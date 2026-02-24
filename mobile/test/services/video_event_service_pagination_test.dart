@@ -4,39 +4,44 @@
 // ignore_for_file: invalid_use_of_null_value
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'dart:async';
 
-@GenerateMocks([NostrClient, SubscriptionManager])
-import 'video_event_service_pagination_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('VideoEventService Pagination', () {
     late VideoEventService videoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
       // Setup basic mock responses
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.connectedRelayCount).thenReturn(1);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
       when(
-        mockSubscriptionManager.createSubscription(
-          name: anyNamed('name'),
-          filters: anyNamed('filters'),
-          onEvent: anyNamed('onEvent'),
-          onError: anyNamed('onError'),
-          onComplete: anyNamed('onComplete'),
-          timeout: anyNamed('timeout'),
-          priority: anyNamed('priority'),
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          timeout: any(named: 'timeout'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((_) async => 'mock-subscription-id');
 
@@ -66,7 +71,7 @@ void main() {
     //    final streamController = StreamController<Event>.broadcast();
 
     //    when(
-    //      mockNostrService.subscribe(argThat(anything)),
+    //      () => mockNostrService.subscribe(any()),
     //    ).thenAnswer((_) => streamController.stream);
 
     //    // Act
@@ -89,7 +94,7 @@ void main() {
 
     //    // Assert - Verify the filter was created correctly
     //    final capturedFilters = verify(
-    //      mockNostrService.subscribe(captureAny()),
+    //      () => mockNostrService.subscribe(captureAny()),
     //    ).captured;
 
     //    expect(capturedFilters.isNotEmpty, true);
@@ -114,7 +119,7 @@ void main() {
         final streamController = StreamController<Event>.broadcast();
 
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => streamController.stream);
 
         // Act - First load should work
@@ -138,7 +143,7 @@ void main() {
         // Now try to load more - it should reset and allow loading
         final secondController = StreamController<Event>.broadcast();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => secondController.stream);
 
         final secondLoad = videoEventService.loadMoreEvents(
@@ -150,7 +155,7 @@ void main() {
         await secondLoad;
 
         // Assert - should have made two subscription calls
-        verify(mockNostrService.subscribe(argThat(anything))).called(2);
+        verify(() => mockNostrService.subscribe(any())).called(2);
       },
     );
 
@@ -159,7 +164,7 @@ void main() {
       final streamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => streamController.stream);
 
       // Act
@@ -192,7 +197,7 @@ void main() {
     //    // First subscription to get initial events
     //    final firstStreamController = StreamController<Event>.broadcast();
     //    when(
-    //      mockNostrService.subscribe(argThat(anything)),
+    //      () => mockNostrService.subscribe(any()),
     //    ).thenAnswer((_) => firstStreamController.stream);
 
     //    await videoEventService.subscribeToVideoFeed(
@@ -213,15 +218,15 @@ void main() {
 
     //    // Reset mock for next query
     //    reset(mockNostrService);
-    //    when(mockNostrService.isInitialized).thenReturn(true);
-    //    when(mockNostrService.connectedRelayCount).thenReturn(1);
+    //    when(() => mockNostrService.isInitialized).thenReturn(true);
+    //    when(() => mockNostrService.connectedRelayCount).thenReturn(1);
 
     //    // Now test that pagination reset preserves the oldest timestamp
     //    videoEventService.resetPaginationState(SubscriptionType.discovery);
 
     //    final secondStreamController = StreamController<Event>.broadcast();
     //    when(
-    //      mockNostrService.subscribe(argThat(anything)),
+    //      () => mockNostrService.subscribe(any()),
     //    ).thenAnswer((_) => secondStreamController.stream);
 
     //    // Act - Load more events after reset
@@ -235,7 +240,7 @@ void main() {
 
     //    // Assert - Verify the filter used the oldest timestamp as 'until'
     //    final capturedFilters = verify(
-    //      mockNostrService.subscribe(captureAny()),
+    //      () => mockNostrService.subscribe(captureAny()),
     //    ).captured;
 
     //    expect(capturedFilters.isNotEmpty, true);

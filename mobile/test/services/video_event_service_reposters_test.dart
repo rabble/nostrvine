@@ -4,30 +4,34 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import './video_event_service_reposters_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, SubscriptionManager])
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('VideoEventService getRepostersForVideo', () {
     late VideoEventService videoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
       // Setup default mock behaviors
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.connectedRelayCount).thenReturn(3);
-      when(mockNostrService.connectedRelays).thenReturn([
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(3);
+      when(() => mockNostrService.connectedRelays).thenReturn([
         'wss://relay1.example.com',
         'wss://relay2.example.com',
         'wss://relay3.example.com',
@@ -48,7 +52,7 @@ void main() {
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       // Call the method
@@ -61,9 +65,9 @@ void main() {
 
       // Verify the filter
       verify(
-        mockNostrService.subscribe(
-          argThat(
-            predicate<List<Filter>>((filters) {
+        () => mockNostrService.subscribe(
+          any(
+            that: predicate<List<Filter>>((filters) {
               if (filters.isEmpty) return false;
               final filter = filters.first;
               return filter.kinds != null &&
@@ -82,7 +86,7 @@ void main() {
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       // Create repost events with valid hex pubkeys (64 chars)
@@ -161,7 +165,7 @@ void main() {
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       // Call the method
@@ -184,7 +188,7 @@ void main() {
         final eventStreamController = StreamController<Event>.broadcast();
 
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => eventStreamController.stream);
 
         final reposter1Pubkey =
@@ -256,7 +260,7 @@ void main() {
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       // Call the method
@@ -281,7 +285,7 @@ void main() {
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       final reposterPubkey =

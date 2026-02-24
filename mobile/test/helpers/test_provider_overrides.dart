@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -25,13 +26,15 @@ import 'package:openvine/services/subscription_manager.dart';
   SharedPreferences,
   SocialService,
   AuthService,
-  NostrClient,
   UserProfileService,
   SubscriptionManager,
   BlossomAuthService,
   MediaCacheManager,
 ])
 import 'test_provider_overrides.mocks.dart';
+
+// Mocktail mock for NostrClient (migrated from Mockito code generation)
+class MockNostrClient extends mocktail.Mock implements NostrClient {}
 
 /// Creates a properly stubbed MockSharedPreferences for testing
 MockSharedPreferences createMockSharedPreferences() {
@@ -108,17 +111,21 @@ MockNostrClient createMockNostrService() {
   final mockNostr = MockNostrClient();
 
   // Stub common properties
-  when(mockNostr.isInitialized).thenReturn(true);
-  when(mockNostr.connectedRelayCount).thenReturn(1);
-  when(mockNostr.configuredRelays).thenReturn(<String>[]);
+  mocktail.when(() => mockNostr.isInitialized).thenReturn(true);
+  mocktail.when(() => mockNostr.connectedRelayCount).thenReturn(1);
+  mocktail.when(() => mockNostr.configuredRelays).thenReturn(<String>[]);
 
   // Stub subscribe() to return empty stream (never null) so SubscriptionManager
   // and UserProfileService batch fetch do not get type 'Null' is not a subtype of type 'Stream<Event>'
-  when(mockNostr.subscribe(any)).thenAnswer((_) => Stream<Event>.empty());
+  mocktail
+      .when(() => mockNostr.subscribe(mocktail.any()))
+      .thenAnswer((_) => Stream<Event>.empty());
 
   // Stub queryEvents() to return empty list (never null) so FollowRepository
   // getFollowers/getMyFollowers do not get type 'Null' is not a subtype of type 'Future<List<String>>'
-  when(mockNostr.queryEvents(any)).thenAnswer((_) async => <Event>[]);
+  mocktail
+      .when(() => mockNostr.queryEvents(mocktail.any()))
+      .thenAnswer((_) async => <Event>[]);
 
   return mockNostr;
 }

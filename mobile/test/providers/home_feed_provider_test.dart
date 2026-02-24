@@ -2,14 +2,14 @@
 // ABOUTME: Verifies that home feed correctly filters videos from followed authors
 // ABOUTME: Tests REST API first with Nostr fallback pattern
 
-import 'package:flutter/foundation.dart';
+import 'dart:ui';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mocktail/mocktail.dart' as mocktail;
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
@@ -22,88 +22,98 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-@GenerateMocks([
-  VideoEventService,
-  NostrClient,
-  SubscriptionManager,
-  AnalyticsApiService,
-])
-import 'home_feed_provider_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-/// Mocktail mock for FollowRepository
-class MockFollowRepository extends mocktail.Mock implements FollowRepository {}
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
+class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 /// Creates a mock FollowRepository with the given following pubkeys
-MockFollowRepository createMockFollowRepository(List<String> followingPubkeys) {
-  final mock = MockFollowRepository();
-  mocktail.when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
-  mocktail
-      .when(() => mock.followingStream)
-      .thenAnswer(
-        (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
-      );
-  mocktail.when(() => mock.isInitialized).thenReturn(true);
-  mocktail.when(() => mock.followingCount).thenReturn(followingPubkeys.length);
+_MockFollowRepository createMockFollowRepository(
+  List<String> followingPubkeys,
+) {
+  final mock = _MockFollowRepository();
+  when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
+  when(() => mock.followingStream).thenAnswer(
+    (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
+  );
+  when(() => mock.isInitialized).thenReturn(true);
+  when(() => mock.followingCount).thenReturn(followingPubkeys.length);
   return mock;
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(<String>[]);
+    registerFallbackValue(() {});
+    registerFallbackValue(SubscriptionType.homeFeed);
+  });
+
   group('HomeFeedProvider', () {
     late ProviderContainer container;
-    late MockVideoEventService mockVideoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
     late SharedPreferences sharedPreferences;
     final List<VoidCallback> registeredListeners = [];
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
-      mockVideoEventService = MockVideoEventService();
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
       registeredListeners.clear();
 
       // Setup default mock behaviors
       // Note: Individual tests will override homeFeedVideos with their own values
       when(
-        mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
+        () => mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
       ).thenReturn(0);
 
       // Setup nostrService isInitialized stub (needed for profile fetching)
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.hasKeys).thenReturn(true);
-      when(mockNostrService.publicKey).thenReturn('test_pubkey');
-      when(mockNostrService.configuredRelays).thenReturn(<String>[]);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.hasKeys).thenReturn(true);
+      when(() => mockNostrService.publicKey).thenReturn('test_pubkey');
+      when(() => mockNostrService.configuredRelays).thenReturn(<String>[]);
       when(
-        mockNostrService.subscribe(
-          any,
-          subscriptionId: anyNamed('subscriptionId'),
-          tempRelays: anyNamed('tempRelays'),
-          targetRelays: anyNamed('targetRelays'),
-          relayTypes: anyNamed('relayTypes'),
-          sendAfterAuth: anyNamed('sendAfterAuth'),
-          onEose: anyNamed('onEose'),
+        () => mockNostrService.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+          relayTypes: any(named: 'relayTypes'),
+          sendAfterAuth: any(named: 'sendAfterAuth'),
+          onEose: any(named: 'onEose'),
         ),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
 
       // Capture listeners when added
-      when(mockVideoEventService.addListener(any)).thenAnswer((invocation) {
+      when(() => mockVideoEventService.addListener(any())).thenAnswer((
+        invocation,
+      ) {
         final listener = invocation.positionalArguments[0] as VoidCallback;
         registeredListeners.add(listener);
       });
 
       // Remove listeners when removed
-      when(mockVideoEventService.removeListener(any)).thenAnswer((invocation) {
+      when(() => mockVideoEventService.removeListener(any())).thenAnswer((
+        invocation,
+      ) {
         final listener = invocation.positionalArguments[0] as VoidCallback;
         registeredListeners.remove(listener);
       });
 
       // subscribeToHomeFeed just completes - videos should already be set up by individual tests
       when(
-        mockVideoEventService.subscribeToHomeFeed(
-          any,
-          limit: anyNamed('limit'),
+        () => mockVideoEventService.subscribeToHomeFeed(
+          any(),
+          limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async {
         // Videos are already set up via when(homeFeedVideos).thenReturn() in individual tests
@@ -158,9 +168,9 @@ void main() {
 
       // Verify that we didn't try to subscribe since there are no following
       verifyNever(
-        mockVideoEventService.subscribeToHomeFeed(
-          any,
-          limit: anyNamed('limit'),
+        () => mockVideoEventService.subscribeToHomeFeed(
+          any(),
+          limit: any(named: 'limit'),
         ),
       );
 
@@ -190,7 +200,7 @@ void main() {
           ),
         ];
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
+        when(() => mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
 
         // Create container with initial social state
         final testContainer = ProviderContainer(
@@ -248,9 +258,9 @@ void main() {
 
         // Verify we didn't re-subscribe unnecessarily
         verify(
-          mockVideoEventService.subscribeToHomeFeed(
-            any,
-            limit: anyNamed('limit'),
+          () => mockVideoEventService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
           ),
         );
 
@@ -294,7 +304,7 @@ void main() {
           ),
         ];
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
+        when(() => mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
 
         // Create a new container with social state override
         final testContainer = ProviderContainer(
@@ -320,7 +330,7 @@ void main() {
 
         // Verify subscription was created with correct authors
         verify(
-          mockVideoEventService.subscribeToHomeFeed(
+          () => mockVideoEventService.subscribeToHomeFeed(
             followingPubkeys,
             limit: 100,
           ),
@@ -359,7 +369,7 @@ void main() {
           ),
         ];
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
+        when(() => mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
 
         // Create a new container with follow repository override
         final testContainer = ProviderContainer(
@@ -412,9 +422,9 @@ void main() {
           ),
         );
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
+        when(() => mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
         when(
-          mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
+          () => mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
         ).thenReturn(10);
 
         // Create a new container with social state override
@@ -441,7 +451,7 @@ void main() {
 
         // Verify subscription was created
         verify(
-          mockVideoEventService.subscribeToHomeFeed(
+          () => mockVideoEventService.subscribeToHomeFeed(
             followingPubkeys,
             limit: 100,
           ),
@@ -459,7 +469,7 @@ void main() {
         // Setup
         final followingPubkeys = ['pubkey1'];
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn([]);
+        when(() => mockVideoEventService.homeFeedVideos).thenReturn([]);
 
         // Create a new container with social state override
         final testContainer = ProviderContainer(
@@ -484,7 +494,7 @@ void main() {
 
         // Assert: Should re-subscribe after refresh
         verify(
-          mockVideoEventService.subscribeToHomeFeed(
+          () => mockVideoEventService.subscribeToHomeFeed(
             followingPubkeys,
             limit: 100,
           ),
@@ -502,7 +512,7 @@ void main() {
         // Setup: User is following people but no videos available
         final followingPubkeys = ['pubkey1', 'pubkey2'];
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn([]);
+        when(() => mockVideoEventService.homeFeedVideos).thenReturn([]);
 
         // Create a new container with social state override
         final testContainer = ProviderContainer(
@@ -528,7 +538,7 @@ void main() {
 
         // Verify subscription was still attempted
         verify(
-          mockVideoEventService.subscribeToHomeFeed(
+          () => mockVideoEventService.subscribeToHomeFeed(
             followingPubkeys,
             limit: 100,
           ),
@@ -542,24 +552,24 @@ void main() {
   });
 
   group('HomeFeed Helper Providers', () {
-    late MockVideoEventService mockVideoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
-      mockVideoEventService = MockVideoEventService();
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
       // Setup default mock behaviors
-      when(mockVideoEventService.homeFeedVideos).thenReturn([]);
+      when(() => mockVideoEventService.homeFeedVideos).thenReturn([]);
       when(
-        mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
+        () => mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
       ).thenReturn(0);
       when(
-        mockVideoEventService.subscribeToHomeFeed(
-          any,
-          limit: anyNamed('limit'),
+        () => mockVideoEventService.subscribeToHomeFeed(
+          any(),
+          limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async {});
     });
@@ -636,52 +646,56 @@ void main() {
   });
 
   group('HomeFeed REST API Mode', () {
-    late MockVideoEventService mockVideoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
-    late MockAnalyticsApiService mockAnalyticsApiService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
+    late _MockAnalyticsApiService mockAnalyticsApiService;
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
-      mockVideoEventService = MockVideoEventService();
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
-      mockAnalyticsApiService = MockAnalyticsApiService();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
+      mockAnalyticsApiService = _MockAnalyticsApiService();
 
       // Setup default mock behaviors
-      when(mockVideoEventService.homeFeedVideos).thenReturn([]);
+      when(() => mockVideoEventService.homeFeedVideos).thenReturn([]);
       when(
-        mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
+        () => mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
       ).thenReturn(0);
       when(
-        mockVideoEventService.subscribeToHomeFeed(
-          any,
-          limit: anyNamed('limit'),
+        () => mockVideoEventService.subscribeToHomeFeed(
+          any(),
+          limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async {});
-      when(mockVideoEventService.addListener(any)).thenReturn(null);
-      when(mockVideoEventService.removeListener(any)).thenReturn(null);
-      when(mockVideoEventService.addVideoUpdateListener(any)).thenReturn(() {});
-      when(mockVideoEventService.addNewVideoListener(any)).thenReturn(() {});
+      when(() => mockVideoEventService.addListener(any())).thenReturn(null);
+      when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
+      when(
+        () => mockVideoEventService.addVideoUpdateListener(any()),
+      ).thenReturn(() {});
+      when(
+        () => mockVideoEventService.addNewVideoListener(any()),
+      ).thenReturn(() {});
 
       // Setup NostrClient stubs
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.hasKeys).thenReturn(true);
-      when(mockNostrService.publicKey).thenReturn('test_pubkey');
-      when(mockNostrService.configuredRelays).thenReturn(<String>[]);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.hasKeys).thenReturn(true);
+      when(() => mockNostrService.publicKey).thenReturn('test_pubkey');
+      when(() => mockNostrService.configuredRelays).thenReturn(<String>[]);
       when(
-        mockNostrService.subscribe(
-          any,
-          subscriptionId: anyNamed('subscriptionId'),
-          tempRelays: anyNamed('tempRelays'),
-          targetRelays: anyNamed('targetRelays'),
-          relayTypes: anyNamed('relayTypes'),
-          sendAfterAuth: anyNamed('sendAfterAuth'),
-          onEose: anyNamed('onEose'),
+        () => mockNostrService.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+          relayTypes: any(named: 'relayTypes'),
+          sendAfterAuth: any(named: 'sendAfterAuth'),
+          onEose: any(named: 'onEose'),
         ),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
     });
 
     tearDown(() {
@@ -695,7 +709,7 @@ void main() {
       'should use REST API when available and has videos',
       () async {
         // Setup: REST API is available and returns videos
-        when(mockAnalyticsApiService.isAvailable).thenReturn(true);
+        when(() => mockAnalyticsApiService.isAvailable).thenReturn(true);
 
         final now = DateTime.now();
         final timestamp = now.millisecondsSinceEpoch ~/ 1000;
@@ -719,11 +733,11 @@ void main() {
         ];
 
         when(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).thenAnswer(
           (_) async => HomeFeedResult(
@@ -761,19 +775,19 @@ void main() {
 
         // Verify REST API was called
         verify(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).called(1);
 
         // Verify Nostr was NOT called since REST API succeeded
         verifyNever(
-          mockVideoEventService.subscribeToHomeFeed(
-            any,
-            limit: anyNamed('limit'),
+          () => mockVideoEventService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
           ),
         );
 
@@ -787,7 +801,7 @@ void main() {
       'should fallback to Nostr when REST API is not available',
       () async {
         // Setup: REST API is NOT available
-        when(mockAnalyticsApiService.isAvailable).thenReturn(false);
+        when(() => mockAnalyticsApiService.isAvailable).thenReturn(false);
 
         final now = DateTime.now();
         final timestamp = now.millisecondsSinceEpoch ~/ 1000;
@@ -802,7 +816,7 @@ void main() {
           ),
         ];
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
+        when(() => mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
 
         final container = ProviderContainer(
           overrides: [
@@ -830,9 +844,9 @@ void main() {
 
         // Verify Nostr was called since REST API not available
         verify(
-          mockVideoEventService.subscribeToHomeFeed(
-            any,
-            limit: anyNamed('limit'),
+          () => mockVideoEventService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
           ),
         ).called(1);
 
@@ -846,13 +860,13 @@ void main() {
       'should fallback to Nostr when REST API throws error',
       () async {
         // Setup: REST API is available but throws error
-        when(mockAnalyticsApiService.isAvailable).thenReturn(true);
+        when(() => mockAnalyticsApiService.isAvailable).thenReturn(true);
         when(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).thenThrow(Exception('API Error'));
 
@@ -869,7 +883,7 @@ void main() {
           ),
         ];
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
+        when(() => mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
 
         final container = ProviderContainer(
           overrides: [
@@ -897,17 +911,17 @@ void main() {
 
         // Verify both were called (REST API tried, then Nostr)
         verify(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).called(1);
         verify(
-          mockVideoEventService.subscribeToHomeFeed(
-            any,
-            limit: anyNamed('limit'),
+          () => mockVideoEventService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
           ),
         ).called(1);
 
@@ -921,13 +935,13 @@ void main() {
       'should fallback to Nostr when REST API returns empty',
       () async {
         // Setup: REST API is available but returns empty
-        when(mockAnalyticsApiService.isAvailable).thenReturn(true);
+        when(() => mockAnalyticsApiService.isAvailable).thenReturn(true);
         when(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).thenAnswer(
           (_) async => const HomeFeedResult(
@@ -950,7 +964,7 @@ void main() {
           ),
         ];
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
+        when(() => mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
 
         final container = ProviderContainer(
           overrides: [
@@ -978,17 +992,17 @@ void main() {
 
         // Verify both were called
         verify(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).called(1);
         verify(
-          mockVideoEventService.subscribeToHomeFeed(
-            any,
-            limit: anyNamed('limit'),
+          () => mockVideoEventService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
           ),
         ).called(1);
 
@@ -1002,7 +1016,7 @@ void main() {
       'loadMore should use REST API cursor pagination',
       () async {
         // Setup: REST API is available
-        when(mockAnalyticsApiService.isAvailable).thenReturn(true);
+        when(() => mockAnalyticsApiService.isAvailable).thenReturn(true);
 
         final now = DateTime.now();
         final timestamp = now.millisecondsSinceEpoch ~/ 1000;
@@ -1033,11 +1047,11 @@ void main() {
 
         var callCount = 0;
         when(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).thenAnswer((_) async {
           callCount++;
@@ -1087,11 +1101,11 @@ void main() {
 
         // Verify REST API was called twice (initial + loadMore)
         verify(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).called(2);
 

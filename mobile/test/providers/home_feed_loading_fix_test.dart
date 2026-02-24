@@ -6,9 +6,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mocktail/mocktail.dart' as mocktail;
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -26,31 +24,29 @@ import 'package:openvine/state/user_profile_state.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:rxdart/rxdart.dart';
 
-@GenerateMocks([
-  VideoEventService,
-  NostrClient,
-  SubscriptionManager,
-  AnalyticsApiService,
-  AuthService,
-])
-import 'home_feed_loading_fix_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-/// Mocktail mock for FollowRepository
-class _MockFollowRepository extends mocktail.Mock implements FollowRepository {}
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
+class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 /// Creates a mock FollowRepository with the given following pubkeys
 _MockFollowRepository _createMockFollowRepository(
   List<String> followingPubkeys,
 ) {
   final mock = _MockFollowRepository();
-  mocktail.when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
-  mocktail
-      .when(() => mock.followingStream)
-      .thenAnswer(
-        (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
-      );
-  mocktail.when(() => mock.isInitialized).thenReturn(true);
-  mocktail.when(() => mock.followingCount).thenReturn(followingPubkeys.length);
+  when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
+  when(() => mock.followingStream).thenAnswer(
+    (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
+  );
+  when(() => mock.isInitialized).thenReturn(true);
+  when(() => mock.followingCount).thenReturn(followingPubkeys.length);
   return mock;
 }
 
@@ -124,65 +120,73 @@ Future<VideoFeedState> waitForHomeFeedComplete(
 
 void main() {
   group('HomeFeed REST API Integration', () {
-    late MockVideoEventService mockVideoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
-    late MockAnalyticsApiService mockAnalyticsApiService;
-    late MockAuthService mockAuthService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
+    late _MockAnalyticsApiService mockAnalyticsApiService;
+    late _MockAuthService mockAuthService;
+
+    setUpAll(() {
+      registerFallbackValue(<String>[]);
+    });
 
     setUp(() {
-      mockVideoEventService = MockVideoEventService();
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
-      mockAnalyticsApiService = MockAnalyticsApiService();
-      mockAuthService = MockAuthService();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
+      mockAnalyticsApiService = _MockAnalyticsApiService();
+      mockAuthService = _MockAuthService();
 
       // Setup default VideoEventService mock behaviors
-      when(mockVideoEventService.homeFeedVideos).thenReturn([]);
+      when(() => mockVideoEventService.homeFeedVideos).thenReturn([]);
       when(
-        mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
+        () => mockVideoEventService.getEventCount(SubscriptionType.homeFeed),
       ).thenReturn(0);
       when(
-        mockVideoEventService.subscribeToHomeFeed(
-          any,
-          limit: anyNamed('limit'),
-          sortBy: anyNamed('sortBy'),
-          force: anyNamed('force'),
+        () => mockVideoEventService.subscribeToHomeFeed(
+          any(),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
+          force: any(named: 'force'),
         ),
       ).thenAnswer((_) async {});
-      when(mockVideoEventService.addListener(any)).thenReturn(null);
-      when(mockVideoEventService.removeListener(any)).thenReturn(null);
-      when(mockVideoEventService.addVideoUpdateListener(any)).thenReturn(() {});
-      when(mockVideoEventService.addNewVideoListener(any)).thenReturn(() {});
+      when(() => mockVideoEventService.addListener(any())).thenReturn(null);
+      when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
       when(
-        mockVideoEventService.debugDumpCdnDivineVideoThumbnails(),
+        () => mockVideoEventService.addVideoUpdateListener(any()),
+      ).thenReturn(() {});
+      when(
+        () => mockVideoEventService.addNewVideoListener(any()),
+      ).thenReturn(() {});
+      when(
+        () => mockVideoEventService.debugDumpCdnDivineVideoThumbnails(),
       ).thenReturn(null);
 
       // Setup AnalyticsApiService enrichment stubs (used by _enrichVideosWithBulkStats)
       when(
-        mockAnalyticsApiService.getBulkVideoStats(argThat(isA<List<String>>())),
+        () => mockAnalyticsApiService.getBulkVideoStats(any()),
       ).thenAnswer((_) async => <String, BulkVideoStatsEntry>{});
       when(
-        mockAnalyticsApiService.getBulkVideoViews(
-          argThat(isA<List<String>>()),
-          maxVideos: anyNamed('maxVideos'),
-          maxConcurrent: anyNamed('maxConcurrent'),
+        () => mockAnalyticsApiService.getBulkVideoViews(
+          any(),
+          maxVideos: any(named: 'maxVideos'),
+          maxConcurrent: any(named: 'maxConcurrent'),
         ),
       ).thenAnswer((_) async => <String, int>{});
 
       // Setup NostrClient stubs
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.hasKeys).thenReturn(false);
-      when(mockNostrService.publicKey).thenReturn('');
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.hasKeys).thenReturn(false);
+      when(() => mockNostrService.publicKey).thenReturn('');
 
       // Setup AuthService stubs
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(
         'abc123def456abc123def456abc123def456abc123def456abc123def456abc1',
       );
-      when(mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(
-        mockAuthService.authStateStream,
+        () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
     });
 
@@ -242,11 +246,11 @@ void main() {
         ];
 
         when(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).thenAnswer(
           (_) async => HomeFeedResult(
@@ -275,21 +279,21 @@ void main() {
 
         // Verify REST API was called with the user's pubkey
         verify(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).called(1);
 
         // Verify Nostr was NOT called (followRepository is null)
         verifyNever(
-          mockVideoEventService.subscribeToHomeFeed(
-            any,
-            limit: anyNamed('limit'),
-            sortBy: anyNamed('sortBy'),
-            force: anyNamed('force'),
+          () => mockVideoEventService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+            force: any(named: 'force'),
           ),
         );
 
@@ -302,11 +306,11 @@ void main() {
       final timestamp = now.millisecondsSinceEpoch ~/ 1000;
 
       when(
-        mockAnalyticsApiService.getHomeFeed(
-          pubkey: anyNamed('pubkey'),
-          limit: anyNamed('limit'),
-          sort: anyNamed('sort'),
-          before: anyNamed('before'),
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          sort: any(named: 'sort'),
+          before: any(named: 'before'),
         ),
       ).thenAnswer(
         (_) async => HomeFeedResult(
@@ -332,11 +336,11 @@ void main() {
 
       // Capture the actual call to verify the pubkey was passed
       final captured = verify(
-        mockAnalyticsApiService.getHomeFeed(
-          pubkey: captureAnyNamed('pubkey'),
-          limit: captureAnyNamed('limit'),
-          sort: captureAnyNamed('sort'),
-          before: anyNamed('before'),
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: captureAny(named: 'pubkey'),
+          limit: captureAny(named: 'limit'),
+          sort: captureAny(named: 'sort'),
+          before: any(named: 'before'),
         ),
       ).captured;
 
@@ -356,7 +360,7 @@ void main() {
     test(
       'should return loading state when pubkey is null (not authenticated)',
       () async {
-        when(mockAuthService.currentPublicKeyHex).thenReturn(null);
+        when(() => mockAuthService.currentPublicKeyHex).thenReturn(null);
 
         final container = createContainer();
 
@@ -370,11 +374,11 @@ void main() {
 
         // Verify REST API was NOT called (no pubkey available)
         verifyNever(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         );
 
@@ -386,11 +390,11 @@ void main() {
       'should fall back to Nostr when REST API fails and followRepository is available',
       () async {
         when(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).thenThrow(Exception('API Error'));
 
@@ -408,7 +412,9 @@ void main() {
           ),
         ];
 
-        when(mockVideoEventService.homeFeedVideos).thenReturn(nostrVideos);
+        when(
+          () => mockVideoEventService.homeFeedVideos,
+        ).thenReturn(nostrVideos);
 
         final followRepo = _createMockFollowRepository([
           'author_abc123def456abc123def456abc123def456abc123def456abc123def456ab',
@@ -434,21 +440,21 @@ void main() {
 
         // Verify REST API was tried first
         verify(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).called(1);
 
         // Verify Nostr was called as fallback
         verify(
-          mockVideoEventService.subscribeToHomeFeed(
-            any,
-            limit: anyNamed('limit'),
-            sortBy: anyNamed('sortBy'),
-            force: anyNamed('force'),
+          () => mockVideoEventService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+            force: any(named: 'force'),
           ),
         ).called(1);
 
@@ -460,11 +466,11 @@ void main() {
       'should return loading when REST API fails and followRepository is null',
       () async {
         when(
-          mockAnalyticsApiService.getHomeFeed(
-            pubkey: anyNamed('pubkey'),
-            limit: anyNamed('limit'),
-            sort: anyNamed('sort'),
-            before: anyNamed('before'),
+          () => mockAnalyticsApiService.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            sort: any(named: 'sort'),
+            before: any(named: 'before'),
           ),
         ).thenThrow(Exception('API Error'));
 
@@ -485,11 +491,11 @@ void main() {
     test('REST API returns empty should fall back to Nostr when available', () async {
       // REST API returns empty list - should try Nostr path
       when(
-        mockAnalyticsApiService.getHomeFeed(
-          pubkey: anyNamed('pubkey'),
-          limit: anyNamed('limit'),
-          sort: anyNamed('sort'),
-          before: anyNamed('before'),
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          sort: any(named: 'sort'),
+          before: any(named: 'before'),
         ),
       ).thenAnswer(
         (_) async =>
@@ -510,7 +516,7 @@ void main() {
         ),
       ];
 
-      when(mockVideoEventService.homeFeedVideos).thenReturn(nostrVideos);
+      when(() => mockVideoEventService.homeFeedVideos).thenReturn(nostrVideos);
 
       final followRepo = _createMockFollowRepository([
         'author_abc123def456abc123def456abc123def456abc123def456abc123def456ab',
@@ -521,7 +527,7 @@ void main() {
         followRepository: followRepo,
       );
 
-      // Wait for full build (REST empty → Nostr fallback)
+      // Wait for full build (REST empty -> Nostr fallback)
       final result = await waitForHomeFeedComplete(container);
 
       // Assert: Should get videos from Nostr since REST was empty
@@ -530,19 +536,19 @@ void main() {
 
       // Verify both were called
       verify(
-        mockAnalyticsApiService.getHomeFeed(
-          pubkey: anyNamed('pubkey'),
-          limit: anyNamed('limit'),
-          sort: anyNamed('sort'),
-          before: anyNamed('before'),
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          sort: any(named: 'sort'),
+          before: any(named: 'before'),
         ),
       ).called(1);
       verify(
-        mockVideoEventService.subscribeToHomeFeed(
-          any,
-          limit: anyNamed('limit'),
-          sortBy: anyNamed('sortBy'),
-          force: anyNamed('force'),
+        () => mockVideoEventService.subscribeToHomeFeed(
+          any(),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
+          force: any(named: 'force'),
         ),
       ).called(1);
 
@@ -552,14 +558,13 @@ void main() {
     test('REST API pagination cursor should be set correctly', () async {
       final now = DateTime.now();
       final timestamp = now.millisecondsSinceEpoch ~/ 1000;
-      const expectedCursor = 1700000000;
 
       when(
-        mockAnalyticsApiService.getHomeFeed(
-          pubkey: anyNamed('pubkey'),
-          limit: anyNamed('limit'),
-          sort: anyNamed('sort'),
-          before: anyNamed('before'),
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          sort: any(named: 'sort'),
+          before: any(named: 'before'),
         ),
       ).thenAnswer(
         (_) async => HomeFeedResult(
@@ -574,7 +579,7 @@ void main() {
               videoUrl: 'https://example.com/cursor_test.mp4',
             ),
           ],
-          nextCursor: expectedCursor,
+          nextCursor: 1700000000,
           hasMore: true,
         ),
       );
@@ -593,14 +598,14 @@ void main() {
 
   group('isNostrReadyProvider retry polling', () {
     test('should return false initially when NostrClient hasKeys is false', () {
-      final mockNostrClient = MockNostrClient();
-      final mockAuthService = MockAuthService();
+      final mockNostrClient = _MockNostrClient();
+      final mockAuthService = _MockAuthService();
 
-      when(mockNostrClient.hasKeys).thenReturn(false);
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(() => mockNostrClient.hasKeys).thenReturn(false);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(
-        mockAuthService.authStateStream,
+        () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
 
       final container = ProviderContainer(
@@ -620,15 +625,15 @@ void main() {
     });
 
     test('should return true when NostrClient hasKeys is true', () {
-      final mockNostrClient = MockNostrClient();
-      final mockAuthService = MockAuthService();
+      final mockNostrClient = _MockNostrClient();
+      final mockAuthService = _MockAuthService();
 
-      when(mockNostrClient.hasKeys).thenReturn(true);
-      when(mockNostrClient.publicKey).thenReturn('test_key');
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(() => mockNostrClient.hasKeys).thenReturn(true);
+      when(() => mockNostrClient.publicKey).thenReturn('test_key');
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(
-        mockAuthService.authStateStream,
+        () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
 
       final container = ProviderContainer(
@@ -648,14 +653,16 @@ void main() {
     });
 
     test('should return false when user is not authenticated', () {
-      final mockNostrClient = MockNostrClient();
-      final mockAuthService = MockAuthService();
+      final mockNostrClient = _MockNostrClient();
+      final mockAuthService = _MockAuthService();
 
-      when(mockNostrClient.hasKeys).thenReturn(true);
-      when(mockAuthService.isAuthenticated).thenReturn(false);
-      when(mockAuthService.authState).thenReturn(AuthState.unauthenticated);
+      when(() => mockNostrClient.hasKeys).thenReturn(true);
+      when(() => mockAuthService.isAuthenticated).thenReturn(false);
       when(
-        mockAuthService.authStateStream,
+        () => mockAuthService.authState,
+      ).thenReturn(AuthState.unauthenticated);
+      when(
+        () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.unauthenticated));
 
       final container = ProviderContainer(
@@ -677,15 +684,17 @@ void main() {
     test(
       'should schedule retry and invalidate when hasKeys transitions to true',
       () async {
-        final mockNostrClient = MockNostrClient();
-        final mockAuthService = MockAuthService();
+        final mockNostrClient = _MockNostrClient();
+        final mockAuthService = _MockAuthService();
 
         // Initially hasKeys is false
-        when(mockNostrClient.hasKeys).thenReturn(false);
-        when(mockAuthService.isAuthenticated).thenReturn(true);
-        when(mockAuthService.authState).thenReturn(AuthState.authenticated);
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
         when(
-          mockAuthService.authStateStream,
+          () => mockAuthService.authState,
+        ).thenReturn(AuthState.authenticated);
+        when(
+          () => mockAuthService.authStateStream,
         ).thenAnswer((_) => Stream.value(AuthState.authenticated));
 
         final container = ProviderContainer(
@@ -701,7 +710,7 @@ void main() {
 
         // Simulate NostrClient.initialize() completing asynchronously
         // (hasKeys transitions to true on the same object reference)
-        when(mockNostrClient.hasKeys).thenReturn(true);
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
 
         // Wait for the 100ms retry to fire
         await Future<void>.delayed(const Duration(milliseconds: 200));

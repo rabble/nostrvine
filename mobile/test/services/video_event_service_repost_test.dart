@@ -4,38 +4,42 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import './video_event_service_repost_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, SubscriptionManager])
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('VideoEventService Kind 16 Generic Repost Processing', () {
     late VideoEventService videoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
     late StreamController<Event> eventStreamController;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
       eventStreamController = StreamController<Event>.broadcast();
 
       // Setup default mock behaviors
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.connectedRelayCount).thenReturn(3);
-      when(mockNostrService.connectedRelays).thenReturn([
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(3);
+      when(() => mockNostrService.connectedRelays).thenReturn([
         'wss://relay1.example.com',
         'wss://relay2.example.com',
         'wss://relay3.example.com',
       ]);
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       videoEventService = VideoEventService(
@@ -57,9 +61,9 @@ void main() {
 
       // Verify that the filter includes both Kind 22 and Kind 16
       verify(
-        mockNostrService.subscribe(
-          argThat(
-            predicate<List<Filter>>((filters) {
+        () => mockNostrService.subscribe(
+          any(
+            that: predicate<List<Filter>>((filters) {
               if (filters.isEmpty) return false;
               final filter = filters.first;
               return filter.kinds != null &&
@@ -166,9 +170,9 @@ void main() {
 
         // Verify that a new subscription was created to fetch the original event
         verify(
-          mockNostrService.subscribe(
-            argThat(
-              predicate<List<Filter>>((filters) {
+          () => mockNostrService.subscribe(
+            any(
+              that: predicate<List<Filter>>((filters) {
                 if (filters.isEmpty) return false;
                 final filter = filters.first;
                 return filter.ids != null &&
@@ -238,9 +242,9 @@ void main() {
       // Setup a separate stream for fetching original
       final fetchStreamController = StreamController<Event>.broadcast();
       when(
-        mockNostrService.subscribe(
-          argThat(
-            predicate<List<Filter>>(
+        () => mockNostrService.subscribe(
+          any(
+            that: predicate<List<Filter>>(
               (filters) =>
                   filters.any((f) => f.ids?.contains('text123') ?? false),
             ),

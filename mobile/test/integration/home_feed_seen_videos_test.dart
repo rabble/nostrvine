@@ -3,10 +3,10 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -17,10 +17,22 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'home_feed_seen_videos_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-@GenerateMocks([VideoEventService, NostrClient, FollowRepository])
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
+
+/// Fake [Filter] for use with registerFallbackValue.
+class _FakeFilter extends Fake implements Filter {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeFilter());
+    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(SubscriptionType.discovery);
+  });
+
   // TODO: HomeFeed provider doesn't implement seen video ordering yet
   // These tests were written for planned functionality that isn't implemented
   // Skip until the feature is added to HomeFeedProvider
@@ -28,43 +40,45 @@ void main() {
     'HomeFeed SeenVideos Integration',
     skip: 'HomeFeed provider does not implement seen video ordering',
     () {
-      late MockVideoEventService mockVideoService;
-      late MockNostrClient mockNostrClient;
-      late MockFollowRepository mockFollowRepository;
+      late _MockVideoEventService mockVideoService;
+      late _MockNostrClient mockNostrClient;
+      late _MockFollowRepository mockFollowRepository;
       late SharedPreferences sharedPreferences;
       late BehaviorSubject<List<String>> followingSubject;
 
       setUp(() async {
         SharedPreferences.setMockInitialValues({});
         sharedPreferences = await SharedPreferences.getInstance();
-        mockVideoService = MockVideoEventService();
-        mockNostrClient = MockNostrClient();
-        mockFollowRepository = MockFollowRepository();
+        mockVideoService = _MockVideoEventService();
+        mockNostrClient = _MockNostrClient();
+        mockFollowRepository = _MockFollowRepository();
         followingSubject = BehaviorSubject<List<String>>.seeded(['author1']);
 
         // Setup nostr client mock
-        when(mockNostrClient.hasKeys).thenReturn(true);
-        when(mockNostrClient.isInitialized).thenReturn(true);
-        when(mockNostrClient.publicKey).thenReturn('test_pubkey');
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(() => mockNostrClient.isInitialized).thenReturn(true);
+        when(() => mockNostrClient.publicKey).thenReturn('test_pubkey');
         when(
-          mockNostrClient.subscribe(
-            any,
-            subscriptionId: anyNamed('subscriptionId'),
-            tempRelays: anyNamed('tempRelays'),
-            targetRelays: anyNamed('targetRelays'),
-            relayTypes: anyNamed('relayTypes'),
-            sendAfterAuth: anyNamed('sendAfterAuth'),
-            onEose: anyNamed('onEose'),
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenAnswer((_) => Stream.empty());
 
         // Setup follow repository mock
-        when(mockFollowRepository.followingPubkeys).thenReturn(['author1']);
         when(
-          mockFollowRepository.followingStream,
+          () => mockFollowRepository.followingPubkeys,
+        ).thenReturn(['author1']);
+        when(
+          () => mockFollowRepository.followingStream,
         ).thenAnswer((_) => followingSubject.stream);
-        when(mockFollowRepository.isInitialized).thenReturn(true);
-        when(mockFollowRepository.followingCount).thenReturn(1);
+        when(() => mockFollowRepository.isInitialized).thenReturn(true);
+        when(() => mockFollowRepository.followingCount).thenReturn(1);
       });
 
       test('orders unseen videos before seen videos', () async {
@@ -100,11 +114,14 @@ void main() {
 
         // Setup mock service
         when(
-          mockVideoService.homeFeedVideos,
+          () => mockVideoService.homeFeedVideos,
         ).thenReturn([video1, video2, video3]);
-        when(mockVideoService.isSubscribed(any)).thenReturn(false);
+        when(() => mockVideoService.isSubscribed(any())).thenReturn(false);
         when(
-          mockVideoService.subscribeToHomeFeed(any, limit: anyNamed('limit')),
+          () => mockVideoService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
+          ),
         ).thenAnswer((_) async {});
 
         // Create container with overrides
@@ -172,10 +189,15 @@ void main() {
           timestamp: now,
         );
 
-        when(mockVideoService.homeFeedVideos).thenReturn([video1, video2]);
-        when(mockVideoService.isSubscribed(any)).thenReturn(false);
         when(
-          mockVideoService.subscribeToHomeFeed(any, limit: anyNamed('limit')),
+          () => mockVideoService.homeFeedVideos,
+        ).thenReturn([video1, video2]);
+        when(() => mockVideoService.isSubscribed(any())).thenReturn(false);
+        when(
+          () => mockVideoService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
+          ),
         ).thenAnswer((_) async {});
 
         final container = ProviderContainer(
@@ -220,10 +242,15 @@ void main() {
           timestamp: now.subtract(const Duration(hours: 1)),
         );
 
-        when(mockVideoService.homeFeedVideos).thenReturn([video1, video2]);
-        when(mockVideoService.isSubscribed(any)).thenReturn(false);
         when(
-          mockVideoService.subscribeToHomeFeed(any, limit: anyNamed('limit')),
+          () => mockVideoService.homeFeedVideos,
+        ).thenReturn([video1, video2]);
+        when(() => mockVideoService.isSubscribed(any())).thenReturn(false);
+        when(
+          () => mockVideoService.subscribeToHomeFeed(
+            any(),
+            limit: any(named: 'limit'),
+          ),
         ).thenAnswer((_) async {});
 
         final container = ProviderContainer(

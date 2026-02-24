@@ -2,39 +2,62 @@
 // ABOUTME: Ensures profile editing waits for relay to confirm updated profile before navigating back
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
-@GenerateMocks([NostrClient, AuthService, UserProfileService])
-import 'profile_setup_relay_confirmation_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockUserProfileService extends Mock implements UserProfileService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(
+      Event(
+        '0000000000000000000000000000000000000000000000000000000000000000',
+        0,
+        [],
+        '',
+      ),
+    );
+    registerFallbackValue(
+      UserProfile(
+        pubkey:
+            '0000000000000000000000000000000000000000000000000000000000000000',
+        name: '',
+        createdAt: DateTime.now(),
+        eventId: 'fallback_event_id',
+        rawData: const {},
+      ),
+    );
+  });
+
   group('Profile Setup Relay Confirmation', () {
-    late MockNostrClient mockNostrService;
-    late MockAuthService mockAuthService;
-    late MockUserProfileService mockUserProfileService;
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
+    late _MockUserProfileService mockUserProfileService;
     late String testPubkey;
     late String testEventId;
     late int testTimestamp;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockAuthService = MockAuthService();
-      mockUserProfileService = MockUserProfileService();
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
+      mockUserProfileService = _MockUserProfileService();
 
       testPubkey =
           '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
       testTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
       // Default mock setup
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
     });
 
     test(
@@ -57,15 +80,15 @@ void main() {
 
         // Mock successful event creation and publish
         when(
-          mockAuthService.createAndSignEvent(
+          () => mockAuthService.createAndSignEvent(
             kind: 0,
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => publishedEvent);
 
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => publishedEvent);
 
         // Mock profile fetches - first two return stale profile, third returns updated
@@ -91,7 +114,10 @@ void main() {
 
         var fetchCallCount = 0;
         when(
-          mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+          () => mockUserProfileService.fetchProfile(
+            testPubkey,
+            forceRefresh: true,
+          ),
         ).thenAnswer((_) async {
           fetchCallCount++;
           if (fetchCallCount <= 2) {
@@ -101,9 +127,11 @@ void main() {
           }
         });
 
-        when(mockUserProfileService.removeProfile(testPubkey)).thenReturn(null);
         when(
-          mockUserProfileService.updateCachedProfile(any),
+          () => mockUserProfileService.removeProfile(testPubkey),
+        ).thenReturn(null);
+        when(
+          () => mockUserProfileService.updateCachedProfile(any()),
         ).thenAnswer((_) async {});
 
         // Act - simulate the publish flow with retry logic
@@ -174,9 +202,14 @@ void main() {
           equals(3),
           reason: 'Should retry until getting updated profile',
         );
-        verify(mockUserProfileService.removeProfile(testPubkey)).called(3);
         verify(
-          mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+          () => mockUserProfileService.removeProfile(testPubkey),
+        ).called(3);
+        verify(
+          () => mockUserProfileService.fetchProfile(
+            testPubkey,
+            forceRefresh: true,
+          ),
         ).called(3);
       },
     );
@@ -198,15 +231,15 @@ void main() {
       testEventId = publishedEvent.id;
 
       when(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 0,
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => publishedEvent);
 
       when(
-        mockNostrService.publishEvent(any),
+        () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => publishedEvent);
 
       // Mock profile service to ALWAYS return stale profile
@@ -221,9 +254,12 @@ void main() {
       );
 
       when(
-        mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+        () =>
+            mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
       ).thenAnswer((_) async => staleProfile);
-      when(mockUserProfileService.removeProfile(testPubkey)).thenReturn(null);
+      when(
+        () => mockUserProfileService.removeProfile(testPubkey),
+      ).thenReturn(null);
 
       // Act
       final event = await mockAuthService.createAndSignEvent(
@@ -294,15 +330,15 @@ void main() {
         testEventId = publishedEvent.id;
 
         when(
-          mockAuthService.createAndSignEvent(
+          () => mockAuthService.createAndSignEvent(
             kind: 0,
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => publishedEvent);
 
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => publishedEvent);
 
         // Mock profile service to return updated profile immediately
@@ -315,9 +351,14 @@ void main() {
         );
 
         when(
-          mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+          () => mockUserProfileService.fetchProfile(
+            testPubkey,
+            forceRefresh: true,
+          ),
         ).thenAnswer((_) async => updatedProfile);
-        when(mockUserProfileService.removeProfile(testPubkey)).thenReturn(null);
+        when(
+          () => mockUserProfileService.removeProfile(testPubkey),
+        ).thenReturn(null);
 
         // Act
         final event = await mockAuthService.createAndSignEvent(
@@ -356,7 +397,10 @@ void main() {
           reason: 'Should succeed on first attempt without retries',
         );
         verify(
-          mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+          () => mockUserProfileService.fetchProfile(
+            testPubkey,
+            forceRefresh: true,
+          ),
         ).called(1);
       },
     );

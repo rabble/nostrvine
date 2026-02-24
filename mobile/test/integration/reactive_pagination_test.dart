@@ -3,24 +3,24 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
 import 'package:openvine/utils/unified_logger.dart';
 
-import 'reactive_pagination_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, SubscriptionManager])
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Reactive Pagination Tests', () {
     late VideoEventService videoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
     bool listenerCalled = false;
 
     setUp(() {
@@ -28,23 +28,25 @@ void main() {
       Log.setLogLevel(LogLevel.debug);
 
       // Create mock services
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
       // Set up basic mock behavior
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.connectedRelays).thenReturn(['wss://test.relay']);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(
+        () => mockNostrService.connectedRelays,
+      ).thenReturn(['wss://test.relay']);
 
       // Mock successful subscription creation - complete immediately
       when(
-        mockSubscriptionManager.createSubscription(
-          name: anyNamed('name'),
-          filters: anyNamed('filters'),
-          onEvent: anyNamed('onEvent'),
-          onError: anyNamed('onError'),
-          onComplete: anyNamed('onComplete'),
-          timeout: anyNamed('timeout'),
-          priority: anyNamed('priority'),
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          timeout: any(named: 'timeout'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
         // Immediately call the onComplete callback to simulate EOSE
@@ -56,7 +58,7 @@ void main() {
       });
 
       when(
-        mockSubscriptionManager.cancelSubscription(any),
+        () => mockSubscriptionManager.cancelSubscription(any()),
       ).thenAnswer((_) async {});
 
       // Create VideoEventService with mock dependencies
@@ -94,20 +96,22 @@ void main() {
 
         // Assert: Verify createSubscription was called with correct parameters
         verify(
-          mockSubscriptionManager.createSubscription(
+          () => mockSubscriptionManager.createSubscription(
             name: 'historical_query',
-            filters: argThat(hasLength(1), named: 'filters'),
-            onEvent: anyNamed('onEvent'),
-            onError: anyNamed('onError'),
-            onComplete: anyNamed('onComplete'),
-            timeout: anyNamed('timeout'),
+            filters: any(named: 'filters', that: hasLength(1)),
+            onEvent: any(named: 'onEvent'),
+            onError: any(named: 'onError'),
+            onComplete: any(named: 'onComplete'),
+            timeout: any(named: 'timeout'),
             priority: 5,
           ),
         ).called(1);
 
         // Verify subscription was cancelled after completion
         verify(
-          mockSubscriptionManager.cancelSubscription('test-subscription-id'),
+          () => mockSubscriptionManager.cancelSubscription(
+            'test-subscription-id',
+          ),
         ).called(1);
       },
     );
@@ -121,14 +125,14 @@ void main() {
 
       // Assert: Verify the filter structure is correct
       final captured = verify(
-        mockSubscriptionManager.createSubscription(
+        () => mockSubscriptionManager.createSubscription(
           name: 'historical_query',
-          filters: captureAnyNamed('filters'),
-          onEvent: anyNamed('onEvent'),
-          onError: anyNamed('onError'),
-          onComplete: anyNamed('onComplete'),
-          timeout: anyNamed('timeout'),
-          priority: anyNamed('priority'),
+          filters: captureAny(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          timeout: any(named: 'timeout'),
+          priority: any(named: 'priority'),
         ),
       ).captured;
 
@@ -156,14 +160,14 @@ void main() {
 
         // Assert: Verify filter does not have until parameter
         final captured = verify(
-          mockSubscriptionManager.createSubscription(
+          () => mockSubscriptionManager.createSubscription(
             name: 'historical_query',
-            filters: captureAnyNamed('filters'),
-            onEvent: anyNamed('onEvent'),
-            onError: anyNamed('onError'),
-            onComplete: anyNamed('onComplete'),
-            timeout: anyNamed('timeout'),
-            priority: anyNamed('priority'),
+            filters: captureAny(named: 'filters'),
+            onEvent: any(named: 'onEvent'),
+            onError: any(named: 'onError'),
+            onComplete: any(named: 'onComplete'),
+            timeout: any(named: 'timeout'),
+            priority: any(named: 'priority'),
           ),
         ).captured;
 

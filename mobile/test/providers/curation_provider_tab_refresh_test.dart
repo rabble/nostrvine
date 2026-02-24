@@ -2,9 +2,9 @@
 // ABOUTME: Verifies the fix for videos showing blank when navigating from video back to tab
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -16,51 +16,57 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:riverpod/riverpod.dart';
 
-import 'curation_provider_lifecycle_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([
-  NostrClient,
-  VideoEventService,
-  SocialService,
-  LikesRepository,
-  AuthService,
-  AnalyticsApiService,
-])
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockSocialService extends Mock implements SocialService {}
+
+class _MockLikesRepository extends Mock implements LikesRepository {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(<String>[]);
+  });
+
   group('CurationProvider Tab Refresh', () {
-    late MockNostrClient mockNostrService;
-    late MockVideoEventService mockVideoEventService;
-    late MockSocialService mockSocialService;
-    late MockLikesRepository mockLikesRepository;
-    late MockAuthService mockAuthService;
-    late MockAnalyticsApiService mockAnalyticsApiService;
+    late _MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockSocialService mockSocialService;
+    late _MockLikesRepository mockLikesRepository;
+    late _MockAuthService mockAuthService;
+    late _MockAnalyticsApiService mockAnalyticsApiService;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockVideoEventService = MockVideoEventService();
-      mockSocialService = MockSocialService();
-      mockLikesRepository = MockLikesRepository();
-      mockAuthService = MockAuthService();
-      mockAnalyticsApiService = MockAnalyticsApiService();
+      mockNostrService = _MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockSocialService = _MockSocialService();
+      mockLikesRepository = _MockLikesRepository();
+      mockAuthService = _MockAuthService();
+      mockAnalyticsApiService = _MockAnalyticsApiService();
 
       // Stub nostr service to return empty stream (no async fetch for this test)
       when(
-        mockNostrService.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) => const Stream.empty());
 
       // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
-      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
+      when(
+        () => mockLikesRepository.getLikeCounts(any()),
+      ).thenAnswer((_) async => {});
     });
 
     test(
       'refreshAll() picks up videos added to cache after provider initialization',
       () async {
         // ARRANGE: Start with empty discoveryVideos
-        when(mockVideoEventService.discoveryVideos).thenReturn([]);
-        when(mockVideoEventService.addVideoEvent(any)).thenReturn(null);
+        when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
+        when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
         final container = ProviderContainer(
           overrides: [
@@ -101,7 +107,7 @@ void main() {
         );
 
         // Update mock to return new videos
-        when(mockVideoEventService.discoveryVideos).thenReturn(newVideos);
+        when(() => mockVideoEventService.discoveryVideos).thenReturn(newVideos);
 
         // ACT: Call refreshAll() (simulates tab change to Editor's Pick)
         await container.read(curationProvider.notifier).refreshAll();
@@ -144,7 +150,7 @@ void main() {
         );
 
         // Initially empty, then populated (simulating async fetch)
-        when(mockVideoEventService.discoveryVideos).thenReturn([]);
+        when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
 
         final container = ProviderContainer(
           overrides: [
@@ -171,7 +177,9 @@ void main() {
 
         // SIMULATE: Videos fetched, cache populated
         // Update mock to return videos now
-        when(mockVideoEventService.discoveryVideos).thenReturn(editorVideos);
+        when(
+          () => mockVideoEventService.discoveryVideos,
+        ).thenReturn(editorVideos);
 
         // SIMULATE: User navigates back to Editor's Pick tab
         // _onTabChanged() calls refreshAll()

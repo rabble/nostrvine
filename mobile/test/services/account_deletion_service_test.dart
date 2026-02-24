@@ -1,22 +1,31 @@
 // ABOUTME: Tests for NIP-62 account deletion service
-// ABOUTME: Verifies kind 62 event creation, ALL_RELAYS tag, NIP-09 batch deletion, and broadcast behavior
+// ABOUTME: Verifies kind 62 event creation, ALL_RELAYS tag, NIP-09 batch
+// ABOUTME: deletion, and broadcast behavior
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 
-import 'account_deletion_service_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
+class _FakeEvent extends Fake implements Event {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeEvent());
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('AccountDeletionService', () {
-    late MockNostrClient mockNostrService;
-    late MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
     late AccountDeletionService service;
     late String testPrivateKey;
     late String testPublicKey;
@@ -44,16 +53,18 @@ void main() {
       testPrivateKey = generatePrivateKey();
       testPublicKey = getPublicKey(testPrivateKey);
 
-      mockNostrService = MockNostrClient();
-      mockAuthService = MockAuthService();
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
       service = AccountDeletionService(
         nostrService: mockNostrService,
         authService: mockAuthService,
       );
 
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
-      when(mockNostrService.queryEvents(any)).thenAnswer((_) async => []);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
+      when(
+        () => mockNostrService.queryEvents(any()),
+      ).thenAnswer((_) async => []);
     });
 
     test('createNip62Event should create kind 62 event', () async {
@@ -68,10 +79,10 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => expectedEvent);
 
@@ -85,10 +96,10 @@ void main() {
 
       // Verify createAndSignEvent was called with kind 62
       verify(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 62,
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).called(1);
     });
@@ -105,10 +116,10 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => expectedEvent);
 
@@ -117,10 +128,10 @@ void main() {
 
       // Assert - verify tags include ALL_RELAYS
       final captured = verify(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: captureAnyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: captureAny(named: 'tags'),
         ),
       ).captured;
 
@@ -146,22 +157,22 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => expectedEvent);
 
       when(
-        mockNostrService.publishEvent(any),
+        () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => expectedEvent);
 
       // Act
       await expectLater(service.deleteAccount(), completes);
 
       // Assert
-      verify(mockNostrService.publishEvent(any)).called(1);
+      verify(() => mockNostrService.publishEvent(any())).called(1);
     });
 
     test(
@@ -178,15 +189,15 @@ void main() {
         );
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => expectedEvent);
 
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => expectedEvent);
 
         // Act
@@ -210,15 +221,17 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => expectedEvent);
 
       // publishEvent returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => null);
 
       // Act
       final result = await service.deleteAccount();
@@ -231,7 +244,7 @@ void main() {
 
     test('deleteAccount should fail when not authenticated', () async {
       // Arrange
-      when(mockAuthService.isAuthenticated).thenReturn(false);
+      when(() => mockAuthService.isAuthenticated).thenReturn(false);
 
       // Act
       final result = await service.deleteAccount();
@@ -241,7 +254,7 @@ void main() {
       expect(result.error, contains('Not authenticated'));
 
       // Verify publishEvent was NOT called
-      verifyNever(mockNostrService.publishEvent(any));
+      verifyNever(() => mockNostrService.publishEvent(any()));
     });
 
     test(
@@ -249,10 +262,10 @@ void main() {
       () async {
         // Arrange
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => null);
 
@@ -264,7 +277,7 @@ void main() {
         expect(result.error, contains('Failed to create deletion event'));
 
         // Verify publishEvent was NOT called
-        verifyNever(mockNostrService.publishEvent(any));
+        verifyNever(() => mockNostrService.publishEvent(any()));
       },
     );
 
@@ -280,23 +293,25 @@ void main() {
           content: 'User requested account deletion via diVine app',
         );
 
-        when(mockNostrService.queryEvents(any)).thenAnswer((_) async => []);
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => nip62Event);
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => nip62Event);
 
         // Act
         await service.deleteAccount();
 
         // Assert
-        verify(mockNostrService.queryEvents(any)).called(1);
+        verify(() => mockNostrService.queryEvents(any())).called(1);
       });
 
       test(
@@ -331,15 +346,15 @@ void main() {
           );
 
           when(
-            mockNostrService.queryEvents(any),
+            () => mockNostrService.queryEvents(any()),
           ).thenAnswer((_) async => [userVideoEvent]);
 
           var createCallCount = 0;
           when(
-            mockAuthService.createAndSignEvent(
-              kind: anyNamed('kind'),
-              content: anyNamed('content'),
-              tags: anyNamed('tags'),
+            () => mockAuthService.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
             ),
           ).thenAnswer((_) async {
             createCallCount++;
@@ -348,7 +363,7 @@ void main() {
           });
 
           when(
-            mockNostrService.publishEvent(any),
+            () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => nip62Event);
 
           // Act
@@ -356,7 +371,7 @@ void main() {
 
           // Assert
           expect(result.success, isTrue);
-          verify(mockNostrService.publishEvent(any)).called(2);
+          verify(() => mockNostrService.publishEvent(any())).called(2);
         },
       );
 
@@ -413,15 +428,15 @@ void main() {
         );
 
         when(
-          mockNostrService.queryEvents(any),
+          () => mockNostrService.queryEvents(any()),
         ).thenAnswer((_) async => [videoEvent1, videoEvent2, likeEvent]);
 
         var createCallCount = 0;
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async {
           createCallCount++;
@@ -431,7 +446,7 @@ void main() {
         });
 
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => nip62Event);
 
         // Act
@@ -440,7 +455,7 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.deletedEventsCount, equals(3));
-        verify(mockNostrService.publishEvent(any)).called(3);
+        verify(() => mockNostrService.publishEvent(any())).called(3);
       });
 
       test('should return deletedEventsCount in result', () async {
@@ -472,15 +487,15 @@ void main() {
         );
 
         when(
-          mockNostrService.queryEvents(any),
+          () => mockNostrService.queryEvents(any()),
         ).thenAnswer((_) async => [userEvent]);
 
         var createCallCount = 0;
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async {
           createCallCount++;
@@ -489,7 +504,7 @@ void main() {
         });
 
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => nip62Event);
 
         // Act
@@ -511,16 +526,18 @@ void main() {
           content: 'deletion',
         );
 
-        when(mockNostrService.queryEvents(any)).thenAnswer((_) async => []);
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockNostrService.queryEvents(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => nip62Event);
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => nip62Event);
 
         // Act
@@ -529,7 +546,7 @@ void main() {
         // Assert
         expect(result.success, isTrue);
         expect(result.deletedEventsCount, equals(0));
-        verify(mockNostrService.publishEvent(any)).called(1);
+        verify(() => mockNostrService.publishEvent(any())).called(1);
       });
     });
   });
