@@ -35,7 +35,6 @@
 
 | File | Lines | Tests | Reason |
 |------|-------|-------|--------|
-| `hashtag_functionality_test.dart` | 57, 77 | 2 | `skip: true` |
 | `profile_fetching_test.dart` | 99 | 1 | `skip: true` — `// TODO(any): Fix and enable this test` |
 | `widget_test.dart` | 34 | 1 | `skip: true` |
 
