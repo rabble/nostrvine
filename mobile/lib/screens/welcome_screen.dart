@@ -193,9 +193,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     try {
       final authService = ref.read(authServiceProvider);
       authService.clearError();
-      // Accept TOS - this transitions auth state from awaitingTosAcceptance to authenticated
-      // Router will automatically redirect to /explore when state changes
-      await authService.signInAutomatically();
+      // Accept TOS then re-run the auth check to load existing keys or
+      // create a new identity. Replaced in upcoming welcome screen overhaul.
+      await authService.acceptTerms();
+      await authService.initialize();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -268,8 +269,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         _savedNpub = null;
       });
 
-      // Now sign in with the new auto-generated identity
-      await authService.signInAutomatically();
+      // Create a new identity (also accepts terms internally)
+      await authService.createAnonymousAccount();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
