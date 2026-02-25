@@ -1320,6 +1320,67 @@ void main() {
           );
         },
       );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'drops username and skips claim when both username and '
+        'externalNip05 are sent in external mode',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              nip05: 'alice@example.com',
+              picture: testPicture,
+              currentProfile: null,
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        seed: () => const ProfileEditorState(nip05Mode: Nip05Mode.external_),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+            picture: testPicture,
+            username: testUsername,
+            externalNip05: 'alice@example.com',
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.loading,
+          ),
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.success,
+          ),
+        ],
+        verify: (_) {
+          // Username should be dropped — saveProfileEvent called without it
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              nip05: 'alice@example.com',
+              picture: testPicture,
+              currentProfile: null,
+            ),
+          ).called(1);
+          // No username claim should be attempted
+          verifyNever(
+            () => mockProfileRepository.claimUsername(
+              username: any(named: 'username'),
+            ),
+          );
+        },
+      );
     });
 
     group('isUsernameSaveReady', () {
