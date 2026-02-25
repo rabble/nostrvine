@@ -13,6 +13,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -321,31 +322,66 @@ class HomeFeed extends _$HomeFeed {
     final curatedListsState = ref.read(curatedListsStateProvider);
     final isCuratedListsLoading = curatedListsState.isLoading;
 
-    // Watch subscribedListVideoCache - provider will rebuild when cache changes
-    // We listen to the cache's ChangeNotifier to invalidate when list videos change
-    final subscribedListCacheForListener = ref.watch(
-      subscribedListVideoCacheProvider,
-    );
+    // When REST API succeeded, use ref.read to avoid a full rebuild when
+    // the cache transitions from null → ready. The REST API already has
+    // the feed data; we only need the ChangeNotifier for future list changes.
+    SubscribedListVideoCache? subscribedListCacheForListener;
+    if (_usingRestApi) {
+      subscribedListCacheForListener = ref.read(
+        subscribedListVideoCacheProvider,
+      );
+
+      // Listen for cache becoming available (without triggering rebuild)
+      // and refresh from REST API when list videos change
+      ref.listen(subscribedListVideoCacheProvider, (prev, next) {
+        if (next != null && prev == null && ref.mounted) {
+          // Cache just became ready - attach ChangeNotifier listener
+          void onCacheChanged() {
+            if (ref.mounted) {
+              _refreshFromRestApi();
+            }
+          }
+
+          next.addListener(onCacheChanged);
+          ref.onDispose(() {
+            next.removeListener(onCacheChanged);
+          });
+        }
+      });
+    } else {
+      // Nostr fallback path: watch so we rebuild when cache becomes available
+      subscribedListCacheForListener = ref.watch(
+        subscribedListVideoCacheProvider,
+      );
+    }
+
     if (subscribedListCacheForListener != null) {
       void onCacheChanged() {
         Log.debug(
-          '🏠 HomeFeed: SubscribedListVideoCache updated, refreshing from service',
+          '🏠 HomeFeed: SubscribedListVideoCache updated, refreshing',
           name: 'HomeFeedProvider',
           category: LogCategory.video,
         );
         if (ref.mounted) {
-          refreshFromService();
+          if (_usingRestApi) {
+            _refreshFromRestApi();
+          } else {
+            refreshFromService();
+          }
         }
       }
 
       subscribedListCacheForListener.addListener(onCacheChanged);
       ref.onDispose(() {
-        subscribedListCacheForListener.removeListener(onCacheChanged);
+        subscribedListCacheForListener?.removeListener(onCacheChanged);
       });
     }
 
-    // Get following pubkeys (may be empty if followRepository not ready yet)
-    final followingPubkeys = followRepository?.followingPubkeys ?? [];
+    // Get following pubkeys from followRepository, or fall back to cached
+    // list from SharedPreferences (available before NostrClient is ready)
+    final List<String> followingPubkeys =
+        followRepository?.followingPubkeys ??
+        ref.read(cachedFollowingListProvider);
 
     // Even if not following anyone, we might have videos from subscribed lists
     // Need to wait for CuratedListService to initialize before declaring empty
@@ -497,7 +533,7 @@ class HomeFeed extends _$HomeFeed {
       Timer? checkTimer;
 
       void checkCache() {
-        final videos = subscribedListCacheForListener.getVideos();
+        final videos = subscribedListCacheForListener?.getVideos() ?? [];
         if (videos.isNotEmpty) {
           checkTimer?.cancel();
           if (!completer.isCompleted) {
@@ -520,7 +556,7 @@ class HomeFeed extends _$HomeFeed {
 
       // Clean up listener when done
       completer.future.then((_) {
-        subscribedListCacheForListener.removeListener(onCacheUpdate);
+        subscribedListCacheForListener?.removeListener(onCacheUpdate);
       });
 
       // Maximum wait time of 2 seconds (first video notifies immediately now)

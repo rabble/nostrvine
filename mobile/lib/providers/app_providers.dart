@@ -938,6 +938,30 @@ SocialService socialService(Ref ref) {
   );
 }
 
+/// Cached following list loaded directly from SharedPreferences.
+///
+/// Available immediately after authentication (no NostrClient needed).
+/// This provides the follow list from the previous session for instant
+/// feed display. The full FollowRepository will update this when ready.
+@Riverpod(keepAlive: true)
+List<String> cachedFollowingList(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final pubkey = authService.currentPublicKeyHex;
+  if (pubkey == null || pubkey.isEmpty) return const [];
+
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final key = 'following_list_$pubkey';
+  final cached = prefs.getString(key);
+  if (cached == null) return const [];
+
+  try {
+    final decoded = jsonDecode(cached) as List<dynamic>;
+    return decoded.cast<String>();
+  } catch (e) {
+    return const [];
+  }
+}
+
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.

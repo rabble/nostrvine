@@ -2649,6 +2649,65 @@ final class SocialServiceProvider
 
 String _$socialServiceHash() => r'f3e43d187c9560fd9db5fe9925238eeb18048fff';
 
+/// Cached following list loaded directly from SharedPreferences.
+///
+/// Available immediately after authentication (no NostrClient needed).
+/// This provides the follow list from the previous session for instant
+/// feed display. The full FollowRepository will update this when ready.
+
+@ProviderFor(cachedFollowingList)
+const cachedFollowingListProvider = CachedFollowingListProvider._();
+
+/// Cached following list loaded directly from SharedPreferences.
+///
+/// Available immediately after authentication (no NostrClient needed).
+/// This provides the follow list from the previous session for instant
+/// feed display. The full FollowRepository will update this when ready.
+
+final class CachedFollowingListProvider
+    extends $FunctionalProvider<List<String>, List<String>, List<String>>
+    with $Provider<List<String>> {
+  /// Cached following list loaded directly from SharedPreferences.
+  ///
+  /// Available immediately after authentication (no NostrClient needed).
+  /// This provides the follow list from the previous session for instant
+  /// feed display. The full FollowRepository will update this when ready.
+  const CachedFollowingListProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cachedFollowingListProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$cachedFollowingListHash();
+
+  @$internal
+  @override
+  $ProviderElement<List<String>> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  List<String> create(Ref ref) {
+    return cachedFollowingList(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<String> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<String>>(value),
+    );
+  }
+}
+
+String _$cachedFollowingListHash() =>
+    r'9aae18333a2883db193f61b69a4d12a5e58899ac';
+
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.
