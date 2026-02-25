@@ -16,10 +16,27 @@ void main() {
 
     setUp(() {
       mockClient = _MockFunnelcakeApiClient();
+      when(() => mockClient.isAvailable).thenReturn(true);
       repository = HashtagRepository(funnelcakeApiClient: mockClient);
     });
 
     group('searchHashtags', () {
+      test('returns empty list when client is null', () async {
+        const repo = HashtagRepository();
+
+        final results = await repo.searchHashtags(query: 'bitcoin');
+
+        expect(results, isEmpty);
+      });
+
+      test('returns empty list when client is not available', () async {
+        when(() => mockClient.isAvailable).thenReturn(false);
+
+        final results = await repository.searchHashtags(query: 'bitcoin');
+
+        expect(results, isEmpty);
+      });
+
       test(
         'delegates to FunnelcakeApiClient with correct parameters',
         () async {
@@ -78,20 +95,6 @@ void main() {
         expect(results, isEmpty);
       });
 
-      test('propagates FunnelcakeNotConfiguredException', () {
-        when(
-          () => mockClient.searchHashtags(
-            query: any(named: 'query'),
-            limit: any(named: 'limit'),
-          ),
-        ).thenThrow(const FunnelcakeNotConfiguredException());
-
-        expect(
-          () => repository.searchHashtags(query: 'test'),
-          throwsA(isA<FunnelcakeNotConfiguredException>()),
-        );
-      });
-
       test('propagates FunnelcakeApiException', () {
         when(
           () => mockClient.searchHashtags(
@@ -134,6 +137,22 @@ void main() {
     });
 
     group('fetchTrendingHashtags', () {
+      test('returns empty list when client is null', () async {
+        const repo = HashtagRepository();
+
+        final results = await repo.fetchTrendingHashtags();
+
+        expect(results, isEmpty);
+      });
+
+      test('returns empty list when client is not available', () async {
+        when(() => mockClient.isAvailable).thenReturn(false);
+
+        final results = await repository.fetchTrendingHashtags();
+
+        expect(results, isEmpty);
+      });
+
       test(
         'delegates to FunnelcakeApiClient with correct parameters',
         () async {
@@ -180,7 +199,9 @@ void main() {
         final results = await repository.fetchTrendingHashtags(limit: 50);
 
         expect(results, hasLength(1));
-        verify(() => mockClient.fetchTrendingHashtags(limit: 50)).called(1);
+        verify(
+          () => mockClient.fetchTrendingHashtags(limit: 50),
+        ).called(1);
       });
 
       test('returns empty list when client returns empty', () async {
@@ -191,19 +212,6 @@ void main() {
         final results = await repository.fetchTrendingHashtags();
 
         expect(results, isEmpty);
-      });
-
-      test('propagates FunnelcakeNotConfiguredException', () {
-        when(
-          () => mockClient.fetchTrendingHashtags(
-            limit: any(named: 'limit'),
-          ),
-        ).thenThrow(const FunnelcakeNotConfiguredException());
-
-        expect(
-          () => repository.fetchTrendingHashtags(),
-          throwsA(isA<FunnelcakeNotConfiguredException>()),
-        );
       });
 
       test('propagates FunnelcakeApiException', () {
