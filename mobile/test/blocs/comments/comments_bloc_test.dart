@@ -15,7 +15,6 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
@@ -26,8 +25,6 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 
 class _MockContentReportingService extends Mock
     implements ContentReportingService {}
-
-class _MockMuteService extends Mock implements MuteService {}
 
 class _MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}
