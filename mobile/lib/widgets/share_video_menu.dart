@@ -25,25 +25,29 @@ import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 
-// Re-export extracted dialogs for backward compatibility
-export 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 
-// TODO(any): Move this to a reusable widget
-Widget get _buildLoadingIndicator => Padding(
-  padding: const EdgeInsets.all(12),
-  child: Center(
-    child: const SizedBox(
-      width: 16,
-      height: 16,
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        color: VineTheme.secondaryText,
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(12),
+      child: Center(
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: VineTheme.secondaryText,
+          ),
+        ),
       ),
-    ),
-  ),
-);
+    );
+  }
+}
 
 /// Comprehensive share menu for videos
 class ShareVideoMenu extends ConsumerStatefulWidget {
@@ -394,11 +398,11 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 ),
               );
             },
-            loading: () => _buildLoadingIndicator,
+            loading: () => const _LoadingIndicator(),
             error: (_, __) => const SizedBox.shrink(),
           );
         },
-        loading: () => _buildLoadingIndicator,
+        loading: () => const _LoadingIndicator(),
         error: (_, __) => const SizedBox.shrink(),
       );
     },
@@ -566,7 +570,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 ),
               );
             },
-            loading: () => _buildLoadingIndicator,
+            loading: () => const _LoadingIndicator(),
             error: (_, __) => const SizedBox.shrink(),
           );
         },

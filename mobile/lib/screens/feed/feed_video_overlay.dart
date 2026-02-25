@@ -14,12 +14,11 @@ import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/actions/comment_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
+import 'package:openvine/widgets/video_feed_item/actions/more_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/repost_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
@@ -96,8 +95,12 @@ class FeedVideoOverlay extends ConsumerWidget {
             hasTextContent: hasTextContent,
           ),
         ),
-        // Action buttons (bottom-right)
-        Positioned(bottom: 16, right: 16, child: _ActionButtons(video: video)),
+        // Action buttons column (bottom-right)
+        Positioned(
+          bottom: 14,
+          right: 16,
+          child: SafeArea(child: _ActionButtons(video: video)),
+        ),
       ],
     );
   }
@@ -274,28 +277,8 @@ class _ActionButtons extends StatelessWidget {
         CcActionButton(video: video),
         RepostActionButton(video: video),
         ShareActionButton(video: video),
-        _MoreOptionsButton(video: video),
+        MoreActionButton(video: video),
       ],
-    );
-  }
-}
-
-class _MoreOptionsButton extends StatelessWidget {
-  const _MoreOptionsButton({required this.video});
-
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context) {
-    return DiVineAppBarIconButton(
-      icon: const SvgIconSource('assets/icon/DotsThree.svg'),
-      onPressed: () {
-        context.showVideoPausingDialog<void>(
-          builder: (context) => ReportContentDialog(video: video),
-        );
-      },
-      semanticLabel: 'More options',
-      backgroundColor: VineTheme.scrim30,
     );
   }
 }
