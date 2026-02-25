@@ -89,6 +89,10 @@ class HomeFeed extends _$HomeFeed {
 
     _lastBuildTime = now;
 
+    // Watch content filter version — rebuilds feed when user changes
+    // Show/Warn/Hide preferences so the filter takes effect immediately.
+    ref.watch(contentFilterVersionProvider);
+
     // Get injectable poll interval (overridable in tests)
     final pollInterval = ref.read(homeFeedPollIntervalProvider);
 

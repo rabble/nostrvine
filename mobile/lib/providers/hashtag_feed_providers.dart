@@ -36,6 +36,9 @@ class HashtagFeed extends _$HashtagFeed {
     _buildCounter++;
     final buildId = _buildCounter;
 
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
+
     // Get hashtag from route context
     final ctx = ref.watch(pageContextProvider).asData?.value;
     if (ctx == null || ctx.type != RouteType.hashtag) {

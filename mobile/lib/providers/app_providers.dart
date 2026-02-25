@@ -41,8 +41,10 @@ import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
@@ -387,6 +389,50 @@ ContentFilterService contentFilterService(Ref ref) {
     ageVerificationService: ageVerificationService,
   );
   service.initialize(); // Initialize asynchronously
+  ref.onDispose(service.dispose);
+  return service;
+}
+
+/// Tracks content filter preference changes. Feed providers watch this
+/// to rebuild when the user changes a Show/Warn/Hide setting.
+@Riverpod(keepAlive: true)
+int contentFilterVersion(Ref ref) {
+  final service = ref.watch(contentFilterServiceProvider);
+  var version = 0;
+  void listener() {
+    version++;
+    ref.invalidateSelf();
+  }
+
+  service.addListener(listener);
+  ref.onDispose(() => service.removeListener(listener));
+  return version;
+}
+
+/// Account label service for self-labeling content (NIP-32 Kind 1985).
+@Riverpod(keepAlive: true)
+AccountLabelService accountLabelService(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final service = AccountLabelService(
+    authService: authService,
+    nostrClient: nostrClient,
+  );
+  service.initialize();
+  return service;
+}
+
+/// Moderation label service for subscribing to Kind 1985 labeler events.
+@Riverpod(keepAlive: true)
+ModerationLabelService moderationLabelService(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+  final service = ModerationLabelService(
+    nostrClient: nostrClient,
+    authService: authService,
+  );
+  service.initialize();
+  ref.onDispose(service.dispose);
   return service;
 }
 

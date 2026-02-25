@@ -726,7 +726,163 @@ final class ContentFilterServiceProvider
 }
 
 String _$contentFilterServiceHash() =>
-    r'd63237c1b948dffd85a0a7244b0f39d3ce111f68';
+    r'72bd9f0073806dd7fe95434fb889c3cb5f5ba750';
+
+/// Tracks content filter preference changes. Feed providers watch this
+/// to rebuild when the user changes a Show/Warn/Hide setting.
+
+@ProviderFor(contentFilterVersion)
+const contentFilterVersionProvider = ContentFilterVersionProvider._();
+
+/// Tracks content filter preference changes. Feed providers watch this
+/// to rebuild when the user changes a Show/Warn/Hide setting.
+
+final class ContentFilterVersionProvider
+    extends $FunctionalProvider<int, int, int>
+    with $Provider<int> {
+  /// Tracks content filter preference changes. Feed providers watch this
+  /// to rebuild when the user changes a Show/Warn/Hide setting.
+  const ContentFilterVersionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'contentFilterVersionProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$contentFilterVersionHash();
+
+  @$internal
+  @override
+  $ProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  int create(Ref ref) {
+    return contentFilterVersion(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$contentFilterVersionHash() =>
+    r'e8a53f89965296fd1a5009a45f685fbe425bfa2e';
+
+/// Account label service for self-labeling content (NIP-32 Kind 1985).
+
+@ProviderFor(accountLabelService)
+const accountLabelServiceProvider = AccountLabelServiceProvider._();
+
+/// Account label service for self-labeling content (NIP-32 Kind 1985).
+
+final class AccountLabelServiceProvider
+    extends
+        $FunctionalProvider<
+          AccountLabelService,
+          AccountLabelService,
+          AccountLabelService
+        >
+    with $Provider<AccountLabelService> {
+  /// Account label service for self-labeling content (NIP-32 Kind 1985).
+  const AccountLabelServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'accountLabelServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$accountLabelServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AccountLabelService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AccountLabelService create(Ref ref) {
+    return accountLabelService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AccountLabelService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AccountLabelService>(value),
+    );
+  }
+}
+
+String _$accountLabelServiceHash() =>
+    r'c72d91b64d2c4522a482868be6bd053eba21a24b';
+
+/// Moderation label service for subscribing to Kind 1985 labeler events.
+
+@ProviderFor(moderationLabelService)
+const moderationLabelServiceProvider = ModerationLabelServiceProvider._();
+
+/// Moderation label service for subscribing to Kind 1985 labeler events.
+
+final class ModerationLabelServiceProvider
+    extends
+        $FunctionalProvider<
+          ModerationLabelService,
+          ModerationLabelService,
+          ModerationLabelService
+        >
+    with $Provider<ModerationLabelService> {
+  /// Moderation label service for subscribing to Kind 1985 labeler events.
+  const ModerationLabelServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'moderationLabelServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$moderationLabelServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ModerationLabelService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ModerationLabelService create(Ref ref) {
+    return moderationLabelService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ModerationLabelService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ModerationLabelService>(value),
+    );
+  }
+}
+
+String _$moderationLabelServiceHash() =>
+    r'17757c116c5d70c141a10d508898fecda07c923d';
 
 /// Audio sharing preference service for managing whether audio is available
 /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.

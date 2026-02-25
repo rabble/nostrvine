@@ -38,6 +38,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
   @override
   Future<VideoFeedState> build() async {
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
+
     // Watch appReady gate
     final isAppReady = ref.watch(appReadyProvider);
 

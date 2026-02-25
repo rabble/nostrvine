@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -27,7 +28,7 @@ enum ContentFilterPreference {
 /// unless the user has verified they are 18+.
 ///
 /// Persists preferences in SharedPreferences as a JSON map.
-class ContentFilterService {
+class ContentFilterService extends ChangeNotifier {
   ContentFilterService({required this.ageVerificationService});
 
   static const String _prefsKey = 'content_filter_prefs';
@@ -157,6 +158,7 @@ class ContentFilterService {
 
     _preferences[label] = preference;
     await _save();
+    notifyListeners();
 
     Log.debug(
       'Content filter updated: ${label.displayName} → ${preference.name}',
@@ -202,6 +204,7 @@ class ContentFilterService {
       _preferences[label] = ContentFilterPreference.hide;
     }
     await _save();
+    notifyListeners();
   }
 
   /// Migrate from the old [AdultContentPreference] system.

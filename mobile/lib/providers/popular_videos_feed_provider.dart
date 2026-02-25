@@ -35,6 +35,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     _usingRestApi = false;
     _nextCursor = null;
 
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
+
     // Watch appReady gate
     final isAppReady = ref.watch(appReadyProvider);
 

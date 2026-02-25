@@ -40,6 +40,9 @@ class PopularNowFeed extends _$PopularNowFeed {
     _usingRestApi = false;
     _nextCursor = null;
 
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
+
     // Watch appReady gate - provider rebuilds when this changes
     final isAppReady = ref.watch(appReadyProvider);
 

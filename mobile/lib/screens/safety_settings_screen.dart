@@ -11,8 +11,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/age_verification_service.dart';
-import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -131,16 +129,13 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                   icon: Icons.tune,
                   title: 'Content Filters',
                   subtitle: 'Per-category Show, Warn, or Hide',
-                  onTap: () =>
-                      context.push(ContentFiltersScreen.path),
+                  onTap: () => context.push(ContentFiltersScreen.path),
                 ),
                 _buildNavigationTile(
                   icon: Icons.warning_amber_rounded,
                   title: 'Account Content Labels',
                   subtitle: _accountLabels.isNotEmpty
-                      ? _accountLabels
-                          .map((l) => l.displayName)
-                          .join(', ')
+                      ? _accountLabels.map((l) => l.displayName).join(', ')
                       : 'Self-label your content',
                   onTap: _selectAccountLabels,
                 ),
@@ -202,10 +197,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   }) {
     return ListTile(
       leading: Icon(icon, color: VineTheme.onSurfaceVariant),
-      title: Text(
-        title,
-        style: const TextStyle(color: VineTheme.whiteText),
-      ),
+      title: Text(title, style: const TextStyle(color: VineTheme.whiteText)),
       subtitle: Text(
         subtitle,
         style: const TextStyle(color: VineTheme.secondaryText),
@@ -279,10 +271,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         });
       },
       secondary: const Icon(Icons.verified_user, color: VineTheme.vineGreen),
-      title: const Text(
-        'Divine',
-        style: TextStyle(color: VineTheme.whiteText),
-      ),
+      title: const Text('Divine', style: TextStyle(color: VineTheme.whiteText)),
       subtitle: const Text(
         'Official moderation service (on by default)',
         style: TextStyle(color: VineTheme.secondaryText),
@@ -438,12 +427,14 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     }
 
     return Column(
-      children: blockedUsers.map(
-        (pubkey) => _BlockedUserTile(
-          pubkey: pubkey,
-          onUnblock: () => _unblockUser(pubkey),
-        ),
-      ).toList(),
+      children: blockedUsers
+          .map(
+            (pubkey) => _BlockedUserTile(
+              pubkey: pubkey,
+              onUnblock: () => _unblockUser(pubkey),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -622,10 +613,7 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'Select all that apply to your account',
-                style: TextStyle(
-                  color: VineTheme.secondaryText,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
               ),
             ),
             const SizedBox(height: 8),

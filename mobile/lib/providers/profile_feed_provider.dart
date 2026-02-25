@@ -45,6 +45,9 @@ class ProfileFeed extends _$ProfileFeed {
     _usingRestApi = false;
     _nextCursor = null;
 
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
+
     Log.info(
       'ProfileFeed: BUILD START for user=$userId',
       name: 'ProfileFeedProvider',
