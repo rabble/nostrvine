@@ -231,7 +231,6 @@
 | `share_menu_safety_section_test.dart` | 247 | 1 | `skip: true` |
 | `sound_list_item_test.dart` | 78, 98, 177, 230 | 4 | `skip: true` |
 | `subtitle_generation_sheet_test.dart` | 25 | 1 | `skip: 'See: github issue #1568'` |
-| `tabbed_settings_screen_test.dart` | 92, 116, 128, 144, 158, 168, 178, 188, 233, 246, 263, 284, 299, 323, 339, 354, 373 | 17 | `skip: true` |
 | `user_profile_tile_layout_test.dart` | 660 | 1 | `skip: true` |
 | `video_error_overlay_test.dart` | 181 | 1 | `skip: true` |
 | `video_feed_item_aspect_ratio_test.dart` | 103 | 1 | `skip: true` |
@@ -311,7 +310,6 @@ These files have some tests commented out while others remain active.
 | File | Skipped |
 |------|---------|
 | `test/widgets/comprehensive_user_avatar_test.dart` | 4 (golden tests only) |
-| `test/widgets/tabbed_settings_screen_test.dart` | 17 |
 | `test/services/curation_publish_test.dart` | 12 |
 | `test/widgets/comprehensive_age_verification_dialog_test.dart` | 9 |
 | `test/providers/video_events_provider_listener_test.dart` | 9 |
@@ -320,4 +318,3 @@ These files have some tests commented out while others remain active.
 | `test/services/video_sharing_service_test.dart` | 8 |
 | `test/screens/home_screen_router_test.dart` | 8 (commented out) |
 | `test/services/curation_service_create_test.dart` | 7 |
-| `test/services/video_event_service_deduplication_test.dart` | 7 |
