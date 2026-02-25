@@ -12,13 +12,13 @@
 
 ## Authentication
 
-Authenticated endpoints use **NIP-98 HTTP Auth** (kind `24242`):
+Authenticated endpoints use **NIP-98 HTTP Auth** (kind `27235`):
 
 ```
 Authorization: Nostr <base64-encoded-signed-event>
 ```
 
-The signed event proves ownership of a Nostr pubkey. The server validates the event ID (NIP-01 serialized SHA-256), verifies the BIP-340 Schnorr signature, and checks expiration if present.
+The signed event proves ownership of a Nostr pubkey. The server validates the event ID (NIP-01 serialized SHA-256), verifies the BIP-340 Schnorr signature, checks expiration, and verifies the `u` (URL) and `method` tags match the actual request to prevent replay across endpoints.
 
 The caller's pubkey is extracted from the verified event — it is never sent in the request body.
 
