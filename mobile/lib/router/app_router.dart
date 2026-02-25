@@ -98,14 +98,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       );
 
       // Handle authenticated users on auth routes
+      // Note: resetPasswordPath and EmailVerificationScreen are intentionally
+      // excluded — authenticated users may navigate there via deep links.
       if (authState == AuthState.authenticated &&
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
               location == NostrConnectScreen.path ||
               location == WelcomeScreen.createAccountPath ||
-              location == WelcomeScreen.loginOptionsPath ||
-              location == WelcomeScreen.resetPasswordPath ||
-              location == EmailVerificationScreen.path)) {
+              location == WelcomeScreen.loginOptionsPath)) {
         // On first navigation, redirect to explore if user has no following
         if (!_hasNavigated) {
           _hasNavigated = true;
