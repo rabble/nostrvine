@@ -155,6 +155,9 @@ void main() {
       when(mockVideoEventService.addVideoUpdateListener(any)).thenReturn(() {});
       when(mockVideoEventService.addNewVideoListener(any)).thenReturn(() {});
       when(
+        mockVideoEventService.filterVideoList(any),
+      ).thenAnswer((inv) => inv.positionalArguments.first as List<VideoEvent>);
+      when(
         mockVideoEventService.debugDumpCdnDivineVideoThumbnails(),
       ).thenReturn(null);
 
