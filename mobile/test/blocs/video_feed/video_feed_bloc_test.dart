@@ -163,7 +163,7 @@ void main() {
           ).thenAnswer((_) async => videos);
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
           const VideoFeedState(
             status: VideoFeedStatus.loading,
@@ -240,7 +240,7 @@ void main() {
           ).thenAnswer((_) async => []);
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
           const VideoFeedState(
             status: VideoFeedStatus.loading,
@@ -269,7 +269,7 @@ void main() {
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
           const VideoFeedState(
             status: VideoFeedStatus.loading,
@@ -298,7 +298,7 @@ void main() {
           ).thenAnswer((_) async => videos);
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
           const VideoFeedState(
             status: VideoFeedStatus.loading,
@@ -324,7 +324,7 @@ void main() {
           ).thenAnswer((_) async => []);
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
           const VideoFeedState(
             status: VideoFeedStatus.loading,
@@ -866,7 +866,7 @@ void main() {
         ),
         act: (bloc) async {
           // First, trigger a load so _lastRefreshedAt gets set
-          bloc.add(const VideoFeedStarted());
+          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
           await Future<void>.delayed(Duration.zero);
 
           // Now the auto-refresh should be skipped (data is fresh)
@@ -902,7 +902,7 @@ void main() {
         ),
         act: (bloc) async {
           // First load sets _lastRefreshedAt
-          bloc.add(const VideoFeedStarted());
+          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
           await Future<void>.delayed(Duration.zero);
 
           // With Duration.zero interval, this should refresh
@@ -1080,7 +1080,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) async {
-          bloc.add(const VideoFeedStarted());
+          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
           // Wait for initial load to complete
           await Future<void>.delayed(Duration.zero);
           // First stream emission is skipped (BehaviorSubject replay)
