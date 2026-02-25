@@ -7,7 +7,7 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Mixin that provides PageController synchronization logic for router screens.
 ///
 /// This eliminates duplication of the PageController sync pattern across
-/// home_screen_router.dart, explore_screen_router.dart, and profile_screen_router.dart.
+/// explore_screen_router.dart and profile_screen_router.dart.
 ///
 /// Usage:
 /// ```dart

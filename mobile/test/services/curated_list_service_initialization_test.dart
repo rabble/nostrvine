@@ -1,43 +1,61 @@
 // ABOUTME: Unit tests for CuratedListService initialization performance
-// ABOUTME: Verifies that initialization completes quickly without blocking on relay sync
+// ABOUTME: Verifies that initialization completes quickly without blocking
+// on relay sync
 
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'curated_list_service_initialization_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CuratedListService - Initialization Performance', () {
-    late MockNostrClient mockNostr;
-    late MockAuthService mockAuth;
+    late _MockNostrClient mockNostr;
+    late _MockAuthService mockAuth;
     late SharedPreferences prefs;
+
+    setUpAll(() {
+      registerFallbackValue(
+        Event.fromJson({
+          'id': 'fallback_event_id',
+          'pubkey':
+              'aabbccdd00112233445566778899aabbccdd00112233445566778899aabbccdd',
+          'created_at': 0,
+          'kind': 1,
+          'tags': <List<String>>[],
+          'content': '',
+          'sig': '',
+        }),
+      );
+      registerFallbackValue(<Filter>[]);
+    });
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
+      mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
       prefs = await SharedPreferences.getInstance();
 
-      when(mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(
-        mockAuth.currentPublicKeyHex,
+        () => mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
       when(
-        mockAuth.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuth.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer(
         (_) async => Event.fromJson({
@@ -58,7 +76,7 @@ void main() {
         // Set up a SLOW relay response (simulates 7+ second timeout)
         final slowRelayCompleter = Completer<void>();
         when(
-          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) {
           // This stream never completes quickly - simulates slow relay
           return Stream.fromFuture(
@@ -100,16 +118,19 @@ void main() {
         await service.initialize();
         stopwatch.stop();
 
-        // CRITICAL: initialize() should complete in < 100ms, not 7+ seconds
-        // The relay sync should happen in background, not block initialization
+        // CRITICAL: initialize() should complete in < 100ms, not 7+
+        // seconds. The relay sync should happen in background, not
+        // block initialization
         expect(
           stopwatch.elapsedMilliseconds,
           lessThan(100),
           reason:
-              'initialize() should complete quickly without waiting for relay sync',
+              'initialize() should complete quickly without '
+              'waiting for relay sync',
         );
 
-        // isInitialized should be true IMMEDIATELY after initialize() returns
+        // isInitialized should be true IMMEDIATELY after initialize()
+        // returns
         expect(service.isInitialized, isTrue);
 
         // Clean up - complete the slow relay so test can finish
@@ -120,7 +141,7 @@ void main() {
     test('notifies listeners immediately after initialization', () async {
       // Set up slow relay
       when(
-        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       final service = CuratedListService(
@@ -147,7 +168,7 @@ void main() {
         // Set up relay that never responds
         final neverCompletes = Completer<void>();
         when(
-          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) {
           return Stream.fromFuture(
             neverCompletes.future.then((_) => null),
@@ -175,7 +196,8 @@ void main() {
 
         await service.initialize();
 
-        // Local lists should be available even though relay hasn't responded
+        // Local lists should be available even though relay hasn't
+        // responded
         expect(service.isInitialized, isTrue);
         expect(service.lists.any((l) => l.name == 'Local Cached List'), isTrue);
         expect(
@@ -194,7 +216,7 @@ void main() {
         // Set up slow relay
         final slowRelay = Completer<void>();
         when(
-          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) {
           return Stream.fromFuture(
             slowRelay.future.then((_) => null),
@@ -246,7 +268,7 @@ void main() {
         final relayResponseCompleter = Completer<Event>();
 
         when(
-          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((invocation) {
           // Return a stream that will emit an event after delay
           return Stream.fromFuture(relayResponseCompleter.future);

@@ -1,11 +1,11 @@
 // ABOUTME: TDD tests for VideoEventService infinite scroll with 'until' filter
-// ABOUTME: Ensures proper pagination when reaching end of feed to load older content
+// ABOUTME: Ensures proper pagination when reaching end of feed to load older
+// content
 
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart';
@@ -13,31 +13,36 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'video_event_service_infinite_scroll_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, SubscriptionManager])
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
 void main() {
   late VideoEventService videoEventService;
-  late MockNostrClient mockNostrService;
-  late MockSubscriptionManager mockSubscriptionManager;
+  late _MockNostrClient mockNostrService;
+  late _MockSubscriptionManager mockSubscriptionManager;
+
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
 
   setUp(() {
-    mockNostrService = MockNostrClient();
-    mockSubscriptionManager = MockSubscriptionManager();
+    mockNostrService = _MockNostrClient();
+    mockSubscriptionManager = _MockSubscriptionManager();
 
     // Setup basic mock behavior
-    when(mockNostrService.isInitialized).thenReturn(true);
-    when(mockNostrService.publicKey).thenReturn('');
-    when(mockNostrService.connectedRelayCount).thenReturn(3);
+    when(() => mockNostrService.isInitialized).thenReturn(true);
+    when(() => mockNostrService.publicKey).thenReturn('');
+    when(() => mockNostrService.connectedRelayCount).thenReturn(3);
     when(
-      mockSubscriptionManager.createSubscription(
-        name: anyNamed('name'),
-        filters: anyNamed('filters'),
-        onEvent: anyNamed('onEvent'),
-        onError: anyNamed('onError'),
-        onComplete: anyNamed('onComplete'),
-        timeout: anyNamed('timeout'),
-        priority: anyNamed('priority'),
+      () => mockSubscriptionManager.createSubscription(
+        name: any(named: 'name'),
+        filters: any(named: 'filters'),
+        onEvent: any(named: 'onEvent'),
+        onError: any(named: 'onError'),
+        onComplete: any(named: 'onComplete'),
+        timeout: any(named: 'timeout'),
+        priority: any(named: 'priority'),
       ),
     ).thenAnswer((_) async => 'mock-subscription-id');
 
@@ -51,8 +56,8 @@ void main() {
     test(
       'should use until filter when loading more events at end of feed',
       () async {
-        // Arrange - Don't call subscribeToVideoFeed to avoid initial subscription
-        // Just add events directly to establish state
+        // Arrange - Don't call subscribeToVideoFeed to avoid initial
+        // subscription. Just add events directly to establish state
 
         // Simulate having existing events with known timestamps
         final existingEvents = [
@@ -62,7 +67,6 @@ void main() {
         ];
 
         // Add events to the service to establish oldest timestamp
-        // The _addVideoToSubscription method automatically updates oldestTimestamp
         for (final event in existingEvents) {
           videoEventService.addVideoEventForTesting(
             event,
@@ -84,10 +88,8 @@ void main() {
         Filter? capturedFilter;
         final streamController = StreamController<Event>.broadcast();
 
-        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
-          invocation,
-        ) {
-          final filters = invocation.namedArguments[#filters] as List<Filter>;
+        when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
           capturedFilter = filters.first;
           return streamController.stream;
         });
@@ -98,8 +100,9 @@ void main() {
         // Allow async operations to complete
         await Future.delayed(const Duration(milliseconds: 100));
 
-        // Assert - Verify that 'until' filter was applied with oldest timestamp
-        verify(mockNostrService.subscribe(argThat(anything))).called(1);
+        // Assert - Verify that 'until' filter was applied with oldest
+        // timestamp
+        verify(() => mockNostrService.subscribe(any())).called(1);
 
         expect(capturedFilter, isNotNull);
         expect(capturedFilter!.until, equals(1704060000));
@@ -128,10 +131,8 @@ void main() {
       Filter? capturedFilter;
       final streamController = StreamController<Event>.broadcast();
 
-      when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
-        invocation,
-      ) {
-        final filters = invocation.namedArguments[#filters] as List<Filter>;
+      when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
+        final filters = invocation.positionalArguments[0] as List<Filter>;
         capturedFilter = filters.first;
         return streamController.stream;
       });
@@ -143,7 +144,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 100));
 
       // Assert - Verify that no 'until' filter was applied
-      verify(mockNostrService.subscribe(argThat(anything))).called(1);
+      verify(() => mockNostrService.subscribe(any())).called(1);
 
       expect(capturedFilter, isNotNull);
       expect(
@@ -172,13 +173,14 @@ void main() {
         final paginationStates = videoEventService
             .getPaginationStatesForTesting();
         final discoveryState = paginationStates[SubscriptionType.discovery]!;
-        // The oldestTimestamp should already be set by addVideoEventForTesting
+        // The oldestTimestamp should already be set by
+        // addVideoEventForTesting
         expect(discoveryState.oldestTimestamp, equals(1704067200));
 
         // Setup stream for loadMoreEvents
         final streamController = StreamController<Event>.broadcast();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => streamController.stream);
 
         // Act - Load more and simulate receiving older events
@@ -228,7 +230,7 @@ void main() {
         // Setup stream for loadMoreEvents
         final streamController = StreamController<Event>.broadcast();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => streamController.stream);
 
         // Act - Request 10 events but only receive 2
@@ -275,10 +277,8 @@ void main() {
         final capturedFilters = <Filter>[];
         final streamController = StreamController<Event>.broadcast();
 
-        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
-          invocation,
-        ) {
-          final filters = invocation.namedArguments[#filters] as List<Filter>;
+        when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
           capturedFilters.add(filters.first);
           return streamController.stream;
         });
@@ -288,7 +288,6 @@ void main() {
         await Future.delayed(const Duration(milliseconds: 50));
 
         // Simulate receiving events and updating oldest timestamp
-        // Add actual events to establish the oldest timestamp properly
         final firstBatchEvent = _createMockVideoEvent('batch1', 1704067200);
         videoEventService.addVideoEventForTesting(
           firstBatchEvent,
@@ -350,7 +349,7 @@ void main() {
 
       final streamController = StreamController<Event>.broadcast();
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => streamController.stream);
 
       // Act - Load more but receive no events (reached end)
@@ -369,18 +368,19 @@ void main() {
 
       // Try to load more again - should exit early
       reset(mockNostrService);
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
 
-      // Reset the stream mock to ensure we're not accidentally triggering it
+      // Reset the stream mock to ensure we're not accidentally
+      // triggering it
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => streamController.stream);
 
       videoEventService.loadMoreEvents(SubscriptionType.discovery, limit: 50);
       await Future.delayed(const Duration(milliseconds: 50));
 
       // Should not make another subscription since hasMore=false
-      verifyNever(mockNostrService.subscribe(argThat(anything)));
+      verifyNever(() => mockNostrService.subscribe(any()));
 
       // Cleanup
       await streamController.close();

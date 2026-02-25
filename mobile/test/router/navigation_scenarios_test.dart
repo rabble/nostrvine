@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -32,18 +32,18 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      router.go(HomeScreenRouter.pathForIndex(0));
+      router.go(VideoFeedPage.pathForIndex(0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        HomeScreenRouter.pathForIndex(0),
+        VideoFeedPage.pathForIndex(0),
       );
 
-      router.go(HomeScreenRouter.pathForIndex(5));
+      router.go(VideoFeedPage.pathForIndex(5));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        HomeScreenRouter.pathForIndex(5),
+        VideoFeedPage.pathForIndex(5),
       );
     });
 
@@ -402,25 +402,25 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Swiping through home feed updates index in URL
-      router.go(HomeScreenRouter.pathForIndex(0));
+      router.go(VideoFeedPage.pathForIndex(0));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        HomeScreenRouter.pathForIndex(0),
+        VideoFeedPage.pathForIndex(0),
       );
 
-      router.go(HomeScreenRouter.pathForIndex(1));
+      router.go(VideoFeedPage.pathForIndex(1));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        HomeScreenRouter.pathForIndex(1),
+        VideoFeedPage.pathForIndex(1),
       );
 
-      router.go(HomeScreenRouter.pathForIndex(10));
+      router.go(VideoFeedPage.pathForIndex(10));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        HomeScreenRouter.pathForIndex(10),
+        VideoFeedPage.pathForIndex(10),
       );
     });
 

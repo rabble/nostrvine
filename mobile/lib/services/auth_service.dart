@@ -3019,10 +3019,9 @@ class AuthService implements BackgroundAwareService {
     );
 
     try {
-      // Run discoveries - each service manages its own WebSocket connections
-      // to indexer relays. No temp NostrClient needed.
-      await _discoverUserRelays(npub);
-      await _checkExistingProfile();
+      // Run discoveries in parallel - each service manages its own WebSocket
+      // connections to indexer relays. No temp NostrClient needed.
+      await Future.wait([_discoverUserRelays(npub), _checkExistingProfile()]);
     } catch (e) {
       Log.warning(
         '⚠️ Discovery failed: $e - using default fallbacks',

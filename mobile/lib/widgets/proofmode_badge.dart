@@ -55,7 +55,7 @@ class ProofModeBadge extends StatelessWidget {
     switch (level) {
       case VerificationLevel.verifiedMobile:
         return const _BadgeConfig(
-          label: 'Fully Verified',
+          label: 'Human Made',
           icon: Icons.verified,
           backgroundColor: Color(0xFFD4EDDA), // Light green
           borderColor: Color(0xFF28A745), // Green

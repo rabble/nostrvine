@@ -240,6 +240,21 @@ class UserProfile {
     return null;
   }
 
+  /// Whether this profile has an external (non-divine.video) NIP-05 identifier.
+  ///
+  /// Returns `true` when [nip05] is set and is NOT a divine.video or
+  /// openvine.co domain (i.e., [divineUsername] returns `null`).
+  bool get hasExternalNip05 {
+    if (nip05 == null || nip05!.isEmpty) return false;
+    return divineUsername == null;
+  }
+
+  /// Returns the external NIP-05 identifier, or `null` if using divine.video.
+  ///
+  /// Use this to detect and pre-fill external NIP-05 values in the profile
+  /// editor. Returns the raw [nip05] value when [hasExternalNip05] is `true`.
+  String? get externalNip05 => hasExternalNip05 ? nip05 : null;
+
   /// Check if profile has verified NIP-05 identifier
   bool get hasNip05 => nip05?.isNotEmpty ?? false;
 

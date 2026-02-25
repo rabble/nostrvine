@@ -374,6 +374,13 @@ class CameraController: NSObject {
     
     /// Sets up the camera session.
     private func setupCamera(completion: @escaping ([String: Any]?, String?) -> Void) {
+        // NOTE: We do NOT explicitly configure AVAudioSession here.
+        // AVCaptureSession automatically manages the audio session when an
+        // audio input device is added below. Explicitly setting .playAndRecord
+        // with .allowBluetooth/.allowBluetoothA2DP causes iOS to establish a
+        // Bluetooth audio connection, which triggers spurious play/pause events
+        // on connected devices (AirPods, Apple Watch) via MPRemoteCommandCenter.
+        
         // Create capture session
         let session = AVCaptureSession()
         session.beginConfiguration()

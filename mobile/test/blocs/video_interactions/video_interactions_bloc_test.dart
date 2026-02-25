@@ -858,6 +858,61 @@ void main() {
       );
     });
 
+    group('VideoInteractionsCommentCountUpdated', () {
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'updates comment count',
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          commentCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsCommentCountUpdated(10)),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            commentCount: 10,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'updates comment count from null',
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsCommentCountUpdated(3)),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            commentCount: 3,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'preserves other state fields when updating comment count',
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          isLiked: true,
+          likeCount: 42,
+          repostCount: 7,
+          commentCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsCommentCountUpdated(8)),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 42,
+            repostCount: 7,
+            commentCount: 8,
+          ),
+        ],
+      );
+    });
+
     group('close', () {
       test('cancels liked IDs subscription', () async {
         final bloc = createBloc();

@@ -44,6 +44,7 @@ class VideoInteractionsBloc
     on<VideoInteractionsLikeToggled>(_onLikeToggled);
     on<VideoInteractionsRepostToggled>(_onRepostToggled);
     on<VideoInteractionsSubscriptionRequested>(_onSubscriptionRequested);
+    on<VideoInteractionsCommentCountUpdated>(_onCommentCountUpdated);
   }
 
   final String _eventId;
@@ -276,5 +277,12 @@ class VideoInteractionsBloc
         ),
       );
     }
+  }
+
+  void _onCommentCountUpdated(
+    VideoInteractionsCommentCountUpdated event,
+    Emitter<VideoInteractionsState> emit,
+  ) {
+    emit(state.copyWith(commentCount: event.commentCount));
   }
 }

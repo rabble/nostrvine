@@ -14,9 +14,10 @@ import 'package:profile_repository/profile_repository.dart';
 
 /// API endpoint for claiming usernames via NIP-98 auth.
 const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
+const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
 
-/// API endpoint for NIP-05 username availability lookup.
-const _nip05LookupUrl = 'https://divine.video/.well-known/nostr.json';
+/// Keycast NIP-05 endpoint for checking username availability on login server.
+const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 
 /// Callback to check if a user should be filtered from results.
 typedef UserBlockFilter = bool Function(String pubkey);
@@ -95,10 +96,15 @@ class ProfileRepository {
 
   /// Publishes profile metadata to Nostr relays and updates the local cache.
   ///
-  /// When [username] is provided, the repository constructs the NIP-05
-  /// identifier (`_@<username>.divine.video`) internally. When [username] is
-  /// `null` and a [currentProfile] is supplied, the existing NIP-05 value is
-  /// preserved from `currentProfile.rawData`.
+  /// Supports two NIP-05 modes:
+  /// - **Divine.video username**: When [username] is provided, constructs the
+  ///   NIP-05 identifier as `_@<username>.divine.video`.
+  /// - **External NIP-05**: When [nip05] is provided, uses it directly as the
+  ///   full NIP-05 identifier (e.g., `alice@example.com`).
+  ///
+  /// If both [nip05] and [username] are provided, [nip05] takes precedence.
+  /// When neither is provided and a [currentProfile] is supplied, the existing
+  /// NIP-05 value is preserved from `currentProfile.rawData`.
   ///
   /// After successful publish, the profile is cached locally for immediate
   /// subsequent reads.
@@ -108,20 +114,21 @@ class ProfileRepository {
     required String displayName,
     String? about,
     String? username,
+    String? nip05,
     String? picture,
     String? banner,
     UserProfile? currentProfile,
   }) async {
-    final normalizedUsername = username?.toLowerCase();
-    final nip05 = normalizedUsername != null
-        ? '_@$normalizedUsername.divine.video'
-        : null;
+    // External NIP-05 takes precedence when provided.
+    final resolvedNip05 =
+        nip05 ??
+        (username != null ? '_@${username.toLowerCase()}.divine.video' : null);
 
     final profileContent = {
       if (currentProfile != null) ...currentProfile.rawData,
       'display_name': displayName,
       'about': ?about,
-      'nip05': ?nip05,
+      'nip05': ?resolvedNip05,
       'picture': ?picture,
       'banner': ?banner,
     };
@@ -176,11 +183,27 @@ class ProfileRepository {
         body: payload,
       );
 
+      // Parse server error message if available
+      String? serverError;
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        try {
+          final errorData = jsonDecode(response.body) as Map<String, dynamic>;
+          serverError = errorData['error'] as String?;
+        } on Exception {
+          // Ignore JSON parse failures
+        }
+      }
+
       return switch (response.statusCode) {
         200 || 201 => const UsernameClaimSuccess(),
+        400 => UsernameClaimError(
+          serverError ?? 'Invalid username format',
+        ),
         403 => const UsernameClaimReserved(),
         409 => const UsernameClaimTaken(),
-        _ => UsernameClaimError('Unexpected response: ${response.statusCode}'),
+        _ => UsernameClaimError(
+          serverError ?? 'Unexpected response: ${response.statusCode}',
+        ),
       };
     } on Exception catch (e) {
       return UsernameClaimError('Network error: $e');
@@ -201,23 +224,86 @@ class ProfileRepository {
   Future<UsernameAvailabilityResult> checkUsernameAvailability({
     required String username,
   }) async {
-    // NIP-05 local parts are lowercase-only (a-z0-9-_.) per spec;
-    // normalize user input to match.
-    final normalizedUsername = username.toLowerCase();
+    final normalizedUsername = username.toLowerCase().trim();
+
+    // Client-side format validation: usernames become subdomains, so only
+    // lowercase letters, digits, and hyphens are allowed. No dots,
+    // underscores, spaces, or special characters.
+    if (normalizedUsername.isEmpty) {
+      return const UsernameInvalidFormat('Username is required');
+    }
+    if (normalizedUsername.length > 63) {
+      return const UsernameInvalidFormat(
+        'Usernames must be 1–63 characters',
+      );
+    }
+    if (normalizedUsername.startsWith('-') ||
+        normalizedUsername.endsWith('-')) {
+      return const UsernameInvalidFormat(
+        "Usernames can't start or end with a hyphen",
+      );
+    }
+    if (!RegExp(r'^[a-z0-9-]+$').hasMatch(normalizedUsername)) {
+      return const UsernameInvalidFormat(
+        'Only letters, numbers, and hyphens are allowed '
+        '(your username becomes username.divine.video)',
+      );
+    }
+
+    // Server-side check using the name-server API which validates format
+    // and checks availability in one call.
     try {
       final response = await _httpClient.get(
-        Uri.parse('$_nip05LookupUrl?name=$normalizedUsername'),
+        Uri.parse(
+          '$_usernameCheckUrl/$normalizedUsername',
+        ),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final names = data['names'] as Map<String, dynamic>?;
+        final available = data['available'] as bool? ?? false;
+        final reason = data['reason'] as String?;
 
-        // Username is available if not in the names map
-        final isAvailable =
-            names == null || !names.containsKey(normalizedUsername);
+        if (available) {
+          // Also check keycast (login.divine.video) — username must be
+          // available on both the name server and the login server.
+          try {
+            final keycastResponse = await _httpClient.get(
+              Uri.parse(
+                '$_keycastNip05Url?name=$normalizedUsername',
+              ),
+            );
+            if (keycastResponse.statusCode == 200) {
+              final keycastData =
+                  jsonDecode(keycastResponse.body) as Map<String, dynamic>;
+              final names = keycastData['names'] as Map<String, dynamic>? ?? {};
+              if (names.containsKey(normalizedUsername)) {
+                return const UsernameTaken();
+              }
+            }
+            // If keycast returns non-200 or no names entry, treat as available
+          } on Exception catch (e) {
+            // If keycast is unreachable, don't block — name-server said OK
+            developer.log(
+              'Keycast availability check failed (non-blocking): $e',
+              name: 'ProfileRepository.checkUsernameAvailability',
+            );
+          }
+          return const UsernameAvailable();
+        }
 
-        return isAvailable ? const UsernameAvailable() : const UsernameTaken();
+        // Server told us it's not available — return appropriate type
+        if (reason != null) {
+          // Validation failures come back with reason but available=false
+          if (reason.contains('character') ||
+              reason.contains('hyphen') ||
+              reason.contains('invalid') ||
+              reason.contains('emoji') ||
+              reason.contains('DNS')) {
+            return UsernameInvalidFormat(reason);
+          }
+        }
+        return const UsernameTaken();
       } else {
         return UsernameCheckError(
           'Server returned status ${response.statusCode}',

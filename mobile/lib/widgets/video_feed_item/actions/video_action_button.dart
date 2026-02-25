@@ -104,9 +104,13 @@ class VideoActionButton extends StatelessWidget {
         if (count > 0)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              StringUtils.formatCompactNumber(count),
-              style: VineTheme.labelSmallFont(),
+            child: SizedBox(
+              width: 48,
+              child: Text(
+                StringUtils.formatCompactNumber(count),
+                style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
+                textAlign: TextAlign.center,
+              ),
             ),
           ),
       ],

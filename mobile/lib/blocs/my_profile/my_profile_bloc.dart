@@ -45,6 +45,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       MyProfileLoading(
         profile: cachedProfile,
         extractedUsername: cachedProfile?.divineUsername,
+        externalNip05: cachedProfile?.externalNip05,
       ),
     );
 
@@ -60,6 +61,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             profile: freshProfile,
             isFresh: true,
             extractedUsername: freshProfile.divineUsername,
+            externalNip05: freshProfile.externalNip05,
           ),
         );
       } else if (cachedProfile != null) {
@@ -68,6 +70,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             profile: cachedProfile,
             isFresh: false,
             extractedUsername: cachedProfile.divineUsername,
+            externalNip05: cachedProfile.externalNip05,
           ),
         );
       } else {
@@ -80,6 +83,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
             profile: cachedProfile,
             isFresh: false,
             extractedUsername: cachedProfile.divineUsername,
+            externalNip05: cachedProfile.externalNip05,
           ),
         );
       } else {

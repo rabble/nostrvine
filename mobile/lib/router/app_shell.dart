@@ -21,7 +21,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -141,7 +141,7 @@ class AppShell extends ConsumerWidget {
     // GoRouter handles navigation state, but we need to clear pushed routes first
     switch (tabIndex) {
       case 0:
-        return context.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0));
+        return context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
       case 1:
         // Always reset to grid mode (null) when tapping Explore tab
         // This prevents the "No videos available" bug when returning from another tab
@@ -319,222 +319,238 @@ class AppShell extends ConsumerWidget {
         // Track drawer visibility for video pause/resume
         ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
       },
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: getEnvironmentAppBarColor(environment),
-        leading: showBackButton
-            ? IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Container(
-                  width: 48,
-                  height: 48,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: VineTheme.iconButtonBackground,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: SvgPicture.asset(
-                    'assets/icon/CaretLeft.svg',
-                    width: 32,
-                    height: 32,
-                  ),
-                ),
-                onPressed: () {
-                  Log.info(
-                    '👆 User tapped back button',
-                    name: 'Navigation',
-                    category: LogCategory.ui,
-                  );
-
-                  // First, try to pop if there's something on the navigation stack
-                  // This handles pushed routes (e.g., list → profile → back to list)
-                  if (context.canPop()) {
-                    Log.info(
-                      '👈 Popping navigation stack',
-                      name: 'Navigation',
-                      category: LogCategory.ui,
-                    );
-                    context.pop();
-                    return;
-                  }
-
-                  // Get current route context
-                  final ctx = ref.read(pageContextProvider).asData?.value;
-                  if (ctx == null) return;
-
-                  // Check if we're in a sub-route (hashtag, search, etc.)
-                  // If so, navigate back to parent route
-                  switch (ctx.type) {
-                    case RouteType.hashtag:
-                    case RouteType.search:
-                      // Go back to explore
-                      return context.go(ExploreScreen.path);
-                    default:
-                      break;
-                  }
-
-                  // For routes with videoIndex (feed mode), go to grid mode first
-                  // This handles page-internal navigation before tab switching
-                  // For explore/profile: any videoIndex (including 0) should go to grid (null)
-                  // For notifications: videoIndex > 0 should go to index 0
-
-                  if (ctx.videoIndex != null) {
-                    switch (ctx.type) {
-                      case RouteType.explore:
-                        // For Explore, grid mode is null
-                        return context.go(ExploreScreen.path);
-                      // For Profile, grid mode is null
-                      case RouteType.profile:
-                        return context.go(
-                          ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
+      // Home tab uses FeedModeSwitch overlay (menu + mode dropdown + search)
+      // instead of the standard AppBar, for full-screen video UX.
+      appBar: currentIndex == 0
+          ? null
+          : AppBar(
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              toolbarHeight: 72,
+              leadingWidth: 80,
+              centerTitle: false,
+              titleSpacing: 0,
+              backgroundColor: getEnvironmentAppBarColor(environment),
+              leading: showBackButton
+                  ? IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      icon: Container(
+                        width: 48,
+                        height: 48,
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: VineTheme.iconButtonBackground,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: SvgPicture.asset(
+                          'assets/icon/CaretLeft.svg',
+                          width: 32,
+                          height: 32,
+                        ),
+                      ),
+                      onPressed: () {
+                        Log.info(
+                          '👆 User tapped back button',
+                          name: 'Navigation',
+                          category: LogCategory.ui,
                         );
-                      // For Notifications, index 0 is the base state
-                      case RouteType.notifications when ctx.videoIndex != 0:
-                        return context.go(NotificationsScreen.pathForIndex(0));
-                      default:
-                        break;
-                    }
-                  }
 
-                  // Check tab history for navigation
-                  final tabHistory = ref.read(tabHistoryProvider.notifier);
-                  final previousTab = tabHistory.getPreviousTab();
-
-                  // If there's a previous tab in history, navigate to it
-                  if (previousTab != null) {
-                    // Navigate to previous tab
-                    final previousRouteType = _routeTypeForTab(previousTab);
-                    final lastIndex = ref
-                        .read(lastTabPositionProvider.notifier)
-                        .getPosition(previousRouteType);
-
-                    // Remove current tab from history before navigating
-                    tabHistory.navigateBack();
-
-                    // Navigate to previous tab
-                    switch (previousTab) {
-                      case 0:
-                        context.go(
-                          HomeScreenRouter.pathForIndex(lastIndex ?? 0),
-                        );
-                        break;
-                      case 1:
-                        if (lastIndex != null) {
-                          return context.go(
-                            ExploreScreen.pathForIndex(lastIndex),
+                        // First, try to pop if there's something on the navigation stack
+                        // This handles pushed routes (e.g., list → profile → back to list)
+                        if (context.canPop()) {
+                          Log.info(
+                            '👈 Popping navigation stack',
+                            name: 'Navigation',
+                            category: LogCategory.ui,
                           );
-                        } else {
-                          return context.go(ExploreScreen.path);
+                          context.pop();
+                          return;
                         }
-                      case 2:
-                        return context.go(
-                          NotificationsScreen.pathForIndex(lastIndex ?? 0),
-                        );
-                      case 3:
-                        final authService = ref.read(authServiceProvider);
-                        final currentUserHex = authService.currentPublicKeyHex;
-                        if (currentUserHex != null) {
-                          final npub = NostrKeyUtils.encodePubKey(
-                            currentUserHex,
-                          );
-                          return context.go(
-                            ProfileScreenRouter.pathForNpub(npub),
-                          );
+
+                        // Get current route context
+                        final ctx = ref.read(pageContextProvider).asData?.value;
+                        if (ctx == null) return;
+
+                        // Check if we're in a sub-route (hashtag, search, etc.)
+                        // If so, navigate back to parent route
+                        switch (ctx.type) {
+                          case RouteType.hashtag:
+                          case RouteType.search:
+                            // Go back to explore
+                            return context.go(ExploreScreen.path);
+                          default:
+                            break;
                         }
-                    }
-                    return;
-                  }
 
-                  // No previous tab - check if we're on a non-home tab
-                  // If so, go to home first before exiting
-                  final currentTab = _tabIndexFromRouteType(ctx.type);
-                  if (currentTab != null && currentTab != 0) {
-                    // Go to home first
-                    return context.go(HomeScreenRouter.pathForIndex(0));
-                  }
+                        // For routes with videoIndex (feed mode), go to grid mode first
+                        // This handles page-internal navigation before tab switching
+                        // For explore/profile: any videoIndex (including 0) should go to grid (null)
+                        // For notifications: videoIndex > 0 should go to index 0
 
-                  // Already at home with no history - let system handle exit
-                },
-              )
-            : Builder(
-                // Hamburger menu in upper left when no back button
-                builder: (context) => IconButton(
-                  key: const Key('menu-icon-button'),
-                  tooltip: 'Menu',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: Container(
-                    width: 48,
-                    height: 48,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: VineTheme.iconButtonBackground,
-                      borderRadius: BorderRadius.circular(20),
+                        if (ctx.videoIndex != null) {
+                          switch (ctx.type) {
+                            case RouteType.explore:
+                              // For Explore, grid mode is null
+                              return context.go(ExploreScreen.path);
+                            // For Profile, grid mode is null
+                            case RouteType.profile:
+                              return context.go(
+                                ProfileScreenRouter.pathForNpub(
+                                  ctx.npub ?? 'me',
+                                ),
+                              );
+                            // For Notifications, index 0 is the base state
+                            case RouteType.notifications
+                                when ctx.videoIndex != 0:
+                              return context.go(
+                                NotificationsScreen.pathForIndex(0),
+                              );
+                            default:
+                              break;
+                          }
+                        }
+
+                        // Check tab history for navigation
+                        final tabHistory = ref.read(
+                          tabHistoryProvider.notifier,
+                        );
+                        final previousTab = tabHistory.getPreviousTab();
+
+                        // If there's a previous tab in history, navigate to it
+                        if (previousTab != null) {
+                          // Navigate to previous tab
+                          final previousRouteType = _routeTypeForTab(
+                            previousTab,
+                          );
+                          final lastIndex = ref
+                              .read(lastTabPositionProvider.notifier)
+                              .getPosition(previousRouteType);
+
+                          // Remove current tab from history before navigating
+                          tabHistory.navigateBack();
+
+                          // Navigate to previous tab
+                          switch (previousTab) {
+                            case 0:
+                              context.go(
+                                VideoFeedPage.pathForIndex(lastIndex ?? 0),
+                              );
+                              break;
+                            case 1:
+                              if (lastIndex != null) {
+                                return context.go(
+                                  ExploreScreen.pathForIndex(lastIndex),
+                                );
+                              } else {
+                                return context.go(ExploreScreen.path);
+                              }
+                            case 2:
+                              return context.go(
+                                NotificationsScreen.pathForIndex(
+                                  lastIndex ?? 0,
+                                ),
+                              );
+                            case 3:
+                              final authService = ref.read(authServiceProvider);
+                              final currentUserHex =
+                                  authService.currentPublicKeyHex;
+                              if (currentUserHex != null) {
+                                final npub = NostrKeyUtils.encodePubKey(
+                                  currentUserHex,
+                                );
+                                return context.go(
+                                  ProfileScreenRouter.pathForNpub(npub),
+                                );
+                              }
+                          }
+                          return;
+                        }
+
+                        // No previous tab - check if we're on a non-home tab
+                        // If so, go to home first before exiting
+                        final currentTab = _tabIndexFromRouteType(ctx.type);
+                        if (currentTab != null && currentTab != 0) {
+                          // Go to home first
+                          return context.go(VideoFeedPage.pathForIndex(0));
+                        }
+
+                        // Already at home with no history - let system handle exit
+                      },
+                    )
+                  : Builder(
+                      // Hamburger menu in upper left when no back button
+                      builder: (context) => IconButton(
+                        key: const Key('menu-icon-button'),
+                        tooltip: 'Menu',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Container(
+                          width: 48,
+                          height: 48,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: VineTheme.iconButtonBackground,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: SvgPicture.asset(
+                            'assets/icon/menu.svg',
+                            width: 32,
+                            height: 32,
+                          ),
+                        ),
+                        onPressed: () {
+                          Log.info(
+                            '👆 User tapped menu button',
+                            name: 'Navigation',
+                            category: LogCategory.ui,
+                          );
+                          // Drawer open state is tracked via onDrawerChanged callback
+                          // which triggers overlay visibility provider to pause videos
+                          Scaffold.of(context).openDrawer();
+                        },
+                      ),
                     ),
-                    child: SvgPicture.asset(
-                      'assets/icon/menu.svg',
-                      width: 32,
-                      height: 32,
-                    ),
-                  ),
-                  onPressed: () {
-                    Log.info(
-                      '👆 User tapped menu button',
-                      name: 'Navigation',
-                      category: LogCategory.ui,
-                    );
-                    // Drawer open state is tracked via onDrawerChanged callback
-                    // which triggers overlay visibility provider to pause videos
-                    Scaffold.of(context).openDrawer();
-                  },
-                ),
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(child: _buildTappableTitle(context, ref, title)),
+                  const EnvironmentBadge(),
+                ],
               ),
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(child: _buildTappableTitle(context, ref, title)),
-            const EnvironmentBadge(),
-          ],
-        ),
-        actions: isSearchRoute
-            ? null
-            : [
-                IconButton(
-                  tooltip: 'Search',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: Container(
-                    width: 48,
-                    height: 48,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: VineTheme.iconButtonBackground,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/icon/search.svg',
-                      width: 32,
-                      height: 32,
-                    ),
-                  ),
-                  onPressed: () {
-                    Log.info(
-                      '👆 User tapped search button',
-                      name: 'Navigation',
-                      category: LogCategory.ui,
-                    );
-                    context.go(SearchScreenPure.path);
-                  },
-                ),
-                const SizedBox(width: 16),
-              ],
-      ),
+              actions: isSearchRoute
+                  ? null
+                  : [
+                      IconButton(
+                        tooltip: 'Search',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        icon: Container(
+                          width: 48,
+                          height: 48,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: VineTheme.iconButtonBackground,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: SvgPicture.asset(
+                            'assets/icon/search.svg',
+                            width: 32,
+                            height: 32,
+                          ),
+                        ),
+                        onPressed: () {
+                          Log.info(
+                            '👆 User tapped search button',
+                            name: 'Navigation',
+                            category: LogCategory.ui,
+                          );
+                          context.go(SearchScreenPure.path);
+                        },
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+            ),
       drawer: const VineDrawer(),
       body: child,
       // Bottom nav visible for all shell routes (search, tabs, etc.)

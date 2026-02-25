@@ -4,8 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -13,14 +12,15 @@ import 'package:openvine/services/curated_list_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'curated_list_service_stream_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CuratedListService - Stream Operations', () {
     late CuratedListService service;
-    late MockNostrClient mockNostr;
-    late MockAuthService mockAuth;
+    late _MockNostrClient mockNostr;
+    late _MockAuthService mockAuth;
     late SharedPreferences prefs;
     late StreamController<Event> eventController;
 
@@ -65,20 +65,36 @@ void main() {
       });
     }
 
+    setUpAll(() {
+      registerFallbackValue(
+        Event.fromJson({
+          'id': 'fallback_event_id',
+          'pubkey':
+              'aabbccdd00112233445566778899aabbccdd00112233445566778899aabbccdd',
+          'created_at': 0,
+          'kind': 1,
+          'tags': <List<String>>[],
+          'content': '',
+          'sig': '',
+        }),
+      );
+      registerFallbackValue(<Filter>[]);
+    });
+
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
 
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
+      mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
       prefs = await SharedPreferences.getInstance();
       eventController = StreamController<Event>.broadcast();
 
-      when(mockAuth.isAuthenticated).thenReturn(true);
-      when(mockAuth.currentPublicKeyHex).thenReturn('test_pubkey');
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn('test_pubkey');
 
       // Mock subscribe to return our controlled stream
       when(
-        mockNostr.subscribe(any, onEose: anyNamed('onEose')),
+        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) => eventController.stream);
 
       service = CuratedListService(
@@ -302,10 +318,12 @@ void main() {
         await eventController.close();
         await subscription.cancel();
 
-        // Should have received 2 yields (both versions triggered yield)
+        // Should have received 2 yields (both versions triggered
+        // yield)
         expect(receivedLists.length, 2);
 
-        // But final list should only have 1 unique list with newer data
+        // But final list should only have 1 unique list with newer
+        // data
         expect(receivedLists.last.length, 1);
         expect(receivedLists.last.first.name, 'New Name');
         expect(receivedLists.last.first.videoEventIds.length, 2);
@@ -314,9 +332,9 @@ void main() {
       test('passes limit parameter to filter', () async {
         // Capture the filter passed to subscribe
         Filter? capturedFilter;
-        when(mockNostr.subscribe(any, onEose: anyNamed('onEose'))).thenAnswer((
-          invocation,
-        ) {
+        when(
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+        ).thenAnswer((invocation) {
           final filters = invocation.positionalArguments[0] as List<Filter>;
           capturedFilter = filters.first;
           return eventController.stream;

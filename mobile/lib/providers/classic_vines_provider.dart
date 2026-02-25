@@ -38,6 +38,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
   @override
   Future<VideoFeedState> build() async {
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
+
     // Watch appReady gate
     final isAppReady = ref.watch(appReadyProvider);
 
@@ -80,10 +83,10 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
           sort: 'loops',
         );
 
-        // Filter for platform compatibility and shuffle
-        final filteredVideos =
-            videos.where((v) => v.isSupportedOnCurrentPlatform).toList()
-              ..shuffle(_random);
+        // Filter for platform compatibility, content preferences, and shuffle
+        final filteredVideos = videoEventService.filterVideoList(
+          videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+        )..shuffle(_random);
 
         Log.info(
           '🎬 ClassicVinesFeed: Loaded ${filteredVideos.length} videos '
@@ -117,14 +120,12 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     );
 
     final allVideos = videoEventService.discoveryVideos;
-    final classicVideos =
-        allVideos
-            .where((v) => v.originalLoops != null && v.originalLoops! > 0)
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .toList()
-          ..sort(
-            (a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0),
-          );
+    final classicVideos = videoEventService.filterVideoList(
+      allVideos
+          .where((v) => v.originalLoops != null && v.originalLoops! > 0)
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .toList(),
+    )..sort((a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0));
 
     // Take top entries then shuffle for variety
     final topClassics = classicVideos.take(_pageSize).toList()
@@ -169,9 +170,10 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         sort: 'loops',
       );
 
-      final filteredVideos =
-          videos.where((v) => v.isSupportedOnCurrentPlatform).toList()
-            ..shuffle(_random);
+      final videoEventService = ref.read(videoEventServiceProvider);
+      final filteredVideos = videoEventService.filterVideoList(
+        videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+      )..shuffle(_random);
 
       final nextOffset = _randomOffset + _pageSize;
       state = AsyncData(
@@ -216,9 +218,10 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         sort: 'loops',
       );
 
-      final filteredVideos = videos
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .toList();
+      final videoEventService = ref.read(videoEventServiceProvider);
+      final filteredVideos = videoEventService.filterVideoList(
+        videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+      );
 
       final allVideos = [...currentState.videos, ...filteredVideos];
       final followingOffset = nextOffset + _pageSize;

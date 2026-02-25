@@ -1,5 +1,5 @@
 // ABOUTME: Events for VideoFeedBloc - unified feed with mode switching
-// ABOUTME: Supports Home (following), New (latest), and Popular feed modes
+// ABOUTME: Supports For You, Home (following), New (latest), and Popular feed modes
 
 part of 'video_feed_bloc.dart';
 
@@ -11,9 +11,10 @@ sealed class VideoFeedEvent extends Equatable {
 /// Start the video feed with a specific mode.
 ///
 /// Dispatched when the feed screen initializes. Triggers initial
-/// data loading for the specified [mode].
+/// data loading for the specified [mode]. If a mode was previously persisted
+/// to SharedPreferences, the bloc will restore that mode instead.
 final class VideoFeedStarted extends VideoFeedEvent {
-  const VideoFeedStarted({this.mode = FeedMode.home});
+  const VideoFeedStarted({this.mode = FeedMode.forYou});
 
   /// The feed mode to start with.
   final FeedMode mode;

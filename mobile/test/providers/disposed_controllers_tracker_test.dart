@@ -20,22 +20,25 @@ void main() {
     });
 
     group('markDisposed', () {
-      test('adds videoId and notifies listeners', () {
+      test('adds videoId and notifies listeners', () async {
         tracker.markDisposed('video-1');
 
         expect(tracker.contains('video-1'), isTrue);
+        // Notification is deferred to a microtask
+        await Future<void>.delayed(Duration.zero);
         expect(notifyCount, equals(1));
       });
 
-      test('does not notify when marking same videoId twice', () {
+      test('does not notify when marking same videoId twice', () async {
         tracker.markDisposed('video-1');
         tracker.markDisposed('video-1');
 
         expect(tracker.contains('video-1'), isTrue);
+        await Future<void>.delayed(Duration.zero);
         expect(notifyCount, equals(1));
       });
 
-      test('tracks multiple videoIds independently', () {
+      test('tracks multiple videoIds independently', () async {
         tracker.markDisposed('video-1');
         tracker.markDisposed('video-2');
         tracker.markDisposed('video-3');
@@ -43,13 +46,15 @@ void main() {
         expect(tracker.contains('video-1'), isTrue);
         expect(tracker.contains('video-2'), isTrue);
         expect(tracker.contains('video-3'), isTrue);
+        await Future<void>.delayed(Duration.zero);
         expect(notifyCount, equals(3));
       });
     });
 
     group('clearDisposed', () {
-      test('removes videoId and notifies listeners', () {
+      test('removes videoId and notifies listeners', () async {
         tracker.markDisposed('video-1');
+        await Future<void>.delayed(Duration.zero);
         notifyCount = 0;
 
         tracker.clearDisposed('video-1');
@@ -65,8 +70,9 @@ void main() {
         expect(notifyCount, equals(0));
       });
 
-      test('clearing same videoId twice only notifies once', () {
+      test('clearing same videoId twice only notifies once', () async {
         tracker.markDisposed('video-1');
+        await Future<void>.delayed(Duration.zero);
         notifyCount = 0;
 
         tracker.clearDisposed('video-1');
@@ -88,8 +94,9 @@ void main() {
         expect(tracker.contains('video-1'), isTrue);
       });
 
-      test('returns false after clearDisposed', () {
+      test('returns false after clearDisposed', () async {
         tracker.markDisposed('video-1');
+        await Future<void>.delayed(Duration.zero);
         tracker.clearDisposed('video-1');
 
         expect(tracker.contains('video-1'), isFalse);
@@ -118,9 +125,10 @@ void main() {
         );
       });
 
-      test('does not include cleared videoIds', () {
+      test('does not include cleared videoIds', () async {
         tracker.markDisposed('video-1');
         tracker.markDisposed('video-2');
+        await Future<void>.delayed(Duration.zero);
         tracker.clearDisposed('video-1');
 
         expect(tracker.ids, contains('video-2'));

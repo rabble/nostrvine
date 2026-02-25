@@ -22,6 +22,19 @@ class VolumeKeyHandler: NSObject {
     private var volumeChangeTimer: Timer?
     private var isInternalVolumeChange = false
     
+    // Cooldown after activation to ignore spurious Bluetooth events.
+    // Must be long enough to cover delayed events from AirPods/Apple Watch
+    // that arrive after audio route changes during camera initialization.
+    private var enabledTimestamp: TimeInterval = 0
+    private let activationCooldownSeconds: TimeInterval = 3.0
+    
+    // Debounce between Bluetooth triggers to prevent rapid-fire events
+    private var lastBluetoothTriggerTimestamp: TimeInterval = 0
+    private let bluetoothDebounceSeconds: TimeInterval = 1.0
+    
+    // Temporary suppression during camera switch / audio route changes
+    private var isSuppressed = false
+    
     init(onTrigger: @escaping (String) -> Void) {
         self.onTrigger = onTrigger
         super.init()
@@ -46,7 +59,18 @@ class VolumeKeyHandler: NSObject {
         
         isEnabled = true
         volumeKeysEnabled = true
-        NSLog("DivineCameraVolumeKeyHandler: Enabled")
+        enabledTimestamp = ProcessInfo.processInfo.systemUptime
+        
+        // Suppress triggers initially to absorb any spurious Bluetooth events
+        // that fire when MPRemoteCommandCenter handlers are first registered.
+        // Connected AirPods/Apple Watch may send play/pause events when they
+        // detect a new "now playing" app.
+        isSuppressed = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + activationCooldownSeconds) { [weak self] in
+            self?.isSuppressed = false
+            NSLog("DivineCameraVolumeKeyHandler: Initial suppression ended")
+        }
+        NSLog("DivineCameraVolumeKeyHandler: Enabled (suppressed for \(activationCooldownSeconds)s)")
         return true
     }
     
@@ -77,6 +101,20 @@ class VolumeKeyHandler: NSObject {
         return isEnabled
     }
     
+    /// Temporarily suppress all triggers for the given duration.
+    ///
+    /// Used during camera switch and other operations that cause
+    /// iOS audio route changes, which can trigger spurious Bluetooth
+    /// play/pause events from connected devices (e.g. Apple Watch).
+    func suppressTemporarily(forSeconds duration: TimeInterval = 1.0) {
+        isSuppressed = true
+        NSLog("DivineCameraVolumeKeyHandler: Suppressed for \(duration)s")
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.isSuppressed = false
+            NSLog("DivineCameraVolumeKeyHandler: Suppression ended")
+        }
+    }
+    
     /// Cleanup resources.
     func release() {
         disable()
@@ -91,21 +129,21 @@ class VolumeKeyHandler: NSObject {
         // Play/Pause toggle (most common on Bluetooth headphones)
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
             NSLog("DivineCameraVolumeKeyHandler: Bluetooth toggle play/pause")
-            self?.onTrigger?("bluetooth")
+            self?.handleBluetoothTrigger()
             return .success
         }
         
         // Play command
         commandCenter.playCommand.addTarget { [weak self] _ in
             NSLog("DivineCameraVolumeKeyHandler: Bluetooth play")
-            self?.onTrigger?("bluetooth")
+            self?.handleBluetoothTrigger()
             return .success
         }
         
         // Pause command
         commandCenter.pauseCommand.addTarget { [weak self] _ in
             NSLog("DivineCameraVolumeKeyHandler: Bluetooth pause")
-            self?.onTrigger?("bluetooth")
+            self?.handleBluetoothTrigger()
             return .success
         }
         
@@ -130,6 +168,60 @@ class VolumeKeyHandler: NSObject {
         commandCenter.pauseCommand.removeTarget(nil)
         
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+    
+    // MARK: - Bluetooth Trigger Handling
+    
+    /// Handles a Bluetooth remote trigger with cooldown and debounce protection.
+    ///
+    /// Filters out:
+    /// - Events during activation cooldown (spurious events when enabling)
+    /// - Events during temporary suppression (camera switch / route changes)
+    /// - Rapid-fire duplicate events (debounce)
+    private func handleBluetoothTrigger() {
+        let now = ProcessInfo.processInfo.systemUptime
+        
+        // Check suppression (camera switch in progress)
+        if isSuppressed {
+            NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - suppressed")
+            return
+        }
+        
+        // Check activation cooldown
+        let timeSinceEnabled = now - enabledTimestamp
+        if timeSinceEnabled < activationCooldownSeconds {
+            NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - within \(String(format: "%.0f", activationCooldownSeconds * 1000))ms activation cooldown (\(String(format: "%.0f", timeSinceEnabled * 1000))ms since enabled)")
+            return
+        }
+        
+        // Check debounce between triggers
+        let timeSinceLastTrigger = now - lastBluetoothTriggerTimestamp
+        if timeSinceLastTrigger < bluetoothDebounceSeconds {
+            NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - debounce (\(String(format: "%.0f", timeSinceLastTrigger * 1000))ms since last)")
+            return
+        }
+        
+        lastBluetoothTriggerTimestamp = now
+        NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger accepted")
+        
+        // Refresh now playing info so iOS keeps routing remote events to us.
+        // Without this, audio session changes during recording start/stop can
+        // cause iOS to disassociate our app from MPNowPlayingInfoCenter,
+        // making AirPods stop sending events to our command handlers.
+        refreshNowPlayingInfo()
+        
+        onTrigger?("bluetooth")
+    }
+    
+    /// Refreshes MPNowPlayingInfoCenter to keep our app as the active
+    /// "now playing" app. Without this, iOS may stop routing AirPods/Apple
+    /// Watch button presses to our MPRemoteCommandCenter handlers after
+    /// audio session changes (e.g. recording start/stop).
+    private func refreshNowPlayingInfo() {
+        var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [String: Any]()
+        nowPlayingInfo[MPMediaItemPropertyTitle] = "Recording"
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = 1.0
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
     
     // MARK: - Volume Button Detection

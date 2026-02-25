@@ -6,14 +6,14 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/auth_back_button.dart';
+import 'package:openvine/widgets/divine_primary_button.dart';
 
 class KeyImportScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -30,8 +30,8 @@ class KeyImportScreen extends ConsumerStatefulWidget {
 
 class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
   final _keyController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
   bool _isImporting = false;
+  String? _keyError;
 
   /// Cached reference to auth service, since ref is invalid after unmount.
   late final AuthService _authService;
@@ -56,65 +56,143 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: VineTheme.surfaceBackground,
+      backgroundColor: VineTheme.backgroundColor,
       resizeToAvoidBottomInset: false,
-      body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(),
-        behavior: HitTestBehavior.opaque,
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Scrollable content fills entire safe area
-              _KeyImportFormContent(
-                formKey: _formKey,
-                keyController: _keyController,
-                isImporting: _isImporting,
-                onImport: _importKey,
-                onPaste: _pasteFromClipboard,
-                onSignUp: _navigateToSignUp,
-              ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Scrollable form content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
 
-              // Back button overlays top-left
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: DivineIconButton(
-                  icon: DivineIconName.caretLeft,
-                  type: DivineIconButtonType.secondary,
-                  size: DivineIconButtonSize.small,
-                  onPressed: () => context.pop(),
+                    // Back button
+                    AuthBackButton(
+                      onPressed: _isImporting ? null : () => context.pop(),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Title
+                    const Text(
+                      'Import your\nNostr identity',
+                      style: TextStyle(
+                        fontFamily: VineTheme.fontFamilyBricolage,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: VineTheme.whiteText,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Subtitle
+                    const Text(
+                      'Import your existing Nostr identity using your '
+                      'private key or a bunker URL.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: VineTheme.secondaryText,
+                        height: 1.4,
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Key input field
+                    DivineAuthTextField(
+                      controller: _keyController,
+                      label: 'Private key or bunker URL',
+                      enabled: !_isImporting,
+                      autocorrect: false,
+                      errorText: _keyError,
+                      onChanged: (_) {
+                        if (_keyError != null) {
+                          setState(() => _keyError = null);
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Import button
+                    DivinePrimaryButton(
+                      label: 'Import Nostr key',
+                      isLoading: _isImporting,
+                      onPressed: _importKey,
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+
+            // Pinned security warning with key overlay
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const _SecurityWarning(),
+                  Positioned(
+                    right: -60,
+                    top: -130,
+                    child: Transform.rotate(
+                      angle: 12 * 3.1415926535 / 180,
+                      child: Image.asset(
+                        'assets/stickers/key.png',
+                        width: 174,
+                        height: 174,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+          ],
         ),
       ),
     );
   }
 
-  void _navigateToSignUp() {
-    context.push('${WelcomeScreen.authNativePath}?mode=register');
-  }
-
-  Future<void> _pasteFromClipboard() async {
-    try {
-      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-      if (clipboardData?.text != null) {
-        _keyController.text = clipboardData!.text!.trim();
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to paste from clipboard: $e',
-        name: 'KeyImportScreen',
-        category: LogCategory.ui,
-      );
+  String? _validateKey(String value) {
+    if (value.trim().isEmpty) {
+      return 'Please enter your private key or bunker URL';
     }
+
+    final trimmed = value.trim();
+
+    // Check if it's a bunker URL
+    if (NostrRemoteSignerInfo.isBunkerUrl(trimmed)) {
+      try {
+        NostrRemoteSignerInfo.parseBunkerUrl(trimmed);
+      } catch (e) {
+        return 'Invalid bunker URL';
+      }
+      return null;
+    }
+
+    // Check if it looks like a valid key format
+    if (!trimmed.startsWith('nsec') && trimmed.length != 64) {
+      return 'Invalid format. Use nsec..., hex, or bunker://...';
+    }
+
+    if (trimmed.startsWith('nsec') && trimmed.length != 63) {
+      return 'Invalid nsec format. Should be 63 characters';
+    }
+
+    return null;
   }
 
   Future<void> _importKey() async {
-    if (!_formKey.currentState!.validate()) {
+    final error = _validateKey(_keyController.text);
+    if (error != null) {
+      setState(() => _keyError = error);
       return;
     }
 
@@ -148,7 +226,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
           final userProfileService = ref.read(userProfileServiceProvider);
           unawaited(userProfileService.fetchProfile(pubkeyHex));
           Log.info(
-            '📥 Started background fetch for imported user profile',
+            'Started background fetch for imported user profile',
             name: 'KeyImportScreen',
             category: LogCategory.auth,
           );
@@ -182,163 +260,47 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
   }
 }
 
-/// Form content for the key import screen.
-///
-/// Mirrors the layout of [_AuthFormContent] in [DivineAuthScreen]:
-/// same title/subtitle styles, spacing, and bottom-aligned actions.
-class _KeyImportFormContent extends StatelessWidget {
-  const _KeyImportFormContent({
-    required this.formKey,
-    required this.keyController,
-    required this.isImporting,
-    required this.onImport,
-    required this.onPaste,
-    required this.onSignUp,
-  });
-
-  final GlobalKey<FormState> formKey;
-  final TextEditingController keyController;
-  final bool isImporting;
-  final VoidCallback onImport;
-  final VoidCallback onPaste;
-  final VoidCallback onSignUp;
+/// Security warning box about private key safety.
+class _SecurityWarning extends StatelessWidget {
+  const _SecurityWarning();
 
   @override
   Widget build(BuildContext context) {
-    return CustomScrollView(
-      physics: const ClampingScrollPhysics(),
-      slivers: [
-        SliverFillRemaining(
-          hasScrollBody: false,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Space for back button overlay
-                  const SizedBox(height: 72),
-
-                  // Title
-                  Text(
-                    'Import your Nostr ID',
-                    style: VineTheme.headlineLargeFont(),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Subtitle
-                  Text(
-                    'Import your existing Nostr identity using '
-                    'your private key or a bunker URL.',
-                    style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Key input field
-                  DivineAuthTextField(
-                    label: 'Private key or bunker URL',
-                    controller: keyController,
-                    obscureText: true,
-                    autocorrect: false,
-                    keyboardType: TextInputType.text,
-                    validator: _validateKey,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Import button
-                  DivineButton(
-                    label: 'Import Nostr ID',
-                    expanded: true,
-                    isLoading: isImporting,
-                    onPressed: isImporting ? null : onImport,
-                  ),
-
-                  // Push sign up prompt to bottom
-                  const Spacer(),
-                  const SizedBox(height: 32),
-
-                  // Sign up prompt
-                  _SignUpPrompt(onSignUp: onSignUp),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  String? _validateKey(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Please enter your private key or bunker URL';
-    }
-
-    final trimmed = value.trim();
-
-    // Check if it's a bunker URL
-    if (NostrRemoteSignerInfo.isBunkerUrl(trimmed)) {
-      try {
-        NostrRemoteSignerInfo.parseBunkerUrl(trimmed);
-      } catch (e) {
-        return 'Invalid bunker URL';
-      }
-      return null;
-    }
-
-    // Check if it looks like a valid key format
-    if (!trimmed.startsWith('nsec') && trimmed.length != 64) {
-      return 'Invalid format. Use nsec, hex, or bunker://';
-    }
-
-    if (trimmed.startsWith('nsec') && trimmed.length != 63) {
-      return 'Invalid nsec format. Should be 63 characters';
-    }
-
-    return null;
-  }
-}
-
-/// Bottom prompt encouraging users without a Nostr identity to sign up.
-class _SignUpPrompt extends StatelessWidget {
-  const _SignUpPrompt({required this.onSignUp});
-
-  final VoidCallback onSignUp;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text.rich(
-          TextSpan(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: VineTheme.accentOrangeBackground),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              TextSpan(
-                text: "Don't have a Nostr identity? ",
-                style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
-                ).copyWith(fontWeight: FontWeight.bold),
+              Icon(
+                Icons.warning_amber_rounded,
+                color: VineTheme.accentOrange,
+                size: 20,
               ),
-              TextSpan(
-                text:
-                    "We'll automatically create one for "
-                    'you when you sign up for diVine.',
-                style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
+              const SizedBox(width: 8),
+              Text(
+                'Keep your private key secure!',
+                style: TextStyle(
+                  color: VineTheme.accentOrange,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        DivineButton(
-          label: 'Sign up',
-          type: DivineButtonType.secondary,
-          expanded: true,
-          onPressed: onSignUp,
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            'Never share your private key with anyone. This key '
+            'gives full access to your Nostr identity.',
+            style: TextStyle(color: VineTheme.accentOrange, fontSize: 13),
+          ),
+        ],
+      ),
     );
   }
 }

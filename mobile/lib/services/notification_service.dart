@@ -500,10 +500,14 @@ class NotificationService {
         presentSound: true,
       );
 
+      // Define Linux notification details
+      const linuxDetails = LinuxNotificationDetails();
+
       const notificationDetails = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
         macOS: macosDetails,
+        linux: linuxDetails,
       );
 
       // Show the notification
@@ -617,10 +621,14 @@ class NotificationService {
         presentSound: true,
       );
 
+      // Define Linux notification details
+      const linuxDetails = LinuxNotificationDetails();
+
       const notificationDetails = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
         macOS: macosDetails,
+        linux: linuxDetails,
       );
 
       // Show the notification with unique ID from timestamp
