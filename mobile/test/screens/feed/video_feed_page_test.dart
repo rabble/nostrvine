@@ -13,20 +13,11 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../../helpers/test_provider_overrides.dart';
-import '../../test_data/video_test_data.dart';
 
 class _MockVideoFeedBloc extends MockBloc<VideoFeedEvent, VideoFeedState>
     implements VideoFeedBloc {}
 
 class _MockVideoFeedController extends Mock implements VideoFeedController {}
-
-// Full 64-character test IDs
-const _testVideoId1 =
-    'a1b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234';
-const _testVideoId2 =
-    'b2c3d4e5f6789012345678901234567890abcdef123456789012345678901234a1';
-const _testPubkey =
-    'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
 
 void main() {
   group('VideoFeedView overlay integration', () {
