@@ -139,19 +139,23 @@ void main() {
         },
       );
 
-      testWidgets('falls back to video.totalLikes before BLoC has loaded', (
-        tester,
-      ) async {
-        when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
+      testWidgets(
+        'hides like count when nostrLikeCount is null and before BLoC has loaded',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
 
-        await tester.pumpWidget(buildSubject(video: testVideo, bloc: mockBloc));
+          await tester.pumpWidget(
+            buildSubject(video: testVideo, bloc: mockBloc),
+          );
 
-        expect(find.text('42'), findsOneWidget);
-      });
+          expect(find.text('42'), findsNothing);
+        },
+      );
 
-      testWidgets('falls back to combined totalLikes when video has both '
-          'originalLikes and nostrLikeCount', (tester) async {
-        when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
+      testWidgets('shows total like count', (tester) async {
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoInteractionsState(likeCount: 503));
 
         final vineImportVideo = VideoEvent(
           id: 'vine-video-id-0123456789abcdef0123456789abcdef0123456789abcdef01',
