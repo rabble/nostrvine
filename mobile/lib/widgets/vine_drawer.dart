@@ -104,9 +104,17 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                         _DrawerItem(
                           title: 'Settings',
                           onTap: () {
-                            final router = GoRouter.of(context);
+                            // Push the settings route before closing the drawer.
+                            //
+                            // This ensures the overlay flag (isDrawerOpen) stays
+                            // true while the route isbeing pushed,
+                            // preventing a brief video resume.
+                            //
+                            // The drawer closes after the push,
+                            // and onDrawerChanged(false) fires only once the
+                            // settings screen is already on top.
+                            context.push(SettingsScreen.path);
                             Navigator.of(context).pop();
-                            router.push(SettingsScreen.path);
                           },
                         ),
 

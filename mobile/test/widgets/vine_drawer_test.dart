@@ -1,16 +1,19 @@
 // ABOUTME: Unit tests for VineDrawer widget
-// ABOUTME: Tests branding (wordmark logo) and navigation menu functionality
+// ABOUTME: Tests branding (wordmark logo), navigation menu, and video pause behavior
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mocktail/mocktail.dart' as mocktail;
+import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
+import '../helpers/go_router.dart';
 import 'vine_drawer_test.mocks.dart';
 
 @GenerateMocks([AuthService])
@@ -119,5 +122,75 @@ void main() {
             'Generic video_library icon should not be used, use wordmark instead',
       );
     });
+  });
+
+  group('VineDrawer Settings navigation', () {
+    late MockGoRouter mockGoRouter;
+    late MockAuthService mockAuthService;
+
+    setUp(() {
+      mockGoRouter = MockGoRouter();
+      mocktail
+          .when(() => mockGoRouter.push(mocktail.any()))
+          .thenAnswer((_) async => null);
+
+      mockAuthService = MockAuthService();
+      when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        mockAuthService.currentPublicKeyHex,
+      ).thenReturn('test_pubkey_' + '0' * 54);
+    });
+
+    testWidgets(
+      'pushes settings route before closing drawer to prevent video resume',
+      (tester) async {
+        final scaffoldKey = GlobalKey<ScaffoldState>();
+        var didDrawerClose = false;
+
+        // Track call order to verify push happens before drawer closes
+        mocktail
+            .when(() => mockGoRouter.push(mocktail.any()))
+            .thenAnswer((_) => Future.value());
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              authServiceProvider.overrideWith((ref) => mockAuthService),
+              currentAuthStateProvider.overrideWithValue(
+                AuthState.authenticated,
+              ),
+            ],
+            child: MaterialApp(
+              home: MockGoRouterProvider(
+                goRouter: mockGoRouter,
+                child: Scaffold(
+                  key: scaffoldKey,
+                  onDrawerChanged: (isOpen) {
+                    if (!isOpen) didDrawerClose = true;
+                  },
+                  drawer: const VineDrawer(),
+                  body: const Center(child: Text('Test')),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Open the drawer
+        scaffoldKey.currentState!.openDrawer();
+        await tester.pumpAndSettle();
+
+        // Tap Settings
+        await tester.tap(find.text('Settings'));
+        await tester.pumpAndSettle();
+
+        // didDrawerClose stays true while the route is being pushed,
+        // preventing a brief video resume.
+        expect(didDrawerClose, isTrue);
+
+        // Verify GoRouter.push was called with settings path
+        mocktail.verify(() => mockGoRouter.push(SettingsScreen.path)).called(1);
+      },
+    );
   });
 }
