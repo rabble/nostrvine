@@ -171,9 +171,13 @@ definitions:
         echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/firebase-sa.json
         export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-sa.json
 
-        firebase crashlytics:symbols:upload \
-          --app="$FIREBASE_IOS_APP_ID" \
-          "$DSYM_DIR"
+        # Upload each .dSYM bundle individually
+        for dsym in "$DSYM_DIR"/*.dSYM; do
+          echo "Uploading: $dsym"
+          firebase crashlytics:symbols:upload \
+            --app="$FIREBASE_IOS_APP_ID" \
+            "$dsym"
+        done
 
         rm -f /tmp/firebase-sa.json
     - &build_ios_simulator
