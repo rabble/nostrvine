@@ -161,7 +161,6 @@
 | `curated_list_service_persistence_test.dart` | 94 | 1 | `skip: true` |
 | `curated_list_service_persistence_test.dart` | 344 | 1 | `skip: 'Flaky: timestamp-based ID collision in concurrent creation'` |
 | `curated_list_service_query_test.dart` | 89, 127, 493, 505, 562 | 5 | `skip: true` |
-| `curation_service_create_test.dart` | 105, 125, 167, 241, 262, 305, 327 | 7 | `skip: true` |
 | `curation_service_editors_picks_test.dart` | 216 | 1 | `skip: true` |
 | `curation_service_kind_30005_test.dart` | 76, 146 | 2 | `skip: true` |
 | `curation_service_test.dart` | 71 | 1 | `skip: true` |
@@ -262,7 +261,6 @@ These files have all test code commented out, leaving only `void main() {}`. Mos
 | `test/providers/home_feed_refresh_on_follow_test.dart` | 4 | Home feed refresh on follow/unfollow changes |
 | `test/providers/profile_feed_pagination_test.dart` | 6 | Profile feed cursor pagination (load, append, hasMore, dedup) |
 | `test/screens/explore_screen_missing_methods_test.dart` | 6 | ExploreScreen method TDD (hidden, visible, feed mode, hashtags) |
-| `test/screens/home_screen_router_test.dart` | 8 | HomeScreen router-driven tests (URL, PageView, refresh, prefetch) |
 | `test/services/event_router_test.dart` | multiple | EventRouter TDD tests (centralized event caching) |
 | `test/widgets/share_video_menu_comprehensive_test.dart` | multiple | ShareVideoMenu comprehensive TDD tests |
 
@@ -307,5 +305,3 @@ These files have some tests commented out while others remain active.
 | `test/widgets/comprehensive_user_avatar_test.dart` | 4 (golden tests only) |
 | `test/services/upload_manager_web_test.dart` | 9 (web-only) |
 | `test/services/upload_initialization_helper_web_test.dart` | 8 (web-only) |
-| `test/screens/home_screen_router_test.dart` | 8 (commented out) |
-| `test/services/curation_service_create_test.dart` | 7 |
