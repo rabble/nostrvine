@@ -4,7 +4,7 @@ appId: co.openvine.app
 - assertVisible: Authentic moments.
 - assertVisible: Human creativity.
 - assertVisible: Create a new Divine account
-- assertVisible: Login with a different account
+- assertVisible: Sign in with a different account
 - assertVisible: "By selecting an option above, you confirm you are at least 16 years old and agree to the "
 - assertVisible: Terms of Service
 - assertVisible: ", "

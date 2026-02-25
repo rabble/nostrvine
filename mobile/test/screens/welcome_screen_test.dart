@@ -171,7 +171,7 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Login with a different account'));
+        await tester.tap(find.text('Sign in with a different account'));
         await tester.pumpAndSettle();
 
         verify(() => mockAuthService.acceptTerms()).called(1);
@@ -218,7 +218,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('Create a new Divine account'), findsNothing);
-        expect(find.text('Login with a different account'), findsNothing);
+        expect(find.text('Sign in with a different account'), findsNothing);
       });
 
       testWidgets('does not call acceptTerms when auth state is checking', (
