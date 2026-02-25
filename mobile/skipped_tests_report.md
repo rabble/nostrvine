@@ -16,12 +16,6 @@
 
 ## Category 1: Skipped Tests
 
-### packages/nostr_sdk/test/
-
-| File | Lines | Tests | Reason |
-|------|-------|-------|--------|
-| `integration/nip50_search_test.dart` | 85, 124, 148, 186 | 4 | `skip: true` |
-
 ### test/goldens/
 
 | File | Lines | Tests | Reason |
