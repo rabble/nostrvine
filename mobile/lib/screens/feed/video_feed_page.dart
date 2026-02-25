@@ -95,16 +95,14 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     // Use injected controller if provided (for testing)
-    if (widget.controller != null) {
-      controller = widget.controller;
-    }
+    if (!ownsController) controller = widget.controller;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Initialize controller eagerly if BLoC already has videos on first build
-    _initializeController();
+    handleVideoController();
   }
 
   @override
@@ -121,17 +119,17 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     }
   }
 
-  /// Initializes the controller when videos first become available.
+  /// Handles the controller changes.
   ///
   /// Called from [didChangeDependencies] for eager setup and from
   /// [BlocListener] when videos arrive asynchronously.
-  void _initializeController() {
+  void handleVideoController([VideoFeedState? state]) {
     if (controller != null) return;
 
-    final state = context.read<VideoFeedBloc>().state;
-    if (!state.isLoaded || state.videos.isEmpty) return;
+    final effectiveState = state ?? context.read<VideoFeedBloc>().state;
+    if (!effectiveState.isLoaded || effectiveState.videos.isEmpty) return;
 
-    final pooledVideos = state.videos.toVideoItems;
+    final pooledVideos = effectiveState.videos.toVideoItems;
 
     controller = VideoFeedController(
       videos: pooledVideos,
@@ -142,7 +140,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   }
 
   /// Handles new videos from pagination by adding them to the controller.
-  void _handleVideosChanged(VideoFeedState state) {
+  void handleVideosChanged(VideoFeedState state) {
     if (controller == null || lastPooledVideos == null) return;
 
     final pooledVideos = state.videos.toVideoItems;
@@ -156,7 +154,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     lastPooledVideos = pooledVideos;
   }
 
-  void _prefetchProfiles(List<VideoEvent> videos, int index) {
+  void prefetchProfiles(List<VideoEvent> videos, int index) {
     if (index == lastPrefetchIndex) return;
     lastPrefetchIndex = index;
 
@@ -201,13 +199,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 !previous.isLoaded &&
                 current.isLoaded &&
                 current.videos.isNotEmpty,
-            listener: (_, state) => _initializeController(),
+            listener: (_, state) => handleVideoController(state),
           ),
           // Handle new videos from pagination
           BlocListener<VideoFeedBloc, VideoFeedState>(
             listenWhen: (previous, current) =>
                 previous.videos.length != current.videos.length,
-            listener: (_, state) => _handleVideosChanged(state),
+            listener: (_, state) => handleVideosChanged(state),
           ),
         ],
         child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
@@ -253,7 +251,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                     );
                   },
                   onActiveVideoChanged: (video, index) {
-                    _prefetchProfiles(state.videos, index);
+                    prefetchProfiles(state.videos, index);
                   },
                   onNearEnd: (index) {
                     // PooledVideoFeed fires this when the user is within
