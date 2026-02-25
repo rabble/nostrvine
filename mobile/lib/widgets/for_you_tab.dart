@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -159,7 +160,10 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                       videoList,
                     ),
                     initialIndex: index,
+                    onLoadMore: () =>
+                        ref.read(forYouFeedProvider.notifier).loadMore(),
                     contextTitle: 'For You',
+                    trafficSource: ViewTrafficSource.discoveryForYou,
                   ),
                 );
               },

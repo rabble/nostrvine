@@ -2,21 +2,27 @@
 // ABOUTME: Tests NIP-17 gift wrap creation, encryption, and broadcasting
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_client/nostr_client.dart';
 
-import 'nip17_message_service_test.mocks.dart';
+class _MockNostrKeyManager extends Mock implements NostrKeyManager {}
 
-@GenerateMocks([NostrKeyManager, NostrClient])
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _FakeEvent extends Fake implements Event {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeEvent());
+  });
+
   group('NIP17MessageService', () {
     late NIP17MessageService service;
-    late MockNostrKeyManager mockKeyManager;
-    late MockNostrClient mockNostrService;
+    late _MockNostrKeyManager mockKeyManager;
+    late _MockNostrClient mockNostrService;
 
     const testPrivateKey =
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -26,13 +32,13 @@ void main() {
         'e771af0b05c8e95fcdf6feb3500544d2fb1ccd384788e9f490bb3ee28e8ed66f'; // Rabble's pubkey (hex)
 
     setUp(() {
-      mockKeyManager = MockNostrKeyManager();
-      mockNostrService = MockNostrClient();
+      mockKeyManager = _MockNostrKeyManager();
+      mockNostrService = _MockNostrClient();
 
       // Setup mock key manager
-      when(mockKeyManager.hasKeys).thenReturn(true);
-      when(mockKeyManager.privateKey).thenReturn(testPrivateKey);
-      when(mockKeyManager.publicKey).thenReturn(testPublicKey);
+      when(() => mockKeyManager.hasKeys).thenReturn(true);
+      when(() => mockKeyManager.privateKey).thenReturn(testPrivateKey);
+      when(() => mockKeyManager.publicKey).thenReturn(testPublicKey);
 
       service = NIP17MessageService(
         keyManager: mockKeyManager,
@@ -42,7 +48,9 @@ void main() {
 
     test('should create encrypted gift wrap event', () async {
       // Setup: Mock successful publish - returns the event on success
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         return invocation.positionalArguments[0] as Event;
       });
 
@@ -59,13 +67,15 @@ void main() {
       expect(result.error, isNull);
 
       // Verify: Event was published
-      verify(mockNostrService.publishEvent(any)).called(1);
+      verify(() => mockNostrService.publishEvent(any())).called(1);
     });
 
     test('should create gift wrap with kind 1059', () async {
       Event? capturedEvent;
 
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
         return capturedEvent;
       });
@@ -83,7 +93,9 @@ void main() {
     test('should include p tag with recipient pubkey', () async {
       Event? capturedEvent;
 
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
         return capturedEvent;
       });
@@ -105,7 +117,9 @@ void main() {
     test('should use random ephemeral key for gift wrap', () async {
       final capturedEvents = <Event>[];
 
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         final event = invocation.positionalArguments[0] as Event;
         capturedEvents.add(event);
         return event;
@@ -132,7 +146,9 @@ void main() {
     test('should obfuscate timestamp with random offset', () async {
       Event? capturedEvent;
 
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
         return capturedEvent;
       });
@@ -146,16 +162,18 @@ void main() {
 
       // Verify: Timestamp is offset (should be earlier than actual send time)
       expect(capturedEvent, isNotNull);
-      // Gift wrap timestamp should be within ±2 days of actual time
+      // Gift wrap timestamp should be within +-2 days of actual time
       final timeDiff = (capturedEvent!.createdAt - beforeSend).abs();
-      expect(timeDiff, lessThanOrEqualTo(60 * 60 * 24 * 2)); // ±2 days
+      expect(timeDiff, lessThanOrEqualTo(60 * 60 * 24 * 2)); // +-2 days
       // And typically it should be in the past (offset is negative)
       expect(capturedEvent!.createdAt, lessThan(afterSend));
     });
 
     test('should handle publish failure gracefully', () async {
       // Setup: Mock publish failure - returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => null);
 
       // Execute: Attempt to send message
       final result = await service.sendPrivateMessage(
@@ -170,8 +188,8 @@ void main() {
 
     test('should fail when no keys available', () async {
       // Setup: No keys
-      when(mockKeyManager.hasKeys).thenReturn(false);
-      when(mockKeyManager.privateKey).thenReturn(null);
+      when(() => mockKeyManager.hasKeys).thenReturn(false);
+      when(() => mockKeyManager.privateKey).thenReturn(null);
 
       // Execute: Attempt to send message
       final result = await service.sendPrivateMessage(
@@ -187,7 +205,9 @@ void main() {
     test('should include additional tags if provided', () async {
       Event? capturedEvent;
 
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         capturedEvent = invocation.positionalArguments[0] as Event;
         return capturedEvent;
       });
@@ -201,9 +221,10 @@ void main() {
         ],
       );
 
-      // Note: Additional tags go into the rumor event (kind 14), not the gift wrap
-      // The gift wrap only has the p tag
-      // We can't easily verify rumor tags without decrypting, so just verify it doesn't crash
+      // Note: Additional tags go into the rumor event (kind 14),
+      // not the gift wrap. The gift wrap only has the p tag.
+      // We can't easily verify rumor tags without decrypting,
+      // so just verify it doesn't crash.
       expect(capturedEvent, isNotNull);
     });
   });

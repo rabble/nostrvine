@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
 
 class UserName extends ConsumerWidget {
@@ -87,10 +86,9 @@ class UserName extends ConsumerWidget {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
       effectivePubkey = pubkey!;
 
-      // Use embedded name from REST API as fallback before truncated npub.
-      // This avoids unnecessary WebSocket profile fetches for videos with
-      // author_name already embedded.
-      final fallbackName = embeddedName ?? NostrKeyUtils.truncateNpub(pubkey!);
+      // Use embedded name from REST API as fallback, then generated name.
+      final fallbackName =
+          embeddedName ?? UserProfile.defaultDisplayNameFor(pubkey!);
 
       displayName = switch (profileAsync) {
         AsyncData(:final value) when value != null => value.betterDisplayName(

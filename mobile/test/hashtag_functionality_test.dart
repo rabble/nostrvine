@@ -11,12 +11,24 @@ import 'package:mocktail/mocktail.dart';
 class MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(SubscriptionType.discovery);
+  });
+
   group('Hashtag Sorting Tests', () {
     late HashtagService hashtagService;
     late MockVideoEventService mockVideoService;
 
     setUp(() {
       mockVideoService = MockVideoEventService();
+
+      // Stub before constructing HashtagService, since the constructor
+      // immediately calls _updateHashtagStats() and addListener().
+      when(() => mockVideoService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoService.homeFeedVideos).thenReturn([]);
+      when(() => mockVideoService.getEventCount(any())).thenReturn(0);
+      when(() => mockVideoService.getVideos(any())).thenReturn([]);
+
       hashtagService = HashtagService(mockVideoService);
     });
 
@@ -30,11 +42,8 @@ void main() {
         _createVideoWithHashtags(['rare']),
       ];
 
-      // Mock the video service to return our test videos
+      // Update mocks with test data
       when(() => mockVideoService.discoveryVideos).thenReturn(testVideos);
-      when(() => mockVideoService.homeFeedVideos).thenReturn([]);
-      when(() => mockVideoService.getEventCount(any())).thenReturn(0);
-      when(() => mockVideoService.getVideos(any())).thenReturn([]);
 
       // Act - Update hashtag stats
       hashtagService.refreshHashtagStats();
@@ -53,28 +62,21 @@ void main() {
       expect(popularStats?.videoCount, equals(3));
       expect(trendingStats?.videoCount, equals(2));
       expect(rareStats?.videoCount, equals(1));
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    });
 
-    test('should combine and sort hashtags from JSON and local cache', () {
-      // This test would verify that the explore screen properly combines
-      // hashtags from TopHashtagsService and local HashtagService
-      // and sorts them by total count
-
-      // Arrange
-      // Test data (not yet implemented - variables removed to fix warnings):
-      // jsonHashtags: {'vine': 1000, 'comedy': 800, 'dance': 600}
-      // localHashtags: {'vine': 50, 'local': 100, 'dance': 700}
-
-      // Expected result after combining and sorting:
-      // 'dance': 700 (from local, higher than JSON's 600)
-      // 'vine': 1050 (1000 from JSON + 50 from local)
-      // 'comedy': 800 (from JSON only)
-      // 'local': 100 (from local only)
-
-      // The actual implementation should sort these properly
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    test(
+      'should combine and sort hashtags from TopHashtagsService JSON '
+      'and local HashtagService cache',
+      // Not implemented: explore screen currently uses TopHashtagsService
+      // alone. This test documents a planned feature to merge JSON-sourced
+      // counts (e.g. {'vine': 1000, 'comedy': 800, 'dance': 600}) with
+      // locally observed counts (e.g. {'vine': 50, 'local': 100,
+      // 'dance': 700}) and sort by the combined total.
+      skip:
+          'Feature not yet implemented — explore screen only uses '
+          'TopHashtagsService',
+      () {},
+    );
   });
 
   group('Relay Hashtag Fetching Tests', () {

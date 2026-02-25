@@ -6,9 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mocktail/mocktail.dart' as mocktail;
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:models/models.dart';
@@ -21,9 +19,13 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 import '../helpers/go_router.dart';
-import 'sound_detail_screen_test.mocks.dart';
 
-@GenerateMocks([AudioPlaybackService, NostrClient, VideoEventService])
+class _MockAudioPlaybackService extends Mock implements AudioPlaybackService {}
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
 /// Creates a test AudioEvent with the given parameters.
 AudioEvent createTestAudioEvent({
   required String id,
@@ -116,30 +118,32 @@ Widget createTestWidget({required Widget child, List<dynamic>? overrides}) {
 
 void main() {
   group('SoundDetailScreen', () {
-    late MockAudioPlaybackService mockAudioService;
-    late MockNostrClient mockNostrClient;
-    late MockVideoEventService mockVideoEventService;
+    late _MockAudioPlaybackService mockAudioService;
+    late _MockNostrClient mockNostrClient;
+    late _MockVideoEventService mockVideoEventService;
 
     setUp(() {
-      mockAudioService = MockAudioPlaybackService();
-      mockNostrClient = MockNostrClient();
-      mockVideoEventService = MockVideoEventService();
+      mockAudioService = _MockAudioPlaybackService();
+      mockNostrClient = _MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
 
       // Set up default mock behavior
       when(
-        mockAudioService.loadAudio(any),
+        () => mockAudioService.loadAudio(any()),
       ).thenAnswer((_) async => const Duration(seconds: 6));
-      when(mockAudioService.play()).thenAnswer((_) async {});
-      when(mockAudioService.stop()).thenAnswer((_) async {});
-      when(mockAudioService.isPlaying).thenReturn(false);
+      when(() => mockAudioService.play()).thenAnswer((_) async {});
+      when(() => mockAudioService.stop()).thenAnswer((_) async {});
+      when(() => mockAudioService.isPlaying).thenReturn(false);
 
       // NostrClient stubs
-      when(mockNostrClient.isInitialized).thenReturn(true);
-      when(mockNostrClient.connectedRelayCount).thenReturn(1);
-      when(mockNostrClient.fetchEventById(any)).thenAnswer((_) async => null);
+      when(() => mockNostrClient.isInitialized).thenReturn(true);
+      when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
+      when(
+        () => mockNostrClient.fetchEventById(any()),
+      ).thenAnswer((_) async => null);
 
       // VideoEventService stubs
-      when(mockVideoEventService.getVideoById(any)).thenReturn(null);
+      when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
     });
 
     group('Widget Structure', () {
@@ -495,8 +499,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify loadAudio and play were called
-        verify(mockAudioService.loadAudio(testSound.url!)).called(1);
-        verify(mockAudioService.play()).called(1);
+        verify(() => mockAudioService.loadAudio(testSound.url!)).called(1);
+        verify(() => mockAudioService.play()).called(1);
       });
 
       testWidgets('preview button shows Stop when playing', (tester) async {
@@ -556,14 +560,15 @@ void main() {
         await tester.pumpAndSettle();
 
         // Clear previous interactions
-        clearInteractions(mockAudioService);
+        reset(mockAudioService);
+        when(() => mockAudioService.stop()).thenAnswer((_) async {});
 
         // Tap Stop
         await tester.tap(find.text('Stop'));
         await tester.pumpAndSettle();
 
         // Verify stop was called
-        verify(mockAudioService.stop()).called(1);
+        verify(() => mockAudioService.stop()).called(1);
 
         // Back to Preview button
         expect(find.text('Preview'), findsOneWidget);
@@ -609,14 +614,14 @@ void main() {
         );
 
         // loadAudio should NOT have been called
-        verifyNever(mockAudioService.loadAudio(any));
+        verifyNever(() => mockAudioService.loadAudio(any()));
       });
 
       testWidgets('shows error snackbar when playback fails', (tester) async {
         final testSound = createTestAudioEvent(id: 'sound1');
 
         when(
-          mockAudioService.loadAudio(any),
+          () => mockAudioService.loadAudio(any()),
         ).thenThrow(Exception('Playback failed'));
 
         await tester.pumpWidget(
@@ -650,13 +655,9 @@ void main() {
 
       setUp(() {
         mockGoRouter = MockGoRouter();
-        mocktail.when(() => mockGoRouter.canPop()).thenReturn(true);
-        mocktail
-            .when(() => mockGoRouter.pop<Object?>(mocktail.any()))
-            .thenAnswer((_) {});
-        mocktail
-            .when(() => mockGoRouter.pop<bool>(mocktail.any()))
-            .thenAnswer((_) {});
+        when(() => mockGoRouter.canPop()).thenReturn(true);
+        when(() => mockGoRouter.pop<Object?>(any())).thenAnswer((_) {});
+        when(() => mockGoRouter.pop<bool>(any())).thenAnswer((_) {});
       });
 
       testWidgets(
@@ -702,7 +703,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Verify GoRouter.pop(true) was called
-          mocktail.verify(() => mockGoRouter.pop<bool>(true)).called(1);
+          verify(() => mockGoRouter.pop<bool>(true)).called(1);
           expect(selectedSound?.id, equals(testSound.id));
         },
       );
@@ -737,14 +738,15 @@ void main() {
         await tester.pumpAndSettle();
 
         // Clear interactions
-        clearInteractions(mockAudioService);
+        reset(mockAudioService);
+        when(() => mockAudioService.stop()).thenAnswer((_) async {});
 
         // Tap Use Sound
         await tester.tap(find.text('Use Sound'));
         await tester.pumpAndSettle();
 
         // Verify stop was called (at least once - may be called again during disposal)
-        verify(mockAudioService.stop()).called(greaterThanOrEqualTo(1));
+        verify(() => mockAudioService.stop()).called(greaterThanOrEqualTo(1));
       });
     });
 
@@ -975,13 +977,9 @@ void main() {
 
       setUp(() {
         mockGoRouter = MockGoRouter();
-        mocktail.when(() => mockGoRouter.canPop()).thenReturn(true);
-        mocktail
-            .when(() => mockGoRouter.pop<Object?>(mocktail.any()))
-            .thenAnswer((_) {});
-        mocktail
-            .when(() => mockGoRouter.pop<bool>(mocktail.any()))
-            .thenAnswer((_) {});
+        when(() => mockGoRouter.canPop()).thenReturn(true);
+        when(() => mockGoRouter.pop<Object?>(any())).thenAnswer((_) {});
+        when(() => mockGoRouter.pop<bool>(any())).thenAnswer((_) {});
       });
 
       testWidgets(
@@ -1020,7 +1018,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Verify GoRouter.pop() was called
-          mocktail.verify(() => mockGoRouter.pop<Object?>(null)).called(1);
+          verify(() => mockGoRouter.pop<Object?>(null)).called(1);
         },
       );
 
@@ -1054,7 +1052,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify GoRouter.pop(true) was called
-        mocktail.verify(() => mockGoRouter.pop<bool>(true)).called(1);
+        verify(() => mockGoRouter.pop<bool>(true)).called(1);
       });
 
       testWidgets('back button stops preview if playing', (tester) async {
@@ -1091,7 +1089,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify GoRouter.pop() was called (preview stops in dispose)
-        mocktail.verify(() => mockGoRouter.pop<Object?>(null)).called(1);
+        verify(() => mockGoRouter.pop<Object?>(null)).called(1);
       });
     });
   });

@@ -13,6 +13,7 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 class HashtagFeedScreen extends ConsumerStatefulWidget {
@@ -416,6 +417,8 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                     index: index,
                     contextTitle: '#${widget.hashtag}',
                     forceShowOverlay: true,
+                    trafficSource: ViewTrafficSource.search,
+                    sourceDetail: widget.hashtag,
                   ),
                 ),
               );

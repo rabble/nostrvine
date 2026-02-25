@@ -7,12 +7,12 @@ import 'dart:async' as _i5;
 
 import 'package:keycast_flutter/keycast_flutter.dart' as _i11;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:mockito/src/dummies.dart' as _i8;
 import 'package:nostr_sdk/event.dart' as _i6;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i4;
+import 'package:openvine/models/known_account.dart' as _i9;
 import 'package:openvine/services/account_deletion_service.dart' as _i2;
 import 'package:openvine/services/auth_service.dart' as _i3;
-import 'package:openvine/services/blossom_server_discovery_service.dart' as _i8;
 import 'package:openvine/services/relay_discovery_service.dart' as _i7;
 import 'package:openvine/services/user_profile_service.dart' as _i10;
 
@@ -163,22 +163,6 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as bool);
 
   @override
-  List<_i8.DiscoveredBlossomServer> get userBlossomServers =>
-      (super.noSuchMethod(
-            Invocation.getter(#userBlossomServers),
-            returnValue: <_i8.DiscoveredBlossomServer>[],
-          )
-          as List<_i8.DiscoveredBlossomServer>);
-
-  @override
-  bool get hasUserBlossomServers =>
-      (super.noSuchMethod(
-            Invocation.getter(#hasUserBlossomServers),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
   Map<String, dynamic> get userStats =>
       (super.noSuchMethod(
             Invocation.getter(#userStats),
@@ -190,7 +174,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
   String get serviceName =>
       (super.noSuchMethod(
             Invocation.getter(#serviceName),
-            returnValue: _i9.dummyValue<String>(
+            returnValue: _i8.dummyValue<String>(
               this,
               Invocation.getter(#serviceName),
             ),
@@ -252,6 +236,46 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
             ),
           )
           as _i5.Future<_i3.AuthResult>);
+
+  @override
+  _i5.Future<void> createAnonymousAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#createAnonymousAccount, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<List<_i9.KnownAccount>> getKnownAccounts() =>
+      (super.noSuchMethod(
+            Invocation.method(#getKnownAccounts, []),
+            returnValue: _i5.Future<List<_i9.KnownAccount>>.value(
+              <_i9.KnownAccount>[],
+            ),
+          )
+          as _i5.Future<List<_i9.KnownAccount>>);
+
+  @override
+  _i5.Future<void> removeKnownAccount(String? pubkeyHex) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeKnownAccount, [pubkeyHex]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> signInForAccount(
+    String? pubkeyHex,
+    _i3.AuthenticationSource? authSource,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#signInForAccount, [pubkeyHex, authSource]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 
   @override
   _i5.Future<_i3.AuthResult> connectWithAmber() =>
@@ -369,20 +393,17 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
   );
 
   @override
+  void onSignerCallbackReceived() => super.noSuchMethod(
+    Invocation.method(#onSignerCallbackReceived, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   _i5.Future<void> refreshCurrentProfile(
     _i10.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
-          )
-          as _i5.Future<void>);
-
-  @override
-  _i5.Future<void> signInAutomatically() =>
-      (super.noSuchMethod(
-            Invocation.method(#signInAutomatically, []),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
           )

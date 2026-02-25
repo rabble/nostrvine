@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -94,12 +93,7 @@ class _LayerTile extends StatelessWidget {
       tileColor: VineTheme.surfaceContainer,
       leading: ReorderableDragStartListener(
         index: index,
-        child: SvgPicture.asset(
-          'assets/icon/menu.svg',
-          width: 24,
-          height: 24,
-          colorFilter: const .mode(VineTheme.primary, .srcIn),
-        ),
+        child: DivineIcon(icon: .menu, size: 24, color: VineTheme.primary),
       ),
       title: switch (layer) {
         final TextLayer layer => _TextLayerPreview(layer: layer),

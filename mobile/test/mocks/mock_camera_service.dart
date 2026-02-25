@@ -25,7 +25,9 @@ class MockCameraService extends CameraService {
   @override
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    DivineCameraLens initialLens = DivineCameraLens.front,
   }) async {
+    _currentLens = initialLens;
     _isInitialized = true;
   }
 

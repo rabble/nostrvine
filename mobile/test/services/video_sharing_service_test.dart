@@ -2,29 +2,31 @@
 // ABOUTME: Covers getShareableUsers and searchUsersToShareWith with TDD approach
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 
-import 'video_sharing_service_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockUserProfileService extends Mock implements UserProfileService {}
 
 // Note: SocialService mock removed - following list now handled by FollowRepository
 // These tests are mostly skipped and need updating to use FollowRepository
-@GenerateMocks([NostrClient, AuthService, UserProfileService])
 void main() {
   late VideoSharingService service;
-  late MockNostrClient mockNostrService;
-  late MockAuthService mockAuthService;
-  late MockUserProfileService mockUserProfileService;
+  late _MockNostrClient mockNostrService;
+  late _MockAuthService mockAuthService;
+  late _MockUserProfileService mockUserProfileService;
 
   setUp(() {
-    mockNostrService = MockNostrClient();
-    mockAuthService = MockAuthService();
-    mockUserProfileService = MockUserProfileService();
+    mockNostrService = _MockNostrClient();
+    mockAuthService = _MockAuthService();
+    mockUserProfileService = _MockUserProfileService();
 
     service = VideoSharingService(
       nostrService: mockNostrService,
@@ -80,13 +82,13 @@ void main() {
 
       // Note: Following list mocks removed - tests need updating to use FollowRepository
       when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[0]),
+        () => mockUserProfileService.getCachedProfile(followingPubkeys[0]),
       ).thenReturn(profile1);
       when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[1]),
+        () => mockUserProfileService.getCachedProfile(followingPubkeys[1]),
       ).thenReturn(profile2);
       when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[2]),
+        () => mockUserProfileService.getCachedProfile(followingPubkeys[2]),
       ).thenReturn(null);
 
       // Act
@@ -114,7 +116,9 @@ void main() {
       final followingPubkeys = ['pubkey1' * 8, 'pubkey2' * 8];
 
       // Note: Following list mocks removed - tests need updating to use FollowRepository
-      when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
+      when(
+        () => mockUserProfileService.getCachedProfile(any()),
+      ).thenReturn(null);
 
       // Share with one user to add to recent
       final now = DateTime.now();
@@ -126,12 +130,12 @@ void main() {
         content: 'Test video',
       );
 
-      when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -160,7 +164,9 @@ void main() {
       final followingPubkeys = List.generate(25, (i) => 'pubkey$i' * 8);
 
       // Note: Following list mocks removed - tests need updating to use FollowRepository
-      when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
+      when(
+        () => mockUserProfileService.getCachedProfile(any()),
+      ).thenReturn(null);
 
       // Act
       final result = await service.getShareableUsers(limit: 10);
@@ -210,13 +216,13 @@ void main() {
 
       // Note: Following list mock removed - tests need updating to use FollowRepository
       when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[0]),
+        () => mockUserProfileService.getCachedProfile(followingPubkeys[0]),
       ).thenReturn(profile1);
       when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[1]),
+        () => mockUserProfileService.getCachedProfile(followingPubkeys[1]),
       ).thenReturn(profile2);
       when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[2]),
+        () => mockUserProfileService.getCachedProfile(followingPubkeys[2]),
       ).thenReturn(profile3);
 
       // Act
@@ -244,7 +250,7 @@ void main() {
 
       // Note: Following list mock removed - tests need updating to use FollowRepository
       when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[0]),
+        () => mockUserProfileService.getCachedProfile(followingPubkeys[0]),
       ).thenReturn(profile);
 
       // Act
@@ -270,7 +276,7 @@ void main() {
 
       // Note: Following list mock removed - tests need updating to use FollowRepository
       when(
-        mockUserProfileService.fetchProfile(hexPubkey),
+        () => mockUserProfileService.fetchProfile(hexPubkey),
       ).thenAnswer((_) async => profile);
 
       // Act
@@ -280,7 +286,7 @@ void main() {
       expect(result.length, 1);
       expect(result[0].pubkey, hexPubkey);
       expect(result[0].displayName, 'Charlie');
-      verify(mockUserProfileService.fetchProfile(hexPubkey)).called(1);
+      verify(() => mockUserProfileService.fetchProfile(hexPubkey)).called(1);
     });
 
     test('is case insensitive for display name search', () async {
@@ -297,7 +303,7 @@ void main() {
 
       // Note: Following list mock removed - tests need updating to use FollowRepository
       when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[0]),
+        () => mockUserProfileService.getCachedProfile(followingPubkeys[0]),
       ).thenReturn(profile);
 
       // Act
@@ -315,7 +321,7 @@ void main() {
 
       // Note: Following list mock removed - tests need updating to use FollowRepository
       when(
-        mockUserProfileService.fetchProfile(hexPubkey),
+        () => mockUserProfileService.fetchProfile(hexPubkey),
       ).thenAnswer((_) async => null);
 
       // Act

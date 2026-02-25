@@ -64,7 +64,7 @@ class AccountDeletionService {
       }
 
       final reason =
-          customReason ?? 'User requested account deletion via diVine app';
+          customReason ?? 'User requested account deletion via Divine app';
 
       Log.info(
         'Starting account deletion for pubkey: $pubkey',

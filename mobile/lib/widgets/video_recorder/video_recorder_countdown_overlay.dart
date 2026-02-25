@@ -1,6 +1,7 @@
 // ABOUTME: Overlay widget that displays a countdown timer before recording starts
 // ABOUTME: Shows large countdown numbers (3, 2, 1) with fade animation
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
@@ -33,7 +34,7 @@ class VideoRecorderCountdownOverlay extends ConsumerWidget {
               style: const TextStyle(
                 color: Color(0xFFFFFFFF),
                 fontSize: 114,
-                fontFamily: 'BricolageGrotesque',
+                fontFamily: VineTheme.fontFamilyBricolage,
                 fontWeight: .w700,
                 height: 1.12,
               ),

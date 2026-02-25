@@ -3,34 +3,45 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'curation_service_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, VideoEventService, LikesRepository, AuthService])
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockLikesRepository extends Mock implements LikesRepository {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(Event('0' * 64, 1, <List<String>>[], ''));
+    registerFallbackValue(<String>[]);
+  });
+
   group('CurationService', () {
     late CurationService curationService;
-    late MockNostrClient mockNostrService;
-    late MockVideoEventService mockVideoEventService;
-    late MockLikesRepository mockLikesRepository;
-    late MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockLikesRepository mockLikesRepository;
+    late _MockAuthService mockAuthService;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockVideoEventService = MockVideoEventService();
-      mockLikesRepository = MockLikesRepository();
-      mockAuthService = MockAuthService();
+      mockNostrService = _MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockLikesRepository = _MockLikesRepository();
+      mockAuthService = _MockAuthService();
 
       // Mock video events for testing
-      when(mockVideoEventService.videoEvents).thenReturn([
+      when(() => mockVideoEventService.videoEvents).thenReturn([
         VideoEvent(
           id: '22e73ca1faedb07dd3e24c1dca52d849aa75c6e4090eb60c532820b782c93da3',
           pubkey: 'test_pubkey',
@@ -40,13 +51,15 @@ void main() {
         ),
       ]);
       // Mock discoveryVideos to avoid MissingStubError during CurationService initialization
-      when(mockVideoEventService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
       // Mock subscribeToEvents to avoid MissingStubError when fetching Editor's Picks list
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => Stream<Event>.empty());
       // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
-      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
+      when(
+        () => mockLikesRepository.getLikeCounts(any()),
+      ).thenAnswer((_) async => {});
 
       curationService = CurationService(
         nostrService: mockNostrService,
@@ -100,8 +113,8 @@ void main() {
 
     test('should handle empty video events gracefully', () {
       // Given: No video events
-      when(mockVideoEventService.videoEvents).thenReturn([]);
-      when(mockVideoEventService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoEventService.videoEvents).thenReturn([]);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
 
       final service = CurationService(
         nostrService: mockNostrService,

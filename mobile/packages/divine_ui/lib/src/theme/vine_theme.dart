@@ -13,6 +13,13 @@ class VineTheme {
   // Typography - Google Fonts
   // ==========================================================================
 
+  /// Font family name for Bricolage Grotesque.
+  ///
+  /// Use this constant instead of hardcoding `'BricolageGrotesque'` in
+  /// `TextStyle(fontFamily: ...)` declarations. For full themed text styles,
+  /// prefer the static methods like [displayLargeFont] instead.
+  static const fontFamilyBricolage = 'BricolageGrotesque';
+
   // --------------------------------------------------------------------------
   // Display styles (Bricolage Grotesque, weight 700)
   // --------------------------------------------------------------------------
@@ -96,14 +103,17 @@ class VineTheme {
       );
 
   /// Title medium: Bricolage Grotesque 800 18/24/0.15
-  static TextStyle titleMediumFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
-        fontSize: 18,
-        fontWeight: FontWeight.w800,
-        height: 24 / 18,
-        letterSpacing: 0.15,
-        color: color,
-      );
+  static TextStyle titleMediumFont({
+    Color color = whiteText,
+    double fontSize = 18,
+    double height = 24 / 18,
+  }) => GoogleFonts.bricolageGrotesque(
+    fontSize: fontSize,
+    fontWeight: FontWeight.w800,
+    height: height,
+    letterSpacing: 0.15,
+    color: color,
+  );
 
   /// Title small: Bricolage Grotesque 800 14/20/0.1
   static TextStyle titleSmallFont({Color color = whiteText}) =>
@@ -383,6 +393,9 @@ class VineTheme {
 
   /// Accent orange/amber color.
   static const Color accentOrange = Color(0xFFFF7640);
+
+  /// Accent orange/amber color.
+  static const Color accentOrangeBackground = Color(0xFF471F10);
 
   /// Accent yellow color.
   static const Color accentYellow = Color(0xFFFFF140);

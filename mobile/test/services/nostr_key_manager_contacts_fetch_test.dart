@@ -62,9 +62,9 @@ void main() {
         // after successful import. This test documents the expected behavior.
       },
       skip:
-          'AuthService._setupUserSession calls _discoverUserBlossomServers '
-          'which uses real WebSocket; fails in test environment (HTTP 400). '
-          'Inject BlossomServerDiscoveryService into AuthService to unit test.',
+          'AuthService._setupUserSession calls discovery services '
+          'which use real WebSocket; fails in test environment (HTTP 400). '
+          'Inject discovery services into AuthService to unit test.',
     );
 
     test('should not fetch contacts if import fails', () async {

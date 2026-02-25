@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -180,7 +179,7 @@ class _VideoMetadataTagsInputState
                 ...tags.map((tag) => _TagChip(tag: tag)),
                 // Show input field if under limit
                 if (tags.length < VideoEditorConstants.tagLimit)
-                  DivineAuthTextField(
+                  DivineTextField(
                     controller: _controller,
                     focusNode: _focusNode,
                     // TODO(l10n): Replace with context.l10n when localization is added.
@@ -188,6 +187,7 @@ class _VideoMetadataTagsInputState
                     contentPadding: .zero,
                     textCapitalization: .none,
                     textInputAction: .done,
+                    maxLines: 1,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
                         RegExp(r'[a-zA-Z0-9\s]'),
@@ -271,13 +271,10 @@ class _TagChip extends ConsumerWidget {
             button: true,
             child: GestureDetector(
               onTap: () => _removeTag(ref),
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: SvgPicture.asset(
-                  'assets/icon/close.svg',
-                  colorFilter: const .mode(Color(0xFF818F8B), .srcIn),
-                ),
+              child: DivineIcon(
+                icon: .x,
+                size: 16,
+                color: VineTheme.onSurfaceMuted,
               ),
             ),
           ),

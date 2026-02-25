@@ -5,6 +5,9 @@ part of 'video_feed_bloc.dart';
 
 /// Feed modes for the unified video feed.
 enum FeedMode {
+  /// Personalized recommended videos.
+  forYou,
+
   /// Videos from users the current user follows.
   home,
 

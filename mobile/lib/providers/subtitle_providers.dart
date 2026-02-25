@@ -1,15 +1,14 @@
-// ABOUTME: Providers for subtitle fetching with dual strategy.
-// ABOUTME: Fast path: parse embedded VTT from REST API. Slow path: query relay
-// ABOUTME: for Kind 39307 subtitle events.
-//
-// NOTE: Subtitle generation is temporarily disabled due to Android build issues
-// with whisper_ggml_plus v1.3.1. See: https://github.com/divinevideo/divine-mobile/issues/1568
+// ABOUTME: Providers for subtitle fetching with triple strategy.
+// ABOUTME: Fast path: parse embedded VTT from REST API. Blossom path: fetch VTT
+// ABOUTME: from media.divine.video/{sha256}/vtt. Slow path: query relay for
+// ABOUTME: Kind 39307 subtitle events.
 
+import 'dart:developer' as developer;
+
+import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-// import 'package:openvine/services/subtitle_generation_service.dart';
 import 'package:openvine/services/subtitle_service.dart';
-// import 'package:openvine/services/whisper_transcription_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'subtitle_providers.g.dart';
@@ -18,20 +17,42 @@ part 'subtitle_providers.g.dart';
 ///
 /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
 ///    directly — zero network cost.
-/// 2. If [textTrackRef] is present (addressable coordinates like
+/// 2. If [sha256] is present, fetch VTT from the Blossom server at
+///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
+///    (VTT not yet generated). Non-blocking.
+/// 3. If [textTrackRef] is present (addressable coordinates like
 ///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
 ///    event and parse its content.
-/// 3. Otherwise returns an empty list (no subtitles available).
+/// 4. Otherwise returns an empty list (no subtitles available).
 @riverpod
 Future<List<SubtitleCue>> subtitleCues(
   Ref ref, {
   required String videoId,
   String? textTrackRef,
   String? textTrackContent,
+  String? sha256,
 }) async {
   // Fast path: REST API already embedded the VTT content
   if (textTrackContent != null && textTrackContent.isNotEmpty) {
     return SubtitleService.parseVtt(textTrackContent);
+  }
+
+  // Blossom path: fetch VTT from media server by sha256
+  if (sha256 != null && sha256.isNotEmpty) {
+    final vttUrl = Uri.parse('https://media.divine.video/$sha256/vtt');
+    try {
+      final response = await http.get(vttUrl);
+      if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
+        return SubtitleService.parseVtt(response.body);
+      }
+      // 404 or empty = VTT not yet generated, fall through silently
+    } catch (e) {
+      developer.log(
+        'Blossom VTT fetch failed for $sha256: $e',
+        name: 'subtitleCues',
+      );
+      // Network error — fall through to relay path
+    }
   }
 
   // No ref at all → no subtitles
@@ -62,38 +83,18 @@ Future<List<SubtitleCue>> subtitleCues(
   return SubtitleService.parseVtt(events.first.content);
 }
 
-/// Tracks per-video subtitle visibility (CC on/off).
+/// Tracks global subtitle visibility (CC on/off).
 ///
-/// State is a map of video IDs to visibility booleans.
-/// Videos not in the map default to subtitles hidden.
+/// When enabled, subtitles are shown on all videos that have them.
+/// This acts as an app-wide preference - toggling on one video
+/// applies to all videos.
 @riverpod
 class SubtitleVisibility extends _$SubtitleVisibility {
   @override
-  Map<String, bool> build() => {};
+  bool build() => false;
 
-  /// Toggle subtitle visibility for a specific video.
-  void toggle(String videoId) {
-    final current = state[videoId] ?? false;
-    state = {...state, videoId: !current};
+  /// Toggle subtitle visibility globally.
+  void toggle() {
+    state = !state;
   }
-
-  /// Check if subtitles are visible for a specific video.
-  bool isVisible(String videoId) => state[videoId] ?? false;
 }
-
-/// Provider for the SubtitleGenerationService.
-/// Requires authentication.
-// @riverpod
-// SubtitleGenerationService subtitleGenerationService(Ref ref) {
-//   final whisperService = WhisperTranscriptionService();
-//   final authService = ref.watch(authServiceProvider);
-//   final eventPublisher = ref.watch(videoEventPublisherProvider);
-//   final nostrClient = ref.watch(nostrServiceProvider);
-
-//   return SubtitleGenerationService(
-//     whisperService: whisperService,
-//     authService: authService,
-//     eventPublisher: eventPublisher,
-//     nostrClient: nostrClient,
-//   );
-// }

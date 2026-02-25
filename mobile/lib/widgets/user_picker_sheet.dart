@@ -208,7 +208,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
         // Search field
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: DivineAuthTextField(
+          child: DivineTextField(
             controller: _searchController,
             label: _useLocalSearch ? 'Filter by name' : 'Search by name',
             textInputAction: TextInputAction.search,

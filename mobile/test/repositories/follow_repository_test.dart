@@ -72,11 +72,13 @@ void main() {
       repository = FollowRepository(
         nostrClient: mockNostrClient,
         personalEventCache: mockPersonalEventCache,
+        // Prevent real WebSocket connections to indexer relays in tests
+        indexerRelayUrls: const [],
       );
     });
 
-    tearDown(() {
-      repository.dispose();
+    tearDown(() async {
+      await repository.dispose();
     });
 
     group('initialization', () {
@@ -99,6 +101,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -117,6 +120,7 @@ void main() {
           fetchFollowingFromApi: (pubkey) async {
             return [testTargetPubkey, testTargetPubkey2];
           },
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -145,6 +149,7 @@ void main() {
             apiCalled = true;
             return [testTargetPubkey, testTargetPubkey2];
           },
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -161,6 +166,7 @@ void main() {
           fetchFollowingFromApi: (pubkey) async {
             throw Exception('Network error');
           },
+          indexerRelayUrls: const [],
         );
 
         // Should not throw, just log warning and continue
@@ -443,6 +449,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -494,6 +501,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -769,9 +777,11 @@ void main() {
       test(
         'returns empty list on timeout',
         () async {
-          // Simulate a slow query that takes longer than the 5 second timeout
+          // Simulate a slow query that exceeds the repository's internal
+          // timeout. The delay must be longer than the repo timeout (5s) but
+          // shorter than the test timeout so cleanup completes cleanly.
           when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
-            await Future<void>.delayed(const Duration(seconds: 10));
+            await Future<void>.delayed(const Duration(seconds: 7));
             return [];
           });
 
@@ -779,7 +789,7 @@ void main() {
 
           expect(followers, isEmpty);
         },
-        timeout: const Timeout(Duration(seconds: 8)),
+        timeout: const Timeout(Duration(seconds: 15)),
       );
     });
 
@@ -869,6 +879,9 @@ void main() {
       });
 
       tearDown(() async {
+        // Dispose repository first to cancel stream listeners,
+        // then close the controller.
+        await repository.dispose();
         await realTimeStreamController.close();
       });
 
@@ -1073,6 +1086,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -1106,6 +1120,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -1153,6 +1168,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();

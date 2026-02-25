@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 
-class CommentsList extends StatelessWidget {
+class CommentsList extends StatefulWidget {
   const CommentsList({
     required this.isOriginalVine,
     required this.scrollController,
@@ -15,6 +15,32 @@ class CommentsList extends StatelessWidget {
 
   final bool isOriginalVine;
   final ScrollController scrollController;
+
+  @override
+  State<CommentsList> createState() => _CommentsListState();
+}
+
+class _CommentsListState extends State<CommentsList> {
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController.removeListener(_onScroll);
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Auto-acknowledge new comments when user scrolls to the top
+    if (!widget.scrollController.hasClients) return;
+    final bloc = context.read<CommentsBloc>();
+    if (widget.scrollController.offset <= 0 && bloc.state.newCommentCount > 0) {
+      bloc.add(const NewCommentsAcknowledged());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,11 +57,11 @@ class CommentsList extends StatelessWidget {
         final threaded = state.threadedComments;
 
         if (threaded.isEmpty) {
-          return CommentsEmptyState(isClassicVine: isOriginalVine);
+          return CommentsEmptyState(isClassicVine: widget.isOriginalVine);
         }
 
         return ListView.builder(
-          controller: scrollController,
+          controller: widget.scrollController,
           itemCount: threaded.length,
           itemBuilder: (context, index) {
             final node = threaded[index];

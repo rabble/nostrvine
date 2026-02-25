@@ -1,8 +1,6 @@
 // ABOUTME: Grid widget displaying user's liked videos on profile page
 // ABOUTME: Shows 3-column grid with thumbnails and heart badge indicator
 
-import 'dart:async';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -10,151 +8,104 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:rxdart/rxdart.dart';
 
 /// Grid widget displaying user's liked videos
 ///
 /// Requires [ProfileLikedVideosBloc] to be provided in the widget tree.
-class ProfileLikedGrid extends StatefulWidget {
+class ProfileLikedGrid extends StatelessWidget {
   const ProfileLikedGrid({required this.isOwnProfile, super.key});
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
 
   @override
-  State<ProfileLikedGrid> createState() => _ProfileLikedGridState();
-}
-
-class _ProfileLikedGridState extends State<ProfileLikedGrid> {
-  late final StreamController<List<VideoEvent>> _videosStreamController;
-
-  @override
-  void initState() {
-    super.initState();
-    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
-  }
-
-  @override
-  void dispose() {
-    _videosStreamController.close();
-    super.dispose();
-  }
-
-  void _onVideoTapped(int index, List<VideoEvent> allVideos) {
-    Log.info(
-      '🎯 ProfileLikedGrid TAP: gridIndex=$index, '
-      'videoId=${allVideos[index].id}',
-      category: LogCategory.video,
-    );
-
-    context.push(
-      PooledFullscreenVideoFeedScreen.path,
-      extra: PooledFullscreenVideoFeedArgs(
-        videosStream: _videosStreamController.stream.startWith(allVideos),
-        initialIndex: index,
-        onLoadMore: () => context.read<ProfileLikedVideosBloc>().add(
-          const ProfileLikedVideosLoadMoreRequested(),
-        ),
-        contextTitle: 'Liked Videos',
-      ),
-    );
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return BlocListener<ProfileLikedVideosBloc, ProfileLikedVideosState>(
-      listener: (context, state) {
-        if (state.status == ProfileLikedVideosStatus.success) {
-          _videosStreamController.add(state.videos);
+    return BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+      builder: (context, state) {
+        if (state.status == ProfileLikedVideosStatus.initial ||
+            state.status == ProfileLikedVideosStatus.syncing ||
+            state.status == ProfileLikedVideosStatus.loading) {
+          return const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          );
         }
-      },
-      child: BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
-        builder: (context, state) {
-          if (state.status == ProfileLikedVideosStatus.initial ||
-              state.status == ProfileLikedVideosStatus.syncing ||
-              state.status == ProfileLikedVideosStatus.loading) {
-            return const Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
-            );
-          }
 
-          if (state.status == ProfileLikedVideosStatus.failure) {
-            return const Center(
-              child: Text(
-                'Error loading liked videos',
-                style: TextStyle(color: Colors.white),
-              ),
-            );
-          }
+        if (state.status == ProfileLikedVideosStatus.failure) {
+          return const Center(
+            child: Text(
+              'Error loading liked videos',
+              style: TextStyle(color: Colors.white),
+            ),
+          );
+        }
 
-          final likedVideos = state.videos;
+        final likedVideos = state.videos;
 
-          if (likedVideos.isEmpty) {
-            return _LikedEmptyState(isOwnProfile: widget.isOwnProfile);
-          }
+        if (likedVideos.isEmpty) {
+          return _LikedEmptyState(isOwnProfile: isOwnProfile);
+        }
 
-          return NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              // Trigger load more when near the bottom
-              if (notification is ScrollUpdateNotification) {
-                final pixels = notification.metrics.pixels;
-                final maxExtent = notification.metrics.maxScrollExtent;
-                // Load more when within 200 pixels of the bottom
-                if (pixels >= maxExtent - 200 &&
-                    state.hasMoreContent &&
-                    !state.isLoadingMore) {
-                  context.read<ProfileLikedVideosBloc>().add(
-                    const ProfileLikedVideosLoadMoreRequested(),
-                  );
-                }
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            // Trigger load more when near the bottom
+            if (notification is ScrollUpdateNotification) {
+              final pixels = notification.metrics.pixels;
+              final maxExtent = notification.metrics.maxScrollExtent;
+              // Load more when within 200 pixels of the bottom
+              if (pixels >= maxExtent - 200 &&
+                  state.hasMoreContent &&
+                  !state.isLoadingMore) {
+                context.read<ProfileLikedVideosBloc>().add(
+                  const ProfileLikedVideosLoadMoreRequested(),
+                );
               }
-              return false;
-            },
-            child: CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.all(4),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 4,
-                          mainAxisSpacing: 4,
-                          childAspectRatio: 1,
-                        ),
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      if (index >= likedVideos.length) {
-                        return const SizedBox.shrink();
-                      }
-
-                      final videoEvent = likedVideos[index];
-                      return _LikedGridTile(
-                        videoEvent: videoEvent,
-                        index: index,
-                        onTap: () => _onVideoTapped(index, likedVideos),
-                      );
-                    }, childCount: likedVideos.length),
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(4),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 4,
+                    mainAxisSpacing: 4,
+                    childAspectRatio: 1,
                   ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    if (index >= likedVideos.length) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final videoEvent = likedVideos[index];
+                    return _LikedGridTile(
+                      videoEvent: videoEvent,
+                      index: index,
+                      allVideos: likedVideos,
+                    );
+                  }, childCount: likedVideos.length),
                 ),
-                // Loading indicator at the bottom
-                if (state.isLoadingMore)
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: VineTheme.vineGreen,
-                        ),
+              ),
+              // Loading indicator at the bottom
+              if (state.isLoadingMore)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: VineTheme.vineGreen,
                       ),
                     ),
                   ),
-              ],
-            ),
-          );
-        },
-      ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -206,18 +157,38 @@ class _LikedGridTile extends StatelessWidget {
   const _LikedGridTile({
     required this.videoEvent,
     required this.index,
-    required this.onTap,
+    required this.allVideos,
   });
 
   final VideoEvent videoEvent;
   final int index;
-  final VoidCallback onTap;
+  final List<VideoEvent> allVideos;
 
   @override
   Widget build(BuildContext context) => Semantics(
     label: 'liked_video_thumbnail_$index',
     child: GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        Log.info(
+          '🎯 ProfileLikedGrid TAP: gridIndex=$index, '
+          'videoId=${videoEvent.id}',
+          category: LogCategory.video,
+        );
+        // Use LikedVideosFeedSource for fullscreen playback
+        context.push(
+          FullscreenVideoFeedScreen.path,
+          extra: FullscreenVideoFeedArgs(
+            source: LikedVideosFeedSource(allVideos),
+            initialIndex: index,
+            trafficSource: ViewTrafficSource.profile,
+          ),
+        );
+        Log.info(
+          '✅ ProfileLikedGrid: Called pushVideoFeed with '
+          'LikedVideosFeedSource at index $index',
+          category: LogCategory.video,
+        );
+      },
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(

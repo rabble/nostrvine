@@ -1,6 +1,8 @@
 // ABOUTME: Flash mode enum for camera recording
 // ABOUTME: Defines flash modes (auto, torch, off) with corresponding icon assets
 
+import 'package:divine_ui/divine_ui.dart';
+
 /// Camera flash mode options.
 enum DivineFlashMode {
   /// Auto flash mode.
@@ -12,10 +14,10 @@ enum DivineFlashMode {
   /// Flash off mode.
   off;
 
-  /// Path to SVG asset representing the flash mode.
-  String get iconPath => switch (this) {
-    .off => 'assets/icon/flash_off.svg',
-    .torch => 'assets/icon/flash_on.svg',
-    .auto => 'assets/icon/flash_auto.svg',
+  /// Icon representing the flash mode.
+  DivineIconName get icon => switch (this) {
+    .off => .lightningSlash,
+    .torch => .lightning,
+    .auto => .lightningA,
   };
 }

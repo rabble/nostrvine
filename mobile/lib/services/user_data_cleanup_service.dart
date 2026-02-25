@@ -56,7 +56,6 @@ class UserDataCleanupService {
   /// redirect logic needs following_list_ at login time before relay responds.
   static const List<String> identityChangePrefixes = [
     'following_list_', // follow cache per pubkey
-    'blossom_server_discovery_', // blossom server cache per npub
     'relay_discovery_', // relay discovery cache per npub
   ];
 

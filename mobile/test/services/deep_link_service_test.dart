@@ -99,14 +99,83 @@ void main() {
         expect(result.npub, isNull);
       });
 
-      test('rejects profile URL with extra path segments', () {
-        const url = 'https://divine.video/profile/npub123/extra';
+      test('parses profile URL with video index', () {
+        const npub = 'npub1abc123def456';
+        final url = 'https://divine.video/profile/$npub/3';
 
         final result = service.parseDeepLink(url);
 
+        expect(result.type, equals(DeepLinkType.profile));
+        expect(result.npub, equals(npub));
+        expect(result.index, equals(3));
+      });
+
+      test('parses profile URL with non-numeric index as null', () {
+        const npub = 'npub1abc123def456';
+        final url = 'https://divine.video/profile/$npub/extra';
+
+        final result = service.parseDeepLink(url);
+
+        expect(result.type, equals(DeepLinkType.profile));
+        expect(result.npub, equals(npub));
+        expect(result.index, isNull);
+      });
+    });
+
+    group('Hashtag URL Parsing', () {
+      test('parses /hashtag/{tag} correctly', () {
+        final result = service.parseDeepLink(
+          'https://divine.video/hashtag/vibes',
+        );
+
+        expect(result.type, equals(DeepLinkType.hashtag));
+        expect(result.hashtag, equals('vibes'));
+        expect(result.index, isNull);
+      });
+
+      test('parses /hashtag/{tag}/{index} with index', () {
+        final result = service.parseDeepLink(
+          'https://divine.video/hashtag/music/5',
+        );
+
+        expect(result.type, equals(DeepLinkType.hashtag));
+        expect(result.hashtag, equals('music'));
+        expect(result.index, equals(5));
+      });
+
+      test('rejects hashtag URL without tag', () {
+        final result = service.parseDeepLink('https://divine.video/hashtag');
+
         expect(result.type, equals(DeepLinkType.unknown));
-        // TODO(any): Fix and re-enable this test
-      }, skip: true);
+      });
+    });
+
+    group('Search URL Parsing', () {
+      test('parses /search/{term} correctly', () {
+        final result = service.parseDeepLink(
+          'https://divine.video/search/flutter',
+        );
+
+        expect(result.type, equals(DeepLinkType.search));
+        expect(result.searchTerm, equals('flutter'));
+        expect(result.index, isNull);
+      });
+
+      test('parses /search/{term}/{index} with index', () {
+        final result = service.parseDeepLink(
+          'https://divine.video/search/dart/2',
+        );
+
+        expect(result.type, equals(DeepLinkType.search));
+        expect(result.searchTerm, equals('dart'));
+        expect(result.index, equals(2));
+      });
+
+      test('rejects search URL without term', () {
+        final result = service.parseDeepLink('https://divine.video/search');
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
     });
 
     group('Unknown URL Patterns', () {
@@ -196,6 +265,68 @@ void main() {
         expect(deepLink.type, equals(DeepLinkType.unknown));
         expect(deepLink.videoId, isNull);
         expect(deepLink.npub, isNull);
+      });
+
+      test('creates hashtag deep link with index', () {
+        const deepLink = DeepLink(
+          type: DeepLinkType.hashtag,
+          hashtag: 'art',
+          index: 2,
+        );
+
+        expect(deepLink.type, equals(DeepLinkType.hashtag));
+        expect(deepLink.hashtag, equals('art'));
+        expect(deepLink.index, equals(2));
+      });
+
+      test('creates search deep link', () {
+        const deepLink = DeepLink(
+          type: DeepLinkType.search,
+          searchTerm: 'test',
+        );
+
+        expect(deepLink.type, equals(DeepLinkType.search));
+        expect(deepLink.searchTerm, equals('test'));
+      });
+    });
+
+    group('$DeepLink toString', () {
+      test('formats video deep link', () {
+        const link = DeepLink(type: DeepLinkType.video, videoId: 'abc');
+        expect(link.toString(), equals('DeepLink(type: video, videoId: abc)'));
+      });
+
+      test('formats profile deep link with index', () {
+        const link = DeepLink(
+          type: DeepLinkType.profile,
+          npub: 'npub1x',
+          index: 2,
+        );
+        expect(
+          link.toString(),
+          equals('DeepLink(type: profile, npub: npub1x, index: 2)'),
+        );
+      });
+
+      test('formats hashtag deep link', () {
+        const link = DeepLink(type: DeepLinkType.hashtag, hashtag: 'art');
+        expect(
+          link.toString(),
+          equals('DeepLink(type: hashtag, hashtag: art)'),
+        );
+      });
+
+      test('formats search deep link', () {
+        const link = DeepLink(type: DeepLinkType.search, searchTerm: 'q');
+        expect(
+          link.toString(),
+          equals('DeepLink(type: search, searchTerm: q)'),
+        );
+      });
+
+      test('formats unknown deep link', () {
+        const link = DeepLink(type: DeepLinkType.unknown);
+        expect(link.toString(), equals('DeepLink(type: unknown)'));
       });
     });
   });

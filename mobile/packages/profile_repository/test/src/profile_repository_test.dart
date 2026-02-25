@@ -230,6 +230,53 @@ void main() {
         ).called(1);
       });
 
+      test('uses external nip05 directly when provided', () async {
+        when(() => mockProfileEvent.content).thenReturn(
+          jsonEncode({
+            'display_name': 'Test',
+            'nip05': 'alice@example.com',
+          }),
+        );
+
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test',
+          nip05: 'alice@example.com',
+        );
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
+              'display_name': 'Test',
+              'nip05': 'alice@example.com',
+            },
+          ),
+        ).called(1);
+      });
+
+      test('external nip05 takes precedence over username', () async {
+        when(() => mockProfileEvent.content).thenReturn(
+          jsonEncode({
+            'display_name': 'Test',
+            'nip05': 'alice@example.com',
+          }),
+        );
+
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test',
+          username: 'alice',
+          nip05: 'alice@example.com',
+        );
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
+              'display_name': 'Test',
+              'nip05': 'alice@example.com',
+            },
+          ),
+        ).called(1);
+      });
+
       test('omits null optional fields', () async {
         await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
@@ -1302,6 +1349,80 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'returns server error message when server returns '
+        'non-200 with JSON error body',
+        () async {
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value('authHeader'));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) => Future.value(
+              Response('{"error": "Username too short"}', 400),
+            ),
+          );
+
+          final result = await profileRepository.claimUsername(
+            username: 'ab',
+          );
+
+          expect(
+            result,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Username too short',
+            ),
+          );
+        },
+      );
+
+      test(
+        'returns error with default message when server returns '
+        'non-200 with unparseable body',
+        () async {
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value('authHeader'));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) => Future.value(Response('not json at all', 400)),
+          );
+
+          final result = await profileRepository.claimUsername(
+            username: 'baduser',
+          );
+
+          expect(
+            result,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Invalid username format',
+            ),
+          );
+        },
+      );
     });
 
     group('UsernameClaimResult', () {
@@ -1312,118 +1433,160 @@ void main() {
     });
 
     group('checkUsernameAvailability', () {
-      test('returns UsernameAvailable when username not in '
-          'names map', () async {
+      // Helper: stub name-server check endpoint
+      void stubNameServerCheck(
+        String username, {
+        bool available = true,
+        String? reason,
+        int statusCode = 200,
+      }) {
         when(
-          () => mockHttpClient.get(any()),
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://names.divine.video/api/username/check/$username',
+            ),
+          ),
         ).thenAnswer(
           (_) async => Response(
             jsonEncode({
-              'names': {'existinguser': 'pubkey123'},
+              'available': available,
+              'reason': ?reason,
             }),
-            200,
+            statusCode,
           ),
         );
+      }
 
-        final result = await profileRepository.checkUsernameAvailability(
-          username: 'newuser',
-        );
-
-        expect(result, equals(const UsernameAvailable()));
-
-        verify(
+      // Helper: stub keycast NIP-05 endpoint
+      void stubKeycastCheck(
+        String username, {
+        bool taken = false,
+        int statusCode = 200,
+      }) {
+        when(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://divine.video/.well-known/nostr.json?name=newuser',
+              'https://login.divine.video/.well-known/nostr.json'
+              '?name=$username',
             ),
           ),
-        ).called(1);
-      });
-
-      test('returns UsernameAvailable when names map is null', () async {
-        when(
-          () => mockHttpClient.get(any()),
-        ).thenAnswer(
-          (_) async => Response(
-            jsonEncode({'relays': <String, dynamic>{}}),
-            200,
-          ),
-        );
-
-        final result = await profileRepository.checkUsernameAvailability(
-          username: 'testuser',
-        );
-
-        expect(result, equals(const UsernameAvailable()));
-
-        verify(
-          () => mockHttpClient.get(
-            Uri.parse(
-              'https://divine.video/.well-known/nostr.json?name=testuser',
-            ),
-          ),
-        ).called(1);
-      });
-
-      test('returns UsernameAvailable when names map is empty', () async {
-        when(
-          () => mockHttpClient.get(any()),
-        ).thenAnswer(
-          (_) async => Response(
-            jsonEncode({'names': <String, dynamic>{}}),
-            200,
-          ),
-        );
-
-        final result = await profileRepository.checkUsernameAvailability(
-          username: 'testuser',
-        );
-
-        expect(result, equals(const UsernameAvailable()));
-
-        verify(
-          () => mockHttpClient.get(
-            Uri.parse(
-              'https://divine.video/.well-known/nostr.json?name=testuser',
-            ),
-          ),
-        ).called(1);
-      });
-
-      test('returns UsernameTaken when username exists in names map', () async {
-        when(
-          () => mockHttpClient.get(any()),
         ).thenAnswer(
           (_) async => Response(
             jsonEncode({
-              'names': {
-                'alice': 'pubkey1',
-                'bob': 'pubkey2',
-                'takenuser': 'pubkey3',
-              },
+              'names': taken ? {username: 'pubkey123'} : <String, dynamic>{},
             }),
-            200,
+            statusCode,
           ),
         );
+      }
+
+      test(
+        'returns UsernameAvailable when both servers say available',
+        () async {
+          stubNameServerCheck('newuser');
+          stubKeycastCheck('newuser');
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'newuser',
+          );
+
+          expect(result, equals(const UsernameAvailable()));
+        },
+      );
+
+      test(
+        'returns UsernameTaken when name-server says not available',
+        () async {
+          stubNameServerCheck('takenuser', available: false);
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'takenuser',
+          );
+
+          expect(result, equals(const UsernameTaken()));
+        },
+      );
+
+      test('returns UsernameTaken when name-server says available but '
+          'keycast has it', () async {
+        stubNameServerCheck('keycastuser');
+        stubKeycastCheck('keycastuser', taken: true);
 
         final result = await profileRepository.checkUsernameAvailability(
-          username: 'takenuser',
+          username: 'keycastuser',
         );
 
         expect(result, equals(const UsernameTaken()));
-
-        verify(
-          () => mockHttpClient.get(
-            Uri.parse(
-              'https://divine.video/.well-known/nostr.json?name=takenuser',
-            ),
-          ),
-        ).called(1);
       });
 
-      test('returns UsernameCheckError when HTTP status is not 200', () async {
+      test('returns UsernameAvailable when keycast is unreachable '
+          'but name-server says available', () async {
+        stubNameServerCheck('testuser');
         when(
-          () => mockHttpClient.get(any()),
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://login.divine.video/.well-known/nostr.json'
+              '?name=testuser',
+            ),
+          ),
+        ).thenThrow(Exception('Connection timeout'));
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        // Keycast failure is non-blocking
+        expect(result, equals(const UsernameAvailable()));
+      });
+
+      test('returns UsernameInvalidFormat for names with dots', () async {
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'mr.',
+        );
+
+        expect(result, isA<UsernameInvalidFormat>());
+      });
+
+      test(
+        'returns UsernameInvalidFormat for names with underscores',
+        () async {
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'my_name',
+          );
+
+          expect(result, isA<UsernameInvalidFormat>());
+        },
+      );
+
+      test(
+        'returns UsernameInvalidFormat for names starting with hyphen',
+        () async {
+          final result = await profileRepository.checkUsernameAvailability(
+            username: '-alice',
+          );
+
+          expect(result, isA<UsernameInvalidFormat>());
+        },
+      );
+
+      test(
+        'returns UsernameInvalidFormat for names ending with hyphen',
+        () async {
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'alice-',
+          );
+
+          expect(result, isA<UsernameInvalidFormat>());
+        },
+      );
+
+      test('returns UsernameCheckError when name-server returns 500', () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://names.divine.video/api/username/check/testuser',
+            ),
+          ),
         ).thenAnswer(
           (_) async => Response('Server error', 500),
         );
@@ -1440,19 +1603,15 @@ void main() {
             'Server returned status 500',
           ),
         );
-
-        verify(
-          () => mockHttpClient.get(
-            Uri.parse(
-              'https://divine.video/.well-known/nostr.json?name=testuser',
-            ),
-          ),
-        ).called(1);
       });
 
       test('returns UsernameCheckError on network exception', () async {
         when(
-          () => mockHttpClient.get(any()),
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://names.divine.video/api/username/check/testuser',
+            ),
+          ),
         ).thenThrow(Exception('Connection timeout'));
 
         final result = await profileRepository.checkUsernameAvailability(
@@ -1467,112 +1626,83 @@ void main() {
             'Network error: Exception: Connection timeout',
           ),
         );
+      });
+
+      test('normalizes username to lowercase', () async {
+        stubNameServerCheck('alice');
+        stubKeycastCheck('alice');
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'Alice',
+        );
+
+        expect(result, equals(const UsernameAvailable()));
 
         verify(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://divine.video/.well-known/nostr.json?name=testuser',
+              'https://names.divine.video/api/username/check/alice',
             ),
           ),
         ).called(1);
       });
 
-      test('returns UsernameCheckError on JSON parsing error', () async {
-        when(
-          () => mockHttpClient.get(any()),
-        ).thenAnswer(
-          (_) async => Response('invalid json', 200),
+      test('returns UsernameInvalidFormat with server reason for '
+          'validation failures', () async {
+        stubNameServerCheck(
+          'bad',
+          available: false,
+          reason: 'Username contains invalid characters',
         );
 
         final result = await profileRepository.checkUsernameAvailability(
-          username: 'testuser',
+          username: 'bad',
         );
 
         expect(
           result,
-          isA<UsernameCheckError>().having(
-            (e) => e.message,
-            'message',
-            contains('Network error'),
+          isA<UsernameInvalidFormat>().having(
+            (e) => e.reason,
+            'reason',
+            'Username contains invalid characters',
           ),
         );
-
-        verify(
-          () => mockHttpClient.get(
-            Uri.parse(
-              'https://divine.video/.well-known/nostr.json?name=testuser',
-            ),
-          ),
-        ).called(1);
       });
 
-      test(
-        'returns UsernameTaken when username differs only in case',
-        () async {
-          when(
-            () => mockHttpClient.get(any()),
-          ).thenAnswer(
-            (_) async => Response(
-              jsonEncode({
-                'names': {'alice': 'pubkey1'},
-              }),
-              200,
-            ),
-          );
-
-          final result = await profileRepository.checkUsernameAvailability(
-            username: 'Alice',
-          );
-
-          expect(result, equals(const UsernameTaken()));
-        },
-      );
-
-      test(
-        'returns UsernameTaken for all-caps input when lowercase exists',
-        () async {
-          when(
-            () => mockHttpClient.get(any()),
-          ).thenAnswer(
-            (_) async => Response(
-              jsonEncode({
-                'names': {'alice': 'pubkey1'},
-              }),
-              200,
-            ),
-          );
-
-          final result = await profileRepository.checkUsernameAvailability(
-            username: 'ALICE',
-          );
-
-          expect(result, equals(const UsernameTaken()));
-        },
-      );
-
-      test('sends lowercase username in query parameter', () async {
-        when(
-          () => mockHttpClient.get(any()),
-        ).thenAnswer(
-          (_) async => Response(
-            jsonEncode({
-              'names': {'testuser': 'pubkey1'},
-            }),
-            200,
-          ),
+      test('returns UsernameInvalidFormat for hyphen reason', () async {
+        stubNameServerCheck(
+          'ok',
+          available: false,
+          reason: 'Cannot start with hyphen',
         );
-
-        await profileRepository.checkUsernameAvailability(
-          username: 'TestUser',
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'ok',
         );
+        expect(result, isA<UsernameInvalidFormat>());
+      });
 
-        verify(
-          () => mockHttpClient.get(
-            Uri.parse(
-              'https://divine.video/.well-known/nostr.json?name=testuser',
-            ),
-          ),
-        ).called(1);
+      test('returns UsernameInvalidFormat for emoji reason', () async {
+        stubNameServerCheck(
+          'ok',
+          available: false,
+          reason: 'Username contains emoji',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'ok',
+        );
+        expect(result, isA<UsernameInvalidFormat>());
+      });
+
+      test('returns UsernameInvalidFormat for DNS reason', () async {
+        stubNameServerCheck(
+          'ok',
+          available: false,
+          reason: 'Not a valid DNS label',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'ok',
+        );
+        expect(result, isA<UsernameInvalidFormat>());
       });
     });
 

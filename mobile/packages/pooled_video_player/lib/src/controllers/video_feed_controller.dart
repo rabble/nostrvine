@@ -232,18 +232,35 @@ class VideoFeedController extends ChangeNotifier {
     _loadedPlayers.keys.toList().forEach(_releasePlayer);
   }
 
-  /// Play the current video.
+  /// Play the current video (user-initiated resume).
+  ///
+  /// Resumes from current position without seeking. Distinct from
+  /// [_playVideo] which seeks to start for swipe transitions.
   void play() {
     if (!_isActive || !isVideoReady(_currentIndex)) return;
     _isPaused = false;
-    _playVideo(_currentIndex);
+    final player = _loadedPlayers[_currentIndex]?.player;
+    if (player != null) {
+      unawaited(player.setVolume(100));
+      if (!player.state.playing) {
+        unawaited(player.play());
+      }
+      _startPositionTimer(_currentIndex);
+    }
     notifyListeners();
   }
 
-  /// Pause the current video.
+  /// Pause the current video (user-initiated).
+  ///
+  /// Actually pauses the player (not just mute). Distinct from [_pauseVideo]
+  /// which only mutes for smooth swipe transitions.
   void pause() {
     _isPaused = true;
-    _pauseVideo(_currentIndex);
+    final player = _loadedPlayers[_currentIndex]?.player;
+    if (player != null) {
+      unawaited(player.pause());
+    }
+    _stopPositionTimer(_currentIndex);
     notifyListeners();
   }
 
@@ -333,9 +350,32 @@ class VideoFeedController extends ChangeNotifier {
       final video = _videos[index];
       final pooledPlayer = await pool.getPlayer(video.url);
 
-      if (_isDisposed) return;
+      // Guard: index may have been released during the await (e.g., the
+      // preload window shifted while we were waiting for the pool).
+      if (_isDisposed || !_loadingIndices.contains(index)) return;
 
       _loadedPlayers[index] = pooledPlayer;
+
+      // Register a callback so we learn when the pool evicts this player.
+      // The identity check in _onPlayerEvicted ensures stale callbacks
+      // (from previously-released indices that loaded the same player)
+      // are ignored.
+      pooledPlayer.addOnDisposedCallback(
+        () => _onPlayerEvicted(index, pooledPlayer),
+      );
+
+      // The pool may have already evicted (and disposed) this player during
+      // a concurrent _loadPlayer call. For example, with maxPlayers=2 and
+      // three concurrent loads, _loadPlayer(2) can evict url0 before
+      // _loadPlayer(0) resumes to store its result. The eviction callback
+      // fires as a no-op (identity check fails because _loadedPlayers[0]
+      // was still null), so we must catch it here.
+      if (pooledPlayer.isDisposed) {
+        _loadedPlayers.remove(index);
+        _loadStates.remove(index);
+        _notifyIndex(index);
+        return;
+      }
 
       // Resolve media source via hook (for caching)
       final resolvedSource = mediaSourceResolver?.call(video) ?? video.url;
@@ -344,7 +384,8 @@ class VideoFeedController extends ChangeNotifier {
       await pooledPlayer.player.open(Media(resolvedSource), play: false);
       await pooledPlayer.player.setPlaylistMode(PlaylistMode.single);
 
-      if (_isDisposed) return;
+      // Guard: index may have been released during open/setPlaylistMode.
+      if (_isDisposed || !_loadingIndices.contains(index)) return;
 
       // Set up buffer subscription
       unawaited(_bufferSubscriptions[index]?.cancel());
@@ -364,8 +405,11 @@ class VideoFeedController extends ChangeNotifier {
       if (!pooledPlayer.player.state.buffering) {
         _onBufferReady(index);
       }
-    } on Exception catch (e) {
-      debugPrint('PooledVideoPlayer: Failed to load video at index $index: $e');
+    } on Exception catch (e, stack) {
+      debugPrint(
+        'VideoFeedController: Failed to load index $index '
+        '(videoCount=${_videos.length}): $e\n$stack',
+      );
       if (!_isDisposed) {
         _loadStates[index] = LoadState.error;
         _notifyIndex(index);
@@ -373,6 +417,28 @@ class VideoFeedController extends ChangeNotifier {
     } finally {
       _loadingIndices.remove(index);
     }
+  }
+
+  /// Called when a [PooledPlayer] is disposed externally (e.g., by pool
+  /// eviction while loading a different video).
+  ///
+  /// Updates the widget state so the UI shows a placeholder instead of
+  /// trying to render with a disposed [VideoController], which would crash
+  /// with "A `ValueNotifier<int?>` was used after being disposed."
+  void _onPlayerEvicted(int index, PooledPlayer evictedPlayer) {
+    if (_isDisposed) return;
+    // Only act if the evicted player is still the one tracked at this index.
+    // After _releasePlayer or a subsequent _loadPlayer, _loadedPlayers[index]
+    // will either be null or a different player, making this callback stale.
+    if (_loadedPlayers[index] != evictedPlayer) return;
+
+    _stopPositionTimer(index);
+    unawaited(_bufferSubscriptions[index]?.cancel());
+    _bufferSubscriptions.remove(index);
+    _loadedPlayers.remove(index);
+    _loadStates.remove(index);
+    _loadingIndices.remove(index);
+    _notifyIndex(index);
   }
 
   void _onBufferReady(int index) {
@@ -394,10 +460,9 @@ class VideoFeedController extends ChangeNotifier {
       // Start position callback timer for current video
       _startPositionTimer(index);
     } else {
-      // Preloaded video - pause it and keep muted to prevent audio leaks.
-      // Volume will be set to 100 when this video becomes current via
-      // _playVideo().
-      unawaited(player.pause());
+      // Keep playing muted — avoids expensive pause→resume rebuffer stall
+      // in mpv. Volume is already 0 from _loadPlayer, so no audio leak.
+      // When this video becomes current, _playVideo will unmute and seek.
     }
 
     unawaited(_bufferSubscriptions[index]?.cancel());
@@ -408,17 +473,27 @@ class VideoFeedController extends ChangeNotifier {
 
   void _playVideo(int index) {
     final player = _loadedPlayers[index]?.player;
-    if (player != null && !player.state.playing) {
-      unawaited(player.setVolume(100));
+    if (player == null) return;
+
+    // Seek to start — also serves as a frame refresh trigger for media_kit's
+    // Video widget. Without it, the widget may not receive a fresh frame
+    // when first mounted, causing the video to appear frozen.
+    unawaited(player.seek(Duration.zero));
+    // Unmute — video may already be playing (muted preload) or paused.
+    unawaited(player.setVolume(100));
+    // Ensure playing regardless of current state.
+    if (!player.state.playing) {
       unawaited(player.play());
-      _startPositionTimer(index);
     }
+    _startPositionTimer(index);
   }
 
   void _pauseVideo(int index) {
     final player = _loadedPlayers[index]?.player;
-    if (player != null && player.state.playing) {
-      unawaited(player.pause());
+    if (player != null) {
+      // Mute instead of pausing — keeps the video playing silently so
+      // resuming (via _playVideo) avoids the expensive mpv rebuffer stall.
+      unawaited(player.setVolume(0));
     }
     _stopPositionTimer(index);
   }

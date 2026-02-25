@@ -62,7 +62,12 @@ class FullscreenFeedBloc
        _onLoadMore = onLoadMore,
        _mediaCache = mediaCache,
        _blossomAuthService = blossomAuthService,
-       super(FullscreenFeedState(currentIndex: initialIndex)) {
+       super(
+         FullscreenFeedState(
+           currentIndex: initialIndex,
+           canLoadMore: onLoadMore != null,
+         ),
+       ) {
     on<FullscreenFeedStarted>(_onStarted);
     on<FullscreenFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<FullscreenFeedIndexChanged>(_onIndexChanged);
@@ -304,11 +309,6 @@ class FullscreenFeedBloc
     Emitter<FullscreenFeedState> emit,
   ) {
     if (event.position >= maxPlaybackDuration) {
-      Log.debug(
-        'FullscreenFeedBloc: Loop enforcement at ${event.position.inMilliseconds}ms',
-        name: 'FullscreenFeedBloc',
-        category: LogCategory.video,
-      );
       emit(
         state.copyWith(
           seekCommand: SeekCommand(index: event.index, position: Duration.zero),

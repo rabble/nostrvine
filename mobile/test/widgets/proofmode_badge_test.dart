@@ -23,7 +23,7 @@ void main() {
       expect(find.byIcon(Icons.verified), findsOneWidget);
 
       // Should display correct text
-      expect(find.text('Fully Verified'), findsOneWidget);
+      expect(find.text('Human Made'), findsOneWidget);
 
       // Check the badge container exists
       expect(find.byType(Container), findsWidgets);

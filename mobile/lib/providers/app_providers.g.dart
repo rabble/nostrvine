@@ -556,12 +556,16 @@ final class RelaySetChangeBridgeProvider
 String _$relaySetChangeBridgeHash() =>
     r'69fd17051348b968d05f92adbaf87cc6844dea05';
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 @ProviderFor(analyticsService)
 const analyticsServiceProvider = AnalyticsServiceProvider._();
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 final class AnalyticsServiceProvider
     extends
@@ -571,7 +575,9 @@ final class AnalyticsServiceProvider
           AnalyticsService
         >
     with $Provider<AnalyticsService> {
-  /// Analytics service with opt-out support
+  /// Analytics service with opt-out support.
+  ///
+  /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
   const AnalyticsServiceProvider._()
     : super(
         from: null,
@@ -605,7 +611,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'8ce8c6be2430cd9f271eb66d8e7fe6fcfbae0154';
+String _$analyticsServiceHash() => r'63092a98aa600d9e6e5dd4402ee303ca9eb06c33';
 
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state
@@ -665,6 +671,218 @@ final class AgeVerificationServiceProvider
 
 String _$ageVerificationServiceHash() =>
     r'e866f0341e541ba27ba2b4e4278ed4b35edb8d8b';
+
+/// Content filter service for per-category Show/Warn/Hide preferences.
+/// keepAlive ensures preferences persist and are consistent across the app.
+
+@ProviderFor(contentFilterService)
+const contentFilterServiceProvider = ContentFilterServiceProvider._();
+
+/// Content filter service for per-category Show/Warn/Hide preferences.
+/// keepAlive ensures preferences persist and are consistent across the app.
+
+final class ContentFilterServiceProvider
+    extends
+        $FunctionalProvider<
+          ContentFilterService,
+          ContentFilterService,
+          ContentFilterService
+        >
+    with $Provider<ContentFilterService> {
+  /// Content filter service for per-category Show/Warn/Hide preferences.
+  /// keepAlive ensures preferences persist and are consistent across the app.
+  const ContentFilterServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'contentFilterServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$contentFilterServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ContentFilterService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ContentFilterService create(Ref ref) {
+    return contentFilterService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ContentFilterService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ContentFilterService>(value),
+    );
+  }
+}
+
+String _$contentFilterServiceHash() =>
+    r'72bd9f0073806dd7fe95434fb889c3cb5f5ba750';
+
+/// Tracks content filter preference changes. Feed providers watch this
+/// to rebuild when the user changes a Show/Warn/Hide setting.
+
+@ProviderFor(contentFilterVersion)
+const contentFilterVersionProvider = ContentFilterVersionProvider._();
+
+/// Tracks content filter preference changes. Feed providers watch this
+/// to rebuild when the user changes a Show/Warn/Hide setting.
+
+final class ContentFilterVersionProvider
+    extends $FunctionalProvider<int, int, int>
+    with $Provider<int> {
+  /// Tracks content filter preference changes. Feed providers watch this
+  /// to rebuild when the user changes a Show/Warn/Hide setting.
+  const ContentFilterVersionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'contentFilterVersionProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$contentFilterVersionHash();
+
+  @$internal
+  @override
+  $ProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  int create(Ref ref) {
+    return contentFilterVersion(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$contentFilterVersionHash() =>
+    r'e8a53f89965296fd1a5009a45f685fbe425bfa2e';
+
+/// Account label service for self-labeling content (NIP-32 Kind 1985).
+
+@ProviderFor(accountLabelService)
+const accountLabelServiceProvider = AccountLabelServiceProvider._();
+
+/// Account label service for self-labeling content (NIP-32 Kind 1985).
+
+final class AccountLabelServiceProvider
+    extends
+        $FunctionalProvider<
+          AccountLabelService,
+          AccountLabelService,
+          AccountLabelService
+        >
+    with $Provider<AccountLabelService> {
+  /// Account label service for self-labeling content (NIP-32 Kind 1985).
+  const AccountLabelServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'accountLabelServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$accountLabelServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AccountLabelService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AccountLabelService create(Ref ref) {
+    return accountLabelService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AccountLabelService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AccountLabelService>(value),
+    );
+  }
+}
+
+String _$accountLabelServiceHash() =>
+    r'c72d91b64d2c4522a482868be6bd053eba21a24b';
+
+/// Moderation label service for subscribing to Kind 1985 labeler events.
+
+@ProviderFor(moderationLabelService)
+const moderationLabelServiceProvider = ModerationLabelServiceProvider._();
+
+/// Moderation label service for subscribing to Kind 1985 labeler events.
+
+final class ModerationLabelServiceProvider
+    extends
+        $FunctionalProvider<
+          ModerationLabelService,
+          ModerationLabelService,
+          ModerationLabelService
+        >
+    with $Provider<ModerationLabelService> {
+  /// Moderation label service for subscribing to Kind 1985 labeler events.
+  const ModerationLabelServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'moderationLabelServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$moderationLabelServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ModerationLabelService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ModerationLabelService create(Ref ref) {
+    return moderationLabelService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ModerationLabelService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ModerationLabelService>(value),
+    );
+  }
+}
+
+String _$moderationLabelServiceHash() =>
+    r'17757c116c5d70c141a10d508898fecda07c923d';
 
 /// Audio sharing preference service for managing whether audio is available
 /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
@@ -781,6 +999,65 @@ final class AudioDevicePreferenceServiceProvider
 
 String _$audioDevicePreferenceServiceHash() =>
     r'9880cf38a5d5ae812a798e7a5c4fa96ffa3578d6';
+
+/// Language preference service for managing the user's preferred content
+/// language. Used for NIP-32 self-labeling on published video events.
+/// keepAlive ensures setting persists across widget rebuilds.
+
+@ProviderFor(languagePreferenceService)
+const languagePreferenceServiceProvider = LanguagePreferenceServiceProvider._();
+
+/// Language preference service for managing the user's preferred content
+/// language. Used for NIP-32 self-labeling on published video events.
+/// keepAlive ensures setting persists across widget rebuilds.
+
+final class LanguagePreferenceServiceProvider
+    extends
+        $FunctionalProvider<
+          LanguagePreferenceService,
+          LanguagePreferenceService,
+          LanguagePreferenceService
+        >
+    with $Provider<LanguagePreferenceService> {
+  /// Language preference service for managing the user's preferred content
+  /// language. Used for NIP-32 self-labeling on published video events.
+  /// keepAlive ensures setting persists across widget rebuilds.
+  const LanguagePreferenceServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'languagePreferenceServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$languagePreferenceServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<LanguagePreferenceService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  LanguagePreferenceService create(Ref ref) {
+    return languagePreferenceService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LanguagePreferenceService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LanguagePreferenceService>(value),
+    );
+  }
+}
+
+String _$languagePreferenceServiceHash() =>
+    r'96dfa1a85d20ef92361b088de547a934ca5ccbb7';
 
 /// Geo-blocking service for regional compliance
 
@@ -1084,7 +1361,7 @@ final class FlutterSecureStorageProvider
 }
 
 String _$flutterSecureStorageHash() =>
-    r'5be8817de87a006e56f25bca80abfc39a48777cd';
+    r'903085f91b6d90816a6d87fa98f580de863a012f';
 
 @ProviderFor(secureKeycastStorage)
 const secureKeycastStorageProvider = SecureKeycastStorageProvider._();
@@ -2225,7 +2502,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'2e58eabbb8807979c479042abb7adc1bbb3bfade';
+String _$videoEventServiceHash() => r'd6953220eb702b4924a85f03e34a7ce6370080f5';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -2372,6 +2649,65 @@ final class SocialServiceProvider
 
 String _$socialServiceHash() => r'f3e43d187c9560fd9db5fe9925238eeb18048fff';
 
+/// Cached following list loaded directly from SharedPreferences.
+///
+/// Available immediately after authentication (no NostrClient needed).
+/// This provides the follow list from the previous session for instant
+/// feed display. The full FollowRepository will update this when ready.
+
+@ProviderFor(cachedFollowingList)
+const cachedFollowingListProvider = CachedFollowingListProvider._();
+
+/// Cached following list loaded directly from SharedPreferences.
+///
+/// Available immediately after authentication (no NostrClient needed).
+/// This provides the follow list from the previous session for instant
+/// feed display. The full FollowRepository will update this when ready.
+
+final class CachedFollowingListProvider
+    extends $FunctionalProvider<List<String>, List<String>, List<String>>
+    with $Provider<List<String>> {
+  /// Cached following list loaded directly from SharedPreferences.
+  ///
+  /// Available immediately after authentication (no NostrClient needed).
+  /// This provides the follow list from the previous session for instant
+  /// feed display. The full FollowRepository will update this when ready.
+  const CachedFollowingListProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cachedFollowingListProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$cachedFollowingListHash();
+
+  @$internal
+  @override
+  $ProviderElement<List<String>> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  List<String> create(Ref ref) {
+    return cachedFollowingList(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(List<String> value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<List<String>>(value),
+    );
+  }
+}
+
+String _$cachedFollowingListHash() =>
+    r'9aae18333a2883db193f61b69a4d12a5e58899ac';
+
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.
@@ -2443,7 +2779,65 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'cc2cdaa9ac69fd09c9131f43f2068f533ff3e593';
+String _$followRepositoryHash() => r'59ccfaf4522b9c8534a1ee5b9f51b851614f9425';
+
+/// Provider for HashtagRepository instance.
+///
+/// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+
+@ProviderFor(hashtagRepository)
+const hashtagRepositoryProvider = HashtagRepositoryProvider._();
+
+/// Provider for HashtagRepository instance.
+///
+/// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+
+final class HashtagRepositoryProvider
+    extends
+        $FunctionalProvider<
+          HashtagRepository,
+          HashtagRepository,
+          HashtagRepository
+        >
+    with $Provider<HashtagRepository> {
+  /// Provider for HashtagRepository instance.
+  ///
+  /// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+  const HashtagRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'hashtagRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$hashtagRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<HashtagRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  HashtagRepository create(Ref ref) {
+    return hashtagRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(HashtagRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<HashtagRepository>(value),
+    );
+  }
+}
+
+String _$hashtagRepositoryHash() => r'7d61e9d5f99412e7f62cbb1456aeca1c12ab5b34';
 
 /// Provider for ProfileRepository instance
 ///
@@ -3793,6 +4187,7 @@ String _$videoLocalStorageHash() => r'0be44203ec8edf59105a013aae374c07637a3ba0';
 /// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
+/// - FunnelcakeApiClient for trending/popular video sorting
 
 @ProviderFor(videosRepository)
 const videosRepositoryProvider = VideosRepositoryProvider._();
@@ -3807,6 +4202,7 @@ const videosRepositoryProvider = VideosRepositoryProvider._();
 /// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
+/// - FunnelcakeApiClient for trending/popular video sorting
 
 final class VideosRepositoryProvider
     extends
@@ -3826,6 +4222,7 @@ final class VideosRepositoryProvider
   /// - VideoLocalStorage for cache-first lookups and caching results
   /// - ContentBlocklistService for filtering blocked/muted users
   /// - AgeVerificationService for filtering NSFW content based on user preference
+  /// - FunnelcakeApiClient for trending/popular video sorting
   const VideosRepositoryProvider._()
     : super(
         from: null,
@@ -3859,7 +4256,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'b21ecf459b7186280630e67d72b5c27a3e73edd0';
+String _$videosRepositoryHash() => r'a962937408e5ed2b8c35cf3bb14786582e5e550f';
 
 /// Provider for LikesRepository instance
 ///

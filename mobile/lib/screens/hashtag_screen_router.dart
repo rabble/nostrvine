@@ -9,6 +9,7 @@ import 'package:openvine/providers/hashtag_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -119,6 +120,8 @@ class _HashtagScreenRouterState extends ConsumerState<HashtagScreenRouter>
           contextTitle: '#$hashtag',
           startingIndex: safeIndex,
           useLocalActiveState: true,
+          trafficSource: ViewTrafficSource.search,
+          sourceDetail: hashtag,
           // Add pagination callback
           onLoadMore: () => ref.read(hashtagFeedProvider.notifier).loadMore(),
           // Add navigation callback to keep hashtag context when swiping

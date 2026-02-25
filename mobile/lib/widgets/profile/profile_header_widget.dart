@@ -359,7 +359,9 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
   Widget _buildAction(BuildContext context, EmailVerificationState state) {
     switch (state.status) {
       case EmailVerificationStatus.polling:
-        // No action button while polling - user should check email
+        // No action needed — polling auto-expires after 15 minutes
+        // (matching the server's token lifetime), then transitions to
+        // failure state with a Retry button.
         return const SizedBox.shrink();
       case EmailVerificationStatus.failure:
         return ElevatedButton(

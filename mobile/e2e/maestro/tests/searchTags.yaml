@@ -1,6 +1,4 @@
 appId: co.openvine.app
-env:
-  SEARCH_TAG: "comedy"
 ---
 #TC to search with tags,
 # given the user is logged in in the app,
@@ -47,11 +45,10 @@ env:
 - tapOn: |-
     #${SEARCH_TAG}
     Tap to view videos with this hashtag
-- assertVisible: "#${SEARCH_TAG}"
+- assertVisible: "#${SEARCH_TAG} STG"
 - assertVisible:
-    id: play_button
+    id: video_thumbnail_0
 
 # 5. Tap on the 1st video listed: Valiate playback
-- tapOn:
-    id: play_button
+- tapOn: Video thumbnail 1
 - assertVisible: "#${SEARCH_TAG}" #Search tag is still visible

@@ -52,6 +52,11 @@ class BuildConfiguration {
           'FF_CLASSICS_HASHTAGS',
           defaultValue: false,
         );
+      case FeatureFlag.curatedLists:
+        return const bool.fromEnvironment(
+          'FF_CURATED_LISTS',
+          defaultValue: false,
+        );
     }
   }
 
@@ -82,6 +87,8 @@ class BuildConfiguration {
         return 'FF_ENABLE_VIDEO_EDITOR_V1';
       case FeatureFlag.classicsHashtags:
         return 'FF_CLASSICS_HASHTAGS';
+      case FeatureFlag.curatedLists:
+        return 'FF_CURATED_LISTS';
     }
   }
 }
