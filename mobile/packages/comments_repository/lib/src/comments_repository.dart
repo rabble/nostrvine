@@ -114,12 +114,17 @@ class CommentsRepository {
           eventMap.values.toList(),
           rootEventId,
           rootEventKind,
+          rootAddressableId: rootAddressableId,
         );
       }
 
       // No addressable ID - just query by E tag
       final events = await _nostrClient.queryEvents([filterByE]);
-      return _buildThreadFromEvents(events, rootEventId, rootEventKind);
+      return _buildThreadFromEvents(
+        events,
+        rootEventId,
+        rootEventKind,
+      );
     } on Exception catch (e) {
       throw LoadCommentsFailedException('Failed to load comments: $e');
     }
@@ -402,15 +407,44 @@ class CommentsRepository {
     }
   }
 
+  /// Checks whether an event's uppercase `E` or `A` tag matches the queried
+  /// root. This provides client-side filtering for relays that do not support
+  /// NIP-22 uppercase tag filters and return all Kind 1111 events.
+  bool _eventMatchesRoot(
+    Event event,
+    String rootEventId,
+    String? rootAddressableId,
+  ) {
+    for (final rawTag in event.tags) {
+      final tag = rawTag as List<dynamic>;
+      if (tag.length < 2) continue;
+      final tagType = tag[0] as String;
+      final tagValue = tag[1] as String;
+      if (tagType == 'E' && tagValue == rootEventId) return true;
+      if (tagType == 'A' &&
+          rootAddressableId != null &&
+          tagValue == rootAddressableId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Builds a CommentThread from a list of Nostr events.
+  ///
+  /// Events that do not reference the queried root (via uppercase `E` or `A`
+  /// tags) are filtered out to guard against relays that ignore uppercase tag
+  /// filters.
   CommentThread _buildThreadFromEvents(
     List<Event> events,
     String rootEventId,
-    int rootEventKind,
-  ) {
+    int rootEventKind, {
+    String? rootAddressableId,
+  }) {
     final commentMap = <String, Comment>{};
 
     for (final event in events) {
+      if (!_eventMatchesRoot(event, rootEventId, rootAddressableId)) continue;
       final comment = _eventToComment(event, rootEventId, rootEventKind);
       if (comment != null) {
         commentMap[comment.id] = comment;

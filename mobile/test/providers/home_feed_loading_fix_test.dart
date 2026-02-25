@@ -13,6 +13,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/analytics_api_service.dart';
@@ -23,6 +24,7 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/user_profile_state.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -75,12 +77,14 @@ class _FakeUserProfileNotifier extends UserProfileNotifier {
 
 /// Waits for the HomeFeed provider to complete its full build.
 ///
-/// The HomeFeed provider emits an intermediate `state = AsyncData(empty, isInitialLoad: true)`
-/// before the async REST API/Nostr calls. Using `.future` would resolve to that empty state.
-/// This helper listens for a state where `isInitialLoad == false`, indicating the full
-/// build completed (REST API response processed).
+/// The HomeFeed provider emits an intermediate
+/// `state = AsyncData(empty, isInitialLoad: true)` before the async REST
+/// API/Nostr calls. Using `.future` would resolve to that empty state.
+/// This helper listens for a state where `isInitialLoad == false`, indicating
+/// the full build completed (REST API response processed).
 ///
-/// Falls back to returning the last state after [timeout] if no completed state arrives.
+/// Falls back to returning the last state after [timeout] if no completed
+/// state arrives.
 Future<VideoFeedState> waitForHomeFeedComplete(
   ProviderContainer container, {
   Duration timeout = const Duration(seconds: 5),
@@ -125,17 +129,22 @@ void main() {
     late _MockSubscriptionManager mockSubscriptionManager;
     late _MockAnalyticsApiService mockAnalyticsApiService;
     late _MockAuthService mockAuthService;
+    late SharedPreferences sharedPreferences;
 
     setUpAll(() {
       registerFallbackValue(<String>[]);
     });
 
-    setUp(() {
+    setUp(() async {
       mockVideoEventService = _MockVideoEventService();
       mockNostrService = _MockNostrClient();
       mockSubscriptionManager = _MockSubscriptionManager();
       mockAnalyticsApiService = _MockAnalyticsApiService();
       mockAuthService = _MockAuthService();
+
+      // Initialize SharedPreferences for test
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
 
       // Setup default VideoEventService mock behaviors
       when(() => mockVideoEventService.homeFeedVideos).thenReturn([]);
@@ -159,10 +168,13 @@ void main() {
         () => mockVideoEventService.addNewVideoListener(any()),
       ).thenReturn(() {});
       when(
+        () => mockVideoEventService.filterVideoList(any()),
+      ).thenAnswer((inv) => inv.positionalArguments.first as List<VideoEvent>);
+      when(
         () => mockVideoEventService.debugDumpCdnDivineVideoThumbnails(),
       ).thenReturn(null);
 
-      // Setup AnalyticsApiService enrichment stubs (used by _enrichVideosWithBulkStats)
+      // Setup AnalyticsApiService enrichment stubs
       when(
         () => mockAnalyticsApiService.getBulkVideoStats(any()),
       ).thenAnswer((_) async => <String, BulkVideoStatsEntry>{});
@@ -173,6 +185,13 @@ void main() {
           maxConcurrent: any(named: 'maxConcurrent'),
         ),
       ).thenAnswer((_) async => <String, int>{});
+
+      // Setup getCachedHomeFeed stub (returns null = no cache)
+      when(
+        () => mockAnalyticsApiService.getCachedHomeFeed(
+          prefs: any(named: 'prefs'),
+        ),
+      ).thenAnswer((_) async => null);
 
       // Setup NostrClient stubs
       when(() => mockNostrService.isInitialized).thenReturn(true);
@@ -219,87 +238,91 @@ void main() {
           subscribedListVideoCacheProvider.overrideWithValue(null),
           isNostrReadyProvider.overrideWithValue(isNostrReady),
           followRepositoryProvider.overrideWithValue(followRepository),
+          contentFilterVersionProvider.overrideWithValue(0),
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         ],
       );
     }
 
-    test(
-      'should load via REST API when followRepository is null (Nostr not ready)',
-      () async {
-        // This is THE key test for the fix:
-        // When NostrClient is not ready, followRepositoryProvider returns null.
-        // Before the fix, HomeFeed would be stuck on loading forever.
-        // After the fix, HomeFeed tries REST API first, which only needs pubkey.
+    test('should load via REST API when followRepository is null (Nostr not '
+        'ready)', () async {
+      // This is THE key test for the fix:
+      // When NostrClient is not ready, followRepositoryProvider returns
+      // null. Before the fix, HomeFeed would be stuck on loading forever.
+      // After the fix, HomeFeed tries REST API first, which only needs
+      // pubkey.
 
-        final now = DateTime.now();
-        final timestamp = now.millisecondsSinceEpoch ~/ 1000;
-        final mockVideos = [
-          VideoEvent(
-            id: 'rest_video_aaa111bbb222ccc333ddd444eee555fff666aaa111bbb222ccc333ddd444e',
-            pubkey:
-                'author_abc123def456abc123def456abc123def456abc123def456abc123def456ab',
-            content: 'Video from REST API',
-            createdAt: timestamp,
-            timestamp: now,
-            videoUrl: 'https://example.com/video1.mp4',
-          ),
-        ];
+      final now = DateTime.now();
+      final timestamp = now.millisecondsSinceEpoch ~/ 1000;
+      final mockVideos = [
+        VideoEvent(
+          id: 'rest_video_aaa111bbb222ccc333ddd444eee555fff666aaa111bbb222ccc333ddd444e',
+          pubkey:
+              'author_abc123def456abc123def456abc123def456abc123def456abc123def456ab',
+          content: 'Video from REST API',
+          createdAt: timestamp,
+          timestamp: now,
+          videoUrl: 'https://example.com/video1.mp4',
+        ),
+      ];
 
-        when(
-          () => mockAnalyticsApiService.getHomeFeed(
-            pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
-            sort: any(named: 'sort'),
-            before: any(named: 'before'),
-          ),
-        ).thenAnswer(
-          (_) async => HomeFeedResult(
-            videos: mockVideos,
-            nextCursor: timestamp - 200,
-            hasMore: true,
-          ),
-        );
+      when(
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          sort: any(named: 'sort'),
+          before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
+        ),
+      ).thenAnswer(
+        (_) async => HomeFeedResult(
+          videos: mockVideos,
+          nextCursor: timestamp - 200,
+          hasMore: true,
+        ),
+      );
 
-        final container = createContainer();
+      final container = createContainer();
 
-        // Act: Wait for full build to complete (past intermediate empty state)
-        final result = await waitForHomeFeedComplete(container);
+      // Act: Wait for full build to complete (past intermediate empty
+      // state)
+      final result = await waitForHomeFeedComplete(container);
 
-        // Assert: Should have videos from REST API despite Nostr not ready
-        expect(result.videos, isNotEmpty);
-        expect(result.videos.length, equals(1));
-        expect(
-          result.videos[0].id,
-          equals(
-            'rest_video_aaa111bbb222ccc333ddd444eee555fff666aaa111bbb222ccc333ddd444e',
-          ),
-        );
-        expect(result.hasMoreContent, isTrue);
-        expect(result.isInitialLoad, isFalse);
+      // Assert: Should have videos from REST API despite Nostr not ready
+      expect(result.videos, isNotEmpty);
+      expect(result.videos.length, equals(1));
+      expect(
+        result.videos[0].id,
+        equals(
+          'rest_video_aaa111bbb222ccc333ddd444eee555fff666aaa111bbb222ccc333ddd444e',
+        ),
+      );
+      expect(result.hasMoreContent, isTrue);
+      expect(result.isInitialLoad, isFalse);
 
-        // Verify REST API was called with the user's pubkey
-        verify(
-          () => mockAnalyticsApiService.getHomeFeed(
-            pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
-            sort: any(named: 'sort'),
-            before: any(named: 'before'),
-          ),
-        ).called(1);
+      // Verify REST API was called with the user's pubkey
+      verify(
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          sort: any(named: 'sort'),
+          before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
+        ),
+      ).called(1);
 
-        // Verify Nostr was NOT called (followRepository is null)
-        verifyNever(
-          () => mockVideoEventService.subscribeToHomeFeed(
-            any(),
-            limit: any(named: 'limit'),
-            sortBy: any(named: 'sortBy'),
-            force: any(named: 'force'),
-          ),
-        );
+      // Verify Nostr was NOT called (followRepository is null)
+      verifyNever(
+        () => mockVideoEventService.subscribeToHomeFeed(
+          any(),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
+          force: any(named: 'force'),
+        ),
+      );
 
-        container.dispose();
-      },
-    );
+      container.dispose();
+    });
 
     test('REST API should receive correct pubkey parameter', () async {
       final now = DateTime.now();
@@ -311,6 +334,7 @@ void main() {
           limit: any(named: 'limit'),
           sort: any(named: 'sort'),
           before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
         ),
       ).thenAnswer(
         (_) async => HomeFeedResult(
@@ -341,6 +365,7 @@ void main() {
           limit: captureAny(named: 'limit'),
           sort: captureAny(named: 'sort'),
           before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
         ),
       ).captured;
 
@@ -364,7 +389,8 @@ void main() {
 
         final container = createContainer();
 
-        // Act: When pubkey is null, build returns early with isInitialLoad: true
+        // Act: When pubkey is null, build returns early with
+        // isInitialLoad: true
         // Use .future here since build returns before any async work
         final result = await container.read(homeFeedProvider.future);
 
@@ -379,6 +405,7 @@ void main() {
             limit: any(named: 'limit'),
             sort: any(named: 'sort'),
             before: any(named: 'before'),
+            prefs: any(named: 'prefs'),
           ),
         );
 
@@ -386,107 +413,104 @@ void main() {
       },
     );
 
-    test(
-      'should fall back to Nostr when REST API fails and followRepository is available',
-      () async {
-        when(
-          () => mockAnalyticsApiService.getHomeFeed(
-            pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
-            sort: any(named: 'sort'),
-            before: any(named: 'before'),
-          ),
-        ).thenThrow(Exception('API Error'));
+    test('should fall back to Nostr when REST API fails and '
+        'followRepository is available', () async {
+      when(
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          sort: any(named: 'sort'),
+          before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
+        ),
+      ).thenThrow(Exception('API Error'));
 
-        final now = DateTime.now();
-        final timestamp = now.millisecondsSinceEpoch ~/ 1000;
-        final nostrVideos = [
-          VideoEvent(
-            id: 'nostr_vid_abc123def456abc123def456abc123def456abc123def456abc123def456a',
-            pubkey:
-                'author_abc123def456abc123def456abc123def456abc123def456abc123def456ab',
-            content: 'Video from Nostr',
-            createdAt: timestamp,
-            timestamp: now,
-            videoUrl: 'https://example.com/nostr_video.mp4',
-          ),
-        ];
+      final now = DateTime.now();
+      final timestamp = now.millisecondsSinceEpoch ~/ 1000;
+      final nostrVideos = [
+        VideoEvent(
+          id: 'nostr_vid_abc123def456abc123def456abc123def456abc123def456abc123def456a',
+          pubkey:
+              'author_abc123def456abc123def456abc123def456abc123def456abc123def456ab',
+          content: 'Video from Nostr',
+          createdAt: timestamp,
+          timestamp: now,
+          videoUrl: 'https://example.com/nostr_video.mp4',
+        ),
+      ];
 
-        when(
-          () => mockVideoEventService.homeFeedVideos,
-        ).thenReturn(nostrVideos);
+      when(() => mockVideoEventService.homeFeedVideos).thenReturn(nostrVideos);
 
-        final followRepo = _createMockFollowRepository([
-          'author_abc123def456abc123def456abc123def456abc123def456abc123def456ab',
-        ]);
+      final followRepo = _createMockFollowRepository([
+        'author_abc123def456abc123def456abc123def456abc123def456abc123def456ab',
+      ]);
 
-        final container = createContainer(
-          isNostrReady: true,
-          followRepository: followRepo,
-        );
+      final container = createContainer(
+        isNostrReady: true,
+        followRepository: followRepo,
+      );
 
-        // Act: Wait for full build (REST API fails, then Nostr fallback runs)
-        final result = await waitForHomeFeedComplete(container);
+      // Act: Wait for full build (REST API fails, then Nostr fallback)
+      final result = await waitForHomeFeedComplete(container);
 
-        // Assert: Should have videos from Nostr fallback
-        expect(result.videos, isNotEmpty);
-        expect(result.videos.length, equals(1));
-        expect(
-          result.videos[0].id,
-          equals(
-            'nostr_vid_abc123def456abc123def456abc123def456abc123def456abc123def456a',
-          ),
-        );
+      // Assert: Should have videos from Nostr fallback
+      expect(result.videos, isNotEmpty);
+      expect(result.videos.length, equals(1));
+      expect(
+        result.videos[0].id,
+        equals(
+          'nostr_vid_abc123def456abc123def456abc123def456abc123def456abc123def456a',
+        ),
+      );
 
-        // Verify REST API was tried first
-        verify(
-          () => mockAnalyticsApiService.getHomeFeed(
-            pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
-            sort: any(named: 'sort'),
-            before: any(named: 'before'),
-          ),
-        ).called(1);
+      // Verify REST API was tried first
+      verify(
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          sort: any(named: 'sort'),
+          before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
+        ),
+      ).called(1);
 
-        // Verify Nostr was called as fallback
-        verify(
-          () => mockVideoEventService.subscribeToHomeFeed(
-            any(),
-            limit: any(named: 'limit'),
-            sortBy: any(named: 'sortBy'),
-            force: any(named: 'force'),
-          ),
-        ).called(1);
+      // Verify Nostr was called as fallback
+      verify(
+        () => mockVideoEventService.subscribeToHomeFeed(
+          any(),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
+          force: any(named: 'force'),
+        ),
+      ).called(1);
 
-        container.dispose();
-      },
-    );
+      container.dispose();
+    });
 
-    test(
-      'should return loading when REST API fails and followRepository is null',
-      () async {
-        when(
-          () => mockAnalyticsApiService.getHomeFeed(
-            pubkey: any(named: 'pubkey'),
-            limit: any(named: 'limit'),
-            sort: any(named: 'sort'),
-            before: any(named: 'before'),
-          ),
-        ).thenThrow(Exception('API Error'));
+    test('should return loading when REST API fails and '
+        'followRepository is null', () async {
+      when(
+        () => mockAnalyticsApiService.getHomeFeed(
+          pubkey: any(named: 'pubkey'),
+          limit: any(named: 'limit'),
+          sort: any(named: 'sort'),
+          before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
+        ),
+      ).thenThrow(Exception('API Error'));
 
-        final container = createContainer();
+      final container = createContainer();
 
-        // Act: REST API fails and followRepository is null
-        // Build returns early with isInitialLoad: true after REST failure
-        final result = await container.read(homeFeedProvider.future);
+      // Act: REST API fails and followRepository is null
+      // Build returns early with isInitialLoad: true after REST failure
+      final result = await container.read(homeFeedProvider.future);
 
-        // Assert: Should return loading state (waiting for Nostr to become ready)
-        expect(result.videos, isEmpty);
-        expect(result.isInitialLoad, isTrue);
+      // Assert: Should return loading state (waiting for Nostr ready)
+      expect(result.videos, isEmpty);
+      expect(result.isInitialLoad, isTrue);
 
-        container.dispose();
-      },
-    );
+      container.dispose();
+    });
 
     test('REST API returns empty should fall back to Nostr when available', () async {
       // REST API returns empty list - should try Nostr path
@@ -496,6 +520,7 @@ void main() {
           limit: any(named: 'limit'),
           sort: any(named: 'sort'),
           before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
         ),
       ).thenAnswer(
         (_) async =>
@@ -541,6 +566,7 @@ void main() {
           limit: any(named: 'limit'),
           sort: any(named: 'sort'),
           before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
         ),
       ).called(1);
       verify(
@@ -565,6 +591,7 @@ void main() {
           limit: any(named: 'limit'),
           sort: any(named: 'sort'),
           before: any(named: 'before'),
+          prefs: any(named: 'prefs'),
         ),
       ).thenAnswer(
         (_) async => HomeFeedResult(
@@ -681,46 +708,42 @@ void main() {
       container.dispose();
     });
 
-    test(
-      'should schedule retry and invalidate when hasKeys transitions to true',
-      () async {
-        final mockNostrClient = _MockNostrClient();
-        final mockAuthService = _MockAuthService();
+    test('should schedule retry and invalidate when hasKeys transitions to '
+        'true', () async {
+      final mockNostrClient = _MockNostrClient();
+      final mockAuthService = _MockAuthService();
 
-        // Initially hasKeys is false
-        when(() => mockNostrClient.hasKeys).thenReturn(false);
-        when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        when(
-          () => mockAuthService.authState,
-        ).thenReturn(AuthState.authenticated);
-        when(
-          () => mockAuthService.authStateStream,
-        ).thenAnswer((_) => Stream.value(AuthState.authenticated));
+      // Initially hasKeys is false
+      when(() => mockNostrClient.hasKeys).thenReturn(false);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(
+        () => mockAuthService.authStateStream,
+      ).thenAnswer((_) => Stream.value(AuthState.authenticated));
 
-        final container = ProviderContainer(
-          overrides: [
-            nostrServiceProvider.overrideWithValue(mockNostrClient),
-            authServiceProvider.overrideWithValue(mockAuthService),
-          ],
-        );
+      final container = ProviderContainer(
+        overrides: [
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
+          authServiceProvider.overrideWithValue(mockAuthService),
+        ],
+      );
 
-        // Read initially - should be false
-        var result = container.read(isNostrReadyProvider);
-        expect(result, isFalse);
+      // Read initially - should be false
+      var result = container.read(isNostrReadyProvider);
+      expect(result, isFalse);
 
-        // Simulate NostrClient.initialize() completing asynchronously
-        // (hasKeys transitions to true on the same object reference)
-        when(() => mockNostrClient.hasKeys).thenReturn(true);
+      // Simulate NostrClient.initialize() completing asynchronously
+      // (hasKeys transitions to true on the same object reference)
+      when(() => mockNostrClient.hasKeys).thenReturn(true);
 
-        // Wait for the 100ms retry to fire
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+      // Wait for the 100ms retry to fire
+      await Future<void>.delayed(const Duration(milliseconds: 200));
 
-        // Read again - the retry should have invalidated the provider
-        result = container.read(isNostrReadyProvider);
-        expect(result, isTrue);
+      // Read again - the retry should have invalidated the provider
+      result = container.read(isNostrReadyProvider);
+      expect(result, isTrue);
 
-        container.dispose();
-      },
-    );
+      container.dispose();
+    });
   });
 }

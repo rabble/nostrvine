@@ -77,8 +77,9 @@ class FunnelcakeAvailable extends _$FunnelcakeAvailable {
         name: 'FunnelcakeAvailable',
         category: LogCategory.system,
       );
-      // Use trending endpoint with limit=1 as lightweight probe
-      await analyticsService.getTrendingVideos(limit: 1);
+      // Use recent endpoint with limit=1 as lightweight probe
+      // (trending endpoint may 500 on staging due to scoring query issues)
+      await analyticsService.getRecentVideos(limit: 1);
       Log.info(
         '✅ Funnelcake: API available',
         name: 'FunnelcakeAvailable',

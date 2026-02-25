@@ -39,6 +39,7 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -548,6 +549,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const SafetySettingsScreen(),
       ),
       GoRoute(
+        path: ContentFiltersScreen.path,
+        name: ContentFiltersScreen.routeName,
+        builder: (_, __) => const ContentFiltersScreen(),
+      ),
+      GoRoute(
         path: DeveloperOptionsScreen.path,
         name: DeveloperOptionsScreen.routeName,
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -856,6 +862,7 @@ int tabIndexFromLocation(String loc) {
     case 'notification-settings':
     case 'key-management':
     case 'safety-settings':
+    case 'content-filters':
     case 'developer-options':
     case 'edit-profile':
     case 'setup-profile':

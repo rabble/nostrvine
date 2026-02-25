@@ -159,7 +159,8 @@ Future<void> _startOpenVineApp() async {
   }
 
   // DEFER window manager initialization until after UI is ready to avoid blocking
-  if (defaultTargetPlatform == TargetPlatform.macOS) {
+  if (defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.linux) {
     // Defer window manager setup to not block main thread during critical startup
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {

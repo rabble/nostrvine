@@ -25,6 +25,7 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -59,6 +60,7 @@ enum RouteType {
   notificationSettings, // Notification preferences
   keyManagement, // Key backup/export screen
   safetySettings, // Safety and privacy settings
+  contentFilters, // Content filter preferences (Show/Warn/Hide)
   editProfile, // Profile editing screen
   clips, // Clip library screen (formerly drafts)
   welcome, // Welcome/onboarding screen
@@ -248,6 +250,9 @@ RouteContext parseRoute(String path) {
     case 'safety-settings':
       return const RouteContext(type: RouteType.safetySettings);
 
+    case 'content-filters':
+      return const RouteContext(type: RouteType.contentFilters);
+
     case 'edit-profile':
     case 'setup-profile':
       // Profile editing screens - standalone routes outside ShellRoute
@@ -430,6 +435,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.safetySettings:
       return SafetySettingsScreen.path;
+
+    case RouteType.contentFilters:
+      return ContentFiltersScreen.path;
 
     case RouteType.editProfile:
       return ProfileSetupScreen.editPath;

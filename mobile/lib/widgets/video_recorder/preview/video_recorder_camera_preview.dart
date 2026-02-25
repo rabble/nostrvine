@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_macos_preview.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_mobile_preview.dart';
+import 'package:openvine/utils/platform_helpers.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_focus_point.dart';
 
@@ -41,7 +42,7 @@ class _VideoRecorderCameraPreviewState
             // In vertical mode, we use the full available screen size,
             // even if it's not exactly 16:9.
             final aspectRatioValue = aspectRatio == .vertical
-                ? !kIsWeb && Platform.isMacOS
+                ? isDesktopPlatform
                       ? 9 / 16
                       : constraints.biggest.aspectRatio
                 : 1.0;
@@ -122,6 +123,8 @@ class _CameraPreview extends ConsumerWidget {
             /// Preview widget
             if (!kIsWeb && Platform.isMacOS)
               const VideoRecorderMacosPreview()
+            else if (!kIsWeb && Platform.isLinux)
+              const SizedBox.shrink()
             else
               const VideoRecorderMobilePreview(),
           ],

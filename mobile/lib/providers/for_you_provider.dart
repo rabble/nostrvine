@@ -22,6 +22,9 @@ class ForYouFeed extends _$ForYouFeed {
 
   @override
   Future<VideoFeedState> build() async {
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
+
     // Watch appReady gate
     final isAppReady = ref.watch(appReadyProvider);
 
@@ -109,10 +112,11 @@ class ForYouFeed extends _$ForYouFeed {
         category: LogCategory.video,
       );
 
-      // Filter for platform compatibility (WebM not supported on iOS/macOS)
-      final filteredVideos = result.videos
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .toList();
+      // Filter for platform compatibility and content preferences
+      final videoEventService = ref.read(videoEventServiceProvider);
+      final filteredVideos = videoEventService.filterVideoList(
+        result.videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+      );
 
       return VideoFeedState(
         videos: filteredVideos,
@@ -170,9 +174,10 @@ class ForYouFeed extends _$ForYouFeed {
 
       if (!ref.mounted) return;
 
-      final filteredVideos = result.videos
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .toList();
+      final videoEventService = ref.read(videoEventServiceProvider);
+      final filteredVideos = videoEventService.filterVideoList(
+        result.videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+      );
       final newEventsLoaded =
           filteredVideos.length - currentState.videos.length;
 

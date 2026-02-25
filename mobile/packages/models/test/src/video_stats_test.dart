@@ -446,6 +446,33 @@ void main() {
         );
       });
 
+      test('handles numeric fields as doubles from REST API', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 10.0,
+          'comments': 5.0,
+          'reposts': 2.0,
+          'engagement_score': 125.0,
+          'loops': 42.0,
+          'views': 100.0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+        expect(stats.reactions, equals(10));
+        expect(stats.comments, equals(5));
+        expect(stats.reposts, equals(2));
+        expect(stats.engagementScore, equals(125));
+        expect(stats.loops, equals(42));
+        expect(stats.views, equals(100));
+      });
+
       test('normalizes empty values to null', () {
         final json = {
           'id': 'test-id',
@@ -475,6 +502,83 @@ void main() {
         expect(stats.authorAvatar, isNull);
         expect(stats.blurhash, isNull);
       });
+
+      test('falls back to d_tag as sha256 when d_tag is 64-char hex', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag':
+              'a04b70820ef370e90aae19d23e46b148'
+              '2d3af0e7c9d994d1594a1384a62d3972',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(
+          stats.sha256,
+          equals(
+            'a04b70820ef370e90aae19d23e46b1482d3af0e7c9d994d1594a1384a62d3972',
+          ),
+        );
+      });
+
+      test('does not use d_tag as sha256 when d_tag is not a hex hash', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'my-video-slug',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.sha256, isNull);
+      });
+
+      test(
+        'does not override explicit sha256 with d_tag',
+        () {
+          final json = {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'd_tag':
+                'a04b70820ef370e90aae19d23'
+                'e46b1482d3af0e7c9d994d15'
+                '94a1384a62d3972',
+            'sha256': 'explicit-sha256-value',
+            'title': 'Test',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'video_url': 'https://example.com/video.mp4',
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          };
+
+          final stats = VideoStats.fromJson(json);
+
+          expect(stats.sha256, equals('explicit-sha256-value'));
+        },
+      );
 
       test('defaults kind to 34236 when missing', () {
         final json = {

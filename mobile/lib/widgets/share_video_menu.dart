@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
@@ -32,11 +33,7 @@ import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-// NOTE: Subtitle generation temporarily disabled due to Android build issues
-// See: https://github.com/divinevideo/divine-mobile/issues/1568
-// import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
-// import 'package:openvine/widgets/subtitle_generation_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 
 // TODO(any): Move this to a reusable widget
@@ -481,63 +478,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       ],
     ],
   );
-
-  // NOTE: Subtitle generation temporarily disabled due to Android build issues
-  // See: https://github.com/divinevideo/divine-mobile/issues/1568
-  // Widget _buildSubtitleSection() => Column(
-  //   crossAxisAlignment: CrossAxisAlignment.start,
-  //   children: [
-  //     const Text(
-  //       'Subtitles',
-  //       style: TextStyle(
-  //         color: VineTheme.whiteText,
-  //         fontSize: 16,
-  //         fontWeight: FontWeight.w600,
-  //       ),
-  //     ),
-  //     const SizedBox(height: 12),
-  //     _buildActionTile(
-  //       icon: Icons.closed_caption,
-  //       title: widget.video.hasSubtitles
-  //           ? 'Regenerate Subtitles'
-  //           : 'Generate Subtitles',
-  //       subtitle: 'Auto-transcribe speech with AI',
-  //       onTap: () => _generateSubtitles(context),
-  //     ),
-  //   ],
-  // );
-
-  // Future<void> _generateSubtitles(BuildContext ctx) async {
-  //   final cache = ref.read(mediaCacheProvider);
-  //   final cachedFile = cache.getCachedFileSync(widget.video.id);
-
-  //   if (cachedFile == null) {
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(ctx).showSnackBar(
-  //         const SnackBar(
-  //           content: Text(
-  //             'Video not cached locally. Play the video first, then try again.',
-  //           ),
-  //           duration: Duration(seconds: 3),
-  //         ),
-  //       );
-  //     }
-  //     return;
-  //   }
-
-  //   _safePop(ctx);
-
-  //   if (!ctx.mounted) return;
-
-  //   await showModalBottomSheet<void>(
-  //     context: ctx,
-  //     backgroundColor: VineTheme.backgroundColor,
-  //     builder: (_) => SubtitleGenerationSheet(
-  //       video: widget.video,
-  //       videoFilePath: cachedFile.path,
-  //     ),
-  //   );
-  // }
 
   Widget _buildListSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3623,9 +3563,159 @@ class _ReportConfirmationDialog extends StatelessWidget {
 }
 
 /// Dialog for viewing raw Nostr event JSON
-class _ViewSourceDialog extends StatelessWidget {
+///
+/// Fetches the raw Nostr event from the Funnelcake REST API first,
+/// falling back to WebSocket relay fetch, with parsed VideoEvent data
+/// as the final fallback.
+class _ViewSourceDialog extends ConsumerStatefulWidget {
   const _ViewSourceDialog({required this.video});
   final VideoEvent video;
+
+  @override
+  ConsumerState<_ViewSourceDialog> createState() => _ViewSourceDialogState();
+}
+
+class _ViewSourceDialogState extends ConsumerState<_ViewSourceDialog> {
+  Map<String, dynamic>? _eventJson;
+  bool _isRawSource = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchRawEvent();
+  }
+
+  Future<void> _fetchRawEvent() async {
+    // 1. Try Funnelcake REST API first (fast, non-blocking)
+    try {
+      final analyticsApi = ref.read(analyticsApiServiceProvider);
+      final rawEvent = await analyticsApi.getRawEvent(widget.video.id);
+
+      if (rawEvent != null) {
+        if (mounted) {
+          setState(() {
+            _eventJson = rawEvent;
+            _isRawSource = true;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+    } catch (e) {
+      Log.debug(
+        'REST API raw event fetch failed, trying WebSocket: $e',
+        name: 'ViewSourceDialog',
+        category: LogCategory.video,
+      );
+    }
+
+    // 2. Show parsed data immediately as fallback
+    if (mounted) {
+      setState(() {
+        _eventJson = widget.video.toJson();
+        _isRawSource = false;
+        _isLoading = false;
+      });
+    }
+
+    // 3. Try WebSocket fallback in the background
+    try {
+      final nostrService = ref.read(nostrServiceProvider);
+      final event = await nostrService.fetchEventById(widget.video.id);
+
+      if (event != null && mounted) {
+        setState(() {
+          _eventJson = event.toJson();
+          _isRawSource = true;
+        });
+      }
+    } catch (e) {
+      Log.debug(
+        'WebSocket raw event fetch failed: $e',
+        name: 'ViewSourceDialog',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  String _getDisplayJson() {
+    final json = _eventJson ?? widget.video.toJson();
+    return const JsonEncoder.withIndent('  ').convert(json);
+  }
+
+  Widget _buildSourceBadge() {
+    if (_isLoading) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: VineTheme.vineGreen.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: VineTheme.vineGreen,
+              ),
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Fetching raw event...',
+              style: TextStyle(
+                color: VineTheme.vineGreen,
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_isRawSource) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: VineTheme.vineGreen.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
+        ),
+        child: const Text(
+          'Raw Nostr event source',
+          style: TextStyle(
+            color: VineTheme.vineGreen,
+            fontSize: 11,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: VineTheme.accentOrange.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: VineTheme.accentOrange.withValues(alpha: 0.3),
+        ),
+      ),
+      child: const Text(
+        'Parsed event data, not raw Nostr source',
+        style: TextStyle(
+          color: VineTheme.accentOrange,
+          fontSize: 11,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3660,7 +3750,7 @@ class _ViewSourceDialog extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    video.id,
+                    widget.video.id,
                     style: const TextStyle(
                       color: VineTheme.whiteText,
                       fontSize: 12,
@@ -3674,7 +3764,7 @@ class _ViewSourceDialog extends StatelessWidget {
                   icon: const Icon(Icons.copy, size: 16),
                   color: VineTheme.vineGreen,
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: video.id));
+                    Clipboard.setData(ClipboardData(text: widget.video.id));
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Event ID copied'),
@@ -3689,23 +3779,8 @@ class _ViewSourceDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Explainer note
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-              ),
-              child: const Text(
-                'Parsed event data, not raw Nostr source',
-                style: TextStyle(
-                  color: Colors.amber,
-                  fontSize: 11,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
+            // Source badge (loading / raw / parsed)
+            _buildSourceBadge(),
             const SizedBox(height: 12),
 
             // JSON content
@@ -3715,11 +3790,11 @@ class _ViewSourceDialog extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: VineTheme.backgroundColor,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade700),
+                  border: Border.all(color: VineTheme.secondaryText),
                 ),
                 child: SingleChildScrollView(
                   child: SelectableText(
-                    _getEventJson(),
+                    _getDisplayJson(),
                     style: const TextStyle(
                       color: VineTheme.whiteText,
                       fontSize: 12,
@@ -3735,7 +3810,7 @@ class _ViewSourceDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () async {
-            final json = _getEventJson();
+            final json = _getDisplayJson();
             await Clipboard.setData(ClipboardData(text: json));
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -3751,11 +3826,6 @@ class _ViewSourceDialog extends StatelessWidget {
         TextButton(onPressed: context.pop, child: const Text('Close')),
       ],
     );
-  }
-
-  String _getEventJson() {
-    // Serialize the video event we already have - no network fetch needed
-    return const JsonEncoder.withIndent('  ').convert(video.toJson());
   }
 }
 

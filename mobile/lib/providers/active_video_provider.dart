@@ -110,6 +110,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.notificationSettings:
     case RouteType.keyManagement:
     case RouteType.safetySettings:
+    case RouteType.contentFilters:
     case RouteType.editProfile:
     case RouteType.clips:
     case RouteType.importKey:

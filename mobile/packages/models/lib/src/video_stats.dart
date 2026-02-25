@@ -91,6 +91,8 @@ class VideoStats {
         statsData['loops'] ?? json['loops'] ?? json['original_loops'];
     if (directLoops is int) {
       loops = directLoops;
+    } else if (directLoops is double) {
+      loops = directLoops.toInt();
     } else if (directLoops is String) {
       loops = int.tryParse(directLoops);
     }
@@ -123,6 +125,8 @@ class VideoStats {
         statsData['views'] ?? json['views'] ?? json['view_count'];
     if (directViews is int) {
       views = directViews;
+    } else if (directViews is double) {
+      views = directViews.toInt();
     } else if (directViews is String) {
       views = int.tryParse(directViews);
     }
@@ -175,6 +179,13 @@ class VideoStats {
 
     // Normalize empty sha256 to null
     if (sha256 != null && sha256.isEmpty) sha256 = null;
+
+    // Fall back to d_tag as sha256 for Blossom-uploaded videos.
+    // The REST API doesn't return sha256 or raw tags, but d_tag IS the
+    // content hash for Blossom uploads (64 hex chars).
+    if (sha256 == null && dTag.length == 64 && _isHex(dTag)) {
+      sha256 = dTag;
+    }
 
     // Parse author_name for classic Vines
     var authorName =
@@ -231,12 +242,12 @@ class VideoStats {
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
-      reactions: reactions is int ? reactions : 0,
-      comments: comments is int ? comments : 0,
-      reposts: reposts is int ? reposts : 0,
-      engagementScore:
-          (statsData['engagement_score'] ?? json['engagement_score'] ?? 0)
-              as int,
+      reactions: _parseInt(reactions),
+      comments: _parseInt(comments),
+      reposts: _parseInt(reposts),
+      engagementScore: _parseInt(
+        statsData['engagement_score'] ?? json['engagement_score'],
+      ),
       trendingScore: _parseDouble(
         statsData['trending_score'] ?? json['trending_score'],
       ),
@@ -375,3 +386,15 @@ double? _parseDouble(dynamic value) {
   if (value is String) return double.tryParse(value);
   return null;
 }
+
+int _parseInt(dynamic value) {
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
+final _hexPattern = RegExp(r'^[0-9a-fA-F]+$');
+
+/// Returns `true` if [value] contains only hexadecimal characters.
+bool _isHex(String value) => _hexPattern.hasMatch(value);
