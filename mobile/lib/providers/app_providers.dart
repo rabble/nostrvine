@@ -41,8 +41,12 @@ import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/account_label_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -377,6 +381,62 @@ AgeVerificationService ageVerificationService(Ref ref) {
   return service;
 }
 
+/// Content filter service for per-category Show/Warn/Hide preferences.
+/// keepAlive ensures preferences persist and are consistent across the app.
+@Riverpod(keepAlive: true)
+ContentFilterService contentFilterService(Ref ref) {
+  final ageVerificationService = ref.watch(ageVerificationServiceProvider);
+  final service = ContentFilterService(
+    ageVerificationService: ageVerificationService,
+  );
+  service.initialize(); // Initialize asynchronously
+  ref.onDispose(service.dispose);
+  return service;
+}
+
+/// Tracks content filter preference changes. Feed providers watch this
+/// to rebuild when the user changes a Show/Warn/Hide setting.
+@Riverpod(keepAlive: true)
+int contentFilterVersion(Ref ref) {
+  final service = ref.watch(contentFilterServiceProvider);
+  var version = 0;
+  void listener() {
+    version++;
+    ref.invalidateSelf();
+  }
+
+  service.addListener(listener);
+  ref.onDispose(() => service.removeListener(listener));
+  return version;
+}
+
+/// Account label service for self-labeling content (NIP-32 Kind 1985).
+@Riverpod(keepAlive: true)
+AccountLabelService accountLabelService(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final service = AccountLabelService(
+    authService: authService,
+    nostrClient: nostrClient,
+  );
+  service.initialize();
+  return service;
+}
+
+/// Moderation label service for subscribing to Kind 1985 labeler events.
+@Riverpod(keepAlive: true)
+ModerationLabelService moderationLabelService(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+  final service = ModerationLabelService(
+    nostrClient: nostrClient,
+    authService: authService,
+  );
+  service.initialize();
+  ref.onDispose(service.dispose);
+  return service;
+}
+
 /// Audio sharing preference service for managing whether audio is available
 /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
 @Riverpod(keepAlive: true)
@@ -452,6 +512,7 @@ FlutterSecureStorage flutterSecureStorage(Ref ref) => FlutterSecureStorage(
     resetOnError: true,
   ),
   mOptions: MacOsOptions(useDataProtectionKeyChain: false),
+  lOptions: const LinuxOptions(),
 );
 
 @Riverpod(keepAlive: true)
@@ -814,6 +875,7 @@ VideoEventService videoEventService(Ref ref) {
   service.setBlocklistService(blocklistService);
   service.setAgeVerificationService(ageVerificationService);
   service.setLikesRepository(likesRepository);
+  service.setContentFilterService(ref.watch(contentFilterServiceProvider));
   return service;
 }
 
@@ -875,6 +937,30 @@ SocialService socialService(Ref ref) {
     personalEventCache: personalEventCache,
     analyticsApiService: analyticsApiService,
   );
+}
+
+/// Cached following list loaded directly from SharedPreferences.
+///
+/// Available immediately after authentication (no NostrClient needed).
+/// This provides the follow list from the previous session for instant
+/// feed display. The full FollowRepository will update this when ready.
+@Riverpod(keepAlive: true)
+List<String> cachedFollowingList(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final pubkey = authService.currentPublicKeyHex;
+  if (pubkey == null || pubkey.isEmpty) return const [];
+
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final key = 'following_list_$pubkey';
+  final cached = prefs.getString(key);
+  if (cached == null) return const [];
+
+  try {
+    final decoded = jsonDecode(cached) as List<dynamic>;
+    return decoded.cast<String>();
+  } catch (e) {
+    return const [];
+  }
 }
 
 /// Provider for FollowRepository instance
@@ -1467,18 +1553,21 @@ VideoLocalStorage videoLocalStorage(Ref ref) {
 /// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
+/// - FunnelcakeApiClient for trending/popular video sorting
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final localStorage = ref.watch(videoLocalStorageProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(ageVerificationService),
+    funnelcakeApiClient: funnelcakeClient,
   );
 }
 

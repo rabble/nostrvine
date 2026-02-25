@@ -3,13 +3,11 @@
 
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/settings_screen.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -106,9 +104,17 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                         _DrawerItem(
                           title: 'Settings',
                           onTap: () {
-                            final router = GoRouter.of(context);
+                            // Push the settings route before closing the drawer.
+                            //
+                            // This ensures the overlay flag (isDrawerOpen) stays
+                            // true while the route isbeing pushed,
+                            // preventing a brief video resume.
+                            //
+                            // The drawer closes after the push,
+                            // and onDrawerChanged(false) fires only once the
+                            // settings screen is already on top.
+                            context.push(SettingsScreen.path);
                             Navigator.of(context).pop();
-                            router.push(SettingsScreen.path);
                           },
                         ),
 
@@ -222,17 +228,6 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                           color: VineTheme.outlineDisabled,
                           height: 1,
                         ),
-
-                        // Developer section (debug mode only)
-                        if (kDebugMode)
-                          _DrawerItem(
-                            title: 'BLoC Test Screen',
-                            onTap: () {
-                              final router = GoRouter.of(context);
-                              Navigator.of(context).pop();
-                              router.push(VideoFeedPage.path);
-                            },
-                          ),
                       ],
                     ),
                   ),

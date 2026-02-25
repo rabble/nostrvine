@@ -127,6 +127,7 @@ final class CommentsState extends Equatable {
     this.mentionQuery = '',
     this.mentionSuggestions = const [],
     this.activeMentions = const {},
+    this.newCommentCount = 0,
   });
 
   /// The current status of the comments
@@ -176,6 +177,10 @@ final class CommentsState extends Equatable {
   /// Populated when user selects a mention suggestion; consumed on submit
   /// to convert `@displayName` back to `nostr:npub` in the posted text.
   final Map<String, String> activeMentions;
+
+  /// Number of new comments received from the real-time subscription
+  /// that the user has not yet acknowledged (scrolled to top / tapped pill).
+  final int newCommentCount;
 
   /// All comments sorted according to [sortMode].
   List<Comment> get comments {
@@ -328,6 +333,7 @@ final class CommentsState extends Equatable {
     String? mentionQuery,
     List<MentionSuggestion>? mentionSuggestions,
     Map<String, String>? activeMentions,
+    int? newCommentCount,
   }) {
     return CommentsState(
       status: status ?? this.status,
@@ -352,11 +358,12 @@ final class CommentsState extends Equatable {
       mentionQuery: mentionQuery ?? this.mentionQuery,
       mentionSuggestions: mentionSuggestions ?? this.mentionSuggestions,
       activeMentions: activeMentions ?? this.activeMentions,
+      newCommentCount: newCommentCount ?? this.newCommentCount,
     );
   }
 
   /// Creates a copy with the active reply cleared.
-  /// Preserves like data, sort mode, and reply counts.
+  /// Preserves like data, sort mode, reply counts, and new comment count.
   CommentsState clearActiveReply({
     CommentsStatus? status,
     Map<String, Comment>? commentsById,
@@ -381,6 +388,7 @@ final class CommentsState extends Equatable {
       mentionQuery: '',
       mentionSuggestions: const [],
       activeMentions: const {},
+      newCommentCount: newCommentCount,
     );
   }
 
@@ -407,5 +415,6 @@ final class CommentsState extends Equatable {
     mentionQuery,
     mentionSuggestions,
     activeMentions,
+    newCommentCount,
   ];
 }

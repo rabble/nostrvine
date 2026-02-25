@@ -146,6 +146,40 @@ definitions:
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
           --export-options-plist=/Users/builder/export_options.plist
+    - &upload_dsyms_to_crashlytics
+      name: Upload dSYMs to Firebase Crashlytics
+      script: |
+        DSYM_DIR="build/ios/archive/Runner.xcarchive/dSYMs"
+
+        if [ ! -d "$DSYM_DIR" ]; then
+          echo "ERROR: dSYM directory not found at $DSYM_DIR"
+          find build/ios -name "*.dSYM" -type d 2>/dev/null || true
+          exit 1
+        fi
+
+        echo "Found dSYMs:"
+        ls -la "$DSYM_DIR"
+
+        # Find the Crashlytics upload-symbols tool from the SPM build
+        UPLOAD_SYMBOLS=$(find "$HOME/Library/Developer/Xcode/DerivedData" -name "upload-symbols" -type f 2>/dev/null | head -1)
+        if [ -z "$UPLOAD_SYMBOLS" ]; then
+          UPLOAD_SYMBOLS=$(find . -path "*/FirebaseCrashlytics*" -name "upload-symbols" -type f 2>/dev/null | head -1)
+        fi
+
+        if [ -z "$UPLOAD_SYMBOLS" ]; then
+          echo "ERROR: upload-symbols tool not found. Searching all locations..."
+          find "$HOME" -name "upload-symbols" -type f 2>/dev/null || true
+          find . -name "upload-symbols" -type f 2>/dev/null || true
+          exit 1
+        fi
+
+        echo "Found upload-symbols at: $UPLOAD_SYMBOLS"
+        chmod +x "$UPLOAD_SYMBOLS"
+
+        "$UPLOAD_SYMBOLS" \
+          -gsp ios/Runner/GoogleService-Info.plist \
+          -p ios \
+          "$DSYM_DIR"
     - &build_ios_simulator
       name: Build iOS Simulator app
       script: |
@@ -206,9 +240,11 @@ workflows:
       - *enable_spm
       - *pod_install
       - *build_ios
+      - *upload_dsyms_to_crashlytics
       - *publish_github_release
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/ios/archive/Runner.xcarchive/dSYMs/**
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
     publishing:

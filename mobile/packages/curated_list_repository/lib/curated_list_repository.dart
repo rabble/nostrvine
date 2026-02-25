@@ -1,0 +1,4 @@
+/// Repository for managing curated video list subscriptions.
+library;
+
+export 'src/curated_list_repository.dart';

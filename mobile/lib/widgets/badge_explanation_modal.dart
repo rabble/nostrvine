@@ -255,7 +255,7 @@ class _VerificationLevelCard extends StatelessWidget {
       return _VerificationConfig(
         icon: Icons.verified,
         color: Colors.green[700]!,
-        title: 'Fully Verified',
+        title: 'Human Made',
         description:
             'This video has the highest level of proof - captured on a real device with hardware security verification, and embedded Content Credentials (C2PA) in the video file. We can confirm it was recorded using DiVine on an actual phone.',
       );

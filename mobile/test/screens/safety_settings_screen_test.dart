@@ -5,9 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/services/account_label_service.dart';
+import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
 
@@ -35,14 +40,64 @@ class MockContentBlocklistService extends Mock
 class MockContentReportingService extends Mock
     implements ContentReportingService {}
 
+class MockAccountLabelService extends Mock implements AccountLabelService {
+  @override
+  Set<ContentLabel> get accountLabels => const {};
+
+  @override
+  bool get hasAccountLabels => false;
+
+  @override
+  Future<void> initialize() async {}
+}
+
+class MockModerationLabelService extends Mock
+    implements ModerationLabelService {
+  @override
+  Set<String> get subscribedLabelers => {
+    ModerationLabelService.divineModerationPubkeyHex,
+  };
+
+  @override
+  Future<void> initialize() async {}
+}
+
+class MockAgeVerificationService extends Mock
+    implements AgeVerificationService {
+  @override
+  bool get isAdultContentVerified => false;
+
+  @override
+  Future<void> initialize() async {}
+}
+
+class MockContentFilterService extends Mock implements ContentFilterService {
+  @override
+  bool get isInitialized => true;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Map<ContentLabel, ContentFilterPreference> get allPreferences => {};
+}
+
 void main() {
   group('SafetySettingsScreen Widget Tests', () {
     late MockContentBlocklistService mockBlocklistService;
     late MockContentReportingService mockReportingService;
+    late MockAccountLabelService mockAccountLabelService;
+    late MockModerationLabelService mockModerationLabelService;
+    late MockAgeVerificationService mockAgeVerificationService;
+    late MockContentFilterService mockContentFilterService;
 
     setUp(() {
       mockBlocklistService = MockContentBlocklistService();
       mockReportingService = MockContentReportingService();
+      mockAccountLabelService = MockAccountLabelService();
+      mockModerationLabelService = MockModerationLabelService();
+      mockAgeVerificationService = MockAgeVerificationService();
+      mockContentFilterService = MockContentFilterService();
     });
 
     Widget createTestWidget() {
@@ -54,6 +109,18 @@ void main() {
           // contentReportingServiceProvider is async, so wrap in AsyncValue
           contentReportingServiceProvider.overrideWith(
             (ref) async => mockReportingService,
+          ),
+          accountLabelServiceProvider.overrideWithValue(
+            mockAccountLabelService,
+          ),
+          moderationLabelServiceProvider.overrideWithValue(
+            mockModerationLabelService,
+          ),
+          ageVerificationServiceProvider.overrideWithValue(
+            mockAgeVerificationService,
+          ),
+          contentFilterServiceProvider.overrideWithValue(
+            mockContentFilterService,
           ),
         ],
       );

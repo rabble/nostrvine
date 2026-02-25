@@ -145,3 +145,16 @@ final class MentionRegistered extends CommentsEvent {
 final class MentionSuggestionsCleared extends CommentsEvent {
   const MentionSuggestionsCleared();
 }
+
+/// A new comment was received from the real-time subscription
+final class NewCommentReceived extends CommentsEvent {
+  const NewCommentReceived(this.comment);
+
+  /// The new comment received from the stream
+  final Comment comment;
+}
+
+/// User acknowledged the new comments (e.g., tapped the pill or scrolled to top)
+final class NewCommentsAcknowledged extends CommentsEvent {
+  const NewCommentsAcknowledged();
+}

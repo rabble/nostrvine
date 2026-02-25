@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 
 void main() {
   group('Explore Tab Tap Navigation Test', () {
@@ -26,7 +26,7 @@ void main() {
         );
 
         // Start at home
-        container.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(0));
+        container.read(goRouterProvider).go(VideoFeedPage.pathForIndex(0));
         await tester.pumpAndSettle();
 
         // Get current location - should be /home/0
@@ -36,7 +36,7 @@ void main() {
             .value
             .uri
             .toString();
-        expect(homeLocation, HomeScreenRouter.pathForIndex(0));
+        expect(homeLocation, VideoFeedPage.pathForIndex(0));
 
         // Simulate tapping explore tab (index 1)
         // This should navigate to /explore (grid mode), NOT /explore/0 (feed mode)

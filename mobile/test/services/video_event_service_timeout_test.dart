@@ -1,32 +1,39 @@
 import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'video_event_service_deduplication_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('VideoEventService Timeout Cleanup', () {
     late VideoEventService videoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
       // Setup mock NostrService
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.connectedRelayCount).thenReturn(1);
-      // Ensure we return a stream that hangs (never emits) to simulate timeout conditions
-      // Stream.empty() closes immediately, triggering onDone - we want it to HANG
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
+      // Ensure we return a stream that hangs (never emits) to simulate
+      // timeout conditions. Stream.empty() closes immediately, triggering
+      // onDone - we want it to HANG.
       when(
-        mockNostrService.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) {
         final controller = StreamController<Event>();
         addTearDown(() => controller.close());
@@ -52,10 +59,7 @@ void main() {
 
         // Override mock to use our tracked controller
         when(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) => controller.stream);
 
         fakeAsync((async) {
@@ -68,13 +72,21 @@ void main() {
 
           // Verify subscription started
           verify(
-            mockNostrService.subscribe(
-              argThat(anything),
-              onEose: anyNamed('onEose'),
-            ),
+            () =>
+                mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
           ).called(1);
 
-          clearInteractions(mockNostrService);
+          reset(mockNostrService);
+          when(() => mockNostrService.isInitialized).thenReturn(true);
+          when(() => mockNostrService.connectedRelayCount).thenReturn(1);
+          when(
+            () =>
+                mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
+          ).thenAnswer((_) {
+            final c = StreamController<Event>();
+            addTearDown(() => c.close());
+            return c.stream;
+          });
 
           expect(
             videoEventService.isSubscribed(SubscriptionType.discovery),
@@ -117,7 +129,6 @@ void main() {
           );
 
           // 3. Try to subscribe again (simulate user coming back)
-          // If cleanup failed, this will skip re-subscription because it thinks it's a duplicate
           videoEventService.subscribeToVideoFeed(
             subscriptionType: SubscriptionType.discovery,
             force: false, // Default behavior relies on deduplication
@@ -126,12 +137,9 @@ void main() {
           async.flushMicrotasks();
 
           // 4. Verify that subscribe was called A SECOND TIME
-          // If the bug exists, the total count will be 1 (second call skipped)
-          // If fixed, the total count will be 2
-
-          // Simplified verification to avoid argument matching issues
           verify(
-            mockNostrService.subscribe(any, onEose: anyNamed('onEose')),
+            () =>
+                mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
           ).called(1);
         });
       },

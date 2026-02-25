@@ -17,7 +17,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:divine_camera/divine_camera.dart'
     show DivineCameraLens, DivineVideoQuality;
 import 'package:openvine/services/audio_playback_service.dart';
@@ -605,6 +605,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       return;
     }
 
+    // Pre-load sound before recording starts so playback begins instantly
+    await _prepareSoundForPlayback();
+
     // Set recording state before starting (UI feedback)
     state = state.copyWith(recordingState: .recording);
 
@@ -614,6 +617,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
+    // Sound is already loaded — just hit play
+    unawaited(_playSoundPlayback());
     final success = await _cameraService.startRecording(
       maxDuration: remainingDuration,
     );
@@ -627,9 +632,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
       clipProvider.startRecording();
-
-      // Start audio playback if a sound is selected
-      unawaited(_startSoundPlayback());
     } else {
       Log.warning(
         '⚠️ Recording failed to start or was stopped early',
@@ -893,7 +895,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       context.pop();
     } else {
       // No screen to pop to (navigated via go), go home instead.
-      context.go(HomeScreenRouter.pathForIndex(0));
+      context.go(VideoFeedPage.pathForIndex(0));
     }
   }
 
@@ -984,13 +986,14 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   // === SOUND PLAYBACK DURING RECORDING ===
 
-  /// Starts audio playback for the selected sound during recording.
+  /// Pre-loads the selected sound so playback can start instantly.
   ///
   /// Configures the audio session for simultaneous recording and playback,
-  /// loads the audio from the sound's URL, seeks to the correct position
-  /// based on existing clip durations, and starts playback.
+  /// loads the audio from the sound's URL, and seeks to the correct
+  /// position based on existing clip durations.
+  /// Call [_playSoundPlayback] after recording starts to begin playback.
   /// Failures are logged but do not prevent recording from continuing.
-  Future<void> _startSoundPlayback() async {
+  Future<void> _prepareSoundForPlayback() async {
     final selectedSound = ref.read(selectedSoundProvider);
     if (selectedSound == null || selectedSound.url == null) return;
 
@@ -1009,24 +1012,46 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       if (startPosition > Duration.zero) {
         await _audioPlaybackService!.seek(startPosition);
         Log.debug(
-          'Seeking sound to position: ${startPosition.inMilliseconds}ms',
+          'Seeking sound to position: '
+          '${startPosition.inMilliseconds}ms',
           name: 'VideoRecorderNotifier',
           category: LogCategory.video,
         );
       }
 
-      // Start playback
-      await _audioPlaybackService!.play();
-
       Log.info(
-        'Started sound playback during recording: '
+        'Sound prepared for playback: '
         '${selectedSound.title ?? selectedSound.id}',
         name: 'VideoRecorderNotifier',
         category: LogCategory.video,
       );
     } catch (e) {
       Log.warning(
-        'Failed to start sound playback during recording: $e',
+        'Failed to prepare sound for playback: $e',
+        name: 'VideoRecorderNotifier',
+        category: LogCategory.video,
+      );
+      // Don't prevent recording - sound playback is best-effort
+    }
+  }
+
+  /// Starts playback of a previously prepared sound.
+  ///
+  /// Assumes [_prepareSoundForPlayback] was called beforehand.
+  Future<void> _playSoundPlayback() async {
+    if (_audioPlaybackService == null) return;
+
+    try {
+      await _audioPlaybackService!.play();
+
+      Log.info(
+        'Started sound playback during recording',
+        name: 'VideoRecorderNotifier',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to start sound playback: $e',
         name: 'VideoRecorderNotifier',
         category: LogCategory.video,
       );

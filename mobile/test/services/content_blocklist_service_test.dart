@@ -1,16 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 
-import 'content_blocklist_service_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient])
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('ContentBlocklistService', () {
     late ContentBlocklistService service;
 
@@ -132,11 +135,11 @@ void main() {
 
   group('ContentBlocklistService - Mutual Mute Sync', () {
     late ContentBlocklistService service;
-    late MockNostrClient mockNostrService;
+    late _MockNostrClient mockNostrService;
 
     setUp(() {
       service = ContentBlocklistService();
-      mockNostrService = MockNostrClient();
+      mockNostrService = _MockNostrClient();
     });
 
     test(
@@ -145,9 +148,7 @@ void main() {
         const ourPubkey = 'test_our_pubkey_hex';
 
         List<dynamic>? capturedFilters;
-        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
-          invocation,
-        ) {
+        when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
           capturedFilters = invocation.positionalArguments[0] as List;
           return Stream.empty();
         });
@@ -155,7 +156,7 @@ void main() {
         await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
 
         // Verify subscribeToEvents was called
-        verify(mockNostrService.subscribe(argThat(anything))).called(1);
+        verify(() => mockNostrService.subscribe(any())).called(1);
 
         expect(capturedFilters, isNotNull);
         expect(capturedFilters!.length, equals(1));
@@ -170,7 +171,7 @@ void main() {
       const ourPubkey = 'test_our_pubkey_hex';
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => Stream.empty());
 
       await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
@@ -178,7 +179,7 @@ void main() {
       await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
 
       // Should only subscribe once
-      verify(mockNostrService.subscribe(argThat(anything))).called(1);
+      verify(() => mockNostrService.subscribe(any())).called(1);
     });
 
     test(
@@ -204,7 +205,7 @@ void main() {
         event.sig = 'signature';
 
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([event]));
 
         await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
@@ -255,7 +256,7 @@ void main() {
         final controller = StreamController<Event>();
 
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
         await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
@@ -295,7 +296,7 @@ void main() {
       event.sig = 'signature';
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => Stream.fromIterable([event]));
 
       await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
@@ -333,7 +334,7 @@ void main() {
         event.sig = 'signature';
 
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([event]));
 
         await service.syncMuteListsInBackground(mockNostrService, ourPubkey);

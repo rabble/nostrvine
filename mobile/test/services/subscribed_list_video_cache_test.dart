@@ -6,14 +6,15 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
-import '../builders/test_video_event_builder.dart';
 
+import '../builders/test_video_event_builder.dart';
 import 'subscribed_list_video_cache_test.mocks.dart';
 
 @GenerateMocks([

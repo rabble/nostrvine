@@ -2,8 +2,7 @@
 // ABOUTME: Ensures Kind 0 events are fetched and cached when viewing videos
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart';
@@ -13,25 +12,49 @@ import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'dart:convert';
 
-@GenerateMocks([NostrClient, SubscriptionManager, ProfileCacheService])
-import 'profile_fetching_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
+class _MockProfileCacheService extends Mock implements ProfileCacheService {}
 
 void main() {
   late UserProfileService profileService;
-  late MockNostrClient mockNostrService;
-  late MockSubscriptionManager mockSubscriptionManager;
-  late MockProfileCacheService mockCacheService;
+  late _MockNostrClient mockNostrService;
+  late _MockSubscriptionManager mockSubscriptionManager;
+  late _MockProfileCacheService mockCacheService;
+
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(
+      UserProfile(
+        pubkey: 'fallback',
+        name: null,
+        displayName: null,
+        about: null,
+        picture: null,
+        banner: null,
+        website: null,
+        lud06: null,
+        lud16: null,
+        nip05: null,
+        createdAt: DateTime.now(),
+        eventId: 'fallback_event_id',
+        rawData: const {},
+      ),
+    );
+  });
 
   setUp(() {
-    mockNostrService = MockNostrClient();
-    mockSubscriptionManager = MockSubscriptionManager();
-    mockCacheService = MockProfileCacheService();
+    mockNostrService = _MockNostrClient();
+    mockSubscriptionManager = _MockSubscriptionManager();
+    mockCacheService = _MockProfileCacheService();
 
     // Set up default mock behaviors
-    when(mockNostrService.isInitialized).thenReturn(true);
-    when(mockCacheService.isInitialized).thenReturn(true);
-    when(mockCacheService.getCachedProfile(any)).thenReturn(null);
-    when(mockCacheService.shouldRefreshProfile(any)).thenReturn(false);
+    when(() => mockNostrService.isInitialized).thenReturn(true);
+    when(() => mockCacheService.isInitialized).thenReturn(true);
+    when(() => mockCacheService.getCachedProfile(any())).thenReturn(null);
+    when(() => mockCacheService.shouldRefreshProfile(any())).thenReturn(false);
 
     profileService = UserProfileService(
       mockNostrService,
@@ -49,54 +72,49 @@ void main() {
         const testPubkey = 'test_pubkey_123456789';
         const testSubscriptionId = 'sub_123';
 
-        // Note: VideoEvent creation removed - not used in this test
-
         // Mock subscription creation
         when(
-          mockSubscriptionManager.createSubscription(
-            name: anyNamed('name'),
-            filters: anyNamed('filters'),
-            onEvent: anyNamed('onEvent'),
-            onError: anyNamed('onError'),
-            onComplete: anyNamed('onComplete'),
-            priority: anyNamed('priority'),
+          () => mockSubscriptionManager.createSubscription(
+            name: any(named: 'name'),
+            filters: any(named: 'filters'),
+            onEvent: any(named: 'onEvent'),
+            onError: any(named: 'onError'),
+            onComplete: any(named: 'onComplete'),
+            priority: any(named: 'priority'),
           ),
         ).thenAnswer((_) async => testSubscriptionId);
 
         // Act - Simulate video display triggering profile fetch
         await profileService.initialize();
-        final profileFuture = profileService.fetchProfile(testPubkey);
+        // fetchProfile adds the pubkey to a batch queue with a 100ms debounce
+        profileService.fetchProfile(testPubkey);
 
-        // Assert - Verify subscription was created for Kind 0 event
+        // Wait for the debounce timer to fire and execute the batch fetch
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        // Assert - Verify a batch subscription was created for Kind 0 event
         verify(
-          mockSubscriptionManager.createSubscription(
-            name: argThat(contains('profile'), named: 'name'),
-            filters: argThat(
-              predicate<List<Filter>>((filters) {
+          () => mockSubscriptionManager.createSubscription(
+            name: any(that: contains('profile'), named: 'name'),
+            filters: any(
+              that: predicate<List<Filter>>((filters) {
                 if (filters.isEmpty) return false;
                 final filter = filters.first;
                 return filter.kinds!.contains(0) &&
-                    filter.authors!.contains(testPubkey) &&
-                    filter.limit == 1;
+                    filter.authors!.contains(testPubkey);
               }),
               named: 'filters',
             ),
-            onEvent: anyNamed('onEvent'),
-            onError: anyNamed('onError'),
-            onComplete: anyNamed('onComplete'),
-            priority: anyNamed('priority'),
+            onEvent: any(named: 'onEvent'),
+            onError: any(named: 'onError'),
+            onComplete: any(named: 'onComplete'),
+            priority: any(named: 'priority'),
           ),
         ).called(1);
 
-        // Verify profile is not yet available (async fetch)
-        final profile = await profileFuture;
-        expect(profile, isNull);
-
-        // Verify profile is marked as pending
+        // Verify profile is not yet available (batch fetch hasn't completed)
         expect(profileService.hasProfile(testPubkey), isFalse);
-        // TODO(any): Fix and enable this test
       },
-      skip: true,
     );
 
     test(
@@ -144,9 +162,9 @@ void main() {
 
         // Verify persistent cache was updated
         verify(
-          mockCacheService.cacheProfile(
-            argThat(
-              predicate<UserProfile>(
+          () => mockCacheService.cacheProfile(
+            any(
+              that: predicate<UserProfile>(
                 (profile) =>
                     profile.pubkey == testPubkey &&
                     profile.name == testName &&
@@ -171,13 +189,13 @@ void main() {
 
       // Mock subscription creation for batch
       when(
-        mockSubscriptionManager.createSubscription(
-          name: anyNamed('name'),
-          filters: anyNamed('filters'),
-          onEvent: anyNamed('onEvent'),
-          onError: anyNamed('onError'),
-          onComplete: anyNamed('onComplete'),
-          priority: anyNamed('priority'),
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((_) async => testSubscriptionId);
 
@@ -190,10 +208,10 @@ void main() {
 
       // Assert - Verify batch subscription was created
       verify(
-        mockSubscriptionManager.createSubscription(
-          name: argThat(contains('profile_batch'), named: 'name'),
-          filters: argThat(
-            predicate<List<Filter>>((filters) {
+        () => mockSubscriptionManager.createSubscription(
+          name: any(that: contains('profile_batch'), named: 'name'),
+          filters: any(
+            that: predicate<List<Filter>>((filters) {
               if (filters.isEmpty) return false;
               final filter = filters.first;
               return filter.kinds!.contains(0) &&
@@ -202,10 +220,10 @@ void main() {
             }),
             named: 'filters',
           ),
-          onEvent: anyNamed('onEvent'),
-          onError: anyNamed('onError'),
-          onComplete: anyNamed('onComplete'),
-          priority: anyNamed('priority'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          priority: any(named: 'priority'),
         ),
       ).called(1);
     });
@@ -226,7 +244,7 @@ void main() {
         nip05: null,
         createdAt: DateTime.now(),
         eventId: 'cached_event_id',
-        rawData: {
+        rawData: const {
           'name': 'Cached User',
           'display_name': 'CachedUser',
           'about': 'Already cached',
@@ -235,7 +253,7 @@ void main() {
 
       // Mock cached profile
       when(
-        mockCacheService.getCachedProfile(testPubkey),
+        () => mockCacheService.getCachedProfile(testPubkey),
       ).thenReturn(cachedProfile);
 
       // Act
@@ -244,13 +262,13 @@ void main() {
 
       // Assert - Verify no subscription was created
       verifyNever(
-        mockSubscriptionManager.createSubscription(
-          name: anyNamed('name'),
-          filters: anyNamed('filters'),
-          onEvent: anyNamed('onEvent'),
-          onError: anyNamed('onError'),
-          onComplete: anyNamed('onComplete'),
-          priority: anyNamed('priority'),
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          priority: any(named: 'priority'),
         ),
       );
 
@@ -265,13 +283,13 @@ void main() {
 
       // Mock subscription creation that will fail
       when(
-        mockSubscriptionManager.createSubscription(
-          name: anyNamed('name'),
-          filters: anyNamed('filters'),
-          onEvent: anyNamed('onEvent'),
-          onError: anyNamed('onError'),
-          onComplete: anyNamed('onComplete'),
-          priority: anyNamed('priority'),
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          priority: any(named: 'priority'),
         ),
       ).thenThrow(Exception('Network error'));
 

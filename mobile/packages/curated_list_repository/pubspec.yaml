@@ -1,0 +1,16 @@
+name: curated_list_repository
+description: Repository for managing curated video lists (NIP-51 kind 30005).
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  models:
+
+dev_dependencies:
+  mocktail: ^1.0.4
+  test: ^1.29.0
+  very_good_analysis: ^10.2.0

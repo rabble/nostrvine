@@ -45,6 +45,9 @@ class ProfileFeed extends _$ProfileFeed {
     _usingRestApi = false;
     _nextCursor = null;
 
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
+
     Log.info(
       'ProfileFeed: BUILD START for user=$userId',
       name: 'ProfileFeedProvider',
@@ -274,6 +277,9 @@ class ProfileFeed extends _$ProfileFeed {
       unregisterNew();
     });
 
+    // Apply content filter preferences
+    authorVideos = videoEventService.filterVideoList(authorVideos);
+
     Log.info(
       'ProfileFeed: Initial load complete - ${authorVideos.length} videos for user=$userId (REST API: $_usingRestApi)',
       name: 'ProfileFeedProvider',
@@ -314,6 +320,9 @@ class ProfileFeed extends _$ProfileFeed {
 
     // Fix #3: Apply cached metadata to preserve engagement stats
     updatedVideos = _applyMetadataCache(updatedVideos);
+
+    // Apply content filter preferences
+    updatedVideos = videoEventService.filterVideoList(updatedVideos);
 
     state = AsyncData(
       VideoFeedState(
@@ -465,6 +474,10 @@ class ProfileFeed extends _$ProfileFeed {
         // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
         authorVideos = await _enrichWithNostrTags(authorVideos);
 
+        // Apply content filter preferences
+        final videoEventService = ref.read(videoEventServiceProvider);
+        authorVideos = videoEventService.filterVideoList(authorVideos);
+
         state = AsyncData(
           VideoFeedState(
             videos: authorVideos,
@@ -573,6 +586,10 @@ class ProfileFeed extends _$ProfileFeed {
           // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
           newVideos = await _enrichWithNostrTags(newVideos);
 
+          // Apply content filter preferences
+          final videoEventService = ref.read(videoEventServiceProvider);
+          newVideos = videoEventService.filterVideoList(newVideos);
+
           if (newVideos.isNotEmpty) {
             final allVideos = [...currentState.videos, ...newVideos];
             Log.info(
@@ -664,6 +681,9 @@ class ProfileFeed extends _$ProfileFeed {
       // Apply cached metadata to preserve engagement stats
       updatedVideos = _applyMetadataCache(updatedVideos);
 
+      // Apply content filter preferences
+      updatedVideos = videoEventService.filterVideoList(updatedVideos);
+
       // Update state with new videos
       if (!ref.mounted) return;
       state = AsyncData(
@@ -720,6 +740,10 @@ class ProfileFeed extends _$ProfileFeed {
 
           // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
           authorVideos = await _enrichWithNostrTags(authorVideos);
+
+          // Apply content filter preferences
+          final videoEventService = ref.read(videoEventServiceProvider);
+          authorVideos = videoEventService.filterVideoList(authorVideos);
 
           state = AsyncData(
             VideoFeedState(

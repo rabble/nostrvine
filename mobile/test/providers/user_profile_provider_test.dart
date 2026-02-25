@@ -1,43 +1,47 @@
 // ABOUTME: Tests for Riverpod UserProfileProvider state management and profile caching
 // ABOUTME: Verifies reactive user profile updates and proper cache management
 
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/state/user_profile_state.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 // Mock classes
-class MockNostrService extends Mock implements NostrClient {}
+class _MockNostrClient extends Mock implements NostrClient {}
 
-class MockSubscriptionManager extends Mock implements SubscriptionManager {}
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
-class MockEvent extends Mock implements Event {}
+class _MockEvent extends Mock implements Event {}
+
+class _MockProfileRepository extends Mock implements ProfileRepository {}
+
+class _MockUserProfileService extends Mock implements UserProfileService {}
 
 void main() {
   setUpAll(() {
-    // Register fallback values for mocktail
-    registerFallbackValue(MockEvent());
+    registerFallbackValue(_MockEvent());
   });
 
-  group('UserProfileProvider', () {
+  group(UserProfileNotifier, () {
     late ProviderContainer container;
-    late MockNostrService mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
+    late UserProfileService userProfileService;
 
     setUp(() {
-      mockNostrService = MockNostrService();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
-      // Mock SubscriptionManager.createSubscription to simulate profile event delivery
+      // Default mock for subscription creation: simulates no profile found
       when(
         () => mockSubscriptionManager.createSubscription(
           name: any(named: 'name'),
@@ -48,24 +52,29 @@ void main() {
           priority: any(named: 'priority'),
         ),
       ).thenAnswer((invocation) async {
-        // Get callbacks
         final onComplete =
             invocation.namedArguments[const Symbol('onComplete')]
                 as void Function()?;
-
-        // Note: Real tests should create proper mock events for their specific scenarios
-        // This default handler just calls onComplete without events (simulates no profile found)
-
         if (onComplete != null) {
           Future.delayed(const Duration(milliseconds: 50), onComplete);
         }
         return 'test-subscription-id';
       });
 
-      // Mock SubscriptionManager.cancelSubscription
       when(
         () => mockSubscriptionManager.cancelSubscription(any()),
       ).thenAnswer((_) async {});
+
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
+
+      // Create a real UserProfileService with mocked dependencies,
+      // bypassing the provider chain that requires analyticsApiService etc.
+      userProfileService = UserProfileService(
+        mockNostrService,
+        subscriptionManager: mockSubscriptionManager,
+        skipIndexerFallback: true,
+      );
 
       container = ProviderContainer(
         overrides: [
@@ -73,12 +82,14 @@ void main() {
           subscriptionManagerProvider.overrideWithValue(
             mockSubscriptionManager,
           ),
+          userProfileServiceProvider.overrideWithValue(userProfileService),
         ],
       );
     });
 
     tearDown(() {
       container.dispose();
+      userProfileService.dispose();
     });
 
     test('should start with initial state', () {
@@ -91,110 +102,16 @@ void main() {
     });
 
     test('should initialize properly', () async {
-      // Setup mock Nostr service with all required connection checks
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(
-        () => mockNostrService.connectedRelayCount,
-      ).thenReturn(1); // FIX: Add missing mock
-
-      // Initialize
       await container.read(userProfileProvider.notifier).initialize();
 
       final state = container.read(userProfileProvider);
       expect(state.isInitialized, isTrue);
     });
 
-    test('should fetch profile using async provider with real data', () async {
-      const pubkey = 'test-pubkey-123';
-
-      // Setup mock Nostr service with all required connection checks
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(
-        () => mockNostrService.connectedRelayCount,
-      ).thenReturn(1); // FIX: Add missing mock
-
-      // Setup mock event with real profile data
-      final mockEvent = MockEvent();
-      when(() => mockEvent.kind).thenReturn(0);
-      when(() => mockEvent.pubkey).thenReturn(pubkey);
-      when(() => mockEvent.id).thenReturn('event-id-123');
-      when(() => mockEvent.createdAt).thenReturn(1234567890);
-      when(() => mockEvent.content).thenReturn(
-        '{"name":"Test User","picture":"https://example.com/avatar.jpg","about":"Test bio"}',
-      );
-      when(() => mockEvent.tags).thenReturn([]);
-
-      // Mock SubscriptionManager to call onEvent with mock event
-      when(
-        () => mockSubscriptionManager.createSubscription(
-          name: any(named: 'name'),
-          filters: any(named: 'filters'),
-          onEvent: any(named: 'onEvent'),
-          onError: any(named: 'onError'),
-          onComplete: any(named: 'onComplete'),
-          priority: any(named: 'priority'),
-        ),
-      ).thenAnswer((invocation) async {
-        // Get callbacks
-        final onEvent =
-            invocation.namedArguments[const Symbol('onEvent')]
-                as void Function(Event);
-        final onComplete =
-            invocation.namedArguments[const Symbol('onComplete')]
-                as void Function()?;
-
-        // Call onEvent with the mock event
-        Future.microtask(() => onEvent(mockEvent));
-
-        // Call onComplete after event
-        Future.delayed(const Duration(milliseconds: 50), onComplete);
-
-        return 'test-subscription-id';
-      });
-
-      // Test the async provider directly
-      final profileAsyncValue = await container.read(
-        fetchUserProfileProvider(pubkey).future,
-      );
-
-      expect(profileAsyncValue, isNotNull);
-      expect(profileAsyncValue!.pubkey, equals(pubkey));
-      expect(profileAsyncValue.name, equals('Test User'));
-      expect(
-        profileAsyncValue.picture,
-        equals('https://example.com/avatar.jpg'),
-      );
-
-      // Test that it's cached by calling again (should not hit network again)
-      final cachedProfile = await container.read(
-        fetchUserProfileProvider(pubkey).future,
-      );
-      expect(cachedProfile, equals(profileAsyncValue));
-
-      // Verify subscription was created
-      verify(
-        () => mockSubscriptionManager.createSubscription(
-          name: any(named: 'name'),
-          filters: any(named: 'filters'),
-          onEvent: any(named: 'onEvent'),
-          onError: any(named: 'onError'),
-          onComplete: any(named: 'onComplete'),
-          priority: any(named: 'priority'),
-        ),
-      ).called(1);
-      // TODO(any): Fix and re-enable tests
-      // This test fails only when running the whole suite, likely due to mock contamination
-    }, skip: true);
-
     test('should use notifier for basic profile management', () async {
       const pubkey = 'test-pubkey-456';
 
-      // Setup mock Nostr service with all required connection checks
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
-
-      // Setup mock event
-      final mockEvent = MockEvent();
+      final mockEvent = _MockEvent();
       when(() => mockEvent.kind).thenReturn(0);
       when(() => mockEvent.pubkey).thenReturn(pubkey);
       when(() => mockEvent.id).thenReturn('event-id-456');
@@ -202,8 +119,7 @@ void main() {
       when(() => mockEvent.content).thenReturn('{"name":"Notifier Test User"}');
       when(() => mockEvent.tags).thenReturn([]);
 
-      // Override the subscription manager mock for this specific test
-      // to actually deliver the profile event
+      // Override subscription manager to deliver the profile event
       when(
         () => mockSubscriptionManager.createSubscription(
           name: any(named: 'name'),
@@ -221,21 +137,18 @@ void main() {
             invocation.namedArguments[const Symbol('onComplete')]
                 as void Function()?;
 
-        // Deliver the profile event
         if (onEvent != null) {
           Future.delayed(
             const Duration(milliseconds: 10),
             () => onEvent(mockEvent),
           );
         }
-
         if (onComplete != null) {
           Future.delayed(const Duration(milliseconds: 50), onComplete);
         }
         return 'test-subscription-id';
       });
 
-      // Test notifier fetch method - this is what matters
       final profile = await container
           .read(userProfileProvider.notifier)
           .fetchProfile(pubkey);
@@ -244,25 +157,16 @@ void main() {
       expect(profile!.pubkey, equals(pubkey));
       expect(profile.name, equals('Notifier Test User'));
 
-      // Test that getCachedProfile works (this tests the actual caching mechanism)
       final cachedProfile = container
           .read(userProfileProvider.notifier)
           .getCachedProfile(pubkey);
       expect(cachedProfile, isNotNull);
       expect(cachedProfile!.name, equals('Notifier Test User'));
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+    });
 
     test('should return cached profile without fetching', () async {
       const pubkey = 'test-pubkey-123';
 
-      // Setup mock Nostr service with all required connection checks
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(
-        () => mockNostrService.connectedRelayCount,
-      ).thenReturn(1); // FIX: Add missing mock
-
-      // Pre-populate cache
       final testProfile = UserProfile(
         pubkey: pubkey,
         name: 'Cached User',
@@ -271,34 +175,36 @@ void main() {
         eventId: 'cached-event-id',
       );
 
-      container
+      await container
           .read(userProfileProvider.notifier)
           .updateCachedProfile(testProfile);
 
-      // Fetch should return cached profile without network call
       final profile = await container
           .read(userProfileProvider.notifier)
           .fetchProfile(pubkey);
 
-      expect(profile, equals(testProfile));
-      verifyNever(() => mockNostrService.subscribe(any(named: 'filters')));
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+      expect(profile, isNotNull);
+      expect(profile!.name, equals('Cached User'));
+      // Verify no subscription was created (profile was cached)
+      verifyNever(
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          priority: any(named: 'priority'),
+        ),
+      );
+    });
 
     test('should handle multiple individual profile fetches', () async {
-      // Test multiple individual fetches instead of complex batch logic
       final pubkeys = ['pubkey1', 'pubkey2', 'pubkey3'];
 
-      // Setup mock Nostr service with all required connection checks
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
-
-      // For each pubkey, we'll test individual fetch (which exercises the core functionality)
-      for (int i = 0; i < pubkeys.length; i++) {
+      for (var i = 0; i < pubkeys.length; i++) {
         final pubkey = pubkeys[i];
 
-        // Setup mock event for this pubkey
-        final mockEvent = MockEvent();
+        final mockEvent = _MockEvent();
         when(() => mockEvent.kind).thenReturn(0);
         when(() => mockEvent.pubkey).thenReturn(pubkey);
         when(() => mockEvent.id).thenReturn('event-$pubkey');
@@ -306,7 +212,6 @@ void main() {
         when(() => mockEvent.content).thenReturn('{"name":"User $pubkey"}');
         when(() => mockEvent.tags).thenReturn([]);
 
-        // Override mock to deliver this specific event
         when(
           () => mockSubscriptionManager.createSubscription(
             name: any(named: 'name'),
@@ -324,21 +229,18 @@ void main() {
               invocation.namedArguments[const Symbol('onComplete')]
                   as void Function()?;
 
-          // Deliver the profile event
           if (onEvent != null) {
             Future.delayed(
               const Duration(milliseconds: 10),
               () => onEvent(mockEvent),
             );
           }
-
           if (onComplete != null) {
             Future.delayed(const Duration(milliseconds: 50), onComplete);
           }
           return 'test-subscription-id-$i';
         });
 
-        // Fetch this profile
         final profile = await container
             .read(userProfileProvider.notifier)
             .fetchProfile(pubkey);
@@ -347,57 +249,28 @@ void main() {
         expect(profile!.pubkey, equals(pubkey));
         expect(profile.name, equals('User $pubkey'));
 
-        // Verify it's cached
         final cachedProfile = container
             .read(userProfileProvider.notifier)
             .getCachedProfile(pubkey);
         expect(cachedProfile, isNotNull);
         expect(cachedProfile!.name, equals('User $pubkey'));
       }
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    });
 
     test('should handle profile not found', () async {
       const pubkey = 'non-existent-pubkey';
 
-      // Setup mock Nostr service with all required connection checks
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(
-        () => mockNostrService.connectedRelayCount,
-      ).thenReturn(1); // FIX: Add missing mock
+      // Default mock already simulates no profile found (only calls onComplete)
 
-      // Mock empty stream (no profile found)
-      when(
-        () => mockNostrService.subscribe(any(named: 'filters')),
-      ).thenAnswer((_) => const Stream.empty());
-
-      // Fetch profile
       final profile = await container
           .read(userProfileProvider.notifier)
           .fetchProfile(pubkey);
 
       expect(profile, isNull);
-
-      // Verify it's marked as missing in global cache (the memory cache handles this)
-      // Since the missing profile logic is now in the memory cache, we verify behavior differently
-
-      // Try to fetch again - should skip due to missing marker
-      final profileAgain = await container
-          .read(userProfileProvider.notifier)
-          .fetchProfile(pubkey);
-
-      expect(profileAgain, isNull);
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    });
 
     test('should force refresh cached profile', () async {
       const pubkey = 'test-pubkey-123';
-
-      // Setup mock Nostr service with all required connection checks
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(
-        () => mockNostrService.connectedRelayCount,
-      ).thenReturn(1); // FIX: Add missing mock
 
       // Pre-populate cache with old profile
       final oldProfile = UserProfile(
@@ -408,12 +281,12 @@ void main() {
         eventId: 'old-event-id',
       );
 
-      container
+      await container
           .read(userProfileProvider.notifier)
           .updateCachedProfile(oldProfile);
 
       // Setup new profile event
-      final mockEvent = MockEvent();
+      final mockEvent = _MockEvent();
       when(() => mockEvent.kind).thenReturn(0);
       when(() => mockEvent.pubkey).thenReturn(pubkey);
       when(() => mockEvent.id).thenReturn('new-event-id');
@@ -423,7 +296,6 @@ void main() {
       when(() => mockEvent.content).thenReturn('{"name":"New Name"}');
       when(() => mockEvent.tags).thenReturn([]);
 
-      // Override mock to deliver the new profile event
       when(
         () => mockSubscriptionManager.createSubscription(
           name: any(named: 'name'),
@@ -441,21 +313,18 @@ void main() {
             invocation.namedArguments[const Symbol('onComplete')]
                 as void Function()?;
 
-        // Deliver the new profile event
         if (onEvent != null) {
           Future.delayed(
             const Duration(milliseconds: 10),
             () => onEvent(mockEvent),
           );
         }
-
         if (onComplete != null) {
           Future.delayed(const Duration(milliseconds: 50), onComplete);
         }
         return 'test-subscription-refresh-id';
       });
 
-      // Force refresh
       final profile = await container
           .read(userProfileProvider.notifier)
           .fetchProfile(pubkey, forceRefresh: true);
@@ -463,7 +332,6 @@ void main() {
       expect(profile, isNotNull);
       expect(profile!.name, equals('New Name'));
 
-      // Verify subscription was created for refresh
       verify(
         () => mockSubscriptionManager.createSubscription(
           name: any(named: 'name'),
@@ -474,54 +342,127 @@ void main() {
           priority: any(named: 'priority'),
         ),
       ).called(1);
-      // TODO(any): Fix and re-enable this test
-      // This test fails only when running the whole suite, likely due to mock contamination
-    }, skip: true);
+    });
 
     test('should handle errors gracefully', () async {
       const pubkey = 'error-test-pubkey';
 
-      // Setup fresh container to avoid mock contamination
-      final errorContainer = ProviderContainer(
-        overrides: [
-          nostrServiceProvider.overrideWithValue(mockNostrService),
-          subscriptionManagerProvider.overrideWithValue(
-            mockSubscriptionManager,
-          ),
-        ],
-      );
-
-      // Setup mock Nostr service with all required connection checks
-      when(() => mockNostrService.isInitialized).thenReturn(true);
+      // Make subscription throw
       when(
-        () => mockNostrService.connectedRelayCount,
-      ).thenReturn(1); // FIX: Add missing mock
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          priority: any(named: 'priority'),
+        ),
+      ).thenThrow(Exception('Network error'));
 
-      // Mock subscription error - reset all previous mocks first
-      reset(mockNostrService);
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(
-        () => mockNostrService.subscribe(any(named: 'filters')),
-      ).thenAnswer((_) => Stream.error(Exception('Network error')));
-
-      // Fetch profile should handle error gracefully
-      final profile = await errorContainer
+      final profile = await container
           .read(userProfileProvider.notifier)
           .fetchProfile(pubkey);
 
       expect(profile, isNull);
+      expect(container.read(userProfileProvider).error, isNull);
+    });
+  });
 
-      // With the new async provider design, errors are handled gracefully
-      // and the profile is marked as missing rather than stored in state.error
-      // Let's verify the profile is marked as missing by trying to fetch again
-      final profileAgain = await errorContainer
-          .read(userProfileProvider.notifier)
-          .fetchProfile(pubkey);
+  group('fetchUserProfileProvider', () {
+    test('should return profile from repository', () async {
+      const pubkey = 'test-pubkey-123';
 
-      expect(profileAgain, isNull);
+      final mockProfileRepo = _MockProfileRepository();
+      final mockUserProfileService = _MockUserProfileService();
 
-      errorContainer.dispose();
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+      final testProfile = UserProfile(
+        pubkey: pubkey,
+        name: 'Test User',
+        picture: 'https://example.com/avatar.jpg',
+        rawData: {
+          'name': 'Test User',
+          'picture': 'https://example.com/avatar.jpg',
+        },
+        createdAt: DateTime.now(),
+        eventId: 'event-id-123',
+      );
+
+      when(
+        () => mockUserProfileService.shouldSkipProfileFetch(pubkey),
+      ).thenReturn(false);
+      when(
+        () => mockProfileRepo.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => testProfile);
+
+      final container = ProviderContainer(
+        overrides: [
+          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
+          profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final profile = await container.read(
+        fetchUserProfileProvider(pubkey).future,
+      );
+
+      expect(profile, isNotNull);
+      expect(profile!.pubkey, equals(pubkey));
+      expect(profile.name, equals('Test User'));
+    });
+
+    test('should return null when profile not found', () async {
+      const pubkey = 'missing-pubkey';
+
+      final mockProfileRepo = _MockProfileRepository();
+      final mockUserProfileService = _MockUserProfileService();
+
+      when(
+        () => mockUserProfileService.shouldSkipProfileFetch(pubkey),
+      ).thenReturn(false);
+      when(
+        () => mockUserProfileService.markProfileAsMissing(pubkey),
+      ).thenReturn(null);
+      when(
+        () => mockProfileRepo.getCachedProfile(pubkey: pubkey),
+      ).thenAnswer((_) async => null);
+
+      final container = ProviderContainer(
+        overrides: [
+          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
+          profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final profile = await container.read(
+        fetchUserProfileProvider(pubkey).future,
+      );
+
+      expect(profile, isNull);
+      verify(
+        () => mockUserProfileService.markProfileAsMissing(pubkey),
+      ).called(1);
+    });
+
+    test('should return null when repository is not ready', () async {
+      const pubkey = 'test-pubkey';
+
+      final mockUserProfileService = _MockUserProfileService();
+
+      final container = ProviderContainer(
+        overrides: [
+          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
+          profileRepositoryProvider.overrideWithValue(null),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final profile = await container.read(
+        fetchUserProfileProvider(pubkey).future,
+      );
+
+      expect(profile, isNull);
+    });
   });
 }

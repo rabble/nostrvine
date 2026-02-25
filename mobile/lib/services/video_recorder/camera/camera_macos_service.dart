@@ -343,10 +343,9 @@ class CameraMacOSService extends CameraService {
       final session = await AudioSession.instance;
       await session.configure(
         const AudioSessionConfiguration(
-          avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
-          avAudioSessionMode: AVAudioSessionMode.videoRecording,
-          avAudioSessionCategoryOptions:
-              AVAudioSessionCategoryOptions.defaultToSpeaker,
+          avAudioSessionCategory: .playAndRecord,
+          avAudioSessionMode: .videoRecording,
+          avAudioSessionCategoryOptions: .allowBluetooth,
         ),
       );
       Log.info(
@@ -369,10 +368,9 @@ class CameraMacOSService extends CameraService {
       final session = await AudioSession.instance;
       await session.configure(
         const AudioSessionConfiguration(
-          avAudioSessionCategory: AVAudioSessionCategory.ambient,
-          avAudioSessionMode: AVAudioSessionMode.defaultMode,
-          avAudioSessionCategoryOptions:
-              AVAudioSessionCategoryOptions.mixWithOthers,
+          avAudioSessionCategory: .ambient,
+          avAudioSessionMode: .defaultMode,
+          avAudioSessionCategoryOptions: .mixWithOthers,
         ),
       );
       Log.info(

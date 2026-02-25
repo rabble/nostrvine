@@ -256,30 +256,31 @@ class AudioPlaybackService {
   /// Configures the audio session for recording mode.
   ///
   /// This sets up the audio session to:
-  /// - Allow audio playback during recording
-  /// - Mix with other audio when appropriate
-  /// - Handle interruptions properly
+  /// - Allow audio playback during recording via A2DP to Bluetooth headphones
+  /// - Use built-in microphone for recording (NOT Bluetooth mic)
+  /// - Route to speaker when no headphones connected
+  ///
+  /// IMPORTANT: Only uses allowBluetoothA2dp, NOT allowBluetooth.
+  /// allowBluetooth enables HFP (phone call mode) which causes
+  /// "call started/ended" sounds on Bluetooth headsets.
   Future<void> configureForRecording() async {
     try {
       final session = await AudioSession.instance;
 
       await session.configure(
         AudioSessionConfiguration(
-          avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+          avAudioSessionCategory: .playAndRecord,
           avAudioSessionCategoryOptions:
               AVAudioSessionCategoryOptions.defaultToSpeaker |
-              AVAudioSessionCategoryOptions.allowBluetooth |
               AVAudioSessionCategoryOptions.allowBluetoothA2dp,
-          avAudioSessionMode: AVAudioSessionMode.videoRecording,
-          avAudioSessionRouteSharingPolicy:
-              AVAudioSessionRouteSharingPolicy.defaultPolicy,
-          avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+          avAudioSessionMode: .defaultMode,
+          avAudioSessionRouteSharingPolicy: .defaultPolicy,
+          avAudioSessionSetActiveOptions: .none,
           androidAudioAttributes: const AndroidAudioAttributes(
-            contentType: AndroidAudioContentType.music,
-            usage: AndroidAudioUsage.media,
+            contentType: .music,
+            usage: .media,
           ),
-          androidAudioFocusGainType:
-              AndroidAudioFocusGainType.gainTransientMayDuck,
+          androidAudioFocusGainType: .gainTransientMayDuck,
           androidWillPauseWhenDucked: false,
         ),
       );

@@ -10,12 +10,13 @@ import 'package:likes_repository/likes_repository.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:models/models.dart' as _i3;
-import 'package:nostr_sdk/event.dart' as _i11;
+import 'package:nostr_sdk/event.dart' as _i12;
 import 'package:openvine/services/age_verification_service.dart' as _i9;
 import 'package:openvine/services/content_blocklist_service.dart' as _i8;
+import 'package:openvine/services/content_filter_service.dart' as _i11;
 import 'package:openvine/services/hashtag_service.dart' as _i2;
 import 'package:openvine/services/video_event_service.dart' as _i5;
-import 'package:openvine/services/video_filter_builder.dart' as _i12;
+import 'package:openvine/services/video_filter_builder.dart' as _i13;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -282,12 +283,38 @@ class MockVideoEventService extends _i1.Mock implements _i5.VideoEventService {
       );
 
   @override
-  bool shouldFilterEvent(_i11.Event? event) =>
+  void setContentFilterService(
+    _i11.ContentFilterService? contentFilterService,
+  ) => super.noSuchMethod(
+    Invocation.method(#setContentFilterService, [contentFilterService]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  bool shouldFilterEvent(_i12.Event? event) =>
       (super.noSuchMethod(
             Invocation.method(#shouldFilterEvent, [event]),
             returnValue: false,
           )
           as bool);
+
+  @override
+  (_i11.ContentFilterPreference, List<String>) getFilterAction(
+    _i12.Event? event,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getFilterAction, [event]),
+            returnValue: (_i11.ContentFilterPreference.show, <String>[]),
+          )
+          as (_i11.ContentFilterPreference, List<String>));
+
+  @override
+  List<_i3.VideoEvent> filterVideoList(List<_i3.VideoEvent>? videos) =>
+      (super.noSuchMethod(
+            Invocation.method(#filterVideoList, [videos]),
+            returnValue: <_i3.VideoEvent>[],
+          )
+          as List<_i3.VideoEvent>);
 
   @override
   int filterAdultContentFromExistingVideos() =>
@@ -412,8 +439,8 @@ class MockVideoEventService extends _i1.Mock implements _i5.VideoEventService {
     int? limit = 200,
     bool? replace = true,
     bool? includeReposts = false,
-    _i12.VideoSortField? sortBy,
-    _i12.NIP50SortMode? nip50Sort,
+    _i13.VideoSortField? sortBy,
+    _i13.NIP50SortMode? nip50Sort,
     bool? force = false,
     List<String>? collaboratorPubkeys,
   }) =>
@@ -489,7 +516,7 @@ class MockVideoEventService extends _i1.Mock implements _i5.VideoEventService {
   _i4.Future<void> subscribeToHomeFeed(
     List<String>? followingPubkeys, {
     int? limit = 100,
-    _i12.VideoSortField? sortBy,
+    _i13.VideoSortField? sortBy,
     bool? force = false,
   }) =>
       (super.noSuchMethod(
@@ -529,8 +556,8 @@ class MockVideoEventService extends _i1.Mock implements _i5.VideoEventService {
   @override
   _i4.Future<void> subscribeToDiscovery({
     int? limit = 100,
-    _i12.VideoSortField? sortBy,
-    _i12.NIP50SortMode? nip50Sort,
+    _i13.VideoSortField? sortBy,
+    _i13.NIP50SortMode? nip50Sort,
     bool? force = false,
   }) =>
       (super.noSuchMethod(
@@ -823,7 +850,7 @@ class MockVideoEventService extends _i1.Mock implements _i5.VideoEventService {
   );
 
   @override
-  List<_i3.VideoEvent> processSearchResults(List<_i11.Event>? events) =>
+  List<_i3.VideoEvent> processSearchResults(List<_i12.Event>? events) =>
       (super.noSuchMethod(
             Invocation.method(#processSearchResults, [events]),
             returnValue: <_i3.VideoEvent>[],
@@ -902,7 +929,7 @@ class MockVideoEventService extends _i1.Mock implements _i5.VideoEventService {
   );
 
   @override
-  void handleEventForTesting(_i11.Event? event, _i5.SubscriptionType? type) =>
+  void handleEventForTesting(_i12.Event? event, _i5.SubscriptionType? type) =>
       super.noSuchMethod(
         Invocation.method(#handleEventForTesting, [event, type]),
         returnValueForMissingStub: null,

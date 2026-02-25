@@ -20,7 +20,7 @@ import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -599,7 +599,7 @@ class _MeProfileRedirect extends ConsumerWidget {
         authService.currentPublicKeyHex == null) {
       // Not authenticated - redirect to home
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go(HomeScreenRouter.pathForIndex(0));
+        context.go(VideoFeedPage.pathForIndex(0));
       });
       return const Center(child: CircularProgressIndicator());
     }

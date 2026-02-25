@@ -137,7 +137,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.switch_account,
                   title: 'Switch Account',
                   subtitle:
-                      'Go to login screen to use a different account. '
+                      'Go to sign in screen to use a different account. '
                       'Your current keys stay saved on this device.',
                   onTap: _handleSwitchAccount,
                 ),
@@ -684,7 +684,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           style: TextStyle(color: VineTheme.whiteText),
         ),
         content: const Text(
-          'You will be taken to the login screen where you can:\n\n'
+          'You will be taken to the sign in screen where you can:\n\n'
           '• Continue with your saved keys\n'
           '• Import a different account\n'
           '• Create a new identity\n\n'

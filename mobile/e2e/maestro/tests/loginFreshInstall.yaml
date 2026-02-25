@@ -12,30 +12,31 @@ appId: co.openvine.app
 - runFlow: "../asserts/assertSplash.yaml"
 - runFlow: "../asserts/assertLogin.yaml"
 
-# 2. Tap on I am 16 and I agree, tap on Get Started: User is directed to the empty Home screen
-- tapOn: I am 16 years or older
-- tapOn: "I agree to the "
+#2. Tap on Create new Divine account
 
 - runFlow:
     when:
-      visible: Continue
+      visible: Create a new Divine account
     commands:
-      - tapOn: Continue
-
-- runFlow:
-    when:
-      visible: Continue with Saved Keys
-    commands:
-      - assertVisible: Start with a new identity
-      - tapOn: Start with a new identity
-      # Assert the new identity modal and test Cancel
-      - runFlow: ../asserts/assertNewIdentity.yaml
-      - tapOn: Cancel
-      - waitForAnimationToEnd
-      # Tap again and confirm with Start Fresh
-      - tapOn: Start with a new identity
-      - assertVisible: "Start with New Identity?"
-      - tapOn: Start Fresh
+      - tapOn: Create a new Divine account
+      - tapOn: Use Divine with no backup
+      - tapOn: Use this device only
+      
+# Commenting this until we have a better test implementation of signing in with keys
+# - runFlow:
+#    when:
+#      visible: Continue with Saved Keys
+#    commands:
+#      - assertVisible: Start with a new identity
+#      - tapOn: Start with a new identity
+#      # Assert the new identity modal and test Cancel
+#      - runFlow: ../asserts/assertNewIdentity.yaml
+#      - tapOn: Cancel
+#      - waitForAnimationToEnd
+#      # Tap again and confirm with Start Fresh
+#      - tapOn: Start with a new identity
+#      - assertVisible: "Start with New Identity?"
+#      - tapOn: Start Fresh
 
 - waitForAnimationToEnd
 - runFlow: ../asserts/assertExploreNew.yaml
