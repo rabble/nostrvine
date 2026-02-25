@@ -9,7 +9,6 @@ environment:
 
 dependencies:
   models:
-    path: ../models
 
 dev_dependencies:
   mocktail: ^1.0.4
