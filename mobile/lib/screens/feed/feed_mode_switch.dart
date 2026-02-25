@@ -20,6 +20,7 @@ class FeedModeSwitch extends StatelessWidget {
 
   /// Labels for each feed mode displayed in the UI.
   static const feedModeLabels = {
+    FeedMode.forYou: 'For You',
     FeedMode.latest: 'New',
     FeedMode.popular: 'Popular',
     FeedMode.home: 'Following',
@@ -119,6 +120,7 @@ class FeedModeSwitch extends StatelessWidget {
       context: context,
       selectedValue: currentMode.name,
       options: const [
+        VineBottomSheetSelectionOptionData(label: 'For You', value: 'forYou'),
         VineBottomSheetSelectionOptionData(label: 'New', value: 'latest'),
         VineBottomSheetSelectionOptionData(label: 'Popular', value: 'popular'),
         VineBottomSheetSelectionOptionData(label: 'Following', value: 'home'),
