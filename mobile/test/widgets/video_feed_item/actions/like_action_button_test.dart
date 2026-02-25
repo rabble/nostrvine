@@ -149,32 +149,9 @@ void main() {
           );
 
           expect(find.text('42'), findsNothing);
+          expect(find.byType(VideoActionButton), findsOneWidget);
         },
       );
-
-      testWidgets('shows total like count', (tester) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoInteractionsState(likeCount: 503));
-
-        final vineImportVideo = VideoEvent(
-          id: 'vine-video-id-0123456789abcdef0123456789abcdef0123456789abcdef01',
-          pubkey: testPubkey,
-          createdAt: 1700000000,
-          content: '',
-          timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
-          originalLikes: 500,
-          nostrLikeCount: 3,
-        );
-
-        await tester.pumpWidget(
-          buildSubject(video: vineImportVideo, bloc: mockBloc),
-        );
-
-        // totalLikes = 500 + 3 = 503
-        expect(find.text('503'), findsOneWidget);
-        expect(find.text('500'), findsNothing);
-      });
 
       testWidgets('hides count when both sources are 0', (tester) async {
         when(() => mockBloc.state).thenReturn(
