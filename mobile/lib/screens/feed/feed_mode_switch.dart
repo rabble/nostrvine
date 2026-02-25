@@ -29,9 +29,9 @@ class FeedModeSwitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned(
-      top: 12,
-      left: 12,
-      right: 12,
+      top: 0,
+      left: 0,
+      right: 0,
       child: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -49,8 +49,8 @@ class FeedModeSwitch extends StatelessWidget {
             padding: const EdgeInsets.only(
               top: 6,
               bottom: 16,
-              left: 8,
-              right: 8,
+              left: 20,
+              right: 20,
             ),
             child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
               buildWhen: (prev, curr) => prev.mode != curr.mode,

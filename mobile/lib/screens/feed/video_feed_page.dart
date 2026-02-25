@@ -341,7 +341,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           isPortrait: isPortrait,
         ),
         overlayBuilder: (context, videoController, player) =>
-            FeedVideoOverlay(video: video, isActive: isActive),
+            FeedVideoOverlay(video: video, isActive: isActive, player: player),
       ),
     );
   }
