@@ -257,7 +257,7 @@ class AudioPlaybackService {
   ///
   /// This sets up the audio session to:
   /// - Allow audio playback during recording
-  /// - Mix with other audio when appropriate
+  /// - Route to headphones when connected, speaker otherwise
   /// - Handle interruptions properly
   Future<void> configureForRecording() async {
     try {
@@ -265,21 +265,18 @@ class AudioPlaybackService {
 
       await session.configure(
         AudioSessionConfiguration(
-          avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+          avAudioSessionCategory: .playAndRecord,
           avAudioSessionCategoryOptions:
-              AVAudioSessionCategoryOptions.defaultToSpeaker |
               AVAudioSessionCategoryOptions.allowBluetooth |
               AVAudioSessionCategoryOptions.allowBluetoothA2dp,
-          avAudioSessionMode: AVAudioSessionMode.videoRecording,
-          avAudioSessionRouteSharingPolicy:
-              AVAudioSessionRouteSharingPolicy.defaultPolicy,
-          avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+          avAudioSessionMode: .videoRecording,
+          avAudioSessionRouteSharingPolicy: .defaultPolicy,
+          avAudioSessionSetActiveOptions: .none,
           androidAudioAttributes: const AndroidAudioAttributes(
-            contentType: AndroidAudioContentType.music,
-            usage: AndroidAudioUsage.media,
+            contentType: .music,
+            usage: .media,
           ),
-          androidAudioFocusGainType:
-              AndroidAudioFocusGainType.gainTransientMayDuck,
+          androidAudioFocusGainType: .gainTransientMayDuck,
           androidWillPauseWhenDucked: false,
         ),
       );
