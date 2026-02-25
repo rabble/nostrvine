@@ -10,6 +10,7 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
@@ -157,18 +158,53 @@ class HomeFeed extends _$HomeFeed {
     // Will hold videos from either REST API or Nostr
     List<VideoEvent> followingVideosFromSource = [];
 
-    // Emit initial loading state so UI shows loading indicator instead of empty state
-    state = const AsyncData(
-      VideoFeedState(videos: [], hasMoreContent: false, isInitialLoad: true),
-    );
+    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final prefs = ref.read(sharedPreferencesProvider);
 
-    // === PRIMARY PATH: Try REST API first ===
+    // === CACHE-FIRST: Show previous feed instantly ===
+    // Before any network call, check if we have a cached feed from the
+    // last session. If so, emit it immediately so the user sees content
+    // within milliseconds instead of waiting 2-6s for the REST API.
+    bool emittedFromCache = false;
+    if (currentUserPubkey != null) {
+      try {
+        final cached = await analyticsService.getCachedHomeFeed(prefs: prefs);
+        if (cached != null && cached.videos.isNotEmpty) {
+          _usingRestApi = true;
+          _restApiSucceededOnce = true;
+          followingVideosFromSource = cached.videos;
+          emittedFromCache = true;
+
+          Log.info(
+            '⚡ HomeFeed: Showing ${cached.videos.length} cached videos '
+            'instantly (from previous session)',
+            name: 'HomeFeedProvider',
+            category: LogCategory.video,
+          );
+        }
+      } catch (e) {
+        Log.warning(
+          '🏠 HomeFeed: Cache read failed: $e',
+          name: 'HomeFeedProvider',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    // If no cache, emit loading state so UI shows spinner
+    if (!emittedFromCache) {
+      state = const AsyncData(
+        VideoFeedState(videos: [], hasMoreContent: false, isInitialLoad: true),
+      );
+    }
+
+    // === PRIMARY PATH: Fetch fresh data from REST API ===
     // REST API only needs pubkey + analyticsApiService (independent of Nostr/followRepository)
     // Try optimistically without waiting for funnelcakeAvailableProvider to resolve
-    final analyticsService = ref.read(analyticsApiServiceProvider);
     if (currentUserPubkey != null) {
       Log.info(
-        '🏠 HomeFeed: Trying Funnelcake REST API first (pubkey available)',
+        '🏠 HomeFeed: Fetching fresh data from Funnelcake REST API'
+        '${emittedFromCache ? " (cache already displayed)" : ""}',
         name: 'HomeFeedProvider',
         category: LogCategory.video,
       );
@@ -178,6 +214,7 @@ class HomeFeed extends _$HomeFeed {
           pubkey: currentUserPubkey,
           limit: 100,
           sort: 'recent',
+          prefs: prefs,
         );
 
         if (feedResult.videos.isNotEmpty) {
@@ -193,12 +230,12 @@ class HomeFeed extends _$HomeFeed {
           unawaited(_enrichInBackground(feedResult.videos));
 
           Log.info(
-            '✅ HomeFeed: Got ${feedResult.videos.length} videos from REST API, '
+            '✅ HomeFeed: Got ${feedResult.videos.length} fresh videos from REST API, '
             'hasMore: ${feedResult.hasMore}, cursor: ${feedResult.nextCursor}',
             name: 'HomeFeedProvider',
             category: LogCategory.video,
           );
-        } else {
+        } else if (!emittedFromCache) {
           Log.warning(
             '🏠 HomeFeed: REST API returned empty, falling back to Nostr',
             name: 'HomeFeedProvider',
@@ -207,14 +244,22 @@ class HomeFeed extends _$HomeFeed {
           _usingRestApi = false;
         }
       } catch (e, stackTrace) {
-        Log.error(
-          '🏠 HomeFeed: REST API failed ($e), falling back to Nostr',
-          name: 'HomeFeedProvider',
-          category: LogCategory.video,
-          error: e,
-          stackTrace: stackTrace,
-        );
-        _usingRestApi = false;
+        if (!emittedFromCache) {
+          Log.error(
+            '🏠 HomeFeed: REST API failed ($e), falling back to Nostr',
+            name: 'HomeFeedProvider',
+            category: LogCategory.video,
+            error: e,
+            stackTrace: stackTrace,
+          );
+          _usingRestApi = false;
+        } else {
+          Log.warning(
+            '🏠 HomeFeed: REST API failed ($e), keeping cached data',
+            name: 'HomeFeedProvider',
+            category: LogCategory.video,
+          );
+        }
       }
     }
 
@@ -1054,10 +1099,12 @@ class HomeFeed extends _$HomeFeed {
 
     try {
       final analyticsService = ref.read(analyticsApiServiceProvider);
+      final prefs = ref.read(sharedPreferencesProvider);
       final feedResult = await analyticsService.getHomeFeed(
         pubkey: currentUserPubkey,
         limit: 100,
         sort: 'recent',
+        prefs: prefs,
       );
 
       if (!ref.mounted) return;

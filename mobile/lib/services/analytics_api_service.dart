@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/utils/hashtag_extractor.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Sort options for funnelcake video API
 enum VideoSortOption {
@@ -1008,18 +1009,79 @@ class AnalyticsApiService {
     }
   }
 
-  /// Get personalized home feed for a user (videos from followed accounts)
+  /// SharedPreferences key for cached home feed JSON.
+  static const _homeFeedCacheKey = 'home_feed_cache';
+
+  /// SharedPreferences key for cached home feed timestamp.
+  static const _homeFeedCacheTimeKey = 'home_feed_cache_time';
+
+  /// Maximum age of cached home feed before it's considered stale (1 hour).
+  static const _homeFeedCacheMaxAge = Duration(hours: 1);
+
+  /// Load the cached home feed from SharedPreferences (instant, no network).
+  ///
+  /// Returns null if no cache exists or if the cache is older than
+  /// [_homeFeedCacheMaxAge].
+  Future<HomeFeedResult?> getCachedHomeFeed({
+    required SharedPreferences prefs,
+  }) async {
+    try {
+      final cachedJson = prefs.getString(_homeFeedCacheKey);
+      if (cachedJson == null) return null;
+
+      final cachedTimeMs = prefs.getInt(_homeFeedCacheTimeKey) ?? 0;
+      final cachedTime = DateTime.fromMillisecondsSinceEpoch(cachedTimeMs);
+      if (DateTime.now().difference(cachedTime) > _homeFeedCacheMaxAge) {
+        return null;
+      }
+
+      return _parseHomeFeedJson(cachedJson);
+    } catch (e) {
+      Log.warning(
+        'Failed to load cached home feed: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+  }
+
+  HomeFeedResult _parseHomeFeedJson(String jsonStr) {
+    final data = jsonDecode(jsonStr) as Map<String, dynamic>;
+    final videosData = data['videos'] as List<dynamic>? ?? [];
+    final videos = videosData
+        .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+        .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+        .map((v) => v.toVideoEvent())
+        .toList();
+
+    final nextCursorStr = data['next_cursor'] as String?;
+    final nextCursor = nextCursorStr != null
+        ? int.tryParse(nextCursorStr)
+        : null;
+    final hasMore = data['has_more'] as bool? ?? false;
+
+    return HomeFeedResult(
+      videos: videos,
+      nextCursor: nextCursor,
+      hasMore: hasMore,
+    );
+  }
+
+  /// Get personalized home feed for a user (videos from followed accounts).
   ///
   /// Uses the /api/users/{pubkey}/feed endpoint which returns videos
   /// from accounts the user follows, with cursor-based pagination.
   ///
-  /// [sort] - Sort order: 'recent' or 'trending'
-  /// [before] - Unix timestamp cursor for pagination
+  /// When [prefs] is provided and [before] is null (initial page), the raw
+  /// JSON response is cached to SharedPreferences for instant display on
+  /// next cold start.
   Future<HomeFeedResult> getHomeFeed({
     required String pubkey,
     int limit = 50,
     String sort = 'recent',
     int? before,
+    SharedPreferences? prefs,
   }) async {
     if (!isAvailable || pubkey.isEmpty) {
       return const HomeFeedResult(videos: [], hasMore: false);
@@ -1049,34 +1111,32 @@ class AnalyticsApiService {
           .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-
-        // Parse videos array
-        final videosData = data['videos'] as List<dynamic>? ?? [];
-        final videos = videosData
-            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
-            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
-            .map((v) => v.toVideoEvent())
-            .toList();
-
-        // Parse pagination info
-        final nextCursorStr = data['next_cursor'] as String?;
-        final nextCursor = nextCursorStr != null
-            ? int.tryParse(nextCursorStr)
-            : null;
-        final hasMore = data['has_more'] as bool? ?? false;
+        final result = _parseHomeFeedJson(response.body);
 
         Log.info(
-          'Home feed: ${videos.length} videos, hasMore: $hasMore, nextCursor: $nextCursor',
+          'Home feed: ${result.videos.length} videos, '
+          'hasMore: ${result.hasMore}, nextCursor: ${result.nextCursor}',
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );
 
-        return HomeFeedResult(
-          videos: videos,
-          nextCursor: nextCursor,
-          hasMore: hasMore,
-        );
+        // Cache response for instant display on next launch
+        // Only cache the initial page (no cursor), fire-and-forget
+        if (before == null && prefs != null) {
+          unawaited(
+            Future(() async {
+              try {
+                await prefs.setString(_homeFeedCacheKey, response.body);
+                await prefs.setInt(
+                  _homeFeedCacheTimeKey,
+                  DateTime.now().millisecondsSinceEpoch,
+                );
+              } catch (_) {}
+            }),
+          );
+        }
+
+        return result;
       } else if (response.statusCode == 404) {
         Log.warning(
           'Home feed not found (user may not have contact list)',
