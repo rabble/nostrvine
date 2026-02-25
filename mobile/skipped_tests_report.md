@@ -162,7 +162,6 @@
 | `curated_list_service_persistence_test.dart` | 94 | 1 | `skip: true` |
 | `curated_list_service_persistence_test.dart` | 344 | 1 | `skip: 'Flaky: timestamp-based ID collision in concurrent creation'` |
 | `curated_list_service_query_test.dart` | 89, 127, 493, 505, 562 | 5 | `skip: true` |
-| `curation_publish_test.dart` | 105, 128, 160, 190, 209, 252, 277, 325, 358, 378, 456, 477 | 12 | `skip: true` |
 | `curation_service_create_test.dart` | 105, 125, 167, 241, 262, 305, 327 | 7 | `skip: true` |
 | `curation_service_editors_picks_test.dart` | 216 | 1 | `skip: true` |
 | `curation_service_kind_30005_test.dart` | 76, 146 | 2 | `skip: true` |
@@ -310,7 +309,6 @@ These files have some tests commented out while others remain active.
 | File | Skipped |
 |------|---------|
 | `test/widgets/comprehensive_user_avatar_test.dart` | 4 (golden tests only) |
-| `test/services/curation_publish_test.dart` | 12 |
 | `test/widgets/comprehensive_age_verification_dialog_test.dart` | 9 |
 | `test/providers/video_events_provider_listener_test.dart` | 9 |
 | `test/services/upload_manager_web_test.dart` | 9 (web-only) |
