@@ -1304,6 +1304,44 @@ void main() {
       );
 
       test(
+        'returns server error message when server returns '
+        'non-200 with JSON error body',
+        () async {
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value('authHeader'));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) => Future.value(
+              Response('{"error": "Username too short"}', 400),
+            ),
+          );
+
+          final result = await profileRepository.claimUsername(
+            username: 'ab',
+          );
+
+          expect(
+            result,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Username too short',
+            ),
+          );
+        },
+      );
+
+      test(
         'returns error with default message when server returns '
         'non-200 with unparseable body',
         () async {
