@@ -1,37 +1,56 @@
+// ABOUTME: Basic widget tests for AgeVerificationDialog
+// ABOUTME: Covers element rendering, button interactions, non-dismissibility,
+// ABOUTME: VineTheme colors, and dialog constraints.
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/age_verification_dialog.dart';
 
+/// Helper to create a test widget with GoRouter for dialog interaction tests.
+Widget _createDialogTestApp({ValueChanged<bool?>? onResult}) {
+  final router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                final result = await AgeVerificationDialog.show(context);
+                onResult?.call(result);
+              },
+              child: const Text('Show Dialog'),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+  return MaterialApp.router(routerConfig: router);
+}
+
 void main() {
-  group('AgeVerificationDialog', () {
+  group(AgeVerificationDialog, () {
     testWidgets('should display all required elements', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
       );
 
-      // Check for icon
       expect(find.byIcon(Icons.person_outline), findsOneWidget);
-
-      // Check for title
       expect(find.text('Age Verification'), findsOneWidget);
-
-      // Check for explanation text
       expect(
         find.text(
-          'To use the camera and create content, you must be at least 16 years old.',
+          'To use the camera and create content, you must be at '
+          'least 16 years old.',
         ),
         findsOneWidget,
       );
-
-      // Check for question
       expect(find.text('Are you 16 years of age or older?'), findsOneWidget);
-
-      // Check for buttons
       expect(find.text('No'), findsOneWidget);
-      expect(find.text('Yes, I am 16+'), findsOneWidget);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+      expect(find.text('Yes'), findsOneWidget);
+    });
 
     testWidgets('should return false when No button is pressed', (
       tester,
@@ -39,33 +58,18 @@ void main() {
       bool? result;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    result = await AgeVerificationDialog.show(context);
-                  },
-                  child: const Text('Show Dialog'),
-                ),
-              ),
-            ),
-          ),
-        ),
+        _createDialogTestApp(onResult: (r) => result = r),
       );
+      await tester.pumpAndSettle();
 
-      // Open dialog
       await tester.tap(find.text('Show Dialog'));
       await tester.pumpAndSettle();
 
-      // Press No button
       await tester.tap(find.text('No'));
       await tester.pumpAndSettle();
 
       expect(result, false);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('should return true when Yes button is pressed', (
       tester,
@@ -73,53 +77,23 @@ void main() {
       bool? result;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    result = await AgeVerificationDialog.show(context);
-                  },
-                  child: const Text('Show Dialog'),
-                ),
-              ),
-            ),
-          ),
-        ),
+        _createDialogTestApp(onResult: (r) => result = r),
       );
+      await tester.pumpAndSettle();
 
-      // Open dialog
       await tester.tap(find.text('Show Dialog'));
       await tester.pumpAndSettle();
 
-      // Press Yes button
-      await tester.tap(find.text('Yes, I am 16+'));
+      await tester.tap(find.text('Yes'));
       await tester.pumpAndSettle();
 
       expect(result, true);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('should not be dismissible by tapping outside', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => Center(
-                child: ElevatedButton(
-                  onPressed: () async {
-                    AgeVerificationDialog.show(context);
-                  },
-                  child: const Text('Show Dialog'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
+      await tester.pumpWidget(_createDialogTestApp());
+      await tester.pumpAndSettle();
 
-      // Open dialog
       await tester.tap(find.text('Show Dialog'));
       await tester.pumpAndSettle();
 
@@ -131,37 +105,37 @@ void main() {
       expect(find.text('Age Verification'), findsOneWidget);
     });
 
-    testWidgets('should use VineTheme colors', (tester) async {
+    testWidgets('should use $VineTheme colors', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
       );
 
-      // Check that the icon uses VineTheme green color
       final icon = tester.widget<Icon>(find.byIcon(Icons.person_outline));
       expect(icon.color, VineTheme.vineGreen);
 
-      // Check that Yes button uses VineTheme green background
       final yesButton = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Yes, I am 16+'),
+        find.widgetWithText(ElevatedButton, 'Yes'),
       );
-      final style = yesButton.style;
-      expect(style?.backgroundColor?.resolve({}), VineTheme.vineGreen);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+      expect(
+        yesButton.style?.backgroundColor?.resolve({}),
+        VineTheme.vineGreen,
+      );
+    });
 
     testWidgets('should have proper dialog constraints', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
       );
 
-      // Find the Container with constraints
-      final container = tester.widget<Container>(
-        find.descendant(
-          of: find.byType(Dialog),
-          matching: find.byType(Container).first,
-        ),
-      );
+      final dialog = tester.widget<Dialog>(find.byType(Dialog));
+      expect(dialog.backgroundColor, Colors.black);
 
+      // Find the Container that is a direct child of the Dialog
+      final containers = find.descendant(
+        of: find.byType(Dialog),
+        matching: find.byType(Container),
+      );
+      final container = tester.widget<Container>(containers.first);
       expect(container.constraints?.maxWidth, 400);
       expect(container.padding, const EdgeInsets.all(24));
     });

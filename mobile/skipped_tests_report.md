@@ -213,11 +213,9 @@
 
 | File | Lines | Tests | Reason |
 |------|-------|-------|--------|
-| `age_verification_dialog_test.dart` | 34, 68, 102, 150 | 4 | `skip: true` |
 | `all_settings_screens_scaffold_test.dart` | 28, 68 | 2 | `skip: true` |
 | `bug_report_dialog_test.dart` | 333, 471 | 2 | `skip: true` |
 | `composable_video_grid_test.dart` | 107, 136, 198, 228, 254 | 5 | `skip: true` |
-| `comprehensive_age_verification_dialog_test.dart` | 40, 75, 110, 144, 179, 214, 314, 404, 458 | 9 | `skip: true` |
 | `comprehensive_clickable_hashtag_text_test.dart` | 180, 234, 261, 304 | 4 | `skip: true` |
 | `comprehensive_user_avatar_test.dart` | golden group | 4 | `skip: 'Golden tests require golden file generation and are maintained separately'` |
 | `original_content_badge_test.dart` | 157, 228 | 2 | `skip: true` |
@@ -309,7 +307,6 @@ These files have some tests commented out while others remain active.
 | File | Skipped |
 |------|---------|
 | `test/widgets/comprehensive_user_avatar_test.dart` | 4 (golden tests only) |
-| `test/widgets/comprehensive_age_verification_dialog_test.dart` | 9 |
 | `test/providers/video_events_provider_listener_test.dart` | 9 |
 | `test/services/upload_manager_web_test.dart` | 9 (web-only) |
 | `test/services/upload_initialization_helper_web_test.dart` | 8 (web-only) |

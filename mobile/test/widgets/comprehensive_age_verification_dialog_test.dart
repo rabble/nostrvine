@@ -1,10 +1,41 @@
-// ABOUTME: Comprehensive widget test for AgeVerificationDialog covering all verification types
-// ABOUTME: Tests both creation (16+) and adult content (18+) verification flows with edge cases
+// ABOUTME: Comprehensive widget test for AgeVerificationDialog covering all
+// ABOUTME: verification types. Tests both creation (16+) and adult content
+// ABOUTME: (18+) verification flows with edge cases.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/age_verification_dialog.dart';
+
+/// Helper to create a test widget with GoRouter for dialog interaction tests.
+Widget _createDialogTestApp({
+  AgeVerificationType type = AgeVerificationType.creation,
+  ValueChanged<bool?>? onResult,
+}) {
+  final router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                final result = await AgeVerificationDialog.show(
+                  context,
+                  type: type,
+                );
+                onResult?.call(result);
+              },
+              child: const Text('Show Dialog'),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+  return MaterialApp.router(routerConfig: router);
+}
 
 void main() {
   group('AgeVerificationDialog - Comprehensive Tests', () {
@@ -20,24 +51,18 @@ void main() {
           ),
         );
 
-        // Check for correct title
         expect(find.text('Age Verification'), findsOneWidget);
-
-        // Check for correct explanation
         expect(
           find.text(
-            'To use the camera and create content, you must be at least 16 years old.',
+            'To use the camera and create content, you must be at '
+            'least 16 years old.',
           ),
           findsOneWidget,
         );
-
-        // Check for correct question
         expect(find.text('Are you 16 years of age or older?'), findsOneWidget);
-
-        // Check for correct button text
-        expect(find.text('Yes, I am 16+'), findsOneWidget);
-        // TODO(Any): Fix and re-enable these tests
-      }, skip: true);
+        expect(find.text('Yes'), findsOneWidget);
+        expect(find.text('No'), findsOneWidget);
+      });
 
       testWidgets('returns false when No button is pressed for creation', (
         tester,
@@ -45,24 +70,9 @@ void main() {
         bool? result;
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      result = await AgeVerificationDialog.show(
-                        context,
-                        type: AgeVerificationType.creation,
-                      );
-                    },
-                    child: const Text('Show Dialog'),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          _createDialogTestApp(onResult: (r) => result = r),
         );
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text('Show Dialog'));
         await tester.pumpAndSettle();
@@ -71,8 +81,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(result, false);
-        // TODO(Any): Fix and re-enable these tests
-      }, skip: true);
+      });
 
       testWidgets('returns true when Yes button is pressed for creation', (
         tester,
@@ -80,34 +89,18 @@ void main() {
         bool? result;
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      result = await AgeVerificationDialog.show(
-                        context,
-                        type: AgeVerificationType.creation,
-                      );
-                    },
-                    child: const Text('Show Dialog'),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          _createDialogTestApp(onResult: (r) => result = r),
         );
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text('Show Dialog'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Yes, I am 16+'));
+        await tester.tap(find.text('Yes'));
         await tester.pumpAndSettle();
 
         expect(result, true);
-        // TODO(Any): Fix and re-enable these tests
-      }, skip: true);
+      });
     });
 
     group('Adult Content Verification (18+)', () {
@@ -124,24 +117,18 @@ void main() {
           ),
         );
 
-        // Check for correct title
         expect(find.text('Content Warning'), findsOneWidget);
-
-        // Check for correct explanation
         expect(
           find.text(
-            'This content has been flagged as potentially containing adult material. You must be 18 or older to view it.',
+            'This content has been flagged as potentially containing '
+            'adult material. You must be 18 or older to view it.',
           ),
           findsOneWidget,
         );
-
-        // Check for correct question
         expect(find.text('Are you 18 years of age or older?'), findsOneWidget);
-
-        // Check for correct button text
-        expect(find.text('Yes, I am 18+'), findsOneWidget);
-        // TODO(Any): Fix and re-enable these tests
-      }, skip: true);
+        expect(find.text('Yes'), findsOneWidget);
+        expect(find.text('No'), findsOneWidget);
+      });
 
       testWidgets('returns false when No button is pressed for adult content', (
         tester,
@@ -149,24 +136,12 @@ void main() {
         bool? result;
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      result = await AgeVerificationDialog.show(
-                        context,
-                        type: AgeVerificationType.adultContent,
-                      );
-                    },
-                    child: const Text('Show Dialog'),
-                  ),
-                ),
-              ),
-            ),
+          _createDialogTestApp(
+            type: AgeVerificationType.adultContent,
+            onResult: (r) => result = r,
           ),
         );
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text('Show Dialog'));
         await tester.pumpAndSettle();
@@ -175,8 +150,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(result, false);
-        // TODO(Any): Fix and re-enable these tests
-      }, skip: true);
+      });
 
       testWidgets('returns true when Yes button is pressed for adult content', (
         tester,
@@ -184,63 +158,35 @@ void main() {
         bool? result;
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      result = await AgeVerificationDialog.show(
-                        context,
-                        type: AgeVerificationType.adultContent,
-                      );
-                    },
-                    child: const Text('Show Dialog'),
-                  ),
-                ),
-              ),
-            ),
+          _createDialogTestApp(
+            type: AgeVerificationType.adultContent,
+            onResult: (r) => result = r,
           ),
         );
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text('Show Dialog'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Yes, I am 18+'));
+        await tester.tap(find.text('Yes'));
         await tester.pumpAndSettle();
 
         expect(result, true);
-        // TODO(Any): Fix and re-enable these tests
-      }, skip: true);
+      });
     });
 
     group('Dialog Behavior', () {
       testWidgets('is not dismissible by tapping outside', (tester) async {
         bool? result;
-        bool dialogShown = false;
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      dialogShown = true;
-                      result = await AgeVerificationDialog.show(context);
-                    },
-                    child: const Text('Show Dialog'),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          _createDialogTestApp(onResult: (r) => result = r),
         );
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text('Show Dialog'));
         await tester.pumpAndSettle();
 
-        expect(dialogShown, isTrue);
         expect(find.text('Age Verification'), findsOneWidget);
 
         // Try to dismiss by tapping outside
@@ -249,7 +195,7 @@ void main() {
 
         // Dialog should still be visible
         expect(find.text('Age Verification'), findsOneWidget);
-        expect(result, isNull); // Dialog hasn't returned a result yet
+        expect(result, isNull);
       });
 
       testWidgets('returns false by default if dialog is dismissed', (
@@ -258,26 +204,14 @@ void main() {
         bool? result;
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => Center(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      result = await AgeVerificationDialog.show(context);
-                    },
-                    child: const Text('Show Dialog'),
-                  ),
-                ),
-              ),
-            ),
-          ),
+          _createDialogTestApp(onResult: (r) => result = r),
         );
+        await tester.pumpAndSettle();
 
         await tester.tap(find.text('Show Dialog'));
         await tester.pumpAndSettle();
 
-        // Force dismiss the dialog (simulates system back button or other dismissal)
+        // Force dismiss using Navigator (simulates system back button)
         Navigator.of(tester.element(find.byType(AgeVerificationDialog))).pop();
         await tester.pumpAndSettle();
 
@@ -286,7 +220,7 @@ void main() {
     });
 
     group('Styling and Visual Elements', () {
-      testWidgets('uses VineTheme colors correctly', (tester) async {
+      testWidgets('uses $VineTheme colors correctly', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
         );
@@ -298,7 +232,7 @@ void main() {
 
         // Check Yes button styling
         final yesButton = tester.widget<ElevatedButton>(
-          find.widgetWithText(ElevatedButton, 'Yes, I am 16+'),
+          find.widgetWithText(ElevatedButton, 'Yes'),
         );
         expect(
           yesButton.style?.backgroundColor?.resolve({}),
@@ -310,8 +244,7 @@ void main() {
           find.widgetWithText(OutlinedButton, 'No'),
         );
         expect(noButton.style?.side?.resolve({})?.color, Colors.white54);
-        // TODO(Any): Fix and re-enable these tests
-      }, skip: true);
+      });
 
       testWidgets('has correct dialog structure and constraints', (
         tester,
@@ -320,20 +253,14 @@ void main() {
           const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
         );
 
-        // Check dialog shape and border
         final dialog = tester.widget<Dialog>(find.byType(Dialog));
         expect(dialog.backgroundColor, Colors.black);
         expect(dialog.shape, isA<RoundedRectangleBorder>());
 
-        // Check container constraints
-        final container = tester.widget<Container>(
-          find.descendant(
-            of: find.byType(Dialog),
-            matching: find.byType(Container),
-          ),
-        );
-        expect(container.constraints?.maxWidth, 400);
-        expect(container.padding, const EdgeInsets.all(24));
+        // Verify the border includes VineTheme green
+        final shape = dialog.shape! as RoundedRectangleBorder;
+        expect(shape.side.color, VineTheme.vineGreen);
+        expect(shape.side.width, 2);
       });
 
       testWidgets('has proper text styling', (tester) async {
@@ -357,7 +284,8 @@ void main() {
         // Check explanation text style
         final explanationText = tester.widget<Text>(
           find.text(
-            'To use the camera and create content, you must be at least 16 years old.',
+            'To use the camera and create content, you must be at '
+            'least 16 years old.',
           ),
         );
         expect(explanationText.style?.color, Colors.white70);
@@ -379,46 +307,45 @@ void main() {
           const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
         );
 
-        // Check that all elements are present in correct order
+        // Check that all elements are present
         expect(find.byIcon(Icons.person_outline), findsOneWidget);
         expect(find.text('Age Verification'), findsOneWidget);
         expect(
           find.text(
-            'To use the camera and create content, you must be at least 16 years old.',
+            'To use the camera and create content, you must be at '
+            'least 16 years old.',
           ),
           findsOneWidget,
         );
         expect(find.text('Are you 16 years of age or older?'), findsOneWidget);
         expect(find.text('No'), findsOneWidget);
-        expect(find.text('Yes, I am 16+'), findsOneWidget);
+        expect(find.text('Yes'), findsOneWidget);
 
-        // Check button layout
-        final buttonRow = tester.widget<Row>(
-          find.descendant(
-            of: find.byType(AgeVerificationDialog),
-            matching: find.byType(Row),
-          ),
+        // Check button row layout
+        final rows = find.descendant(
+          of: find.byType(AgeVerificationDialog),
+          matching: find.byType(Row),
         );
+        // Find the row containing the buttons
+        final buttonRow = tester
+            .widgetList<Row>(rows)
+            .firstWhere(
+              (row) => row.mainAxisAlignment == MainAxisAlignment.spaceEvenly,
+            );
         expect(buttonRow.mainAxisAlignment, MainAxisAlignment.spaceEvenly);
-        // TODO(Any): Fix and re-enable these tests
-      }, skip: true);
+      });
 
       testWidgets('buttons are properly sized and spaced', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
         );
 
-        // Check button containers are Expanded (equal width)
-        expect(find.byType(Expanded), findsNWidgets(2));
-
-        // Check spacing between buttons
-        final sizedBox = tester.widget<SizedBox>(
-          find.descendant(
-            of: find.byType(Row),
-            matching: find.byType(SizedBox),
-          ),
+        // Both buttons are wrapped in Expanded for equal width
+        final expandedWidgets = find.descendant(
+          of: find.byType(AgeVerificationDialog),
+          matching: find.byType(Expanded),
         );
-        expect(sizedBox.width, 16);
+        expect(expandedWidgets, findsNWidgets(2));
       });
     });
 
@@ -436,7 +363,7 @@ void main() {
         );
 
         expect(find.text('Age Verification'), findsOneWidget);
-        expect(find.text('Yes, I am 16+'), findsOneWidget);
+        expect(find.text('Are you 16 years of age or older?'), findsOneWidget);
 
         // Clear and test adult content type
         await tester.pumpWidget(Container());
@@ -453,9 +380,8 @@ void main() {
         );
 
         expect(find.text('Content Warning'), findsOneWidget);
-        expect(find.text('Yes, I am 18+'), findsOneWidget);
-        // TODO(Any): Fix and re-enable these tests
-      }, skip: true);
+        expect(find.text('Are you 18 years of age or older?'), findsOneWidget);
+      });
     });
 
     group('Accessibility', () {
@@ -468,9 +394,8 @@ void main() {
         expect(find.byType(ElevatedButton), findsOneWidget);
         expect(find.byType(OutlinedButton), findsOneWidget);
 
-        // Verify text is selectable and accessible
-        final titleText = find.text('Age Verification');
-        expect(titleText, findsOneWidget);
+        // Verify text is present and accessible
+        expect(find.text('Age Verification'), findsOneWidget);
       });
     });
   });
