@@ -181,7 +181,6 @@
 | `upload_manager_thumbnail_test.dart` | 67, 129 | 2 | `skip: true` |
 | `upload_manager_web_test.dart` | 67, 81, 95, 109, 124, 138, 155, 165, 181 | 9 | `skip: !kIsWeb ? 'Web-only test' : null` |
 | `video_event_publisher_native_proof_test.dart` | 344 | 1 | `skip: true` |
-| `video_event_service_deduplication_test.dart` | 65, 84, 105, 117, 132, 150, 167 | 7 | `skip: true` |
 | `video_event_service_replaceable_test.dart` | 276 | 1 | `skip: true` |
 | `video_event_service_repost_test.dart` | 420 | 1 | `skip: true` |
 | `video_event_service_reposters_test.dart` | 157, 251 | 2 | `skip: true` |
@@ -322,4 +321,3 @@ These files have some tests commented out while others remain active.
 | `test/screens/home_screen_router_test.dart` | 8 (commented out) |
 | `test/services/curation_service_create_test.dart` | 7 |
 | `test/services/video_event_service_deduplication_test.dart` | 7 |
-| `test/unit/services/video_event_service_deduplication_test.dart` | 7 |
