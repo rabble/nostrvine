@@ -80,8 +80,12 @@ class FeedVideoOverlay extends ConsumerWidget {
             ),
           ),
         ),
-        // Subtitle overlay
-        if (video.hasSubtitles) _SubtitleLayer(video: video, player: player),
+        // Subtitle overlay — Positioned.fill gives the inner Stack a size
+        // so SubtitleOverlay's Positioned can resolve correctly.
+        if (video.hasSubtitles)
+          Positioned.fill(
+            child: _SubtitleLayer(video: video, player: player),
+          ),
         // Author info and description (bottom-left)
         Positioned(
           bottom: 14,
@@ -330,7 +334,10 @@ class _Nip05Badge extends ConsumerWidget {
   }
 }
 
-/// Streams the player position and renders [SubtitleOverlay].
+/// Streams the player position and renders subtitle text.
+///
+/// Uses [Positioned.fill] + inner [Stack] so the [SubtitleOverlay]'s
+/// own [Positioned] resolves against a proper [Stack] ancestor.
 class _SubtitleLayer extends ConsumerWidget {
   const _SubtitleLayer({required this.video, required this.player});
 
@@ -345,11 +352,15 @@ class _SubtitleLayer extends ConsumerWidget {
       stream: player.stream.position,
       builder: (context, snapshot) {
         final positionMs = snapshot.data?.inMilliseconds ?? 0;
-        return SubtitleOverlay(
-          video: video,
-          positionMs: positionMs,
-          visible: subtitlesVisible,
-          bottomOffset: 180,
+        return Stack(
+          children: [
+            SubtitleOverlay(
+              video: video,
+              positionMs: positionMs,
+              visible: subtitlesVisible,
+              bottomOffset: 180,
+            ),
+          ],
         );
       },
     );
