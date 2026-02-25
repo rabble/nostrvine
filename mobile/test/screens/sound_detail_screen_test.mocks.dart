@@ -16,8 +16,9 @@ import 'package:nostr_sdk/nostr_sdk.dart' as _i7;
 import 'package:openvine/services/age_verification_service.dart' as _i12;
 import 'package:openvine/services/audio_playback_service.dart' as _i3;
 import 'package:openvine/services/content_blocklist_service.dart' as _i11;
+import 'package:openvine/services/content_filter_service.dart' as _i14;
 import 'package:openvine/services/video_event_service.dart' as _i8;
-import 'package:openvine/services/video_filter_builder.dart' as _i14;
+import 'package:openvine/services/video_filter_builder.dart' as _i15;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -871,12 +872,38 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
       );
 
   @override
+  void setContentFilterService(
+    _i14.ContentFilterService? contentFilterService,
+  ) => super.noSuchMethod(
+    Invocation.method(#setContentFilterService, [contentFilterService]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   bool shouldFilterEvent(_i7.Event? event) =>
       (super.noSuchMethod(
             Invocation.method(#shouldFilterEvent, [event]),
             returnValue: false,
           )
           as bool);
+
+  @override
+  (_i14.ContentFilterPreference, List<String>) getFilterAction(
+    _i7.Event? event,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getFilterAction, [event]),
+            returnValue: (_i14.ContentFilterPreference.show, <String>[]),
+          )
+          as (_i14.ContentFilterPreference, List<String>));
+
+  @override
+  List<_i9.VideoEvent> filterVideoList(List<_i9.VideoEvent>? videos) =>
+      (super.noSuchMethod(
+            Invocation.method(#filterVideoList, [videos]),
+            returnValue: <_i9.VideoEvent>[],
+          )
+          as List<_i9.VideoEvent>);
 
   @override
   int filterAdultContentFromExistingVideos() =>
@@ -1001,8 +1028,8 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
     int? limit = 200,
     bool? replace = true,
     bool? includeReposts = false,
-    _i14.VideoSortField? sortBy,
-    _i14.NIP50SortMode? nip50Sort,
+    _i15.VideoSortField? sortBy,
+    _i15.NIP50SortMode? nip50Sort,
     bool? force = false,
     List<String>? collaboratorPubkeys,
   }) =>
@@ -1078,7 +1105,7 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
   _i4.Future<void> subscribeToHomeFeed(
     List<String>? followingPubkeys, {
     int? limit = 100,
-    _i14.VideoSortField? sortBy,
+    _i15.VideoSortField? sortBy,
     bool? force = false,
   }) =>
       (super.noSuchMethod(
@@ -1118,8 +1145,8 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
   @override
   _i4.Future<void> subscribeToDiscovery({
     int? limit = 100,
-    _i14.VideoSortField? sortBy,
-    _i14.NIP50SortMode? nip50Sort,
+    _i15.VideoSortField? sortBy,
+    _i15.NIP50SortMode? nip50Sort,
     bool? force = false,
   }) =>
       (super.noSuchMethod(

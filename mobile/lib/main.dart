@@ -159,7 +159,8 @@ Future<void> _startOpenVineApp() async {
   }
 
   // DEFER window manager initialization until after UI is ready to avoid blocking
-  if (defaultTargetPlatform == TargetPlatform.macOS) {
+  if (defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.linux) {
     // Defer window manager setup to not block main thread during critical startup
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
@@ -573,11 +574,6 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     bandwidthTracker.initialize(),
     container.read(uploadManagerProvider).initialize(),
   ]);
-  Log.info(
-    '[INIT] ✅ SeenVideosService, BandwidthTracker, UploadManager initialized',
-    name: 'Main',
-    category: LogCategory.system,
-  );
 
   Log.info(
     '[INIT] ✅ All critical services initialized',

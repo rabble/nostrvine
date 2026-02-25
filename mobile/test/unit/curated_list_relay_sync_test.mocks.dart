@@ -5,15 +5,16 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i7;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i10;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i11;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:nostr_client/src/models/models.dart' as _i2;
 import 'package:nostr_client/src/nostr_client.dart' as _i5;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i4;
+import 'package:openvine/models/known_account.dart' as _i9;
 import 'package:openvine/services/auth_service.dart' as _i3;
 import 'package:openvine/services/relay_discovery_service.dart' as _i8;
-import 'package:openvine/services/user_profile_service.dart' as _i9;
+import 'package:openvine/services/user_profile_service.dart' as _i10;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -819,6 +820,49 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i7.Future<_i3.AuthResult>);
 
   @override
+  _i7.Future<void> createAnonymousAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#createAnonymousAccount, []),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
+
+  @override
+  _i7.Future<List<_i9.KnownAccount>> getKnownAccounts() =>
+      (super.noSuchMethod(
+            Invocation.method(#getKnownAccounts, []),
+            returnValue: _i7.Future<List<_i9.KnownAccount>>.value(
+              <_i9.KnownAccount>[],
+            ),
+            returnValueForMissingStub: _i7.Future<List<_i9.KnownAccount>>.value(
+              <_i9.KnownAccount>[],
+            ),
+          )
+          as _i7.Future<List<_i9.KnownAccount>>);
+
+  @override
+  _i7.Future<void> removeKnownAccount(String? pubkeyHex) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeKnownAccount, [pubkeyHex]),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
+
+  @override
+  _i7.Future<void> signInForAccount(
+    String? pubkeyHex,
+    _i3.AuthenticationSource? authSource,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#signInForAccount, [pubkeyHex, authSource]),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
+
+  @override
   _i7.Future<_i3.AuthResult> connectWithAmber() =>
       (super.noSuchMethod(
             Invocation.method(#connectWithAmber, []),
@@ -987,7 +1031,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
 
   @override
   _i7.Future<void> refreshCurrentProfile(
-    _i9.UserProfileService? userProfileService,
+    _i10.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -997,16 +1041,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i7.Future<void>);
 
   @override
-  _i7.Future<void> signInAutomatically() =>
-      (super.noSuchMethod(
-            Invocation.method(#signInAutomatically, []),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
-          )
-          as _i7.Future<void>);
-
-  @override
-  _i7.Future<void> signInWithDivineOAuth(_i10.KeycastSession? session) =>
+  _i7.Future<void> signInWithDivineOAuth(_i11.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i7.Future<void>.value(),

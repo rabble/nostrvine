@@ -4,11 +4,11 @@
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_nostr_enrichment.dart';
@@ -34,6 +34,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     // Reset state
     _usingRestApi = false;
     _nextCursor = null;
+
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
 
     // Watch appReady gate
     final isAppReady = ref.watch(appReadyProvider);
@@ -130,10 +133,11 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           _usingRestApi = true;
           _nextCursor = _getOldestTimestamp(apiVideos);
 
-          // Filter for platform compatibility
-          final filteredVideos = apiVideos
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .toList();
+          // Filter for platform compatibility and content preferences
+          final videoEventService = ref.read(videoEventServiceProvider);
+          final filteredVideos = videoEventService.filterVideoList(
+            apiVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+          );
 
           // Enrich REST API videos with Nostr tags for ProofMode badge
           final enrichedVideos = await enrichVideosWithNostrTags(
@@ -183,10 +187,11 @@ class PopularVideosFeed extends _$PopularVideosFeed {
 
     return videoEventsAsync.when(
       data: (videos) {
-        // Filter for platform compatibility
-        var filteredVideos = videos
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .toList();
+        // Filter for platform compatibility and content preferences
+        final videoEventService = ref.read(videoEventServiceProvider);
+        var filteredVideos = videoEventService.filterVideoList(
+          videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+        );
 
         // Sort by likes for trending (use nostrLikeCount, fall back to originalLikes)
         filteredVideos.sort((a, b) {
@@ -264,10 +269,13 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
-          final newVideos = enrichedVideos
-              .where((v) => !existingIds.contains(v.id.toLowerCase()))
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .toList();
+          final videoEventService = ref.read(videoEventServiceProvider);
+          final newVideos = videoEventService.filterVideoList(
+            enrichedVideos
+                .where((v) => !existingIds.contains(v.id.toLowerCase()))
+                .where((v) => v.isSupportedOnCurrentPlatform)
+                .toList(),
+          );
 
           _nextCursor = _getOldestTimestamp(enrichedVideos);
 
@@ -354,9 +362,10 @@ class PopularVideosFeed extends _$PopularVideosFeed {
 
           _nextCursor = _getOldestTimestamp(statsEnriched);
 
-          final filteredVideos = statsEnriched
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .toList();
+          final videoEventService = ref.read(videoEventServiceProvider);
+          final filteredVideos = videoEventService.filterVideoList(
+            statsEnriched.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+          );
 
           // Enrich REST API videos with Nostr tags for ProofMode badge
           final enrichedVideos = await enrichVideosWithNostrTags(

@@ -11,7 +11,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -89,6 +88,10 @@ class HomeFeed extends _$HomeFeed {
     }
 
     _lastBuildTime = now;
+
+    // Watch content filter version — rebuilds feed when user changes
+    // Show/Warn/Hide preferences so the filter takes effect immediately.
+    ref.watch(contentFilterVersionProvider);
 
     // Get injectable poll interval (overridable in tests)
     final pollInterval = ref.read(homeFeedPollIntervalProvider);
@@ -178,22 +181,16 @@ class HomeFeed extends _$HomeFeed {
         );
 
         if (feedResult.videos.isNotEmpty) {
-          final enrichedVideos = await _enrichVideosWithBulkStats(
-            feedResult.videos,
-          );
-
-          // Enrich REST API videos with Nostr tags for ProofMode badge
-          final nostrEnrichedVideos = await enrichVideosWithNostrTags(
-            enrichedVideos,
-            nostrService: ref.read(nostrServiceProvider),
-            callerName: 'HomeFeedProvider',
-          );
-
+          // Show feed immediately with basic data, enrich in background
           _usingRestApi = true;
           _restApiSucceededOnce = true;
           _nextCursor = feedResult.nextCursor;
           _hasMoreFromApi = feedResult.hasMore;
-          followingVideosFromSource = nostrEnrichedVideos;
+          followingVideosFromSource = feedResult.videos;
+
+          // Fire-and-forget: enrich with stats + Nostr tags in background
+          // This avoids blocking the initial feed display by ~10s
+          unawaited(_enrichInBackground(feedResult.videos));
 
           Log.info(
             '✅ HomeFeed: Got ${feedResult.videos.length} videos from REST API, '
@@ -234,11 +231,29 @@ class HomeFeed extends _$HomeFeed {
     if (followRepository != null) {
       // Listen to followingStream and refresh when following list changes
       // Skip the initial replay from BehaviorSubject using skip(1)
+      // Track the current following set so we only refresh when it
+      // actually changes (not on the initial cache-load emission that
+      // arrives after the REST API has already returned personalised results).
+      var lastFollowingSet = followRepository.followingPubkeys.toSet();
+
       final followingSubscription = followRepository.followingStream
           .skip(1) // Skip initial replay, only react to NEW emissions
           .listen((newFollowingList) {
+            final newSet = newFollowingList.toSet();
+            if (newSet.length == lastFollowingSet.length &&
+                newSet.containsAll(lastFollowingSet)) {
+              Log.debug(
+                '🏠 HomeFeed: Following list loaded but unchanged '
+                '(${newSet.length} users) - skipping refresh',
+                name: 'HomeFeedProvider',
+                category: LogCategory.video,
+              );
+              return;
+            }
+            lastFollowingSet = newSet;
+
             Log.info(
-              '🏠 HomeFeed: Stream received new following list '
+              '🏠 HomeFeed: Following list CHANGED '
               '(${newFollowingList.length} users), '
               'restApiPreferred=$_restApiSucceededOnce',
               name: 'HomeFeedProvider',
@@ -626,6 +641,9 @@ class HomeFeed extends _$HomeFeed {
       );
     }
 
+    // Apply content filter preferences (hide videos matching "Filter Out")
+    followingVideos = videoEventService.filterVideoList(followingVideos);
+
     // Keep showing loading if we have no videos but might still be getting them from lists
     // This prevents showing "empty" while subscribed list cache is still syncing
     final stillLoadingLists = followingVideos.isEmpty && hasSubscribedLists;
@@ -714,6 +732,45 @@ class HomeFeed extends _$HomeFeed {
     }
   }
 
+  /// Enrich videos with stats and Nostr tags in the background.
+  /// Updates the feed state when enrichment completes without blocking
+  /// the initial feed display.
+  Future<void> _enrichInBackground(List<VideoEvent> videos) async {
+    try {
+      final enrichedVideos = await _enrichVideosWithBulkStats(videos);
+      if (!ref.mounted) return;
+
+      final nostrEnrichedVideos = await enrichVideosWithNostrTags(
+        enrichedVideos,
+        nostrService: ref.read(nostrServiceProvider),
+        callerName: 'HomeFeedProvider',
+      );
+      if (!ref.mounted) return;
+
+      // Update current state with enriched videos, preserving sort order
+      final currentState = state.value;
+      if (currentState == null) return;
+
+      // Build a map of enriched videos by ID for quick lookup
+      final enrichedById = <String, VideoEvent>{
+        for (final v in nostrEnrichedVideos) v.id: v,
+      };
+
+      // Replace matching videos in current state with enriched versions
+      final updatedVideos = currentState.videos.map((v) {
+        return enrichedById[v.id] ?? v;
+      }).toList();
+
+      state = AsyncData(currentState.copyWith(videos: updatedVideos));
+    } catch (e) {
+      Log.warning(
+        '🏠 HomeFeed: Background enrichment failed: $e',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
+    }
+  }
+
   Future<List<VideoEvent>> _enrichVideosWithBulkStats(
     List<VideoEvent> videos,
   ) async {
@@ -722,11 +779,13 @@ class HomeFeed extends _$HomeFeed {
     final analyticsService = ref.read(analyticsApiServiceProvider);
     final videoIds = videos.map((video) => video.id).toList();
 
-    final statsByEventId = await analyticsService.getBulkVideoStats(videoIds);
-    final viewsByEventId = await analyticsService.getBulkVideoViews(
-      videoIds,
-      maxVideos: 20,
-    );
+    // Fetch stats and views in parallel instead of sequentially
+    final results = await Future.wait([
+      analyticsService.getBulkVideoStats(videoIds),
+      analyticsService.getBulkVideoViews(videoIds, maxVideos: 20),
+    ]);
+    final statsByEventId = results[0] as Map<String, BulkVideoStatsEntry>;
+    final viewsByEventId = results[1] as Map<String, int>;
     if (statsByEventId.isEmpty && viewsByEventId.isEmpty) return videos;
 
     final statsByIdLower = <String, BulkVideoStatsEntry>{
@@ -856,10 +915,13 @@ class HomeFeed extends _$HomeFeed {
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
-          final newVideos = nostrEnrichedVideos
-              .where((v) => !existingIds.contains(v.id.toLowerCase()))
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .toList();
+          final videoEventService = ref.read(videoEventServiceProvider);
+          final newVideos = videoEventService.filterVideoList(
+            nostrEnrichedVideos
+                .where((v) => !existingIds.contains(v.id.toLowerCase()))
+                .where((v) => v.isSupportedOnCurrentPlatform)
+                .toList(),
+          );
 
           // Update cursor for next pagination
           _nextCursor = feedResult.nextCursor;
@@ -1001,26 +1063,16 @@ class HomeFeed extends _$HomeFeed {
       if (!ref.mounted) return;
 
       if (feedResult.videos.isNotEmpty) {
-        final enrichedVideos = await _enrichVideosWithBulkStats(
-          feedResult.videos,
-        );
-        if (!ref.mounted) return;
-
-        // Enrich REST API videos with Nostr tags for ProofMode badge
-        final nostrEnrichedVideos = await enrichVideosWithNostrTags(
-          enrichedVideos,
-          nostrService: ref.read(nostrServiceProvider),
-          callerName: 'HomeFeedProvider',
-        );
-        if (!ref.mounted) return;
-
         _usingRestApi = true;
         _nextCursor = feedResult.nextCursor;
         _hasMoreFromApi = feedResult.hasMore;
 
-        var videos = nostrEnrichedVideos
+        var videos = feedResult.videos
             .where((v) => v.isSupportedOnCurrentPlatform)
             .toList();
+
+        // Enrich in background (stats + Nostr tags) without blocking refresh
+        unawaited(_enrichInBackground(feedResult.videos));
 
         // Merge subscribed list videos
         final subscribedListCache = ref.read(subscribedListVideoCacheProvider);
@@ -1046,6 +1098,10 @@ class HomeFeed extends _$HomeFeed {
           if (timeCompare != 0) return timeCompare;
           return a.id.compareTo(b.id);
         });
+
+        // Apply content filter preferences (hide videos matching "Filter Out")
+        final videoEventService = ref.read(videoEventServiceProvider);
+        videos = videoEventService.filterVideoList(videos);
 
         Log.info(
           '✅ HomeFeed: REST API refresh got ${videos.length} videos',
@@ -1125,6 +1181,9 @@ class HomeFeed extends _$HomeFeed {
     updatedVideos = updatedVideos
         .where((v) => v.isSupportedOnCurrentPlatform)
         .toList();
+
+    // Apply content filter preferences (hide videos matching "Filter Out")
+    updatedVideos = videoEventService.filterVideoList(updatedVideos);
 
     // Sort by creation time (newest first)
     updatedVideos.sort((a, b) {

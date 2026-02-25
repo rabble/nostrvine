@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:models/models.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 
 void main() {

@@ -14,7 +14,6 @@ import 'package:nostr_sdk/signer/pubkey_only_nostr_signer.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for managing user profiles from Nostr kind 0 events
@@ -1031,8 +1030,8 @@ class UserProfileService extends ChangeNotifier {
     if (profile?.name?.isNotEmpty == true) {
       return profile!.name!;
     }
-    // Immediate fallback to truncated npub
-    return NostrKeyUtils.truncateNpub(pubkey);
+    // Immediate fallback to generated name
+    return UserProfile.defaultDisplayNameFor(pubkey);
   }
 
   /// Remove specific profile from cache

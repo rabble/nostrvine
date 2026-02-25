@@ -62,6 +62,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Disable Crashlytics symbol uploads for debug builds
+            configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                mappingFileUploadEnabled = false
+                nativeSymbolUploadEnabled = false
+            }
+        }
         release {
             signingConfig = signingConfigs.getByName("release")
             // TEMPORARILY DISABLE R8 minification for debugging

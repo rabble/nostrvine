@@ -63,6 +63,8 @@ class VideoEvent {
     this.nostrEventTags = const [],
     this.textTrackRef,
     this.textTrackContent,
+    this.contentWarningLabels = const [],
+    this.warnLabels = const [],
   });
 
   /// Create VideoEvent from Nostr event
@@ -123,6 +125,7 @@ class VideoEvent {
     final collaboratorPubkeys = <String>[];
     InspiredByInfo? inspiredByVideo;
     String? textTrackRef;
+    final contentWarningLabels = <String>[];
 
     // Parse event tags according to NIP-71
     // Handle both List<String> and List<dynamic>
@@ -435,6 +438,21 @@ class VideoEvent {
                   : null,
             );
           }
+        case 'content-warning':
+          // NIP-36 content-warning tag
+          // Format: ['content-warning', '<reason>']
+          if (tagValue.isNotEmpty && !contentWarningLabels.contains(tagValue)) {
+            contentWarningLabels.add(tagValue);
+          }
+        case 'l':
+          // NIP-32 label tag — only collect content-warning namespace
+          // Format: ['l', '<label>', 'content-warning']
+          if (tag.length >= 3 &&
+              tag[2] == 'content-warning' &&
+              tagValue.isNotEmpty &&
+              !contentWarningLabels.contains(tagValue)) {
+            contentWarningLabels.add(tagValue);
+          }
         case 'text-track':
           // Subtitle/caption track reference
           // Format: ['text-track', '<coords-or-url>', '<relay>', 'captions',
@@ -621,6 +639,7 @@ class VideoEvent {
           )
           .toList(),
       textTrackRef: textTrackRef,
+      contentWarningLabels: contentWarningLabels,
     );
   }
   final String id;
@@ -706,6 +725,25 @@ class VideoEvent {
 
   /// Embedded VTT content from funnelcake REST API (skips relay fetch).
   final String? textTrackContent;
+
+  /// NIP-32 content-warning self-labels on this video.
+  ///
+  /// Parsed from `["l", "<label>", "content-warning"]` tags and
+  /// `["content-warning", "<reason>"]` tags. Empty if no warnings.
+  final List<String> contentWarningLabels;
+
+  /// Content warning labels that triggered the "warn" filter preference.
+  ///
+  /// Set during feed processing based on user's per-category filter settings.
+  /// When non-empty, the video should be shown with a blur overlay.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final List<String> warnLabels;
+
+  /// Whether this video has any content warnings.
+  bool get hasContentWarning => contentWarningLabels.isNotEmpty;
+
+  /// Whether this video should show a content warning overlay.
+  bool get shouldShowWarning => warnLabels.isNotEmpty;
 
   /// Whether this video has subtitle/caption data available.
   bool get hasSubtitles =>
@@ -1080,6 +1118,8 @@ class VideoEvent {
     List<List<String>>? nostrEventTags,
     String? textTrackRef,
     String? textTrackContent,
+    List<String>? contentWarningLabels,
+    List<String>? warnLabels,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -1132,6 +1172,8 @@ class VideoEvent {
     nostrEventTags: nostrEventTags ?? this.nostrEventTags,
     textTrackRef: textTrackRef ?? this.textTrackRef,
     textTrackContent: textTrackContent ?? this.textTrackContent,
+    contentWarningLabels: contentWarningLabels ?? this.contentWarningLabels,
+    warnLabels: warnLabels ?? this.warnLabels,
   );
 
   @override

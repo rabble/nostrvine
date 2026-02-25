@@ -1,6 +1,7 @@
 // ABOUTME: Widget displaying current and total video time with separator
 // ABOUTME: Combines smooth interpolated current time with static total duration
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
@@ -45,7 +46,7 @@ class VideoTimeDisplay extends ConsumerWidget {
         const TextStyle(
           color: Colors.white,
           fontSize: 18,
-          fontFamily: 'BricolageGrotesque',
+          fontFamily: VineTheme.fontFamilyBricolage,
           fontWeight: .w800,
           height: 1.33,
           letterSpacing: 0.15,

@@ -2,7 +2,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
@@ -28,13 +27,10 @@ class VideoEditorRemoveArea extends ConsumerWidget {
             color: VineTheme.error,
             shape: RoundedRectangleBorder(borderRadius: .circular(20)),
           ),
-          child: SizedBox(
-            height: 28,
-            width: 28,
-            child: SvgPicture.asset(
-              'assets/icon/delete.svg',
-              colorFilter: const .mode(Color(0xFF000000), .srcIn),
-            ),
+          child: DivineIcon(
+            icon: .trash,
+            size: 28,
+            color: VineTheme.backgroundColor,
           ),
         ),
       ),

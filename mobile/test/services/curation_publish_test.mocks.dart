@@ -6,7 +6,7 @@
 import 'dart:async' as _i8;
 import 'dart:ui' as _i11;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i17;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i19;
 import 'package:likes_repository/likes_repository.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
@@ -14,13 +14,15 @@ import 'package:models/models.dart' as _i10;
 import 'package:nostr_client/nostr_client.dart' as _i6;
 import 'package:nostr_client/src/models/models.dart' as _i2;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i5;
+import 'package:openvine/models/known_account.dart' as _i17;
 import 'package:openvine/services/age_verification_service.dart' as _i13;
 import 'package:openvine/services/auth_service.dart' as _i4;
 import 'package:openvine/services/content_blocklist_service.dart' as _i12;
-import 'package:openvine/services/relay_discovery_service.dart' as _i15;
-import 'package:openvine/services/user_profile_service.dart' as _i16;
+import 'package:openvine/services/content_filter_service.dart' as _i14;
+import 'package:openvine/services/relay_discovery_service.dart' as _i16;
+import 'package:openvine/services/user_profile_service.dart' as _i18;
 import 'package:openvine/services/video_event_service.dart' as _i9;
-import 'package:openvine/services/video_filter_builder.dart' as _i14;
+import 'package:openvine/services/video_filter_builder.dart' as _i15;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -748,12 +750,38 @@ class MockVideoEventService extends _i1.Mock implements _i9.VideoEventService {
       );
 
   @override
+  void setContentFilterService(
+    _i14.ContentFilterService? contentFilterService,
+  ) => super.noSuchMethod(
+    Invocation.method(#setContentFilterService, [contentFilterService]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   bool shouldFilterEvent(_i5.Event? event) =>
       (super.noSuchMethod(
             Invocation.method(#shouldFilterEvent, [event]),
             returnValue: false,
           )
           as bool);
+
+  @override
+  (_i14.ContentFilterPreference, List<String>) getFilterAction(
+    _i5.Event? event,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getFilterAction, [event]),
+            returnValue: (_i14.ContentFilterPreference.show, <String>[]),
+          )
+          as (_i14.ContentFilterPreference, List<String>));
+
+  @override
+  List<_i10.VideoEvent> filterVideoList(List<_i10.VideoEvent>? videos) =>
+      (super.noSuchMethod(
+            Invocation.method(#filterVideoList, [videos]),
+            returnValue: <_i10.VideoEvent>[],
+          )
+          as List<_i10.VideoEvent>);
 
   @override
   int filterAdultContentFromExistingVideos() =>
@@ -878,8 +906,8 @@ class MockVideoEventService extends _i1.Mock implements _i9.VideoEventService {
     int? limit = 200,
     bool? replace = true,
     bool? includeReposts = false,
-    _i14.VideoSortField? sortBy,
-    _i14.NIP50SortMode? nip50Sort,
+    _i15.VideoSortField? sortBy,
+    _i15.NIP50SortMode? nip50Sort,
     bool? force = false,
     List<String>? collaboratorPubkeys,
   }) =>
@@ -955,7 +983,7 @@ class MockVideoEventService extends _i1.Mock implements _i9.VideoEventService {
   _i8.Future<void> subscribeToHomeFeed(
     List<String>? followingPubkeys, {
     int? limit = 100,
-    _i14.VideoSortField? sortBy,
+    _i15.VideoSortField? sortBy,
     bool? force = false,
   }) =>
       (super.noSuchMethod(
@@ -995,8 +1023,8 @@ class MockVideoEventService extends _i1.Mock implements _i9.VideoEventService {
   @override
   _i8.Future<void> subscribeToDiscovery({
     int? limit = 100,
-    _i14.VideoSortField? sortBy,
-    _i14.NIP50SortMode? nip50Sort,
+    _i15.VideoSortField? sortBy,
+    _i15.NIP50SortMode? nip50Sort,
     bool? force = false,
   }) =>
       (super.noSuchMethod(
@@ -1716,12 +1744,12 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
           as bool);
 
   @override
-  List<_i15.DiscoveredRelay> get userRelays =>
+  List<_i16.DiscoveredRelay> get userRelays =>
       (super.noSuchMethod(
             Invocation.getter(#userRelays),
-            returnValue: <_i15.DiscoveredRelay>[],
+            returnValue: <_i16.DiscoveredRelay>[],
           )
-          as List<_i15.DiscoveredRelay>);
+          as List<_i16.DiscoveredRelay>);
 
   @override
   bool get hasExistingProfile =>
@@ -1805,6 +1833,46 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
             ),
           )
           as _i8.Future<_i4.AuthResult>);
+
+  @override
+  _i8.Future<void> createAnonymousAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#createAnonymousAccount, []),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<List<_i17.KnownAccount>> getKnownAccounts() =>
+      (super.noSuchMethod(
+            Invocation.method(#getKnownAccounts, []),
+            returnValue: _i8.Future<List<_i17.KnownAccount>>.value(
+              <_i17.KnownAccount>[],
+            ),
+          )
+          as _i8.Future<List<_i17.KnownAccount>>);
+
+  @override
+  _i8.Future<void> removeKnownAccount(String? pubkeyHex) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeKnownAccount, [pubkeyHex]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> signInForAccount(
+    String? pubkeyHex,
+    _i4.AuthenticationSource? authSource,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#signInForAccount, [pubkeyHex, authSource]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
 
   @override
   _i8.Future<_i4.AuthResult> connectWithAmber() =>
@@ -1929,7 +1997,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
 
   @override
   _i8.Future<void> refreshCurrentProfile(
-    _i16.UserProfileService? userProfileService,
+    _i18.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -1939,16 +2007,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
           as _i8.Future<void>);
 
   @override
-  _i8.Future<void> signInAutomatically() =>
-      (super.noSuchMethod(
-            Invocation.method(#signInAutomatically, []),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> signInWithDivineOAuth(_i17.KeycastSession? session) =>
+  _i8.Future<void> signInWithDivineOAuth(_i19.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i8.Future<void>.value(),
