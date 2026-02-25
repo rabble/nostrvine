@@ -441,8 +441,7 @@ class VideoEvent {
         case 'content-warning':
           // NIP-36 content-warning tag
           // Format: ['content-warning', '<reason>']
-          if (tagValue.isNotEmpty &&
-              !contentWarningLabels.contains(tagValue)) {
+          if (tagValue.isNotEmpty && !contentWarningLabels.contains(tagValue)) {
             contentWarningLabels.add(tagValue);
           }
         case 'l':
@@ -1173,8 +1172,7 @@ class VideoEvent {
     nostrEventTags: nostrEventTags ?? this.nostrEventTags,
     textTrackRef: textTrackRef ?? this.textTrackRef,
     textTrackContent: textTrackContent ?? this.textTrackContent,
-    contentWarningLabels:
-        contentWarningLabels ?? this.contentWarningLabels,
+    contentWarningLabels: contentWarningLabels ?? this.contentWarningLabels,
     warnLabels: warnLabels ?? this.warnLabels,
   );
 
