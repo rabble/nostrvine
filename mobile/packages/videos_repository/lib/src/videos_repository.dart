@@ -668,4 +668,186 @@ class VideosRepository {
     final events = await _nostrClient.queryEvents([filter]);
     return _transformAndFilter(events);
   }
+
+  /// Fetches videos sorted by loop count (most looped first).
+  ///
+  /// Returns empty list if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<List<VideoEvent>> getVideosByLoops({
+    int limit = 20,
+    int? before,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return [];
+    }
+    final stats = await _funnelcakeApiClient.getVideosByLoops(
+      limit: limit,
+      before: before,
+    );
+    return _transformVideoStats(stats, sortByCreatedAt: false);
+  }
+
+  /// Fetches videos for a specific hashtag.
+  ///
+  /// Returns empty list if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<List<VideoEvent>> getVideosByHashtag({
+    required String hashtag,
+    int limit = 20,
+    int? before,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return [];
+    }
+    final stats = await _funnelcakeApiClient.getVideosByHashtag(
+      hashtag: hashtag,
+      limit: limit,
+      before: before,
+    );
+    return _transformVideoStats(stats, sortByCreatedAt: false);
+  }
+
+  /// Fetches classic videos (pre-Nostr) for a specific hashtag.
+  ///
+  /// Returns empty list if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<List<VideoEvent>> getClassicVideosByHashtag({
+    required String hashtag,
+    int limit = 20,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return [];
+    }
+    final stats = await _funnelcakeApiClient.getClassicVideosByHashtag(
+      hashtag: hashtag,
+      limit: limit,
+    );
+    return _transformVideoStats(stats, sortByCreatedAt: false);
+  }
+
+  /// Searches videos by text query.
+  ///
+  /// Returns empty list if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<List<VideoEvent>> searchVideos({
+    required String query,
+    int limit = 20,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return [];
+    }
+    final stats = await _funnelcakeApiClient.searchVideos(
+      query: query,
+      limit: limit,
+    );
+    return _transformVideoStats(stats, sortByCreatedAt: false);
+  }
+
+  /// Fetches classic Vine videos (pre-Nostr archive).
+  ///
+  /// Returns empty list if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<List<VideoEvent>> getClassicVines({
+    String sort = 'popular',
+    int limit = 20,
+    int? offset,
+    int? before,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return [];
+    }
+    final stats = await _funnelcakeApiClient.getClassicVines(
+      sort: sort,
+      limit: limit,
+      offset: offset ?? 0,
+      before: before,
+    );
+    return _transformVideoStats(stats, sortByCreatedAt: false);
+  }
+
+  /// Fetches videos by a specific author from the Funnelcake API.
+  ///
+  /// Returns empty list if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<List<VideoEvent>> getVideosByAuthor({
+    required String pubkey,
+    int limit = 20,
+    int? before,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return [];
+    }
+    final stats = await _funnelcakeApiClient.getVideosByAuthor(
+      pubkey: pubkey,
+      limit: limit,
+      before: before,
+    );
+    return _transformVideoStats(stats);
+  }
+
+  /// Fetches stats for a single video.
+  ///
+  /// Returns null if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<VideoStats?> getVideoStats(String eventId) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getVideoStats(eventId);
+  }
+
+  /// Fetches view count for a single video.
+  ///
+  /// Returns null if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<int?> getVideoViews(String eventId) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getVideoViews(eventId);
+  }
+
+  /// Fetches bulk video stats for multiple event IDs.
+  ///
+  /// Returns null if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<BulkVideoStatsResponse?> getBulkVideoStats(
+    List<String> eventIds,
+  ) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getBulkVideoStats(eventIds);
+  }
+
+  /// Fetches personalized video recommendations.
+  ///
+  /// Returns null if Funnelcake API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<RecommendationsResponse?> getRecommendations({
+    required String pubkey,
+    int limit = 20,
+    String fallback = 'popular',
+    String? category,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getRecommendations(
+      pubkey: pubkey,
+      limit: limit,
+      fallback: fallback,
+      category: category,
+    );
+  }
 }
