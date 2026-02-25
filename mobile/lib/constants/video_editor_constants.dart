@@ -115,6 +115,9 @@ class VideoEditorConstants {
   /// Hero animation tag for the back button in the video editor.
   static const heroBackButtonId = 'Video-Editor-Back-Button';
 
+  /// Hero animation tag for the final clip-preview in the video editor.
+  static const heroMetaPreviewId = 'Video-metadata-clip-preview-video';
+
   /// List of filter presets sorted by popularity
   static final filters = [
     PresetFilters.none,

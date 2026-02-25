@@ -6,10 +6,9 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_app_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
@@ -79,50 +78,32 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         child: Stack(
           children: [
-            const Positioned.fill(child: _BackgroundGradient()),
             Scaffold(
-              backgroundColor: Colors.transparent,
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                leading: Hero(
-                  tag: VideoEditorConstants.heroBackButtonId,
-                  child: IconButton(
-                    padding: const .all(8),
-                    icon: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: const Color(0x33000000),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: VineTheme.outlineVariant),
-                      ),
-                      child: Padding(
-                        padding: const .all(4.0),
-                        child: DivineIcon(
-                          size: 32,
-                          icon: .caretLeft,
-                          color: VineTheme.whiteText,
-                        ),
-                      ),
-                    ),
-                    onPressed: () => context.pop(),
-                    tooltip: 'Back',
-                  ),
-                ),
-                title: Text(
-                  'Post details',
-                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
-                ),
-              ),
+              backgroundColor: VineTheme.surfaceContainerHigh,
+              appBar: const VideoMetadataAppBar(),
               body: Column(
+                spacing: 12,
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-                      child: _FormData(
-                        titleController: _titleController,
-                        descriptionController: _descriptionController,
-                        titleFocusNode: _titleFocusNode,
-                        descriptionFocusNode: _descriptionFocusNode,
+                      child: Column(
+                        mainAxisSize: .min,
+                        crossAxisAlignment: .stretch,
+                        children: [
+                          // Video preview at top
+                          const Padding(
+                            padding: EdgeInsets.only(top: 8, bottom: 16),
+                            child: VideoMetadataClipPreview(),
+                          ),
+
+                          // Form fields
+                          _FormData(
+                            titleController: _titleController,
+                            descriptionController: _descriptionController,
+                            titleFocusNode: _titleFocusNode,
+                            descriptionFocusNode: _descriptionFocusNode,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -139,22 +120,28 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
   }
 }
 
-class _BackgroundGradient extends StatelessWidget {
-  const _BackgroundGradient();
+/// A subtle divider line for separating metadata sections.
+class _Divider extends StatelessWidget {
+  /// Creates a divider widget.
+  const _Divider({
+    this.enablePaddingTop = false,
+    this.enablePaddingBottom = false,
+  });
+
+  final bool enablePaddingTop;
+  final bool enablePaddingBottom;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF062117),
-            VineTheme.surfaceContainerHigh,
-            const Color(0xFF000704),
-          ],
-        ),
+    return Padding(
+      padding: .only(
+        top: enablePaddingTop ? 12 : 0.0,
+        bottom: enablePaddingBottom ? 12 : 0,
+      ),
+      child: const Divider(
+        thickness: 0,
+        height: 1,
+        color: VineTheme.outlineDisabled,
       ),
     );
   }
@@ -178,116 +165,63 @@ class _FormData extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
+      mainAxisSize: .min,
       crossAxisAlignment: .stretch,
       children: [
-        const _FormHeader(),
-        const SizedBox(height: 20),
-        const _SectionCard(child: VideoMetadataClipPreview()),
-        const SizedBox(height: 16),
-        _SectionCard(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // Title input field
-                DivineTextField(
-                  controller: titleController,
-                  // TODO(l10n): Replace with context.l10n when localization is
-                  // added.
-                  label: 'Title',
-                  focusNode: titleFocusNode,
-                  textInputAction: .next,
-                  minLines: 1,
-                  maxLines: 5,
-                  onChanged: (value) {
-                    ref
-                        .read(videoEditorProvider.notifier)
-                        .updateMetadata(title: value);
-                  },
-                  onSubmitted: (_) => descriptionFocusNode.requestFocus(),
-                ),
-                const SizedBox(height: 12),
-
-                // Description input field
-                DivineTextField(
-                  controller: descriptionController,
-                  // TODO(l10n): Replace with context.l10n when localization is
-                  // added.
-                  label: 'Description',
-                  focusNode: descriptionFocusNode,
-                  keyboardType: .multiline,
-                  textInputAction: .newline,
-                  minLines: 1,
-                  maxLines: 10,
-                  onChanged: (value) {
-                    ref
-                        .read(videoEditorProvider.notifier)
-                        .updateMetadata(description: value);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        const _SectionCard(child: VideoMetadataTagsInput()),
-        const SizedBox(height: 16),
         const _MetadataLimitWarning(),
-        const _SectionCard(child: VideoMetadataExpirationSelector()),
-        const SizedBox(height: 12),
-        const _SectionCard(child: VideoMetadataCollaboratorsInput()),
-        const SizedBox(height: 12),
-        const _SectionCard(child: VideoMetadataInspiredByInput()),
+
+        // Title input field
+        DivineTextField(
+          controller: titleController,
+          // TODO(l10n): Replace with context.l10n when localization is
+          // added.
+          labelText: 'Title',
+          focusNode: titleFocusNode,
+          textInputAction: .next,
+          minLines: 1,
+          maxLines: 5,
+          onChanged: (value) {
+            ref.read(videoEditorProvider.notifier).updateMetadata(title: value);
+          },
+          onSubmitted: (_) => descriptionFocusNode.requestFocus(),
+        ),
+        const _Divider(),
+
+        // Description input field
+        DivineTextField(
+          controller: descriptionController,
+          // TODO(l10n): Replace with context.l10n when localization is
+          // added.
+          labelText: 'Description',
+          focusNode: descriptionFocusNode,
+          keyboardType: .multiline,
+          textInputAction: .newline,
+          minLines: 1,
+          maxLines: 10,
+          onChanged: (value) {
+            ref
+                .read(videoEditorProvider.notifier)
+                .updateMetadata(description: value);
+          },
+        ),
+        const _Divider(enablePaddingBottom: true),
+
+        // Hashtags input
+        const VideoMetadataTagsInput(),
+        const _Divider(enablePaddingTop: true),
+
+        // Expiration time selector
+        const VideoMetadataExpirationSelector(),
+        const _Divider(),
+
+        // Collaborators
+        const VideoMetadataCollaboratorsInput(),
+        const _Divider(),
+
+        // Inspired By
+        const VideoMetadataInspiredByInput(),
+        const SizedBox(height: 48),
       ],
-    );
-  }
-}
-
-class _FormHeader extends StatelessWidget {
-  const _FormHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: const Color(0xAA032017),
-        border: Border.all(color: VineTheme.outlineVariant),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Ready to publish?',
-            style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Add context and credits so people can discover your post.',
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: const Color(0xC0032017),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: VineTheme.outlineVariant),
-      ),
-      child: child,
     );
   }
 }
@@ -305,7 +239,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
     if (!limitReached) return const SizedBox.shrink();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const .all(16),
       padding: const .all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF4A1C00),

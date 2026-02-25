@@ -14,6 +14,7 @@ class VideoEditorIconButton extends StatelessWidget {
     super.key,
     this.backgroundColor = const Color(0xFF000000),
     this.iconColor = Colors.white,
+    this.borderColor,
     this.iconSize = 32,
     this.size = 48,
     this.radius = 20,
@@ -30,19 +31,21 @@ class VideoEditorIconButton extends StatelessWidget {
   /// Color of the icon.
   final Color iconColor;
 
+  final Color? borderColor;
+
   /// Size of the icon.
   final double iconSize;
 
   /// Size of the button container.
   final double size;
 
+  final double radius;
+
   /// Callback when the button is tapped.
   final VoidCallback? onTap;
 
   /// Semantic label for accessibility.
   final String? semanticLabel;
-
-  final double radius;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +60,10 @@ class VideoEditorIconButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(radius),
+            borderRadius: .circular(radius),
+            border: borderColor != null
+                ? .all(width: 2, color: borderColor!)
+                : null,
           ),
           child: Center(
             child: DivineIcon(size: iconSize, icon: icon, color: iconColor),
