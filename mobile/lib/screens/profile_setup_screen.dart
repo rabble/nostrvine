@@ -8,6 +8,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -855,6 +856,12 @@ class _ProfileSetupScreenViewState
                                   ),
                                   errorMaxLines: 2,
                                 ),
+                                // Only allow valid subdomain characters
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[a-zA-Z0-9-]'),
+                                  ),
+                                ],
                                 textInputAction: TextInputAction.next,
                                 onFieldSubmitted: (_) =>
                                     FocusScope.of(context).nextFocus(),
@@ -871,6 +878,8 @@ class _ProfileSetupScreenViewState
                                     UsernameStatusIndicator(
                                       status: state.usernameStatus,
                                       error: state.usernameError,
+                                      formatMessage:
+                                          state.usernameFormatMessage,
                                     ),
                               ),
 
@@ -1372,10 +1381,18 @@ class _ProfileSetupScreenViewState
 
 /// Displays username availability status (checking, available, taken, reserved, error)
 class UsernameStatusIndicator extends StatelessWidget {
-  const UsernameStatusIndicator({required this.status, this.error, super.key});
+  const UsernameStatusIndicator({
+    required this.status,
+    this.error,
+    this.formatMessage,
+    super.key,
+  });
 
   final UsernameStatus status;
   final UsernameValidationError? error;
+
+  /// Custom message from the server for format validation errors.
+  final String? formatMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -1383,7 +1400,7 @@ class UsernameStatusIndicator extends StatelessWidget {
     if (error != null) {
       errorText = switch (error) {
         UsernameValidationError.invalidFormat =>
-          'Only lowercase letters, numbers, -, _, and . are allowed',
+          formatMessage ?? 'Only letters, numbers, and hyphens are allowed',
         UsernameValidationError.invalidLength =>
           'Username must be 3-20 characters',
         UsernameValidationError.networkError =>
@@ -1397,6 +1414,9 @@ class UsernameStatusIndicator extends StatelessWidget {
       UsernameStatus.available => const _UsernameAvailableIndicator(),
       UsernameStatus.taken => const _UsernameTakenIndicator(),
       UsernameStatus.reserved => _UsernameReservedIndicator(),
+      UsernameStatus.invalidFormat => _UsernameErrorIndicator(
+        message: errorText ?? 'Invalid username format',
+      ),
       UsernameStatus.error => _UsernameErrorIndicator(
         message: errorText ?? 'Failed to check availability',
       ),

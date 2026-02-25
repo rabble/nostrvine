@@ -14,9 +14,10 @@ import 'package:profile_repository/profile_repository.dart';
 
 /// API endpoint for claiming usernames via NIP-98 auth.
 const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
+const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
 
 /// API endpoint for NIP-05 username availability lookup.
-const _nip05LookupUrl = 'https://divine.video/.well-known/nostr.json';
+// NIP-05 lookup no longer used for availability checks; using name-server API.
 
 /// Callback to check if a user should be filtered from results.
 typedef UserBlockFilter = bool Function(String pubkey);
@@ -176,11 +177,27 @@ class ProfileRepository {
         body: payload,
       );
 
+      // Parse server error message if available
+      String? serverError;
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        try {
+          final errorData = jsonDecode(response.body) as Map<String, dynamic>;
+          serverError = errorData['error'] as String?;
+        } on Exception {
+          // Ignore JSON parse failures
+        }
+      }
+
       return switch (response.statusCode) {
         200 || 201 => const UsernameClaimSuccess(),
+        400 => UsernameClaimError(
+          serverError ?? 'Invalid username format',
+        ),
         403 => const UsernameClaimReserved(),
         409 => const UsernameClaimTaken(),
-        _ => UsernameClaimError('Unexpected response: ${response.statusCode}'),
+        _ => UsernameClaimError(
+          serverError ?? 'Unexpected response: ${response.statusCode}',
+        ),
       };
     } on Exception catch (e) {
       return UsernameClaimError('Network error: $e');
@@ -201,23 +218,62 @@ class ProfileRepository {
   Future<UsernameAvailabilityResult> checkUsernameAvailability({
     required String username,
   }) async {
-    // NIP-05 local parts are lowercase-only (a-z0-9-_.) per spec;
-    // normalize user input to match.
-    final normalizedUsername = username.toLowerCase();
+    final normalizedUsername = username.toLowerCase().trim();
+
+    // Client-side format validation: usernames become subdomains, so only
+    // lowercase letters, digits, and hyphens are allowed. No dots,
+    // underscores, spaces, or special characters.
+    if (normalizedUsername.isEmpty) {
+      return const UsernameInvalidFormat('Username is required');
+    }
+    if (normalizedUsername.length > 63) {
+      return const UsernameInvalidFormat(
+        'Usernames must be 1–63 characters',
+      );
+    }
+    if (normalizedUsername.startsWith('-') ||
+        normalizedUsername.endsWith('-')) {
+      return const UsernameInvalidFormat(
+        "Usernames can't start or end with a hyphen",
+      );
+    }
+    if (!RegExp(r'^[a-z0-9-]+$').hasMatch(normalizedUsername)) {
+      return const UsernameInvalidFormat(
+        'Only letters, numbers, and hyphens are allowed '
+        '(your username becomes username.divine.video)',
+      );
+    }
+
+    // Server-side check using the name-server API which validates format
+    // and checks availability in one call.
     try {
       final response = await _httpClient.get(
-        Uri.parse('$_nip05LookupUrl?name=$normalizedUsername'),
+        Uri.parse(
+          '$_usernameCheckUrl/$normalizedUsername',
+        ),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final names = data['names'] as Map<String, dynamic>?;
+        final available = data['available'] as bool? ?? false;
+        final reason = data['reason'] as String?;
 
-        // Username is available if not in the names map
-        final isAvailable =
-            names == null || !names.containsKey(normalizedUsername);
+        if (available) {
+          return const UsernameAvailable();
+        }
 
-        return isAvailable ? const UsernameAvailable() : const UsernameTaken();
+        // Server told us it's not available — return appropriate type
+        if (reason != null) {
+          // Validation failures come back with reason but available=false
+          if (reason.contains('character') ||
+              reason.contains('hyphen') ||
+              reason.contains('invalid') ||
+              reason.contains('emoji') ||
+              reason.contains('DNS')) {
+            return UsernameInvalidFormat(reason);
+          }
+        }
+        return const UsernameTaken();
       } else {
         return UsernameCheckError(
           'Server returned status ${response.statusCode}',

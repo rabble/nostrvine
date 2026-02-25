@@ -55,7 +55,10 @@ enum UsernameStatus {
   /// Username is reserved - user should contact support.
   reserved,
 
-  /// Validation error (format or network error).
+  /// Username has invalid format (e.g. contains dots, underscores).
+  invalidFormat,
+
+  /// Validation error (network or other error).
   error,
 }
 
@@ -86,6 +89,7 @@ final class ProfileEditorState extends Equatable {
     this.initialUsername,
     this.usernameStatus = UsernameStatus.idle,
     this.usernameError,
+    this.usernameFormatMessage,
     this.reservedUsernames = const {},
   });
 
@@ -109,6 +113,9 @@ final class ProfileEditorState extends Equatable {
 
   /// Error message for username validation (when status is error).
   final UsernameValidationError? usernameError;
+
+  /// Human-readable reason when [usernameStatus] is [UsernameStatus.invalidFormat].
+  final String? usernameFormatMessage;
 
   /// Cache of reserved usernames (403 responses from claim API).
   final Set<String> reservedUsernames;
@@ -134,6 +141,7 @@ final class ProfileEditorState extends Equatable {
     String? initialUsername,
     UsernameStatus? usernameStatus,
     UsernameValidationError? usernameError,
+    String? usernameFormatMessage,
     Set<String>? reservedUsernames,
   }) {
     return ProfileEditorState(
@@ -144,6 +152,7 @@ final class ProfileEditorState extends Equatable {
       initialUsername: initialUsername ?? this.initialUsername,
       usernameStatus: usernameStatus ?? this.usernameStatus,
       usernameError: usernameError,
+      usernameFormatMessage: usernameFormatMessage,
       reservedUsernames: reservedUsernames ?? this.reservedUsernames,
     );
   }
@@ -157,5 +166,6 @@ final class ProfileEditorState extends Equatable {
     initialUsername,
     usernameStatus,
     usernameError,
+    usernameFormatMessage,
   ];
 }

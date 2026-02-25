@@ -198,6 +198,14 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
             usernameError: null,
           ),
         );
+      case UsernameInvalidFormat(:final reason):
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.invalidFormat,
+            usernameError: UsernameValidationError.invalidFormat,
+            usernameFormatMessage: reason,
+          ),
+        );
       case UsernameCheckError(:final message):
         Log.error(
           'Username availability check failed: $message',
