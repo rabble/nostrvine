@@ -4187,6 +4187,7 @@ String _$videoLocalStorageHash() => r'0be44203ec8edf59105a013aae374c07637a3ba0';
 /// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
+/// - FunnelcakeApiClient for trending/popular video sorting
 
 @ProviderFor(videosRepository)
 const videosRepositoryProvider = VideosRepositoryProvider._();
@@ -4201,6 +4202,7 @@ const videosRepositoryProvider = VideosRepositoryProvider._();
 /// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
+/// - FunnelcakeApiClient for trending/popular video sorting
 
 final class VideosRepositoryProvider
     extends
@@ -4220,6 +4222,7 @@ final class VideosRepositoryProvider
   /// - VideoLocalStorage for cache-first lookups and caching results
   /// - ContentBlocklistService for filtering blocked/muted users
   /// - AgeVerificationService for filtering NSFW content based on user preference
+  /// - FunnelcakeApiClient for trending/popular video sorting
   const VideosRepositoryProvider._()
     : super(
         from: null,
@@ -4253,7 +4256,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'b21ecf459b7186280630e67d72b5c27a3e73edd0';
+String _$videosRepositoryHash() => r'a962937408e5ed2b8c35cf3bb14786582e5e550f';
 
 /// Provider for LikesRepository instance
 ///

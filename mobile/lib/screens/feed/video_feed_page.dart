@@ -193,6 +193,18 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       color: VineTheme.backgroundColor,
       child: MultiBlocListener(
         listeners: [
+          // Reset controller when mode changes so a fresh one is
+          // created for the new feed.
+          BlocListener<VideoFeedBloc, VideoFeedState>(
+            listenWhen: (previous, current) =>
+                previous.mode != current.mode && current.isLoading,
+            listener: (_, state) {
+              if (ownsController) controller?.dispose();
+              controller = null;
+              lastPooledVideos = null;
+              lastPrefetchIndex = null;
+            },
+          ),
           // Initialize controller when videos first become available
           BlocListener<VideoFeedBloc, VideoFeedState>(
             listenWhen: (previous, current) =>
@@ -239,6 +251,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
             return Stack(
               children: [
                 PooledVideoFeed(
+                  key: ValueKey(state.mode),
                   videos: pooledVideos,
                   controller: controller,
                   itemBuilder: (context, video, index, {required isActive}) {
