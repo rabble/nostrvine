@@ -28,7 +28,7 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -857,7 +857,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               pageContext.whenData((ctx) {
                 // Build new route with same type but different index
                 final routePath = switch (ctx.type) {
-                  RouteType.home => HomeScreenRouter.pathForIndex(widget.index),
+                  RouteType.home => VideoFeedPage.pathForIndex(widget.index),
                   RouteType.explore => ExploreScreen.pathForIndex(widget.index),
                   RouteType.notifications => NotificationsScreen.pathForIndex(
                     widget.index,

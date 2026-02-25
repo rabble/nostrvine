@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
@@ -130,7 +130,8 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     if (_switchedToBunker) return;
 
     if (result.success) {
-      context.go(HomeScreenRouter.pathForIndex(0));
+      // Navigate to home on success
+      context.go(VideoFeedPage.pathForIndex(0));
     } else {
       setState(() {
         _errorMessage = result.errorMessage;
@@ -277,7 +278,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       if (!mounted) return;
 
       if (authResult.success) {
-        context.go(HomeScreenRouter.pathForIndex(0));
+        context.go(VideoFeedPage.pathForIndex(0));
       } else {
         setState(() {
           _sessionState = NostrConnectState.error;

@@ -8,7 +8,7 @@ import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -40,7 +40,7 @@ String? testRedirectLogic({
 
   // Rule 1: Authenticated users on auth routes go to home
   if (authState == AuthState.authenticated && isAuthRoute) {
-    return HomeScreenRouter.pathForIndex(0);
+    return VideoFeedPage.pathForIndex(0);
   }
 
   // Rule 2: Unauthenticated users on non-auth routes go to welcome
@@ -150,10 +150,10 @@ void main() {
       );
 
       test(
-        'unauthenticated user on ${HomeScreenRouter.pathForIndex(0)} redirects to /welcome',
+        'unauthenticated user on ${VideoFeedPage.pathForIndex(0)} redirects to /welcome',
         () {
           final redirect = testRedirectLogic(
-            location: HomeScreenRouter.pathForIndex(0),
+            location: VideoFeedPage.pathForIndex(0),
             authState: AuthState.unauthenticated,
           );
           expect(
@@ -182,7 +182,7 @@ void main() {
 
     group('Authenticated user scenarios', () {
       test(
-        'authenticated user on ${WelcomeScreen.path} redirects to ${HomeScreenRouter.pathForIndex(0)}',
+        'authenticated user on ${WelcomeScreen.path} redirects to ${VideoFeedPage.pathForIndex(0)}',
         () {
           final redirect = testRedirectLogic(
             location: WelcomeScreen.path,
@@ -190,15 +190,15 @@ void main() {
           );
           expect(
             redirect,
-            equals(HomeScreenRouter.pathForIndex(0)),
+            equals(VideoFeedPage.pathForIndex(0)),
             reason:
-                'Authenticated user on auth route goes to ${HomeScreenRouter.pathForIndex(0)}',
+                'Authenticated user on auth route goes to ${VideoFeedPage.pathForIndex(0)}',
           );
         },
       );
 
       test(
-        'authenticated user on ${WelcomeScreen.loginOptionsPath} redirects to ${HomeScreenRouter.pathForIndex(0)}',
+        'authenticated user on ${WelcomeScreen.loginOptionsPath} redirects to ${VideoFeedPage.pathForIndex(0)}',
         () {
           final redirect = testRedirectLogic(
             location: WelcomeScreen.loginOptionsPath,
@@ -206,23 +206,23 @@ void main() {
           );
           expect(
             redirect,
-            equals(HomeScreenRouter.pathForIndex(0)),
+            equals(VideoFeedPage.pathForIndex(0)),
             reason: 'Authenticated user on auth route should go to home',
           );
         },
       );
 
       test(
-        'authenticated user on ${HomeScreenRouter.pathForIndex(0)} stays there',
+        'authenticated user on ${VideoFeedPage.pathForIndex(0)} stays there',
         () {
           final redirect = testRedirectLogic(
-            location: HomeScreenRouter.pathForIndex(0),
+            location: VideoFeedPage.pathForIndex(0),
             authState: AuthState.authenticated,
           );
           expect(
             redirect,
             isNull,
-            reason: '${HomeScreenRouter.pathForIndex(0)} should not redirect',
+            reason: '${VideoFeedPage.pathForIndex(0)} should not redirect',
           );
         },
       );

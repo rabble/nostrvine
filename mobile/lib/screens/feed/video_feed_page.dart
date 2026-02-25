@@ -11,20 +11,30 @@ import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
-import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 class VideoFeedPage extends ConsumerWidget {
-  static const String path = '/new-video-feed';
+  /// Route name for this screen.
+  static const routeName = 'home';
 
-  static const String routeName = 'new-video-feed';
+  /// Path for this route.
+  static const path = '/home';
 
-  const VideoFeedPage({super.key});
+  /// Path for this route with index.
+  static const pathWithIndex = '/home/:index';
+
+  /// Build path for a specific index.
+  static String pathForIndex(int index) => '/home/$index';
+
+  const VideoFeedPage({this.initialMode = FeedMode.home, super.key});
+
+  /// The feed mode to start with. Defaults to [FeedMode.home].
+  final FeedMode initialMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final videosRepository = ref.read(videosRepositoryProvider);
-    final followRepository = ref.read(followRepositoryProvider);
+    final videosRepository = ref.watch(videosRepositoryProvider);
+    final followRepository = ref.watch(followRepositoryProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -35,7 +45,7 @@ class VideoFeedPage extends ConsumerWidget {
       create: (_) => VideoFeedBloc(
         videosRepository: videosRepository,
         followRepository: followRepository,
-      )..add(const VideoFeedStarted(mode: FeedMode.latest)),
+      )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),
     );
   }
@@ -98,11 +108,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
-      drawer: const VineDrawer(),
-      body: BlocBuilder<VideoFeedBloc, VideoFeedState>(
+    return ColoredBox(
+      color: VineTheme.backgroundColor,
+      child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
         builder: (context, state) {
           // Loading state (including initial state before first load)
           if (state.isLoading) {
@@ -116,7 +124,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
           // Empty state
           if (state.isEmpty) {
-            return FeedEmptyWidget(state: state);
+            return Stack(
+              children: [
+                FeedEmptyWidget(state: state),
+                const FeedModeSwitch(),
+              ],
+            );
           }
 
           // Wrap videos for pool compatibility
@@ -136,7 +149,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                     video: originalEvent,
                     index: index,
                     isActive: isActive,
-                    contextTitle: 'BLoC Test (${state.mode.name})',
+                    contextTitle: state.mode.name,
                   );
                 },
                 onActiveVideoChanged: (video, index) {
