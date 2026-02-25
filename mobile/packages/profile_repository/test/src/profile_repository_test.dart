@@ -1302,6 +1302,42 @@ void main() {
           ).called(1);
         },
       );
+
+      test(
+        'returns error with default message when server returns '
+        'non-200 with unparseable body',
+        () async {
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value('authHeader'));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) => Future.value(Response('not json at all', 400)),
+          );
+
+          final result = await profileRepository.claimUsername(
+            username: 'baduser',
+          );
+
+          expect(
+            result,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Invalid username format',
+            ),
+          );
+        },
+      );
     });
 
     group('UsernameClaimResult', () {
@@ -1546,6 +1582,42 @@ void main() {
             'Username contains invalid characters',
           ),
         );
+      });
+
+      test('returns UsernameInvalidFormat for hyphen reason', () async {
+        stubNameServerCheck(
+          'ok',
+          available: false,
+          reason: 'Cannot start with hyphen',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'ok',
+        );
+        expect(result, isA<UsernameInvalidFormat>());
+      });
+
+      test('returns UsernameInvalidFormat for emoji reason', () async {
+        stubNameServerCheck(
+          'ok',
+          available: false,
+          reason: 'Username contains emoji',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'ok',
+        );
+        expect(result, isA<UsernameInvalidFormat>());
+      });
+
+      test('returns UsernameInvalidFormat for DNS reason', () async {
+        stubNameServerCheck(
+          'ok',
+          available: false,
+          reason: 'Not a valid DNS label',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'ok',
+        );
+        expect(result, isA<UsernameInvalidFormat>());
       });
     });
 
