@@ -38,6 +38,8 @@ class _MockAuthService extends Mock implements AuthService {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
+class _FakeSharedPreferences extends Fake implements SharedPreferences {}
+
 /// Creates a mock FollowRepository with the given following pubkeys
 _MockFollowRepository _createMockFollowRepository(
   List<String> followingPubkeys,
@@ -133,6 +135,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(<String>[]);
+      registerFallbackValue(_FakeSharedPreferences());
     });
 
     setUp(() async {
