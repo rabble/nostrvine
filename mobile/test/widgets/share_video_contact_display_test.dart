@@ -1,30 +1,32 @@
-// ABOUTME: Tests for contact display in share video dialog
+// ABOUTME: Tests for contact display in SendToUserDialog
 // ABOUTME: Verifies npub/nip05 is shown instead of raw hex pubkey
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/services/social_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
-import 'package:openvine/services/video_sharing_service.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:openvine/widgets/send_to_user_dialog.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
-@GenerateMocks([SocialService, UserProfileService, VideoSharingService])
-import 'share_video_contact_display_test.mocks.dart';
+import '../helpers/test_provider_overrides.dart';
+import '../helpers/test_provider_overrides.mocks.dart';
 
 /// Mocktail mock for FollowRepository
-class MockFollowRepository extends mocktail.Mock implements FollowRepository {}
+class _MockFollowRepository extends mocktail.Mock implements FollowRepository {}
+
+/// Mocktail mock for ProfileRepository
+class _MockProfileRepository extends mocktail.Mock
+    implements ProfileRepository {}
 
 /// Creates a mock FollowRepository with the given following pubkeys
-MockFollowRepository createMockFollowRepository(List<String> followingPubkeys) {
-  final mock = MockFollowRepository();
+_MockFollowRepository _createMockFollowRepository(
+  List<String> followingPubkeys,
+) {
+  final mock = _MockFollowRepository();
   mocktail.when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
   mocktail
       .when(() => mock.followingStream)
@@ -37,15 +39,15 @@ MockFollowRepository createMockFollowRepository(List<String> followingPubkeys) {
 }
 
 void main() {
-  group('Share Video Contact Display Tests', () {
-    late MockSocialService mockSocialService;
+  group('SendToUserDialog Contact Display', () {
     late MockUserProfileService mockUserProfileService;
-    late MockVideoSharingService mockVideoSharingService;
-    late MockFollowRepository mockFollowRepository;
+    late _MockFollowRepository mockFollowRepository;
+    late _MockProfileRepository mockProfileRepository;
 
     final testVideo = VideoEvent(
-      id: 'test-video-id',
-      pubkey: '1234567890abcdef' * 4, // 64-char hex
+      id: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      pubkey:
+          '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
       createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       content: 'Test video',
       timestamp: DateTime.now(),
@@ -57,21 +59,23 @@ void main() {
         '2646f4c01362b3b48d4b4e31d9c96a4eabe06c4eb971e1a482ef651f1bf023b7';
 
     setUp(() {
-      mockSocialService = MockSocialService();
-      mockUserProfileService = MockUserProfileService();
-      mockVideoSharingService = MockVideoSharingService();
-      mockFollowRepository = createMockFollowRepository([testPubkey]);
-
-      // Setup default mocks
-      when(mockSocialService.followSets).thenReturn([]);
-      when(mockUserProfileService.hasProfile(any)).thenReturn(false);
-      when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
+      mockUserProfileService = createMockUserProfileService();
+      mockFollowRepository = _createMockFollowRepository([testPubkey]);
+      mockProfileRepository = _MockProfileRepository();
     });
 
-    testWidgets('Contact display shows npub instead of raw hex', (
-      tester,
-    ) async {
-      // Setup profile with display name but no nip05
+    Widget buildSubject() => testProviderScope(
+      mockUserProfileService: mockUserProfileService,
+      additionalOverrides: [
+        followRepositoryProvider.overrideWithValue(mockFollowRepository),
+        profileRepositoryProvider.overrideWithValue(mockProfileRepository),
+      ],
+      child: MaterialApp(
+        home: Scaffold(body: SendToUserDialog(video: testVideo)),
+      ),
+    );
+
+    testWidgets('shows npub instead of raw hex', (tester) async {
       final testProfile = UserProfile(
         pubkey: testPubkey,
         displayName: 'Test User',
@@ -93,28 +97,7 @@ void main() {
         mockUserProfileService.getCachedProfile(testPubkey),
       ).thenReturn(testProfile);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            socialServiceProvider.overrideWithValue(mockSocialService),
-            userProfileServiceProvider.overrideWithValue(
-              mockUserProfileService,
-            ),
-            videoSharingServiceProvider.overrideWithValue(
-              mockVideoSharingService,
-            ),
-            followRepositoryProvider.overrideWithValue(mockFollowRepository),
-          ],
-          child: MaterialApp(
-            home: Scaffold(body: ShareVideoMenu(video: testVideo)),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Tap "Send to Viner" to open dialog
-      await tester.tap(find.text('Send to Viner'));
+      await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       // Verify contact list loads
@@ -127,8 +110,7 @@ void main() {
       expect(find.textContaining('npub1'), findsOneWidget);
     });
 
-    testWidgets('Contact display shows nip05 when available', (tester) async {
-      // Setup profile with nip05
+    testWidgets('shows nip05 when available', (tester) async {
       final testProfile = UserProfile(
         pubkey: testPubkey,
         displayName: 'Test User',
@@ -150,28 +132,7 @@ void main() {
         mockUserProfileService.getCachedProfile(testPubkey),
       ).thenReturn(testProfile);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            socialServiceProvider.overrideWithValue(mockSocialService),
-            userProfileServiceProvider.overrideWithValue(
-              mockUserProfileService,
-            ),
-            videoSharingServiceProvider.overrideWithValue(
-              mockVideoSharingService,
-            ),
-            followRepositoryProvider.overrideWithValue(mockFollowRepository),
-          ],
-          child: MaterialApp(
-            home: Scaffold(body: ShareVideoMenu(video: testVideo)),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Tap "Send to Viner" to open dialog
-      await tester.tap(find.text('Send to Viner'));
+      await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       // Verify contact list loads
@@ -184,43 +145,38 @@ void main() {
       expect(find.textContaining(testPubkey), findsNothing);
     });
 
-    testWidgets('Contact with no profile data shows npub fallback', (
-      tester,
-    ) async {
-      // No profile data - should still show npub, not hex
+    testWidgets('shows npub fallback when no profile data', (tester) async {
       when(mockUserProfileService.hasProfile(testPubkey)).thenReturn(false);
       when(
         mockUserProfileService.getCachedProfile(testPubkey),
       ).thenReturn(null);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            socialServiceProvider.overrideWithValue(mockSocialService),
-            userProfileServiceProvider.overrideWithValue(
-              mockUserProfileService,
-            ),
-            videoSharingServiceProvider.overrideWithValue(
-              mockVideoSharingService,
-            ),
-            followRepositoryProvider.overrideWithValue(mockFollowRepository),
-          ],
-          child: MaterialApp(
-            home: Scaffold(body: ShareVideoMenu(video: testVideo)),
-          ),
-        ),
-      );
-
+      await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // Tap "Send to Viner" to open dialog
-      await tester.tap(find.text('Send to Viner'));
-      await tester.pumpAndSettle();
-
-      // CRITICAL: Even without profile data, verify npub is shown, not raw hex
-      // May find multiple npub references (truncated + full in different places)
+      // CRITICAL: Even without profile data, npub is shown, not raw hex
       expect(find.textContaining('npub1'), findsWidgets);
       expect(find.textContaining(testPubkey), findsNothing);
+    });
+
+    testWidgets('renders search and message fields', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Verify dialog title
+      expect(find.text('Share with user'), findsOneWidget);
+
+      // Verify search field
+      expect(
+        find.widgetWithText(TextField, 'Search by name, npub, or pubkey...'),
+        findsOneWidget,
+      );
+
+      // Verify message field
+      expect(
+        find.widgetWithText(TextField, 'Add a personal message (optional)'),
+        findsOneWidget,
+      );
     });
   });
 }

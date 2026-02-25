@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
@@ -256,7 +257,9 @@ void main() {
 
     setUp(() {
       mockNostrClient = createMockNostrService();
-      when(mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
+      mocktail
+          .when(() => mockNostrClient.publicKey)
+          .thenReturn('test_pubkey_hex');
     });
 
     Widget buildSubject() {
