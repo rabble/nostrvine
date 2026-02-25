@@ -186,6 +186,26 @@ definitions:
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+    - &build_ios_e2e
+      name: Build iOS Simulator app
+      script: |
+        flutter build ios --simulator \
+          --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
+          --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+    - &build_android_e2e
+      name: Build Android debug APK
+      script: |
+        flutter build apk --debug \
+          --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
+          --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
 workflows:
   ios-build:
     name: iOS Build
@@ -417,15 +437,7 @@ workflows:
       - *enable_spm
       - *flutter_pub_get
       - *pod_install
-      - name: Build iOS Simulator app
-        script: |
-          flutter build ios --simulator \
-            --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
-            --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-            --dart-define=ZENDESK_URL=$ZENDESK_URL \
-            --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
-            --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-            --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+      - *build_ios_e2e
       - name: Install Maestro CLI
         script: |
           curl -Ls "https://get.maestro.mobile.dev" | bash
@@ -494,17 +506,8 @@ workflows:
       events: []
     scripts:
       - *flutter_pub_get
-      - name: Set up local.properties
-        script: echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/mobile/android/local.properties"
-      - name: Build Android debug APK
-        script: |
-          flutter build apk --debug \
-            --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
-            --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-            --dart-define=ZENDESK_URL=$ZENDESK_URL \
-            --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
-            --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
-            --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+      - *setup_local_properties
+      - *build_android_e2e
       - name: Install Maestro CLI
         script: |
           set -e
