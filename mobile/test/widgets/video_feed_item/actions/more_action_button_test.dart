@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -18,7 +19,6 @@ import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/video_feed_item/actions/more_action_button.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
-import '../../../helpers/test_provider_overrides.mocks.dart';
 
 @GenerateMocks([ContentBlocklistService, MuteService])
 import 'more_action_button_test.mocks.dart';
@@ -81,7 +81,9 @@ void main() {
       mockMuteService = MockMuteService();
       mockNostrClient = createMockNostrService();
       // Stub publicKey so _handleBlock can access it
-      when(mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
+      mocktail
+          .when(() => mockNostrClient.publicKey)
+          .thenReturn('test_pubkey_hex');
     });
 
     Widget buildMenuWidget({bool debugToolsEnabled = false}) {

@@ -127,6 +127,9 @@ MockNostrClient createMockNostrService() {
       .when(() => mockNostr.queryEvents(mocktail.any()))
       .thenAnswer((_) async => <Event>[]);
 
+  // Stub publicKey with empty string default so tests that access it
+  // do not get type 'Null' is not a subtype of type 'String'
+  mocktail.when(() => mockNostr.publicKey).thenReturn('');
   return mockNostr;
 }
 

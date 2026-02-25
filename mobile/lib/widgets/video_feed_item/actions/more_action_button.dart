@@ -431,8 +431,8 @@ class _ViewSourceDialog extends StatelessWidget {
   const _ViewSourceDialog({required this.video});
   final VideoEvent video;
 
-  // Amber color for the explainer note
-  static const _amberColor = VineTheme.accentOrange;
+  // Warning color for the explainer note
+  static const _warningColor = VineTheme.accentOrange;
 
   @override
   Widget build(BuildContext context) {
@@ -498,14 +498,14 @@ class _ViewSourceDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _amberColor.withValues(alpha: 0.1),
+                color: _warningColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: _amberColor.withValues(alpha: 0.3)),
+                border: Border.all(color: _warningColor.withValues(alpha: 0.3)),
               ),
               child: Text(
                 'Parsed event data, not raw Nostr source',
                 style: TextStyle(
-                  color: _amberColor,
+                  color: _warningColor,
                   fontSize: 11,
                   fontStyle: FontStyle.italic,
                 ),
