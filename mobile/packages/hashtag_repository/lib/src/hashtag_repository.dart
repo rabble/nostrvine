@@ -11,45 +11,41 @@ import 'package:models/models.dart';
 class HashtagRepository {
   /// Creates a new [HashtagRepository] instance.
   const HashtagRepository({
-    FunnelcakeApiClient? funnelcakeApiClient,
+    required FunnelcakeApiClient funnelcakeApiClient,
   }) : _funnelcakeApiClient = funnelcakeApiClient;
 
-  final FunnelcakeApiClient? _funnelcakeApiClient;
+  final FunnelcakeApiClient _funnelcakeApiClient;
 
   /// Searches for hashtags matching [query].
   ///
   /// Returns a list of hashtag name strings sorted by popularity/trending.
   /// When [query] is null or empty, returns popular hashtags without filtering.
-  /// Returns an empty list if the API client is not available.
   /// [limit] defaults to 20.
   ///
-  /// Throws [FunnelcakeException] subtypes on API errors.
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
   Future<List<String>> searchHashtags({
     String? query,
     int limit = 20,
-  }) async {
-    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
-      return [];
-    }
-    return _funnelcakeApiClient.searchHashtags(
-      query: query,
-      limit: limit,
-    );
-  }
+  }) => _funnelcakeApiClient.searchHashtags(
+    query: query,
+    limit: limit,
+  );
 
   /// Fetches trending hashtags.
   ///
   /// Returns a list of [TrendingHashtag] sorted by popularity.
-  /// Returns an empty list if the API client is not available.
   /// [limit] defaults to 20.
   ///
-  /// Throws [FunnelcakeException] subtypes on API errors.
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] on server error.
+  /// - [FunnelcakeTimeoutException] on timeout.
+  /// - [FunnelcakeException] for other errors.
   Future<List<TrendingHashtag>> fetchTrendingHashtags({
     int limit = 20,
-  }) async {
-    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
-      return [];
-    }
-    return _funnelcakeApiClient.fetchTrendingHashtags(limit: limit);
-  }
+  }) => _funnelcakeApiClient.fetchTrendingHashtags(limit: limit);
 }
