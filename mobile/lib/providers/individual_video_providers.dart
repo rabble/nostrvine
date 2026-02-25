@@ -69,9 +69,14 @@ class DisposedControllersTracker extends ChangeNotifier {
   Set<String> get ids => Set.unmodifiable(_ids);
 
   /// Mark a controller as disposed. Safe to call from onDispose.
+  ///
+  /// The ID is added synchronously so [contains] returns true immediately,
+  /// but [notifyListeners] is deferred to a microtask to avoid triggering
+  /// ChangeNotifierProvider's listener inside a Riverpod lifecycle callback
+  /// (which would cause "Cannot use Ref inside life-cycles" assertion).
   void markDisposed(String videoId) {
     if (_ids.add(videoId)) {
-      notifyListeners();
+      Future.microtask(notifyListeners);
     }
   }
 

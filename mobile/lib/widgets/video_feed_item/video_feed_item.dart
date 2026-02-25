@@ -1309,12 +1309,6 @@ class _SafeVideoPlayer extends ConsumerWidget {
     );
 
     if (isDisposed) {
-      Log.debug(
-        'SafeVideoPlayer: controller for $videoId is marked disposed, '
-        'showing placeholder',
-        name: 'SafeVideoPlayer',
-        category: LogCategory.video,
-      );
       return const SizedBox.shrink();
     }
 
