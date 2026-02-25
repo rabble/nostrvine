@@ -510,7 +510,8 @@ void main() {
           'created_at': 1700000000,
           'kind': 34236,
           'd_tag':
-              'a04b70820ef370e90aae19d23e46b1482d3af0e7c9d994d1594a1384a62d3972',
+              'a04b70820ef370e90aae19d23e46b148'
+              '2d3af0e7c9d994d1594a1384a62d3972',
           'title': 'Test',
           'thumbnail': 'https://example.com/thumb.jpg',
           'video_url': 'https://example.com/video.mp4',
@@ -560,7 +561,9 @@ void main() {
             'created_at': 1700000000,
             'kind': 34236,
             'd_tag':
-                'a04b70820ef370e90aae19d23e46b1482d3af0e7c9d994d1594a1384a62d3972',
+                'a04b70820ef370e90aae19d23'
+                'e46b1482d3af0e7c9d994d15'
+                '94a1384a62d3972',
             'sha256': 'explicit-sha256-value',
             'title': 'Test',
             'thumbnail': 'https://example.com/thumb.jpg',
