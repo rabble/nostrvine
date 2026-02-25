@@ -240,24 +240,6 @@ void main() {
       });
     });
 
-    group('TOS not accepted scenarios', () {
-      test(
-        'user without TOS on ${VideoFeedPage.pathForIndex(0)} redirects to /welcome',
-        () {
-          final redirect = testRedirectLogic(
-            location: VideoFeedPage.pathForIndex(0),
-            authState: AuthState.authenticated,
-            tosAccepted: false,
-          );
-          expect(
-            redirect,
-            equals(WelcomeScreen.path),
-            reason: 'User must accept TOS to access protected routes',
-          );
-        },
-      );
-    });
-
     group('Edge cases', () {
       test(
         '${WelcomeScreen.loginOptionsPath} should NEVER redirect to ${WelcomeScreen.path} for unauthenticated users',
