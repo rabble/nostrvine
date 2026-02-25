@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:likes_repository/likes_repository.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart';
@@ -11,37 +11,58 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:likes_repository/likes_repository.dart';
 
-@GenerateMocks([NostrClient, VideoEventService, LikesRepository, AuthService])
-import 'curation_service_trending_fetch_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockLikesRepository extends Mock implements LikesRepository {}
+
+class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(Event('0' * 64, 1, <List<String>>[], ''));
+    registerFallbackValue(<String>[]);
+    registerFallbackValue(
+      VideoEvent(
+        id: 'fallback',
+        pubkey: 'fallback',
+        createdAt: 0,
+        content: '',
+        timestamp: DateTime(2020),
+      ),
+    );
+  });
+
   late CurationService curationService;
-  late MockNostrClient mockNostrService;
-  late MockVideoEventService mockVideoEventService;
-  late MockLikesRepository mockLikesRepository;
-  late MockAuthService mockAuthService;
+  late _MockNostrClient mockNostrService;
+  late _MockVideoEventService mockVideoEventService;
+  late _MockLikesRepository mockLikesRepository;
+  late _MockAuthService mockAuthService;
 
   setUp(() {
-    mockNostrService = MockNostrClient();
-    mockVideoEventService = MockVideoEventService();
-    mockLikesRepository = MockLikesRepository();
-    mockAuthService = MockAuthService();
+    mockNostrService = _MockNostrClient();
+    mockVideoEventService = _MockVideoEventService();
+    mockLikesRepository = _MockLikesRepository();
+    mockAuthService = _MockAuthService();
 
     // Setup default mocks
-    when(mockVideoEventService.videoEvents).thenReturn([]);
-    when(mockVideoEventService.discoveryVideos).thenReturn([]);
+    when(() => mockVideoEventService.videoEvents).thenReturn([]);
+    when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
 
     // Mock the addListener call
-    when(mockVideoEventService.addListener(any)).thenReturn(null);
+    when(() => mockVideoEventService.addListener(any())).thenReturn(null);
 
     // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
-    when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
+    when(
+      () => mockLikesRepository.getLikeCounts(any()),
+    ).thenAnswer((_) async => {});
 
     // Mock subscribeToEvents to avoid MissingStubError when fetching Editor's Picks list
     when(
-      mockNostrService.subscribe(argThat(anything)),
+      () => mockNostrService.subscribe(any()),
     ).thenAnswer((_) => Stream<Event>.empty());
 
     curationService = CurationService(
@@ -59,7 +80,7 @@ void main() {
       // that don't exist locally, requiring fetch from relays
 
       // Create a test where we have no local videos
-      when(mockVideoEventService.videoEvents).thenReturn([]);
+      when(() => mockVideoEventService.videoEvents).thenReturn([]);
 
       // Mock Nostr subscription to return a video event
       final videoEvent = Event(
@@ -79,7 +100,7 @@ void main() {
       videoEvent.id = 'test123';
 
       final streamController = StreamController<Event>();
-      when(mockNostrService.subscribe(argThat(anything))).thenAnswer((_) {
+      when(() => mockNostrService.subscribe(any())).thenAnswer((_) {
         // Emit the video event
         Timer(const Duration(milliseconds: 100), () {
           streamController.add(videoEvent);
@@ -111,12 +132,12 @@ void main() {
       expect(fetchedEvents[0].id, 'test123');
 
       // Verify addVideoEvent would be called
-      when(mockVideoEventService.addVideoEvent(any)).thenReturn(null);
+      when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
     });
 
     test('handles empty trending response gracefully', () {
       // Test that the service handles no trending videos without errors
-      when(mockVideoEventService.videoEvents).thenReturn([]);
+      when(() => mockVideoEventService.videoEvents).thenReturn([]);
 
       final trendingVideos = curationService.getVideosForSetType(
         CurationSetType.trending,
@@ -141,7 +162,9 @@ void main() {
         timestamp: DateTime.now(),
       );
 
-      when(mockVideoEventService.videoEvents).thenReturn([video2, video1]);
+      when(
+        () => mockVideoEventService.videoEvents,
+      ).thenReturn([video2, video1]);
 
       // The curation service should maintain order based on analytics response
       // (This would be tested more thoroughly with HTTP mocking)

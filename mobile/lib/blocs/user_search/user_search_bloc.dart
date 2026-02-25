@@ -27,9 +27,11 @@ EventTransformer<E> _debounceRestartable<E>() {
 
 /// BLoC for searching user profiles.
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
-  UserSearchBloc({required ProfileRepository profileRepository})
-    : _profileRepository = profileRepository,
-      super(const UserSearchState()) {
+  UserSearchBloc({
+    required ProfileRepository profileRepository,
+    this.hasVideos = true,
+  }) : _profileRepository = profileRepository,
+       super(const UserSearchState()) {
     on<UserSearchQueryChanged>(
       _onQueryChanged,
       transformer: _debounceRestartable(),
@@ -39,6 +41,9 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   }
 
   final ProfileRepository _profileRepository;
+
+  /// Whether to filter results to users who have uploaded videos.
+  final bool hasVideos;
 
   Future<void> _onQueryChanged(
     UserSearchQueryChanged event,
@@ -59,7 +64,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         query: query,
         limit: _pageSize,
         sortBy: 'followers',
-        hasVideos: true,
+        hasVideos: hasVideos,
       );
 
       final withPic = results.where((p) => p.picture != null).length;
@@ -68,12 +73,6 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         '$withPic with picture',
         name: 'UserSearchBloc',
       );
-      for (final p in results) {
-        developer.log(
-          '  ${p.bestDisplayName}: picture=${p.picture ?? "null"}',
-          name: 'UserSearchBloc',
-        );
-      }
 
       emit(
         state.copyWith(
@@ -103,7 +102,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         limit: _pageSize,
         offset: state.offset,
         sortBy: 'followers',
-        hasVideos: true,
+        hasVideos: hasVideos,
       );
 
       final allResults = [...state.results, ...moreResults];

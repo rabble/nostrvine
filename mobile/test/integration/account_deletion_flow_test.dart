@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -15,15 +14,27 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_client/nostr_client.dart';
 
-import 'account_deletion_flow_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService, NostrKeyManager, Keychain])
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockNostrKeyManager extends Mock implements NostrKeyManager {}
+
+class _MockKeychain extends Mock implements Keychain {}
+
+/// Fake [Event] for use with registerFallbackValue.
+class _FakeEvent extends Fake implements Event {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeEvent());
+  });
+
   group('Account Deletion Flow Integration', () {
-    late MockNostrClient mockNostrService;
-    late MockAuthService mockAuthService;
-    late MockNostrKeyManager mockKeyManager;
-    late MockKeychain mockKeychain;
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
+    late _MockNostrKeyManager mockKeyManager;
+    late _MockKeychain mockKeychain;
     late String testPrivateKey;
     late String testPublicKey;
 
@@ -32,25 +43,25 @@ void main() {
       testPrivateKey = generatePrivateKey();
       testPublicKey = getPublicKey(testPrivateKey);
 
-      mockNostrService = MockNostrClient();
-      mockAuthService = MockAuthService();
-      mockKeyManager = MockNostrKeyManager();
-      mockKeychain = MockKeychain();
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
+      mockKeyManager = _MockNostrKeyManager();
+      mockKeychain = _MockKeychain();
 
       // Setup common mocks with valid keys
-      when(mockKeyManager.keyPair).thenReturn(mockKeychain);
-      when(mockKeychain.public).thenReturn(testPublicKey);
-      when(mockKeychain.private).thenReturn(testPrivateKey);
+      when(() => mockKeyManager.keyPair).thenReturn(mockKeychain);
+      when(() => mockKeychain.public).thenReturn(testPublicKey);
+      when(() => mockKeychain.private).thenReturn(testPrivateKey);
     });
 
     testWidgets('complete deletion flow from settings to sign out', (
       tester,
     ) async {
       // Arrange
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentProfile).thenReturn(null);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
-      when(mockNostrService.hasKeys).thenReturn(true);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentProfile).thenReturn(null);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
+      when(() => mockNostrService.hasKeys).thenReturn(true);
 
       final mockEvent = Event(
         testPublicKey,
@@ -63,11 +74,11 @@ void main() {
       );
 
       when(
-        mockNostrService.publishEvent(any),
+        () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => mockEvent);
 
       when(
-        mockAuthService.signOut(deleteKeys: true),
+        () => mockAuthService.signOut(deleteKeys: true),
       ).thenAnswer((_) async => Future.value());
 
       final deletionService = AccountDeletionService(
@@ -102,10 +113,10 @@ void main() {
       await tester.pumpAndSettle(); // Complete deletion
 
       // Verify NIP-62 event was published
-      verify(mockNostrService.publishEvent(any)).called(1);
+      verify(() => mockNostrService.publishEvent(any())).called(1);
 
       // Verify user was signed out with keys deleted
-      verify(mockAuthService.signOut(deleteKeys: true)).called(1);
+      verify(() => mockAuthService.signOut(deleteKeys: true)).called(1);
 
       // Verify completion dialog appears
       expect(find.text('✓ Account Deleted'), findsOneWidget);
@@ -114,13 +125,15 @@ void main() {
 
     testWidgets('should show error when publish fails', (tester) async {
       // Arrange
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentProfile).thenReturn(null);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
-      when(mockNostrService.hasKeys).thenReturn(true);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentProfile).thenReturn(null);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
+      when(() => mockNostrService.hasKeys).thenReturn(true);
 
       // publishEvent returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => null);
 
       final deletionService = AccountDeletionService(
         nostrService: mockNostrService,
@@ -153,7 +166,7 @@ void main() {
       expect(find.textContaining('Failed to'), findsOneWidget);
 
       // Verify user was NOT signed out
-      verifyNever(mockAuthService.signOut(deleteKeys: true));
+      verifyNever(() => mockAuthService.signOut(deleteKeys: true));
     });
     // TODO(any): Fix and reenable this test
   }, skip: true);

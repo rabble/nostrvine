@@ -3,6 +3,8 @@
 // ABOUTME: Uses NostrClient for relay operations and organizes comments
 // chronologically.
 
+import 'dart:async';
+
 import 'package:comments_repository/src/exceptions.dart';
 import 'package:comments_repository/src/models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -38,6 +40,9 @@ class CommentsRepository {
   }) : _nostrClient = nostrClient;
 
   final NostrClient _nostrClient;
+
+  /// Subscription ID for the active comment watch, if any.
+  String? _watchSubscriptionId;
 
   /// Loads comments for a root event and returns them in a flat list.
   ///
@@ -320,6 +325,78 @@ class CommentsRepository {
       rethrow;
     } on Exception catch (e) {
       throw DeleteCommentFailedException('Failed to delete comment: $e');
+    }
+  }
+
+  /// Watches for new comments in real-time via a persistent Nostr subscription.
+  ///
+  /// Opens a subscription for Kind 1111 events matching the root event,
+  /// returning a [Stream<Comment>] that emits each new comment as it arrives.
+  ///
+  /// Parameters:
+  /// - [rootEventId]: The ID of the root event to watch comments for
+  /// - [rootEventKind]: The kind of the root event (e.g., 34236 for videos)
+  /// - [rootAddressableId]: Optional addressable identifier (format:
+  ///   `kind:pubkey:d-tag`). When provided, subscribes to both E and A tags.
+  /// - [since]: Only receive comments created after this time
+  ///
+  /// Returns a [Stream<Comment>] that emits new comments as they arrive.
+  /// Call [stopWatchingComments] to close the subscription.
+  ///
+  /// Throws [WatchCommentsFailedException] if the subscription fails.
+  Stream<Comment> watchComments({
+    required String rootEventId,
+    required int rootEventKind,
+    required DateTime since,
+    String? rootAddressableId,
+  }) {
+    try {
+      final sinceTimestamp = since.millisecondsSinceEpoch ~/ 1000;
+
+      final filters = <Filter>[
+        Filter(
+          kinds: const [_commentKind],
+          uppercaseE: [rootEventId],
+          since: sinceTimestamp,
+        ),
+        if (rootAddressableId != null && rootAddressableId.isNotEmpty)
+          Filter(
+            kinds: const [_commentKind],
+            uppercaseA: [rootAddressableId],
+            since: sinceTimestamp,
+          ),
+      ];
+
+      _watchSubscriptionId = 'comments_watch_$rootEventId';
+
+      final eventStream = _nostrClient.subscribe(
+        filters,
+        subscriptionId: _watchSubscriptionId,
+      );
+
+      // When dual-filter subscriptions are active (E + A tags), the same
+      // comment event can arrive from both filters. Deduplicate by event ID
+      // to prevent consumers from processing duplicates.
+      final seenIds = <String>{};
+
+      return eventStream
+          .where((event) => seenIds.add(event.id))
+          .map((event) => _eventToComment(event, rootEventId, rootEventKind))
+          .where((comment) => comment != null)
+          .cast<Comment>();
+    } on Exception catch (e) {
+      throw WatchCommentsFailedException('Failed to watch comments: $e');
+    }
+  }
+
+  /// Stops watching for new comments.
+  ///
+  /// Closes the persistent Nostr subscription opened by [watchComments].
+  Future<void> stopWatchingComments() async {
+    final id = _watchSubscriptionId;
+    if (id != null) {
+      await _nostrClient.unsubscribe(id);
+      _watchSubscriptionId = null;
     }
   }
 

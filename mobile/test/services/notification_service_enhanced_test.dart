@@ -2,35 +2,42 @@
 // ABOUTME: Verifies race condition fixes and concurrent notification deduplication
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-@GenerateMocks([NostrClient, UserProfileService, VideoEventService])
-import 'notification_service_enhanced_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockUserProfileService extends Mock implements UserProfileService {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('NotificationServiceEnhanced Race Condition Tests', () {
     late NotificationServiceEnhanced service;
-    late MockNostrClient mockNostrService;
-    late MockUserProfileService mockProfileService;
-    late MockVideoEventService mockVideoService;
+    late _MockNostrClient mockNostrService;
+    late _MockUserProfileService mockProfileService;
+    late _MockVideoEventService mockVideoService;
 
     setUp(() {
       service = NotificationServiceEnhanced();
-      mockNostrService = MockNostrClient();
-      mockProfileService = MockUserProfileService();
-      mockVideoService = MockVideoEventService();
+      mockNostrService = _MockNostrClient();
+      mockProfileService = _MockUserProfileService();
+      mockVideoService = _MockVideoEventService();
 
       // Setup mock responses
-      when(mockNostrService.hasKeys).thenReturn(true);
-      when(mockNostrService.publicKey).thenReturn('test-pubkey-123');
+      when(() => mockNostrService.hasKeys).thenReturn(true);
+      when(() => mockNostrService.publicKey).thenReturn('test-pubkey-123');
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => Stream.empty());
     });
 
@@ -197,20 +204,20 @@ void main() {
 
   group('NotificationServiceEnhanced Chronological Order Tests', () {
     late NotificationServiceEnhanced service;
-    late MockNostrClient mockNostrService;
-    late MockUserProfileService mockProfileService;
-    late MockVideoEventService mockVideoService;
+    late _MockNostrClient mockNostrService;
+    late _MockUserProfileService mockProfileService;
+    late _MockVideoEventService mockVideoService;
 
     setUp(() {
       service = NotificationServiceEnhanced();
-      mockNostrService = MockNostrClient();
-      mockProfileService = MockUserProfileService();
-      mockVideoService = MockVideoEventService();
+      mockNostrService = _MockNostrClient();
+      mockProfileService = _MockUserProfileService();
+      mockVideoService = _MockVideoEventService();
 
-      when(mockNostrService.hasKeys).thenReturn(true);
-      when(mockNostrService.publicKey).thenReturn('test-pubkey-123');
+      when(() => mockNostrService.hasKeys).thenReturn(true);
+      when(() => mockNostrService.publicKey).thenReturn('test-pubkey-123');
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => Stream.empty());
     });
 

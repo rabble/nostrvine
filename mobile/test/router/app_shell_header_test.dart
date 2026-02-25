@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -24,7 +24,7 @@ void main() {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     await tester.pumpWidget(shell(c));
-    c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(0));
+    c.read(goRouterProvider).go(VideoFeedPage.pathForIndex(0));
     await tester.pump();
     expect(find.text('Divine'), findsOneWidget);
     expect(find.byIcon(Icons.photo_camera_outlined), findsOneWidget);
@@ -109,7 +109,7 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
-      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(0));
+      c.read(goRouterProvider).go(VideoFeedPage.pathForIndex(0));
       await tester.pumpAndSettle();
 
       // Should NOT find back button in AppBar

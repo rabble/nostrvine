@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/active_video_provider.dart';
-import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -41,32 +40,21 @@ void main() {
       overrides: [
         // appForegroundProvider defaults to true (Notifier-based)
 
-        // URL context: home index 1
+        // URL context: explore index 1
         pageContextProvider.overrideWithValue(
           const AsyncValue.data(
-            RouteContext(type: RouteType.home, videoIndex: 1),
+            RouteContext(type: RouteType.explore, videoIndex: 1),
           ),
         ),
 
-        // Feed (two items) — activeVideoIdProvider reads homeFeedProvider
-        // directly for home routes
-        videosForHomeRouteProvider.overrideWith((ref) {
+        // Feed (two items) — activeVideoIdProvider reads
+        // videosForExploreRouteProvider for explore routes
+        videosForExploreRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
             VideoFeedState(
               videos: mockVideos,
               hasMoreContent: false,
               isLoadingMore: false,
-            ),
-          );
-        }),
-        homeFeedProvider.overrideWith(() {
-          return _TestHomeFeedNotifier(
-            AsyncData(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-                isLoadingMore: false,
-              ),
             ),
           );
         }),
@@ -76,7 +64,6 @@ void main() {
     // Create active subscription to force reactive chain evaluation
     container.listen(activeVideoIdProvider, (_, __) {}, fireImmediately: true);
 
-    // Allow async homeFeedProvider to resolve
     await pumpEventQueue();
 
     // Should return video at index 1
@@ -108,31 +95,20 @@ void main() {
           () => _TestAppForegroundNotifier(false),
         ),
 
-        // URL context: home index 0
+        // URL context: explore index 0
         pageContextProvider.overrideWithValue(
           const AsyncValue.data(
-            RouteContext(type: RouteType.home, videoIndex: 0),
+            RouteContext(type: RouteType.explore, videoIndex: 0),
           ),
         ),
 
         // Feed (one item)
-        videosForHomeRouteProvider.overrideWith((ref) {
+        videosForExploreRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
             VideoFeedState(
               videos: mockVideos,
               hasMoreContent: false,
               isLoadingMore: false,
-            ),
-          );
-        }),
-        homeFeedProvider.overrideWith(() {
-          return _TestHomeFeedNotifier(
-            AsyncData(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-                isLoadingMore: false,
-              ),
             ),
           );
         }),
@@ -142,7 +118,6 @@ void main() {
     // Create active subscription to force reactive chain evaluation
     container.listen(activeVideoIdProvider, (_, __) {}, fireImmediately: true);
 
-    // Allow async homeFeedProvider to resolve
     await pumpEventQueue();
 
     // Should return null when backgrounded
@@ -150,28 +125,6 @@ void main() {
 
     container.dispose();
   });
-}
-
-/// Test notifier that returns a fixed state for homeFeedProvider overrides.
-class _TestHomeFeedNotifier extends HomeFeed {
-  _TestHomeFeedNotifier(this._state);
-
-  final AsyncValue<VideoFeedState> _state;
-
-  @override
-  Future<VideoFeedState> build() async {
-    return _state.when(
-      data: (data) => data,
-      loading: () => VideoFeedState(
-        videos: const [],
-        hasMoreContent: false,
-        isLoadingMore: false,
-        error: null,
-        lastUpdated: null,
-      ),
-      error: (e, s) => throw e,
-    );
-  }
 }
 
 /// Test notifier for appForegroundProvider that starts with a custom value.

@@ -8,7 +8,6 @@ import 'package:openvine/providers/hashtag_feed_providers.dart';
 import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
-import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -65,13 +64,14 @@ final activeVideoIdProvider = Provider<String?>((ref) {
   AsyncValue<VideoFeedState> videosAsync;
   switch (ctx.type) {
     case RouteType.home:
-      // Use homeFeedProvider directly instead of videosForHomeRouteProvider.
-      // videosForHomeRouteProvider gates on pageContextProvider which
-      // oscillates during post-login transitions, causing the active video
-      // to flicker between null and the correct value. homeFeedProvider
-      // has no such dependency and provides a stable video list.
-      videosAsync = ref.watch(homeFeedProvider);
-      break;
+      // Home feed uses PooledVideoFeed which manages its own playback
+      // via VideoFeedController. Return null to let it handle internally.
+      Log.debug(
+        '[ACTIVE] Home route (self-managed by PooledVideoFeed)',
+        name: 'ActiveVideoProvider',
+        category: LogCategory.system,
+      );
+      return null;
     case RouteType.profile:
       videosAsync = ref.watch(videosForProfileRouteProvider);
       break;
@@ -125,7 +125,6 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.creatorAnalytics:
     case RouteType.sound:
     case RouteType.secureAccount:
-    case RouteType.newVideoFeed:
       // Non-video routes - return null
       Log.debug(
         '[ACTIVE] ❌ Non-video route: ${ctx.type}',

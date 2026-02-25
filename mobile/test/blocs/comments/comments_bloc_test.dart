@@ -1,6 +1,8 @@
 // ABOUTME: Tests for CommentsBloc - loading comments, posting, and tree building
 // ABOUTME: Tests comment stream handling and error cases
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -92,6 +94,24 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+
+      // Default stubs for real-time comment watching
+      when(
+        () => mockCommentsRepository.watchComments(
+          rootEventId: any(named: 'rootEventId'),
+          rootEventKind: any(named: 'rootEventKind'),
+          rootAddressableId: any(named: 'rootAddressableId'),
+          since: any(named: 'since'),
+        ),
+      ).thenAnswer((_) => const Stream<Comment>.empty());
+      when(
+        () => mockCommentsRepository.stopWatchingComments(),
+      ).thenAnswer((_) async {});
+
+      // Default stub for blocklist checks
+      when(
+        () => mockContentBlocklistService.isBlocked(any()),
+      ).thenReturn(false);
     });
 
     // Video kind 34236 for NIP-71 addressable short videos
@@ -1966,6 +1986,316 @@ void main() {
           ).called(1);
         },
       );
+    });
+
+    group('NewCommentReceived', () {
+      blocTest<CommentsBloc, CommentsState>(
+        'adds comment to state and increments newCommentCount',
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          rootEventId: validId('root'),
+          rootEventKind: testRootEventKind,
+          rootAuthorPubkey: validId('author'),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          NewCommentReceived(
+            Comment(
+              id: validId('newComment'),
+              content: 'A new comment!',
+              authorPubkey: validId('someone'),
+              createdAt: DateTime.now(),
+              rootEventId: validId('root'),
+              rootAuthorPubkey: validId('author'),
+            ),
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.commentsById.containsKey(validId('newComment')),
+                'contains new comment',
+                isTrue,
+              )
+              .having((s) => s.newCommentCount, 'newCommentCount', equals(1)),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'increments newCommentCount for each new comment',
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          rootEventId: validId('root'),
+          rootEventKind: testRootEventKind,
+          rootAuthorPubkey: validId('author'),
+          newCommentCount: 2,
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          NewCommentReceived(
+            Comment(
+              id: validId('another'),
+              content: 'Another new one',
+              authorPubkey: validId('someone'),
+              createdAt: DateTime.now(),
+              rootEventId: validId('root'),
+              rootAuthorPubkey: validId('author'),
+            ),
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.newCommentCount,
+            'newCommentCount',
+            equals(3),
+          ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'skips duplicate comment already in commentsById',
+        seed: () {
+          final existing = Comment(
+            id: validId('existing'),
+            content: 'Already here',
+            authorPubkey: validId('someone'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            rootEventId: validId('root'),
+            rootEventKind: testRootEventKind,
+            rootAuthorPubkey: validId('author'),
+            commentsById: {existing.id: existing},
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          NewCommentReceived(
+            Comment(
+              id: validId('existing'),
+              content: 'Already here',
+              authorPubkey: validId('someone'),
+              createdAt: DateTime.now(),
+              rootEventId: validId('root'),
+              rootAuthorPubkey: validId('author'),
+            ),
+          ),
+        ),
+        expect: () => <CommentsState>[],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'skips comment from blocked user',
+        setUp: () {
+          when(
+            () => mockContentBlocklistService.isBlocked(validId('blocked')),
+          ).thenReturn(true);
+        },
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          rootEventId: validId('root'),
+          rootEventKind: testRootEventKind,
+          rootAuthorPubkey: validId('author'),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          NewCommentReceived(
+            Comment(
+              id: validId('blockedComment'),
+              content: 'From blocked user',
+              authorPubkey: validId('blocked'),
+              createdAt: DateTime.now(),
+              rootEventId: validId('root'),
+              rootAuthorPubkey: validId('author'),
+            ),
+          ),
+        ),
+        expect: () => <CommentsState>[],
+      );
+    });
+
+    group('NewCommentsAcknowledged', () {
+      blocTest<CommentsBloc, CommentsState>(
+        'resets newCommentCount to 0',
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          rootEventId: validId('root'),
+          rootEventKind: testRootEventKind,
+          rootAuthorPubkey: validId('author'),
+          newCommentCount: 5,
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const NewCommentsAcknowledged()),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.newCommentCount,
+            'newCommentCount',
+            equals(0),
+          ),
+        ],
+      );
+    });
+
+    group('real-time comment subscription', () {
+      test(
+        'CommentsLoadRequested starts watching comments on success',
+        () async {
+          final comment = Comment(
+            id: validId('comment1'),
+            content: 'Test comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final thread = CommentThread(
+            rootEventId: validId('root'),
+            comments: [comment],
+            totalCount: 1,
+            commentCache: {comment.id: comment},
+          );
+
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => thread);
+
+          final bloc = createBloc()..add(const CommentsLoadRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          verify(
+            () => mockCommentsRepository.watchComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              since: any(named: 'since'),
+            ),
+          ).called(1);
+
+          await bloc.close();
+        },
+      );
+
+      test('stops watching on close', () async {
+        final bloc = createBloc();
+        await bloc.close();
+
+        verify(() => mockCommentsRepository.stopWatchingComments()).called(1);
+      });
+
+      test('new comments from stream are added to state', () async {
+        final streamController = StreamController<Comment>.broadcast();
+
+        when(
+          () => mockCommentsRepository.watchComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            since: any(named: 'since'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        final existingComment = Comment(
+          id: validId('existing'),
+          content: 'Existing comment',
+          authorPubkey: validId('commenter'),
+          createdAt: DateTime.now(),
+          rootEventId: validId('root'),
+          rootAuthorPubkey: validId('author'),
+        );
+        final thread = CommentThread(
+          rootEventId: validId('root'),
+          comments: [existingComment],
+          totalCount: 1,
+          commentCache: {existingComment.id: existingComment},
+        );
+
+        when(
+          () => mockCommentsRepository.loadComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => thread);
+
+        final bloc = createBloc()..add(const CommentsLoadRequested());
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Emit a new comment via the stream
+        final newComment = Comment(
+          id: validId('streamComment'),
+          content: 'Real-time comment!',
+          authorPubkey: validId('otherUser'),
+          createdAt: DateTime.now(),
+          rootEventId: validId('root'),
+          rootAuthorPubkey: validId('author'),
+        );
+        streamController.add(newComment);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(
+          bloc.state.commentsById.containsKey(validId('streamComment')),
+          isTrue,
+        );
+        expect(bloc.state.newCommentCount, equals(1));
+
+        await streamController.close();
+        await bloc.close();
+      });
+
+      test('throttles comments exceeding rate limit', () async {
+        final streamController = StreamController<Comment>.broadcast();
+
+        when(
+          () => mockCommentsRepository.watchComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            since: any(named: 'since'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        when(
+          () => mockCommentsRepository.loadComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+        final bloc = createBloc()..add(const CommentsLoadRequested());
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Emit more comments than the per-second budget (10)
+        for (var i = 0; i < 15; i++) {
+          streamController.add(
+            Comment(
+              id: validId('burst$i'),
+              content: 'Burst comment $i',
+              authorPubkey: validId('someone'),
+              createdAt: DateTime.now(),
+              rootEventId: validId('root'),
+              rootAuthorPubkey: validId('author'),
+            ),
+          );
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Should have accepted at most 10 (the budget), not all 15
+        expect(bloc.state.commentsById.length, lessThanOrEqualTo(10));
+
+        await streamController.close();
+        await bloc.close();
+      });
     });
   });
 

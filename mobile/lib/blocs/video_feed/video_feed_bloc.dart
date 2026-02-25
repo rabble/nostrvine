@@ -1,5 +1,5 @@
 // ABOUTME: BLoC for unified video feed with mode switching
-// ABOUTME: Manages Home (following), New (latest), and Popular feeds
+// ABOUTME: Manages For You, Home (following), New (latest), and Popular feeds
 // ABOUTME: Uses VideosRepository for data fetching with cursor-based pagination
 
 import 'dart:async';
@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'video_feed_event.dart';
@@ -20,6 +21,9 @@ const _pageSize = 5;
 
 /// Default interval between auto-refreshes of the home feed.
 const _defaultAutoRefreshMinInterval = Duration(minutes: 10);
+
+/// SharedPreferences key for persisting the selected feed mode.
+const _feedModeKey = 'selected_feed_mode';
 
 /// BLoC for managing the unified video feed.
 ///
@@ -32,9 +36,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   VideoFeedBloc({
     required VideosRepository videosRepository,
     required FollowRepository followRepository,
+    SharedPreferences? sharedPreferences,
     Duration autoRefreshMinInterval = _defaultAutoRefreshMinInterval,
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
+       _sharedPreferences = sharedPreferences,
        _autoRefreshMinInterval = autoRefreshMinInterval,
        super(const VideoFeedState()) {
     on<VideoFeedStarted>(_onStarted);
@@ -50,6 +56,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
   final VideosRepository _videosRepository;
   final FollowRepository _followRepository;
+  final SharedPreferences? _sharedPreferences;
   final Duration _autoRefreshMinInterval;
 
   /// Tracks when the last successful load completed, used by
@@ -62,13 +69,24 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// so the home feed refreshes reactively when the user follows/unfollows
   /// someone. The first emission is skipped (BehaviorSubject replays its
   /// seed/last value) to avoid a redundant refresh on startup.
+  ///
+  /// If a feed mode was previously saved to SharedPreferences, that mode is
+  /// restored. Otherwise [event.mode] is used.
   Future<void> _onStarted(
     VideoFeedStarted event,
     Emitter<VideoFeedState> emit,
   ) async {
-    emit(state.copyWith(status: VideoFeedStatus.loading, mode: event.mode));
+    final savedModeName = _sharedPreferences?.getString(_feedModeKey);
+    final mode = savedModeName != null
+        ? FeedMode.values.firstWhere(
+            (m) => m.name == savedModeName,
+            orElse: () => event.mode,
+          )
+        : event.mode;
 
-    await _loadVideos(event.mode, emit);
+    emit(state.copyWith(status: VideoFeedStatus.loading, mode: mode));
+
+    await _loadVideos(mode, emit);
 
     await emit.onEach<List<String>>(
       _followRepository.followingStream.skip(1),
@@ -85,6 +103,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     if (state.mode == event.mode && state.status == VideoFeedStatus.success) {
       return;
     }
+
+    await _sharedPreferences?.setString(_feedModeKey, event.mode.name);
 
     emit(
       state.copyWith(
@@ -295,6 +315,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     int? until,
   }) async {
     switch (mode) {
+      case FeedMode.forYou:
+        return _videosRepository.getPopularVideos(
+          limit: _pageSize,
+          until: until,
+        );
+
       case FeedMode.home:
         final authors = _followRepository.followingPubkeys;
         return _videosRepository.getHomeFeedVideos(

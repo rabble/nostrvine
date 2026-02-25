@@ -2,8 +2,7 @@
 // ABOUTME: Verifies that newer versions of replaceable events replace older ones
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' as sdk;
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:models/models.dart' hide NIP71VideoKinds;
@@ -11,21 +10,22 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-@GenerateMocks([NostrClient, SubscriptionManager])
-import 'video_event_service_replaceable_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
   group('VideoEventService - Replaceable Events (NIP-33)', () {
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
     late VideoEventService service;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.publicKey).thenReturn('');
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.publicKey).thenReturn('');
 
       service = VideoEventService(
         mockNostrService,
@@ -277,16 +277,16 @@ void main() {
   });
 
   group('VideoEventService - updateVideoEvent()', () {
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
     late VideoEventService service;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.publicKey).thenReturn('');
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.publicKey).thenReturn('');
 
       service = VideoEventService(
         mockNostrService,

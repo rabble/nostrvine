@@ -79,6 +79,7 @@ class AnalyticsApiService {
   // Cache for API responses
   List<VideoStats> _trendingVideosCache = [];
   List<VideoStats> _recentVideosCache = [];
+  int _cachedRecentLimit = 0;
   List<TrendingHashtag> _trendingHashtagsCache = [];
   DateTime? _lastTrendingVideosFetch;
   DateTime? _lastRecentVideosFetch;
@@ -298,12 +299,15 @@ class AnalyticsApiService {
   }) async {
     if (!isAvailable) return [];
 
-    // Check cache only for initial load (no cursor)
+    // Check cache only for initial load (no cursor) and when the cached
+    // result was fetched with at least the requested limit (avoids returning
+    // a 1-item probe result when the caller wants 100 videos).
     if (before == null &&
         !forceRefresh &&
         _lastRecentVideosFetch != null &&
         DateTime.now().difference(_lastRecentVideosFetch!) < cacheTimeout &&
-        _recentVideosCache.isNotEmpty) {
+        _recentVideosCache.isNotEmpty &&
+        _cachedRecentLimit >= limit) {
       Log.debug(
         'Using cached recent videos (${_recentVideosCache.length} items)',
         name: 'AnalyticsApiService',
@@ -344,6 +348,7 @@ class AnalyticsApiService {
         // Only update cache for initial load (no cursor)
         if (before == null) {
           _recentVideosCache = videos;
+          _cachedRecentLimit = limit;
           _lastRecentVideosFetch = DateTime.now();
         }
 
@@ -1993,6 +1998,7 @@ class AnalyticsApiService {
   void clearCache() {
     _trendingVideosCache.clear();
     _recentVideosCache.clear();
+    _cachedRecentLimit = 0;
     _trendingHashtagsCache.clear();
     _hashtagSearchCache.clear();
     _hashtagSearchCacheTime.clear();

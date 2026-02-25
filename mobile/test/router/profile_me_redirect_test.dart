@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -158,7 +158,7 @@ void main() {
       // ASSERT: Should redirect to home (or login screen)
       final location = router.routeInformationProvider.value.uri.toString();
       expect(
-        location.contains(HomeScreenRouter.path),
+        location.contains(VideoFeedPage.path),
         isTrue,
         reason: 'Should redirect to home when not authenticated',
       );

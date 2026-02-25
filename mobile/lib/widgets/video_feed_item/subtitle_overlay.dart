@@ -13,12 +13,16 @@ class SubtitleOverlay extends ConsumerWidget {
     required this.video,
     required this.positionMs,
     required this.visible,
+    this.bottomOffset = 80,
     super.key,
   });
 
   final VideoEvent video;
   final int positionMs;
   final bool visible;
+
+  /// Distance from the bottom of the parent Stack.
+  final double bottomOffset;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,9 +45,9 @@ class SubtitleOverlay extends ConsumerWidget {
         if (currentCue == null) return const SizedBox.shrink();
 
         return Positioned(
-          bottom: 80,
+          bottom: bottomOffset,
           left: 16,
-          right: 16,
+          right: 80,
           child: Center(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

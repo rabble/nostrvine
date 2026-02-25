@@ -4,47 +4,64 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'curated_list_service_persistence_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CuratedListService - Persistence', () {
-    late MockNostrClient mockNostr;
-    late MockAuthService mockAuth;
+    late _MockNostrClient mockNostr;
+    late _MockAuthService mockAuth;
     late SharedPreferences prefs;
+
+    setUpAll(() {
+      registerFallbackValue(
+        Event.fromJson({
+          'id': 'fallback_event_id',
+          'pubkey':
+              'aabbccdd00112233445566778899aabbccdd00112233445566778899aabbccdd',
+          'created_at': 0,
+          'kind': 1,
+          'tags': <List<String>>[],
+          'content': '',
+          'sig': '',
+        }),
+      );
+      registerFallbackValue(<Filter>[]);
+    });
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
+      mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
       prefs = await SharedPreferences.getInstance();
 
-      when(mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(
-        mockAuth.currentPublicKeyHex,
+        () => mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
-      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
 
       when(
-        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       when(
-        mockAuth.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuth.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer(
         (_) async => Event.fromJson({
@@ -241,7 +258,8 @@ void main() {
           'invalid json {{{',
         );
 
-        // Should not throw, just log error and continue with empty list
+        // Should not throw, just log error and continue with
+        // empty list
         final service = CuratedListService(
           nostrService: mockNostr,
           authService: mockAuth,
@@ -339,7 +357,8 @@ void main() {
           // At least some lists should be saved
           final savedData = prefs.getString(CuratedListService.listsStorageKey);
           expect(savedData, isNotNull);
-          // Race condition: lists with same timestamp may overwrite each other
+          // Race condition: lists with same timestamp may overwrite
+          // each other
         },
         skip: 'Flaky: timestamp-based ID collision in concurrent creation',
       );

@@ -10,7 +10,7 @@ import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/view_event_publisher.dart'
@@ -211,7 +211,7 @@ void main() {
       // ASSERT: Should redirect to home
       final location = router.routeInformationProvider.value.uri.toString();
       expect(
-        location.contains(HomeScreenRouter.path),
+        location.contains(VideoFeedPage.path),
         isTrue,
         reason: 'Should redirect to home when not authenticated',
       );
