@@ -36,7 +36,8 @@ extension PlayOrderExtension on PlayOrder {
     }
   }
 
-  /// Parses a string into a [PlayOrder], defaulting to [PlayOrder.chronological].
+  /// Parses a string into a [PlayOrder], defaulting to
+  /// [PlayOrder.chronological].
   static PlayOrder fromString(String value) {
     switch (value) {
       case 'chronological':
