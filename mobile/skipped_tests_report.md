@@ -182,7 +182,6 @@
 | `video_event_service_replaceable_test.dart` | 276 | 1 | `skip: true` |
 | `video_event_service_repost_test.dart` | 420 | 1 | `skip: true` |
 | `video_event_service_reposters_test.dart` | 157, 251 | 2 | `skip: true` |
-| `video_sharing_service_test.dart` | 51, 110, 155, 171, 230, 258, 310, 327 | 8 | `skip: true` |
 
 ### test/startup/
 
@@ -308,6 +307,5 @@ These files have some tests commented out while others remain active.
 | `test/widgets/comprehensive_user_avatar_test.dart` | 4 (golden tests only) |
 | `test/services/upload_manager_web_test.dart` | 9 (web-only) |
 | `test/services/upload_initialization_helper_web_test.dart` | 8 (web-only) |
-| `test/services/video_sharing_service_test.dart` | 8 |
 | `test/screens/home_screen_router_test.dart` | 8 (commented out) |
 | `test/services/curation_service_create_test.dart` | 7 |
