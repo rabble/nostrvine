@@ -1,4 +1,4 @@
-# Invite System API - Mobile App Endpoints
+# Invite System API
 
 ## Principles
 
@@ -10,17 +10,42 @@
 
 ---
 
-## 1. POST `/v1/consume-invite`
+## Authentication
+
+Authenticated endpoints use **NIP-98 HTTP Auth** (kind `24242`):
+
+```
+Authorization: Nostr <base64-encoded-signed-event>
+```
+
+The signed event proves ownership of a Nostr pubkey. The server validates the event ID (NIP-01 serialized SHA-256), verifies the BIP-340 Schnorr signature, and checks expiration if present.
+
+The caller's pubkey is extracted from the verified event — it is never sent in the request body.
+
+---
+
+## Code Format
+
+Invite codes use the format `DIVINE-XXXX` where the suffix is 4 alphanumeric characters from a reduced charset that excludes ambiguous characters (`0`/`O`, `1`/`I`/`L`).
+
+Codes are **case-insensitive** on input (normalized to uppercase server-side).
+
+---
+
+## Mobile-Facing Endpoints
+
+### 1. POST `/v1/consume-invite` (NIP-98 authenticated)
 
 Atomically claim an invite code **during new identity creation**.
 
-### Flow
+#### Flow
 
 1. App generates nsec in memory (not yet persisted to secure storage).
 2. App derives the pubkey from that nsec.
-3. App sends `code + pubkey` to this endpoint.
-4. If success: app persists nsec to secure storage, user proceeds.
-5. If failure: app discards in-memory nsec, user stays at invite gate.
+3. App creates a NIP-98 auth event signed with the new nsec.
+4. App sends the code to this endpoint with the auth header.
+5. If success: app persists nsec to secure storage, user proceeds.
+6. If failure: app discards in-memory nsec, user stays at invite gate.
 
 **MUST NOT be called for:**
 
@@ -28,68 +53,71 @@ Atomically claim an invite code **during new identity creation**.
 - Users logging in via bunker, Amber, or Keycast / external Nostr signer.
 - Legacy account reclaim flows.
 
-This endpoint is only for users who **do not already have an npub** and are creating a brand-new identity.
-
-### Request
+#### Request
 
 ```json
 {
-  "code": "ABCD1234",
-  "pubkey": "64_HEX_CHARS"
+  "code": "DIVINE-AB23"
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `code` | string | 8-character alphanumeric invite code (case-insensitive, normalized to uppercase) |
-| `pubkey` | string | 64-character hex public key derived from the in-memory nsec |
+| `code` | string | Invite code (case-insensitive, normalized to uppercase) |
 
-### Responses (all `200`)
+The claiming pubkey is extracted from the NIP-98 auth header.
 
-**Success:**
+#### Responses
 
-```json
-{
-  "valid": true,
-  "code": "ABCD1234",
-  "claimedAt": "2025-01-15T10:30:00Z"
-}
-```
-
-**Invalid code:**
+**Success (`200`):**
 
 ```json
 {
-  "valid": false,
-  "message": "Invalid invite code"
+  "message": "Welcome to diVine!",
+  "codesAllocated": 5
 }
 ```
 
-**Already claimed (by a different pubkey):**
+New users receive a default allocation of invite codes to share.
+
+**Code not found (`404`):**
 
 ```json
 {
-  "valid": false,
-  "message": "This code has already been claimed"
+  "error": "Invite code not found"
 }
 ```
 
-### Idempotency
+**Already claimed or user already joined (`409`):**
 
-- Same `code + pubkey` combination returns success (retry-safe on network issues).
-- A different `pubkey` on an already-claimed `code` returns failure.
+```json
+{
+  "error": "Invite code is already used or revoked"
+}
+```
+
+```json
+{
+  "error": "User has already joined"
+}
+```
+
+#### Idempotency
+
+- Same `code + pubkey` combination returns `200` success (retry-safe on network issues).
+- A different pubkey on an already-claimed code returns `409`.
 
 ---
 
-## 2. GET `/v1/invite-status` (NIP-98 authenticated)
+### 2. GET `/v1/invite-status` (NIP-98 authenticated)
 
 Check whether the **current authenticated user** can generate invites and how many they have left.
 
 The app uses this to decide **whether to show invite generation UI** and to display pending/claimed invites.
 
-### Responses
+#### Responses
 
-**Eligible inviter:**
+**Eligible inviter (`200`):**
 
 ```json
 {
@@ -98,20 +126,22 @@ The app uses this to decide **whether to show invite generation UI** and to disp
   "total": 5,
   "codes": [
     {
-      "code": "ABCD1234",
+      "code": "DIVINE-AB23",
       "claimed": true,
-      "claimedAt": "2025-01-15T10:30:00Z"
+      "claimedAt": "2025-01-15T10:30:00Z",
+      "claimedBy": "64_HEX_PUBKEY"
     },
     {
-      "code": "EFGH5678",
+      "code": "DIVINE-EF56",
       "claimed": false,
-      "claimedAt": null
+      "claimedAt": null,
+      "claimedBy": null
     }
   ]
 }
 ```
 
-**Not eligible (default for most users):**
+**Not eligible (default for most users) (`200`):**
 
 ```json
 {
@@ -122,27 +152,27 @@ The app uses this to decide **whether to show invite generation UI** and to disp
 }
 ```
 
-If the user is not found in the inviter list, return `canInvite: false`.
+If the user has no invite allocation, return `canInvite: false`.
 
 ---
 
-## 3. POST `/v1/generate-invite` (NIP-98 authenticated)
+### 3. POST `/v1/generate-invite` (NIP-98 authenticated)
 
 Generate an invite code to share with others.
 
 Eligibility is **NOT tied to how the user joined diVine**. Any authenticated user may generate invites **if** the server has granted them inviter status. This is controlled server-side by admins or policy, not automatic.
 
-### Request
+#### Request
 
 No JSON body. Auth is via NIP-98 header proving pubkey ownership.
 
-### Responses
+#### Responses
 
-**Success (`200`):**
+**Success (`201`):**
 
 ```json
 {
-  "code": "WXYZ5678",
+  "code": "DIVINE-WX56",
   "remaining": 4
 }
 ```
@@ -151,7 +181,7 @@ No JSON body. Auth is via NIP-98 header proving pubkey ownership.
 
 ```json
 {
-  "message": "Not eligible to generate invites"
+  "error": "Not eligible to generate invites"
 }
 ```
 
@@ -159,28 +189,159 @@ No JSON body. Auth is via NIP-98 header proving pubkey ownership.
 
 ```json
 {
-  "message": "Invite limit reached",
+  "error": "Invite limit reached",
   "remaining": 0
 }
 ```
 
 ---
 
-## What changed from v1 spec
+### 4. POST `/v1/validate` (public)
+
+Check if a code is valid without consuming it. No authentication required.
+
+#### Request
+
+```json
+{
+  "code": "DIVINE-AB23"
+}
+```
+
+#### Responses (`200`)
+
+```json
+{
+  "valid": true,
+  "code": "DIVINE-AB23",
+  "used": false
+}
+```
+
+```json
+{
+  "valid": false,
+  "code": null,
+  "used": false
+}
+```
+
+---
+
+## Growth Endpoints
+
+### 5. POST `/v1/waitlist` (public)
+
+Join the invite waitlist. Complementary to direct code distribution — useful for organic signups before they have a code.
+
+#### Request
+
+```json
+{
+  "contact": "user@example.com",
+  "pubkey": "64_HEX_OPTIONAL"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `contact` | string | Email, social handle, or other contact info (required) |
+| `pubkey` | string? | Optional Nostr pubkey if the user already has one |
+
+#### Response (`201`)
+
+```json
+{
+  "id": "a1b2c3d4e5f6g7h8",
+  "message": "You're on the waitlist!"
+}
+```
+
+---
+
+### 6. POST `/v1/buy` (public)
+
+Purchase an invite code with a [Cashu](https://cashu.space) ecash token. Enables permissionless onboarding via Lightning/Bitcoin payments.
+
+#### Request
+
+```json
+{
+  "token": "cashuA...",
+  "pubkey": "64_HEX_OPTIONAL"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `token` | string | Cashu token (cashuA-prefixed, base64url encoded) |
+| `pubkey` | string? | Optional Nostr pubkey to associate with the purchased code |
+
+The token must meet the configured minimum sats price and come from the accepted mint.
+
+#### Response (`201`)
+
+```json
+{
+  "code": "DIVINE-QR78",
+  "amountSats": 1000
+}
+```
+
+**Insufficient amount (`400`):**
+
+```json
+{
+  "error": "Token amount 500 sats is less than required 1000 sats"
+}
+```
+
+**Already redeemed (`409`):**
+
+```json
+{
+  "error": "Cashu token has already been redeemed"
+}
+```
+
+---
+
+## Admin Endpoints (Server-Side Management)
+
+These endpoints require NIP-98 auth from a pubkey in the server's admin allowlist. They are not called by the mobile app.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/admin/grant` | Allocate N invite codes to a user's pubkey |
+| `POST` | `/v1/admin/approve-waitlist` | Approve a waitlist entry and issue a code |
+| `POST` | `/v1/admin/revoke` | Revoke an invite code |
+| `GET` | `/v1/admin/tree` | View the full invitation graph |
+| `GET` | `/v1/admin/waitlist` | List all waitlist entries |
+| `GET` | `/v1/admin/stats` | Global stats (codes created/used, users, waitlist size) |
+
+---
+
+## What Changed from v1 Spec
 
 ### Dropped
 
-- **verify-npub** - existing Nostr users bypass the invite gate entirely.
-- **join-waitlist** - growth controlled by who gets codes and how many, not by a central waitlist gate.
-- **deviceId** - replaced by pubkey association in the invite graph.
-- **verify stored code on startup** - invite is a one-time identity creation gate, not a continuous entitlement check.
+- **verify-npub** — existing Nostr users bypass the invite gate entirely.
+- **deviceId** — replaced by pubkey association in the invite graph.
+- **verify stored code on startup** — invite is a one-time identity creation gate, not a continuous entitlement check.
+- **200-for-everything responses** — use proper HTTP status codes.
 
 ### Added
 
-- **invite-status** - for the app to check if a user can generate invites and show their codes.
-- **generate-invite** - for user-driven, invite-based growth.
+- **NIP-98 auth on consume** — proves key ownership instead of trusting a pubkey in the body.
+- **validate** — public code validation without consuming.
+- **waitlist** — organic signup funnel for users without a code.
+- **buy** — Cashu ecash payments for permissionless onboarding.
+- **Admin endpoints** — server-side management for granting, revoking, and monitoring.
+- **DIVINE-XXXX code format** — human-readable, ambiguous-char-free.
 
 ### Changed
 
-- **consume-invite** maps `code -> pubkey` (and inviter) instead of `code -> device`.
-- **consume-invite** is only called during new identity creation, never for existing Nostr user login, nsec import, or legacy reclaim flows.
+- **consume-invite** requires NIP-98 auth and maps `code → authenticated pubkey` (not body pubkey).
+- **consume-invite** returns allocated code count on success (users get 5 codes by default).
+- **invite-status** returns full code objects with claim details.
+- **generate-invite** returns `201` on success.
