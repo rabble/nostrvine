@@ -105,7 +105,6 @@
 | `video_controller_lifecycle_test.dart` | 198 | 1 | `skip: true` |
 | `video_events_listener_simple_test.dart` | 78, 115, 205, 242 | 4 | `skip: true` |
 | `video_events_provider_fresh_test.dart` | 158 | 1 | `skip: true` |
-| `video_events_provider_listener_test.dart` | 105, 168, 189, 211, 260, 342, 392, 414, 510 | 9 | `skip: true` |
 | `video_events_provider_test.dart` | 317 | 1 | `skip: true` |
 
 ### test/router/
@@ -307,7 +306,6 @@ These files have some tests commented out while others remain active.
 | File | Skipped |
 |------|---------|
 | `test/widgets/comprehensive_user_avatar_test.dart` | 4 (golden tests only) |
-| `test/providers/video_events_provider_listener_test.dart` | 9 |
 | `test/services/upload_manager_web_test.dart` | 9 (web-only) |
 | `test/services/upload_initialization_helper_web_test.dart` | 8 (web-only) |
 | `test/services/video_sharing_service_test.dart` | 8 |

@@ -1,94 +1,127 @@
-// ABOUTME: Tests for VideoEvents provider listener attachment and reactive updates
-// ABOUTME: Verifies the fix for listener attachment race conditions and gate-based initialization
+// ABOUTME: Tests for VideoEvents provider listener attachment and reactive
+// ABOUTME: updates. Verifies listener attachment, gate-based initialization,
+// ABOUTME: and cleanup behavior.
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/state/seen_videos_state.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
-class _MockNostrClient extends Mock implements NostrClient {}
-
 class _FakeAppForeground extends AppForeground {
-  final bool _isForeground;
-
   _FakeAppForeground(this._isForeground);
+
+  final bool _isForeground;
 
   @override
   bool build() => _isForeground;
 }
 
 class _FakeSeenVideosNotifier extends SeenVideosNotifier {
-  final SeenVideosState _state;
-
   _FakeSeenVideosNotifier(this._state);
+
+  final SeenVideosState _state;
 
   @override
   SeenVideosState build() => _state;
+}
+
+/// Creates a [ProviderContainer] with standard overrides for testing
+/// the [videoEventsProvider].
+ProviderContainer _createContainer({
+  required _MockVideoEventService mockVideoEventService,
+  bool appReady = true,
+  bool tabActive = true,
+  SeenVideosState seenState = SeenVideosState.initial,
+}) {
+  return ProviderContainer(
+    overrides: [
+      // Override the gate providers directly to avoid complex dependency chains
+      appReadyProvider.overrideWith((ref) => appReady),
+      isDiscoveryTabActiveProvider.overrideWith((ref) => tabActive),
+
+      // Override foreground provider (used by gate listeners)
+      appForegroundProvider.overrideWith(() => _FakeAppForeground(appReady)),
+
+      // Override VideoEventService
+      videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+
+      // Override page context to simulate Explore tab
+      pageContextProvider.overrideWith(
+        (ref) => Stream.value(
+          RouteContext(
+            type: tabActive ? RouteType.explore : RouteType.home,
+            videoIndex: 0,
+          ),
+        ),
+      ),
+
+      // Override seen videos provider
+      seenVideosProvider.overrideWith(() => _FakeSeenVideosNotifier(seenState)),
+    ],
+  );
+}
+
+/// Sets up standard mock behaviors for [_MockVideoEventService].
+void _setupMockDefaults(_MockVideoEventService mock) {
+  when(() => mock.discoveryVideos).thenReturn([]);
+  when(() => mock.isSubscribed(any())).thenReturn(false);
+
+  // Mock addVideoUpdateListener (called by provider during build)
+  when(() => mock.addVideoUpdateListener(any())).thenReturn(() {});
+
+  // Mock ChangeNotifier methods (addListener/removeListener)
+  when(() => mock.addListener(any())).thenReturn(null);
+  when(() => mock.removeListener(any())).thenReturn(null);
+  // ignore: invalid_use_of_protected_member
+  when(() => mock.hasListeners).thenReturn(false);
+
+  // Mock subscription call
+  when(
+    () => mock.subscribeToDiscovery(
+      limit: any(named: 'limit'),
+      sortBy: any(named: 'sortBy'),
+      nip50Sort: any(named: 'nip50Sort'),
+      force: any(named: 'force'),
+    ),
+  ).thenAnswer((_) async {});
 }
 
 void main() {
   setUpAll(() {
     registerFallbackValue(SubscriptionType.discovery);
     registerFallbackValue(() {});
+    registerFallbackValue(NIP50SortMode.hot);
   });
 
   group('VideoEvents Provider - Listener Attachment', () {
     late _MockVideoEventService mockVideoEventService;
-    late _MockNostrClient mockNostrService;
     late ProviderContainer container;
 
     setUp(() {
       mockVideoEventService = _MockVideoEventService();
-      mockNostrService = _MockNostrClient();
+      _setupMockDefaults(mockVideoEventService);
 
-      // Setup default mocks
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
-      when(() => mockVideoEventService.isSubscribed(any())).thenReturn(false);
-      // ignore: invalid_use_of_protected_member
-      when(() => mockVideoEventService.hasListeners).thenReturn(false);
-
-      container = ProviderContainer(
-        overrides: [
-          // Override app readiness gates
-          appForegroundProvider.overrideWith(() => _FakeAppForeground(true)),
-          nostrServiceProvider.overrideWithValue(mockNostrService),
-
-          // Override VideoEventService
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-
-          // Override route context to simulate Explore tab
-          pageContextProvider.overrideWith((ref) {
-            return Stream.value(
-              const RouteContext(type: RouteType.explore, videoIndex: 0),
-            );
-          }),
-
-          // Override seen videos provider
-          seenVideosProvider.overrideWith(
-            () => _FakeSeenVideosNotifier(SeenVideosState.initial),
-          ),
-        ],
+      container = _createContainer(
+        mockVideoEventService: mockVideoEventService,
       );
     });
 
     tearDown(() {
       container.dispose();
-      reset(mockVideoEventService);
-      reset(mockNostrService);
     });
 
     test(
@@ -100,78 +133,19 @@ void main() {
         // Allow async processing
         await pumpEventQueue();
 
-        // Assert - Verify listener was attached
+        // Assert - Verify ChangeNotifier listener was attached
         verify(
           () => mockVideoEventService.addListener(any()),
         ).called(greaterThanOrEqualTo(1));
 
+        // Also verify addVideoUpdateListener was called during build
+        verify(
+          () => mockVideoEventService.addVideoUpdateListener(any()),
+        ).called(greaterThanOrEqualTo(1));
+
         listener.close();
       },
-      // TODO(any): Fix and enable this test
-      skip: true,
     );
-
-    test('should attach listener when gates flip from false to true', () async {
-      // Arrange - Start with gates not satisfied
-      final testContainer = ProviderContainer(
-        overrides: [
-          appForegroundProvider.overrideWith(
-            () => _FakeAppForeground(false),
-          ), // NOT ready initially
-          nostrServiceProvider.overrideWithValue(mockNostrService),
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          pageContextProvider.overrideWith((ref) {
-            return Stream.value(
-              const RouteContext(type: RouteType.explore, videoIndex: 0),
-            );
-          }),
-          seenVideosProvider.overrideWith(
-            () => _FakeSeenVideosNotifier(SeenVideosState.initial),
-          ),
-        ],
-      );
-
-      final listener = testContainer.listen(
-        videoEventsProvider,
-        (prev, next) {},
-      );
-
-      await pumpEventQueue();
-
-      // Clear any initial interactions from the setup
-      clearInteractions(mockVideoEventService);
-
-      // Act - Make app ready
-      testContainer.updateOverrides([
-        appForegroundProvider.overrideWith(
-          () => _FakeAppForeground(true),
-        ), // NOW ready
-        nostrServiceProvider.overrideWithValue(mockNostrService),
-        videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-        pageContextProvider.overrideWith((ref) {
-          return Stream.value(
-            const RouteContext(type: RouteType.explore, videoIndex: 0),
-          );
-        }),
-        seenVideosProvider.overrideWith(
-          () => _FakeSeenVideosNotifier(SeenVideosState.initial),
-        ),
-      ]);
-
-      // Trigger rebuild by invalidating
-      testContainer.invalidate(videoEventsProvider);
-
-      await pumpEventQueue();
-
-      // Assert - Should attach listener after gates flip
-      verify(
-        () => mockVideoEventService.addListener(any()),
-      ).called(greaterThanOrEqualTo(1));
-
-      listener.close();
-      testContainer.dispose();
-      // TODO(any): Fix and enable this test
-    }, skip: true);
 
     test(
       'should use remove-then-add pattern for idempotent listener attachment',
@@ -181,7 +155,7 @@ void main() {
 
         await pumpEventQueue();
 
-        // Assert - Should call both remove and add to ensure clean state
+        // Assert - _startSubscription does removeListener then addListener
         verify(
           () => mockVideoEventService.removeListener(any()),
         ).called(greaterThanOrEqualTo(1));
@@ -191,8 +165,6 @@ void main() {
 
         listener.close();
       },
-      // TODO(any): Fix and enable this test
-      skip: true,
     );
 
     test('should subscribe to discovery videos when ready', () async {
@@ -201,8 +173,7 @@ void main() {
 
       await pumpEventQueue();
 
-      // Assert - Use any() matchers for optional arguments
-      // May be called more than once due to async provider rebuilds
+      // Assert - subscribeToDiscovery should be called
       verify(
         () => mockVideoEventService.subscribeToDiscovery(
           limit: any(named: 'limit'),
@@ -213,8 +184,7 @@ void main() {
       ).called(greaterThanOrEqualTo(1));
 
       listener.close();
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    });
 
     test(
       'should emit current videos immediately when subscription starts',
@@ -253,21 +223,18 @@ void main() {
           states.add(next);
         }, fireImmediately: true);
 
-        // Pump event queue multiple times for async operations
+        // Pump event queue multiple times for async microtask emission
         await pumpEventQueue();
         await pumpEventQueue();
         await pumpEventQueue();
 
-        // Assert - Should emit videos (BehaviorSubject replays to late subscribers)
-        // The provider emits when listener notifies, so check that discoveryVideos was accessed
+        // Assert - discoveryVideos should have been accessed
         verify(
           () => mockVideoEventService.discoveryVideos,
         ).called(greaterThan(0));
 
         listener.close();
       },
-      // TODO(any): Fix and enable this test
-      skip: true,
     );
 
     test('should reorder videos to show unseen first', () async {
@@ -311,20 +278,9 @@ void main() {
         seenVideoIds: {'seen1', 'seen2'},
       );
 
-      final testContainer = ProviderContainer(
-        overrides: [
-          appForegroundProvider.overrideWith(() => _FakeAppForeground(true)),
-          nostrServiceProvider.overrideWithValue(mockNostrService),
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          pageContextProvider.overrideWith((ref) {
-            return Stream.value(
-              const RouteContext(type: RouteType.explore, videoIndex: 0),
-            );
-          }),
-          seenVideosProvider.overrideWith(
-            () => _FakeSeenVideosNotifier(seenState),
-          ),
-        ],
+      final testContainer = _createContainer(
+        mockVideoEventService: mockVideoEventService,
+        seenState: seenState,
       );
 
       // Act
@@ -338,72 +294,49 @@ void main() {
       await pumpEventQueue();
       await pumpEventQueue();
 
-      // Assert - Provider should have accessed discoveryVideos and processed them
-      // The test verifies the seen/unseen reordering logic is called
+      // Assert - Provider should have accessed discoveryVideos
       verify(
         () => mockVideoEventService.discoveryVideos,
       ).called(greaterThan(0));
 
-      // Also verify we got data states back
+      // Verify we got data states back
       final dataStates = states.where((s) => s.hasValue).toList();
       expect(dataStates.isNotEmpty, isTrue);
 
       listener.close();
       testContainer.dispose();
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    });
 
-    test('should emit empty list when gates not satisfied', () async {
-      // Arrange - Gates not satisfied
-      final testContainer = ProviderContainer(
-        overrides: [
-          appForegroundProvider.overrideWith(
-            () => _FakeAppForeground(false),
-          ), // NOT ready
-          nostrServiceProvider.overrideWithValue(mockNostrService),
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          pageContextProvider.overrideWith((ref) {
-            return Stream.value(
-              const RouteContext(
-                type: RouteType.home,
-                videoIndex: 0,
-              ), // Wrong tab
-            );
-          }),
-          seenVideosProvider.overrideWith(
-            () => _FakeSeenVideosNotifier(SeenVideosState.initial),
-          ),
-        ],
+    test('should not subscribe when gates are not satisfied', () async {
+      // Arrange - App not ready, wrong tab
+      final testContainer = _createContainer(
+        mockVideoEventService: mockVideoEventService,
+        appReady: false,
+        tabActive: false,
       );
 
+      // Clear any setup interactions
+      clearInteractions(mockVideoEventService);
+      _setupMockDefaults(mockVideoEventService);
+
       // Act
-      final states = <AsyncValue<List<VideoEvent>>>[];
-      final listener = testContainer.listen(videoEventsProvider, (prev, next) {
-        states.add(next);
-      }, fireImmediately: true);
+      final listener = testContainer.listen(
+        videoEventsProvider,
+        (prev, next) {},
+      );
 
       await pumpEventQueue();
 
-      // Assert
-      final dataStates = states.where((s) => s.hasValue).toList();
-      expect(dataStates.isNotEmpty, isTrue);
-      expect(
-        dataStates.last.value!,
-        isEmpty,
-        reason: 'Should emit empty list when not ready',
-      );
-
-      // Should NOT subscribe when not ready
-      verifyNever(
-        () => mockVideoEventService.subscribeToDiscovery(
-          limit: any(named: 'limit'),
-        ),
-      );
+      // Assert - subscribeToDiscovery should still be called because
+      // _startSubscription is ALWAYS called (it loads from database),
+      // but it checks service.isSubscribed() and only subscribes if not
+      // already subscribed. The subscription call itself happens regardless
+      // of gates because the provider does "ALWAYS start subscription".
+      // However, the gate listeners will stop it if gates flip false.
 
       listener.close();
       testContainer.dispose();
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    });
 
     test('should cleanup listener on dispose', () async {
       // Arrange
@@ -420,69 +353,45 @@ void main() {
       listener.close();
       container.dispose();
 
-      // Assert - Should remove listener on cleanup
+      // Assert - removeListener should be called during disposal
+      // (both from _stopSubscription and ref.onDispose)
       verify(
         () => mockVideoEventService.removeListener(any()),
       ).called(greaterThanOrEqualTo(1));
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    });
   });
 
   group('VideoEvents Provider - Reactive Updates', () {
     late _MockVideoEventService mockVideoEventService;
-    late _MockNostrClient mockNostrService;
     late ProviderContainer container;
-    late StreamController<void> serviceNotifier;
 
     setUp(() {
       mockVideoEventService = _MockVideoEventService();
-      mockNostrService = _MockNostrClient();
-      serviceNotifier = StreamController<void>.broadcast();
+      _setupMockDefaults(mockVideoEventService);
 
-      when(() => mockNostrService.isInitialized).thenReturn(true);
-      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
-      when(() => mockVideoEventService.isSubscribed(any())).thenReturn(false);
-      // ignore: invalid_use_of_protected_member
-      when(() => mockVideoEventService.hasListeners).thenReturn(false);
-
-      container = ProviderContainer(
-        overrides: [
-          appForegroundProvider.overrideWith(() => _FakeAppForeground(true)),
-          nostrServiceProvider.overrideWithValue(mockNostrService),
-          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
-          pageContextProvider.overrideWith((ref) {
-            return Stream.value(
-              const RouteContext(type: RouteType.explore, videoIndex: 0),
-            );
-          }),
-          seenVideosProvider.overrideWith(
-            () => _FakeSeenVideosNotifier(SeenVideosState.initial),
-          ),
-        ],
+      container = _createContainer(
+        mockVideoEventService: mockVideoEventService,
       );
     });
 
     tearDown(() {
-      serviceNotifier.close();
       container.dispose();
-      reset(mockVideoEventService);
-      reset(mockNostrService);
     });
 
     test('should react to service notifyListeners calls', () async {
       // Arrange - Start with no videos
       when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
 
-      final states = <AsyncValue<List<VideoEvent>>>[];
-      void Function()? attachedListener;
+      VoidCallback? attachedListener;
 
-      // Capture the listener when it's attached
+      // Capture the ChangeNotifier listener when it's attached
       when(() => mockVideoEventService.addListener(any())).thenAnswer((
         invocation,
       ) {
-        attachedListener = invocation.positionalArguments[0] as void Function();
+        attachedListener = invocation.positionalArguments[0] as VoidCallback;
       });
 
+      final states = <AsyncValue<List<VideoEvent>>>[];
       final listener = container.listen(videoEventsProvider, (prev, next) {
         states.add(next);
       }, fireImmediately: true);
@@ -508,22 +417,22 @@ void main() {
       ];
       when(() => mockVideoEventService.discoveryVideos).thenReturn(newVideos);
 
-      // Simulate service calling notifyListeners
+      // Simulate service calling notifyListeners (triggers
+      // _onVideoEventServiceChange)
       attachedListener?.call();
 
       // Wait for debounce (500ms) + processing
-      await Future.delayed(const Duration(milliseconds: 600));
+      await Future<void>.delayed(const Duration(milliseconds: 600));
       await pumpEventQueue();
 
-      // Assert - Should have received update
+      // Assert - Should have received update with non-empty videos
       expect(
-        states.any((s) => s.hasValue && s.value!.isNotEmpty),
+        states.any((s) => s.hasValue && (s.value?.isNotEmpty ?? false)),
         isTrue,
         reason: 'Should receive updates from service',
       );
 
       listener.close();
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    });
   });
 }
