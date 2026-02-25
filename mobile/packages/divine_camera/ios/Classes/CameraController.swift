@@ -167,6 +167,46 @@ class CameraController: NSObject {
               "ultraWide=\(hasUltraWideCamera), telephoto=\(hasTelephotoCamera), macro=\(hasMacroCamera)")
     }
     
+    /// Configures the audio session for video recording with proper Bluetooth headphone routing.
+    ///
+    /// When AVCaptureSession has an audio input, iOS defaults to routing audio output to the
+    /// built-in speaker (not earpiece, not headphones) because it assumes the user wants to
+    /// hear themselves during recording. This causes audio to come from the speaker even when
+    /// Bluetooth headphones are connected.
+    ///
+    /// By explicitly setting ONLY allowBluetoothA2DP (without allowBluetooth), we tell iOS to:
+    /// - Route audio playback to Bluetooth headphones in A2DP (music) mode
+    /// - Use the built-in microphone for recording (NOT the Bluetooth mic)
+    /// This prevents iOS from switching to HFP (phone call) mode which causes the
+    /// "call started/ended" sounds on Bluetooth headsets.
+    private func configureAudioSessionForRecording() {
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            // Use playAndRecord category since we need both:
+            // - Record: Microphone capture for video (uses built-in mic)
+            // - Play: Playing selected sounds through Bluetooth headphones (uses A2DP)
+            //
+            // Options:
+            // - defaultToSpeaker: Use speaker (not earpiece) when no headphones connected
+            // - allowBluetoothA2DP: Route playback to Bluetooth in A2DP mode
+            //
+            // IMPORTANT: Do NOT include .allowBluetooth!
+            // .allowBluetooth enables HFP (Hands-Free Profile) which:
+            // - Triggers "call started/ended" sounds on headsets
+            // - Switches to low-quality phone audio
+            // - Routes microphone input through Bluetooth (not needed for video)
+            try audioSession.setCategory(
+                .playAndRecord,
+                mode: .default,
+                options: [.defaultToSpeaker, .allowBluetoothA2DP]
+            )
+            try audioSession.setActive(true)
+            print("[DivineCameraController] Audio session configured: A2DP for playback, built-in mic for recording")
+        } catch {
+            print("[DivineCameraController] Failed to configure audio session: \(error.localizedDescription)")
+        }
+    }
+    
     /// Gets metadata for the currently active camera lens.
     private func getCurrentLensMetadata() -> [String: Any]? {
         guard let device = videoDevice else {
@@ -383,6 +423,14 @@ class CameraController: NSObject {
         
         // Create capture session
         let session = AVCaptureSession()
+        
+        // CRITICAL: Disable automatic audio session configuration!
+        // By default, AVCaptureSession automatically configures the audio session when
+        // an audio input is added, which overrides our manual configuration and routes
+        // audio output to the speaker instead of connected Bluetooth headphones.
+        // Setting this to false lets us control the audio session ourselves.
+        session.automaticallyConfiguresApplicationAudioSession = false
+        
         session.beginConfiguration()
         
         // Setup video input FIRST (before setting preset)
@@ -435,6 +483,12 @@ class CameraController: NSObject {
             completion(nil, "Failed to create video input: \(error.localizedDescription)")
             return
         }
+        
+        // Configure audio session BEFORE adding audio input
+        // Without this, iOS defaults to speaker output when audio capture is active
+        // because it assumes you want to hear yourself during recording.
+        // We need to explicitly allow Bluetooth A2DP to keep headphone routing.
+        configureAudioSessionForRecording()
         
         // Setup audio input
         if let audioDevice = AVCaptureDevice.default(for: .audio) {

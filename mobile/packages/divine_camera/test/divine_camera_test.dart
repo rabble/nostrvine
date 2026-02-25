@@ -1633,7 +1633,7 @@ void _runMethodChannelTests() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             methodChannelImpl.methodChannel,
-            (MethodCall methodCall) async {
+            (methodCall) async {
               capturedCalls.add(methodCall);
               switch (methodCall.method) {
                 case 'setRemoteRecordControlEnabled':

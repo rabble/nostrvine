@@ -7,6 +7,7 @@ export 'src/bug_report_result.dart';
 export 'src/bulk_profiles_response.dart';
 export 'src/bulk_video_stats_entry.dart';
 export 'src/bulk_video_stats_response.dart';
+export 'src/curated_list.dart';
 export 'src/curation_publish_status.dart';
 export 'src/curation_set.dart';
 export 'src/divine_filter.dart';

@@ -10,7 +10,6 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
-import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';

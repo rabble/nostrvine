@@ -2,7 +2,7 @@
 // ABOUTME: Shows up to 2 tappable chips linking to source curated lists
 
 import 'package:flutter/material.dart';
-import 'package:openvine/services/curated_list_service.dart';
+import 'package:models/models.dart';
 import 'package:divine_ui/divine_ui.dart';
 
 /// Callback type for list tap events.

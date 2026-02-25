@@ -23,10 +23,6 @@
 #   - Set to YES to upload artifacts to a GitHub Release (for Zapstore / direct distribution)
 #   - Defaults to NO
 #   - Requires GITHUB_TOKEN in "github_credentials" environment variable group
-# 9 - Ensure environment variable group "firebase" contains:
-#   - FIREBASE_SERVICE_ACCOUNT (Google service account JSON key with Firebase Crashlytics access)
-#   - FIREBASE_IOS_APP_ID (Firebase iOS app ID, e.g. 1:123456:ios:abc123)
-#   - FIREBASE_ANDROID_APP_ID (Firebase Android app ID)
 
 definitions:
   environment:
@@ -150,9 +146,6 @@ definitions:
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
           --export-options-plist=/Users/builder/export_options.plist
-    - &install_firebase_cli
-      name: Install Firebase CLI
-      script: curl -sL https://firebase.tools | bash
     - &upload_dsyms_to_crashlytics
       name: Upload dSYMs to Firebase Crashlytics
       script: |
@@ -167,15 +160,26 @@ definitions:
         echo "Found dSYMs:"
         ls -la "$DSYM_DIR"
 
-        # Authenticate via service account
-        echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/firebase-sa.json
-        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-sa.json
+        # Find the Crashlytics upload-symbols tool from the SPM build
+        UPLOAD_SYMBOLS=$(find "$HOME/Library/Developer/Xcode/DerivedData" -name "upload-symbols" -type f 2>/dev/null | head -1)
+        if [ -z "$UPLOAD_SYMBOLS" ]; then
+          UPLOAD_SYMBOLS=$(find . -path "*/FirebaseCrashlytics*" -name "upload-symbols" -type f 2>/dev/null | head -1)
+        fi
 
-        firebase crashlytics:symbols:upload \
-          --app="$FIREBASE_IOS_APP_ID" \
+        if [ -z "$UPLOAD_SYMBOLS" ]; then
+          echo "ERROR: upload-symbols tool not found. Searching all locations..."
+          find "$HOME" -name "upload-symbols" -type f 2>/dev/null || true
+          find . -name "upload-symbols" -type f 2>/dev/null || true
+          exit 1
+        fi
+
+        echo "Found upload-symbols at: $UPLOAD_SYMBOLS"
+        chmod +x "$UPLOAD_SYMBOLS"
+
+        "$UPLOAD_SYMBOLS" \
+          -gsp ios/Runner/GoogleService-Info.plist \
+          -p ios \
           "$DSYM_DIR"
-
-        rm -f /tmp/firebase-sa.json
     - &build_ios_simulator
       name: Build iOS Simulator app
       script: |
@@ -218,7 +222,6 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
-        - firebase
         - github_credentials
       vars:
         BUNDLE_ID: co.openvine.app
@@ -237,7 +240,6 @@ workflows:
       - *enable_spm
       - *pod_install
       - *build_ios
-      - *install_firebase_cli
       - *upload_dsyms_to_crashlytics
       - *publish_github_release
     artifacts:

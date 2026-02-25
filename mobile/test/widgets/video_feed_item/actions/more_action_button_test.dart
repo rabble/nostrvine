@@ -19,7 +19,6 @@ import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/video_feed_item/actions/more_action_button.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
-
 @GenerateMocks([ContentBlocklistService, MuteService])
 import 'more_action_button_test.mocks.dart';
 
