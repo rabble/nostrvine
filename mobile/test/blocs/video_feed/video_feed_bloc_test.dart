@@ -12,18 +12,15 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
-class _MockCuratedListRepository extends Mock
-    implements CuratedListRepository {}
-
-class _MockFeedPerformanceTracker extends Mock
-    implements FeedPerformanceTracker {}
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
 void main() {
   group('VideoFeedBloc', () {
@@ -68,12 +65,12 @@ void main() {
       curatedListRepository: mockCuratedListRepository,
     );
 
-    VideoEvent createTestVideo(String id, {int? createdAt}) {
+    VideoEvent createTestVideo(String id, {int? createdAt, String? pubkey}) {
       final timestamp =
           createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
       return VideoEvent(
         id: id,
-        pubkey: '0' * 64,
+        pubkey: pubkey ?? '0' * 64,
         createdAt: timestamp,
         content: '',
         timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
@@ -87,6 +84,7 @@ void main() {
       int count, {
       int? startTimestamp,
       String idPrefix = 'video',
+      String? pubkey,
     }) {
       final baseTimestamp =
           startTimestamp ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -95,6 +93,7 @@ void main() {
         (i) => createTestVideo(
           '$idPrefix-$i',
           createdAt: baseTimestamp - i, // Decreasing timestamps
+          pubkey: pubkey,
         ),
       );
     }
@@ -1111,194 +1110,159 @@ void main() {
       );
     });
 
-    group('VideoFeedCuratedListsChanged', () {
+    group('blocklist filtering', () {
+      late _MockContentBlocklistService mockBlocklistService;
+
+      final blockedPubkey = '1' * 64;
+      final allowedPubkey = '2' * 64;
+
+      setUp(() {
+        mockBlocklistService = _MockContentBlocklistService();
+        when(
+          () => mockBlocklistService.shouldFilterFromFeeds(blockedPubkey),
+        ).thenReturn(true);
+        when(
+          () => mockBlocklistService.shouldFilterFromFeeds(allowedPubkey),
+        ).thenReturn(false);
+        when(
+          () => mockBlocklistService.shouldFilterFromFeeds('0' * 64),
+        ).thenReturn(false);
+      });
+
+      VideoFeedBloc createBlocWithBlocklist() => VideoFeedBloc(
+        videosRepository: mockVideosRepository,
+        followRepository: mockFollowRepository,
+        contentBlocklistService: mockBlocklistService,
+      );
+
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'refreshes home feed when curated lists change',
+        'filters blocked users from initial load',
         setUp: () {
-          final videos = createTestVideos(pageSize);
+          final baseTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final videos = [
+            createTestVideo(
+              'allowed-1',
+              pubkey: allowedPubkey,
+              createdAt: baseTimestamp,
+            ),
+            createTestVideo(
+              'blocked-1',
+              pubkey: blockedPubkey,
+              createdAt: baseTimestamp - 1,
+            ),
+            createTestVideo(
+              'allowed-2',
+              pubkey: allowedPubkey,
+              createdAt: baseTimestamp - 2,
+            ),
+          ];
 
           when(
-            () => mockFollowRepository.followingPubkeys,
-          ).thenReturn(['author']);
-          when(
-            () => mockVideosRepository.getHomeFeedVideos(
-              authors: any(named: 'authors'),
-              videoRefs: any(named: 'videoRefs'),
+            () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+          ).thenAnswer((_) async => videos);
         },
-        build: createBloc,
-        seed: () => VideoFeedState(
-          status: VideoFeedStatus.success,
-          videos: createTestVideos(3),
-        ),
-        act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
+        build: createBlocWithBlocklist,
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
         expect: () => [
-          const VideoFeedState(),
+          isA<VideoFeedState>().having(
+            (s) => s.status,
+            'status',
+            VideoFeedStatus.loading,
+          ),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.videos.length, 'videos count', pageSize)
-              .having((s) => s.mode, 'mode', FeedMode.home),
+              .having((s) => s.videos.length, 'videos count', 2)
+              .having(
+                (s) => s.videos.every((v) => v.pubkey != blockedPubkey),
+                'no blocked videos',
+                isTrue,
+              ),
         ],
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'does nothing when mode is not home',
-        build: createBloc,
-        seed: () => VideoFeedState(
-          status: VideoFeedStatus.success,
-          mode: FeedMode.latest,
-          videos: createTestVideos(5),
-        ),
-        act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
-        expect: () => <VideoFeedState>[],
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
-        'does nothing when feed is still loading',
-        build: createBloc,
-        seed: () => const VideoFeedState(),
-        act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
-        expect: () => <VideoFeedState>[],
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
-        'subscribes to subscribedListsStream via emit.onEach on startup',
+        'filters blocked users from load more results',
         setUp: () {
-          final videos = createTestVideos(pageSize);
+          final baseTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final moreVideos = [
+            createTestVideo(
+              'more-allowed',
+              pubkey: allowedPubkey,
+              createdAt: baseTimestamp - 100,
+            ),
+            createTestVideo(
+              'more-blocked',
+              pubkey: blockedPubkey,
+              createdAt: baseTimestamp - 101,
+            ),
+          ];
 
           when(
-            () => mockFollowRepository.followingPubkeys,
-          ).thenReturn(['author']);
-          when(
-            () => mockVideosRepository.getHomeFeedVideos(
-              authors: any(named: 'authors'),
-              videoRefs: any(named: 'videoRefs'),
+            () => mockVideosRepository.getNewVideos(
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+          ).thenAnswer((_) async => moreVideos);
         },
-        build: createBloc,
-        act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
-          // Wait for initial load to complete
-          await Future<void>.delayed(Duration.zero);
-          // First stream emission is skipped (BehaviorSubject replay)
-          curatedListsController.add(const []);
-          await Future<void>.delayed(Duration.zero);
-          // Second emission triggers the handler
-          curatedListsController.add(const []);
-        },
-        skip: 2, // Skip loading + success from VideoFeedStarted
-        expect: () => [
-          const VideoFeedState(),
-          isA<VideoFeedState>()
-              .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.videos.length, 'videos count', pageSize),
-        ],
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
-        'emits state with videoListSources and listOnlyVideoIds '
-        'from HomeFeedResult',
-        setUp: () {
-          final videos = createTestVideos(pageSize);
-
-          when(
-            () => mockFollowRepository.followingPubkeys,
-          ).thenReturn(['author']);
-          when(
-            () => mockVideosRepository.getHomeFeedVideos(
-              authors: any(named: 'authors'),
-              videoRefs: any(named: 'videoRefs'),
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-            ),
-          ).thenAnswer(
-            (_) async => HomeFeedResult(
-              videos: videos,
-              videoListSources: {
-                'video-0': {'list-1'},
-              },
-              listOnlyVideoIds: {'video-0'},
+        build: createBlocWithBlocklist,
+        seed: () {
+          final baseTimestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          return VideoFeedState(
+            status: VideoFeedStatus.success,
+            mode: FeedMode.latest,
+            videos: createTestVideos(
+              pageSize,
+              startTimestamp: baseTimestamp,
+              pubkey: allowedPubkey,
             ),
           );
         },
-        build: createBloc,
-        seed: () => VideoFeedState(
-          status: VideoFeedStatus.success,
-          videos: createTestVideos(3),
-        ),
-        act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
-        expect: () => [
-          const VideoFeedState(),
-          isA<VideoFeedState>()
-              .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.videoListSources, 'videoListSources', {
-                'video-0': {'list-1'},
-              })
-              .having((s) => s.listOnlyVideoIds, 'listOnlyVideoIds', {
-                'video-0',
-              }),
-        ],
-      );
-
-      blocTest<VideoFeedBloc, VideoFeedState>(
-        'merges attribution metadata on load more',
-        setUp: () {
-          final moreVideos = createTestVideos(
-            pageSize,
-            startTimestamp: 1000,
-            idPrefix: 'more',
-          );
-
-          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
-          when(
-            () => mockVideosRepository.getHomeFeedVideos(
-              authors: any(named: 'authors'),
-              videoRefs: any(named: 'videoRefs'),
-              limit: any(named: 'limit'),
-              until: any(named: 'until'),
-            ),
-          ).thenAnswer(
-            (_) async => HomeFeedResult(
-              videos: moreVideos,
-              videoListSources: {
-                'more-0': {'list-2'},
-              },
-              listOnlyVideoIds: {'more-0'},
-            ),
-          );
-        },
-        build: createBloc,
-        seed: () => VideoFeedState(
-          status: VideoFeedStatus.success,
-          videos: createTestVideos(pageSize, startTimestamp: 2000),
-          videoListSources: const {
-            'existing-0': {'list-1'},
-          },
-          listOnlyVideoIds: const {'existing-0'},
-        ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
+          // Loading more state
           isA<VideoFeedState>().having(
             (s) => s.isLoadingMore,
             'isLoadingMore',
-            true,
+            isTrue,
+          ),
+          // Final state with only allowed videos
+          isA<VideoFeedState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse)
+              .having((s) => s.videos.length, 'videos count', pageSize + 1)
+              .having(
+                (s) => s.videos.every((v) => v.pubkey != blockedPubkey),
+                'no blocked videos',
+                isTrue,
+              ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'works without blocklist service (null)',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockVideosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: createBloc, // No blocklist service
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
+        expect: () => [
+          isA<VideoFeedState>().having(
+            (s) => s.status,
+            'status',
+            VideoFeedStatus.loading,
           ),
           isA<VideoFeedState>()
-              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
-              .having((s) => s.videoListSources, 'videoListSources', {
-                'existing-0': {'list-1'},
-                'more-0': {'list-2'},
-              })
-              .having((s) => s.listOnlyVideoIds, 'listOnlyVideoIds', {
-                'existing-0',
-                'more-0',
-              }),
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize),
         ],
       );
     });
