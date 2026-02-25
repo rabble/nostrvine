@@ -4,6 +4,7 @@
 export 'cc_action_button.dart';
 export 'comment_action_button.dart';
 export 'like_action_button.dart';
+export 'more_action_button.dart';
 export 'repost_action_button.dart';
 export 'report_action_button.dart';
 export 'share_action_button.dart';

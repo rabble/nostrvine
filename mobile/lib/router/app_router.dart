@@ -27,7 +27,6 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
@@ -39,6 +38,7 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -122,13 +122,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             return emptyFollowingRedirect;
           }
         }
-        Log.info(
-          'Router redirect: authenticated on auth route — '
-          'redirecting to /home/0',
-          name: 'AppRouter',
-          category: LogCategory.auth,
-        );
-        return HomeScreenRouter.pathForIndex(0);
+        return VideoFeedPage.pathForIndex(0);
       }
 
       // Auth routes don't require authentication — user is in the
@@ -166,17 +160,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           // HOME tab subtree
           GoRoute(
-            path: HomeScreenRouter.pathWithIndex,
-            name: HomeScreenRouter.routeName,
+            path: VideoFeedPage.pathWithIndex,
+            name: VideoFeedPage.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
                 key: NavigatorKeys.home,
                 onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const HomeScreenRouter(),
-                  settings: const RouteSettings(
-                    name: HomeScreenRouter.routeName,
-                  ),
+                  builder: (_) => const VideoFeedPage(),
+                  settings: RouteSettings(name: VideoFeedPage.routeName),
                 ),
               ),
             ),
@@ -548,6 +540,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const SafetySettingsScreen(),
       ),
       GoRoute(
+        path: ContentFiltersScreen.path,
+        name: ContentFiltersScreen.routeName,
+        builder: (_, __) => const ContentFiltersScreen(),
+      ),
+      GoRoute(
         path: DeveloperOptionsScreen.path,
         name: DeveloperOptionsScreen.routeName,
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -564,13 +561,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           },
         ),
       ),
-      // Debug route for testing VideoFeedBloc as a pushed screen
-      GoRoute(
-        path: VideoFeedPage.path,
-        name: VideoFeedPage.routeName,
-        builder: (_, __) => const VideoFeedPage(),
-      ),
-
       GoRoute(
         path: ProfileSetupScreen.editPath,
         name: ProfileSetupScreen.editRouteName,
@@ -856,6 +846,7 @@ int tabIndexFromLocation(String loc) {
     case 'notification-settings':
     case 'key-management':
     case 'safety-settings':
+    case 'content-filters':
     case 'developer-options':
     case 'edit-profile':
     case 'setup-profile':
@@ -872,7 +863,6 @@ int tabIndexFromLocation(String loc) {
     case 'video-feed':
     case 'profile-view':
     case 'sound':
-    case 'new-video-feed':
     case 'list':
     case 'discover-lists':
     case 'creator-analytics':

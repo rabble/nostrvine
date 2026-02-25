@@ -5,8 +5,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
@@ -18,7 +17,9 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/seen_videos_state.dart';
 
-import 'video_events_provider_listener_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockNostrClient extends Mock implements NostrClient {}
 
 class _FakeAppForeground extends AppForeground {
   final bool _isForeground;
@@ -38,22 +39,27 @@ class _FakeSeenVideosNotifier extends SeenVideosNotifier {
   SeenVideosState build() => _state;
 }
 
-@GenerateMocks([VideoEventService, NostrClient])
 void main() {
+  setUpAll(() {
+    registerFallbackValue(SubscriptionType.discovery);
+    registerFallbackValue(() {});
+  });
+
   group('VideoEvents Provider - Listener Attachment', () {
-    late MockVideoEventService mockVideoEventService;
-    late MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockNostrClient mockNostrService;
     late ProviderContainer container;
 
     setUp(() {
-      mockVideoEventService = MockVideoEventService();
-      mockNostrService = MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrService = _MockNostrClient();
 
       // Setup default mocks
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockVideoEventService.discoveryVideos).thenReturn([]);
-      when(mockVideoEventService.isSubscribed(any)).thenReturn(false);
-      when(mockVideoEventService.hasListeners).thenReturn(false);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoEventService.isSubscribed(any())).thenReturn(false);
+      // ignore: invalid_use_of_protected_member
+      when(() => mockVideoEventService.hasListeners).thenReturn(false);
 
       container = ProviderContainer(
         overrides: [
@@ -96,7 +102,7 @@ void main() {
 
         // Assert - Verify listener was attached
         verify(
-          mockVideoEventService.addListener(any),
+          () => mockVideoEventService.addListener(any()),
         ).called(greaterThanOrEqualTo(1));
 
         listener.close();
@@ -159,7 +165,7 @@ void main() {
 
       // Assert - Should attach listener after gates flip
       verify(
-        mockVideoEventService.addListener(any),
+        () => mockVideoEventService.addListener(any()),
       ).called(greaterThanOrEqualTo(1));
 
       listener.close();
@@ -177,10 +183,10 @@ void main() {
 
         // Assert - Should call both remove and add to ensure clean state
         verify(
-          mockVideoEventService.removeListener(any),
+          () => mockVideoEventService.removeListener(any()),
         ).called(greaterThanOrEqualTo(1));
         verify(
-          mockVideoEventService.addListener(any),
+          () => mockVideoEventService.addListener(any()),
         ).called(greaterThanOrEqualTo(1));
 
         listener.close();
@@ -198,11 +204,11 @@ void main() {
       // Assert - Use any() matchers for optional arguments
       // May be called more than once due to async provider rebuilds
       verify(
-        mockVideoEventService.subscribeToDiscovery(
-          limit: anyNamed('limit'),
-          sortBy: anyNamed('sortBy'),
-          nip50Sort: anyNamed('nip50Sort'),
-          force: anyNamed('force'),
+        () => mockVideoEventService.subscribeToDiscovery(
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
+          nip50Sort: any(named: 'nip50Sort'),
+          force: any(named: 'force'),
         ),
       ).called(greaterThanOrEqualTo(1));
 
@@ -237,7 +243,9 @@ void main() {
           ),
         ];
 
-        when(mockVideoEventService.discoveryVideos).thenReturn(testVideos);
+        when(
+          () => mockVideoEventService.discoveryVideos,
+        ).thenReturn(testVideos);
 
         // Act
         final states = <AsyncValue<List<VideoEvent>>>[];
@@ -252,7 +260,9 @@ void main() {
 
         // Assert - Should emit videos (BehaviorSubject replays to late subscribers)
         // The provider emits when listener notifies, so check that discoveryVideos was accessed
-        verify(mockVideoEventService.discoveryVideos).called(greaterThan(0));
+        verify(
+          () => mockVideoEventService.discoveryVideos,
+        ).called(greaterThan(0));
 
         listener.close();
       },
@@ -294,7 +304,7 @@ void main() {
         ),
       ];
 
-      when(mockVideoEventService.discoveryVideos).thenReturn(testVideos);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn(testVideos);
 
       // Mark some as seen
       final seenState = SeenVideosState.initial.copyWith(
@@ -330,7 +340,9 @@ void main() {
 
       // Assert - Provider should have accessed discoveryVideos and processed them
       // The test verifies the seen/unseen reordering logic is called
-      verify(mockVideoEventService.discoveryVideos).called(greaterThan(0));
+      verify(
+        () => mockVideoEventService.discoveryVideos,
+      ).called(greaterThan(0));
 
       // Also verify we got data states back
       final dataStates = states.where((s) => s.hasValue).toList();
@@ -383,7 +395,9 @@ void main() {
 
       // Should NOT subscribe when not ready
       verifyNever(
-        mockVideoEventService.subscribeToDiscovery(limit: anyNamed('limit')),
+        () => mockVideoEventService.subscribeToDiscovery(
+          limit: any(named: 'limit'),
+        ),
       );
 
       listener.close();
@@ -399,7 +413,7 @@ void main() {
 
       // Verify listener was attached
       verify(
-        mockVideoEventService.addListener(any),
+        () => mockVideoEventService.addListener(any()),
       ).called(greaterThanOrEqualTo(1));
 
       // Act - Dispose
@@ -408,27 +422,28 @@ void main() {
 
       // Assert - Should remove listener on cleanup
       verify(
-        mockVideoEventService.removeListener(any),
+        () => mockVideoEventService.removeListener(any()),
       ).called(greaterThanOrEqualTo(1));
       // TODO(any): Fix and enable this test
     }, skip: true);
   });
 
   group('VideoEvents Provider - Reactive Updates', () {
-    late MockVideoEventService mockVideoEventService;
-    late MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockNostrClient mockNostrService;
     late ProviderContainer container;
     late StreamController<void> serviceNotifier;
 
     setUp(() {
-      mockVideoEventService = MockVideoEventService();
-      mockNostrService = MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrService = _MockNostrClient();
       serviceNotifier = StreamController<void>.broadcast();
 
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockVideoEventService.discoveryVideos).thenReturn([]);
-      when(mockVideoEventService.isSubscribed(any)).thenReturn(false);
-      when(mockVideoEventService.hasListeners).thenReturn(false);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoEventService.isSubscribed(any())).thenReturn(false);
+      // ignore: invalid_use_of_protected_member
+      when(() => mockVideoEventService.hasListeners).thenReturn(false);
 
       container = ProviderContainer(
         overrides: [
@@ -456,13 +471,15 @@ void main() {
 
     test('should react to service notifyListeners calls', () async {
       // Arrange - Start with no videos
-      when(mockVideoEventService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
 
       final states = <AsyncValue<List<VideoEvent>>>[];
       void Function()? attachedListener;
 
       // Capture the listener when it's attached
-      when(mockVideoEventService.addListener(any)).thenAnswer((invocation) {
+      when(() => mockVideoEventService.addListener(any())).thenAnswer((
+        invocation,
+      ) {
         attachedListener = invocation.positionalArguments[0] as void Function();
       });
 
@@ -489,7 +506,7 @@ void main() {
           timestamp: now,
         ),
       ];
-      when(mockVideoEventService.discoveryVideos).thenReturn(newVideos);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn(newVideos);
 
       // Simulate service calling notifyListeners
       attachedListener?.call();

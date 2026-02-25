@@ -4,18 +4,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 
 void main() {
-  // Disable HomeFeed timer in tests by setting poll interval to 1 year
-  final testOverrides = [
-    homeFeedPollIntervalProvider.overrideWithValue(const Duration(days: 365)),
-  ];
+  // No overrides needed after home feed migration to VideoFeedPage.
+  // Previously overrode homeFeedPollIntervalProvider to disable timer.
+  // Using const [] to match ProviderContainer overrides type.
 
   Widget shell(ProviderContainer c) => UncontrolledProviderScope(
     container: c,
@@ -31,7 +29,7 @@ void main() {
     testWidgets('renders with goRouterProvider and normalization active', (
       tester,
     ) async {
-      final c = ProviderContainer(overrides: testOverrides);
+      final c = ProviderContainer();
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
@@ -42,7 +40,7 @@ void main() {
       await tester.pump();
 
       // Should start at initial location
-      expect(currentLocation(c), HomeScreenRouter.pathForIndex(0));
+      expect(currentLocation(c), VideoFeedPage.pathForIndex(0));
 
       // Find AppShell widget to verify shell is rendered
       expect(find.byType(AppShell), findsOneWidget);
@@ -51,7 +49,7 @@ void main() {
     testWidgets(
       'normalizes /home/-3 to /home/0 with correct bottom nav index',
       (tester) async {
-        final c = ProviderContainer(overrides: testOverrides);
+        final c = ProviderContainer();
         addTearDown(c.dispose);
 
         await tester.pumpWidget(shell(c));
@@ -59,12 +57,12 @@ void main() {
         // Activate normalization provider
         c.read(routeNormalizationProvider);
 
-        c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(-3));
+        c.read(goRouterProvider).go(VideoFeedPage.pathForIndex(-3));
         await tester.pump(); // Process the navigation
         await tester.pump(); // Process the post-frame callback redirect
 
         // After normalization, router location should be canonical
-        expect(currentLocation(c), HomeScreenRouter.pathForIndex(0));
+        expect(currentLocation(c), VideoFeedPage.pathForIndex(0));
 
         // Bottom nav should show Home tab (index 0) as selected
         final bottomNav = tester.widget<BottomNavigationBar>(
@@ -80,7 +78,7 @@ void main() {
     testWidgets('navigating to /profile/npubXYZ/2 selects Profile tab', (
       tester,
     ) async {
-      final c = ProviderContainer(overrides: testOverrides);
+      final c = ProviderContainer();
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
@@ -107,7 +105,7 @@ void main() {
     });
 
     testWidgets('navigating to /explore/5 selects Explore tab', (tester) async {
-      final c = ProviderContainer(overrides: testOverrides);
+      final c = ProviderContainer();
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
@@ -131,7 +129,7 @@ void main() {
     testWidgets('navigating to /hashtag/rust/3 selects Tags tab', (
       tester,
     ) async {
-      final c = ProviderContainer(overrides: testOverrides);
+      final c = ProviderContainer();
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
@@ -163,7 +161,7 @@ void main() {
     testWidgets('switching tabs preserves route within each tab', (
       tester,
     ) async {
-      final c = ProviderContainer(overrides: testOverrides);
+      final c = ProviderContainer();
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
@@ -171,18 +169,18 @@ void main() {
       c.read(routeNormalizationProvider);
 
       // Start at home/2
-      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(2));
+      c.read(goRouterProvider).go(VideoFeedPage.pathForIndex(2));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), HomeScreenRouter.pathForIndex(2));
+      expect(currentLocation(c), VideoFeedPage.pathForIndex(2));
 
       // Navigate within home tab to home/3
-      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(3));
+      c.read(goRouterProvider).go(VideoFeedPage.pathForIndex(3));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), HomeScreenRouter.pathForIndex(3));
+      expect(currentLocation(c), VideoFeedPage.pathForIndex(3));
 
       // Switch to Explore tab
       c.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));
@@ -201,13 +199,13 @@ void main() {
 
       // Should return to canonical /home/0 (basePathForTab behavior)
       // This is expected because onTap navigates to canonical paths
-      expect(currentLocation(c), HomeScreenRouter.pathForIndex(0));
+      expect(currentLocation(c), VideoFeedPage.pathForIndex(0));
     });
 
     testWidgets(
       'per-tab navigators maintain separate state across tab switches',
       (tester) async {
-        final c = ProviderContainer(overrides: testOverrides);
+        final c = ProviderContainer();
         addTearDown(c.dispose);
 
         await tester.pumpWidget(shell(c));
@@ -242,7 +240,7 @@ void main() {
 
   group('D) Back behavior', () {
     testWidgets('can navigate back within tab stack', (tester) async {
-      final c = ProviderContainer(overrides: testOverrides);
+      final c = ProviderContainer();
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
@@ -250,18 +248,18 @@ void main() {
       c.read(routeNormalizationProvider);
 
       // Navigate to home/2
-      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(2));
+      c.read(goRouterProvider).go(VideoFeedPage.pathForIndex(2));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), HomeScreenRouter.pathForIndex(2));
+      expect(currentLocation(c), VideoFeedPage.pathForIndex(2));
 
       // Navigate to home/5
-      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(5));
+      c.read(goRouterProvider).go(VideoFeedPage.pathForIndex(5));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), HomeScreenRouter.pathForIndex(5));
+      expect(currentLocation(c), VideoFeedPage.pathForIndex(5));
 
       // Go back
       c.read(goRouterProvider).pop();
@@ -269,13 +267,13 @@ void main() {
       await tester.pump();
 
       // Should be back at home/2
-      expect(currentLocation(c), HomeScreenRouter.pathForIndex(2));
+      expect(currentLocation(c), VideoFeedPage.pathForIndex(2));
     });
 
     testWidgets('bottom nav tap navigates to canonical tab path', (
       tester,
     ) async {
-      final c = ProviderContainer(overrides: testOverrides);
+      final c = ProviderContainer();
       addTearDown(c.dispose);
 
       await tester.pumpWidget(shell(c));
@@ -283,11 +281,11 @@ void main() {
       c.read(routeNormalizationProvider);
 
       // Start at /home/7
-      c.read(goRouterProvider).go(HomeScreenRouter.pathForIndex(7));
+      c.read(goRouterProvider).go(VideoFeedPage.pathForIndex(7));
       await tester.pump();
       await tester.pump();
 
-      expect(currentLocation(c), HomeScreenRouter.pathForIndex(7));
+      expect(currentLocation(c), VideoFeedPage.pathForIndex(7));
 
       // Tap Explore via bottom nav
       final bottomNav = tester.widget<BottomNavigationBar>(
@@ -306,7 +304,7 @@ void main() {
       await tester.pump();
 
       // Should navigate to canonical home path, not back to /home/7
-      expect(currentLocation(c), HomeScreenRouter.pathForIndex(0));
+      expect(currentLocation(c), VideoFeedPage.pathForIndex(0));
     });
     // TODO(any): Fix and re-enable these tests
   }, skip: true);

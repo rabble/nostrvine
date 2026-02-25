@@ -4,38 +4,50 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:likes_repository/likes_repository.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:likes_repository/likes_repository.dart';
 
-import 'curation_service_kind_30005_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, VideoEventService, LikesRepository, AuthService])
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockLikesRepository extends Mock implements LikesRepository {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(Event('0' * 64, 1, <List<String>>[], ''));
+    registerFallbackValue(<String>[]);
+  });
+
   group('CurationService - Kind 30005 Nostr Queries', () {
-    late MockNostrClient mockNostrService;
-    late MockVideoEventService mockVideoEventService;
-    late MockLikesRepository mockLikesRepository;
-    late MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockLikesRepository mockLikesRepository;
+    late _MockAuthService mockAuthService;
     late CurationService curationService;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockVideoEventService = MockVideoEventService();
-      mockLikesRepository = MockLikesRepository();
-      mockAuthService = MockAuthService();
+      mockNostrService = _MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockLikesRepository = _MockLikesRepository();
+      mockAuthService = _MockAuthService();
 
-      when(mockVideoEventService.videoEvents).thenReturn([]);
-      when(mockVideoEventService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoEventService.videoEvents).thenReturn([]);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
 
       // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
-      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
+      when(
+        () => mockLikesRepository.getLikeCounts(any()),
+      ).thenAnswer((_) async => {});
 
       curationService = CurationService(
         nostrService: mockNostrService,
@@ -50,9 +62,7 @@ void main() {
         // Setup: Mock empty event stream
         final controller = StreamController<Event>();
         List<Filter>? capturedFilters;
-        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
-          invocation,
-        ) {
+        when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
           capturedFilters = invocation.positionalArguments[0] as List<Filter>;
           return controller.stream;
         });
@@ -67,7 +77,7 @@ void main() {
         await future;
 
         // Verify: Called with kind 30005 filter
-        verify(mockNostrService.subscribe(argThat(anything))).called(1);
+        verify(() => mockNostrService.subscribe(any())).called(1);
 
         expect(capturedFilters, isNotNull);
         expect(capturedFilters!.length, 1);
@@ -95,7 +105,7 @@ void main() {
 
         final controller = StreamController<Event>();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
         // Execute
@@ -122,9 +132,7 @@ void main() {
 
         final controller = StreamController<Event>();
         List<Filter>? capturedFilters;
-        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
-          invocation,
-        ) {
+        when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
           capturedFilters = invocation.positionalArguments[0] as List<Filter>;
           return controller.stream;
         });
@@ -138,7 +146,7 @@ void main() {
         await future;
 
         // Verify: Filter included curator pubkeys
-        verify(mockNostrService.subscribe(argThat(anything))).called(1);
+        verify(() => mockNostrService.subscribe(any())).called(1);
 
         expect(capturedFilters, isNotNull);
         expect(capturedFilters![0].authors, curatorPubkeys);
@@ -176,7 +184,7 @@ void main() {
 
         final controller = StreamController<Event>();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
         final future = curationService.refreshCurationSets();
@@ -201,7 +209,7 @@ void main() {
       test('falls back to sample data when no sets found', () async {
         final controller = StreamController<Event>();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
         final future = curationService.refreshCurationSets();
@@ -217,7 +225,7 @@ void main() {
 
       test('handles errors gracefully and falls back to sample data', () async {
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenThrow(Exception('Connection error'));
 
         // Should not throw
@@ -231,7 +239,7 @@ void main() {
         // Setup: Never-completing stream
         final controller = StreamController<Event>();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
         final stopwatch = Stopwatch()..start();
@@ -271,7 +279,7 @@ void main() {
 
         final controller = StreamController<Event>();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
         final future = curationService.refreshCurationSets();
@@ -302,7 +310,7 @@ void main() {
 
         final controller = StreamController<Event>();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
         // Should not throw
@@ -320,16 +328,16 @@ void main() {
       test('subscribes to kind 30005 events', () async {
         final controller = StreamController<Event>();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
         await curationService.subscribeToCurationSets();
 
         // Verify subscription was created
         verify(
-          mockNostrService.subscribe(
-            argThat(
-              predicate<List<Filter>>((filters) {
+          () => mockNostrService.subscribe(
+            any(
+              that: predicate<List<Filter>>((filters) {
                 if (filters.isEmpty) return false;
                 final kinds = filters[0].kinds;
                 return kinds != null && kinds.contains(30005);
@@ -359,7 +367,7 @@ void main() {
 
         final controller = StreamController<Event>();
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => controller.stream);
 
         await curationService.subscribeToCurationSets();

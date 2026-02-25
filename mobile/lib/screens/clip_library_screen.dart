@@ -16,7 +16,7 @@ import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -528,7 +528,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
                         if (context.canPop()) {
                           context.pop();
                         } else {
-                          context.go(HomeScreenRouter.pathForIndex(0));
+                          context.go(VideoFeedPage.pathForIndex(0));
                         }
                       },
                     ),

@@ -1,33 +1,32 @@
 // Tests for readiness gate providers
-// Ensures subscriptions only start when app is ready (foregrounded + Nostr initialized + correct tab)
+// Ensures subscriptions only start when app is ready
+// (foregrounded + Nostr initialized + correct tab)
 
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:nostr_client/nostr_client.dart';
 
-import 'readiness_gate_providers_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient])
 void main() {
   group('Readiness Gate Providers', () {
-    late MockNostrClient mockNostrService;
+    late _MockNostrClient mockNostrService;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
+      mockNostrService = _MockNostrClient();
     });
 
     group('appReadyProvider', () {
       test('should return true when both foreground and Nostr are ready', () {
         // Arrange
-        when(mockNostrService.isInitialized).thenReturn(true);
+        when(() => mockNostrService.isInitialized).thenReturn(true);
 
         final container = ProviderContainer(
           overrides: [
@@ -36,7 +35,8 @@ void main() {
           ],
         );
 
-        // Set foreground state after initialization (default is already true)
+        // Set foreground state after initialization
+        // (default is already true)
         container.read(appForegroundProvider.notifier).setForeground(true);
 
         // Act
@@ -48,11 +48,40 @@ void main() {
         container.dispose();
       });
 
+      test('should return false when app is backgrounded even if '
+          'Nostr is ready', () {
+        // Arrange
+        when(() => mockNostrService.isInitialized).thenReturn(true);
+
+        final container = ProviderContainer(
+          overrides: [
+            nostrServiceProvider.overrideWithValue(mockNostrService),
+            appForegroundProvider.overrideWith(_FakeAppForeground.new),
+          ],
+        );
+
+        // Set background state after initialization
+        container.read(appForegroundProvider.notifier).setForeground(false);
+
+        // Act
+        final isReady = container.read(appReadyProvider);
+
+        // Assert
+        expect(
+          isReady,
+          isFalse,
+          reason: 'App should not be ready when backgrounded',
+        );
+
+        container.dispose();
+      });
+
       test(
-        'should return false when app is backgrounded even if Nostr is ready',
+        'should return false when Nostr is not initialized even if '
+        'foregrounded',
         () {
           // Arrange
-          when(mockNostrService.isInitialized).thenReturn(true);
+          when(() => mockNostrService.isInitialized).thenReturn(false);
 
           final container = ProviderContainer(
             overrides: [
@@ -61,37 +90,8 @@ void main() {
             ],
           );
 
-          // Set background state after initialization
-          container.read(appForegroundProvider.notifier).setForeground(false);
-
-          // Act
-          final isReady = container.read(appReadyProvider);
-
-          // Assert
-          expect(
-            isReady,
-            isFalse,
-            reason: 'App should not be ready when backgrounded',
-          );
-
-          container.dispose();
-        },
-      );
-
-      test(
-        'should return false when Nostr is not initialized even if foregrounded',
-        () {
-          // Arrange
-          when(mockNostrService.isInitialized).thenReturn(false);
-
-          final container = ProviderContainer(
-            overrides: [
-              nostrServiceProvider.overrideWithValue(mockNostrService),
-              appForegroundProvider.overrideWith(_FakeAppForeground.new),
-            ],
-          );
-
-          // Set foreground state after initialization (default is already true)
+          // Set foreground state after initialization
+          // (default is already true)
           container.read(appForegroundProvider.notifier).setForeground(true);
 
           // Act
@@ -112,7 +112,7 @@ void main() {
 
       test('should return false when both are not ready', () {
         // Arrange
-        when(mockNostrService.isInitialized).thenReturn(false);
+        when(() => mockNostrService.isInitialized).thenReturn(false);
 
         final container = ProviderContainer(
           overrides: [
@@ -135,7 +135,7 @@ void main() {
 
       test('should reactively update when foreground state changes', () {
         // Arrange
-        when(mockNostrService.isInitialized).thenReturn(true);
+        when(() => mockNostrService.isInitialized).thenReturn(true);
 
         final container = ProviderContainer(
           overrides: [
@@ -162,11 +162,10 @@ void main() {
 
     group('isDiscoveryTabActiveProvider', () {
       test('should return true when route is explore', () {
-        // Arrange - Override pageContextProvider with AsyncValue.data directly
+        // Arrange
         final container = ProviderContainer(
           overrides: [
             pageContextProvider.overrideWith((ref) {
-              // Return a stream that completes immediately with data
               return Stream.fromIterable([
                 const RouteContext(type: RouteType.explore, videoIndex: 0),
               ]);
@@ -174,17 +173,11 @@ void main() {
           ],
         );
 
-        // Wait for the stream provider to get the value by reading it once
-        // This forces the provider to subscribe and get the value
         final _ = container.read(pageContextProvider);
 
-        // Give microtask queue a chance to process
         // Act
         final isActive = container.read(isDiscoveryTabActiveProvider);
 
-        // The provider should be true once data arrives, or false while loading
-        // Since Stream.fromIterable emits synchronously on subscription, this should work
-        // But if still loading, that's also valid behavior (returns false)
         expect(
           isActive == true || container.read(pageContextProvider).isLoading,
           isTrue,
@@ -212,7 +205,7 @@ void main() {
         // Act
         final isActive = container.read(isDiscoveryTabActiveProvider);
 
-        // Assert - should be false (either because it's home route, or because still loading)
+        // Assert
         expect(isActive, isFalse);
 
         container.dispose();

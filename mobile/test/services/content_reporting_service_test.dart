@@ -2,8 +2,7 @@
 // ABOUTME: Tests NIP-56 content reporting including AI-generated content reports
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -12,13 +11,20 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'content_reporting_service_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
+class _FakeEvent extends Fake implements Event {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeEvent());
+  });
+
   group('ContentReportingService', () {
-    late MockNostrClient mockNostrService;
-    late MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
     late ContentReportingService service;
     late SharedPreferences prefs;
     late String testPrivateKey;
@@ -51,13 +57,13 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
 
-      mockNostrService = MockNostrClient();
-      mockAuthService = MockAuthService();
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
 
       // Setup common mocks
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
 
       service = ContentReportingService(
         nostrService: mockNostrService,
@@ -79,7 +85,7 @@ void main() {
     test(
       'initialize() fails gracefully when Nostr service not ready',
       () async {
-        when(mockNostrService.isInitialized).thenReturn(false);
+        when(() => mockNostrService.isInitialized).thenReturn(false);
 
         final uninitializedService = ContentReportingService(
           nostrService: mockNostrService,
@@ -128,17 +134,17 @@ void main() {
         );
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => reportEvent);
 
         when(
-          mockNostrService.publishEvent(
-            any,
-            targetRelays: anyNamed('targetRelays'),
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).thenAnswer((_) async => reportEvent);
 
@@ -156,76 +162,74 @@ void main() {
 
         // Verify createAndSignEvent was called with kind 1984 (NIP-56)
         verify(
-          mockAuthService.createAndSignEvent(
+          () => mockAuthService.createAndSignEvent(
             kind: 1984,
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).called(1);
 
         // Verify Nostr event was published to moderation relay
         verify(
-          mockNostrService.publishEvent(
-            any,
-            targetRelays: anyNamed('targetRelays'),
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
           ),
         ).called(1);
       },
     );
 
-    test(
-      'reportContent() handles all ContentFilterReason types including aiGenerated',
-      () async {
-        // Arrange
-        final reportEvent = createTestEvent(
-          pubkey: testPublicKey,
-          kind: 1984,
-          tags: [],
-          content: 'Test report',
+    test('reportContent() handles all ContentFilterReason types including '
+        'aiGenerated', () async {
+      // Arrange
+      final reportEvent = createTestEvent(
+        pubkey: testPublicKey,
+        kind: 1984,
+        tags: [],
+        content: 'Test report',
+      );
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      final reasons = ContentFilterReason.values;
+
+      for (final reason in reasons) {
+        final result = await service.reportContent(
+          eventId: 'event_${reason.name}',
+          authorPubkey: 'author_123',
+          reason: reason,
+          details: 'Test report for ${reason.name}',
         );
 
-        when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
-          ),
-        ).thenAnswer((_) async => reportEvent);
+        expect(
+          result.success,
+          true,
+          reason: 'Failed for reason: ${reason.name}',
+        );
+      }
 
-        when(
-          mockNostrService.publishEvent(
-            any,
-            targetRelays: anyNamed('targetRelays'),
-          ),
-        ).thenAnswer((_) async => reportEvent);
-
-        final reasons = ContentFilterReason.values;
-
-        for (final reason in reasons) {
-          final result = await service.reportContent(
-            eventId: 'event_${reason.name}',
-            authorPubkey: 'author_123',
-            reason: reason,
-            details: 'Test report for ${reason.name}',
-          );
-
-          expect(
-            result.success,
-            true,
-            reason: 'Failed for reason: ${reason.name}',
-          );
-        }
-
-        // Should have called createAndSignEvent once per reason
-        verify(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
-          ),
-        ).called(reasons.length);
-      },
-    );
+      // Should have called createAndSignEvent once per reason
+      verify(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).called(reasons.length);
+    });
 
     test('reportContent() specifically tests aiGenerated reason', () async {
       // Arrange
@@ -240,17 +244,17 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        mockNostrService.publishEvent(
-          any,
-          targetRelays: anyNamed('targetRelays'),
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer((_) async => reportEvent);
 
@@ -277,18 +281,18 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => reportEvent);
 
       // Mock failed publish - returns null on failure
       when(
-        mockNostrService.publishEvent(
-          any,
-          targetRelays: anyNamed('targetRelays'),
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -300,7 +304,8 @@ void main() {
         details: 'Spam content',
       );
 
-      // Assert - Service is resilient: saves report locally even if broadcast fails
+      // Assert - Service is resilient: saves report locally even if broadcast
+      // fails
       expect(result.success, true);
       expect(result.error, isNull);
       expect(result.reportId, isNotNull);
@@ -319,17 +324,17 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        mockNostrService.publishEvent(
-          any,
-          targetRelays: anyNamed('targetRelays'),
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer((_) async => reportEvent);
 
@@ -351,7 +356,7 @@ void main() {
 
     test('reportContent() fails when not authenticated', () async {
       // Arrange
-      when(mockAuthService.isAuthenticated).thenReturn(false);
+      when(() => mockAuthService.isAuthenticated).thenReturn(false);
 
       // Act
       final result = await service.reportContent(
@@ -367,10 +372,10 @@ void main() {
 
       // Verify createAndSignEvent was NOT called
       verifyNever(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       );
     });
@@ -380,10 +385,10 @@ void main() {
       () async {
         // Arrange
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => null);
 
@@ -401,9 +406,9 @@ void main() {
 
         // Verify publishEvent was NOT called
         verifyNever(
-          mockNostrService.publishEvent(
-            any,
-            targetRelays: anyNamed('targetRelays'),
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
           ),
         );
       },
@@ -417,16 +422,16 @@ void main() {
 
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      final mockNostrService = MockNostrClient();
-      final mockAuthService = MockAuthService();
+      final mockNostrService = _MockNostrClient();
+      final mockAuthService = _MockAuthService();
 
       // Generate valid keys
       final testPrivateKey = generatePrivateKey();
       final testPublicKey = getPublicKey(testPrivateKey);
 
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
 
       // Simulate what the provider does
       final service = ContentReportingService(
@@ -448,17 +453,17 @@ void main() {
       reportEvent.sig = 'test_sig';
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        mockNostrService.publishEvent(
-          any,
-          targetRelays: anyNamed('targetRelays'),
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
         ),
       ).thenAnswer((_) async => reportEvent);
 

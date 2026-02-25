@@ -4,24 +4,33 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-import 'video_event_service_simple_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, SubscriptionManager])
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
+/// Fake [Filter] for use with registerFallbackValue.
+class _FakeFilter extends Fake implements Filter {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(() {
+    registerFallbackValue(_FakeFilter());
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('VideoEventService Event Reception Bug Investigation', () {
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
     late VideoEventService videoEventService;
     late ContentBlocklistService blocklistService;
     late StreamController<Event> mockEventStream;
@@ -37,22 +46,22 @@ void main() {
       });
 
       // Set up mocks
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
       mockEventStream = StreamController<Event>.broadcast();
 
       // Mock basic properties
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
       when(
-        mockNostrService.connectedRelays,
+        () => mockNostrService.connectedRelays,
       ).thenReturn(['wss://staging-relay.divine.video']);
-      when(mockNostrService.hasKeys).thenReturn(true);
-      when(mockNostrService.publicKey).thenReturn('test_pubkey');
-      when(mockNostrService.connectedRelayCount).thenReturn(1);
+      when(() => mockNostrService.hasKeys).thenReturn(true);
+      when(() => mockNostrService.publicKey).thenReturn('test_pubkey');
+      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
 
       // Mock the critical subscribeToEvents method
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => mockEventStream.stream);
 
       // Initialize services that don't require SharedPreferences
@@ -108,7 +117,7 @@ void main() {
 
         // Verify that subscribeToEvents was called on the mock
         await subscriptionFuture;
-        verify(mockNostrService.subscribe(argThat(anything))).called(1);
+        verify(() => mockNostrService.subscribe(any())).called(1);
         Log.info('✅ Confirmed VideoEventService called subscribeToEvents');
 
         // Verify subscription state

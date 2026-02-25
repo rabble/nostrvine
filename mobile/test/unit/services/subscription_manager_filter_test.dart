@@ -1,31 +1,30 @@
 // ignore_for_file: invalid_use_of_null_value
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_client/nostr_client.dart';
 
-// Generate mocks
-@GenerateMocks([NostrClient])
-import 'subscription_manager_filter_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
 void main() {
   group('SubscriptionManager Filter Preservation', () {
-    late MockNostrClient mockNostrService;
+    late _MockNostrClient mockNostrService;
     // late SubscriptionManager subscriptionManager;
     late List<List<Filter>> capturedFiltersList;
 
+    setUpAll(() {
+      registerFallbackValue(<Filter>[]);
+    });
+
     setUp(() {
-      mockNostrService = MockNostrClient();
+      mockNostrService = _MockNostrClient();
       // subscriptionManager = SubscriptionManager(mockNostrService);
       capturedFiltersList = [];
 
       // Setup default mock behavior with capture
-      when(mockNostrService.subscribe(argThat(anything))).thenAnswer((
-        invocation,
-      ) {
+      when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
         capturedFiltersList.add(
           invocation.positionalArguments[0] as List<Filter>,
         );
@@ -51,7 +50,7 @@ void main() {
 
     //  // Verify the filter passed to NostrService preserved hashtags
     //  final capturedCalls = verify(
-    //    mockNostrService.subscribe(captureAny()),
+    //    () => mockNostrService.subscribe(captureAny()),
     //  ).captured;
 
     //  expect(capturedCalls.isNotEmpty, isTrue);
@@ -81,7 +80,7 @@ void main() {
 
     //  // Verify the filter passed to NostrService preserved group
     //  final capturedCalls = verify(
-    //    mockNostrService.subscribe(captureAny()),
+    //    () => mockNostrService.subscribe(captureAny()),
     //  ).captured;
 
     //  expect(capturedCalls.isNotEmpty, isTrue);
@@ -116,7 +115,7 @@ void main() {
 
     //  // Verify all filter parameters are preserved
     //  final capturedCalls = verify(
-    //    mockNostrService.subscribe(captureAny()),
+    //    () => mockNostrService.subscribe(captureAny()),
     //  ).captured;
 
     //  expect(capturedCalls.isNotEmpty, isTrue);
@@ -157,7 +156,7 @@ void main() {
 
     //  // Verify the filter passed to NostrService
     //  final capturedCalls = verify(
-    //    mockNostrService.subscribe(captureAny()),
+    //    () => mockNostrService.subscribe(captureAny()),
     //  ).captured;
 
     //  expect(capturedCalls.isNotEmpty, isTrue);
@@ -193,7 +192,7 @@ void main() {
 
     //  // Verify both filters are optimized correctly
     //  final capturedCalls = verify(
-    //    mockNostrService.subscribe(captureAny()),
+    //    () => mockNostrService.subscribe(captureAny()),
     //  ).captured;
 
     //  expect(capturedCalls.isNotEmpty, isTrue);
@@ -229,7 +228,7 @@ void main() {
 
     //  // Verify the limit is not changed
     //  final capturedCalls = verify(
-    //    mockNostrService.subscribe(captureAny()),
+    //    () => mockNostrService.subscribe(captureAny()),
     //  ).captured;
 
     //  expect(capturedCalls.isNotEmpty, isTrue);

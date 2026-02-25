@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -13,24 +12,28 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'search_navigation_integration_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-@GenerateMocks([VideoEventService, NostrClient])
+class _MockNostrClient extends Mock implements NostrClient {}
+
 void main() {
   group('Search Navigation Integration Tests', () {
-    late MockVideoEventService mockVideoEventService;
-    late MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockNostrClient mockNostrService;
 
     setUp(() {
-      mockVideoEventService = MockVideoEventService();
-      mockNostrService = MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrService = _MockNostrClient();
 
       // Setup default mock behavior
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
       when(
-        mockVideoEventService.searchVideos(any, limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          any(),
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async {});
-      when(mockVideoEventService.searchResults).thenReturn([]);
+      when(() => mockVideoEventService.searchResults).thenReturn([]);
     });
 
     testWidgets('Complete search flow: enter term → URL updates', (
@@ -79,7 +82,10 @@ void main() {
 
       // Assert: Search should be triggered
       verify(
-        mockVideoEventService.searchVideos('bitcoin', limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          'bitcoin',
+          limit: any(named: 'limit'),
+        ),
       ).called(greaterThan(0));
 
       // Wait for UI to settle
@@ -135,7 +141,10 @@ void main() {
       expect(textField.controller?.text, equals('bitcoin'));
 
       verify(
-        mockVideoEventService.searchVideos('bitcoin', limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          'bitcoin',
+          limit: any(named: 'limit'),
+        ),
       ).called(greaterThan(0));
 
       final pageContext = container.read(pageContextProvider);
@@ -246,15 +255,21 @@ void main() {
       await tester.pumpAndSettle(const Duration(milliseconds: 500));
 
       verify(
-        mockVideoEventService.searchVideos('bitcoin', limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          'bitcoin',
+          limit: any(named: 'limit'),
+        ),
       ).called(greaterThan(0));
 
       reset(mockVideoEventService);
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
       when(
-        mockVideoEventService.searchVideos(any, limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          any(),
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async {});
-      when(mockVideoEventService.searchResults).thenReturn([]);
+      when(() => mockVideoEventService.searchResults).thenReturn([]);
 
       final textField = find.byType(TextField);
       await tester.enterText(textField, 'nostr');
@@ -267,7 +282,10 @@ void main() {
       );
 
       verify(
-        mockVideoEventService.searchVideos('nostr', limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          'nostr',
+          limit: any(named: 'limit'),
+        ),
       ).called(greaterThan(0));
 
       final pageContext = container.read(pageContextProvider);

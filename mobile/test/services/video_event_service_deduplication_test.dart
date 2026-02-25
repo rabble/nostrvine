@@ -2,28 +2,33 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 
-@GenerateMocks([NostrClient, SubscriptionManager])
-import 'video_event_service_deduplication_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('VideoEventService Subscription Deduplication', () {
     late VideoEventService videoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
       // Setup mock NostrService
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.connectedRelayCount).thenReturn(1);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => Stream<Event>.empty());
 
       videoEventService = VideoEventService(
@@ -45,7 +50,7 @@ void main() {
         videoEventService.subscribeToDiscovery(limit: 100);
 
         // Verify NostrService was only called once (reused existing)
-        verify(mockNostrService.subscribe(argThat(anything))).called(1);
+        verify(() => mockNostrService.subscribe(any())).called(1);
       });
     });
 
@@ -59,7 +64,7 @@ void main() {
         await videoEventService.subscribeToHomeFeed(['author1'], limit: 100);
 
         // Both should create separate subscriptions
-        verify(mockNostrService.subscribe(argThat(anything))).called(2);
+        verify(() => mockNostrService.subscribe(any())).called(2);
       },
       // TODO(any): Fix and re-enable this test
       skip: true,
@@ -79,7 +84,7 @@ void main() {
       ], limit: 100);
 
       // Both should create separate subscriptions
-      verify(mockNostrService.subscribe(argThat(anything))).called(2);
+      verify(() => mockNostrService.subscribe(any())).called(2);
       // TODO(any): Fix and re-enable this test
     }, skip: true);
 
@@ -100,7 +105,7 @@ void main() {
       ], limit: 100);
 
       // Should reuse the subscription pattern (2 calls total, not 3)
-      verify(mockNostrService.subscribe(argThat(anything))).called(2);
+      verify(() => mockNostrService.subscribe(any())).called(2);
       // TODO(any): Fix and re-enable this test
     }, skip: true);
 
@@ -112,7 +117,7 @@ void main() {
       await videoEventService.subscribeToHashtagVideos(['music'], limit: 100);
 
       // Both should create separate subscriptions
-      verify(mockNostrService.subscribe(argThat(anything))).called(2);
+      verify(() => mockNostrService.subscribe(any())).called(2);
       // TODO(any): Fix and re-enable this test
     }, skip: true);
 
@@ -127,7 +132,7 @@ void main() {
       await Future.wait(futures);
 
       // Should only create one subscription despite 5 calls
-      verify(mockNostrService.subscribe(argThat(anything))).called(1);
+      verify(() => mockNostrService.subscribe(any())).called(1);
       // TODO(any): Fix and re-enable this test
     }, skip: true);
 
@@ -157,7 +162,7 @@ void main() {
       await videoEventService.subscribeToDiscovery(limit: 100);
 
       // Should create two subscriptions (old one cancelled, new one created)
-      verify(mockNostrService.subscribe(argThat(anything))).called(2);
+      verify(() => mockNostrService.subscribe(any())).called(2);
 
       // But only one should be active
       final status = videoEventService.getConnectionStatus();

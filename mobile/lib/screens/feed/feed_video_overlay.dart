@@ -22,9 +22,13 @@ import 'package:openvine/widgets/video_feed_item/actions/comment_action_button.d
 import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/repost_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
+import 'package:openvine/widgets/video_feed_item/actions/cc_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
+import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Video overlay for the home feed matching the new design.
 ///
@@ -35,11 +39,13 @@ class FeedVideoOverlay extends ConsumerWidget {
   const FeedVideoOverlay({
     required this.video,
     required this.isActive,
+    required this.player,
     super.key,
   });
 
   final VideoEvent video;
   final bool isActive;
+  final Player player;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,6 +80,12 @@ class FeedVideoOverlay extends ConsumerWidget {
             ),
           ),
         ),
+        // Subtitle overlay — Positioned.fill gives the inner Stack a size
+        // so SubtitleOverlay's Positioned can resolve correctly.
+        if (video.hasSubtitles)
+          Positioned.fill(
+            child: _SubtitleLayer(video: video, player: player),
+          ),
         // Author info and description (bottom-left)
         Positioned(
           bottom: 14,
@@ -259,6 +271,7 @@ class _ActionButtons extends StatelessWidget {
       children: [
         LikeActionButton(video: video),
         CommentActionButton(video: video),
+        CcActionButton(video: video),
         RepostActionButton(video: video),
         ShareActionButton(video: video),
         _MoreOptionsButton(video: video),
@@ -305,7 +318,7 @@ class _Nip05Badge extends ConsumerWidget {
         return Padding(
           padding: const EdgeInsets.only(left: 4),
           child: SvgPicture.asset(
-            'assets/icon/SealCheck.svg',
+            'assets/icon/seal_check.svg',
             width: 16,
             height: 16,
             colorFilter: const ColorFilter.mode(
@@ -317,6 +330,39 @@ class _Nip05Badge extends ConsumerWidget {
       },
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// Streams the player position and renders subtitle text.
+///
+/// Uses [Positioned.fill] + inner [Stack] so the [SubtitleOverlay]'s
+/// own [Positioned] resolves against a proper [Stack] ancestor.
+class _SubtitleLayer extends ConsumerWidget {
+  const _SubtitleLayer({required this.video, required this.player});
+
+  final VideoEvent video;
+  final Player player;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
+
+    return StreamBuilder<Duration>(
+      stream: player.stream.position,
+      builder: (context, snapshot) {
+        final positionMs = snapshot.data?.inMilliseconds ?? 0;
+        return Stack(
+          children: [
+            SubtitleOverlay(
+              video: video,
+              positionMs: positionMs,
+              visible: subtitlesVisible,
+              bottomOffset: 180,
+            ),
+          ],
+        );
+      },
     );
   }
 }

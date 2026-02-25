@@ -87,7 +87,7 @@ class VideoDescriptionOverlay extends StatelessWidget {
               explicitChildNodes: true,
               label: 'Video loop count',
               child: Text(
-                '🔁 ${StringUtils.formatCompactNumber(video.originalLoops!)} loops',
+                '🔁 ${StringUtils.formatCompactNumber((video.originalLoops ?? 0) + (int.tryParse(video.rawTags['views'] ?? '') ?? 0))} loops',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 12,

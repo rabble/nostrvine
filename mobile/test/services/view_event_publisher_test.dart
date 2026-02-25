@@ -3,21 +3,28 @@
 // ABOUTME: construction
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 
 import '../test_data/video_test_data.dart';
-import 'view_event_publisher_test.mocks.dart';
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _FakeEvent extends Fake implements Event {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeEvent());
+  });
+
   group(ViewEventPublisher, () {
-    late MockNostrClient mockNostr;
-    late MockAuthService mockAuth;
+    late _MockNostrClient mockNostr;
+    late _MockAuthService mockAuth;
     late ViewEventPublisher publisher;
 
     const viewerPubkey =
@@ -26,18 +33,18 @@ void main() {
         'creator_pubkey_abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234';
 
     setUp(() {
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
+      mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
 
-      when(mockAuth.isAuthenticated).thenReturn(true);
-      when(mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
-      when(mockNostr.connectedRelays).thenReturn([]);
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
+      when(() => mockNostr.connectedRelays).thenReturn([]);
 
       when(
-        mockAuth.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuth.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer(
         (_) async => Event.fromJson({
@@ -51,7 +58,7 @@ void main() {
         }),
       );
 
-      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
 
@@ -63,7 +70,7 @@ void main() {
 
     group('publishViewEvent', () {
       test('returns false when not authenticated', () async {
-        when(mockAuth.isAuthenticated).thenReturn(false);
+        when(() => mockAuth.isAuthenticated).thenReturn(false);
 
         final result = await publisher.publishViewEvent(
           video: createTestVideoEvent(pubkey: creatorPubkey),
@@ -72,7 +79,7 @@ void main() {
         );
 
         expect(result, isFalse);
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('returns false when end <= start', () async {
@@ -83,7 +90,7 @@ void main() {
         );
 
         expect(result, isFalse);
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('returns false when watch time less than 1 second', () async {
@@ -94,7 +101,7 @@ void main() {
         );
 
         expect(result, isFalse);
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('returns false for self-views', () async {
@@ -105,7 +112,7 @@ void main() {
         );
 
         expect(result, isFalse);
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('publishes event successfully', () async {
@@ -117,7 +124,7 @@ void main() {
         );
 
         expect(result, isTrue);
-        verify(mockNostr.publishEvent(any)).called(1);
+        verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
       test('includes correct tags with vineId', () async {
@@ -135,10 +142,10 @@ void main() {
         );
 
         final captured = verify(
-          mockAuth.createAndSignEvent(
-            kind: captureAnyNamed('kind'),
-            content: captureAnyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: captureAny(named: 'kind'),
+            content: captureAny(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         ).captured;
 
@@ -183,10 +190,10 @@ void main() {
         );
 
         final captured = verify(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         ).captured;
 
@@ -198,10 +205,10 @@ void main() {
 
       test('returns false when createAndSignEvent returns null', () async {
         when(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => null);
 
@@ -212,11 +219,11 @@ void main() {
         );
 
         expect(result, isFalse);
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('returns false when publishEvent returns null', () async {
-        when(mockNostr.publishEvent(any)).thenAnswer((_) async => null);
+        when(() => mockNostr.publishEvent(any())).thenAnswer((_) async => null);
 
         final result = await publisher.publishViewEvent(
           video: createTestVideoEvent(pubkey: creatorPubkey),
@@ -229,7 +236,7 @@ void main() {
 
       test('uses connected relay as relay hint when available', () async {
         when(
-          mockNostr.connectedRelays,
+          () => mockNostr.connectedRelays,
         ).thenReturn(['wss://my-relay.example.com']);
 
         await publisher.publishViewEvent(
@@ -239,10 +246,10 @@ void main() {
         );
 
         final captured = verify(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         ).captured;
 
@@ -268,14 +275,14 @@ void main() {
           reset(mockAuth);
           reset(mockNostr);
 
-          when(mockAuth.isAuthenticated).thenReturn(true);
-          when(mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
-          when(mockNostr.connectedRelays).thenReturn([]);
+          when(() => mockAuth.isAuthenticated).thenReturn(true);
+          when(() => mockAuth.currentPublicKeyHex).thenReturn(viewerPubkey);
+          when(() => mockNostr.connectedRelays).thenReturn([]);
           when(
-            mockAuth.createAndSignEvent(
-              kind: anyNamed('kind'),
-              content: anyNamed('content'),
-              tags: anyNamed('tags'),
+            () => mockAuth.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: any(named: 'tags'),
             ),
           ).thenAnswer(
             (_) async => Event.fromJson({
@@ -288,7 +295,9 @@ void main() {
               'sig': 'test_sig',
             }),
           );
-          when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+          when(() => mockNostr.publishEvent(any())).thenAnswer((
+            invocation,
+          ) async {
             return invocation.positionalArguments[0] as Event;
           });
 
@@ -300,10 +309,10 @@ void main() {
           );
 
           final captured = verify(
-            mockAuth.createAndSignEvent(
-              kind: anyNamed('kind'),
-              content: anyNamed('content'),
-              tags: captureAnyNamed('tags'),
+            () => mockAuth.createAndSignEvent(
+              kind: any(named: 'kind'),
+              content: any(named: 'content'),
+              tags: captureAny(named: 'tags'),
             ),
           ).captured;
 
@@ -328,10 +337,10 @@ void main() {
         );
 
         final captured = verify(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         ).captured;
 
@@ -354,10 +363,10 @@ void main() {
         );
 
         final captured = verify(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         ).captured;
 
@@ -379,10 +388,10 @@ void main() {
         );
 
         final captured = verify(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         ).captured;
 
@@ -400,7 +409,7 @@ void main() {
         );
 
         expect(result, isFalse);
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('returns false when all segments are invalid', () async {
@@ -410,7 +419,7 @@ void main() {
         );
 
         expect(result, isFalse);
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('filters out invalid segments', () async {
@@ -420,10 +429,10 @@ void main() {
         );
 
         final captured = verify(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         ).captured;
 
@@ -443,10 +452,10 @@ void main() {
         expect(result, isTrue);
 
         final captured = verify(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         ).captured;
 

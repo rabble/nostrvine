@@ -1,18 +1,20 @@
-// ABOUTME: Safety Settings screen for content moderation and user safety controls
-// ABOUTME: Provides age verification, adult content preferences, and moderation providers
+// ABOUTME: Safety Settings screen - navigation hub for moderation and user safety
+// ABOUTME: Provides age verification gate and navigation to sub-screens
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/npub_hex.dart';
 import 'package:divine_ui/divine_ui.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class SafetySettingsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -31,7 +33,8 @@ class SafetySettingsScreen extends ConsumerStatefulWidget {
 class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   bool _isLoading = true;
   bool _isAgeVerified = false;
-  AdultContentPreference _preference = AdultContentPreference.askEachTime;
+  Set<ContentLabel> _accountLabels = {};
+  bool _isDivineLabelerEnabled = true;
 
   @override
   void initState() {
@@ -42,10 +45,15 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Future<void> _loadSettings() async {
     final service = ref.read(ageVerificationServiceProvider);
     await service.initialize();
+    final accountLabelService = ref.read(accountLabelServiceProvider);
+    final labelService = ref.read(moderationLabelServiceProvider);
     if (mounted) {
       setState(() {
         _isAgeVerified = service.isAdultContentVerified;
-        _preference = service.adultContentPreference;
+        _accountLabels = accountLabelService.accountLabels;
+        _isDivineLabelerEnabled = labelService.subscribedLabelers.contains(
+          ModerationLabelService.divineModerationPubkeyHex,
+        );
         _isLoading = false;
       });
     }
@@ -55,40 +63,17 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     final service = ref.read(ageVerificationServiceProvider);
     await service.setAdultContentVerified(value);
 
-    // If user says they're under 18, force preference to "Never show"
-    if (!value && _preference != AdultContentPreference.neverShow) {
-      await service.setAdultContentPreference(AdultContentPreference.neverShow);
+    // If unchecked, lock adult categories to hide
+    if (!value) {
+      final contentFilterService = ref.read(contentFilterServiceProvider);
+      await contentFilterService.lockAdultCategories();
       final videoEventService = ref.read(videoEventServiceProvider);
       videoEventService.filterAdultContentFromExistingVideos();
-      if (mounted) {
-        setState(() {
-          _isAgeVerified = value;
-          _preference = AdultContentPreference.neverShow;
-        });
-      }
-      return;
     }
 
     if (mounted) {
       setState(() {
         _isAgeVerified = value;
-      });
-    }
-  }
-
-  Future<void> _setPreference(AdultContentPreference value) async {
-    final service = ref.read(ageVerificationServiceProvider);
-    await service.setAdultContentPreference(value);
-
-    // If user chose to never show adult content, filter existing videos from feeds
-    if (value == AdultContentPreference.neverShow) {
-      final videoEventService = ref.read(videoEventServiceProvider);
-      videoEventService.filterAdultContentFromExistingVideos();
-    }
-
-    if (mounted) {
-      setState(() {
-        _preference = value;
       });
     }
   }
@@ -138,11 +123,26 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
           : ListView(
               children: [
                 _buildAgeVerificationSection(),
-                _buildAdultContentSection(),
+                const SizedBox(height: 8),
+                _buildSectionHeader('SETTINGS'),
+                _buildNavigationTile(
+                  icon: Icons.tune,
+                  title: 'Content Filters',
+                  subtitle: 'Per-category Show, Warn, or Hide',
+                  onTap: () => context.push(ContentFiltersScreen.path),
+                ),
+                _buildNavigationTile(
+                  icon: Icons.warning_amber_rounded,
+                  title: 'Account Content Labels',
+                  subtitle: _accountLabels.isNotEmpty
+                      ? _accountLabels.map((l) => l.displayName).join(', ')
+                      : 'Self-label your content',
+                  onTap: _selectAccountLabels,
+                ),
+                _buildSectionHeader('MODERATION'),
                 _buildModerationProvidersSection(),
+                _buildSectionHeader('BLOCKED USERS'),
                 _buildBlockedUsersSection(),
-                _buildSectionHeader('MUTED CONTENT'),
-                _buildSectionHeader('REPORT HISTORY'),
               ],
             ),
     );
@@ -175,11 +175,11 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
           },
           title: const Text(
             'I confirm I am 18 years or older',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: VineTheme.whiteText),
           ),
           subtitle: const Text(
             'Required to view adult content',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: VineTheme.secondaryText),
           ),
           activeColor: VineTheme.vineGreen,
           checkColor: Colors.black,
@@ -189,77 +189,62 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     );
   }
 
-  Widget _buildAdultContentSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('ADULT CONTENT'),
-        if (!_isAgeVerified)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Verify your age above to change adult content settings',
-              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-            ),
-          ),
-        _buildRadioOption(
-          title: 'Always show',
-          subtitle: 'Auto-authenticate for age-gated content',
-          value: AdultContentPreference.alwaysShow,
-          enabled: _isAgeVerified,
-        ),
-        _buildRadioOption(
-          title: 'Ask each time',
-          subtitle: 'Show confirmation dialog for each video',
-          value: AdultContentPreference.askEachTime,
-          enabled: _isAgeVerified,
-        ),
-        _buildRadioOption(
-          title: 'Never show',
-          subtitle: 'Filter adult content from your feed',
-          value: AdultContentPreference.neverShow,
-          enabled: _isAgeVerified,
-        ),
-      ],
+  Widget _buildNavigationTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: VineTheme.onSurfaceVariant),
+      title: Text(title, style: const TextStyle(color: VineTheme.whiteText)),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: VineTheme.secondaryText),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right,
+        color: VineTheme.onSurfaceDisabled,
+      ),
+      onTap: onTap,
     );
   }
 
-  Widget _buildRadioOption({
-    required String title,
-    required String subtitle,
-    required AdultContentPreference value,
-    required bool enabled,
+  Future<void> _selectAccountLabels() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    final result = await _showAccountLabelMultiSelect(
+      context: context,
+      selected: _accountLabels,
+    );
+
+    if (result != null && mounted) {
+      final service = ref.read(accountLabelServiceProvider);
+      await service.setAccountLabels(result);
+      setState(() {
+        _accountLabels = result;
+      });
+    }
+  }
+
+  Future<Set<ContentLabel>?> _showAccountLabelMultiSelect({
+    required BuildContext context,
+    required Set<ContentLabel> selected,
   }) {
-    // TODO: migrate to `RadioGroup` widget.
-    return RadioListTile<AdultContentPreference>(
-      value: value,
-      // ignore: deprecated_member_use
-      groupValue: _preference,
-      // ignore: deprecated_member_use
-      onChanged: enabled
-          ? (newValue) {
-              if (newValue != null) {
-                _setPreference(newValue);
-              }
-            }
-          : null,
-      title: Text(
-        title,
-        style: TextStyle(color: enabled ? Colors.white : Colors.grey),
+    return showModalBottomSheet<Set<ContentLabel>>(
+      context: context,
+      backgroundColor: VineTheme.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      subtitle: Text(
-        subtitle,
-        style: TextStyle(color: enabled ? Colors.grey : Colors.grey[700]),
-      ),
-      activeColor: VineTheme.vineGreen,
+      isScrollControlled: true,
+      builder: (_) => _AccountLabelMultiSelect(selected: selected),
     );
   }
 
   Widget _buildModerationProvidersSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader('MODERATION PROVIDERS'),
         _buildDivineProvider(),
         _buildPeopleIFollowProvider(),
         _buildCustomLabelersSection(),
@@ -268,40 +253,37 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   }
 
   Widget _buildDivineProvider() {
-    return ListTile(
-      leading: const Icon(Icons.verified_user, color: VineTheme.vineGreen),
-      title: const Text('Divine', style: TextStyle(color: Colors.white)),
+    return SwitchListTile(
+      value: _isDivineLabelerEnabled,
+      onChanged: (value) async {
+        final labelService = ref.read(moderationLabelServiceProvider);
+        if (value) {
+          await labelService.addLabeler(
+            ModerationLabelService.divineModerationPubkeyHex,
+          );
+        } else {
+          await labelService.removeLabeler(
+            ModerationLabelService.divineModerationPubkeyHex,
+          );
+        }
+        setState(() {
+          _isDivineLabelerEnabled = value;
+        });
+      },
+      secondary: const Icon(Icons.verified_user, color: VineTheme.vineGreen),
+      title: const Text('Divine', style: TextStyle(color: VineTheme.whiteText)),
       subtitle: const Text(
-        'Default moderation service',
-        style: TextStyle(color: Colors.grey),
+        'Official moderation service (on by default)',
+        style: TextStyle(color: VineTheme.secondaryText),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.check_circle, color: VineTheme.vineGreen),
-          const SizedBox(width: 8),
-          TextButton(
-            onPressed: () async {
-              final uri = Uri.parse('https://divine.video/moderation');
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
-              }
-            },
-            child: const Text(
-              'Learn more',
-              style: TextStyle(color: VineTheme.vineGreen),
-            ),
-          ),
-        ],
-      ),
+      activeThumbColor: VineTheme.vineGreen,
     );
   }
 
   Widget _buildPeopleIFollowProvider() {
     return SwitchListTile(
-      value: false, // TODO: Wire to actual state
+      value: false,
       onChanged: (value) {
-        // TODO: Implement subscription to followed users' mute lists
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Coming soon: Follow-based moderation'),
@@ -311,41 +293,116 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
       },
       title: const Text(
         'People I follow',
-        style: TextStyle(color: Colors.white),
+        style: TextStyle(color: VineTheme.whiteText),
       ),
       subtitle: const Text(
-        'Subscribe to mute lists from people you follow',
-        style: TextStyle(color: Colors.grey),
+        'Subscribe to labels from people you follow',
+        style: TextStyle(color: VineTheme.secondaryText),
       ),
       activeThumbColor: VineTheme.vineGreen,
-      secondary: const Icon(Icons.people, color: Colors.grey),
+      secondary: const Icon(Icons.people, color: VineTheme.onSurfaceDisabled),
     );
   }
 
+  Future<void> _showAddLabelerDialog() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          'Add Custom Labeler',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: VineTheme.whiteText),
+          decoration: const InputDecoration(
+            hintText: 'Enter npub...',
+            hintStyle: TextStyle(color: VineTheme.secondaryText),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: VineTheme.secondaryText),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: VineTheme.vineGreen),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.secondaryText),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text(
+              'Add',
+              style: TextStyle(color: VineTheme.vineGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+
+    if (result != null && result.isNotEmpty && mounted) {
+      final hexPubkey = npubToHexOrNull(result) ?? result;
+      final labelService = ref.read(moderationLabelServiceProvider);
+      await labelService.addLabeler(hexPubkey);
+      setState(() {});
+    }
+  }
+
   Widget _buildCustomLabelersSection() {
+    final labelService = ref.read(moderationLabelServiceProvider);
+    final customLabelers = labelService.subscribedLabelers
+        .where((pk) => pk != ModerationLabelService.divineModerationPubkeyHex)
+        .toList();
+
     return Column(
       children: [
+        ...customLabelers.map(
+          (pubkey) => ListTile(
+            leading: const Icon(
+              Icons.label_outline,
+              color: VineTheme.onSurfaceDisabled,
+            ),
+            title: Text(
+              NostrKeyUtils.truncateNpub(pubkey),
+              style: const TextStyle(color: VineTheme.whiteText),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: IconButton(
+              icon: const Icon(
+                Icons.remove_circle_outline,
+                color: VineTheme.secondaryText,
+              ),
+              onPressed: () async {
+                await labelService.removeLabeler(pubkey);
+                setState(() {});
+              },
+            ),
+          ),
+        ),
         ListTile(
-          leading: const Icon(Icons.add_circle_outline, color: Colors.grey),
+          leading: const Icon(
+            Icons.add_circle_outline,
+            color: VineTheme.onSurfaceDisabled,
+          ),
           title: const Text(
             'Add custom labeler',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: VineTheme.whiteText),
           ),
           subtitle: const Text(
-            'Enter npub or nip05 address',
-            style: TextStyle(color: Colors.grey),
+            'Enter npub address',
+            style: TextStyle(color: VineTheme.secondaryText),
           ),
-          onTap: () {
-            // TODO: Show add labeler dialog (Task 3b)
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Coming soon: Custom labeler support'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
+          onTap: _showAddLabelerDialog,
         ),
-        // TODO: List of added custom labelers
       ],
     );
   }
@@ -356,26 +413,28 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     final blocklistService = ref.read(contentBlocklistServiceProvider);
     final blockedUsers = blocklistService.runtimeBlockedUsers.toList();
 
+    if (blockedUsers.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Text(
+          'No blocked users',
+          style: TextStyle(
+            color: VineTheme.secondaryText,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('BLOCKED USERS'),
-        if (blockedUsers.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              'No blocked users',
-              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-            ),
-          )
-        else
-          ...blockedUsers.map(
+      children: blockedUsers
+          .map(
             (pubkey) => _BlockedUserTile(
               pubkey: pubkey,
               onUnblock: () => _unblockUser(pubkey),
             ),
-          ),
-      ],
+          )
+          .toList(),
     );
   }
 
@@ -449,13 +508,13 @@ class _BlockedUserTile extends ConsumerWidget {
       ),
       title: Text(
         displayName,
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: VineTheme.whiteText),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       subtitle: Text(
         truncatedNpub,
-        style: const TextStyle(color: Colors.grey, fontSize: 12),
+        style: const TextStyle(color: VineTheme.secondaryText, fontSize: 12),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -466,6 +525,154 @@ class _BlockedUserTile extends ConsumerWidget {
           style: TextStyle(color: VineTheme.vineGreen),
         ),
       ),
+    );
+  }
+}
+
+/// Multi-select bottom sheet for choosing account content warning labels.
+class _AccountLabelMultiSelect extends StatefulWidget {
+  const _AccountLabelMultiSelect({required this.selected});
+
+  final Set<ContentLabel> selected;
+
+  @override
+  State<_AccountLabelMultiSelect> createState() =>
+      _AccountLabelMultiSelectState();
+}
+
+class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
+  late Set<ContentLabel> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = Set.of(widget.selected);
+  }
+
+  void _toggle(ContentLabel label) {
+    setState(() {
+      if (_selected.contains(label)) {
+        _selected.remove(label);
+      } else {
+        _selected.add(label);
+      }
+    });
+  }
+
+  void _clearAll() {
+    setState(() {
+      _selected.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      maxChildSize: 0.9,
+      minChildSize: 0.4,
+      expand: false,
+      builder: (context, scrollController) {
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 4),
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: VineTheme.onSurfaceMuted,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Account Content Labels',
+                    style: VineTheme.titleFont(
+                      fontSize: 18,
+                      color: VineTheme.whiteText,
+                    ),
+                  ),
+                  if (_selected.isNotEmpty)
+                    TextButton(
+                      onPressed: _clearAll,
+                      child: const Text(
+                        'Clear All',
+                        style: TextStyle(color: VineTheme.vineGreen),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Select all that apply to your account',
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                itemCount: ContentLabel.values.length,
+                itemBuilder: (context, index) {
+                  final label = ContentLabel.values[index];
+                  final isChecked = _selected.contains(label);
+                  return CheckboxListTile(
+                    value: isChecked,
+                    onChanged: (_) => _toggle(label),
+                    title: Text(
+                      label.displayName,
+                      style: const TextStyle(
+                        color: VineTheme.whiteText,
+                        fontSize: 15,
+                      ),
+                    ),
+                    activeColor: VineTheme.vineGreen,
+                    checkColor: VineTheme.whiteText,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                  );
+                },
+              ),
+            ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(_selected),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: VineTheme.vineGreen,
+                      foregroundColor: VineTheme.whiteText,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      _selected.isEmpty
+                          ? 'Done (No Labels)'
+                          : 'Done (${_selected.length} selected)',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

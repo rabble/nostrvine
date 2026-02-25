@@ -2,8 +2,7 @@
 // ABOUTME: Verifies kind 5 event creation with k tag and deletion history
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
@@ -12,13 +11,20 @@ import 'package:openvine/services/content_deletion_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'content_deletion_service_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
+class _FakeEvent extends Fake implements Event {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeEvent());
+  });
+
   group('ContentDeletionService', () {
-    late MockNostrClient mockNostrService;
-    late MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
     late ContentDeletionService service;
     late SharedPreferences prefs;
     late String testPrivateKey;
@@ -51,13 +57,13 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
 
-      mockNostrService = MockNostrClient();
-      mockAuthService = MockAuthService();
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
 
       // Setup common mocks
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
 
       service = ContentDeletionService(
         nostrService: mockNostrService,
@@ -99,15 +105,15 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => deleteEvent);
 
       when(
-        mockNostrService.publishEvent(any),
+        () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => deleteEvent);
 
       // Act
@@ -122,10 +128,10 @@ void main() {
 
       // Verify createAndSignEvent was called with kind 5
       verify(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 5,
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).called(1);
     });
@@ -147,15 +153,15 @@ void main() {
         );
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => deleteEvent);
 
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => deleteEvent);
 
         // Act
@@ -163,10 +169,10 @@ void main() {
 
         // Assert - verify the tags include 'k' tag
         final captured = verify(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         ).captured;
 
@@ -200,15 +206,15 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => deleteEvent);
 
       when(
-        mockNostrService.publishEvent(any),
+        () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => deleteEvent);
 
       // Act
@@ -240,10 +246,10 @@ void main() {
 
         // Verify createAndSignEvent was NOT called
         verifyNever(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         );
       },
@@ -266,15 +272,18 @@ void main() {
         );
 
         when(
-          mockAuthService.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((_) async => deleteEvent);
 
-        // Even when publishEvent returns null (failure), deletion is saved locally
-        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+        // Even when publishEvent returns null (failure), deletion is saved
+        // locally
+        when(
+          () => mockNostrService.publishEvent(any()),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await service.deleteContent(
@@ -303,15 +312,15 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => deleteEvent);
 
       when(
-        mockNostrService.publishEvent(any),
+        () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => deleteEvent);
 
       // Act

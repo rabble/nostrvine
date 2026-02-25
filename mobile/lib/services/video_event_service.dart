@@ -32,6 +32,7 @@ import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -201,6 +202,7 @@ class VideoEventService extends ChangeNotifier {
   ContentBlocklistService? _blocklistService;
   AgeVerificationService? _ageVerificationService;
   LikesRepository? _likesRepository;
+  ContentFilterService? _contentFilterService;
   final SubscriptionManager _subscriptionManager;
 
   // Like count batching - accumulates video IDs and fetches counts in batches
@@ -311,6 +313,16 @@ class VideoEventService extends ChangeNotifier {
     );
   }
 
+  /// Set the content filter service for per-category Show/Warn/Hide filtering
+  void setContentFilterService(ContentFilterService contentFilterService) {
+    _contentFilterService = contentFilterService;
+    Log.debug(
+      'Content filter service attached to VideoEventService',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+  }
+
   /// Returns true if adult content should be filtered from feeds
   bool get shouldFilterAdultContent =>
       _ageVerificationService?.shouldHideAdultContent ?? false;
@@ -350,7 +362,98 @@ class VideoEventService extends ChangeNotifier {
       }
     }
 
+    // Check for NIP-32 content-warning namespace tag ['L', 'content-warning']
+    for (final tag in event.tags) {
+      if (tag.length >= 2 && tag[0] == 'L' && tag[1] == 'content-warning') {
+        Log.debug(
+          'Filtering event with NIP-32 content-warning label',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+        return true;
+      }
+    }
+
     return false;
+  }
+
+  /// Determine the filter action for an event based on per-category preferences.
+  ///
+  /// Returns:
+  /// - [ContentFilterPreference.hide] → filter from feed entirely
+  /// - [ContentFilterPreference.warn] → keep in feed but show blur overlay
+  /// - [ContentFilterPreference.show] → display normally
+  ///
+  /// Also returns the list of matched label values that triggered the action.
+  (ContentFilterPreference, List<String>) getFilterAction(Event event) {
+    final contentFilterService = _contentFilterService;
+    if (contentFilterService == null) {
+      // Fall back to legacy binary filtering
+      if (shouldFilterEvent(event)) {
+        return (ContentFilterPreference.hide, <String>[]);
+      }
+      return (ContentFilterPreference.show, <String>[]);
+    }
+
+    // Collect all content warning label values from the event
+    final labels = <String>[];
+
+    // Check content-warning tags (NIP-36)
+    for (final tag in event.tags) {
+      if (tag.isNotEmpty && tag[0] == 'content-warning' && tag.length >= 2) {
+        final value = tag[1].toString();
+        if (value.isNotEmpty && !labels.contains(value)) {
+          labels.add(value);
+        }
+      }
+    }
+
+    // Check NIP-32 label tags with content-warning namespace
+    for (final tag in event.tags) {
+      if (tag.length >= 3 &&
+          tag[0] == 'l' &&
+          tag[2].toString() == 'content-warning') {
+        final value = tag[1].toString();
+        if (value.isNotEmpty && !labels.contains(value)) {
+          labels.add(value);
+        }
+      }
+    }
+
+    // Check NSFW/adult hashtags — map to nudity category
+    for (final tag in event.tags) {
+      if (tag.length >= 2 && tag[0] == 't') {
+        final hashtag = tag[1].toString().toLowerCase();
+        if (hashtag == 'nsfw' || hashtag == 'adult') {
+          if (!labels.contains('nudity')) {
+            labels.add('nudity');
+          }
+        }
+      }
+    }
+
+    if (labels.isEmpty) {
+      return (ContentFilterPreference.show, <String>[]);
+    }
+
+    // Get the most restrictive preference for matched labels
+    final preference = contentFilterService.getPreferenceForLabels(labels);
+    return (preference, labels);
+  }
+
+  /// Filter a list of [VideoEvent]s based on the user's content filter
+  /// preferences. Videos matching "hide" labels are removed from the list.
+  /// Videos matching "warn" labels are kept (the UI shows an overlay).
+  List<VideoEvent> filterVideoList(List<VideoEvent> videos) {
+    final service = _contentFilterService;
+    if (service == null) return videos;
+
+    return videos.where((video) {
+      final labels = video.contentWarningLabels;
+      if (labels.isEmpty) return true;
+      final pref = service.getPreferenceForLabels(labels);
+      return pref != ContentFilterPreference.hide;
+    }).toList();
   }
 
   /// Check if a VideoEvent contains adult content based on hashtags and tags
@@ -365,6 +468,11 @@ class VideoEventService extends ChangeNotifier {
 
     // Check for content-warning in rawTags
     if (video.rawTags.containsKey('content-warning')) {
+      return true;
+    }
+
+    // Check for NIP-32 content-warning namespace tag
+    if (video.rawTags['L'] == 'content-warning') {
       return true;
     }
 
@@ -1886,10 +1994,11 @@ class VideoEventService extends ChangeNotifier {
         return;
       }
 
-      // Check if adult content should be filtered (user preference: never show)
-      if (shouldFilterEvent(event)) {
+      // Check content filter action (show/warn/hide) per user preferences
+      final (filterAction, matchedLabels) = getFilterAction(event);
+      if (filterAction == ContentFilterPreference.hide) {
         Log.verbose(
-          'Filtering adult content from event ${event.id}',
+          'Filtering content from event ${event.id}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2169,10 +2278,11 @@ class VideoEventService extends ChangeNotifier {
         return;
       }
 
-      // Check if adult content should be filtered (user preference: never show)
-      if (shouldFilterEvent(event)) {
+      // Check content filter action (show/warn/hide) per user preferences
+      final (histFilterAction, histMatchedLabels) = getFilterAction(event);
+      if (histFilterAction == ContentFilterPreference.hide) {
         Log.verbose(
-          'Filtering adult historical content from event ${event.id}',
+          'Filtering historical content from event ${event.id}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );

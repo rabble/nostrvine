@@ -4,54 +4,71 @@
 // ignore_for_file: invalid_use_of_null_value
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'curated_list_service_query_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CuratedListService - Query Operations', () {
     late CuratedListService service;
-    late MockNostrClient mockNostr;
-    late MockAuthService mockAuth;
+    late _MockNostrClient mockNostr;
+    late _MockAuthService mockAuth;
     late SharedPreferences prefs;
+
+    setUpAll(() {
+      registerFallbackValue(
+        Event.fromJson({
+          'id': 'fallback_event_id',
+          'pubkey':
+              'aabbccdd00112233445566778899aabbccdd00112233445566778899aabbccdd',
+          'created_at': 0,
+          'kind': 1,
+          'tags': <List<String>>[],
+          'content': '',
+          'sig': '',
+        }),
+      );
+      registerFallbackValue(<Filter>[]);
+    });
 
     setUp(() async {
       // CRITICAL: Reset SharedPreferences mock completely for each test
       SharedPreferences.setMockInitialValues({});
 
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
+      mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
       prefs = await SharedPreferences.getInstance();
 
       // Setup common mocks
-      when(mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(
-        mockAuth.currentPublicKeyHex,
+        () => mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
       // Mock successful event publishing
-      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
 
       // Mock subscribeToEvents for relay sync
       when(
-        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       // Mock event creation
       when(
-        mockAuth.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuth.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer(
         (_) async => Event.fromJson({
@@ -123,7 +140,8 @@ void main() {
         expect(results.length, 1);
         expect(results.first.name, 'List 1');
         // TODO(Any): Fix and re-enable these tests
-        // This test fails only when the whole suite is run, likely due to test isolation issues
+        // This test fails only when the whole suite is run, likely due
+        // to test isolation issues
       }, skip: true);
 
       test('is case-insensitive', () async {
@@ -366,57 +384,12 @@ void main() {
     });
 
     group('fetchPublicListsContainingVideo()', () {
-      // TODO(any): Fix and re-enable this test
-      //test('queries Nostr for lists containing specific video', () async {
-      //  // Setup: Create mock kind 30005 events containing the target video
-      //  final targetVideoId = 'target_video_event_id_123456789abcdef';
-      //  final mockListEvent = Event.fromJson({
-      //    'id': 'list_event_id_1',
-      //    'pubkey': 'other_user_pubkey_123456789abcdef',
-      //    'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      //    'kind': 30005,
-      //    'tags': [
-      //      ['d', 'test-list-1'],
-      //      ['title', 'Nature Videos'],
-      //      ['description', 'Beautiful nature content'],
-      //      ['e', targetVideoId],
-      //      ['e', 'other_video_id_123'],
-      //    ],
-      //    'content': '',
-      //    'sig': 'test_sig',
-      //  });
-
-      //  // Setup mock to return list events when queried with #e filter
-      //  when(
-      //    mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
-      //  ).thenAnswer((_) => Stream.fromIterable([mockListEvent]));
-
-      //  // Act
-      //  final lists = await service.fetchPublicListsContainingVideo(
-      //    targetVideoId,
-      //  );
-
-      //  // Assert: Verify filter includes the video ID
-      //  final captured = verify(
-      //    mockNostr.subscribe(captureAny(), onEose: anyNamed('onEose')),
-      //  ).captured;
-      //  expect(captured, isNotEmpty);
-      //  final filters = captured.first as List<Filter>;
-      //  expect(filters[0].kinds, contains(30005));
-      //  expect(filters[0].e, contains(targetVideoId));
-
-      //  // Assert: Results parsed correctly
-      //  expect(lists.length, 1);
-      //  expect(lists.first.name, 'Nature Videos');
-      //  expect(lists.first.videoEventIds, contains(targetVideoId));
-      //});
-
       test('returns empty list when no public lists contain video', () async {
         final targetVideoId = 'orphan_video_id_123456789abcdef';
 
         // Setup mock to return empty stream
         when(
-          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer((_) => Stream.empty());
 
         // Act
@@ -459,7 +432,7 @@ void main() {
 
         // Setup mock to return events progressively
         when(
-          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer(
           (_) => Stream.fromIterable([mockListEvent1, mockListEvent2]),
         );
@@ -538,7 +511,8 @@ void main() {
       });
 
       test('search performance with many lists', () async {
-        // FIXME: Test isolation issue - passes individually, fails in batch
+        // FIXME: Test isolation issue - passes individually,
+        // fails in batch
         // Create 50 lists
         for (var i = 0; i < 50; i++) {
           await service.createList(
@@ -567,9 +541,11 @@ void main() {
         // Setup: Mock events arriving one at a time
         final event1 = Event.fromJson({
           'id':
-              'event1_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
+              'event1_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345678',
           'pubkey':
-              'pubkey1_123456789abcdef0123456789abcdef0123456789abcdef012345',
+              'pubkey1_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -583,9 +559,11 @@ void main() {
 
         final event2 = Event.fromJson({
           'id':
-              'event2_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
+              'event2_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345678',
           'pubkey':
-              'pubkey2_123456789abcdef0123456789abcdef0123456789abcdef012345',
+              'pubkey2_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -599,7 +577,7 @@ void main() {
 
         // Mock subscribe to return events as a stream
         when(
-          mockNostr.subscribe(any),
+          () => mockNostr.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([event1, event2]));
 
         // Act: Collect streamed results
@@ -618,9 +596,11 @@ void main() {
       test('deduplicates by d-tag keeping newest', () async {
         final olderEvent = Event.fromJson({
           'id':
-              'older_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
+              'older_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef0123456',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'created_at':
               DateTime.now()
                   .subtract(const Duration(hours: 1))
@@ -638,9 +618,11 @@ void main() {
 
         final newerEvent = Event.fromJson({
           'id':
-              'newer_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
+              'newer_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef0123456',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -654,13 +636,15 @@ void main() {
 
         // Send older first, then newer
         when(
-          mockNostr.subscribe(any),
+          () => mockNostr.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([olderEvent, newerEvent]));
 
         List<CuratedList>? finalLists;
         await for (final lists in service.streamPublicListsFromRelays()) {
           finalLists = lists;
-          if (lists.isNotEmpty && lists.first.name == 'New Title') break;
+          if (lists.isNotEmpty && lists.first.name == 'New Title') {
+            break;
+          }
         }
 
         // Should only have one list with the newer title
@@ -671,9 +655,11 @@ void main() {
       test('filters out empty lists', () async {
         final emptyList = Event.fromJson({
           'id':
-              'empty_id_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'empty_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -687,9 +673,11 @@ void main() {
 
         final nonEmptyList = Event.fromJson({
           'id':
-              'nonempty_id_123456789abcdef0123456789abcdef0123456789abcdef0123',
+              'nonempty_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef0123',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -702,7 +690,7 @@ void main() {
         });
 
         when(
-          mockNostr.subscribe(any),
+          () => mockNostr.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([emptyList, nonEmptyList]));
 
         List<CuratedList>? finalLists;
@@ -719,9 +707,11 @@ void main() {
       test('supports pagination with until parameter', () async {
         final oldEvent = Event.fromJson({
           'id':
-              'old_event_123456789abcdef0123456789abcdef0123456789abcdef012345',
+              'old_event_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'created_at': DateTime(2024, 1, 1).millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -734,7 +724,7 @@ void main() {
         });
 
         when(
-          mockNostr.subscribe(any),
+          () => mockNostr.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([oldEvent]));
 
         // Act: Request with until date
@@ -748,7 +738,7 @@ void main() {
         }
 
         // Verify subscribe was called (filter construction is internal)
-        verify(mockNostr.subscribe(any)).called(1);
+        verify(() => mockNostr.subscribe(any())).called(1);
         expect(results?.isNotEmpty, true);
       });
     });

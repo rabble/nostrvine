@@ -13,6 +13,7 @@ class SubtitleOverlay extends ConsumerWidget {
     required this.video,
     required this.positionMs,
     required this.visible,
+    this.bottomOffset = 80,
     super.key,
   });
 
@@ -20,15 +21,21 @@ class SubtitleOverlay extends ConsumerWidget {
   final int positionMs;
   final bool visible;
 
+  /// Distance from the bottom of the parent Stack.
+  final double bottomOffset;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!visible || !video.hasSubtitles) return const SizedBox.shrink();
+    if (!visible || !video.hasSubtitles) {
+      return const SizedBox.shrink();
+    }
 
     final cuesAsync = ref.watch(
       subtitleCuesProvider(
         videoId: video.id,
         textTrackRef: video.textTrackRef,
         textTrackContent: video.textTrackContent,
+        sha256: video.sha256,
       ),
     );
 
@@ -38,9 +45,9 @@ class SubtitleOverlay extends ConsumerWidget {
         if (currentCue == null) return const SizedBox.shrink();
 
         return Positioned(
-          bottom: 80,
+          bottom: bottomOffset,
           left: 16,
-          right: 16,
+          right: 80,
           child: Center(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -61,8 +68,8 @@ class SubtitleOverlay extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      loading: SizedBox.shrink,
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 
