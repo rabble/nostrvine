@@ -1,58 +1,53 @@
-// ABOUTME: Comprehensive share menu for videos with content reporting, user sharing, and list management
-// ABOUTME: Provides Apple-compliant reporting, NIP-51 list management, and social sharing features
+// ABOUTME: Share menu for videos with list management, bookmarks, and social sharing
+// ABOUTME: Provides NIP-51 list management, bookmark sets, follow sets, and sharing features
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/list_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/social_service.dart';
-import 'package:openvine/services/video_sharing_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:openvine/widgets/user_avatar.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-// NOTE: Subtitle generation temporarily disabled due to Android build issues
-// See: https://github.com/divinevideo/divine-mobile/issues/1568
-// import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
-// import 'package:openvine/widgets/subtitle_generation_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 
-// TODO(any): Move this to a reusable widget
-Widget get _buildLoadingIndicator => Padding(
-  padding: const EdgeInsets.all(12),
-  child: Center(
-    child: const SizedBox(
-      width: 16,
-      height: 16,
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        color: VineTheme.secondaryText,
+import 'package:openvine/widgets/add_to_list_dialog.dart';
+import 'package:openvine/widgets/report_content_dialog.dart';
+
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(12),
+      child: Center(
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: VineTheme.secondaryText,
+          ),
+        ),
       ),
-    ),
-  ),
-);
+    );
+  }
+}
 
 /// Comprehensive share menu for videos
 class ShareVideoMenu extends ConsumerStatefulWidget {
@@ -109,8 +104,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   const SizedBox(height: 24),
                   _buildListSection(),
                   const SizedBox(height: 24),
-                  _buildPublicListsSection(),
-                  const SizedBox(height: 24),
                   _buildBookmarkSection(),
                   const SizedBox(height: 24),
                   _buildFollowSetSection(),
@@ -118,10 +111,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                     const SizedBox(height: 24),
                     _buildDeleteSection(),
                   ],
-                  const SizedBox(height: 24),
-                  _buildReportSection(),
-                  const SizedBox(height: 24),
-                  _buildAdvancedSection(),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -135,7 +124,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   Widget _buildHeader() => Container(
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      border: Border(bottom: BorderSide(color: Colors.grey.shade800, width: 1)),
+      border: Border(
+        bottom: BorderSide(color: VineTheme.cardBackground, width: 1),
+      ),
     ),
     child: Row(
       children: [
@@ -252,7 +243,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           showDialog(
             context: context,
             useRootNavigator: true,
-            builder: (context) => const _ReportConfirmationDialog(),
+            builder: (context) => const ReportConfirmationDialog(),
           );
         } else {
           // Show error snackbar
@@ -407,11 +398,11 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 ),
               );
             },
-            loading: () => _buildLoadingIndicator,
+            loading: () => const _LoadingIndicator(),
             error: (_, __) => const SizedBox.shrink(),
           );
         },
-        loading: () => _buildLoadingIndicator,
+        loading: () => const _LoadingIndicator(),
         error: (_, __) => const SizedBox.shrink(),
       );
     },
@@ -430,20 +421,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       ),
       const SizedBox(height: 12),
 
-      // Send to user
-      _buildActionTile(
-        icon: Icons.person_add,
-        title: 'Send to Viner',
-        subtitle: 'Share privately with another user',
-        onTap: _showSendToUserDialog,
-      ),
-
-      const SizedBox(height: 8),
-
       // External share (native share sheet includes copy option)
       _buildActionTile(
         icon: Icons.share,
-        title: 'Share',
+        title: 'Share via other apps',
         subtitle: 'Share via other apps or copy link',
         onTap: _shareExternally,
       ),
@@ -481,63 +462,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       ],
     ],
   );
-
-  // NOTE: Subtitle generation temporarily disabled due to Android build issues
-  // See: https://github.com/divinevideo/divine-mobile/issues/1568
-  // Widget _buildSubtitleSection() => Column(
-  //   crossAxisAlignment: CrossAxisAlignment.start,
-  //   children: [
-  //     const Text(
-  //       'Subtitles',
-  //       style: TextStyle(
-  //         color: VineTheme.whiteText,
-  //         fontSize: 16,
-  //         fontWeight: FontWeight.w600,
-  //       ),
-  //     ),
-  //     const SizedBox(height: 12),
-  //     _buildActionTile(
-  //       icon: Icons.closed_caption,
-  //       title: widget.video.hasSubtitles
-  //           ? 'Regenerate Subtitles'
-  //           : 'Generate Subtitles',
-  //       subtitle: 'Auto-transcribe speech with AI',
-  //       onTap: () => _generateSubtitles(context),
-  //     ),
-  //   ],
-  // );
-
-  // Future<void> _generateSubtitles(BuildContext ctx) async {
-  //   final cache = ref.read(mediaCacheProvider);
-  //   final cachedFile = cache.getCachedFileSync(widget.video.id);
-
-  //   if (cachedFile == null) {
-  //     if (mounted) {
-  //       ScaffoldMessenger.of(ctx).showSnackBar(
-  //         const SnackBar(
-  //           content: Text(
-  //             'Video not cached locally. Play the video first, then try again.',
-  //           ),
-  //           duration: Duration(seconds: 3),
-  //         ),
-  //       );
-  //     }
-  //     return;
-  //   }
-
-  //   _safePop(ctx);
-
-  //   if (!ctx.mounted) return;
-
-  //   await showModalBottomSheet<void>(
-  //     context: ctx,
-  //     backgroundColor: VineTheme.backgroundColor,
-  //     builder: (_) => SubtitleGenerationSheet(
-  //       video: widget.video,
-  //       videoFilePath: cachedFile.path,
-  //     ),
-  //   );
-  // }
 
   Widget _buildListSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -646,7 +570,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 ),
               );
             },
-            loading: () => _buildLoadingIndicator,
+            loading: () => const _LoadingIndicator(),
             error: (_, __) => const SizedBox.shrink(),
           );
         },
@@ -704,10 +628,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       }
     }
   }
-
-  /// Build public lists section showing other users' lists containing this video
-  Widget _buildPublicListsSection() =>
-      _PublicListsSection(videoId: widget.video.id);
 
   /// Build bookmark section for quick bookmarking
   Widget _buildBookmarkSection() => Consumer(
@@ -787,115 +707,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         ],
       );
     },
-  );
-
-  Widget _buildReportSection() => Consumer(
-    builder: (context, ref, child) {
-      final reportServiceAsync = ref.watch(contentReportingServiceProvider);
-
-      return reportServiceAsync.when(
-        data: (reportService) {
-          final hasReported = reportService.hasBeenReported(widget.video.id);
-
-          // Wrap in orange warning container
-          return Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.withAlpha(26), // 0.1 opacity
-              border: Border.all(
-                color: Colors.orange.withAlpha(77), // 0.3 opacity
-                width: 1,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Safety Actions',
-                  style: TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildActionTile(
-                  icon: hasReported ? Icons.flag : Icons.flag_outlined,
-                  title: hasReported ? 'Already Reported' : 'Report Content',
-                  subtitle: hasReported
-                      ? 'You have reported this content'
-                      : 'Report for policy violations',
-                  iconColor: hasReported ? Colors.red : Colors.orange,
-                  onTap: hasReported ? null : _showReportDialog,
-                ),
-                // Add Block User action (only for other users' content)
-                if (!_isUserOwnContent()) ...[
-                  const SizedBox(height: 8),
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final blocklistService = ref.watch(
-                        contentBlocklistServiceProvider,
-                      );
-                      final isBlocked = blocklistService.isBlocked(
-                        widget.video.pubkey,
-                      );
-                      return _buildActionTile(
-                        icon: isBlocked ? Icons.block : Icons.block_outlined,
-                        title: isBlocked
-                            ? 'Unblock User'
-                            : 'Block @${NostrKeyUtils.truncateNpub(widget.video.pubkey)}',
-                        subtitle: isBlocked
-                            ? 'Show content from this user'
-                            : 'Hide content from this user',
-                        iconColor: Colors.orange,
-                        onTap: () => _handleBlockUser(ref, isBlocked),
-                      );
-                    },
-                  ),
-                ],
-              ],
-            ),
-          );
-        },
-        loading: () => _buildLoadingIndicator,
-        error: (_, __) => const SizedBox.shrink(),
-      );
-    },
-  );
-
-  /// Build advanced section for developer/power-user features
-  Widget _buildAdvancedSection() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Advanced',
-        style: TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      const SizedBox(height: 12),
-
-      // View Source
-      _buildActionTile(
-        icon: Icons.code,
-        title: 'View Source',
-        subtitle: 'View raw Nostr event JSON',
-        onTap: _showViewSourceDialog,
-      ),
-
-      const SizedBox(height: 8),
-
-      // Get Event ID
-      _buildActionTile(
-        icon: Icons.fingerprint,
-        title: 'Copy Event ID',
-        subtitle: 'Copy Nostr event ID to clipboard',
-        onTap: _copyEventId,
-      ),
-    ],
   );
 
   Widget _buildActionTile({
@@ -993,13 +804,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     );
   }
 
-  void _showSendToUserDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => _SendToUserDialog(video: widget.video),
-    );
-  }
-
   Future<void> _shareExternally() async {
     try {
       final sharingService = ref.read(videoSharingServiceProvider);
@@ -1045,48 +849,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     );
   }
 
-  /// Show dialog with raw Nostr event JSON
-  void _showViewSourceDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => _ViewSourceDialog(video: widget.video),
-    );
-  }
-
-  /// Copy event ID to clipboard as nevent (NIP-19 bech32 encoded)
-  Future<void> _copyEventId() async {
-    try {
-      final nevent = NIP19Tlv.encodeNevent(
-        Nevent(
-          id: widget.video.id,
-          author: widget.video.pubkey,
-          relays: ['wss://relay.divine.video'],
-        ),
-      );
-      await Clipboard.setData(ClipboardData(text: nevent));
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Event ID copied to clipboard'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        _safePop(context);
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to copy event ID: $e',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-    }
-  }
-
   Future<void> _showCreateListDialog() async {
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => _CreateListDialog(video: widget.video),
+      builder: (context) => CreateListDialog(video: widget.video),
     );
 
     // If list was created successfully, handle closing share menu and showing snackbar
@@ -1102,68 +868,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   void _showSelectListDialog() {
     showDialog(
       context: context,
-      builder: (context) => _SelectListDialog(video: widget.video),
-    );
-  }
-
-  void _handleBlockUser(WidgetRef ref, bool currentlyBlocked) {
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final nostrClient = ref.read(nostrServiceProvider);
-
-    if (currentlyBlocked) {
-      // Unblock without confirmation
-      blocklistService.unblockUser(widget.video.pubkey);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('User unblocked')));
-      }
-    } else {
-      // Block with confirmation
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: VineTheme.cardBackground,
-          title: const Text(
-            'Block User?',
-            style: TextStyle(color: VineTheme.whiteText),
-          ),
-          content: const Text(
-            'You won\'t see their content in feeds. They won\'t be notified.',
-            style: TextStyle(color: Colors.grey),
-          ),
-          actions: [
-            TextButton(
-              onPressed: context.pop,
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-            ),
-            TextButton(
-              onPressed: () {
-                blocklistService.blockUser(
-                  widget.video.pubkey,
-                  ourPubkey: nostrClient.publicKey,
-                );
-                context.pop();
-                if (mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(const SnackBar(content: Text('User blocked')));
-                }
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Block'),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  void _showReportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) =>
-          ReportContentDialog(video: widget.video, isFromShareMenu: true),
+      builder: (context) => SelectListDialog(video: widget.video),
     );
   }
 
@@ -1435,817 +1140,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         );
       }
     }
-  }
-}
-
-/// Dialog for sending video to specific user
-class _SendToUserDialog extends ConsumerStatefulWidget {
-  const _SendToUserDialog({required this.video});
-  final VideoEvent video;
-
-  @override
-  ConsumerState<_SendToUserDialog> createState() => _SendToUserDialogState();
-}
-
-class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
-  final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _messageController = TextEditingController();
-  bool _isSearching = false;
-  List<ShareableUser> _searchResults = [];
-  List<ShareableUser> _contacts = [];
-  bool _contactsLoaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserContacts();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: VineTheme.cardBackground,
-    title: const Text(
-      'Send to Viner',
-      style: TextStyle(color: VineTheme.whiteText),
-    ),
-    content: SizedBox(
-      width: double.maxFinite,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _searchController,
-            enableInteractiveSelection: true,
-            style: const TextStyle(color: VineTheme.whiteText),
-            decoration: const InputDecoration(
-              hintText: 'Search by name, npub, or pubkey...',
-              hintStyle: TextStyle(color: VineTheme.secondaryText),
-              prefixIcon: Icon(Icons.search, color: VineTheme.secondaryText),
-            ),
-            onChanged: (value) {
-              Log.info(
-                '🔍 TextField onChanged fired with value: "$value"',
-                name: 'ShareVideoMenu',
-                category: LogCategory.ui,
-              );
-              _searchUsers(value);
-            },
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _messageController,
-            enableInteractiveSelection: true,
-            style: const TextStyle(color: VineTheme.whiteText),
-            decoration: const InputDecoration(
-              hintText: 'Add a personal message (optional)',
-              hintStyle: TextStyle(color: VineTheme.secondaryText),
-            ),
-            maxLines: 2,
-          ),
-          const SizedBox(height: 16),
-          // Show contacts or search results
-          if (!_contactsLoaded) ...[
-            const Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
-            ),
-          ] else if (_searchController.text.isEmpty &&
-              _contacts.isNotEmpty) ...[
-            // Show user's contacts when not searching
-            const Text(
-              'Your Contacts',
-              style: TextStyle(
-                color: VineTheme.whiteText,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 200,
-              child: ListView.builder(
-                itemCount: _contacts.length,
-                itemBuilder: (context, index) =>
-                    _buildUserTile(_contacts[index]),
-              ),
-            ),
-          ] else if (_searchController.text.isEmpty && _contacts.isEmpty) ...[
-            // No contacts found
-            const Center(
-              child: Text(
-                'No contacts found. Start following people to see them here.',
-                style: TextStyle(color: VineTheme.secondaryText),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ] else if (_searchController.text.isNotEmpty) ...[
-            // Show search results
-            if (_isSearching) ...[
-              const Center(
-                child: CircularProgressIndicator(color: VineTheme.vineGreen),
-              ),
-            ] else if (_searchResults.isNotEmpty) ...[
-              const Text(
-                'Search Results',
-                style: TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 200,
-                child: ListView.builder(
-                  itemCount: _searchResults.length,
-                  itemBuilder: (context, index) =>
-                      _buildUserTile(_searchResults[index]),
-                ),
-              ),
-            ] else ...[
-              const Center(
-                child: Text(
-                  'No users found. Try searching by name or public key.',
-                  style: TextStyle(color: VineTheme.secondaryText),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ],
-        ],
-      ),
-    ),
-    actions: [TextButton(onPressed: context.pop, child: const Text('Cancel'))],
-  );
-
-  /// Load user's contacts from their follow list (NIP-02)
-  Future<void> _loadUserContacts() async {
-    try {
-      final followRepository = ref.read(followRepositoryProvider);
-      final userProfileService = ref.read(userProfileServiceProvider);
-
-      // Get the user's follow list
-      final followList = followRepository?.followingPubkeys ?? [];
-      final contacts = <ShareableUser>[];
-
-      // Convert follows to ShareableUser objects with profile data
-      for (final pubkey in followList) {
-        try {
-          // Fetch profile if not cached
-          if (!userProfileService.hasProfile(pubkey)) {
-            userProfileService.fetchProfile(pubkey);
-          }
-
-          final profile = userProfileService.getCachedProfile(pubkey);
-          contacts.add(
-            ShareableUser(
-              pubkey: pubkey,
-              displayName: profile?.bestDisplayName,
-              picture: profile?.picture,
-            ),
-          );
-        } catch (e) {
-          Log.error(
-            'Error loading contact profile $pubkey: $e',
-            name: 'ShareVideoMenu',
-            category: LogCategory.ui,
-          );
-          // Still add the contact without profile data
-          contacts.add(
-            ShareableUser(pubkey: pubkey, displayName: null, picture: null),
-          );
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _contacts = contacts;
-          _contactsLoaded = true;
-        });
-      }
-    } catch (e) {
-      Log.error(
-        'Error loading user contacts: $e',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-      if (mounted) {
-        setState(() {
-          _contacts = [];
-          _contactsLoaded = true;
-        });
-      }
-    }
-  }
-
-  /// Build a user tile for contacts or search results
-  Widget _buildUserTile(ShareableUser user) {
-    // Get user profile to check for nip05
-    final userProfileService = ref.read(userProfileServiceProvider);
-    final profile = userProfileService.getCachedProfile(user.pubkey);
-
-    // Display nip05 if available, otherwise npub (never show raw hex)
-    // Use normalizeToNpub to convert hex to npub format
-    final displayId =
-        profile?.nip05 ?? normalizeToNpub(user.pubkey) ?? user.pubkey;
-
-    return ListTile(
-      leading: UserAvatar(imageUrl: user.picture, size: 40),
-      title: UserName.fromPubKey(
-        user.pubkey,
-        style: const TextStyle(color: VineTheme.whiteText),
-        anonymousName: 'Anonymous',
-      ),
-      subtitle: Text(
-        displayId,
-        style: const TextStyle(color: VineTheme.secondaryText),
-        overflow: TextOverflow.ellipsis,
-      ),
-      onTap: () => _sendToUser(user),
-      dense: true,
-    );
-  }
-
-  Future<void> _searchUsers(String query) async {
-    Log.info(
-      '🔍 Search users called with query: "$query"',
-      name: 'ShareVideoMenu',
-      category: LogCategory.ui,
-    );
-
-    if (query.trim().isEmpty) {
-      Log.debug(
-        'Search query empty, clearing results',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-      setState(() => _searchResults = []);
-      return;
-    }
-
-    setState(() => _isSearching = true);
-
-    try {
-      final userProfileService = ref.read(userProfileServiceProvider);
-      final searchResults = <ShareableUser>[];
-
-      // Try to normalize the query as a public identifier (npub/nprofile/hex)
-      // If it's not a valid public identifier, use the query as is (it's likely
-      // a username or display name)
-      final pubKey = normalizeToHex(query);
-
-      Log.debug(
-        'Normalized query to pubkey: $pubKey',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-
-      if (pubKey != null) {
-        if (!userProfileService.hasProfile(pubKey)) {
-          try {
-            await userProfileService.fetchProfile(pubKey);
-          } catch (e) {
-            Log.error(
-              'Error fetching profile $pubKey: $e',
-              name: 'ShareVideoMenu',
-              category: LogCategory.ui,
-            );
-          }
-        }
-
-        final profile = userProfileService.getCachedProfile(pubKey);
-        searchResults.add(
-          ShareableUser(
-            pubkey: pubKey,
-            displayName: profile?.bestDisplayName,
-            picture: profile?.picture,
-          ),
-        );
-      } else {
-        try {
-          final users = await userProfileService.searchUsers(query);
-          searchResults.addAll(
-            users.map(
-              (user) => ShareableUser(
-                pubkey: user.pubkey,
-                displayName: user.bestDisplayName,
-                picture: user.picture,
-              ),
-            ),
-          );
-        } catch (e) {
-          Log.error(
-            'Error searching users: $e',
-            name: 'ShareVideoMenu',
-            category: LogCategory.ui,
-          );
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _searchResults = searchResults;
-          _isSearching = false;
-        });
-      }
-    } catch (e) {
-      Log.error(
-        'Error searching users: $e',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-      if (mounted) {
-        setState(() => _isSearching = false);
-      }
-    }
-  }
-
-  Future<void> _sendToUser(ShareableUser user) async {
-    try {
-      final sharingService = ref.read(videoSharingServiceProvider);
-      final result = await sharingService.shareVideoWithUser(
-        video: widget.video,
-        recipientPubkey: user.pubkey,
-        personalMessage: _messageController.text.trim().isEmpty
-            ? null
-            : _messageController.text.trim(),
-      );
-
-      if (mounted) {
-        context.pop(); // Close dialog
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              result.success
-                  ? 'Video sent to ${user.displayName ?? 'user'}'
-                  : 'Failed to send video: ${result.error}',
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to send video: $e',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    _messageController.dispose();
-    super.dispose();
-  }
-}
-
-/// Dialog for creating new curated list
-class _CreateListDialog extends ConsumerStatefulWidget {
-  const _CreateListDialog({required this.video});
-  final VideoEvent video;
-
-  @override
-  ConsumerState<_CreateListDialog> createState() => _CreateListDialogState();
-}
-
-class _CreateListDialogState extends ConsumerState<_CreateListDialog> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  bool _isPublic = true;
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: VineTheme.cardBackground,
-    title: const Text(
-      'Create New List',
-      style: TextStyle(color: VineTheme.whiteText),
-    ),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextField(
-          controller: _nameController,
-          enableInteractiveSelection: true,
-          style: const TextStyle(color: VineTheme.whiteText),
-          decoration: const InputDecoration(
-            labelText: 'List Name',
-            labelStyle: TextStyle(color: VineTheme.secondaryText),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _descriptionController,
-          enableInteractiveSelection: true,
-          style: const TextStyle(color: VineTheme.whiteText),
-          decoration: const InputDecoration(
-            labelText: 'Description (optional)',
-            labelStyle: TextStyle(color: VineTheme.secondaryText),
-          ),
-          maxLines: 2,
-        ),
-        const SizedBox(height: 16),
-        SwitchListTile(
-          title: const Text(
-            'Public List',
-            style: TextStyle(color: VineTheme.whiteText),
-          ),
-          subtitle: const Text(
-            'Others can follow and see this list',
-            style: TextStyle(color: VineTheme.secondaryText),
-          ),
-          value: _isPublic,
-          onChanged: (value) => setState(() => _isPublic = value),
-        ),
-      ],
-    ),
-    actions: [
-      TextButton(onPressed: context.pop, child: const Text('Cancel')),
-      TextButton(onPressed: _createList, child: const Text('Create')),
-    ],
-  );
-
-  Future<void> _createList() async {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) return;
-
-    try {
-      final listService = await ref
-          .read(curatedListsStateProvider.notifier)
-          .service;
-      final newList = await listService?.createList(
-        name: name,
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
-        isPublic: _isPublic,
-      );
-
-      if (newList != null && mounted) {
-        // Add the video to the new list
-        await listService?.addVideoToList(newList.id, widget.video.id);
-
-        if (mounted) {
-          // Close dialog and return the list name
-          context.pop();
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to create list: $e',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to create list'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-        // Return null to indicate failure
-        context.pop();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-}
-
-/// Dialog for selecting existing list
-class _SelectListDialog extends StatelessWidget {
-  const _SelectListDialog({required this.video});
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context) => Consumer(
-    builder: (context, ref, child) {
-      final listServiceAsync = ref.watch(curatedListsStateProvider);
-
-      return listServiceAsync.when(
-        data: (lists) {
-          final availableLists = lists.toList();
-
-          return AlertDialog(
-            backgroundColor: VineTheme.cardBackground,
-            title: const Text(
-              'Add to List',
-              style: TextStyle(color: VineTheme.whiteText),
-            ),
-            content: SizedBox(
-              width: double.maxFinite,
-              height: 300,
-              child: ListView.builder(
-                itemCount: availableLists.length,
-                itemBuilder: (context, index) {
-                  final list = availableLists[index];
-                  final isInList = list.videoEventIds.contains(video.id);
-
-                  return ListTile(
-                    leading: Icon(
-                      isInList ? Icons.check_circle : Icons.playlist_play,
-                      color: isInList
-                          ? VineTheme.vineGreen
-                          : VineTheme.whiteText,
-                    ),
-                    title: Text(
-                      list.name,
-                      style: const TextStyle(color: VineTheme.whiteText),
-                    ),
-                    subtitle: Text(
-                      '${list.videoEventIds.length} videos',
-                      style: const TextStyle(color: VineTheme.secondaryText),
-                    ),
-                    onTap: () => _toggleVideoInList(
-                      context,
-                      ref.read(curatedListsStateProvider.notifier).service!,
-                      list,
-                      isInList,
-                    ),
-                  );
-                },
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: context.pop, child: const Text('Done')),
-            ],
-          );
-        },
-        loading: () => _buildLoadingIndicator,
-        error: (_, __) => const Center(child: Text('Error loading lists')),
-      );
-    },
-  );
-
-  Future<void> _toggleVideoInList(
-    BuildContext context,
-    CuratedListService listService,
-    CuratedList list,
-    bool isCurrentlyInList,
-  ) async {
-    try {
-      bool success;
-      if (isCurrentlyInList) {
-        success = await listService.removeVideoFromList(list.id, video.id);
-      } else {
-        success = await listService.addVideoToList(list.id, video.id);
-      }
-
-      if (success && context.mounted) {
-        final message = isCurrentlyInList
-            ? 'Removed from ${list.name}'
-            : 'Added to ${list.name}';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to toggle video in list: $e',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-    }
-  }
-}
-
-/// Dialog for reporting content
-/// Public report content dialog that can be used from anywhere
-class ReportContentDialog extends ConsumerStatefulWidget {
-  const ReportContentDialog({
-    super.key,
-    required this.video,
-    this.isFromShareMenu = false,
-  });
-  final VideoEvent video;
-  final bool isFromShareMenu;
-
-  @override
-  ConsumerState<ReportContentDialog> createState() =>
-      ReportContentDialogState();
-}
-
-class ReportContentDialogState extends ConsumerState<ReportContentDialog> {
-  ContentFilterReason? _selectedReason;
-  final TextEditingController _detailsController = TextEditingController();
-  bool _blockUser = false;
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: VineTheme.cardBackground,
-    title: const Text(
-      'Report Content',
-      style: TextStyle(color: VineTheme.whiteText),
-    ),
-    content: SizedBox(
-      width: double.maxFinite,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Why are you reporting this content?',
-              style: TextStyle(color: VineTheme.whiteText),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Divine will act on content reports within 24 hours by removing the content and ejecting the user who provided the offending content.',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            const SizedBox(height: 16),
-            RadioGroup<ContentFilterReason>(
-              groupValue: _selectedReason,
-              onChanged: (value) => setState(() => _selectedReason = value),
-              child: Column(
-                children: ContentFilterReason.values
-                    .map(
-                      (reason) => RadioListTile<ContentFilterReason>(
-                        title: Text(
-                          _getReasonDisplayName(reason),
-                          style: const TextStyle(color: VineTheme.whiteText),
-                        ),
-                        value: reason,
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _detailsController,
-              enableInteractiveSelection: true,
-              style: const TextStyle(color: VineTheme.whiteText),
-              decoration: const InputDecoration(
-                labelText: 'Additional details (optional)',
-                labelStyle: TextStyle(color: VineTheme.secondaryText),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 8),
-            CheckboxListTile(
-              title: const Text(
-                'Block this user',
-                style: TextStyle(color: VineTheme.whiteText),
-              ),
-              value: _blockUser,
-              onChanged: (value) => setState(() => _blockUser = value ?? false),
-              controlAffinity: ListTileControlAffinity.leading,
-            ),
-          ],
-        ),
-      ),
-    ),
-    actions: [
-      TextButton(onPressed: context.pop, child: const Text('Cancel')),
-      TextButton(onPressed: _handleSubmitReport, child: const Text('Report')),
-    ],
-  );
-
-  void _handleSubmitReport() {
-    if (_selectedReason == null) {
-      // Show error when no reason selected (Apple requires button to be visible)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a reason for reporting this content'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-    _submitReport();
-  }
-
-  String _getReasonDisplayName(ContentFilterReason reason) {
-    switch (reason) {
-      case ContentFilterReason.spam:
-        return 'Spam or Unwanted Content';
-      case ContentFilterReason.harassment:
-        return 'Harassment, Bullying, or Threats';
-      case ContentFilterReason.violence:
-        return 'Violent or Extremist Content';
-      case ContentFilterReason.sexualContent:
-        return 'Sexual or Adult Content';
-      case ContentFilterReason.copyright:
-        return 'Copyright Violation';
-      case ContentFilterReason.falseInformation:
-        return 'False Information';
-      case ContentFilterReason.csam:
-        return 'Child Safety Violation';
-      case ContentFilterReason.aiGenerated:
-        return 'AI-Generated Content';
-      case ContentFilterReason.other:
-        return 'Other Policy Violation';
-    }
-  }
-
-  Future<void> _submitReport() async {
-    if (_selectedReason == null) return;
-
-    try {
-      final reportService = await ref.read(
-        contentReportingServiceProvider.future,
-      );
-      final result = await reportService.reportContent(
-        eventId: widget.video.id,
-        authorPubkey: widget.video.pubkey,
-        reason: _selectedReason!,
-        details: _detailsController.text.trim().isEmpty
-            ? _getReasonDisplayName(_selectedReason!)
-            : _detailsController.text.trim(),
-      );
-
-      if (mounted) {
-        context.pop(); // Close report dialog
-        if (widget.isFromShareMenu) {
-          context.pop(); // Close share menu (only if opened from share menu)
-        }
-
-        if (result.success) {
-          // Block user if checkbox was checked - publish proper Nostr events
-          if (_blockUser) {
-            // 1. Report the USER (creates kind 1984 for user harassment/abuse)
-            await reportService.reportUser(
-              userPubkey: widget.video.pubkey,
-              reason: _selectedReason!,
-              details:
-                  'User blocked for ${_getReasonDisplayName(_selectedReason!)}',
-              relatedEventIds: [widget.video.id],
-            );
-
-            // 2. Add to mute list (publishes kind 10000 NIP-51 mute list)
-            final muteService = await ref.read(muteServiceProvider.future);
-            await muteService.muteUser(
-              widget.video.pubkey,
-              reason:
-                  'Reported and blocked for ${_getReasonDisplayName(_selectedReason!)}',
-            );
-
-            // 3. Also add to local blocklist for immediate filtering
-            final blocklistService = ref.read(contentBlocklistServiceProvider);
-            final nostrClient = ref.read(nostrServiceProvider);
-            blocklistService.blockUser(
-              widget.video.pubkey,
-              ourPubkey: nostrClient.publicKey,
-            );
-
-            Log.info(
-              'User blocked with Nostr events: kind 1984 user report + kind 10000 mute list: ${widget.video.pubkey}',
-              name: 'ShareVideoMenu',
-              category: LogCategory.ui,
-            );
-          }
-
-          // Show success confirmation dialog using root navigator
-          showDialog(
-            context: context,
-            useRootNavigator: true,
-            builder: (context) => const _ReportConfirmationDialog(),
-          );
-        } else {
-          // Show error snackbar
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to report content: ${result.error}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to submit report: $e',
-        name: 'ShareVideoMenu',
-        category: LogCategory.ui,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to report content: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _detailsController.dispose();
-    super.dispose();
   }
 }
 
@@ -2632,10 +1526,54 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       // Required 'd' tag - must use the same identifier
       tags.add(['d', widget.video.stableId]);
 
-      // Build imeta tag components (preserve existing media data)
+      // Extract ALL valid HTTP video URLs from the original imeta tag.
+      // The original event may have multiple URL entries (streaming MP4,
+      // HLS, R2 fallback, etc.) which must all be preserved.
+      final videoUrls = <String>[];
+      for (final tag in widget.video.nostrEventTags) {
+        if (tag.isEmpty || tag[0] != 'imeta') continue;
+        if (tag.length > 1 && tag[1].contains(' ')) {
+          // Old imeta format: ['imeta', 'url https://...', 'm video/mp4', ...]
+          for (var i = 1; i < tag.length; i++) {
+            final spaceIdx = tag[i].indexOf(' ');
+            if (spaceIdx > 0) {
+              final key = tag[i].substring(0, spaceIdx);
+              final value = tag[i].substring(spaceIdx + 1);
+              if (key == 'url' &&
+                  _isHttpUrl(value) &&
+                  !videoUrls.contains(value)) {
+                videoUrls.add(value);
+              }
+            }
+          }
+        } else {
+          // New imeta format: ['imeta', 'url', 'https://...', 'm', 'video/mp4', ...]
+          for (var i = 1; i < tag.length - 1; i += 2) {
+            if (tag[i] == 'url' &&
+                _isHttpUrl(tag[i + 1]) &&
+                !videoUrls.contains(tag[i + 1])) {
+              videoUrls.add(tag[i + 1]);
+            }
+          }
+        }
+      }
+
+      // Fallback: if nostrEventTags is empty (e.g., loaded from JSON cache
+      // where nostrEventTags is not serialized), use the single videoUrl.
+      if (videoUrls.isEmpty && _isHttpUrl(widget.video.videoUrl)) {
+        videoUrls.add(widget.video.videoUrl!);
+      }
+
+      // Refuse to republish if no valid HTTP video URLs can be preserved.
+      // This prevents corrupt events with local file paths from being published.
+      if (videoUrls.isEmpty) {
+        throw Exception('Cannot update video: no valid HTTP video URLs found');
+      }
+
+      // Build imeta tag components (preserve all original media URLs)
       final imetaComponents = <String>[];
-      if (widget.video.videoUrl != null) {
-        imetaComponents.add('url ${widget.video.videoUrl!}');
+      for (final url in videoUrls) {
+        imetaComponents.add('url $url');
       }
       imetaComponents.add('m video/mp4');
 
@@ -2857,6 +1795,12 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         );
       }
     }
+  }
+
+  /// Check if a URL is a valid HTTP/HTTPS URL (not a local file path).
+  static bool _isHttpUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    return url.startsWith('http://') || url.startsWith('https://');
   }
 
   @override
@@ -3173,12 +2117,6 @@ class _EditInspiredByDisplay extends ConsumerWidget {
       avatarUrl = profileAsync.value?.picture;
     }
 
-    // For npub, show a truncated display
-    final npubDisplay = inspiredByNpub != null && inspiredByNpub!.length > 20
-        ? '${inspiredByNpub!.substring(0, 10)}...'
-              '${inspiredByNpub!.substring(inspiredByNpub!.length - 8)}'
-        : inspiredByNpub;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -3189,13 +2127,13 @@ class _EditInspiredByDisplay extends ConsumerWidget {
         children: [
           UserAvatar(
             imageUrl: avatarUrl,
-            name: displayName ?? npubDisplay,
+            name: displayName ?? inspiredByNpub,
             size: 24,
           ),
           const SizedBox(width: 6),
           Expanded(
             child: Text(
-              displayName ?? npubDisplay ?? 'Unknown',
+              displayName ?? inspiredByNpub ?? 'Unknown',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.bodyFont(
@@ -3533,500 +2471,6 @@ void showEditDialogForVideo(BuildContext context, VideoEvent video) {
     context: context,
     builder: (context) => _EditVideoDialog(video: video),
   );
-}
-
-/// Confirmation dialog shown after successfully reporting content
-class _ReportConfirmationDialog extends StatelessWidget {
-  const _ReportConfirmationDialog();
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    backgroundColor: VineTheme.cardBackground,
-    title: Row(
-      children: [
-        Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
-        const SizedBox(width: 12),
-        const Text(
-          'Report Received',
-          style: TextStyle(color: VineTheme.whiteText),
-        ),
-      ],
-    ),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Thank you for helping keep Divine safe.',
-          style: TextStyle(color: VineTheme.whiteText, fontSize: 16),
-        ),
-        const SizedBox(height: 16),
-        const Text(
-          'Our team will review your report and take appropriate action.',
-          style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
-        ),
-        const SizedBox(height: 20),
-        InkWell(
-          onTap: () async {
-            final uri = Uri.parse('https://divine.video/safety');
-            if (await canLaunchUrl(uri)) {
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: VineTheme.backgroundColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: VineTheme.vineGreen),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: VineTheme.vineGreen, size: 20),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Learn More',
-                        style: TextStyle(
-                          color: VineTheme.whiteText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      Text(
-                        'divine.video/safety',
-                        style: TextStyle(
-                          color: VineTheme.vineGreen,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.open_in_new, color: VineTheme.vineGreen, size: 18),
-              ],
-            ),
-          ),
-        ),
-      ],
-    ),
-    actions: [
-      TextButton(
-        onPressed: context.pop,
-        child: Text('Close', style: TextStyle(color: VineTheme.vineGreen)),
-      ),
-    ],
-  );
-}
-
-/// Dialog for viewing raw Nostr event JSON
-class _ViewSourceDialog extends StatelessWidget {
-  const _ViewSourceDialog({required this.video});
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: VineTheme.cardBackground,
-      title: Row(
-        children: [
-          const Icon(Icons.code, color: VineTheme.vineGreen),
-          const SizedBox(width: 12),
-          const Text(
-            'Event Source',
-            style: TextStyle(color: VineTheme.whiteText),
-          ),
-        ],
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Event ID
-            Row(
-              children: [
-                const Text(
-                  'Event ID: ',
-                  style: TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Expanded(
-                  child: Text(
-                    video.id,
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.copy, size: 16),
-                  color: VineTheme.vineGreen,
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: video.id));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Event ID copied'),
-                        duration: Duration(seconds: 1),
-                      ),
-                    );
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Explainer note
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.amber.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
-              ),
-              child: const Text(
-                'Parsed event data, not raw Nostr source',
-                style: TextStyle(
-                  color: Colors.amber,
-                  fontSize: 11,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // JSON content
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: VineTheme.backgroundColor,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade700),
-                ),
-                child: SingleChildScrollView(
-                  child: SelectableText(
-                    _getEventJson(),
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
-                      fontSize: 12,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () async {
-            final json = _getEventJson();
-            await Clipboard.setData(ClipboardData(text: json));
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('JSON copied to clipboard'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            }
-          },
-          child: const Text('Copy JSON'),
-        ),
-        TextButton(onPressed: context.pop, child: const Text('Close')),
-      ],
-    );
-  }
-
-  String _getEventJson() {
-    // Serialize the video event we already have - no network fetch needed
-    return const JsonEncoder.withIndent('  ').convert(video.toJson());
-  }
-}
-
-/// Widget for displaying public lists containing a video using Riverpod streaming
-/// Uses publicListsContainingVideoProvider for reactive updates as lists arrive
-class _PublicListsSection extends ConsumerStatefulWidget {
-  const _PublicListsSection({required this.videoId});
-  final String videoId;
-
-  @override
-  ConsumerState<_PublicListsSection> createState() =>
-      _PublicListsSectionState();
-}
-
-class _PublicListsSectionState extends ConsumerState<_PublicListsSection> {
-  bool _minTimeElapsed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Start minimum time timer to avoid flashing "no lists" before query completes
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _minTimeElapsed = true);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Watch the Riverpod StreamProvider - automatically updates as lists stream in
-    final listsAsync = ref.watch(
-      publicListsContainingVideoProvider(widget.videoId),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'Public Lists',
-          style: TextStyle(
-            color: VineTheme.whiteText,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-        listsAsync.when(
-          data: (lists) {
-            if (lists.isNotEmpty) {
-              // Show lists as they arrive via Riverpod streaming
-              return Column(
-                children: lists
-                    .map((list) => _buildPublicListTile(list))
-                    .toList(),
-              );
-            }
-            // Empty list - check if minimum time has elapsed
-            if (!_minTimeElapsed) {
-              return _buildLoadingIndicator();
-            }
-            return _buildEmptyState();
-          },
-          loading: () => _buildLoadingIndicator(),
-          error: (error, _) {
-            Log.error(
-              'Error loading public lists: $error',
-              name: 'PublicListsSection',
-              category: LogCategory.ui,
-            );
-            if (!_minTimeElapsed) {
-              return _buildLoadingIndicator();
-            }
-            return _buildEmptyState();
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLoadingIndicator() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: VineTheme.secondaryText,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            'Checking public lists...',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: Text(
-        'Not yet in any lists...',
-        style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
-      ),
-    );
-  }
-
-  Widget _buildPublicListTile(CuratedList list) {
-    final listServiceAsync = ref.watch(curatedListsStateProvider);
-    final listService = ref.read(curatedListsStateProvider.notifier).service;
-
-    return listServiceAsync.when(
-      data: (lists) {
-        final isSubscribed = listService?.isSubscribedToList(list.id) ?? false;
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: GestureDetector(
-            onTap: () => _navigateToList(list),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: VineTheme.cardBackground,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isSubscribed
-                      ? VineTheme.vineGreen.withValues(alpha: 0.5)
-                      : Colors.grey.shade800,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.video_library,
-                    color: VineTheme.vineGreen,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          list.name,
-                          style: const TextStyle(
-                            color: VineTheme.whiteText,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          '${list.videoEventIds.length} videos',
-                          style: TextStyle(
-                            color: VineTheme.secondaryText,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => _toggleSubscription(list),
-                    style: TextButton.styleFrom(
-                      backgroundColor: isSubscribed
-                          ? VineTheme.cardBackground
-                          : VineTheme.vineGreen,
-                      foregroundColor: isSubscribed
-                          ? VineTheme.vineGreen
-                          : VineTheme.backgroundColor,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      minimumSize: Size.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                        side: isSubscribed
-                            ? BorderSide(color: VineTheme.vineGreen)
-                            : BorderSide.none,
-                      ),
-                    ),
-                    child: Text(
-                      isSubscribed ? 'Subscribed' : 'Subscribe',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const SizedBox.shrink(),
-    );
-  }
-
-  Future<void> _toggleSubscription(CuratedList list) async {
-    try {
-      final listService = await ref
-          .read(curatedListsStateProvider.notifier)
-          .service;
-      final isSubscribed = listService?.isSubscribedToList(list.id) ?? false;
-
-      if (isSubscribed) {
-        await listService?.unsubscribeFromList(list.id);
-        Log.info(
-          'Unsubscribed from list: ${list.name}',
-          name: 'PublicListsSection',
-          category: LogCategory.ui,
-        );
-      } else {
-        await listService?.subscribeToList(list.id, list);
-        Log.info(
-          'Subscribed to list: ${list.name}',
-          name: 'PublicListsSection',
-          category: LogCategory.ui,
-        );
-      }
-
-      if (mounted) setState(() {});
-    } catch (e) {
-      Log.error(
-        'Failed to toggle subscription: $e',
-        name: 'PublicListsSection',
-        category: LogCategory.ui,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to update subscription: $e'),
-            backgroundColor: VineTheme.likeRed,
-          ),
-        );
-      }
-    }
-  }
-
-  void _navigateToList(CuratedList list) {
-    // Close the share menu bottom sheet first
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      Navigator.of(context).maybePop();
-    }
-
-    // Navigate to the curated list feed screen
-    context.push(
-      CuratedListFeedScreen.pathForId(list.id),
-      extra: CuratedListRouteExtra(
-        listName: list.name,
-        videoIds: list.videoEventIds,
-        authorPubkey: list.pubkey,
-      ),
-    );
-
-    Log.info(
-      'Navigating to list: ${list.name}',
-      name: 'PublicListsSection',
-      category: LogCategory.ui,
-    );
-  }
 }
 
 /// Action tile for "Use this sound" feature.

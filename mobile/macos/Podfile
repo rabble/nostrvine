@@ -32,7 +32,7 @@ flutter_macos_podfile_setup
 target 'Runner' do
   use_frameworks!
 
-  flutter_install_all_macos_pods File.dirname(File.realpath(__FILE__))
+  flutter_install_all_macos_pods File.dirname(File.expand_path(__FILE__))
   target 'RunnerTests' do
     inherit! :search_paths
   end
@@ -57,8 +57,6 @@ post_install do |installer|
     if target.name == 'Runner'
       target.build_configurations.each do |config|
         if exclude_x86_64_for_macos
-          # whisper_ggml_plus currently fails to link x86_64 symbols; force
-          # arm64 builds on Apple Silicon hosts.
           config.build_settings['EXCLUDED_ARCHS[sdk=macosx*]'] = 'x86_64'
           config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES' if config.name == 'Debug'
         end
@@ -141,8 +139,6 @@ done
       end
 
       if exclude_x86_64_for_macos
-        # whisper_ggml_plus currently fails to link x86_64 symbols; force
-        # arm64 builds on Apple Silicon hosts.
         config.build_settings['EXCLUDED_ARCHS[sdk=macosx*]'] = 'x86_64'
       end
 

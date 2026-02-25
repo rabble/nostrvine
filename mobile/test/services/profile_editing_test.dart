@@ -2,46 +2,62 @@
 // ABOUTME: Ensures profile editing actually works end-to-end with proper Nostr event publishing
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
-@GenerateMocks([
-  NostrClient,
-  AuthService,
-  UserProfileService,
-  SubscriptionManager,
-])
-import 'profile_editing_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockUserProfileService extends Mock implements UserProfileService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(
+      Event(
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        0,
+        [],
+        '',
+      ),
+    );
+    registerFallbackValue(
+      UserProfile(
+        pubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        rawData: const {},
+        createdAt: DateTime(2024),
+        eventId: 'fallback',
+      ),
+    );
+  });
+
   group('Profile Editing Tests', () {
-    late MockNostrClient mockNostrService;
-    late MockAuthService mockAuthService;
-    late MockUserProfileService mockUserProfileService;
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
+    late _MockUserProfileService mockUserProfileService;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockAuthService = MockAuthService();
-      mockUserProfileService = MockUserProfileService();
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
+      mockUserProfileService = _MockUserProfileService();
 
       // Default mock setup
-      when(mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
       // Use a valid hex pubkey for testing (64 hex chars)
-      when(mockAuthService.currentPublicKeyHex).thenReturn(
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(
         '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
       );
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
     });
 
     test('should fail to save profile when not authenticated', () async {
       // Arrange
-      when(mockAuthService.isAuthenticated).thenReturn(false);
+      when(() => mockAuthService.isAuthenticated).thenReturn(false);
 
       // Act & Assert
       expect(mockAuthService.isAuthenticated, isFalse);
@@ -68,14 +84,14 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 0,
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => mockEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
+      when(() => mockNostrService.publishEvent(any())).thenAnswer(
         (invocation) async => invocation.positionalArguments[0] as Event,
       );
 
@@ -99,10 +115,10 @@ void main() {
       expect(event.content, contains('This is my test bio'));
 
       verify(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 0,
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).called(1);
     });
@@ -117,14 +133,14 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 0,
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => mockEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
+      when(() => mockNostrService.publishEvent(any())).thenAnswer(
         (invocation) async => invocation.positionalArguments[0] as Event,
       );
 
@@ -135,11 +151,11 @@ void main() {
         tags: [],
       );
 
-      final publishResult = await mockNostrService.publishEvent(event);
+      final publishResult = await mockNostrService.publishEvent(event!);
 
       // Assert - publishEvent returns non-null on success
       expect(publishResult, isNotNull);
-      verify(mockNostrService.publishEvent(event)).called(1);
+      verify(() => mockNostrService.publishEvent(event)).called(1);
     });
 
     test('should handle publish failure gracefully', () async {
@@ -152,15 +168,15 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 0,
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => mockEvent);
 
       when(
-        mockNostrService.publishEvent(any),
+        () => mockNostrService.publishEvent(any()),
       ).thenThrow(Exception('Network error'));
 
       // Act & Assert
@@ -187,20 +203,20 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 0,
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => mockEvent);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
+      when(() => mockNostrService.publishEvent(any())).thenAnswer(
         (invocation) async => invocation.positionalArguments[0] as Event,
       );
 
       // Mock profile service to update cache
       when(
-        mockUserProfileService.updateCachedProfile(any),
+        () => mockUserProfileService.updateCachedProfile(any()),
       ).thenAnswer((_) async {});
 
       // Act
@@ -210,7 +226,7 @@ void main() {
         tags: [],
       );
 
-      await mockNostrService.publishEvent(event);
+      await mockNostrService.publishEvent(event!);
 
       // Update cache with new profile
       final updatedProfile = UserProfile(
@@ -230,7 +246,7 @@ void main() {
       mockUserProfileService.updateCachedProfile(updatedProfile);
 
       // Assert
-      verify(mockUserProfileService.updateCachedProfile(any)).called(1);
+      verify(() => mockUserProfileService.updateCachedProfile(any())).called(1);
     });
 
     test('should validate profile data before publishing', () async {
@@ -303,7 +319,7 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 0,
           content: '{"name":"Update 1"}',
           tags: [],
@@ -311,25 +327,25 @@ void main() {
       ).thenAnswer((_) async => mockEvent1);
 
       when(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 0,
           content: '{"name":"Update 2"}',
           tags: [],
         ),
       ).thenAnswer((_) async => mockEvent2);
 
-      when(mockNostrService.publishEvent(any)).thenAnswer(
+      when(() => mockNostrService.publishEvent(any())).thenAnswer(
         (invocation) async => invocation.positionalArguments[0] as Event,
       );
 
       // Act - simulate concurrent updates
       final future1 = mockAuthService
           .createAndSignEvent(kind: 0, content: '{"name":"Update 1"}', tags: [])
-          .then((event) => mockNostrService.publishEvent(event));
+          .then((event) => mockNostrService.publishEvent(event!));
 
       final future2 = mockAuthService
           .createAndSignEvent(kind: 0, content: '{"name":"Update 2"}', tags: [])
-          .then((event) => mockNostrService.publishEvent(event));
+          .then((event) => mockNostrService.publishEvent(event!));
 
       // Wait for both to complete
       final results = await Future.wait([future1, future2]);
@@ -340,7 +356,7 @@ void main() {
       expect(results[1], isNotNull);
 
       // Both events should have been published
-      verify(mockNostrService.publishEvent(any)).called(2);
+      verify(() => mockNostrService.publishEvent(any())).called(2);
     });
 
     test('should retry failed publishes with exponential backoff', () async {
@@ -355,16 +371,16 @@ void main() {
       );
 
       when(
-        mockAuthService.createAndSignEvent(
+        () => mockAuthService.createAndSignEvent(
           kind: 0,
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => mockEvent);
 
       // First two attempts fail, third succeeds
       when(
-        mockNostrService.publishEvent(any),
+        () => mockNostrService.publishEvent(any()),
       ).thenThrow(Exception('Network error'));
 
       // This test verifies that retry logic would work if implemented

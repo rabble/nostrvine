@@ -36,6 +36,9 @@ class HashtagFeed extends _$HashtagFeed {
     _buildCounter++;
     final buildId = _buildCounter;
 
+    // Watch content filter version — rebuilds when preferences change.
+    ref.watch(contentFilterVersionProvider);
+
     // Get hashtag from route context
     final ctx = ref.watch(pageContextProvider).asData?.value;
     if (ctx == null || ctx.type != RouteType.hashtag) {
@@ -121,8 +124,10 @@ class HashtagFeed extends _$HashtagFeed {
         _rebuildDebounceTimer = Timer(const Duration(milliseconds: 500), () {
           if (ref.mounted) {
             // Update state directly instead of invalidating to prevent rebuild loop
-            final videos = _sortVideosByPopularity(
-              List<VideoEvent>.from(videoEventService.hashtagVideos(tag)),
+            final videos = videoEventService.filterVideoList(
+              _sortVideosByPopularity(
+                List<VideoEvent>.from(videoEventService.hashtagVideos(tag)),
+              ),
             );
 
             state = AsyncData(
@@ -197,8 +202,10 @@ class HashtagFeed extends _$HashtagFeed {
 
     // Get videos for this hashtag and sort by popularity
     // Uses REST API order if available, otherwise falls back to local sorting
-    final videos = _sortVideosByPopularity(
-      List<VideoEvent>.from(videoEventService.hashtagVideos(tag)),
+    final videos = videoEventService.filterVideoList(
+      _sortVideosByPopularity(
+        List<VideoEvent>.from(videoEventService.hashtagVideos(tag)),
+      ),
     );
 
     Log.info(

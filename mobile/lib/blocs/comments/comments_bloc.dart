@@ -1,6 +1,7 @@
 // ABOUTME: BLoC for managing comments on videos with threaded replies
 // ABOUTME: Handles loading, posting, likes, reporting, blocking, and sorting
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
@@ -88,6 +89,8 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     );
     on<MentionRegistered>(_onMentionRegistered);
     on<MentionSuggestionsCleared>(_onMentionSuggestionsCleared);
+    on<NewCommentReceived>(_onNewCommentReceived);
+    on<NewCommentsAcknowledged>(_onNewCommentsAcknowledged);
   }
 
   /// Page size for comment loading.
@@ -99,6 +102,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
   final CommentsRepository _commentsRepository;
   final AuthService _authService;
+  StreamSubscription<Comment>? _commentStreamSubscription;
   final LikesRepository _likesRepository;
   final Future<ContentReportingService> _contentReportingServiceFuture;
   final Future<MuteService> _muteServiceFuture;
@@ -142,6 +146,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       );
 
       add(const CommentLikeCountsFetchRequested());
+      _startWatchingComments();
     } catch (e) {
       Log.error(
         'Error loading comments: $e',
@@ -660,6 +665,126 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     Emitter<CommentsState> emit,
   ) {
     emit(state.copyWith(mentionQuery: '', mentionSuggestions: []));
+  }
+
+  void _onNewCommentReceived(
+    NewCommentReceived event,
+    Emitter<CommentsState> emit,
+  ) {
+    final comment = event.comment;
+
+    // Skip if already in the map (dedup with optimistic posts)
+    if (state.commentsById.containsKey(comment.id)) return;
+
+    // Skip if author is blocked
+    if (_contentBlocklistService.isBlocked(comment.authorPubkey)) return;
+
+    final updatedCommentsById = {...state.commentsById, comment.id: comment};
+
+    emit(
+      state.copyWith(
+        commentsById: updatedCommentsById,
+        replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
+        newCommentCount: state.newCommentCount + 1,
+      ),
+    );
+  }
+
+  void _onNewCommentsAcknowledged(
+    NewCommentsAcknowledged event,
+    Emitter<CommentsState> emit,
+  ) {
+    emit(state.copyWith(newCommentCount: 0));
+  }
+
+  /// Maximum number of real-time comments to accept per second.
+  /// Beyond this rate the stream is paused briefly to avoid UI thrashing
+  /// on viral videos.
+  static const _maxCommentsPerSecond = 10;
+
+  /// Starts the real-time comment subscription.
+  ///
+  /// Called directly from [_onLoadRequested] after a successful load so that
+  /// the `since` timestamp aligns with the initial load. Opens a persistent
+  /// Nostr subscription and routes incoming comments through
+  /// [NewCommentReceived].
+  void _startWatchingComments() {
+    // Cancel any existing subscription before starting a new one
+    _commentStreamSubscription?.cancel();
+
+    try {
+      final stream = _commentsRepository.watchComments(
+        rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
+        rootAddressableId: state.rootAddressableId,
+        since: DateTime.now(),
+      );
+
+      _commentStreamSubscription = _throttledListen(
+        stream,
+        maxPerSecond: _maxCommentsPerSecond,
+        onData: (comment) {
+          add(NewCommentReceived(comment));
+        },
+        onError: (Object e) {
+          Log.warning(
+            'Comment watch stream error: $e',
+            name: 'CommentsBloc',
+            category: LogCategory.ui,
+          );
+        },
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to start watching comments: $e',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+    }
+  }
+
+  /// Listens to [stream] but drops events that exceed [maxPerSecond].
+  ///
+  /// Uses a simple token-bucket approach: each second refills the budget.
+  /// Events arriving after the budget is exhausted are silently dropped
+  /// until the next second window, preventing UI thrashing on viral videos.
+  StreamSubscription<T> _throttledListen<T>(
+    Stream<T> stream, {
+    required int maxPerSecond,
+    required void Function(T) onData,
+    void Function(Object)? onError,
+  }) {
+    var budget = maxPerSecond;
+    Timer? refillTimer;
+
+    void startRefill() {
+      refillTimer?.cancel();
+      refillTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        budget = maxPerSecond;
+      });
+    }
+
+    startRefill();
+
+    return stream.listen(
+      (event) {
+        if (budget > 0) {
+          budget--;
+          onData(event);
+        }
+      },
+      onError: onError,
+      onDone: () {
+        refillTimer?.cancel();
+      },
+    );
+  }
+
+  @override
+  Future<void> close() async {
+    await _commentStreamSubscription?.cancel();
+    await _commentsRepository.stopWatchingComments();
+    return super.close();
   }
 
   /// Computes an engagement score for ranking comments.

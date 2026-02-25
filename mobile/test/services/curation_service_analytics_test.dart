@@ -2,39 +2,61 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:likes_repository/likes_repository.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:likes_repository/likes_repository.dart';
 
-@GenerateMocks([NostrClient, VideoEventService, LikesRepository, AuthService])
-import 'curation_service_analytics_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockLikesRepository extends Mock implements LikesRepository {}
+
+class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(Event('0' * 64, 1, <List<String>>[], ''));
+    registerFallbackValue(<String>[]);
+    registerFallbackValue(
+      VideoEvent(
+        id: 'fallback',
+        pubkey: 'fallback',
+        createdAt: 0,
+        content: '',
+        timestamp: DateTime(2020),
+      ),
+    );
+  });
+
   late CurationService curationService;
-  late MockNostrClient mockNostrService;
-  late MockVideoEventService mockVideoEventService;
-  late MockLikesRepository mockLikesRepository;
-  late MockAuthService mockAuthService;
+  late _MockNostrClient mockNostrService;
+  late _MockVideoEventService mockVideoEventService;
+  late _MockLikesRepository mockLikesRepository;
+  late _MockAuthService mockAuthService;
   setUp(() {
-    mockNostrService = MockNostrClient();
-    mockVideoEventService = MockVideoEventService();
-    mockLikesRepository = MockLikesRepository();
-    mockAuthService = MockAuthService();
+    mockNostrService = _MockNostrClient();
+    mockVideoEventService = _MockVideoEventService();
+    mockLikesRepository = _MockLikesRepository();
+    mockAuthService = _MockAuthService();
 
     // Setup default mocks
-    when(mockVideoEventService.videoEvents).thenReturn([]);
-    when(mockVideoEventService.discoveryVideos).thenReturn([]);
+    when(() => mockVideoEventService.videoEvents).thenReturn([]);
+    when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
     // Note: addListener removed after ChangeNotifier refactor
-    when(mockVideoEventService.addVideoEvent(any)).thenReturn(null);
+    when(() => mockVideoEventService.addVideoEvent(any())).thenReturn(null);
 
     // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
-    when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
+    when(
+      () => mockLikesRepository.getLikeCounts(any()),
+    ).thenAnswer((_) async => {});
 
     curationService = CurationService(
       nostrService: mockNostrService,
@@ -50,7 +72,7 @@ void main() {
       () async {
         // This test calls the real analytics API but mocks the relay responses
         // Mock local videos - empty so all trending videos will be "missing"
-        when(mockVideoEventService.videoEvents).thenReturn([]);
+        when(() => mockVideoEventService.videoEvents).thenReturn([]);
 
         // Mock Nostr subscription for any missing videos
         final missingVideoEvent = Event(
@@ -70,7 +92,7 @@ void main() {
         missingVideoEvent.id = 'test_trending_video_id';
 
         final streamController = StreamController<Event>();
-        when(mockNostrService.subscribe(argThat(anything))).thenAnswer((_) {
+        when(() => mockNostrService.subscribe(any())).thenAnswer((_) {
           // Add the missing video event to the stream
           Timer(const Duration(milliseconds: 100), () {
             streamController.add(missingVideoEvent);
@@ -113,11 +135,11 @@ void main() {
 
     test('handles relay timeout when fetching missing videos', () async {
       // Test that relay timeouts are handled gracefully
-      when(mockVideoEventService.videoEvents).thenReturn([]);
+      when(() => mockVideoEventService.videoEvents).thenReturn([]);
 
       // Mock Nostr subscription that times out
       final streamController = StreamController<Event>();
-      when(mockNostrService.subscribe(argThat(anything))).thenAnswer((_) {
+      when(() => mockNostrService.subscribe(any())).thenAnswer((_) {
         // Don't emit any events, let it timeout
         Timer(const Duration(seconds: 10), streamController.close);
         return streamController.stream;
@@ -163,7 +185,7 @@ void main() {
             timestamp: DateTime.now(),
           ),
         ];
-        when(mockVideoEventService.videoEvents).thenReturn(videos);
+        when(() => mockVideoEventService.videoEvents).thenReturn(videos);
 
         // Act - Call real analytics API
         await curationService.refreshTrendingFromAnalytics();

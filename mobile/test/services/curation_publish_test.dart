@@ -4,50 +4,64 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:likes_repository/likes_repository.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:likes_repository/likes_repository.dart';
 
-import 'curation_publish_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, VideoEventService, LikesRepository, AuthService])
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockLikesRepository extends Mock implements LikesRepository {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+    registerFallbackValue(Event('0' * 64, 1, <List<String>>[], ''));
+    registerFallbackValue(<String>[]);
+    registerFallbackValue(<List<String>>[]);
+  });
+
   group('CurationService Publishing', () {
     late CurationService curationService;
-    late MockNostrClient mockNostrService;
-    late MockVideoEventService mockVideoEventService;
-    late MockLikesRepository mockLikesRepository;
-    late MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockLikesRepository mockLikesRepository;
+    late _MockAuthService mockAuthService;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockVideoEventService = MockVideoEventService();
-      mockLikesRepository = MockLikesRepository();
-      mockAuthService = MockAuthService();
+      mockNostrService = _MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockLikesRepository = _MockLikesRepository();
+      mockAuthService = _MockAuthService();
 
       // Mock authenticated user with a valid 64-char hex pubkey
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(
         'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
       );
 
       // Mock empty video events initially
-      when(mockVideoEventService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
 
       // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
-      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
+      when(
+        () => mockLikesRepository.getLikeCounts(any()),
+      ).thenAnswer((_) async => {});
 
       // Mock createAndSignEvent to return a properly signed event with captured tags
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((invocation) async {
         final kind = invocation.namedArguments[#kind] as int;
@@ -167,7 +181,7 @@ void main() {
           ['d', 'test_id'],
         ], 'Test content');
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => mockEvent);
 
         // When: Publishing a curation
@@ -185,14 +199,16 @@ void main() {
         expect(result.eventId, isNotNull);
 
         // Verify broadcastEvent was called
-        verify(mockNostrService.publishEvent(any)).called(1);
+        verify(() => mockNostrService.publishEvent(any())).called(1);
         // TODO(any): Fix and enable this test
       }, skip: true);
 
       test('should handle complete failure gracefully', () async {
         // Given: Mock failed broadcast
         // publishEvent returns null on failure
-        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+        when(
+          () => mockNostrService.publishEvent(any()),
+        ).thenAnswer((_) async => null);
 
         // When: Publishing a curation
         final result = await curationService.publishCuration(
@@ -210,7 +226,7 @@ void main() {
 
       test('should timeout after 5 seconds', () async {
         // Given: Mock slow broadcast
-        when(mockNostrService.publishEvent(any)).thenAnswer((_) async {
+        when(() => mockNostrService.publishEvent(any())).thenAnswer((_) async {
           await Future.delayed(const Duration(seconds: 10));
           return Event('test', 30005, [], '');
         });
@@ -233,7 +249,7 @@ void main() {
       test('should handle partial relay success', () async {
         // Given: Mock partial success
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         // When: Publishing
@@ -256,7 +272,7 @@ void main() {
       test('should mark curation as published locally after success', () async {
         // Given: Mock successful publish
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         // When: Publishing curation
@@ -278,7 +294,9 @@ void main() {
 
       test('should track failed publish attempts', () async {
         // Given: Mock failed publish - publishEvent returns null on failure
-        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+        when(
+          () => mockNostrService.publishEvent(any()),
+        ).thenAnswer((_) async => null);
 
         // When: Publishing fails
         await curationService.publishCuration(
@@ -299,7 +317,7 @@ void main() {
       test('should persist publish status across service restarts', () async {
         // Given: Published curation
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         await curationService.publishCuration(
@@ -331,7 +349,7 @@ void main() {
         () async {
           // Given: Failed initial publish - publishEvent returns null on failure
           when(
-            mockNostrService.publishEvent(any),
+            () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => null);
 
           await curationService.publishCuration(
@@ -342,7 +360,7 @@ void main() {
 
           // Mock successful retry - publishEvent returns the event on success
           when(
-            mockNostrService.publishEvent(any),
+            () => mockNostrService.publishEvent(any()),
           ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
           // When: Background worker runs
@@ -361,7 +379,9 @@ void main() {
       test('should stop retrying after max attempts', () async {
         // Given: Persistent failures
         // publishEvent returns null on failure
-        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+        when(
+          () => mockNostrService.publishEvent(any()),
+        ).thenAnswer((_) async => null);
 
         // When: Retrying multiple times
         for (var i = 0; i < 10; i++) {
@@ -396,7 +416,7 @@ void main() {
       test('should coalesce rapid updates to same curation', () async {
         // Given: Mock successful broadcast
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         // When: Publishing same curation multiple times rapidly
@@ -413,7 +433,9 @@ void main() {
         await Future.wait(futures);
 
         // Then: Should coalesce into single publish (or very few)
-        verify(mockNostrService.publishEvent(any)).called(lessThanOrEqualTo(2));
+        verify(
+          () => mockNostrService.publishEvent(any()),
+        ).called(lessThanOrEqualTo(2));
       });
     });
 
@@ -422,7 +444,7 @@ void main() {
         // Given: Slow broadcast simulation
         final completer = Completer<Event?>();
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) => completer.future);
 
         // When: Starting publish
@@ -458,7 +480,7 @@ void main() {
       test('should show relay success count in status', () async {
         // Given: Partial success
         when(
-          mockNostrService.publishEvent(any),
+          () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => Event('test', 30005, [], ''));
 
         // When: Publishing
@@ -479,7 +501,9 @@ void main() {
       test('should show error status for failed publishes', () async {
         // Given: Failed publish
         // publishEvent returns null on failure
-        when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+        when(
+          () => mockNostrService.publishEvent(any()),
+        ).thenAnswer((_) async => null);
 
         // When: Publishing fails
         await curationService.publishCuration(

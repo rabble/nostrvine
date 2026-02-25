@@ -57,7 +57,7 @@ final class PopularVideosFeedProvider
   PopularVideosFeed create() => PopularVideosFeed();
 }
 
-String _$popularVideosFeedHash() => r'558656c66f8e1c8d2dcc2fb471229df1f01df0e6';
+String _$popularVideosFeedHash() => r'10e59dda2ed7e8687a61866bcca543b35e6d7669';
 
 /// Popular Videos feed provider - shows trending videos by recent engagement
 ///

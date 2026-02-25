@@ -83,13 +83,17 @@ class CameraPermissionBloc
       category: LogCategory.video,
     );
 
-    // On macOS desktop, permission_handler doesn't work reliably.
+    // On desktop, permission_handler doesn't work reliably.
     // macOS handles camera permissions at the system level when the app
     // actually tries to access the camera, showing its own permission dialog.
+    // Linux has no camera support yet, so permissions are irrelevant.
     // So we bypass the permission check and assume authorized.
-    if (!kIsWeb && Platform.isMacOS && !_skipMacOSBypass) {
+    if (!kIsWeb &&
+        (Platform.isMacOS || Platform.isLinux) &&
+        !_skipMacOSBypass) {
       Log.info(
-        '🔐 macOS detected - bypassing permission_handler, assuming authorized',
+        '🔐 Desktop detected - bypassing permission_handler, '
+        'assuming authorized',
         name: 'CameraPermissionBloc',
         category: LogCategory.video,
       );

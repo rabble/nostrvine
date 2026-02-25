@@ -670,4 +670,84 @@ void main() {
       expect(stats['event-a']!.views, 120);
     });
   });
+
+  group('getRawEvent', () {
+    test('returns raw event JSON on 200 response', () async {
+      final rawEvent = {
+        'id': 'abc123def456',
+        'pubkey': 'pubkey123',
+        'created_at': 1700000000,
+        'kind': 34236,
+        'tags': [
+          ['d', 'some-d-tag'],
+          ['title', 'Test Video'],
+          ['url', 'https://example.com/video.mp4'],
+        ],
+        'content': 'A test video',
+        'sig': 'sig123',
+      };
+
+      final mockClient = MockClient((request) async {
+        expect(
+          request.url.toString(),
+          equals('https://funnelcake.test/api/event/abc123def456'),
+        );
+        return http.Response(jsonEncode(rawEvent), 200);
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      final result = await service.getRawEvent('abc123def456');
+
+      expect(result, isNotNull);
+      expect(result!['id'], equals('abc123def456'));
+      expect(result['kind'], equals(34236));
+      expect(result['sig'], equals('sig123'));
+    });
+
+    test('returns null on 404 response', () async {
+      final mockClient = MockClient((_) async {
+        return http.Response('Not Found', 404);
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      final result = await service.getRawEvent('nonexistent-id');
+      expect(result, isNull);
+    });
+
+    test('returns null on network error', () async {
+      final mockClient = MockClient((_) async {
+        throw Exception('Connection refused');
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      final result = await service.getRawEvent('timeout-event-id');
+      expect(result, isNull);
+    });
+
+    test('returns null when API not available', () async {
+      final service = AnalyticsApiService(baseUrl: null);
+
+      final result = await service.getRawEvent('any-event-id');
+      expect(result, isNull);
+    });
+
+    test('returns null for empty event ID', () async {
+      final service = AnalyticsApiService(baseUrl: 'https://funnelcake.test');
+
+      final result = await service.getRawEvent('');
+      expect(result, isNull);
+    });
+  });
 }

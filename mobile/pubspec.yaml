@@ -181,20 +181,11 @@ dependencies:
   qr_flutter: ^4.1.0
   android_intent_plus: ^6.0.0
 
-  # On-device speech-to-text for subtitle generation
-  # Temporarily disabled due to Android build issues
-  # See: https://github.com/divinevideo/divine-mobile/issues/1568
-  # whisper_ggml_plus: ^1.3.1
-
 dependency_overrides:
   device_info_plus: ^10.1.2
   rxdart: ^0.28.0
   cryptography_flutter:
     path: overrides/cryptography_flutter-2.3.2
-  # whisper_ggml_plus pins json_annotation ^4.10.0, riverpod_generator needs ^4.9.0
-  # Temporarily disabled due to Android build issues with whisper_ggml_plus
-  # See: https://github.com/divinevideo/divine-mobile/issues/1568
-  # json_annotation: ^4.10.0
 
 dev_dependencies:
   flutter_test:

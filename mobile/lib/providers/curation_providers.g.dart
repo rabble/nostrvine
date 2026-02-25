@@ -161,7 +161,7 @@ final class FunnelcakeAvailableProvider
 }
 
 String _$funnelcakeAvailableHash() =>
-    r'8851a4927b4764fa2c59ed5c09dd3119c91f4ba1';
+    r'de0cbcdee459c443ca81fa108287ba87362d1d16';
 
 /// Single source of truth for Funnelcake REST API availability.
 ///

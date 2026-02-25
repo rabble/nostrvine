@@ -7,7 +7,7 @@ import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
@@ -116,19 +116,16 @@ void main() {
     });
 
     group('Tab routes parse correctly', () {
-      test(
-        '${HomeScreenRouter.path} parses to RouteType.home with index 0',
-        () {
-          final context = parseRoute(HomeScreenRouter.path);
-          expect(context.type, RouteType.home);
-          expect(context.videoIndex, 0);
-        },
-      );
+      test('${VideoFeedPage.path} parses to RouteType.home with index 0', () {
+        final context = parseRoute(VideoFeedPage.path);
+        expect(context.type, RouteType.home);
+        expect(context.videoIndex, 0);
+      });
 
       test(
-        '${HomeScreenRouter.pathForIndex(5)} parses to RouteType.home with index 5',
+        '${VideoFeedPage.pathForIndex(5)} parses to RouteType.home with index 5',
         () {
-          final context = parseRoute(HomeScreenRouter.pathForIndex(5));
+          final context = parseRoute(VideoFeedPage.pathForIndex(5));
           expect(context.type, RouteType.home);
           expect(context.videoIndex, 5);
         },
@@ -312,7 +309,7 @@ void main() {
       });
 
       test('Negative index is normalized to 0', () {
-        final context = parseRoute(HomeScreenRouter.pathForIndex(-5));
+        final context = parseRoute(VideoFeedPage.pathForIndex(-5));
         expect(context.type, RouteType.home);
         expect(context.videoIndex, 0);
       });
@@ -347,7 +344,7 @@ void main() {
       'video detail': VideoDetailScreen.pathForId(
         'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
       ),
-      'home feed': HomeScreenRouter.pathForIndex(3),
+      'home feed': VideoFeedPage.pathForIndex(3),
       'explore': ExploreScreen.path,
       'explore feed': ExploreScreen.pathForIndex(5),
       'profile grid': ProfileScreenRouter.pathForNpub('npub1test'),
@@ -378,7 +375,7 @@ void main() {
     test('All RouteTypes have corresponding parseRoute cases', () {
       // Test that each RouteType can be produced by parseRoute
       final routeTypeExamples = {
-        RouteType.home: HomeScreenRouter.pathForIndex(0),
+        RouteType.home: VideoFeedPage.pathForIndex(0),
         RouteType.explore: ExploreScreen.path,
         RouteType.notifications: NotificationsScreen.pathForIndex(0),
         RouteType.profile: ProfileScreenRouter.pathForNpub('npub1test'),

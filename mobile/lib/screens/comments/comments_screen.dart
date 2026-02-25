@@ -29,34 +29,59 @@ String _errorToString(CommentsError error) {
   };
 }
 
-/// Dynamic title widget that shows comment count
-/// Initially shows the count from video metadata, then updates to loaded count
+/// Dynamic title widget that shows comment count and a "# new" pill
+/// when real-time comments arrive.
+/// Initially shows the count from video metadata, then updates to loaded count.
 class _CommentsTitle extends StatelessWidget {
-  const _CommentsTitle({required this.initialCount});
+  const _CommentsTitle({
+    required this.initialCount,
+    required this.onNewCommentsPillTap,
+  });
 
   final int initialCount;
+
+  /// Called when the user taps the "# new" pill.
+  final VoidCallback onNewCommentsPillTap;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CommentsBloc, CommentsState>(
       buildWhen: (prev, next) =>
           prev.comments.length != next.comments.length ||
-          prev.status != next.status,
+          prev.status != next.status ||
+          prev.newCommentCount != next.newCommentCount,
       builder: (context, state) {
         // Use loaded count if available, otherwise use initial count
         final count = state.status == CommentsStatus.success
             ? state.comments.length
             : initialCount;
 
-        return Text(
-          '$count ${count == 1 ? 'Comment' : 'Comments'}',
-          style: GoogleFonts.bricolageGrotesque(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            height: 32 / 24,
-            letterSpacing: 0.15,
-            color: VineTheme.onSurface,
-          ),
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$count ${count == 1 ? 'Comment' : 'Comments'}',
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                height: 32 / 24,
+                letterSpacing: 0.15,
+                color: VineTheme.onSurface,
+              ),
+            ),
+            if (state.newCommentCount > 0) ...[
+              const SizedBox(width: 8),
+              NewCommentsPill(
+                count: state.newCommentCount,
+                onTap: () {
+                  onNewCommentsPillTap();
+                  context.read<CommentsBloc>().add(
+                    const NewCommentsAcknowledged(),
+                  );
+                },
+              ),
+            ],
+          ],
         );
       },
     );
@@ -68,6 +93,7 @@ class CommentsScreen extends ConsumerWidget {
     required this.videoEvent,
     required this.sheetScrollController,
     this.initialCommentCount,
+    this.onCommentCountChanged,
     super.key,
   });
 
@@ -80,11 +106,17 @@ class CommentsScreen extends ConsumerWidget {
   /// stored in the video event metadata.
   final int? initialCommentCount;
 
+  /// Called whenever the total comment count changes (initial load or
+  /// real-time updates).  The caller can use this to keep external state
+  /// (e.g. the video feed sidebar count) in sync.
+  final ValueChanged<int>? onCommentCountChanged;
+
   /// Shows comments as a modal bottom sheet overlay
   static Future<void> show(
     BuildContext context,
     VideoEvent video, {
     int? initialCommentCount,
+    ValueChanged<int>? onCommentCountChanged,
   }) {
     final container = ProviderScope.containerOf(context, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
@@ -110,6 +142,7 @@ class CommentsScreen extends ConsumerWidget {
             videoEvent: video,
             sheetScrollController: scrollController,
             initialCommentCount: initialCommentCount,
+            onCommentCountChanged: onCommentCountChanged,
           ),
         );
       },
@@ -158,16 +191,36 @@ class CommentsScreen extends ConsumerWidget {
         userProfileService: userProfileService,
         followRepository: followRepository,
       )..add(const CommentsLoadRequested()),
-      child: VineBottomSheet(
-        title: _CommentsTitle(
-          initialCount: initialCommentCount ?? videoEvent.originalComments ?? 0,
+      child: BlocListener<CommentsBloc, CommentsState>(
+        listenWhen: (prev, next) =>
+            prev.commentsById.length != next.commentsById.length,
+        listener: (context, state) {
+          onCommentCountChanged?.call(state.commentsById.length);
+        },
+        child: VineBottomSheet(
+          title: _CommentsTitle(
+            initialCount:
+                initialCommentCount ?? videoEvent.originalComments ?? 0,
+            onNewCommentsPillTap: () {
+              // Scroll to top and acknowledge new comments.
+              // The sheetScrollController drives the DraggableScrollableSheet's
+              // inner list, so animating to 0 scrolls the comments list to top.
+              if (sheetScrollController.hasClients) {
+                sheetScrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              }
+            },
+          ),
+          trailing: const _CommentsSortToggle(),
+          body: _CommentsScreenBody(
+            videoEvent: videoEvent,
+            sheetScrollController: sheetScrollController,
+          ),
+          bottomInput: const _MainCommentInput(),
         ),
-        trailing: const _CommentsSortToggle(),
-        body: _CommentsScreenBody(
-          videoEvent: videoEvent,
-          sheetScrollController: sheetScrollController,
-        ),
-        bottomInput: const _MainCommentInput(),
       ),
     );
   }

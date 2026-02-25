@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -13,24 +12,28 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'search_screen_pure_url_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-@GenerateMocks([VideoEventService, NostrClient])
+class _MockNostrClient extends Mock implements NostrClient {}
+
 void main() {
   group('SearchScreenPure URL Integration', () {
-    late MockVideoEventService mockVideoEventService;
-    late MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockNostrClient mockNostrService;
 
     setUp(() {
-      mockVideoEventService = MockVideoEventService();
-      mockNostrService = MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockNostrService = _MockNostrClient();
 
       // Setup default mock behavior
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
       when(
-        mockVideoEventService.searchVideos(any, limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          any(),
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async {});
-      when(mockVideoEventService.searchResults).thenReturn([]);
+      when(() => mockVideoEventService.searchResults).thenReturn([]);
     });
 
     testWidgets('reads search term from URL and populates text field', (
@@ -115,7 +118,10 @@ void main() {
 
       // Assert: Search should be triggered with 'bitcoin'
       verify(
-        mockVideoEventService.searchVideos('bitcoin', limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          'bitcoin',
+          limit: any(named: 'limit'),
+        ),
       ).called(greaterThan(0));
 
       container.dispose();
@@ -154,7 +160,10 @@ void main() {
 
       // Assert: Search should NOT be triggered
       verifyNever(
-        mockVideoEventService.searchVideos(any, limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          any(),
+          limit: any(named: 'limit'),
+        ),
       );
 
       container.dispose();
@@ -190,15 +199,21 @@ void main() {
 
       // Verify initial search
       verify(
-        mockVideoEventService.searchVideos('nostr', limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          'nostr',
+          limit: any(named: 'limit'),
+        ),
       ).called(greaterThan(0));
 
       // Reset mock to clear call history
       reset(mockVideoEventService);
       when(
-        mockVideoEventService.searchVideos(any, limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          any(),
+          limit: any(named: 'limit'),
+        ),
       ).thenAnswer((_) async {});
-      when(mockVideoEventService.searchResults).thenReturn([]);
+      when(() => mockVideoEventService.searchResults).thenReturn([]);
 
       // Act: Navigate to search with term 'bitcoin'
       container
@@ -216,7 +231,10 @@ void main() {
 
       // Assert: New search should be triggered with 'bitcoin'
       verify(
-        mockVideoEventService.searchVideos('bitcoin', limit: anyNamed('limit')),
+        () => mockVideoEventService.searchVideos(
+          'bitcoin',
+          limit: any(named: 'limit'),
+        ),
       ).called(greaterThan(0));
 
       container.dispose();

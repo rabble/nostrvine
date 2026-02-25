@@ -39,3 +39,18 @@ class VideoInteractionsRepostToggled extends VideoInteractionsEvent {
 class VideoInteractionsSubscriptionRequested extends VideoInteractionsEvent {
   const VideoInteractionsSubscriptionRequested();
 }
+
+/// Updates the comment count from an authoritative source.
+///
+/// Dispatched when the comments sheet is dismissed, carrying the actual
+/// loaded comment count from [CommentsBloc] so the feed sidebar stays
+/// in sync without an extra relay round-trip.
+class VideoInteractionsCommentCountUpdated extends VideoInteractionsEvent {
+  const VideoInteractionsCommentCountUpdated(this.commentCount);
+
+  /// The updated total comment count.
+  final int commentCount;
+
+  @override
+  List<Object?> get props => [commentCount];
+}
