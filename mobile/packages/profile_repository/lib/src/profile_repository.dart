@@ -16,8 +16,8 @@ import 'package:profile_repository/profile_repository.dart';
 const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
 
-/// API endpoint for NIP-05 username availability lookup.
-// NIP-05 lookup no longer used for availability checks; using name-server API.
+/// Keycast NIP-05 endpoint for checking username availability on login server.
+const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 
 /// Callback to check if a user should be filtered from results.
 typedef UserBlockFilter = bool Function(String pubkey);
@@ -259,6 +259,30 @@ class ProfileRepository {
         final reason = data['reason'] as String?;
 
         if (available) {
+          // Also check keycast (login.divine.video) — username must be
+          // available on both the name server and the login server.
+          try {
+            final keycastResponse = await _httpClient.get(
+              Uri.parse(
+                '$_keycastNip05Url?name=$normalizedUsername',
+              ),
+            );
+            if (keycastResponse.statusCode == 200) {
+              final keycastData =
+                  jsonDecode(keycastResponse.body) as Map<String, dynamic>;
+              final names = keycastData['names'] as Map<String, dynamic>? ?? {};
+              if (names.containsKey(normalizedUsername)) {
+                return const UsernameTaken();
+              }
+            }
+            // If keycast returns non-200 or no names entry, treat as available
+          } on Exception catch (e) {
+            // If keycast is unreachable, don't block — name-server said OK
+            developer.log(
+              'Keycast availability check failed (non-blocking): $e',
+              name: 'ProfileRepository.checkUsernameAvailability',
+            );
+          }
           return const UsernameAvailable();
         }
 
