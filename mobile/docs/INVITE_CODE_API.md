@@ -26,7 +26,7 @@ The caller's pubkey is extracted from the verified event — it is never sent in
 
 ## Code Format
 
-Invite codes use the format `DIVINE-XXXX` where the suffix is 4 alphanumeric characters from a reduced charset that excludes ambiguous characters (`0`/`O`, `1`/`I`/`L`).
+Invite codes use the format `XXXX-YYYY` — two groups of 4 alphanumeric characters from a reduced charset that excludes ambiguous characters (`0`/`O`, `1`/`I`/`L`). This gives 31^8 (~852 billion) possible codes.
 
 Codes are **case-insensitive** on input (normalized to uppercase server-side).
 
@@ -57,7 +57,7 @@ Atomically claim an invite code **during new identity creation**.
 
 ```json
 {
-  "code": "DIVINE-AB23"
+  "code": "AB23-EF7K"
 }
 ```
 
@@ -126,13 +126,13 @@ The app uses this to decide **whether to show invite generation UI** and to disp
   "total": 5,
   "codes": [
     {
-      "code": "DIVINE-AB23",
+      "code": "AB23-EF7K",
       "claimed": true,
       "claimedAt": "2025-01-15T10:30:00Z",
       "claimedBy": "64_HEX_PUBKEY"
     },
     {
-      "code": "DIVINE-EF56",
+      "code": "HN4P-QR56",
       "claimed": false,
       "claimedAt": null,
       "claimedBy": null
@@ -172,7 +172,7 @@ No JSON body. Auth is via NIP-98 header proving pubkey ownership.
 
 ```json
 {
-  "code": "DIVINE-WX56",
+  "code": "WX56-3MKT",
   "remaining": 4
 }
 ```
@@ -204,7 +204,7 @@ Check if a code is valid without consuming it. No authentication required.
 
 ```json
 {
-  "code": "DIVINE-AB23"
+  "code": "AB23-EF7K"
 }
 ```
 
@@ -213,7 +213,7 @@ Check if a code is valid without consuming it. No authentication required.
 ```json
 {
   "valid": true,
-  "code": "DIVINE-AB23",
+  "code": "AB23-EF7K",
   "used": false
 }
 ```
@@ -283,7 +283,7 @@ The token must meet the configured minimum sats price and come from the accepted
 
 ```json
 {
-  "code": "DIVINE-QR78",
+  "code": "QR78-VBND",
   "amountSats": 1000
 }
 ```
@@ -337,7 +337,7 @@ These endpoints require NIP-98 auth from a pubkey in the server's admin allowlis
 - **waitlist** — organic signup funnel for users without a code.
 - **buy** — Cashu ecash payments for permissionless onboarding.
 - **Admin endpoints** — server-side management for granting, revoking, and monitoring.
-- **DIVINE-XXXX code format** — human-readable, ambiguous-char-free.
+- **XXXX-YYYY code format** — human-readable, ambiguous-char-free, ~40 bits of entropy.
 
 ### Changed
 
