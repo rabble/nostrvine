@@ -3447,7 +3447,7 @@ void main() {
         );
 
         expect(
-          () => repo.getVideosByLoops(),
+          repo.getVideosByLoops,
           throwsA(isA<FunnelcakeApiException>()),
         );
       });
@@ -3868,7 +3868,7 @@ void main() {
         expect(result, isEmpty);
       });
 
-      test('returns empty list on FunnelcakeException', () async {
+      test('propagates FunnelcakeException', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getClassicVines(
@@ -3884,9 +3884,10 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repo.getClassicVines();
-
-        expect(result, isEmpty);
+        expect(
+          repo.getClassicVines,
+          throwsA(isA<FunnelcakeException>()),
+        );
       });
 
       test('passes parameters correctly', () async {
@@ -3980,7 +3981,7 @@ void main() {
         expect(result, isEmpty);
       });
 
-      test('returns empty list on FunnelcakeException', () async {
+      test('propagates FunnelcakeException', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getVideosByAuthor(
@@ -3995,9 +3996,10 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repo.getVideosByAuthor(pubkey: 'author-pubkey');
-
-        expect(result, isEmpty);
+        expect(
+          () => repo.getVideosByAuthor(pubkey: 'author-pubkey'),
+          throwsA(isA<FunnelcakeException>()),
+        );
       });
 
       test('passes parameters correctly', () async {
@@ -4082,7 +4084,7 @@ void main() {
         expect(result, isNull);
       });
 
-      test('returns null on FunnelcakeException', () async {
+      test('propagates FunnelcakeException', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getVideoStats(any()),
@@ -4093,9 +4095,10 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repo.getVideoStats('event-1');
-
-        expect(result, isNull);
+        expect(
+          () => repo.getVideoStats('event-1'),
+          throwsA(isA<FunnelcakeException>()),
+        );
       });
     });
 
@@ -4141,7 +4144,7 @@ void main() {
         expect(result, isNull);
       });
 
-      test('returns null on FunnelcakeException', () async {
+      test('propagates FunnelcakeException', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getVideoViews(any()),
@@ -4152,9 +4155,10 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repo.getVideoViews('event-1');
-
-        expect(result, isNull);
+        expect(
+          () => repo.getVideoViews('event-1'),
+          throwsA(isA<FunnelcakeException>()),
+        );
       });
     });
 
@@ -4212,7 +4216,7 @@ void main() {
         expect(result, isNull);
       });
 
-      test('returns null on FunnelcakeException', () async {
+      test('propagates FunnelcakeException', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getBulkVideoStats(any()),
@@ -4223,9 +4227,10 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repo.getBulkVideoStats(['event-1']);
-
-        expect(result, isNull);
+        expect(
+          () => repo.getBulkVideoStats(['event-1']),
+          throwsA(isA<FunnelcakeException>()),
+        );
       });
     });
 
@@ -4291,7 +4296,7 @@ void main() {
         expect(result, isNull);
       });
 
-      test('returns null on FunnelcakeException', () async {
+      test('propagates FunnelcakeException', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getRecommendations(
@@ -4307,9 +4312,10 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repo.getRecommendations(pubkey: 'user-pubkey');
-
-        expect(result, isNull);
+        expect(
+          () => repo.getRecommendations(pubkey: 'user-pubkey'),
+          throwsA(isA<FunnelcakeException>()),
+        );
       });
 
       test('passes parameters correctly', () async {
