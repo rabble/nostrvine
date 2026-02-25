@@ -1,8 +1,8 @@
 // ABOUTME: Extension methods for Nostr Event
 // ABOUTME: Provides methods to convert Nostr Event to CuratedList
 
+import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/curated_list_service.dart';
 
 extension NostrEventExt on Event {
   CuratedList toCuratedList() {

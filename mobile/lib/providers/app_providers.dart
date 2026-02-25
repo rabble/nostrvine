@@ -46,6 +46,7 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';

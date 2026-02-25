@@ -1411,12 +1411,12 @@ class MockCuratedListService extends _i1.Mock
   }
 
   @override
-  List<_i15.CuratedList> get lists =>
+  List<_i8.CuratedList> get lists =>
       (super.noSuchMethod(
             Invocation.getter(#lists),
-            returnValue: <_i15.CuratedList>[],
+            returnValue: <_i8.CuratedList>[],
           )
-          as List<_i15.CuratedList>);
+          as List<_i8.CuratedList>);
 
   @override
   bool get isInitialized =>
@@ -1432,12 +1432,12 @@ class MockCuratedListService extends _i1.Mock
           as Set<String>);
 
   @override
-  List<_i15.CuratedList> get subscribedLists =>
+  List<_i8.CuratedList> get subscribedLists =>
       (super.noSuchMethod(
             Invocation.getter(#subscribedLists),
-            returnValue: <_i15.CuratedList>[],
+            returnValue: <_i8.CuratedList>[],
           )
-          as List<_i15.CuratedList>);
+          as List<_i8.CuratedList>);
 
   @override
   bool get hasListeners =>
@@ -1476,7 +1476,7 @@ class MockCuratedListService extends _i1.Mock
           as bool);
 
   @override
-  _i5.Future<_i15.CuratedList?> createList({
+  _i5.Future<_i8.CuratedList?> createList({
     required String? name,
     String? description,
     String? imageUrl,
@@ -1485,7 +1485,7 @@ class MockCuratedListService extends _i1.Mock
     bool? isCollaborative = false,
     List<String>? allowedCollaborators = const [],
     String? thumbnailEventId,
-    _i15.PlayOrder? playOrder = _i15.PlayOrder.chronological,
+    _i8.PlayOrder? playOrder = _i8.PlayOrder.chronological,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#createList, [], {
@@ -1499,9 +1499,9 @@ class MockCuratedListService extends _i1.Mock
               #thumbnailEventId: thumbnailEventId,
               #playOrder: playOrder,
             }),
-            returnValue: _i5.Future<_i15.CuratedList?>.value(),
+            returnValue: _i5.Future<_i8.CuratedList?>.value(),
           )
-          as _i5.Future<_i15.CuratedList?>);
+          as _i5.Future<_i8.CuratedList?>);
 
   @override
   _i5.Future<bool> addVideoToList(String? listId, String? videoEventId) =>
@@ -1536,9 +1536,9 @@ class MockCuratedListService extends _i1.Mock
           as bool);
 
   @override
-  _i15.CuratedList? getListById(String? listId) =>
+  _i8.CuratedList? getListById(String? listId) =>
       (super.noSuchMethod(Invocation.method(#getListById, [listId]))
-          as _i15.CuratedList?);
+          as _i8.CuratedList?);
 
   @override
   _i5.Future<bool> updateList({
@@ -1551,7 +1551,7 @@ class MockCuratedListService extends _i1.Mock
     bool? isCollaborative,
     List<String>? allowedCollaborators,
     String? thumbnailEventId,
-    _i15.PlayOrder? playOrder,
+    _i8.PlayOrder? playOrder,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#updateList, [], {
@@ -1619,12 +1619,12 @@ class MockCuratedListService extends _i1.Mock
           as bool);
 
   @override
-  List<_i15.CuratedList> getListsByTag(String? tag) =>
+  List<_i8.CuratedList> getListsByTag(String? tag) =>
       (super.noSuchMethod(
             Invocation.method(#getListsByTag, [tag]),
-            returnValue: <_i15.CuratedList>[],
+            returnValue: <_i8.CuratedList>[],
           )
-          as List<_i15.CuratedList>);
+          as List<_i8.CuratedList>);
 
   @override
   List<String> getAllTags() =>
@@ -1635,25 +1635,25 @@ class MockCuratedListService extends _i1.Mock
           as List<String>);
 
   @override
-  List<_i15.CuratedList> searchLists(String? query) =>
+  List<_i8.CuratedList> searchLists(String? query) =>
       (super.noSuchMethod(
             Invocation.method(#searchLists, [query]),
-            returnValue: <_i15.CuratedList>[],
+            returnValue: <_i8.CuratedList>[],
           )
-          as List<_i15.CuratedList>);
+          as List<_i8.CuratedList>);
 
   @override
-  List<_i15.CuratedList> getListsContainingVideo(String? videoEventId) =>
+  List<_i8.CuratedList> getListsContainingVideo(String? videoEventId) =>
       (super.noSuchMethod(
             Invocation.method(#getListsContainingVideo, [videoEventId]),
-            returnValue: <_i15.CuratedList>[],
+            returnValue: <_i8.CuratedList>[],
           )
-          as List<_i15.CuratedList>);
+          as List<_i8.CuratedList>);
 
   @override
   _i5.Future<bool> subscribeToList(
     String? listId, [
-    _i15.CuratedList? listData,
+    _i8.CuratedList? listData,
   ]) =>
       (super.noSuchMethod(
             Invocation.method(#subscribeToList, [listId, listData]),
@@ -1698,7 +1698,7 @@ class MockCuratedListService extends _i1.Mock
           as _i5.Future<void>);
 
   @override
-  _i5.Stream<List<_i15.CuratedList>> streamPublicListsFromRelays({
+  _i5.Stream<List<_i8.CuratedList>> streamPublicListsFromRelays({
     DateTime? until,
     int? limit = 500,
     Set<String>? excludeIds,
@@ -1709,47 +1709,47 @@ class MockCuratedListService extends _i1.Mock
               #limit: limit,
               #excludeIds: excludeIds,
             }),
-            returnValue: _i5.Stream<List<_i15.CuratedList>>.empty(),
+            returnValue: _i5.Stream<List<_i8.CuratedList>>.empty(),
           )
-          as _i5.Stream<List<_i15.CuratedList>>);
+          as _i5.Stream<List<_i8.CuratedList>>);
 
   @override
-  _i5.Future<List<_i15.CuratedList>> fetchPublicListsFromRelays({
+  _i5.Future<List<_i8.CuratedList>> fetchPublicListsFromRelays({
     List<String>? searchTags,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#fetchPublicListsFromRelays, [], {
               #searchTags: searchTags,
             }),
-            returnValue: _i5.Future<List<_i15.CuratedList>>.value(
-              <_i15.CuratedList>[],
+            returnValue: _i5.Future<List<_i8.CuratedList>>.value(
+              <_i8.CuratedList>[],
             ),
           )
-          as _i5.Future<List<_i15.CuratedList>>);
+          as _i5.Future<List<_i8.CuratedList>>);
 
   @override
-  _i5.Future<List<_i15.CuratedList>> fetchPublicListsContainingVideo(
+  _i5.Future<List<_i8.CuratedList>> fetchPublicListsContainingVideo(
     String? videoEventId,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#fetchPublicListsContainingVideo, [videoEventId]),
-            returnValue: _i5.Future<List<_i15.CuratedList>>.value(
-              <_i15.CuratedList>[],
+            returnValue: _i5.Future<List<_i8.CuratedList>>.value(
+              <_i8.CuratedList>[],
             ),
           )
-          as _i5.Future<List<_i15.CuratedList>>);
+          as _i5.Future<List<_i8.CuratedList>>);
 
   @override
-  _i5.Stream<_i15.CuratedList> streamPublicListsContainingVideo(
+  _i5.Stream<_i8.CuratedList> streamPublicListsContainingVideo(
     String? videoEventId,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#streamPublicListsContainingVideo, [
               videoEventId,
             ]),
-            returnValue: _i5.Stream<_i15.CuratedList>.empty(),
+            returnValue: _i5.Stream<_i8.CuratedList>.empty(),
           )
-          as _i5.Stream<_i15.CuratedList>);
+          as _i5.Stream<_i8.CuratedList>);
 
   @override
   void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(

@@ -10,6 +10,7 @@ import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/curated_list_ext.dart';
