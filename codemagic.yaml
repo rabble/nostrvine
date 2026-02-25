@@ -23,10 +23,6 @@
 #   - Set to YES to upload artifacts to a GitHub Release (for Zapstore / direct distribution)
 #   - Defaults to NO
 #   - Requires GITHUB_TOKEN in "github_credentials" environment variable group
-# 9 - Ensure environment variable group "firebase" contains:
-#   - FIREBASE_SERVICE_ACCOUNT (Google service account JSON key with Firebase Crashlytics access)
-#   - FIREBASE_IOS_APP_ID (Firebase iOS app ID, e.g. 1:123456:ios:abc123)
-#   - FIREBASE_ANDROID_APP_ID (Firebase Android app ID)
 
 definitions:
   environment:
@@ -226,7 +222,6 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
-        - firebase
         - github_credentials
       vars:
         BUNDLE_ID: co.openvine.app
