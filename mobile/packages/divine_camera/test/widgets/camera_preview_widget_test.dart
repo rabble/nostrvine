@@ -49,6 +49,7 @@ class MockDivineCameraPlatform
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
+    bool enableAutoLensSwitch = false,
   }) async {
     return _state = CameraState(
       isInitialized: true,
@@ -124,6 +125,7 @@ class _WideAspectRatioMock extends MockDivineCameraPlatform {
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
+    bool enableAutoLensSwitch = false,
   }) async {
     return const CameraState(
       isInitialized: true,

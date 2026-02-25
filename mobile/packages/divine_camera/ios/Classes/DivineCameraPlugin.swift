@@ -48,7 +48,8 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             let videoQuality = args["videoQuality"] as? String ?? "fhd"
             let enableScreenFlash = args["enableScreenFlash"] as? Bool ?? true
             let mirrorFrontCameraOutput = args["mirrorFrontCameraOutput"] as? Bool ?? true
-            initializeCamera(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput, result: result)
+            let enableAutoLensSwitch = args["enableAutoLensSwitch"] as? Bool ?? true
+            initializeCamera(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput, enableAutoLensSwitch: enableAutoLensSwitch, result: result)
             
         case "disposeCamera":
             disposeCamera(result: result)
@@ -117,7 +118,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         }
     }
     
-    private func initializeCamera(lens: String, videoQuality: String, enableScreenFlash: Bool, mirrorFrontCameraOutput: Bool, result: @escaping FlutterResult) {
+    private func initializeCamera(lens: String, videoQuality: String, enableScreenFlash: Bool, mirrorFrontCameraOutput: Bool, enableAutoLensSwitch: Bool, result: @escaping FlutterResult) {
         guard let registry = textureRegistry else {
             result(FlutterError(code: "NO_REGISTRY", message: "Texture registry not available", details: nil))
             return
@@ -126,7 +127,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         cameraController?.release()
         cameraController = CameraController(textureRegistry: registry)
         
-        cameraController?.initialize(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput) { [weak self] state, error in
+        cameraController?.initialize(lens: lens, videoQuality: videoQuality, enableScreenFlash: enableScreenFlash, mirrorFrontCameraOutput: mirrorFrontCameraOutput, enableAutoLensSwitch: enableAutoLensSwitch) { [weak self] state, error in
             DispatchQueue.main.async {
                 if let error = error {
                     result(FlutterError(code: "INIT_ERROR", message: error, details: nil))

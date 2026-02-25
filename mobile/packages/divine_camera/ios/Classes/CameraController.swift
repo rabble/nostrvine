@@ -41,6 +41,11 @@ class CameraController: NSObject {
     // Whether to mirror front camera video output
     private var mirrorFrontCameraOutput: Bool = true
     
+    // Auto lens switching via zoom
+    // When true, uses a virtual multi-camera device (builtInTripleCamera,
+    // builtInDualWideCamera, etc.) for smooth cross-fade between lenses.
+    private var autoLensSwitchRequested: Bool = true
+    
     // Auto flash mode - checks brightness once when recording starts
     private var isAutoFlashMode: Bool = false
     private var autoFlashTorchEnabled: Bool = false
@@ -165,6 +170,21 @@ class CameraController: NSObject {
         print("[DivineCameraController] Camera availability: front=\(hasFrontCamera), " +
               "frontUltraWide=\(hasFrontUltraWideCamera), back=\(hasBackCamera), " +
               "ultraWide=\(hasUltraWideCamera), telephoto=\(hasTelephotoCamera), macro=\(hasMacroCamera)")
+        
+        // Log virtual multi-camera device availability
+        if #available(iOS 13.0, *) {
+            let hasTriple = AVCaptureDevice.default(
+                .builtInTripleCamera, for: .video, position: .back
+            ) != nil
+            let hasDualWide = AVCaptureDevice.default(
+                .builtInDualWideCamera, for: .video, position: .back
+            ) != nil
+            let hasDual = AVCaptureDevice.default(
+                .builtInDualCamera, for: .video, position: .back
+            ) != nil
+            print("[DivineCameraController] Virtual devices: " +
+                  "triple=\(hasTriple), dualWide=\(hasDualWide), dual=\(hasDual)")
+        }
     }
     
     /// Gets metadata for the currently active camera lens.
@@ -292,6 +312,27 @@ class CameraController: NSObject {
             }
             return nil
         case "back":
+            // When auto lens switch is enabled, use virtual multi-camera
+            // devices for smooth cross-fade transitions between lenses.
+            if autoLensSwitchRequested {
+                if #available(iOS 13.0, *) {
+                    if let device = AVCaptureDevice.default(
+                        .builtInTripleCamera, for: .video, position: .back
+                    ) {
+                        return device
+                    }
+                    if let device = AVCaptureDevice.default(
+                        .builtInDualWideCamera, for: .video, position: .back
+                    ) {
+                        return device
+                    }
+                }
+                if let device = AVCaptureDevice.default(
+                    .builtInDualCamera, for: .video, position: .back
+                ) {
+                    return device
+                }
+            }
             return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
         case "ultraWide":
             if #available(iOS 13.0, *) {
@@ -325,7 +366,8 @@ class CameraController: NSObject {
     private var videoQualityPreset: AVCaptureSession.Preset = .high
     
     /// Initializes the camera with the specified lens and video quality.
-    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, mirrorFrontCameraOutput: Bool = true, completion: @escaping ([String: Any]?, String?) -> Void) {
+    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, mirrorFrontCameraOutput: Bool = true, enableAutoLensSwitch: Bool = true, completion: @escaping ([String: Any]?, String?) -> Void) {
+        self.autoLensSwitchRequested = enableAutoLensSwitch
         currentLensType = lens
         currentLens = getPositionForLensType(lens)
         screenFlashFeatureEnabled = enableScreenFlash
@@ -571,8 +613,17 @@ class CameraController: NSObject {
     
     /// Updates camera properties from the device.
     private func updateCameraProperties(device: AVCaptureDevice) {
-        minZoom = 1.0
-        maxZoom = min(device.activeFormat.videoMaxZoomFactor, 10.0)
+        if autoLensSwitchRequested {
+            // Use full zoom range including ultra-wide on virtual
+            // multi-camera devices (e.g. builtInTripleCamera).
+            minZoom = device.minAvailableVideoZoomFactor
+            maxZoom = min(device.maxAvailableVideoZoomFactor, 10.0)
+        } else {
+            // No auto lens switch - clamp to 1.0 to prevent native
+            // lens switching on virtual multi-camera devices.
+            minZoom = 1.0
+            maxZoom = min(device.activeFormat.videoMaxZoomFactor, 10.0)
+        }
         currentZoom = device.videoZoomFactor
         // Front camera has "flash" via screen brightness when feature is enabled
         hasFlash = device.hasFlash || (screenFlashFeatureEnabled && currentLens == .front)

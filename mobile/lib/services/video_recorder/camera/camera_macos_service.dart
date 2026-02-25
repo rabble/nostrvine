@@ -49,8 +49,9 @@ class CameraMacOSService extends CameraService {
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
+    bool enableAutoLensSwitch = false,
   }) async {
-    // Note: macOS does not support lens selection - initialLens is ignored
+    // Note: macOS does not support lens selection or auto lens switch
     _currentVideoQuality = videoQuality;
     if (_isInitialized) return;
 

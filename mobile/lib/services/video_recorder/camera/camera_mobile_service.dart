@@ -27,6 +27,7 @@ class CameraMobileService extends CameraService {
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
+    bool enableAutoLensSwitch = false,
   }) async {
     // Clear any previous error
     _initializationError = null;
@@ -38,7 +39,11 @@ class CameraMobileService extends CameraService {
       category: .video,
     );
     try {
-      await _camera.initialize(lens: initialLens, videoQuality: videoQuality);
+      await _camera.initialize(
+        lens: initialLens,
+        videoQuality: videoQuality,
+        enableAutoLensSwitch: enableAutoLensSwitch,
+      );
       _camera.onRecordingAutoStopped = (result) {
         onAutoStopped(EditorVideo.file(result.filePath));
       };
