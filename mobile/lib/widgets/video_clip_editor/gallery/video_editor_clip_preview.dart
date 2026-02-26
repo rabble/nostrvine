@@ -341,9 +341,9 @@ class _ClipThumbnail extends StatelessWidget {
         children: <Widget>[...previous, ?current],
       ),
       child: clip.thumbnailPath == null
-          ? Container(
+          ? const ColoredBox(
               color: VineTheme.onSurfaceMuted,
-              child: const Icon(
+              child: Icon(
                 Icons.play_circle_outline,
                 size: 64,
                 color: VineTheme.whiteText,

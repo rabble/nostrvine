@@ -147,7 +147,7 @@ class _VideoMetadataTagsInputState
       onTap: _focusNode.requestFocus,
       behavior: .opaque,
       child: Padding(
-        padding: .symmetric(horizontal: 16),
+        padding: const .symmetric(horizontal: 16),
         child: Column(
           crossAxisAlignment: .start,
           spacing: 12,

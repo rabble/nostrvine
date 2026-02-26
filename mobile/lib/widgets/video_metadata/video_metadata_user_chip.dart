@@ -81,7 +81,6 @@ class VideoMetadataUserChip extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.bodyFont(
-                color: VineTheme.whiteText,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 height: 1.38,

@@ -11,10 +11,9 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_help_button.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_help_sheet.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_user_chip.dart';
-
-import 'video_metadata_help_button.dart';
 
 /// Input widget for setting "Inspired By" attribution.
 ///
@@ -122,7 +121,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
-      body: VideoMetadataHelpSheet(
+      body: const VideoMetadataHelpSheet(
         // TODO(l10n): Replace with context.l10n when localization is added.
         title: 'Inspired by',
         message:
@@ -153,7 +152,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
     if (blocklistService.hasMutedUs(profile.pubkey)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           behavior: SnackBarBehavior.floating,

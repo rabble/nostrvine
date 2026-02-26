@@ -138,8 +138,8 @@ class _DiscardButton extends ConsumerWidget {
         ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
       },
       style: OutlinedButton.styleFrom(
-        backgroundColor: Color(0xFF032017),
-        side: BorderSide(width: 2, color: VineTheme.containerLow),
+        backgroundColor: const Color(0xFF032017),
+        side: const BorderSide(width: 2, color: VineTheme.containerLow),
         padding: const .symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: .circular(20)),
       ),

@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 
 class VideoMetadataHelpSheet extends StatelessWidget {
   const VideoMetadataHelpSheet({
-    super.key,
     required this.title,
     required this.message,
     required this.assetPath,
+    super.key,
   });
 
   final String title;
@@ -20,7 +20,6 @@ class VideoMetadataHelpSheet extends StatelessWidget {
       padding: const .all(16),
       child: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: .center,
           children: [
             Padding(
               padding: const .only(top: 8.0, bottom: 16),
@@ -48,7 +47,10 @@ class VideoMetadataHelpSheet extends StatelessWidget {
               child: Material(
                 color: VineTheme.surfaceContainer,
                 shape: RoundedRectangleBorder(
-                  side: BorderSide(width: 2, color: VineTheme.outlineMuted),
+                  side: const BorderSide(
+                    width: 2,
+                    color: VineTheme.outlineMuted,
+                  ),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: InkWell(

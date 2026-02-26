@@ -28,9 +28,9 @@ void main() {
           ),
           GoRoute(
             path: '/test',
-            builder: (context, state) => Scaffold(
-              appBar: const VideoMetadataAppBar(),
-              body: const Text('Test'),
+            builder: (context, state) => const Scaffold(
+              appBar: VideoMetadataAppBar(),
+              body: Text('Test'),
             ),
           ),
         ],
@@ -88,7 +88,7 @@ void main() {
 
     testWidgets('tapping back button triggers pop navigation', (tester) async {
       final mockGoRouter = MockGoRouter();
-      when(() => mockGoRouter.canPop()).thenReturn(true);
+      when(mockGoRouter.canPop).thenReturn(true);
       when(() => mockGoRouter.pop<Object?>(any())).thenAnswer((_) async {});
 
       await tester.pumpWidget(

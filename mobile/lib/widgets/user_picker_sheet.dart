@@ -195,7 +195,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
           textField: true,
           label: hintText,
           child: Container(
-            margin: .fromLTRB(16, 16, 16, 4),
+            margin: const .fromLTRB(16, 16, 16, 4),
             decoration: BoxDecoration(
               color: VineTheme.surfaceContainer,
               borderRadius: .circular(20),
@@ -209,14 +209,12 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
               cursorColor: VineTheme.vineGreen,
               style: VineTheme.bodyFont(
                 color: VineTheme.onSurface,
-                fontSize: 16,
                 height: 1.5,
               ),
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: VineTheme.bodyFont(
                   color: VineTheme.onSurfaceMuted,
-                  fontSize: 16,
                   height: 1.5,
                 ),
                 prefixIcon: const Padding(
@@ -387,7 +385,10 @@ class _EmptyFollowList extends StatelessWidget {
                 decoration: ShapeDecoration(
                   color: VineTheme.surfaceContainer,
                   shape: RoundedRectangleBorder(
-                    side: BorderSide(width: 2, color: VineTheme.outlineMuted),
+                    side: const BorderSide(
+                      width: 2,
+                      color: VineTheme.outlineMuted,
+                    ),
                     borderRadius: .circular(20),
                   ),
                 ),
@@ -487,8 +488,11 @@ class _ResultsList extends StatelessWidget {
       controller: scrollController,
       itemCount: results.length,
       padding: const EdgeInsets.symmetric(vertical: 32),
-      separatorBuilder: (context, index) =>
-          Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
+      separatorBuilder: (context, index) => const Divider(
+        height: 40,
+        thickness: 1,
+        color: VineTheme.outlineDisabled,
+      ),
       itemBuilder: (context, index) {
         final profile = results[index];
         final isDisabled = excludePubkeys.contains(profile.pubkey);
@@ -579,8 +583,11 @@ class _LocalResults extends StatelessWidget {
       controller: scrollController,
       itemCount: filteredFollowProfiles.length,
       padding: const EdgeInsets.symmetric(vertical: 32),
-      separatorBuilder: (context, index) =>
-          Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
+      separatorBuilder: (context, index) => const Divider(
+        height: 40,
+        thickness: 1,
+        color: VineTheme.outlineDisabled,
+      ),
       itemBuilder: (context, index) {
         final profile = filteredFollowProfiles[index];
         final isDisabled = excludePubkeys.contains(profile.pubkey);

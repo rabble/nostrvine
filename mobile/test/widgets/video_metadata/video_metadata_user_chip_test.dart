@@ -175,7 +175,7 @@ void main() {
         // Note: NostrKeyUtils.decode converts npub to hex pubkey
         // We test that the widget accepts npub format
         await tester.pumpWidget(
-          ProviderScope(
+          const ProviderScope(
             child: MaterialApp(
               home: Scaffold(
                 body: VideoMetadataUserChip.fromNpub(npub: testNpub),

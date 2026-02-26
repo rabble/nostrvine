@@ -135,7 +135,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
-      body: VideoMetadataHelpSheet(
+      body: const VideoMetadataHelpSheet(
         // TODO(l10n): Replace with context.l10n when localization is added.
         title: 'Collaborators',
         message:

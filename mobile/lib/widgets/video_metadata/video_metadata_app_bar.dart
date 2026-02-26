@@ -23,7 +23,7 @@ class VideoMetadataAppBar extends StatelessWidget
       bottom: false,
       child: Container(
         height: kToolbarHeight,
-        padding: .symmetric(horizontal: 16),
+        padding: const .symmetric(horizontal: 16),
         child: Row(
           spacing: 16,
           children: [
