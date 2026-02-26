@@ -27,7 +27,7 @@ void main() {
 
   setUp(() async {
     // Create in-memory database for testing
-    database = AppDatabase.test(NativeDatabase.memory(logStatements: false));
+    database = AppDatabase.test(NativeDatabase.memory());
     dao = database.pendingActionsDao;
 
     mockConnectionService = MockConnectionStatusService();

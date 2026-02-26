@@ -8,6 +8,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 class VideoEditorThumbnail extends ConsumerWidget {
   const VideoEditorThumbnail({
     required this.contentSize,
+    super.key,
     this.isInitialized = false,
   });
 

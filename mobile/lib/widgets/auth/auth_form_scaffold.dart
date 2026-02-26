@@ -27,17 +27,17 @@ import 'package:openvine/widgets/auth_back_button.dart';
 /// parts that differ.
 class AuthFormScaffold extends StatelessWidget {
   const AuthFormScaffold({
-    super.key,
     required this.title,
     required this.emailController,
     required this.passwordController,
+    required this.primaryButton,
+    super.key,
     this.emailError,
     this.passwordError,
     this.enabled = true,
     this.onEmailChanged,
     this.onPasswordChanged,
     this.errorWidget,
-    required this.primaryButton,
     this.secondaryButton,
     this.onBack,
   });

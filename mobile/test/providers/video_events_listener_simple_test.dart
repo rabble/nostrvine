@@ -4,18 +4,18 @@
 
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
+import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -61,7 +61,7 @@ void main() {
               const RouteContext(type: RouteType.explore, videoIndex: 0),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
 
@@ -96,7 +96,7 @@ void main() {
               const RouteContext(type: RouteType.explore, videoIndex: 0),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
 
@@ -157,7 +157,7 @@ void main() {
               const RouteContext(type: RouteType.explore, videoIndex: 0),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
 
@@ -196,7 +196,7 @@ void main() {
               const RouteContext(type: RouteType.explore, videoIndex: 0),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
 
@@ -227,7 +227,7 @@ void main() {
               const RouteContext(type: RouteType.explore, videoIndex: 0),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
 
@@ -289,7 +289,7 @@ void main() {
               const RouteContext(type: RouteType.explore, videoIndex: 0),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
 

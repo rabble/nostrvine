@@ -1,8 +1,8 @@
 // ABOUTME: Skeleton loader with shimmer animation for comments loading state
 // ABOUTME: Uses skeletonizer package for Material 3-style loading placeholder
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 /// Skeleton loader for comments loading state
@@ -16,7 +16,6 @@ class CommentsSkeletonLoader extends StatelessWidget {
       identifier: 'comments_loading_indicator',
       label: 'Loading comments',
       child: Skeletonizer(
-        enabled: true,
         effect: ShimmerEffect(
           baseColor: VineTheme.iconButtonBackground,
           highlightColor: VineTheme.iconButtonBackground.withValues(
@@ -41,7 +40,7 @@ class _CommentSkeletonItem extends StatelessWidget {
   const _CommentSkeletonItem();
 
   // Surface container color from Figma (green tint)
-  static const _surfaceColor = VineTheme.outlinedDisabled;
+  static const Color _surfaceColor = VineTheme.outlinedDisabled;
 
   @override
   Widget build(BuildContext context) {

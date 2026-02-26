@@ -48,7 +48,6 @@ void main() {
                 video: testVideo,
                 isVisible: true,
                 isActive: true,
-                contextTitle: null,
               ),
             ),
           ),

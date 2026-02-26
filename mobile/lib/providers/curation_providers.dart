@@ -2,13 +2,13 @@
 // ABOUTME: Manages only editor picks - trending/popular handled by infinite feeds
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/curation_state.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
@@ -123,7 +123,7 @@ class Curation extends _$Curation {
     // Initialize with empty state
     _initializeCuration();
 
-    return CurationState(editorsPicks: [], isLoading: true);
+    return const CurationState(editorsPicks: [], isLoading: true);
   }
 
   Future<void> _initializeCuration() async {
@@ -323,7 +323,6 @@ class AnalyticsTrending extends _$AnalyticsTrending {
 
       // Use cursor-based pagination with 'before' parameter
       final videos = await service.getTrendingVideos(
-        limit: 50,
         before: _nextCursor,
       );
 

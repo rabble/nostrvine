@@ -1,16 +1,17 @@
 // ABOUTME: Test for verifying profile fetching when videos are displayed
 // ABOUTME: Ensures Kind 0 events are fetched and cached when viewing videos
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
-import 'dart:convert';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -29,15 +30,6 @@ void main() {
     registerFallbackValue(
       UserProfile(
         pubkey: 'fallback',
-        name: null,
-        displayName: null,
-        about: null,
-        picture: null,
-        banner: null,
-        website: null,
-        lud06: null,
-        lud16: null,
-        nip05: null,
         createdAt: DateTime.now(),
         eventId: 'fallback_event_id',
         rawData: const {},
@@ -236,12 +228,6 @@ void main() {
         name: 'Cached User',
         displayName: 'CachedUser',
         about: 'Already cached',
-        picture: null,
-        banner: null,
-        website: null,
-        lud06: null,
-        lud16: null,
-        nip05: null,
         createdAt: DateTime.now(),
         eventId: 'cached_event_id',
         rawData: const {

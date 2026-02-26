@@ -11,7 +11,7 @@ import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dar
 /// Like action button with count display for video overlay.
 ///
 /// Shows a heart icon that toggles between filled (liked) and outline (not liked).
-/// Displays the total like count combining Nostr likes and original Vine likes.
+/// Displays the like count from the [VideoInteractionsBloc] once loaded.
 ///
 /// Requires [VideoInteractionsBloc] to be provided in the widget tree.
 class LikeActionButton extends StatelessWidget {
@@ -31,8 +31,7 @@ class LikeActionButton extends StatelessWidget {
     return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
       builder: (context, state) {
         final isLiked = state.isLiked;
-        final likeCount = state.likeCount ?? 0;
-        final totalLikes = likeCount + (video.originalLikes ?? 0);
+        final totalLikes = state.likeCount ?? 0;
 
         return _ActionButton(
           isLiked: isLiked,

@@ -125,7 +125,7 @@ void main() {
         expect(audioEvent.duration, equals(6.0));
       });
 
-      test('handles malformed duration gracefully (Postel\'s law)', () {
+      test("handles malformed duration gracefully (Postel's law)", () {
         // Arrange
         final nostrEvent = Event(
           testPubkey,
@@ -146,7 +146,7 @@ void main() {
         expect(audioEvent.duration, isNull);
       });
 
-      test('handles malformed size gracefully (Postel\'s law)', () {
+      test("handles malformed size gracefully (Postel's law)", () {
         // Arrange
         final nostrEvent = Event(
           testPubkey,
@@ -252,7 +252,7 @@ void main() {
       });
 
       test('isBundled returns false for Nostr sounds', () {
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'abc123def456789012345678901234567890123456789012345678901234abcd',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -276,7 +276,7 @@ void main() {
       });
 
       test('assetPath returns null for Nostr sounds', () {
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'abc123def456789012345678901234567890123456789012345678901234abcd',
           pubkey: testPubkey,
           createdAt: 1700000000,
@@ -303,7 +303,7 @@ void main() {
     group('toTags', () {
       test('generates complete tags list', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -338,7 +338,7 @@ void main() {
 
       test('generates minimal tags for sparse event', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'minimal-id-123456789012345678901234567890123456789012345678',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -365,7 +365,7 @@ void main() {
 
       test('generates a tag without relay when relay is null', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'no-relay-id-12345678901234567890123456789012345678901234567',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -385,7 +385,7 @@ void main() {
     group('copyWith', () {
       test('creates copy with updated fields', () {
         // Arrange
-        final original = AudioEvent(
+        const original = AudioEvent(
           id: 'original-id-1234567890123456789012345678901234567890123456',
           pubkey: 'original-pubkey',
           createdAt: 1700000000,
@@ -411,7 +411,7 @@ void main() {
     group('equality', () {
       test('events with same id are equal', () {
         // Arrange
-        final event1 = AudioEvent(
+        const event1 = AudioEvent(
           id: 'same-id-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey1',
           createdAt: 1700000000,
@@ -419,7 +419,7 @@ void main() {
           mimeType: 'audio/aac',
         );
 
-        final event2 = AudioEvent(
+        const event2 = AudioEvent(
           id: 'same-id-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey2', // Different pubkey
           createdAt: 1700000001, // Different timestamp
@@ -434,7 +434,7 @@ void main() {
 
       test('events with different ids are not equal', () {
         // Arrange
-        final event1 = AudioEvent(
+        const event1 = AudioEvent(
           id: 'id-one-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey',
           createdAt: 1700000000,
@@ -442,7 +442,7 @@ void main() {
           mimeType: 'audio/aac',
         );
 
-        final event2 = AudioEvent(
+        const event2 = AudioEvent(
           id: 'id-two-123456789012345678901234567890123456789012345678901',
           pubkey: 'pubkey',
           createdAt: 1700000000,
@@ -458,7 +458,7 @@ void main() {
     group('toString', () {
       test('returns readable debug string', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -487,7 +487,7 @@ void main() {
     group('sourceVideoKind getter', () {
       test('extracts kind from sourceVideoReference', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -502,7 +502,7 @@ void main() {
 
       test('returns null when sourceVideoReference is null', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -518,7 +518,7 @@ void main() {
     group('sourceVideoPubkey getter', () {
       test('extracts pubkey from sourceVideoReference', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -535,7 +535,7 @@ void main() {
     group('sourceVideoIdentifier getter', () {
       test('extracts d-tag identifier from sourceVideoReference', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -552,7 +552,7 @@ void main() {
     group('formattedDuration getter', () {
       test('formats duration as mm:ss', () {
         // Arrange - 65.4 rounds to 65 seconds = 1:05
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -567,7 +567,7 @@ void main() {
 
       test('handles sub-minute duration', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -582,7 +582,7 @@ void main() {
 
       test('returns empty string when duration is null', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,
@@ -598,7 +598,7 @@ void main() {
     group('fileSizeKB getter', () {
       test('returns file size in KB', () {
         // Arrange
-        final audioEvent = AudioEvent(
+        const audioEvent = AudioEvent(
           id: 'test-id-123456789012345678901234567890123456789012345678901234',
           pubkey: 'test-pubkey',
           createdAt: 1700000000,

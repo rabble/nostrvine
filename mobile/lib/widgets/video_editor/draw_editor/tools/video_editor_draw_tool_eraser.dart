@@ -10,9 +10,9 @@ import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item
 class DrawToolEraser extends StatelessWidget {
   /// Creates an eraser tool button.
   const DrawToolEraser({
-    super.key,
     required this.isSelected,
     required this.onTap,
+    super.key,
   });
 
   /// Whether this tool is currently selected.

@@ -1,12 +1,12 @@
 // ABOUTME: Bottom sheet asking user to restore autosaved video editing session
 // ABOUTME: Shows warning icon with restore/discard options
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// Bottom sheet displayed when an autosaved editing session is detected.
 ///
@@ -21,25 +21,25 @@ class VideoEditorRestoreAutosaveSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const .fromLTRB(16, 12, 16, 16),
+    return const SingleChildScrollView(
+      padding: .fromLTRB(16, 12, 16, 16),
       child: Column(
         crossAxisAlignment: .stretch,
         mainAxisSize: .min,
         children: [
-          const _WarningIcon(),
-          const SizedBox(height: 16),
+          _WarningIcon(),
+          SizedBox(height: 16),
 
-          const _Title(),
-          const SizedBox(height: 16),
+          _Title(),
+          SizedBox(height: 16),
 
-          const _Description(),
-          const SizedBox(height: 32),
+          _Description(),
+          SizedBox(height: 32),
 
-          const _RestoreButton(),
-          const SizedBox(height: 16),
+          _RestoreButton(),
+          SizedBox(height: 16),
 
-          const _DiscardButton(),
+          _DiscardButton(),
         ],
       ),
     );
@@ -88,10 +88,8 @@ class _Description extends StatelessWidget {
       'Would you like to continue where you left off?',
       style: VineTheme.bodyFont(
         color: VineTheme.onSurface,
-        fontSize: 16,
         height: 1.5,
         letterSpacing: 0.15,
-        fontWeight: .w400,
       ),
       textAlign: .center,
     );
@@ -140,8 +138,8 @@ class _DiscardButton extends ConsumerWidget {
         ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
       },
       style: OutlinedButton.styleFrom(
-        backgroundColor: Color(0xFF032017),
-        side: BorderSide(width: 2, color: const Color(0xFF0E2B21)),
+        backgroundColor: const Color(0xFF032017),
+        side: const BorderSide(width: 2, color: Color(0xFF0E2B21)),
         padding: const .symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: .circular(20)),
       ),

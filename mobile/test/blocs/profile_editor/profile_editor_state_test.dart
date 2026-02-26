@@ -61,7 +61,7 @@ void main() {
     });
 
     test('different statuses are not equal', () {
-      const state1 = ProfileEditorState(status: ProfileEditorStatus.initial);
+      const state1 = ProfileEditorState();
       const state2 = ProfileEditorState(status: ProfileEditorStatus.loading);
 
       expect(state1, isNot(equals(state2)));

@@ -4,9 +4,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -147,7 +147,7 @@ class SubscribedListVideoCache extends ChangeNotifier {
       final sampleIds = subscribedIds
           .take(3)
           .map((id) => id.length > 8 ? id.substring(0, 8) : id)
-          .join(", ");
+          .join(', ');
       Log.warning(
         '⚠️ Have ${subscribedIds.length} subscribed IDs but 0 lists loaded! '
         'IDs: $sampleIds...',
@@ -225,9 +225,10 @@ class SubscribedListVideoCache extends ChangeNotifier {
 
     // Subsequent videos - debounce to batch updates
     _notifyDebounceTimer?.cancel();
-    _notifyDebounceTimer = Timer(const Duration(milliseconds: 100), () {
-      notifyListeners();
-    });
+    _notifyDebounceTimer = Timer(
+      const Duration(milliseconds: 100),
+      notifyListeners,
+    );
   }
 
   /// Finds a video by addressable coordinate (kind:pubkey:d-tag)

@@ -51,7 +51,6 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
                 'Inspired by',
                 style: VineTheme.bodyFont(
                   color: VineTheme.onSurface,
-                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   height: 1.25,
                 ),
@@ -263,7 +262,6 @@ class _InspiredByProfileInfo extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.bodyFont(
-                color: VineTheme.whiteText,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 height: 1.43,
@@ -321,7 +319,6 @@ class _InspiredByNpubInfo extends ConsumerWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: VineTheme.bodyFont(
-                  color: VineTheme.whiteText,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   height: 1.43,

@@ -3,13 +3,14 @@
 
 import 'dart:async';
 import 'dart:io';
+
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/event_router.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:path/path.dart' as p;
@@ -19,7 +20,7 @@ class MockNostrService implements NostrClient {
   final StreamController<Event> _eventController =
       StreamController<Event>.broadcast();
   final List<Filter> _subscriptionFilters = [];
-  bool _isInitialized = true;
+  final bool _isInitialized = true;
 
   @override
   bool get isInitialized => _isInitialized;
@@ -137,7 +138,7 @@ void main() {
       mockNostrService.emitEvent(videoEvent);
 
       // Wait for event processing
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Verify event was cached to database via EventRouter
       final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -178,7 +179,7 @@ void main() {
         mockNostrService.emitEvent(profileEvent);
 
         // Wait for event processing
-        await Future.delayed(Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 100));
 
         // Verify event was cached to NostrEvents table
         final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -231,7 +232,7 @@ void main() {
       mockNostrService.emitEvent(contactsEvent);
 
       // Wait for event processing
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Verify event was cached to database
       final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -270,7 +271,7 @@ void main() {
       mockNostrService.emitEvent(reactionEvent);
 
       // Wait for event processing
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Verify event was cached to database
       final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -304,7 +305,7 @@ void main() {
       mockNostrService.emitEvent(unknownEvent);
 
       // Wait for event processing
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       // Verify event was cached to database
       final cachedEvent = await db.nostrEventsDao.getEventById(
@@ -344,7 +345,7 @@ void main() {
       }
 
       // Wait for all events to process
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       // Verify all events were cached
       for (int i = 0; i < 5; i++) {

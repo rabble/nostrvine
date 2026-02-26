@@ -47,7 +47,7 @@ Future<void> main() async {
 
   // Create auth event
   final now = DateTime.now();
-  final expiration = now.add(Duration(minutes: 5));
+  final expiration = now.add(const Duration(minutes: 5));
   final event = Event(
     keychain.public,
     24242, // Blossom auth kind
@@ -64,7 +64,7 @@ Future<void> main() async {
   print('🔐 Created and signed auth event: ${event.id}\n');
 
   // Prepare upload
-  final serverUrl = 'https://cf-stream-service-prod.protestnet.workers.dev';
+  const serverUrl = 'https://cf-stream-service-prod.protestnet.workers.dev';
   final authHeader =
       'Nostr ${base64.encode(utf8.encode(jsonEncode(event.toJson())))}';
 

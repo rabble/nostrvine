@@ -207,7 +207,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         // restore the editor state from drafts.
         final filePath = await publishDraft.clips.first.video.safeFilePath();
         final result = await NativeProofModeService.proofFile(File(filePath));
-        String? proofManifestJson = result == null ? null : jsonEncode(result);
+        final String? proofManifestJson = result == null
+            ? null
+            : jsonEncode(result);
         publishDraft = publishDraft.copyWith(
           proofManifestJson: proofManifestJson,
         );

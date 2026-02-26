@@ -10,14 +10,16 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/services/page_load_observer.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
+import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
@@ -38,7 +40,6 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
-import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -47,9 +48,8 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/screens/auth/login_options_screen.dart';
-import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/page_load_observer.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
@@ -168,7 +168,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 key: NavigatorKeys.home,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const VideoFeedPage(),
-                  settings: RouteSettings(name: VideoFeedPage.routeName),
+                  settings: const RouteSettings(name: VideoFeedPage.routeName),
                 ),
               ),
             ),
@@ -440,17 +440,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: WelcomeScreen.path,
         name: WelcomeScreen.routeName,
-        builder: (_, __) => const WelcomeScreen(),
+        builder: (_, _) => const WelcomeScreen(),
         routes: [
           GoRoute(
             path: 'create-account',
             name: CreateAccountScreen.routeName,
-            builder: (_, __) => const CreateAccountScreen(),
+            builder: (_, _) => const CreateAccountScreen(),
           ),
           GoRoute(
             path: 'login-options',
             name: LoginOptionsScreen.routeName,
-            builder: (_, __) => const LoginOptionsScreen(),
+            builder: (_, _) => const LoginOptionsScreen(),
             routes: [
               // Route for deep link when resetting password
               GoRoute(
@@ -468,17 +468,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: KeyImportScreen.path,
         name: KeyImportScreen.routeName,
-        builder: (_, __) => const KeyImportScreen(),
+        builder: (_, _) => const KeyImportScreen(),
       ),
       GoRoute(
         path: NostrConnectScreen.path,
         name: NostrConnectScreen.routeName,
-        builder: (_, __) => const NostrConnectScreen(),
+        builder: (_, _) => const NostrConnectScreen(),
       ),
       GoRoute(
         path: SecureAccountScreen.path,
         name: SecureAccountScreen.routeName,
-        builder: (_, __) => const SecureAccountScreen(),
+        builder: (_, _) => const SecureAccountScreen(),
       ),
       // redirect deep link route to full reset password path
       GoRoute(
@@ -507,42 +507,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: SettingsScreen.path,
         name: SettingsScreen.routeName,
-        builder: (_, __) => const SettingsScreen(),
+        builder: (_, _) => const SettingsScreen(),
       ),
       GoRoute(
         path: RelaySettingsScreen.path,
         name: RelaySettingsScreen.routeName,
-        builder: (_, __) => const RelaySettingsScreen(),
+        builder: (_, _) => const RelaySettingsScreen(),
       ),
       GoRoute(
         path: BlossomSettingsScreen.path,
         name: BlossomSettingsScreen.routeName,
-        builder: (_, __) => const BlossomSettingsScreen(),
+        builder: (_, _) => const BlossomSettingsScreen(),
       ),
       GoRoute(
         path: NotificationSettingsScreen.path,
         name: NotificationSettingsScreen.routeName,
-        builder: (_, __) => const NotificationSettingsScreen(),
+        builder: (_, _) => const NotificationSettingsScreen(),
       ),
       GoRoute(
         path: KeyManagementScreen.path,
         name: KeyManagementScreen.routeName,
-        builder: (_, __) => const KeyManagementScreen(),
+        builder: (_, _) => const KeyManagementScreen(),
       ),
       GoRoute(
         path: RelayDiagnosticScreen.path,
         name: RelayDiagnosticScreen.routeName,
-        builder: (_, __) => const RelayDiagnosticScreen(),
+        builder: (_, _) => const RelayDiagnosticScreen(),
       ),
       GoRoute(
         path: SafetySettingsScreen.path,
         name: SafetySettingsScreen.routeName,
-        builder: (_, __) => const SafetySettingsScreen(),
+        builder: (_, _) => const SafetySettingsScreen(),
       ),
       GoRoute(
         path: ContentFiltersScreen.path,
         name: ContentFiltersScreen.routeName,
-        builder: (_, __) => const ContentFiltersScreen(),
+        builder: (_, _) => const ContentFiltersScreen(),
       ),
       GoRoute(
         path: DeveloperOptionsScreen.path,
@@ -618,12 +618,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: ClipLibraryScreen.draftsPath,
         name: ClipLibraryScreen.draftsRouteName,
-        builder: (_, __) => const ClipLibraryScreen(),
+        builder: (_, _) => const ClipLibraryScreen(),
       ),
       GoRoute(
         path: ClipLibraryScreen.clipsPath,
         name: ClipLibraryScreen.clipsRouteName,
-        builder: (_, __) => const ClipLibraryScreen(),
+        builder: (_, _) => const ClipLibraryScreen(),
       ),
       // Followers screen - routes to My or Others based on pubkey
       GoRoute(

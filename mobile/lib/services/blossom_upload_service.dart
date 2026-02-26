@@ -377,7 +377,7 @@ class BlossomUploadService {
         }
 
         // Response didn't have expected URL
-        return BlossomUploadResult(
+        return const BlossomUploadResult(
           success: false,
           errorMessage: 'Upload response missing URL field',
         );

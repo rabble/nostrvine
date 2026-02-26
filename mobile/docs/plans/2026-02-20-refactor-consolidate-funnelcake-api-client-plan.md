@@ -175,37 +175,45 @@ Follow established test pattern for each method (~8-12 tests each):
 
 #### Phase 2: Migrate video feed consumers
 
-Migrate `popular_videos_feed_provider.dart` and `home_feed_provider.dart` to use `videos_repository` (which already consumes `FunnelcakeApiClient`).
+Migrate `popular_videos_feed_provider.dart`, `home_feed_provider.dart`, and video-related providers in `curation_providers.dart` to use `videos_repository` (which already consumes `FunnelcakeApiClient`).
 
 **Methods to migrate:**
 - `getTrendingVideos`, `getRecentVideos`, `getHomeFeed`
 - `getBulkVideoStats`, `getBulkVideoViews`
 
+**Consumer files:**
+- `lib/providers/popular_videos_feed_provider.dart`
+- `lib/providers/home_feed_provider.dart`
+- `lib/providers/curation_providers.dart` — `FunnelcakeAvailable` (uses `getRecentVideos`), `AnalyticsTrending` and `AnalyticsPopular` (use `getTrendingVideos`)
+
 **Caching moves to:** `videos_repository`
 
 ---
 
-#### Phase 3: Migrate curation consumers
+#### Phase 3: Migrate curation hashtag consumers
 
-Migrate `curation_providers.dart` to use the appropriate repository.
+Migrate hashtag-related providers in `curation_providers.dart` to use `HashtagRepository` (already exists at `packages/hashtag_repository/`).
 
 **Methods to migrate:**
-- `getTrendingVideos` (availability probe)
-- `getTrendingHashtags`, `fetchTrendingHashtags`
+- `getTrendingHashtags` and `fetchTrendingHashtags` → consolidate into single `getTrendingHashtags({bool forceRefresh, int limit})` on `HashtagRepository`. The repository handles caching internally.
 
-**Decision needed:** Create a `hashtag_repository` or extend `videos_repository`?
+**Target repository:** `HashtagRepository` (`packages/hashtag_repository/`)
+
+**Note:** `FunnelcakeAvailable` provider (availability probe using `getRecentVideos`) and `AnalyticsTrending`/`AnalyticsPopular` providers (using `getTrendingVideos`) belong in Phase 2 since they use video-domain methods via `VideosRepository`.
 
 ---
 
 #### Phase 4: Migrate profile and social consumers
 
-Migrate `social_service.dart` and `user_profile_service.dart` to use `profile_repository`.
+Migrate `social_service.dart` and `user_profile_service.dart` to use `profile_repository`. Migrate follower/following data to `FollowRepository`.
 
 **Methods to migrate:**
-- `getSocialCounts`, `getUserProfile`, `getBulkProfiles`
-- `getFollowers`, `getFollowing` (currently in `app_providers.dart`)
+- `getSocialCounts`, `getUserProfile`, `getBulkProfiles` → `profile_repository`
+- `getFollowers`, `getFollowing` → `FollowRepository` (already exists at `lib/repositories/follow_repository.dart` with follower methods and Funnelcake callback injections in `app_providers.dart`)
 
-**Caching moves to:** `profile_repository`
+**Migration approach for followers/following:** Replace the callback injections in `app_providers.dart` (`fetchFollowingFromApi`, `fetchFollowersFromApi`) with direct `FunnelcakeApiClient` dependency on `FollowRepository`. This aligns with layered architecture (Repository → Client).
+
+**Caching moves to:** `profile_repository` (profile/social), `FollowRepository` (followers/following)
 
 ---
 
@@ -390,6 +398,6 @@ erDiagram
 - `lib/screens/creator_analytics_screen.dart` -- Phase 5
 - `lib/providers/popular_videos_feed_provider.dart` -- Phase 2
 - `lib/providers/home_feed_provider.dart` -- Phase 2
-- `lib/providers/curation_providers.dart` -- Phase 3
+- `lib/providers/curation_providers.dart` -- Phase 2 (video providers: `FunnelcakeAvailable`, `AnalyticsTrending`, `AnalyticsPopular`) and Phase 3 (hashtag providers)
 - `lib/providers/creator_analytics_providers.dart` -- Phase 5
 - `lib/features/creator_analytics/creator_analytics_repository.dart` -- Phase 5

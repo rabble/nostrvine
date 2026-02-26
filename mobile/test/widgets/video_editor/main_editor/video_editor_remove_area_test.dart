@@ -67,7 +67,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         buildWidget(
-          state: const VideoEditorMainState(isLayerOverRemoveArea: false),
+          state: const VideoEditorMainState(),
         ),
       );
       await tester.pumpAndSettle();
@@ -100,7 +100,7 @@ void main() {
 
       when(
         () => mockBloc.state,
-      ).thenReturn(const VideoEditorMainState(isLayerOverRemoveArea: false));
+      ).thenReturn(const VideoEditorMainState());
       when(() => mockBloc.stream).thenAnswer((_) => stateController.stream);
 
       await tester.pumpWidget(buildWidget());

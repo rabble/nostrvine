@@ -2,10 +2,11 @@
 // ABOUTME: Auto-closes when upload completes, uses Timer.periodic for status polling
 
 import 'dart:async';
+
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// Dialog that shows upload progress and blocks user interaction until complete
 ///
@@ -15,9 +16,9 @@ import 'package:divine_ui/divine_ui.dart';
 /// - Auto-closes when upload status becomes readyToPublish
 class UploadProgressDialog extends StatefulWidget {
   const UploadProgressDialog({
-    super.key,
     required this.uploadId,
     required this.uploadManager,
+    super.key,
   });
 
   final String uploadId;

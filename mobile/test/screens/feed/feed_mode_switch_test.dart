@@ -73,7 +73,6 @@ void main() {
         when(() => mockBloc.state).thenReturn(
           const VideoFeedState(
             status: VideoFeedStatus.success,
-            mode: FeedMode.home,
           ),
         );
         await tester.pumpWidget(createTestWidget());

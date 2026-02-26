@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:camera_macos_plus/camera_macos.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +28,6 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
@@ -121,7 +121,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               // Profile Section
               if (isAuthenticated) ...[
-                _SectionHeader(title: 'Profile'),
+                const _SectionHeader(title: 'Profile'),
                 // Show register tile for anonymous users
                 // Only shown when headless auth feature is enabled
                 if (authService.isAnonymous)
@@ -144,11 +144,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
 
               // About
-              _SectionHeader(title: 'About'),
+              const _SectionHeader(title: 'About'),
               _VersionTile(appVersion: _appVersion),
 
               // Preferences - most used settings near the top
-              _SectionHeader(title: 'Preferences'),
+              const _SectionHeader(title: 'Preferences'),
               _SettingsTile(
                 icon: Icons.notifications,
                 title: 'Notifications',
@@ -167,7 +167,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               if (!kIsWeb && Platform.isMacOS) _buildAudioDeviceSelector(),
 
               // Network Configuration
-              _SectionHeader(title: 'Network'),
+              const _SectionHeader(title: 'Network'),
               _SettingsTile(
                 icon: Icons.hub,
                 title: 'Relays',
@@ -195,7 +195,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
 
               // Support
-              _SectionHeader(title: 'Support'),
+              const _SectionHeader(title: 'Support'),
               _SettingsTile(
                 icon: Icons.support_agent,
                 title: 'Contact Support',
@@ -260,7 +260,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
 
               if (isAuthenticated) ...[
-                _SectionHeader(title: 'Advanced Account Options'),
+                const _SectionHeader(title: 'Advanced Account Options'),
                 _SettingsTile(
                   icon: Icons.key,
                   title: 'Key Management',
@@ -272,13 +272,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   title: 'Remove Keys from Device',
                   subtitle:
                       'Delete your private key from this device only. '
-                      'Your content stays on relays, but you\'ll need your '
+                      "Your content stays on relays, but you'll need your "
                       'nsec backup to access your account again.',
                   onTap: () => _handleRemoveKeys(context, ref),
                   iconColor: Colors.orange,
                   titleColor: Colors.orange,
                 ),
-                _SectionHeader(title: 'Danger Zone'),
+                const _SectionHeader(title: 'Danger Zone'),
                 _SettingsTile(
                   icon: Icons.delete_forever,
                   title: 'Delete Account and Data',
@@ -535,7 +535,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return deviceId
         .replaceAll('Device', '')
         .replaceAll('device', '')
-        .replaceAll(RegExp(r'[0-9a-f]{8}-[0-9a-f]{4}-.*'), '')
+        .replaceAll(RegExp('[0-9a-f]{8}-[0-9a-f]{4}-.*'), '')
         .trim();
   }
 

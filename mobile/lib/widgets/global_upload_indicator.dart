@@ -1,13 +1,13 @@
 // ABOUTME: Global upload progress indicator that shows on all screens
 // ABOUTME: Displays active uploads as a small overlay that can be tapped for details
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/upload_manager.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/upload_progress_indicator.dart';
 
 /// Global upload indicator that shows active uploads
@@ -237,7 +237,6 @@ class GlobalUploadIndicator extends ConsumerWidget {
                 itemCount: uploads.length,
                 itemBuilder: (context, index) => UploadProgressIndicator(
                   upload: uploads[index],
-                  showActions: true,
                   onCancel: () {
                     // Use captured uploadManagerNotifier instead of ref
                     uploadManagerNotifier.cancelUpload(uploads[index].id);

@@ -40,7 +40,7 @@ void main() {
         displayName: 'Test Display Name',
         about: 'Test bio',
         picture: 'https://example.com/avatar.jpg',
-        rawData: {'name': 'Test User'},
+        rawData: const {'name': 'Test User'},
         createdAt: DateTime.now(),
         eventId: 'test_event_id',
       );
@@ -69,7 +69,7 @@ void main() {
         name: 'Old Name',
         displayName: 'Old Display',
         about: 'Old bio',
-        rawData: {'name': 'Old Name'},
+        rawData: const {'name': 'Old Name'},
         createdAt: DateTime.now().subtract(const Duration(hours: 1)),
         eventId: 'old_event_id',
       );
@@ -79,7 +79,7 @@ void main() {
         name: 'New Name',
         displayName: 'New Display',
         about: 'New bio',
-        rawData: {'name': 'New Name'},
+        rawData: const {'name': 'New Name'},
         createdAt: DateTime.now(),
         eventId: 'new_event_id',
       );
@@ -101,7 +101,7 @@ void main() {
         pubkey: 'test_pubkey',
         name: 'Newer Name',
         displayName: 'Newer Display',
-        rawData: {'name': 'Newer Name'},
+        rawData: const {'name': 'Newer Name'},
         createdAt: DateTime.now(),
         eventId: 'newer_event_id',
       );
@@ -110,7 +110,7 @@ void main() {
         pubkey: 'test_pubkey',
         name: 'Older Name',
         displayName: 'Older Display',
-        rawData: {'name': 'Older Name'},
+        rawData: const {'name': 'Older Name'},
         createdAt: DateTime.now().subtract(const Duration(hours: 1)),
         eventId: 'older_event_id',
       );
@@ -130,7 +130,7 @@ void main() {
       final profile = UserProfile(
         pubkey: 'test_pubkey',
         name: 'Test User',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'test_event_id',
       );
@@ -146,7 +146,7 @@ void main() {
       final profile1 = UserProfile(
         pubkey: 'test_pubkey_1',
         name: 'User 1',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'event_1',
       );
@@ -154,7 +154,7 @@ void main() {
       final profile2 = UserProfile(
         pubkey: 'test_pubkey_2',
         name: 'User 2',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'event_2',
       );
@@ -186,7 +186,7 @@ void main() {
         pubkey: 'test_pubkey',
         name: 'Original Name',
         displayName: 'Original Display',
-        rawData: {'name': 'Original Name'},
+        rawData: const {'name': 'Original Name'},
         createdAt: timestamp,
         eventId: 'original_event_id',
       );
@@ -195,7 +195,7 @@ void main() {
         pubkey: 'test_pubkey',
         name: 'Updated Name',
         displayName: 'Updated Display',
-        rawData: {'name': 'Updated Name'},
+        rawData: const {'name': 'Updated Name'},
         createdAt: timestamp, // Same timestamp
         eventId: 'different_event_id', // Different eventId
       );
@@ -217,7 +217,7 @@ void main() {
       final oldProfile = UserProfile(
         pubkey: 'old_pubkey',
         name: 'Old User',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now().subtract(
           const Duration(days: 8),
         ), // 8 days old

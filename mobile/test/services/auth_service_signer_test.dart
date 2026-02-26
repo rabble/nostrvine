@@ -191,7 +191,7 @@ void main() {
       test('closes without error', () {
         final signer = AuthServiceSigner(mockKeyContainer);
 
-        expect(() => signer.close(), returnsNormally);
+        expect(signer.close, returnsNormally);
       });
     });
   });

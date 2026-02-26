@@ -2,8 +2,8 @@
 // ABOUTME: Tests loading states, error handling, debouncing, and API delegation.
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
@@ -45,8 +45,7 @@ void main() {
         'emits [loading, success] when search succeeds',
         setUp: () {
           when(
-            () =>
-                mockHashtagRepository.searchHashtags(query: 'music', limit: 20),
+            () => mockHashtagRepository.searchHashtags(query: 'music'),
           ).thenAnswer((_) async => ['music', 'musician', 'musicvideo']);
         },
         build: createBloc,
@@ -65,8 +64,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () =>
-                mockHashtagRepository.searchHashtags(query: 'music', limit: 20),
+            () => mockHashtagRepository.searchHashtags(query: 'music'),
           ).called(1);
         },
       );
@@ -92,8 +90,7 @@ void main() {
         'emits [loading, failure] when repository throws',
         setUp: () {
           when(
-            () =>
-                mockHashtagRepository.searchHashtags(query: 'error', limit: 20),
+            () => mockHashtagRepository.searchHashtags(query: 'error'),
           ).thenThrow(const FunnelcakeException('search failed'));
         },
         build: createBloc,
@@ -115,8 +112,7 @@ void main() {
         'emits [loading, failure] when repository throws timeout',
         setUp: () {
           when(
-            () =>
-                mockHashtagRepository.searchHashtags(query: 'slow', limit: 20),
+            () => mockHashtagRepository.searchHashtags(query: 'slow'),
           ).thenThrow(const FunnelcakeTimeoutException());
         },
         build: createBloc,
@@ -170,8 +166,7 @@ void main() {
         'normalizes query by trimming and lowercasing',
         setUp: () {
           when(
-            () =>
-                mockHashtagRepository.searchHashtags(query: 'cats', limit: 20),
+            () => mockHashtagRepository.searchHashtags(query: 'cats'),
           ).thenAnswer((_) async => ['cats']);
         },
         build: createBloc,
@@ -190,8 +185,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () =>
-                mockHashtagRepository.searchHashtags(query: 'cats', limit: 20),
+            () => mockHashtagRepository.searchHashtags(query: 'cats'),
           ).called(1);
         },
       );
@@ -200,8 +194,7 @@ void main() {
         'debounces rapid query changes and only processes final query',
         setUp: () {
           when(
-            () =>
-                mockHashtagRepository.searchHashtags(query: 'final', limit: 20),
+            () => mockHashtagRepository.searchHashtags(query: 'final'),
           ).thenAnswer((_) async => ['finalize']);
         },
         build: createBloc,
@@ -228,8 +221,7 @@ void main() {
         verify: (_) {
           // Only the final query should be processed due to debounce
           verify(
-            () =>
-                mockHashtagRepository.searchHashtags(query: 'final', limit: 20),
+            () => mockHashtagRepository.searchHashtags(query: 'final'),
           ).called(1);
           verifyNever(
             () => mockHashtagRepository.searchHashtags(

@@ -415,6 +415,37 @@ class ProfileRepository {
     }).toList();
   }
 
+  /// Fetches a user profile from the Funnelcake REST API.
+  ///
+  /// Returns profile data as a map, or null if not found.
+  /// Returns null if Funnelcake API is not available.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<Map<String, dynamic>?> getUserProfileFromApi({
+    required String pubkey,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getUserProfile(pubkey);
+  }
+
+  /// Fetches multiple user profiles in bulk from the Funnelcake REST API.
+  ///
+  /// Returns a [BulkProfilesResponse] containing a map of pubkey to profile
+  /// data.
+  /// Returns null if Funnelcake API is not available.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<BulkProfilesResponse?> getBulkProfilesFromApi(
+    List<String> pubkeys,
+  ) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getBulkProfiles(pubkeys);
+  }
+
   /// Enriches search results from the local SQLite cache.
   ///
   /// For each profile, fills in null fields (picture, about, etc.) from

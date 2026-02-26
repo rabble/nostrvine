@@ -1,11 +1,11 @@
 // ABOUTME: Riverpod providers for feature flag service and state management
 // ABOUTME: Provides dependency injection for feature flag system with proper lifecycle management
 
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'feature_flag_providers.g.dart';
 

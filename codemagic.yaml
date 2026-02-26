@@ -190,6 +190,103 @@ definitions:
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+    - &build_ios_e2e
+      name: Build iOS Simulator app
+      script: |
+        flutter build ios --simulator \
+          --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
+          --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+    - &build_android_e2e
+      name: Build Android debug APK
+      script: |
+        flutter build apk --debug \
+          --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
+          --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+    - &install_maestro
+      name: Install Maestro CLI
+      script: |
+        set -e
+        curl -Ls "https://get.maestro.mobile.dev" | bash
+        export PATH="$PATH:$HOME/.maestro/bin"
+        maestro --version
+    - &run_maestro_smoke_tests
+      name: Run Maestro Smoke Tests
+      script: |
+        set -e
+        export PATH="$PATH:$HOME/.maestro/bin"
+        maestro test e2e/maestro/suites/smoke.yaml
+    - &boot_ios_simulator
+      name: Boot iOS Simulator
+      script: |
+        DEVICE_UDID=$(xcrun simctl list devices available -j | \
+          python3 -c "
+        import json, sys
+        data = json.load(sys.stdin)
+        for runtime, devices in data['devices'].items():
+            for d in devices:
+                if d['name'] == 'iPhone 16 Pro' and d['isAvailable']:
+                    print(d['udid'])
+                    sys.exit(0)
+        sys.exit(1)
+        ")
+        xcrun simctl boot "$DEVICE_UDID" || true
+        echo "Booted simulator: $DEVICE_UDID"
+    - &install_app_ios_simulator
+      name: Install app on iOS Simulator
+      script: |
+        APP_PATH="build/ios/iphonesimulator/Runner.app"
+        DEVICE_UDID=$(xcrun simctl list devices booted -j | \
+          python3 -c "
+        import json, sys
+        data = json.load(sys.stdin)
+        for runtime, devices in data['devices'].items():
+            for d in devices:
+                if d['state'] == 'Booted':
+                    print(d['udid'])
+                    sys.exit(0)
+        sys.exit(1)
+        ")
+        xcrun simctl uninstall "$DEVICE_UDID" "$BUNDLE_ID" 2>/dev/null || true
+        xcrun simctl install "$DEVICE_UDID" "$APP_PATH"
+        echo "App installed on iOS simulator: $DEVICE_UDID"
+    - &launch_android_emulator
+      name: Launch Android emulator
+      script: |
+        set -e
+        cd $ANDROID_HOME/tools
+        emulator -avd emulator &
+        adb wait-for-device
+        TIMEOUT=120
+        ELAPSED=0
+        while [ "$(adb shell getprop sys.boot_completed 2>/dev/null)" != "1" ]; do
+          if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+            echo "ERROR: Android emulator failed to boot within ${TIMEOUT}s"
+            exit 1
+          fi
+          echo "Waiting for Android emulator to boot... (${ELAPSED}s/${TIMEOUT}s)"
+          sleep 5
+          ELAPSED=$((ELAPSED + 5))
+        done
+        echo "Android emulator booted"
+    - &install_app_android_emulator
+      name: Install app on Android emulator
+      script: |
+        set -e
+        APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
+        if [ ! -f "$APK_PATH" ]; then
+          echo "ERROR: APK not found at $APK_PATH"
+          exit 1
+        fi
+        adb install "$APK_PATH"
+        echo "App installed on Android emulator"
 workflows:
   ios-build:
     name: iOS Build
@@ -392,3 +489,71 @@ workflows:
     artifacts:
       - build/macos/Build/Products/Release/*.dmg
       - build/macos/Build/Products/Release/*.app
+
+  e2e-smoke-ios:
+    name: E2E Smoke Tests (iOS)
+    working_directory: mobile
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.41.1
+      xcode: 16.1
+      cocoapods: default
+      groups:
+        - zendesk_credentials
+        - proofmode_credentials
+      vars:
+        DEFAULT_ENV: STAGING
+        BUNDLE_ID: co.openvine.app
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $HOME/.pub-cache
+    triggering:
+      events: []
+    scripts:
+      - *install_flutterfire
+      - *enable_spm
+      - *flutter_pub_get
+      - *pod_install
+      - *build_ios_e2e
+      - *install_maestro
+      - *boot_ios_simulator
+      - *install_app_ios_simulator
+      - *run_maestro_smoke_tests
+    artifacts:
+      - build/ios/iphonesimulator/Runner.app
+      - /tmp/xcodebuild_logs/*.log
+      - ~/.maestro/tests/**
+
+  e2e-smoke-android:
+    name: E2E Smoke Tests (Android)
+    working_directory: mobile
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      flutter: 3.41.1
+      java: 17
+      groups:
+        - zendesk_credentials
+        - proofmode_credentials
+      vars:
+        DEFAULT_ENV: STAGING
+        BUNDLE_ID: co.openvine.app
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $HOME/.pub-cache
+    triggering:
+      events: []
+    scripts:
+      - *flutter_pub_get
+      - *setup_local_properties
+      - *build_android_e2e
+      - *install_maestro
+      - *launch_android_emulator
+      - *install_app_android_emulator
+      - *run_maestro_smoke_tests
+    artifacts:
+      - build/app/outputs/flutter-apk/app-debug.apk
+      - ~/.maestro/tests/**

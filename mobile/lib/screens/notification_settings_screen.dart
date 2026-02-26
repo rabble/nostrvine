@@ -1,12 +1,12 @@
 // ABOUTME: Settings screen for notification preferences and controls
 // ABOUTME: Allows users to customize notification types and behavior
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -307,9 +307,9 @@ class _NotificationSettingsScreenState
     ),
   );
 
-  Widget _buildInfoCard() => Card(
+  Widget _buildInfoCard() => const Card(
     color: VineTheme.cardBackground,
-    child: const Padding(
+    child: Padding(
       padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -333,11 +333,11 @@ class _PermissionBottomSheet extends StatelessWidget {
     required this.iconColor,
     required this.title,
     required this.subtitle,
-    this.additionalText,
     required this.primaryButtonText,
     required this.onPrimaryPressed,
     required this.secondaryButtonText,
     required this.onSecondaryPressed,
+    this.additionalText,
   });
 
   final IconData icon;

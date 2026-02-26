@@ -1,8 +1,8 @@
 // ABOUTME: Test suite for native macOS camera permission handling
 // ABOUTME: Verifies permission requests, system settings navigation, and error handling
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/camera/native_macos_camera.dart';
 
 void main() {
@@ -111,9 +111,7 @@ void main() {
             );
 
         try {
-          await NativeMacOSCamera.requestPermission(
-            openSettingsOnDenied: false,
-          );
+          await NativeMacOSCamera.requestPermission();
           fail('Should throw PlatformException');
         } on PlatformException catch (e) {
           expect(e.code, 'PERMISSION_DENIED');

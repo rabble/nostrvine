@@ -1,51 +1,56 @@
 // ABOUTME: Creates a VideoEventFilter for NSFW content filtering.
-// ABOUTME: Bridges app-level AgeVerificationService to repository-level filter.
+// ABOUTME: Bridges app-level ContentFilterService to repository-level filter.
 
 import 'package:models/models.dart';
-import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/models/content_label.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
-/// Creates a [VideoContentFilter] that filters NSFW content based on user
-/// preferences from [ageVerificationService].
+/// Creates a [VideoContentFilter] that filters NSFW content based on
+/// per-category preferences from [contentFilterService].
 ///
-/// Returns `true` (filter out) if:
-/// - User preference is [AdultContentPreference.neverShow] AND
-/// - Video contains NSFW content (content-warning tag or #nsfw/#adult hashtag)
+/// Returns `true` (filter out) if any content label on the video maps to
+/// [ContentFilterPreference.hide] in the user's preferences.
+///
+/// By default, adult categories (nudity, sexual, porn) are set to [hide],
+/// so NSFW content is filtered unless the user explicitly changes preferences.
 ///
 /// This allows the [VideosRepository] to filter NSFW content without
 /// depending directly on app-level services.
-VideoContentFilter createNsfwFilter(
-  AgeVerificationService ageVerificationService,
-) {
+VideoContentFilter createNsfwFilter(ContentFilterService contentFilterService) {
   return (VideoEvent video) {
-    // Only filter if user has chosen to never show adult content
-    if (!ageVerificationService.shouldHideAdultContent) {
-      return false;
-    }
+    final labels = _getContentLabels(video);
+    if (labels.isEmpty) return false;
 
-    // Check if video is NSFW
-    return _isNsfwContent(video);
+    final preference = contentFilterService.getPreferenceForLabels(labels);
+    return preference == ContentFilterPreference.hide;
   };
 }
 
-/// Checks if a [VideoEvent] contains NSFW/adult content.
+/// Extracts content label values from a [VideoEvent].
 ///
-/// Returns `true` if the video has:
-/// - A `content-warning` tag
-/// - A `#nsfw` or `#adult` hashtag
-bool _isNsfwContent(VideoEvent video) {
-  // Check for NSFW or adult hashtags
+/// Uses the already-parsed [VideoEvent.contentWarningLabels] (from NIP-36
+/// content-warning tags and NIP-32 label tags) plus NSFW/adult hashtags
+/// mapped to the 'nudity' category.
+List<String> _getContentLabels(VideoEvent video) {
+  final labels = <String>[...video.contentWarningLabels];
+
+  // If content-warning labels exist but none are recognized categories,
+  // treat as nudity (conservative default)
+  if (labels.isNotEmpty &&
+      labels.every((l) => ContentLabel.fromValue(l) == null)) {
+    labels.add('nudity');
+  }
+
+  // Check NSFW/adult hashtags — map to nudity category
   for (final hashtag in video.hashtags) {
     final lowerHashtag = hashtag.toLowerCase();
     if (lowerHashtag == 'nsfw' || lowerHashtag == 'adult') {
-      return true;
+      if (!labels.contains('nudity')) {
+        labels.add('nudity');
+      }
     }
   }
 
-  // Check for content-warning in rawTags
-  if (video.rawTags.containsKey('content-warning')) {
-    return true;
-  }
-
-  return false;
+  return labels;
 }

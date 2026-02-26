@@ -32,10 +32,7 @@ void main() {
       final bloc = createBloc();
       expect(
         bloc.state,
-        const MyFollowersState(
-          status: MyFollowersStatus.initial,
-          followersPubkeys: [],
-        ),
+        const MyFollowersState(),
       );
       bloc.close();
     });
@@ -104,7 +101,6 @@ void main() {
           const MyFollowersState(status: MyFollowersStatus.loading),
           const MyFollowersState(
             status: MyFollowersStatus.success,
-            followersPubkeys: [],
           ),
         ],
       );
@@ -144,10 +140,7 @@ void main() {
     });
 
     test('copyWith creates copy with updated values', () {
-      const state = MyFollowersState(
-        status: MyFollowersStatus.initial,
-        followersPubkeys: [],
-      );
+      const state = MyFollowersState();
 
       final updated = state.copyWith(
         status: MyFollowersStatus.success,

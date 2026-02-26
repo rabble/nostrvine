@@ -194,11 +194,11 @@ void main() {
       final listTile = tester.widget<ListTile>(find.byType(ListTile));
 
       // Title should use white text
-      final title = listTile.title as Text;
+      final title = listTile.title! as Text;
       expect(title.style?.color, equals(Colors.white));
 
       // Subtitle should use grey text
-      final subtitle = listTile.subtitle as Text;
+      final subtitle = listTile.subtitle! as Text;
       expect(subtitle.style?.color, equals(Colors.grey));
     });
 

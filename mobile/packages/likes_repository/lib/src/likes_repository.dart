@@ -53,48 +53,33 @@ typedef QueueOfflineActionCallback =
 /// - Uses `LikesLocalStorage` to persist like records locally
 /// - Maintains an in-memory cache for fast lookups
 /// - Provides reactive streams for UI updates
-/// - Handles authentication state changes automatically
+/// - Supports real-time cross-device sync via persistent subscriptions
 class LikesRepository {
   /// Creates a new likes repository.
   ///
   /// Parameters:
   /// - [nostrClient]: Client for Nostr relay communication
   /// - [localStorage]: Optional local storage for persistence
-  /// - [authStateStream]: Optional stream of authentication state
-  /// (true=authenticated)
-  /// - [isAuthenticated]: Initial authentication state
   /// - [isOnline]: Optional callback to check connectivity status
   /// - [queueOfflineAction]: Optional callback to queue actions when offline
   LikesRepository({
     required NostrClient nostrClient,
     LikesLocalStorage? localStorage,
-    Stream<bool>? authStateStream,
-    bool isAuthenticated = false,
     IsOnlineCallback? isOnline,
     QueueOfflineActionCallback? queueOfflineAction,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
-       _isAuthenticated = isAuthenticated,
        _isOnline = isOnline,
-       _queueOfflineAction = queueOfflineAction {
-    // Listen to auth state changes if stream provided
-    if (authStateStream != null) {
-      _authSubscription = authStateStream.listen(_handleAuthChange);
-    }
-  }
+       _queueOfflineAction = queueOfflineAction;
 
   final NostrClient _nostrClient;
   final LikesLocalStorage? _localStorage;
-  StreamSubscription<bool>? _authSubscription;
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
 
   /// Callback to queue actions for offline sync
   final QueueOfflineActionCallback? _queueOfflineAction;
-
-  /// Whether the user is currently authenticated.
-  bool _isAuthenticated;
 
   /// In-memory cache of like records keyed by target event ID.
   final Map<String, LikeRecord> _likeRecords = {};
@@ -107,8 +92,12 @@ class LikesRepository {
 
   /// Whether [dispose] has been called.
   ///
-  /// Once disposed, all stream emissions and auth-change handlers are no-ops.
+  /// Once disposed, all stream emissions are no-ops.
   bool _isDisposed = false;
+
+  /// Real-time sync subscription for cross-device synchronization.
+  StreamSubscription<Event>? _reactionSubscription;
+  String? _reactionSubscriptionId;
 
   /// Emits the current liked event IDs ordered by recency (most recent first).
   ///
@@ -756,6 +745,99 @@ class LikesRepository {
     );
   }
 
+  /// Initialize the repository — load from local cache, then subscribe for
+  /// real-time cross-device sync.
+  ///
+  /// Follows the same pattern as `FollowRepository.initialize()`:
+  /// 1. Load persisted records from local storage for immediate UI display.
+  /// 2. Set up a persistent Kind 7 subscription for live updates.
+  ///
+  /// Safe to call multiple times (idempotent).
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    // Load from local storage first for immediate UI display
+    if (_localStorage != null) {
+      final records = await _localStorage.getAllLikeRecords();
+      for (final record in records) {
+        _likeRecords[record.targetEventId] = record;
+      }
+      _emitLikedIds();
+    }
+
+    // Subscribe to reactions for real-time sync and cross-device updates
+    if (_nostrClient.hasKeys) {
+      _subscribeToReactions();
+    }
+
+    _isInitialized = true;
+  }
+
+  /// Subscribe to reactions for real-time sync and cross-device updates.
+  ///
+  /// Creates a long-running subscription to the current user's Kind 7 events.
+  /// When a newer reaction arrives (from another device or this one),
+  /// updates the local cache.
+  void _subscribeToReactions() {
+    final currentUserPubkey = _nostrClient.publicKey;
+    if (currentUserPubkey.isEmpty) return;
+
+    // Use a deterministic subscription ID so we can unsubscribe later
+    _reactionSubscriptionId = 'likes_repo_reactions_$currentUserPubkey';
+
+    final eventStream = _nostrClient.subscribe(
+      [
+        Filter(
+          authors: [currentUserPubkey],
+          kinds: const [EventKind.reaction],
+          limit: 1,
+        ),
+      ],
+      subscriptionId: _reactionSubscriptionId,
+    );
+
+    _reactionSubscription = eventStream.listen(
+      _processIncomingReaction,
+      onError: (Object error) {
+        // Subscription errors are non-fatal; log and continue
+      },
+    );
+  }
+
+  /// Process an incoming Kind 7 reaction event from the subscription.
+  ///
+  /// Validates the event, deduplicates against existing records, and
+  /// updates the in-memory cache + local storage.
+  void _processIncomingReaction(Event event) {
+    if (_isDisposed) return;
+
+    // Only process Kind 7 '+' reactions from the current user
+    if (event.kind != EventKind.reaction) return;
+    if (event.content != _likeContent) return;
+    if (event.pubkey != _nostrClient.publicKey) return;
+
+    final targetId = _extractTargetEventId(event);
+    if (targetId == null) return;
+
+    final createdAt = DateTime.fromMillisecondsSinceEpoch(
+      event.createdAt * 1000,
+    );
+
+    // Deduplicate: only update if newer than existing record
+    final existing = _likeRecords[targetId];
+    if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
+
+    final record = LikeRecord(
+      targetEventId: targetId,
+      reactionEventId: event.id,
+      createdAt: createdAt,
+    );
+
+    _likeRecords[targetId] = record;
+    unawaited(_localStorage?.saveLikeRecord(record));
+    _emitLikedIds();
+  }
+
   /// Clear all local like data.
   ///
   /// Used when logging out or clearing user data.
@@ -772,34 +854,16 @@ class LikesRepository {
 
   /// Dispose of resources.
   ///
-  /// Cancels the auth subscription first so that no further auth-change
-  /// callbacks can fire, then closes the stream controller.
+  /// Cancels the reaction subscription and closes the stream controller.
   /// Should be called when the repository is no longer needed.
   void dispose() {
     _isDisposed = true;
-    unawaited(_authSubscription?.cancel());
-    _authSubscription = null;
-    unawaited(_likedIdsController.close());
-  }
-
-  /// Handle authentication state changes.
-  ///
-  /// When user logs out, clears the cache.
-  /// When user logs in, triggers a sync.
-  void _handleAuthChange(bool isAuthenticated) {
-    if (_isDisposed) return;
-    if (isAuthenticated == _isAuthenticated) return;
-
-    _isAuthenticated = isAuthenticated;
-
-    if (!isAuthenticated) {
-      // User logged out - clear cache
-      unawaited(clearCache());
-    } else {
-      // User logged in - sync will be triggered by BLoC
-      // Just mark as not initialized so next operation triggers init
-      _isInitialized = false;
+    unawaited(_reactionSubscription?.cancel());
+    if (_reactionSubscriptionId != null) {
+      unawaited(_nostrClient.unsubscribe(_reactionSubscriptionId!));
+      _reactionSubscriptionId = null;
     }
+    unawaited(_likedIdsController.close());
   }
 
   /// Ensures the repository is initialized with data from storage.

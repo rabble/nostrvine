@@ -1,8 +1,9 @@
 import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/vine_draft.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
@@ -14,7 +15,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             targetAspectRatio: AspectRatio.vertical,
             originalAspectRatio: 9 / 16,
@@ -36,7 +37,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             targetAspectRatio: AspectRatio.vertical,
             originalAspectRatio: 9 / 16,
@@ -58,7 +59,7 @@ void main() {
           RecordingClip(
             id: 'id',
             video: EditorVideo.file('video.mp4'),
-            duration: Duration(seconds: 5),
+            duration: const Duration(seconds: 5),
             recordedAt: .now(),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,

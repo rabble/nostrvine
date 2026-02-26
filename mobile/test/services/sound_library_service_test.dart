@@ -9,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   group('SoundLibraryService', () {
     test('parseManifest creates sounds from JSON', () {
-      final manifestJson = '''
+      const manifestJson = '''
       {
         "sounds": [
           {

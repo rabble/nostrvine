@@ -30,7 +30,7 @@ void main() {
       thumbnailUrl: 'https://example.com/thumb.jpg',
       title: 'Test Video',
       duration: 15,
-      hashtags: ['test'],
+      hashtags: const ['test'],
     );
   });
 

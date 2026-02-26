@@ -41,7 +41,7 @@ class ReportActionButton extends StatelessWidget {
                 builder: (context) => ReportContentDialog(video: video),
               );
             },
-            icon: Icon(
+            icon: const Icon(
               Icons.flag_outlined,
               color: VineTheme.whiteText,
               size: 32,

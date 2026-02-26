@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
@@ -14,24 +13,25 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'feature_flag_integration_test.mocks.dart';
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
-@GenerateMocks([SharedPreferences])
 void main() {
   group('Feature Flag System Integration', () {
-    late MockSharedPreferences mockPrefs;
+    late _MockSharedPreferences mockPrefs;
 
     setUp(() {
-      mockPrefs = MockSharedPreferences();
+      mockPrefs = _MockSharedPreferences();
 
       // Set up default stubs for all flags
       for (final flag in FeatureFlag.values) {
-        when(mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
+        when(() => mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
         when(
-          mockPrefs.setBool('ff_${flag.name}', any),
+          () => mockPrefs.setBool('ff_${flag.name}', any()),
         ).thenAnswer((_) async => true);
-        when(mockPrefs.remove('ff_${flag.name}')).thenAnswer((_) async => true);
-        when(mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
+        when(
+          () => mockPrefs.remove('ff_${flag.name}'),
+        ).thenAnswer((_) async => true);
+        when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
       }
     });
 
@@ -76,14 +76,14 @@ void main() {
       final switches = find.byType(Switch);
 
       // Update mock to return true when getBool is called after toggle
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
 
       await tester.tap(switches.first);
       await tester.pumpAndSettle();
 
       // Verify persistence call was made
-      verify(mockPrefs.setBool('ff_newCameraUI', true)).called(1);
+      verify(() => mockPrefs.setBool('ff_newCameraUI', true)).called(1);
 
       // Navigate back to home
       await tester.pageBack();
@@ -96,10 +96,12 @@ void main() {
 
     testWidgets('should handle multiple flags independently', (tester) async {
       // Set up mixed initial state
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(mockPrefs.containsKey('ff_enhancedVideoPlayer')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -108,15 +110,15 @@ void main() {
             home: Scaffold(
               body: Column(
                 children: [
-                  FeatureFlagWidget(
+                  const FeatureFlagWidget(
                     flag: FeatureFlag.newCameraUI,
-                    disabled: const Text('Standard Camera'),
-                    child: const Text('Enhanced Camera'),
+                    disabled: Text('Standard Camera'),
+                    child: Text('Enhanced Camera'),
                   ),
-                  FeatureFlagWidget(
+                  const FeatureFlagWidget(
                     flag: FeatureFlag.enhancedVideoPlayer,
-                    disabled: const Text('Standard Player'),
-                    child: const Text('Enhanced Player'),
+                    disabled: Text('Standard Player'),
+                    child: Text('Enhanced Player'),
                   ),
                   Builder(
                     builder: (context) => ElevatedButton(
@@ -156,9 +158,9 @@ void main() {
 
       // Verify switches are present - ListView.builder may not build all items in tests
       // so we verify we have at least some switches rather than exact count
-      final switches = tester.widgetList<Switch>(find.byType(Switch));
+      final switchWidgets = tester.widgetList<Switch>(find.byType(Switch));
       expect(
-        switches.length,
+        switchWidgets.length,
         greaterThanOrEqualTo(2),
         reason: 'Should show switches for feature flags in settings',
       );
@@ -193,11 +195,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify persistence call
-      verify(mockPrefs.setBool('ff_newCameraUI', true)).called(1);
+      verify(() => mockPrefs.setBool('ff_newCameraUI', true)).called(1);
 
       // Simulate app restart by setting up persistence response
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
 
       // Create new app instance (simulating restart)
       await tester.pumpWidget(
@@ -222,24 +224,26 @@ void main() {
 
     testWidgets('should handle flag reset functionality', (tester) async {
       // Set up flags with user overrides
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(mockPrefs.containsKey('ff_enhancedVideoPlayer')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
               body: Column(
                 children: [
                   FeatureFlagWidget(
                     flag: FeatureFlag.newCameraUI,
-                    disabled: const Text('Standard Camera'),
-                    child: const Text('Enhanced Camera'),
+                    disabled: Text('Standard Camera'),
+                    child: Text('Enhanced Camera'),
                   ),
-                  const Expanded(child: FeatureFlagScreen()),
+                  Expanded(child: FeatureFlagScreen()),
                 ],
               ),
             ),
@@ -265,13 +269,13 @@ void main() {
 
       // Verify all flags were reset
       for (final flag in FeatureFlag.values) {
-        verify(mockPrefs.remove('ff_${flag.name}')).called(1);
+        verify(() => mockPrefs.remove('ff_${flag.name}')).called(1);
       }
 
       // Simulate SharedPreferences after reset
       for (final flag in FeatureFlag.values) {
-        when(mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
-        when(mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
+        when(() => mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
+        when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
       }
 
       // Verify UI reflects reset state (build defaults)
@@ -283,8 +287,8 @@ void main() {
 
     testWidgets('should show override indicators correctly', (tester) async {
       // Set up one flag with user override, one with default
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -312,7 +316,9 @@ void main() {
 
     testWidgets('should handle service errors gracefully', (tester) async {
       // Set up SharedPreferences to throw exceptions
-      when(mockPrefs.setBool(any, any)).thenThrow(Exception('Storage error'));
+      when(
+        () => mockPrefs.setBool(any(), any()),
+      ).thenThrow(Exception('Storage error'));
 
       await tester.pumpWidget(
         ProviderScope(
@@ -321,10 +327,10 @@ void main() {
             home: Scaffold(
               body: Column(
                 children: [
-                  FeatureFlagWidget(
+                  const FeatureFlagWidget(
                     flag: FeatureFlag.newCameraUI,
-                    disabled: const Text('Standard Camera'),
-                    child: const Text('Enhanced Camera'),
+                    disabled: Text('Standard Camera'),
+                    child: Text('Enhanced Camera'),
                   ),
                   Builder(
                     builder: (context) => ElevatedButton(
@@ -390,10 +396,10 @@ class TestHomeScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Home')),
       body: Column(
         children: [
-          FeatureFlagWidget(
+          const FeatureFlagWidget(
             flag: FeatureFlag.newCameraUI,
-            disabled: const Text('Standard Camera UI'),
-            child: const Text('Enhanced Camera UI'),
+            disabled: Text('Standard Camera UI'),
+            child: Text('Enhanced Camera UI'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pushNamed(context, SettingsScreen.path),
@@ -411,11 +417,11 @@ class TestContentScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
+    return const Scaffold(
       body: FeatureFlagWidget(
         flag: FeatureFlag.newCameraUI,
-        disabled: const Text('Standard Camera'),
-        child: const Text('New Camera Feature Enabled'),
+        disabled: Text('Standard Camera'),
+        child: Text('New Camera Feature Enabled'),
       ),
     );
   }

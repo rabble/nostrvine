@@ -241,10 +241,9 @@ class ProfileFeed extends _$ProfileFeed {
 
     // Check if provider is still mounted after async gap
     if (!ref.mounted) {
-      return VideoFeedState(
+      return const VideoFeedState(
         videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     }
 
@@ -290,7 +289,6 @@ class ProfileFeed extends _$ProfileFeed {
       videos: authorVideos,
       hasMoreContent:
           authorVideos.length >= AppConstants.hasMoreContentThreshold,
-      isLoadingMore: false,
       lastUpdated: DateTime.now(),
     );
   }
@@ -329,7 +327,6 @@ class ProfileFeed extends _$ProfileFeed {
         videos: updatedVideos,
         hasMoreContent:
             updatedVideos.length >= AppConstants.hasMoreContentThreshold,
-        isLoadingMore: false,
         lastUpdated: DateTime.now(),
       ),
     );
@@ -446,7 +443,6 @@ class ProfileFeed extends _$ProfileFeed {
       VideoFeedState(
         videos: updatedVideos,
         hasMoreContent: currentState.hasMoreContent,
-        isLoadingMore: false,
         lastUpdated: DateTime.now(),
       ),
     );
@@ -483,7 +479,6 @@ class ProfileFeed extends _$ProfileFeed {
             videos: authorVideos,
             hasMoreContent:
                 apiVideos.length >= AppConstants.hasMoreContentThreshold,
-            isLoadingMore: false,
             lastUpdated: DateTime.now(),
           ),
         );
@@ -561,7 +556,6 @@ class ProfileFeed extends _$ProfileFeed {
 
         final apiVideos = await analyticsService.getVideosByAuthor(
           pubkey: userId,
-          limit: 50,
           before: _nextCursor,
         );
 
@@ -603,7 +597,6 @@ class ProfileFeed extends _$ProfileFeed {
                 videos: allVideos,
                 hasMoreContent:
                     apiVideos.length >= AppConstants.paginationBatchSize,
-                isLoadingMore: false,
                 lastUpdated: DateTime.now(),
               ),
             );
@@ -657,7 +650,6 @@ class ProfileFeed extends _$ProfileFeed {
       await videoEventService.queryHistoricalUserVideos(
         userId,
         until: until,
-        limit: 50,
       );
 
       // Check if provider is still mounted after async gap
@@ -690,7 +682,6 @@ class ProfileFeed extends _$ProfileFeed {
         VideoFeedState(
           videos: updatedVideos,
           hasMoreContent: newEventsLoaded > 0,
-          isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
       );
@@ -750,7 +741,6 @@ class ProfileFeed extends _$ProfileFeed {
               videos: authorVideos,
               hasMoreContent:
                   apiVideos.length >= AppConstants.paginationBatchSize,
-              isLoadingMore: false,
               lastUpdated: DateTime.now(),
             ),
           );

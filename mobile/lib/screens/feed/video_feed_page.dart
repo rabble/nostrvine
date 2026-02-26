@@ -224,7 +224,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           builder: (context, state) {
             // Loading state (including initial state before first load)
             if (state.isLoading) {
-              return const Center(child: BrandedLoadingIndicator(size: 80));
+              return const Center(child: BrandedLoadingIndicator());
             }
 
             // Error state
@@ -406,6 +406,9 @@ class _PooledVideoFeedItem extends ConsumerWidget {
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
               addressableId: addressableId,
+              initialLikeCount: video.nostrLikeCount != null
+                  ? video.totalLikes
+                  : null,
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),
@@ -436,9 +439,9 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
   Widget build(BuildContext context) {
     // All videos without dimensions are treated as portrait as its default
     // usecase (e.g. Reels-style vertical videos).
-    final isPortrait = video.dimensions != null ? video.isPortrait : true;
+    final isPortrait = !(video.dimensions != null) || video.isPortrait;
 
-    return Container(
+    return ColoredBox(
       color: Colors.black,
       child: PooledVideoPlayer(
         index: index,
@@ -502,8 +505,7 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
       child: Image.network(
         thumbnailUrl!,
         fit: boxFit,
-        alignment: Alignment.center,
-        errorBuilder: (_, __, ___) => const _LoadingIndicator(),
+        errorBuilder: (_, _, _) => const _LoadingIndicator(),
       ),
     );
   }

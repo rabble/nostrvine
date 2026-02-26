@@ -2,8 +2,8 @@
 // ABOUTME: Tests preference persistence and retrieval for audio reuse opt-in
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('AudioSharingPreferenceService', () {

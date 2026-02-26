@@ -52,7 +52,7 @@ void main() {
           RecordingClip(
             id: 'id',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 4),
+            duration: const Duration(seconds: 4),
             recordedAt: .now(),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
@@ -104,7 +104,7 @@ void main() {
           RecordingClip(
             id: 'id',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 4),
+            duration: const Duration(seconds: 4),
             recordedAt: .now(),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,

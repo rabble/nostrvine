@@ -6,12 +6,12 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/models/recording_clip.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_migration_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -79,8 +79,8 @@ void main() {
           RecordingClip(
             id: 'clip_123',
             video: EditorVideo.file(videoFile.path),
-            duration: Duration(seconds: 6),
-            recordedAt: DateTime(2025, 12, 18, 10, 0),
+            duration: const Duration(seconds: 6),
+            recordedAt: DateTime(2025, 12, 18, 10),
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
           ),
@@ -89,10 +89,9 @@ void main() {
         description: 'Description',
         hashtags: {'test'},
         selectedApproach: 'native',
-        createdAt: DateTime(2025, 12, 18, 10, 0),
-        lastModified: DateTime(2025, 12, 18, 10, 0),
+        createdAt: DateTime(2025, 12, 18, 10),
+        lastModified: DateTime(2025, 12, 18, 10),
         publishStatus: PublishStatus.draft,
-        publishError: null,
         publishAttempts: 0,
       );
 
@@ -130,7 +129,6 @@ void main() {
         createdAt: DateTime.now(),
         lastModified: DateTime.now(),
         publishStatus: PublishStatus.draft,
-        publishError: null,
         publishAttempts: 0,
       );
 
@@ -163,7 +161,6 @@ void main() {
         createdAt: DateTime.now(),
         lastModified: DateTime.now(),
         publishStatus: PublishStatus.draft,
-        publishError: null,
         publishAttempts: 0,
       );
 
@@ -200,7 +197,6 @@ void main() {
         createdAt: DateTime.now(),
         lastModified: DateTime.now(),
         publishStatus: PublishStatus.draft,
-        publishError: null,
         publishAttempts: 0,
       );
 

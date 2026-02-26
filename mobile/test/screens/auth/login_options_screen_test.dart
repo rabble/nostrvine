@@ -51,22 +51,22 @@ void main() {
         routerConfig: GoRouter(
           initialLocation: LoginOptionsScreen.path,
           routes: [
-            GoRoute(path: '/', builder: (_, __) => const Scaffold()),
+            GoRoute(path: '/', builder: (_, _) => const Scaffold()),
             GoRoute(
               path: LoginOptionsScreen.path,
-              builder: (_, __) => const LoginOptionsScreen(),
+              builder: (_, _) => const LoginOptionsScreen(),
             ),
             GoRoute(
               path: '/import-key',
-              builder: (_, __) => const Scaffold(body: Text('Key Import')),
+              builder: (_, _) => const Scaffold(body: Text('Key Import')),
             ),
             GoRoute(
               path: '/nostr-connect',
-              builder: (_, __) => const Scaffold(body: Text('Nostr Connect')),
+              builder: (_, _) => const Scaffold(body: Text('Nostr Connect')),
             ),
             GoRoute(
               path: '/verify-email',
-              builder: (_, __) =>
+              builder: (_, _) =>
                   const Scaffold(body: Text('Email Verification')),
             ),
           ],

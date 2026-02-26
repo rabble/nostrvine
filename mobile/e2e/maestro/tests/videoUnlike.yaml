@@ -23,7 +23,7 @@ tags:
 - waitForAnimationToEnd
 - tapOn:
     id: like_button
-- runFlow: "../asserts/assertVideounLiked.yaml"
+- runFlow: "../asserts/assertVideoUnliked.yaml"
 
 # 3. Close the video and Tap on profile, liked tab: Validate tab is loaded and video is not listed
 - tapOn: Close video player

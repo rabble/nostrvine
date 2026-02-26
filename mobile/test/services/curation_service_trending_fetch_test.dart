@@ -1,15 +1,18 @@
+// ignore_for_file: deprecated_member_use_from_same_package
+// TODO: remove ignore-deprecated above
+
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:models/models.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -63,7 +66,7 @@ void main() {
     // Mock subscribeToEvents to avoid MissingStubError when fetching Editor's Picks list
     when(
       () => mockNostrService.subscribe(any()),
-    ).thenAnswer((_) => Stream<Event>.empty());
+    ).thenAnswer((_) => const Stream<Event>.empty());
 
     curationService = CurationService(
       nostrService: mockNostrService,

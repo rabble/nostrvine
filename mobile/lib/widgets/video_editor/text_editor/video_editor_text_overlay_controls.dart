@@ -22,7 +22,7 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return const Stack(
       children: [
         // Close/Done buttons at the top
         Align(alignment: .topCenter, child: _TopBar()),
@@ -34,7 +34,7 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
         Align(
           alignment: .centerRight,
           child: Padding(
-            padding: const .fromLTRB(0, 96, 16, 96),
+            padding: .fromLTRB(0, 96, 16, 96),
             child: _FontSizeSlider(),
           ),
         ),
@@ -88,7 +88,7 @@ class _TopBar extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: .fromLTRB(12, 12, 12, 0),
+        padding: const .fromLTRB(12, 12, 12, 0),
         child: Row(
           mainAxisAlignment: .spaceBetween,
           children: [

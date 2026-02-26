@@ -20,7 +20,7 @@ class AuthHeroSection extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Hero text with positioned emoji stickers
-          Stack(
+          const Stack(
             clipBehavior: Clip.none,
             children: [
               // Main text

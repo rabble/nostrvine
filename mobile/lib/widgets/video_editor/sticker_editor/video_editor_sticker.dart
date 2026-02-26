@@ -11,8 +11,8 @@ import 'package:models/models.dart' show StickerData;
 /// caching based on the displayed size.
 class VideoEditorSticker extends StatelessWidget {
   const VideoEditorSticker({
-    super.key,
     required this.sticker,
+    super.key,
     this.enableLimitCacheSize = true,
   });
 

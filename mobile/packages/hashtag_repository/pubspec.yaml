@@ -10,6 +10,7 @@ resolution: workspace
 
 dependencies:
   funnelcake_api_client:
+  models:
 
 dev_dependencies:
   mocktail: ^1.0.4

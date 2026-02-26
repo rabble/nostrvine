@@ -205,4 +205,5 @@ class BandwidthTrackerService {
 }
 
 /// Singleton instance for easy access
-final bandwidthTracker = BandwidthTrackerService.instance;
+final BandwidthTrackerService bandwidthTracker =
+    BandwidthTrackerService.instance;

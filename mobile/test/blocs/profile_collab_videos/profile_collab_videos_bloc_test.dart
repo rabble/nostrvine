@@ -134,7 +134,6 @@ void main() {
                 id: 'v1',
                 pubkey: authorPubkey,
                 collaboratorPubkeys: [targetPubkey],
-                createdAt: 1700000000,
               ),
             ],
           );
@@ -346,7 +345,6 @@ void main() {
               id: 'v1',
               pubkey: authorPubkey,
               collaboratorPubkeys: [targetPubkey],
-              createdAt: 1700000000,
             ),
           ],
           paginationCursor: 1700000000,

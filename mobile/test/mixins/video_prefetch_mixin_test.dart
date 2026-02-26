@@ -4,8 +4,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:models/models.dart';
+import 'package:openvine/mixins/video_prefetch_mixin.dart';
 
 class MockMediaCacheManager extends Mock implements MediaCacheManager {}
 

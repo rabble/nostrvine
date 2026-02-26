@@ -102,8 +102,6 @@ void main() {
       // Create a profile where nip05 is the best match
       final nip05Profile = UserProfile(
         pubkey: 'abc123def456',
-        displayName: null,
-        name: null,
         nip05: 'rafa@example.com',
         rawData: const {},
         createdAt: DateTime.now(),
