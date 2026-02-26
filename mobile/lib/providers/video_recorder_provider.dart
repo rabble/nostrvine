@@ -152,7 +152,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       await _cameraService.initialize(
         videoQuality: videoQuality,
         initialLens: initialLens,
-        enableAutoLensSwitch: false,
       );
     } catch (e) {
       Log.error(
