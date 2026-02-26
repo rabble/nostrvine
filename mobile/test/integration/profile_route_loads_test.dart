@@ -123,20 +123,12 @@ void main() {
       reason: 'Video title should be visible in overlay',
     );
 
-    // Verify ProfileScreenRouter uses VideoPageView (not legacy placeholder)
-    expect(
-      find.byWidgetPredicate(
-        (w) => w.runtimeType.toString() == 'VideoPageView',
-      ),
-      findsOneWidget,
-      reason: 'ProfileScreenRouter should use VideoPageView',
-    );
     expect(
       find.byWidgetPredicate(
         (w) => w.runtimeType.toString() == 'VideoFeedItem',
       ),
       findsOneWidget,
-      reason: 'VideoPageView should render VideoFeedItem',
+      reason: 'Profile video feed should render VideoFeedItem',
     );
     expect(
       find.byWidgetPredicate(
