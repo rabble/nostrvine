@@ -1355,10 +1355,10 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isRepost,
-                required String addressableId,
-                required String originalAuthorPubkey,
-                String? eventId,
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
               }) async {
                 queuedAction = {
                   'isRepost': isRepost,
@@ -1417,10 +1417,10 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isRepost,
-                required String addressableId,
-                required String originalAuthorPubkey,
-                String? eventId,
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
               }) async {
                 queuedAction = {
                   'isRepost': isRepost,
@@ -1481,10 +1481,10 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isRepost,
-                required String addressableId,
-                required String originalAuthorPubkey,
-                String? eventId,
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
               }) async {},
         );
 
@@ -1571,10 +1571,10 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isRepost,
-                required String addressableId,
-                required String originalAuthorPubkey,
-                String? eventId,
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
               }) async {},
         );
 
