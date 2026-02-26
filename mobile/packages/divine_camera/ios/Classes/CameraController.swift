@@ -62,6 +62,11 @@ class CameraController: NSObject {
     private var minZoom: CGFloat = 1.0
     private var maxZoom: CGFloat = 1.0
     private var currentZoom: CGFloat = 1.0
+    // Scale factor to convert native videoZoomFactor to user-facing zoom.
+    // Virtual multi-camera devices (builtInTripleCamera, builtInDualWideCamera)
+    // start at ultra-wide where native 1.0 = 0.5x user. Wide angle = native 2.0 = 1.0x user.
+    // So scale = 0.5 for those devices, 1.0 for single-lens cameras.
+    private var nativeToUserZoomScale: CGFloat = 1.0
     // Portrait-Modus: 9:16, e.g: 1080x1920
     private var aspectRatio: CGFloat = 9.0 / 16.0
     
@@ -603,6 +608,20 @@ class CameraController: NSObject {
         // Get camera properties
         updateCameraProperties(device: videoDevice)
         
+        // Set initial zoom to 1.0x (wide angle) for virtual multi-camera devices.
+        // Without this, the camera starts at native 1.0 which is the ultra-wide (0.5x).
+        if nativeToUserZoomScale < 1.0 {
+            let nativeWideZoom = 1.0 / nativeToUserZoomScale  // 2.0 for triple/dualWide
+            do {
+                try videoDevice.lockForConfiguration()
+                videoDevice.videoZoomFactor = nativeWideZoom
+                videoDevice.unlockForConfiguration()
+                currentZoom = 1.0
+            } catch {
+                print("DivineCamera: Failed to set initial zoom to 1.0x: \(error.localizedDescription)")
+            }
+        }
+        
         // Start session first so frames start flowing
         session.startRunning()
         self.captureSession = session
@@ -675,17 +694,33 @@ class CameraController: NSObject {
     /// Updates camera properties from the device.
     private func updateCameraProperties(device: AVCaptureDevice) {
         if autoLensSwitchRequested {
+            // Determine scale factor for virtual multi-camera devices.
+            // builtInTripleCamera and builtInDualWideCamera include ultra-wide
+            // where native videoZoomFactor 1.0 = ultra-wide (0.5x in iOS Camera app)
+            // and native 2.0 = wide angle (1.0x).
+            if #available(iOS 13.0, *) {
+                if device.deviceType == .builtInTripleCamera ||
+                   device.deviceType == .builtInDualWideCamera {
+                    nativeToUserZoomScale = 0.5
+                } else {
+                    nativeToUserZoomScale = 1.0
+                }
+            } else {
+                nativeToUserZoomScale = 1.0
+            }
             // Use full zoom range including ultra-wide on virtual
             // multi-camera devices (e.g. builtInTripleCamera).
-            minZoom = device.minAvailableVideoZoomFactor
-            maxZoom = min(device.maxAvailableVideoZoomFactor, 10.0)
+            // Convert native zoom values to user-facing values.
+            minZoom = device.minAvailableVideoZoomFactor * nativeToUserZoomScale
+            maxZoom = min(device.maxAvailableVideoZoomFactor * nativeToUserZoomScale, 10.0)
         } else {
             // No auto lens switch - clamp to 1.0 to prevent native
             // lens switching on virtual multi-camera devices.
+            nativeToUserZoomScale = 1.0
             minZoom = 1.0
             maxZoom = min(device.activeFormat.videoMaxZoomFactor, 10.0)
         }
-        currentZoom = device.videoZoomFactor
+        currentZoom = device.videoZoomFactor * nativeToUserZoomScale
         // Front camera has "flash" via screen brightness when feature is enabled
         hasFlash = device.hasFlash || (screenFlashFeatureEnabled && currentLens == .front)
         isFocusPointSupported = device.isFocusPointOfInterestSupported
@@ -800,6 +835,20 @@ class CameraController: NSObject {
             }
             
             session.commitConfiguration()
+            
+            // Set zoom to 1.0x (wide angle) for virtual multi-camera devices
+            // after switching cameras, so it matches the Dart side expectation.
+            if self.nativeToUserZoomScale < 1.0 {
+                let nativeWideZoom = 1.0 / self.nativeToUserZoomScale
+                do {
+                    try newDevice.lockForConfiguration()
+                    newDevice.videoZoomFactor = nativeWideZoom
+                    newDevice.unlockForConfiguration()
+                    self.currentZoom = 1.0
+                } catch {
+                    print("DivineCamera: Failed to set zoom after camera switch: \(error.localizedDescription)")
+                }
+            }
             
             // Store completion to be called when first frame arrives from new camera.
             // This ensures Flutter gets the new lens state only after the texture
@@ -1155,15 +1204,18 @@ class CameraController: NSObject {
         }
     }
     
-    /// Sets the zoom level.
+    /// Sets the zoom level (user-facing value, e.g. 0.5x, 1.0x, 2.0x).
+    /// Internally converts to native videoZoomFactor using nativeToUserZoomScale.
     func setZoomLevel(level: CGFloat) -> Bool {
         guard let device = videoDevice else { return false }
         
         let clampedLevel = max(minZoom, min(level, maxZoom))
+        // Convert user-facing zoom to native videoZoomFactor
+        let nativeZoom = clampedLevel / nativeToUserZoomScale
         
         do {
             try device.lockForConfiguration()
-            device.videoZoomFactor = clampedLevel
+            device.videoZoomFactor = nativeZoom
             device.unlockForConfiguration()
             currentZoom = clampedLevel
             return true
