@@ -4,14 +4,14 @@
 
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
-import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/router/router.dart';
-import 'package:nostr_client/nostr_client.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -179,7 +179,7 @@ void main() {
         final isActive = container.read(isDiscoveryTabActiveProvider);
 
         expect(
-          isActive == true || container.read(pageContextProvider).isLoading,
+          isActive || container.read(pageContextProvider).isLoading,
           isTrue,
           reason: 'Should be true when route is explore, or still loading',
         );

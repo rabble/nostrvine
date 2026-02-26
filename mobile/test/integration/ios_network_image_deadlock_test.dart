@@ -1,9 +1,9 @@
 // ABOUTME: Test to reproduce and verify iOS network image loading deadlock issues
 // ABOUTME: Ensures network images load properly on iOS without causing hangs or timeouts
 
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('iOS Network Image Deadlock Prevention', () {
@@ -89,10 +89,12 @@ void main() {
               child: CachedNetworkImage(
                 imageUrl: 'https://api.openvine.co/nonexistent-image.jpg',
                 fit: BoxFit.cover,
-                placeholder: (context, url) =>
-                    Container(color: Colors.grey, child: const Text('Loading')),
+                placeholder: (context, url) => const ColoredBox(
+                  color: Colors.grey,
+                  child: Text('Loading'),
+                ),
                 errorWidget: (context, url, error) =>
-                    Container(color: Colors.red, child: const Text('Error')),
+                    const ColoredBox(color: Colors.red, child: Text('Error')),
               ),
             ),
           ),
@@ -109,7 +111,7 @@ void main() {
 
       // Note: In test environment, network requests might fail immediately or show loading
       // We just verify the app doesn't hang
-      expect(find.byType(Container), findsAtLeast(1));
+      expect(find.byType(ColoredBox), findsAtLeast(1));
     });
 
     test('CachedNetworkImage should have reasonable connection timeout configured', () {

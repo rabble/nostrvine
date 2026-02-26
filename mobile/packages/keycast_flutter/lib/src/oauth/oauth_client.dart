@@ -154,7 +154,7 @@ class KeycastOAuth {
       return CallbackSuccess(code: params['code']!);
     }
 
-    return CallbackError(
+    return const CallbackError(
       error: 'invalid_response',
       description: 'Missing code or error in callback URL',
     );
@@ -291,7 +291,7 @@ class KeycastOAuth {
       }
 
       // Handle error responses - preserve error code for client-side handling
-      String errorCode = json['code'] as String? ?? 'registration_failed';
+      final String errorCode = json['code'] as String? ?? 'registration_failed';
       final description =
           json['error'] as String? ?? json['message'] as String? ?? errorCode;
 

@@ -22,7 +22,7 @@ class SoundListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ColoredBox(
       color: isSelected
           ? Colors.green.withValues(alpha: 0.2)
           : Colors.transparent,

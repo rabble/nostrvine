@@ -57,7 +57,6 @@ void main() {
             title: 'Updated Title',
             createdAt: editTime.millisecondsSinceEpoch ~/ 1000,
             timestamp: editTime,
-            publishedAt: null,
           );
 
           // Manually preserve the original timestamp (simulating _preserveOriginalTimestamp logic)

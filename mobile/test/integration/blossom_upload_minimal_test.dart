@@ -4,12 +4,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/event.dart';
 
 void main() {
   // Use IntegrationTestWidgetsFlutterBinding which allows real HTTP
@@ -51,7 +52,7 @@ void main() {
       }
     });
 
-    Future<void> _testUploadToServer(String serverUrl) async {
+    Future<void> testUploadToServer(String serverUrl) async {
       print('📁 Test file size: ${await testVideoFile.length()} bytes');
       print('👤 Using pubkey: ${keyPair.public}...');
 
@@ -170,7 +171,7 @@ void main() {
 
     test('should upload to staging server with manual Blossom auth', () async {
       print('🔄 Testing upload to staging server: $stagingServer');
-      await _testUploadToServer(stagingServer);
+      await testUploadToServer(stagingServer);
       // TODO(any): Fix and re-enable these tests
     }, skip: true);
 
@@ -178,7 +179,7 @@ void main() {
       'should upload to production server with manual Blossom auth',
       () async {
         print('🔄 Testing upload to production server: $prodServer');
-        await _testUploadToServer(prodServer);
+        await testUploadToServer(prodServer);
       },
       // TODO(any): Fix and re-enable these tests
       skip: true,

@@ -1,16 +1,19 @@
 // ABOUTME: Tests for CurationService kind 30005 Nostr queries
 // ABOUTME: Verifies fetching and subscribing to NIP-51 video curation sets
 
+// ignore_for_file: deprecated_member_use_from_same_package
+// TODO: remove ignore-deprecated above
+
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}

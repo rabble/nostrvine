@@ -1,18 +1,16 @@
 // ABOUTME: Unit tests for CuratedListService relay sync functionality
 // ABOUTME: Tests the relay sync implementation without requiring real relay connections
 
-// ignore_for_file: invalid_use_of_null_value
-
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/curated_list_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/curated_list_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

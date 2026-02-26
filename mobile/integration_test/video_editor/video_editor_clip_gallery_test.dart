@@ -152,7 +152,7 @@ void main() {
             ),
             videoEditorProvider.overrideWith(
               () => TestVideoEditorNotifier(
-                VideoEditorProviderState(currentClipIndex: 0),
+                VideoEditorProviderState(),
               ),
             ),
           ],

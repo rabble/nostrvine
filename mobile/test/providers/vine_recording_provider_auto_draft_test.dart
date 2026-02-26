@@ -2,13 +2,14 @@
 // ABOUTME: Validates that every recording completion creates a draft
 
 import 'dart:io';
-import 'package:flutter_test/flutter_test.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/models/vine_draft.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
+import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/services/draft_storage_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -42,7 +43,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file(videoFile.path),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             originalAspectRatio: 9 / 16,
             targetAspectRatio: AspectRatio.square,
@@ -71,7 +72,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file(videoFile.path),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             originalAspectRatio: 9 / 16,
             targetAspectRatio: AspectRatio.square,

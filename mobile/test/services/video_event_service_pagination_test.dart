@@ -1,16 +1,15 @@
 // ABOUTME: Tests for video pagination and relay loading in VideoEventService
 // ABOUTME: Verifies that the service properly loads videos from relays when scrolling
 
-// ignore_for_file: invalid_use_of_null_value
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/subscription_manager.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'dart:async';
+import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/video_event_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -138,7 +137,7 @@ void main() {
         streamController.close();
 
         await firstLoad;
-        await Future.delayed(Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 100));
 
         // Now try to load more - it should reset and allow loading
         final secondController = StreamController<Event>.broadcast();

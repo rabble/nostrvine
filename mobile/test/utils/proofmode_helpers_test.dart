@@ -3,8 +3,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';
+import 'package:openvine/widgets/proofmode_badge.dart';
 
 void main() {
   group('ProofMode VideoEvent Extensions', () {
@@ -15,7 +15,7 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: {
+        rawTags: const {
           'verification': 'verified_mobile',
           'proofmode': '{"test": "data"}',
           'pgp_fingerprint': 'ABC123',
@@ -37,7 +37,7 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: {
+        rawTags: const {
           'verification': 'verified_web',
           'proofmode': '{"test": "data"}',
         },
@@ -58,7 +58,10 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: {'verification': 'basic_proof', 'pgp_fingerprint': 'ABC123'},
+        rawTags: const {
+          'verification': 'basic_proof',
+          'pgp_fingerprint': 'ABC123',
+        },
       );
 
       expect(video.getVerificationLevel(), VerificationLevel.basicProof);
@@ -76,7 +79,6 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: {},
       );
 
       expect(video.getVerificationLevel(), VerificationLevel.unverified);
@@ -95,7 +97,7 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: {'proofmode': '{"test": "data"}'},
+        rawTags: const {'proofmode': '{"test": "data"}'},
       );
 
       expect(video.hasProofMode, isTrue);
@@ -107,49 +109,49 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: {'pgp_fingerprint': 'ABC123'},
+        rawTags: const {'pgp_fingerprint': 'ABC123'},
       );
 
       expect(video.hasProofMode, isTrue);
     });
 
     test('extracts proof manifest correctly', () {
-      final manifestJson = '{"sessionId": "test", "frameHashes": []}';
+      const manifestJson = '{"sessionId": "test", "frameHashes": []}';
       final video = VideoEvent(
         id: 'test7',
         pubkey: 'pubkey7',
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: {'proofmode': manifestJson},
+        rawTags: const {'proofmode': manifestJson},
       );
 
       expect(video.proofModeManifest, manifestJson);
     });
 
     test('extracts device attestation correctly', () {
-      final attestation = 'ATTESTATION_TOKEN_123';
+      const attestation = 'ATTESTATION_TOKEN_123';
       final video = VideoEvent(
         id: 'test8',
         pubkey: 'pubkey8',
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: {'device_attestation': attestation},
+        rawTags: const {'device_attestation': attestation},
       );
 
       expect(video.proofModeDeviceAttestation, attestation);
     });
 
     test('extracts PGP fingerprint correctly', () {
-      final fingerprint = 'ABCD1234EFGH5678';
+      const fingerprint = 'ABCD1234EFGH5678';
       final video = VideoEvent(
         id: 'test9',
         pubkey: 'pubkey9',
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'test video',
         timestamp: DateTime.now(),
-        rawTags: {'pgp_fingerprint': fingerprint},
+        rawTags: const {'pgp_fingerprint': fingerprint},
       );
 
       expect(video.proofModePgpFingerprint, fingerprint);
@@ -221,7 +223,7 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'verified original vine',
         timestamp: DateTime.now(),
-        rawTags: {'verification': 'verified_mobile'},
+        rawTags: const {'verification': 'verified_mobile'},
         originalLoops: 500000,
       );
 
@@ -241,7 +243,7 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch,
         content: 'new verified vine',
         timestamp: DateTime.now(),
-        rawTags: {'verification': 'verified_web'},
+        rawTags: const {'verification': 'verified_web'},
       );
 
       expect(video.shouldShowProofModeBadge, isTrue);

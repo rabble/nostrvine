@@ -30,7 +30,7 @@ void main() {
         content: 'Test video content',
         timestamp: DateTime.now(),
         title: 'Test Video Title',
-        hashtags: ['test', 'analytics'],
+        hashtags: const ['test', 'analytics'],
       );
 
       // Should complete without error

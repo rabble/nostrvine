@@ -4,9 +4,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -38,7 +38,7 @@ void main() {
       when(() => mockNostrService.publicKey).thenReturn('test-pubkey-123');
       when(
         () => mockNostrService.subscribe(any()),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
     });
 
     tearDown(() {
@@ -218,7 +218,7 @@ void main() {
       when(() => mockNostrService.publicKey).thenReturn('test-pubkey-123');
       when(
         () => mockNostrService.subscribe(any()),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
     });
 
     tearDown(() {
@@ -241,7 +241,7 @@ void main() {
           actorPubkey: 'actor-1',
           actorName: 'User 1',
           message: 'User 1 liked your video',
-          timestamp: DateTime(2024, 1, 1, 10, 0), // Older
+          timestamp: DateTime(2024, 1, 1, 10), // Older
         );
 
         final newerNotification = NotificationModel(
@@ -250,7 +250,7 @@ void main() {
           actorPubkey: 'actor-2',
           actorName: 'User 2',
           message: 'User 2 liked your video',
-          timestamp: DateTime(2024, 1, 2, 10, 0), // Newer
+          timestamp: DateTime(2024, 1, 2, 10), // Newer
         );
 
         // Add older first, then newer (simulating out-of-order Nostr events)
@@ -288,7 +288,7 @@ void main() {
           actorPubkey: 'actor-1',
           actorName: 'User 1',
           message: 'User 1 liked your video',
-          timestamp: DateTime(2024, 1, 1),
+          timestamp: DateTime(2024),
         );
 
         final newComment = NotificationModel(
@@ -334,7 +334,7 @@ void main() {
         videoService: mockVideoService,
       );
 
-      final sameTime = DateTime(2024, 1, 1, 12, 0);
+      final sameTime = DateTime(2024, 1, 1, 12);
 
       // Add notifications with identical timestamps but different IDs
       final notificationB = NotificationModel(

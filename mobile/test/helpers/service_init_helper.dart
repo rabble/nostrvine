@@ -2,14 +2,15 @@
 // ABOUTME: Provides mock services that work in test environment without SharedPreferences or platform channels
 
 import 'package:flutter/services.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+
 import 'test_nostr_service.dart';
 
 /// Helper class for initializing services in test environment
@@ -112,7 +113,6 @@ class ServiceInitHelper {
     );
 
     return ServiceBundle(
-      keyContainer: null, // Not needed for test service
       nostrService: testNostrService,
       subscriptionManager: subscriptionManager,
       videoEventService: videoEventService,
@@ -149,10 +149,10 @@ class ServiceInitHelper {
 /// Bundle of commonly used services for tests
 class ServiceBundle {
   ServiceBundle({
-    this.keyContainer,
     required this.nostrService,
     required this.subscriptionManager,
     required this.videoEventService,
+    this.keyContainer,
   });
 
   final SecureKeyContainer? keyContainer;

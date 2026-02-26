@@ -62,7 +62,6 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
           width: widget.size,
           height: widget.size,
           child: ClipRect(
-            clipBehavior: Clip.hardEdge,
             child: OverflowBox(
               maxWidth: widget.size,
               maxHeight: widget.size * _frameCount,
@@ -80,7 +79,6 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
         width: widget.size,
         height: widget.size * _frameCount,
         fit: BoxFit.fitWidth,
-        filterQuality: FilterQuality.medium,
         errorBuilder: (context, error, stackTrace) {
           debugPrint('Failed to load sprite sheet: $error');
           return SizedBox(

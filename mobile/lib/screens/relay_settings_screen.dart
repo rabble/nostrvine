@@ -1,6 +1,7 @@
 // ABOUTME: Screen for managing Nostr relay connections and settings
 // ABOUTME: Allows users to add, remove, and configure external relay preferences
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -10,7 +11,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -161,8 +161,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                 ),
                 const SizedBox(height: 8),
                 GestureDetector(
-                  onTap: () => _launchNostrDocs(),
-                  child: Text(
+                  onTap: _launchNostrDocs,
+                  child: const Text(
                     'Learn more about Nostr →',
                     style: TextStyle(
                       color: VineTheme.vineGreen,
@@ -173,8 +173,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                 ),
                 const SizedBox(height: 4),
                 GestureDetector(
-                  onTap: () => _launchNostrWatch(),
-                  child: Text(
+                  onTap: _launchNostrWatch,
+                  child: const Text(
                     'Find public relays at nostr.co.uk →',
                     style: TextStyle(
                       color: VineTheme.vineGreen,
@@ -222,7 +222,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                         ),
                         const SizedBox(height: 32),
                         ElevatedButton.icon(
-                          onPressed: () => _restoreDefaultRelay(),
+                          onPressed: _restoreDefaultRelay,
                           icon: const Icon(Icons.restore, color: Colors.white),
                           label: const Text(
                             'Restore Default Relay',
@@ -238,7 +238,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                         ),
                         const SizedBox(height: 12),
                         ElevatedButton.icon(
-                          onPressed: () => _showAddRelayDialog(),
+                          onPressed: _showAddRelayDialog,
                           icon: const Icon(Icons.add, color: Colors.white),
                           label: const Text(
                             'Add Custom Relay',
@@ -264,7 +264,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                           children: [
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: () => _showAddRelayDialog(),
+                                onPressed: _showAddRelayDialog,
                                 icon: const Icon(
                                   Icons.add,
                                   color: Colors.white,
@@ -285,7 +285,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: ElevatedButton.icon(
-                                onPressed: () => _retryConnection(),
+                                onPressed: _retryConnection,
                                 icon: const Icon(
                                   Icons.refresh,
                                   color: Colors.white,
@@ -690,7 +690,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       );
     } catch (e) {
       Log.error('Failed to remove relay: $e', name: 'RelaySettingsScreen');
-      _showError('Failed to remove relay: ${e.toString()}');
+      _showError('Failed to remove relay: $e');
     }
   }
 
@@ -738,7 +738,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       }
     } catch (e) {
       Log.error('Failed to retry connection: $e', name: 'RelaySettingsScreen');
-      _showError('Connection retry failed: ${e.toString()}');
+      _showError('Connection retry failed: $e');
     }
   }
 
@@ -760,8 +760,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
             ),
             const SizedBox(height: 8),
             GestureDetector(
-              onTap: () => _launchNostrWatch(),
-              child: Text(
+              onTap: _launchNostrWatch,
+              child: const Text(
                 'Browse public relays at nostr.co.uk',
                 style: TextStyle(
                   color: VineTheme.vineGreen,
@@ -791,7 +791,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => dialogContext.pop(null),
+            onPressed: () => dialogContext.pop(),
             child: Text('Cancel', style: TextStyle(color: Colors.grey[400])),
           ),
           TextButton(
@@ -848,14 +848,14 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       }
     } catch (e) {
       Log.error('Failed to add relay: $e', name: 'RelaySettingsScreen');
-      _showError('Failed to add relay: ${e.toString()}');
+      _showError('Failed to add relay: $e');
     }
   }
 
   Future<void> _restoreDefaultRelay() async {
     try {
       final nostrService = ref.read(nostrServiceProvider);
-      final defaultRelay = AppConstants.defaultRelayUrl;
+      const defaultRelay = AppConstants.defaultRelayUrl;
 
       final success = await nostrService.addRelay(defaultRelay);
 
@@ -865,7 +865,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Restored default relay: $defaultRelay'),
+              content: const Text('Restored default relay: $defaultRelay'),
               backgroundColor: Colors.green[700],
             ),
           );
@@ -882,7 +882,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         'Failed to restore default relay: $e',
         name: 'RelaySettingsScreen',
       );
-      _showError('Failed to restore default relay: ${e.toString()}');
+      _showError('Failed to restore default relay: $e');
     }
   }
 

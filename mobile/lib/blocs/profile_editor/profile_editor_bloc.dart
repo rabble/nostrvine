@@ -127,7 +127,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           username: username,
           usernameStatus: UsernameStatus.idle,
-          usernameError: null,
         ),
       );
       return;
@@ -162,7 +161,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           username: username,
           usernameStatus: UsernameStatus.reserved,
-          usernameError: null,
         ),
       );
       return;
@@ -175,7 +173,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           username: username,
           usernameStatus: UsernameStatus.idle,
-          usernameError: null,
         ),
       );
       return;
@@ -185,7 +182,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       state.copyWith(
         username: username,
         usernameStatus: UsernameStatus.checking,
-        usernameError: null,
       ),
     );
 
@@ -198,14 +194,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         emit(
           state.copyWith(
             usernameStatus: UsernameStatus.available,
-            usernameError: null,
           ),
         );
       case UsernameTaken():
         emit(
           state.copyWith(
             usernameStatus: UsernameStatus.taken,
-            usernameError: null,
           ),
         );
       case UsernameInvalidFormat(:final reason):
@@ -240,7 +234,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           nip05Mode: Nip05Mode.divine,
           externalNip05: '',
-          externalNip05Error: null,
         ),
       );
     } else {
@@ -249,7 +242,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           nip05Mode: Nip05Mode.external_,
           usernameStatus: UsernameStatus.idle,
-          usernameError: null,
         ),
       );
     }
@@ -262,7 +254,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final nip05 = event.nip05.trim().toLowerCase();
 
     if (nip05.isEmpty) {
-      emit(state.copyWith(externalNip05: nip05, externalNip05Error: null));
+      emit(state.copyWith(externalNip05: nip05));
       return;
     }
 
@@ -293,7 +285,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     }
 
     // Valid format — no API check needed for external NIP-05
-    emit(state.copyWith(externalNip05: nip05, externalNip05Error: null));
+    emit(state.copyWith(externalNip05: nip05));
   }
 
   void _onInitialExternalNip05Set(

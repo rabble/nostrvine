@@ -3,15 +3,16 @@
 
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Mock classes
 class MockAuthService extends Mock implements AuthService {}
@@ -99,9 +100,9 @@ void main() {
 
         final mockFile = MockFile();
         when(() => mockFile.path).thenReturn('/test/video.mp4');
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(
-          () => mockFile.openRead(),
+          mockFile.openRead,
         ).thenAnswer((_) => Stream.value(Uint8List.fromList([1, 2, 3])));
 
         // Act
@@ -196,16 +197,16 @@ void main() {
 
         final mockFile = MockFile();
         when(() => mockFile.path).thenReturn('/test/video.mp4');
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(
-          () => mockFile.readAsBytes(),
+          mockFile.readAsBytes,
         ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3, 4, 5]));
         when(
-          () => mockFile.readAsBytesSync(),
+          mockFile.readAsBytesSync,
         ).thenReturn(Uint8List.fromList([1, 2, 3, 4, 5]));
-        when(() => mockFile.lengthSync()).thenReturn(5);
+        when(mockFile.lengthSync).thenReturn(5);
         when(
-          () => mockFile.openRead(),
+          mockFile.openRead,
         ).thenAnswer((_) => Stream.value(Uint8List.fromList([1, 2, 3, 4, 5])));
 
         // Mock Dio response
@@ -239,13 +240,12 @@ void main() {
 
         // Assert
         if (!result.success) {
-          // ignore: avoid_print
           print('Upload failed with error: ${result.errorMessage}');
         }
         expect(result.success, isTrue);
         // URL is now constructed client-side: {defaultBlossomServer}/{sha256}
         // per Blossom spec (BUD-01), regardless of server response URL
-        final expectedHash =
+        const expectedHash =
             '74f81fe167d99b4cb41d6d0ccda82278caee9f3e2f25d5e5a3936ff3dcec60d0';
         expect(
           result.cdnUrl,
@@ -284,15 +284,15 @@ void main() {
 
           final mockFile = MockFile();
           when(() => mockFile.path).thenReturn('/test/video.mp4');
-          when(() => mockFile.existsSync()).thenReturn(true);
+          when(mockFile.existsSync).thenReturn(true);
           when(
-            () => mockFile.readAsBytes(),
+            mockFile.readAsBytes,
           ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3, 4, 5]));
           when(
-            () => mockFile.readAsBytesSync(),
+            mockFile.readAsBytesSync,
           ).thenReturn(Uint8List.fromList([1, 2, 3, 4, 5]));
-          when(() => mockFile.lengthSync()).thenReturn(5);
-          when(() => mockFile.openRead()).thenAnswer(
+          when(mockFile.lengthSync).thenReturn(5);
+          when(mockFile.openRead).thenAnswer(
             (_) => Stream.value(Uint8List.fromList([1, 2, 3, 4, 5])),
           );
 
@@ -520,7 +520,7 @@ void main() {
           (_) async => Response(
             data: {'url': 'https://blossom.divine.video/abc123.txt'},
             statusCode: 200,
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
           ),
         );
 
@@ -594,15 +594,15 @@ void main() {
 
           final mockFile = MockFile();
           when(() => mockFile.path).thenReturn('/test/avatar.jpg');
-          when(() => mockFile.existsSync()).thenReturn(true);
+          when(mockFile.existsSync).thenReturn(true);
           when(
-            () => mockFile.readAsBytes(),
+            mockFile.readAsBytes,
           ).thenAnswer((_) async => Uint8List.fromList([0xFF, 0xD8, 0xFF]));
           when(
-            () => mockFile.readAsBytesSync(),
+            mockFile.readAsBytesSync,
           ).thenReturn(Uint8List.fromList([0xFF, 0xD8, 0xFF]));
-          when(() => mockFile.lengthSync()).thenReturn(3);
-          when(() => mockFile.openRead()).thenAnswer(
+          when(mockFile.lengthSync).thenReturn(3);
+          when(mockFile.openRead).thenAnswer(
             (_) => Stream.value(Uint8List.fromList([0xFF, 0xD8, 0xFF])),
           );
 
@@ -632,7 +632,6 @@ void main() {
           final result = await service.uploadImage(
             imageFile: mockFile,
             nostrPubkey: testPublicKey,
-            mimeType: 'image/jpeg',
           );
 
           // Assert - URL should have .jpg extension, NOT .mp4
@@ -679,15 +678,15 @@ void main() {
 
           final mockFile = MockFile();
           when(() => mockFile.path).thenReturn('/test/screenshot.png');
-          when(() => mockFile.existsSync()).thenReturn(true);
-          when(() => mockFile.readAsBytes()).thenAnswer(
+          when(mockFile.existsSync).thenReturn(true);
+          when(mockFile.readAsBytes).thenAnswer(
             (_) async => Uint8List.fromList([0x89, 0x50, 0x4E, 0x47]),
           );
           when(
-            () => mockFile.readAsBytesSync(),
+            mockFile.readAsBytesSync,
           ).thenReturn(Uint8List.fromList([0x89, 0x50, 0x4E, 0x47]));
-          when(() => mockFile.lengthSync()).thenReturn(4);
-          when(() => mockFile.openRead()).thenAnswer(
+          when(mockFile.lengthSync).thenReturn(4);
+          when(mockFile.openRead).thenAnswer(
             (_) => Stream.value(Uint8List.fromList([0x89, 0x50, 0x4E, 0x47])),
           );
 
@@ -755,15 +754,15 @@ void main() {
 
           final mockFile = MockFile();
           when(() => mockFile.path).thenReturn('/test/photo.jpg');
-          when(() => mockFile.existsSync()).thenReturn(true);
+          when(mockFile.existsSync).thenReturn(true);
           when(
-            () => mockFile.readAsBytes(),
+            mockFile.readAsBytes,
           ).thenAnswer((_) async => Uint8List.fromList([0xFF, 0xD8, 0xFF]));
           when(
-            () => mockFile.readAsBytesSync(),
+            mockFile.readAsBytesSync,
           ).thenReturn(Uint8List.fromList([0xFF, 0xD8, 0xFF]));
-          when(() => mockFile.lengthSync()).thenReturn(3);
-          when(() => mockFile.openRead()).thenAnswer(
+          when(mockFile.lengthSync).thenReturn(3);
+          when(mockFile.openRead).thenAnswer(
             (_) => Stream.value(Uint8List.fromList([0xFF, 0xD8, 0xFF])),
           );
 
@@ -790,7 +789,6 @@ void main() {
           final result = await service.uploadImage(
             imageFile: mockFile,
             nostrPubkey: testPublicKey,
-            mimeType: 'image/jpeg',
           );
 
           // Assert - Should keep server's .jpg extension as-is

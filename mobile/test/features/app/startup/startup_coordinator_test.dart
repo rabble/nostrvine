@@ -285,9 +285,7 @@ void main() {
 
       await coordinator.initialize();
 
-      final bottlenecks = coordinator.metrics.getBottlenecks(
-        threshold: const Duration(milliseconds: 100),
-      );
+      final bottlenecks = coordinator.metrics.getBottlenecks();
       expect(bottlenecks, contains('SlowService'));
       expect(bottlenecks, isNot(contains('QuickService1')));
       expect(bottlenecks, isNot(contains('QuickService2')));

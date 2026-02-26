@@ -1,15 +1,15 @@
 // ABOUTME: Tests for AudioAttributionRow widget - displays sound attribution on videos.
 // ABOUTME: Verifies dark theme colors, tap navigation, loading states, and graceful errors.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:models/models.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/user_profile_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 
 void main() {
@@ -46,7 +46,6 @@ void main() {
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
         title: 'Test Video',
-        hashtags: [],
         audioEventId: testAudioEventId,
       );
     }
@@ -61,7 +60,6 @@ void main() {
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
         title: 'Test Video',
-        hashtags: [],
       );
     }
 
@@ -164,7 +162,7 @@ void main() {
 
       testWidgets('displays fallback when sound has no title', (tester) async {
         final video = createVideoWithAudio();
-        final noTitleAudio = const AudioEvent(
+        const noTitleAudio = AudioEvent(
           id: testAudioEventId,
           pubkey: testPubkey,
           createdAt: 1704067200,

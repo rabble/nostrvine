@@ -7,7 +7,7 @@ import 'package:openvine/services/auth_service.dart' show AuthenticationSource;
 
 void main() {
   group(KnownAccount, () {
-    final testAddedAt = DateTime.utc(2024, 6, 1);
+    final testAddedAt = DateTime.utc(2024, 6);
     final testLastUsedAt = DateTime.utc(2024, 6, 15);
     const testPubkey =
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
@@ -124,7 +124,7 @@ void main() {
 
     group('equality', () {
       test('two accounts with same pubkey are equal', () {
-        final a = buildAccount(authSource: AuthenticationSource.automatic);
+        final a = buildAccount();
         final b = buildAccount(authSource: AuthenticationSource.divineOAuth);
 
         expect(a, equals(b));
@@ -185,7 +185,7 @@ void main() {
         final original = buildAccount();
         final copied = original.copyWith(
           authSource: AuthenticationSource.bunker,
-          lastUsedAt: DateTime.utc(2025, 1, 1),
+          lastUsedAt: DateTime.utc(2025),
         );
 
         expect(copied.pubkeyHex, equals(testPubkey));

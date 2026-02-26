@@ -136,8 +136,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
     if (!isInstalled) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Amber app is not installed'),
+        const SnackBar(
+          content: Text('Amber app is not installed'),
           backgroundColor: VineTheme.error,
         ),
       );

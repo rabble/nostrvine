@@ -126,7 +126,6 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
                     crossAxisCount: 3,
                     crossAxisSpacing: 2,
                     mainAxisSpacing: 2,
-                    childAspectRatio: 1,
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     if (index >= collabVideos.length) {
@@ -229,7 +228,7 @@ class _CollabGridTile extends StatelessWidget {
     child: ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(
-        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        decoration: const BoxDecoration(color: VineTheme.cardBackground),
         child: _CollabThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),

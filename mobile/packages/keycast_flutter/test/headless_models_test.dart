@@ -29,7 +29,6 @@ void main() {
           verificationRequired: true,
           deviceCode: 'device_123',
           email: 'test@example.com',
-          errorCode: null,
         );
 
         expect(result.deviceCode, 'device_123');
@@ -117,8 +116,6 @@ void main() {
           code: 'auth_code',
           pubkey: 'user_pubkey',
           state: 'state_123',
-          error: null,
-          errorDescription: null,
         );
 
         expect(result.code, 'auth_code');
@@ -212,7 +209,6 @@ void main() {
         final result = PollResult(
           status: PollStatus.complete,
           code: 'auth_code',
-          error: null,
         );
 
         expect(result.status, PollStatus.complete);
@@ -265,7 +261,6 @@ void main() {
         final result = ForgotPasswordResult(
           success: true,
           message: 'Email sent',
-          error: null,
         );
 
         expect(result.success, isTrue);
@@ -383,7 +378,6 @@ void main() {
         final result = DeleteAccountResult(
           success: true,
           message: 'Account deleted',
-          error: null,
         );
 
         expect(result.success, isTrue);

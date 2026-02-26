@@ -108,7 +108,6 @@ void main() {
         verify(
           () => mockBlossomAuthService.createGetAuthHeader(
             sha256Hash: 'abc123',
-            serverUrl: null,
           ),
         ).called(1);
       },
@@ -144,7 +143,6 @@ void main() {
         verify(
           () => mockBlossomAuthService.createGetAuthHeader(
             sha256Hash: 'abc123',
-            serverUrl: null,
           ),
         ).called(1);
       },
@@ -203,7 +201,6 @@ void main() {
       verify(
         () => mockBlossomAuthService.createGetAuthHeader(
           sha256Hash: 'abc123',
-          serverUrl: null,
         ),
       ).called(1);
     });

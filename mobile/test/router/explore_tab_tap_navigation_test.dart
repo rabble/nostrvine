@@ -41,7 +41,7 @@ void main() {
         // Simulate tapping explore tab (index 1)
         // This should navigate to /explore (grid mode), NOT /explore/0 (feed mode)
         final appShell = tester.widget<Scaffold>(find.byType(Scaffold).first);
-        final bottomNav = appShell.bottomNavigationBar as BottomNavigationBar;
+        final bottomNav = appShell.bottomNavigationBar! as BottomNavigationBar;
         bottomNav.onTap!(1); // Tap explore tab
         await tester.pumpAndSettle();
 

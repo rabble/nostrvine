@@ -16,9 +16,6 @@ import 'package:videos_repository/videos_repository.dart';
 part 'video_feed_event.dart';
 part 'video_feed_state.dart';
 
-/// Number of videos to load per page.
-const _pageSize = 5;
-
 /// Default interval between auto-refreshes of the home feed.
 const _defaultAutoRefreshMinInterval = Duration(minutes: 10);
 
@@ -319,7 +316,6 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         final authors = _followRepository.followingPubkeys;
         final result = await _videosRepository.getHomeFeedVideos(
           authors: authors,
-          limit: _pageSize,
           until: until,
         );
         return result.videos;
@@ -328,17 +324,15 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         final authors = _followRepository.followingPubkeys;
         final result = await _videosRepository.getHomeFeedVideos(
           authors: authors,
-          limit: _pageSize,
           until: until,
         );
         return result.videos;
 
       case FeedMode.latest:
-        return _videosRepository.getNewVideos(limit: _pageSize, until: until);
+        return _videosRepository.getNewVideos(until: until);
 
       case FeedMode.popular:
         return _videosRepository.getPopularVideos(
-          limit: _pageSize,
           until: until,
         );
     }

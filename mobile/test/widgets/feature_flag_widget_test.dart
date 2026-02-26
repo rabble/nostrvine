@@ -2,14 +2,14 @@
 // ABOUTME: Validates widget behavior based on feature flag state
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/widgets/feature_flag_widget.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
@@ -41,10 +41,10 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: FeatureFlagWidget(
               flag: FeatureFlag.newCameraUI,
-              child: const Text('Enabled Content'),
+              child: Text('Enabled Content'),
             ),
           ),
         ),
@@ -66,11 +66,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: FeatureFlagWidget(
               flag: FeatureFlag.newCameraUI,
-              disabled: const Text('Disabled Content'),
-              child: const Text('Enabled Content'),
+              disabled: Text('Disabled Content'),
+              child: Text('Enabled Content'),
             ),
           ),
         ),
@@ -120,11 +120,11 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: FeatureFlagWidget(
               flag: FeatureFlag.newCameraUI,
-              disabled: const Text('Disabled Content'),
-              child: const Text('Enabled Content'),
+              disabled: Text('Disabled Content'),
+              child: Text('Enabled Content'),
             ),
           ),
         ),
@@ -166,18 +166,18 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Column(
               children: [
                 FeatureFlagWidget(
                   flag: FeatureFlag.newCameraUI,
-                  disabled: const Text('Camera UI Disabled'),
-                  child: const Text('Camera UI Enabled'),
+                  disabled: Text('Camera UI Disabled'),
+                  child: Text('Camera UI Enabled'),
                 ),
                 FeatureFlagWidget(
                   flag: FeatureFlag.enhancedVideoPlayer,
-                  disabled: const Text('Video Player Disabled'),
-                  child: const Text('Video Player Enabled'),
+                  disabled: Text('Video Player Disabled'),
+                  child: Text('Video Player Enabled'),
                 ),
               ],
             ),
@@ -205,12 +205,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: FeatureFlagWidget(
               flag: FeatureFlag.newCameraUI,
-              disabled: const Text('Disabled Content'),
-              loading: const CircularProgressIndicator(),
-              child: const Text('Enabled Content'),
+              disabled: Text('Disabled Content'),
+              loading: CircularProgressIndicator(),
+              child: Text('Enabled Content'),
             ),
           ),
         ),

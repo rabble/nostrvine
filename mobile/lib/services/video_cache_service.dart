@@ -3,8 +3,8 @@
 
 import 'dart:math';
 
-import 'package:openvine/constants/app_constants.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service responsible for caching and managing video events in memory

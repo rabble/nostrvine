@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -19,7 +20,6 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -149,7 +149,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     });
   }
 
-  void _performSearch(String query, {bool updateUrl = true}) async {
+  Future<void> _performSearch(String query, {bool updateUrl = true}) async {
     if (query.isEmpty) {
       final videoEventService = ref.read(videoEventServiceProvider);
       videoEventService.clearSearchResults();
@@ -457,10 +457,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             borderSide: BorderSide.none,
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          prefixIconConstraints: const BoxConstraints(
-            minWidth: 0,
-            minHeight: 0,
-          ),
+          prefixIconConstraints: const BoxConstraints(),
           prefixIcon: Padding(
             padding: const EdgeInsets.only(left: 12, right: 8),
             child: _isSearching
@@ -558,7 +555,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: searchBar,
               ),
-              Container(color: VineTheme.navGreen, child: tabBar),
+              ColoredBox(color: VineTheme.navGreen, child: tabBar),
               Expanded(child: tabContent),
             ],
           ),
@@ -597,18 +594,18 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
   Widget _buildVideosTab() {
     if (_isSearching) {
-      return Center(
+      return const Center(
         child: CircularProgressIndicator(color: VineTheme.vineGreen),
       );
     }
 
     if (_currentQuery.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.search, size: 64, color: VineTheme.secondaryText),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Search for videos',
               style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
@@ -638,7 +635,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             ),
             child: Row(
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -656,7 +653,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                         _isSearchingWebSocket
                             ? 'Searching Nostr relays...'
                             : 'Searching servers...',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: VineTheme.whiteText,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
@@ -665,7 +662,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                       if (_videoResults.isNotEmpty)
                         Text(
                           '${_videoResults.length} results found',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: VineTheme.secondaryText,
                             fontSize: 12,
                           ),
@@ -701,7 +698,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.video_library,
                     size: 64,
                     color: VineTheme.secondaryText,
@@ -711,7 +708,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                     _isSearchingExternal
                         ? 'Searching servers for "$_currentQuery"...'
                         : 'No videos found for "$_currentQuery"',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: VineTheme.primaryText,
                       fontSize: 18,
                     ),
@@ -740,7 +737,7 @@ class _SearchFeedModeContent extends ConsumerWidget {
         pageContext.whenOrNull(data: (ctx) => ctx.videoIndex ?? 0) ?? 0;
 
     if (videos.isEmpty || startIndex >= videos.length) {
-      return Center(
+      return const Center(
         child: Text(
           'No videos available',
           style: TextStyle(color: VineTheme.whiteText),

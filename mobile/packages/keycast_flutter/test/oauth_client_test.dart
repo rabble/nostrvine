@@ -15,7 +15,7 @@ import 'package:keycast_flutter/src/oauth/oauth_config.dart';
 import 'package:keycast_flutter/src/storage/keycast_storage.dart';
 
 void main() {
-  final config = OAuthConfig(
+  const config = OAuthConfig(
     serverUrl: 'https://login.divine.video',
     clientId: 'test-client',
     redirectUri: 'divine://oauth/callback',

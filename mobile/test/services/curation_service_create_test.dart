@@ -2,14 +2,14 @@
 // ABOUTME: Validates creation and publishing of NIP-51 video curation sets to Nostr
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:likes_repository/likes_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

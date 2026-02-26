@@ -1,6 +1,7 @@
 // ABOUTME: Router-aware hashtag screen that shows grid or feed based on URL
 // ABOUTME: Reads route context to determine grid mode vs feed mode
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,9 +10,8 @@ import 'package:openvine/providers/hashtag_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
-import 'package:openvine/services/view_event_publisher.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Router-aware hashtag screen that shows grid or feed based on route

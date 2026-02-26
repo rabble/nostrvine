@@ -2,18 +2,19 @@
 // ABOUTME: Tests end-to-end flow: collect diagnostics → upload to Blossom → send NIP-17 DM
 
 import 'dart:io';
+
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:nostr_sdk/event.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/services/bug_report_service.dart';
-import 'package:openvine/services/blossom_upload_service.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/config/bug_report_config.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/blossom_upload_service.dart';
+import 'package:openvine/services/bug_report_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Mock services for integration test
@@ -74,7 +75,7 @@ void main() {
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-            MethodChannel('dev.fluttercommunity.plus/package_info'),
+            const MethodChannel('dev.fluttercommunity.plus/package_info'),
             (methodCall) async {
               if (methodCall.method == 'getAll') {
                 return <String, dynamic>{
@@ -91,7 +92,7 @@ void main() {
       // Mock Firebase Core
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-            MethodChannel('plugins.flutter.io/firebase_core'),
+            const MethodChannel('plugins.flutter.io/firebase_core'),
             (methodCall) async {
               if (methodCall.method == 'Firebase#initializeCore') {
                 return [
@@ -114,7 +115,7 @@ void main() {
       // Mock Firebase Analytics
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
-            MethodChannel('plugins.flutter.io/firebase_analytics'),
+            const MethodChannel('plugins.flutter.io/firebase_analytics'),
             (methodCall) async => null,
           );
 
@@ -317,7 +318,7 @@ Error Counts:
 
       final estimatedSize = bugReportService.estimateReportSize(bugReportData);
 
-      print('📊 Estimated report size: ${estimatedSize} bytes');
+      print('📊 Estimated report size: $estimatedSize bytes');
       print('   Max allowed: ${BugReportConfig.maxReportSizeBytes} bytes');
 
       expect(estimatedSize, greaterThan(0), reason: 'Size should be positive');

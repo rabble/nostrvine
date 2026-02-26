@@ -88,7 +88,6 @@ class ProfileRepostsGrid extends StatelessWidget {
                     crossAxisCount: 3,
                     crossAxisSpacing: 2,
                     mainAxisSpacing: 2,
-                    childAspectRatio: 1,
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     if (index >= repostedVideos.length) {
@@ -205,7 +204,7 @@ class _RepostGridTile extends StatelessWidget {
     child: ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(
-        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        decoration: const BoxDecoration(color: VineTheme.cardBackground),
         child: _RepostThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),

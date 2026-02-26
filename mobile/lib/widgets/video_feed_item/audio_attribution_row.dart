@@ -1,16 +1,16 @@
 // ABOUTME: Audio attribution row widget for displaying sound info on video feed.
 // ABOUTME: Shows sound name and creator with tap navigation to SoundDetailScreen.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// A tappable row showing audio attribution when a video uses external audio.
@@ -122,9 +122,7 @@ class _AudioAttributionContent extends ConsumerWidget {
                     fontWeight: FontWeight.w500,
                     shadows: [
                       Shadow(
-                        offset: Offset(0, 0),
                         blurRadius: 4,
-                        color: Colors.black,
                       ),
                     ],
                   ),

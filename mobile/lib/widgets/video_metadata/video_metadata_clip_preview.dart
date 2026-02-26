@@ -23,7 +23,6 @@ class VideoMetadataClipPreview extends ConsumerWidget {
       context,
       PageRouteBuilder<void>(
         pageBuilder: (_, _, _) => VideoMetadataPreviewScreen(clip: clip),
-        transitionDuration: const Duration(milliseconds: 300),
         transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
         },

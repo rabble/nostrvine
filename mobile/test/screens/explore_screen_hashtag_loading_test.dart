@@ -52,7 +52,7 @@ void main() {
       final top10 = service.getTopHashtags(limit: 10);
       expect(top10.length, equals(10));
 
-      final top50 = service.getTopHashtags(limit: 50);
+      final top50 = service.getTopHashtags();
       expect(top50.length, equals(50));
 
       final top100 = service.getTopHashtags(limit: 100);

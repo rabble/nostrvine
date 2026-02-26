@@ -107,9 +107,9 @@ class VideoInteractionsBloc
       final isLiked = await _likesRepository.isLiked(_eventId);
 
       // Check if reposted (fast - from local cache) if addressable
-      final isReposted = _addressableId != null
-          ? await _repostsRepository.isReposted(_addressableId)
-          : false;
+      final isReposted =
+          _addressableId != null &&
+          await _repostsRepository.isReposted(_addressableId);
 
       // Fetch counts in parallel
       // Query repost count by addressable ID when available (NIP-18 specifies

@@ -116,7 +116,7 @@ class VideoEditorConstants {
   static const heroBackButtonId = 'Video-Editor-Back-Button';
 
   /// List of filter presets sorted by popularity
-  static final filters = [
+  static final List<FilterModel> filters = [
     PresetFilters.none,
 
     // Tier 1: Most popular filters

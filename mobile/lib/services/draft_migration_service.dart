@@ -59,7 +59,7 @@ class DraftMigrationService {
     var skippedCount = 0;
 
     for (final draft in drafts) {
-      for (RecordingClip draftClip in draft.clips) {
+      for (final RecordingClip draftClip in draft.clips) {
         final videoPath = await draftClip.video.safeFilePath();
 
         if (!File(videoPath).existsSync()) {

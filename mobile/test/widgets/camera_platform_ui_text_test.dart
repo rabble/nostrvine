@@ -12,7 +12,7 @@ void main() {
     ) async {
       // Build a simple widget that shows the platform-specific text
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: Center(
               child: Text(kIsWeb ? 'Tap to record' : 'Hold to record'),
@@ -51,15 +51,15 @@ void main() {
       tester,
     ) async {
       // Simulate the conditional rendering logic
-      final showSegmentCount = !kIsWeb;
+      const showSegmentCount = !kIsWeb;
 
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: Column(
               children: [
-                if (showSegmentCount) const Text('2 segments'),
-                if (!showSegmentCount) const Text('Recording...'),
+                if (showSegmentCount) Text('2 segments'),
+                if (!showSegmentCount) Text('Recording...'),
               ],
             ),
           ),
@@ -78,8 +78,12 @@ void main() {
     test('duration formatting should work correctly', () {
       String formatDuration(Duration duration) {
         String twoDigits(int n) => n.toString().padLeft(2, '0');
-        String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-        String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+        final String twoDigitMinutes = twoDigits(
+          duration.inMinutes.remainder(60),
+        );
+        final String twoDigitSeconds = twoDigits(
+          duration.inSeconds.remainder(60),
+        );
         return '$twoDigitMinutes:$twoDigitSeconds';
       }
 

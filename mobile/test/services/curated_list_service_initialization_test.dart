@@ -7,12 +7,12 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -89,7 +89,7 @@ void main() {
         final cachedList = CuratedList(
           id: 'cached_list_id',
           name: 'Cached List',
-          videoEventIds: ['video1', 'video2'],
+          videoEventIds: const ['video1', 'video2'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -143,7 +143,7 @@ void main() {
       // Set up slow relay
       when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
 
       final service = CuratedListService(
         nostrService: mockNostr,
@@ -180,7 +180,7 @@ void main() {
         final cachedList = CuratedList(
           id: 'local_list',
           name: 'Local Cached List',
-          videoEventIds: ['v1', 'v2', 'v3'],
+          videoEventIds: const ['v1', 'v2', 'v3'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -228,7 +228,7 @@ void main() {
         final subscribedList = CuratedList(
           id: 'subscribed_list',
           name: 'My Subscribed List',
-          videoEventIds: ['video_a', 'video_b'],
+          videoEventIds: const ['video_a', 'video_b'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );

@@ -272,7 +272,7 @@ class _SecurityWarning extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: VineTheme.accentOrangeBackground),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -282,7 +282,7 @@ class _SecurityWarning extends StatelessWidget {
                 color: VineTheme.accentOrange,
                 size: 20,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 'Keep your private key secure!',
                 style: TextStyle(
@@ -293,7 +293,7 @@ class _SecurityWarning extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Never share your private key with anyone. This key '
             'gives full access to your Nostr identity.',

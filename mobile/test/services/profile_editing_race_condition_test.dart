@@ -83,7 +83,6 @@ void main() {
           }
           throw Exception('Profile not yet updated on relay - retrying...');
         },
-        maxRetries: 3,
         baseDelay: const Duration(milliseconds: 100), // Faster for tests
         debugName: 'test-profile-refresh',
       );
@@ -135,7 +134,6 @@ void main() {
             }
             throw Exception('Profile not yet updated on relay - retrying...');
           },
-          maxRetries: 3,
           baseDelay: const Duration(milliseconds: 100),
           debugName: 'test-profile-refresh',
         );

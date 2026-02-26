@@ -1,12 +1,12 @@
 // ABOUTME: Settings screen for configuring Blossom media server uploads
 // ABOUTME: Allows users to enable Blossom uploads and configure their preferred server
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class BlossomSettingsScreen extends ConsumerStatefulWidget {
@@ -296,7 +296,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                       const SizedBox(height: 12),
                       Text(
                         'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. '
-                        'By default, videos are uploaded to diVine\'s Blossom server. Enable the option below to use a custom server instead.',
+                        "By default, videos are uploaded to diVine's Blossom server. Enable the option below to use a custom server instead.",
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 14,
@@ -317,7 +317,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                 subtitle: Text(
                   _isBlossomEnabled
                       ? 'Videos will be uploaded to your custom Blossom server'
-                      : 'Your videos are currently being uploaded to diVine\'s Blossom server',
+                      : "Your videos are currently being uploaded to diVine's Blossom server",
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
                 ),
                 value: _isBlossomEnabled,

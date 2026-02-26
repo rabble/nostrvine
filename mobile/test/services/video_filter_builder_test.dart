@@ -3,8 +3,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart' show IntRangeFilter, SortDirection;
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 
@@ -152,8 +152,8 @@ void main() {
           relayUrl: testRelayUrl,
           sortBy: VideoSortField.likes,
           intFilters: {
-            'likes': IntRangeFilter(gte: 50, lte: 500),
-            'loop_count': IntRangeFilter(gte: 1000),
+            'likes': const IntRangeFilter(gte: 50, lte: 500),
+            'loop_count': const IntRangeFilter(gte: 1000),
           },
         );
 
@@ -170,7 +170,6 @@ void main() {
           relayUrl: testRelayUrl,
           name: 'Standard Relay',
           rawData: {},
-          hasDivineExtensions: false,
         );
 
         when(
@@ -279,7 +278,7 @@ void main() {
           relayUrl: testRelayUrl,
           sortBy: VideoSortField.loopCount,
           intFilters: {
-            'views': IntRangeFilter(gte: 500), // Not supported!
+            'views': const IntRangeFilter(gte: 500), // Not supported!
           },
         );
 

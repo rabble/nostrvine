@@ -3,16 +3,16 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -103,9 +103,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
     }
 
     try {
-      final service = await ref
-          .read(curatedListsStateProvider.notifier)
-          .service;
+      final service = ref.read(curatedListsStateProvider.notifier).service;
 
       if (service == null) {
         provider.setLoading(false);
@@ -229,9 +227,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
     var foundNewLists = false;
 
     try {
-      final service = await ref
-          .read(curatedListsStateProvider.notifier)
-          .service;
+      final service = ref.read(curatedListsStateProvider.notifier).service;
 
       if (service == null) return;
 
@@ -337,9 +333,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
 
   Future<void> _toggleSubscription(CuratedList list) async {
     try {
-      final service = await ref
-          .read(curatedListsStateProvider.notifier)
-          .service;
+      final service = ref.read(curatedListsStateProvider.notifier).service;
       final isSubscribed = service?.isSubscribedToList(list.id) ?? false;
 
       if (isSubscribed) {
@@ -420,12 +414,12 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
     final isLoading = providerState.isLoading;
 
     if (isLoading && discoveredLists.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(color: VineTheme.vineGreen),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'Discovering public lists...',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
@@ -440,9 +434,9 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+            const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Failed to load lists',
               style: TextStyle(
                 color: VineTheme.likeRed,
@@ -455,7 +449,10 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Text(
                 _errorMessage!,
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 12,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -475,12 +472,12 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
     }
 
     if (discoveredLists.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.search, size: 64, color: VineTheme.secondaryText),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'No public lists found',
               style: TextStyle(
@@ -489,7 +486,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Check back later for new lists',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
@@ -566,7 +563,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
             children: [
               Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.video_library,
                     color: VineTheme.vineGreen,
                     size: 24,
@@ -588,7 +585,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                           const SizedBox(height: 4),
                           Text(
                             list.description!,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 14,
                             ),
@@ -614,7 +611,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                             ? VineTheme.vineGreen
                             : VineTheme.backgroundColor,
                         side: isSubscribed
-                            ? BorderSide(color: VineTheme.vineGreen, width: 1)
+                            ? const BorderSide(color: VineTheme.vineGreen)
                             : null,
                         padding: EdgeInsets.zero,
                         shape: RoundedRectangleBorder(
@@ -634,7 +631,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                 children: [
                   // Creator info
                   if (list.pubkey != null) ...[
-                    Text(
+                    const Text(
                       'by ',
                       style: TextStyle(
                         color: VineTheme.secondaryText,
@@ -645,7 +642,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                       flex: 0,
                       child: UserName.fromPubKey(
                         list.pubkey!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: VineTheme.vineGreen,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -655,7 +652,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(
+                    const Text(
                       '•',
                       style: TextStyle(
                         color: VineTheme.secondaryText,
@@ -666,14 +663,14 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                   ],
                   Text(
                     '${list.videoEventIds.length} ${list.videoEventIds.length == 1 ? 'video' : 'videos'}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: VineTheme.secondaryText,
                       fontSize: 12,
                     ),
                   ),
                   if (list.tags.isNotEmpty) ...[
                     const SizedBox(width: 8),
-                    Text(
+                    const Text(
                       '•',
                       style: TextStyle(
                         color: VineTheme.secondaryText,
@@ -684,7 +681,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                     Expanded(
                       child: Text(
                         list.tags.take(3).map((t) => '#$t').join(' '),
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: VineTheme.vineGreen,
                           fontSize: 12,
                         ),

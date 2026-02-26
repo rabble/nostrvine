@@ -1,10 +1,10 @@
 // ABOUTME: Displays horizontal scrollable list of trending hashtags
 // ABOUTME: Extracted from ExploreScreen for reusability and testability
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// A section displaying trending hashtags in a horizontal scrollable list.
 ///
@@ -12,8 +12,8 @@ import 'package:divine_ui/divine_ui.dart';
 /// Tapping a hashtag navigates to the hashtag feed.
 class TrendingHashtagsSection extends StatelessWidget {
   const TrendingHashtagsSection({
-    super.key,
     required this.hashtags,
+    super.key,
     this.isLoading = false,
     this.onHashtagTap,
   });
@@ -30,7 +30,7 @@ class TrendingHashtagsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ColoredBox(
       color: VineTheme.backgroundColor,
       child: SizedBox(
         height: 52,
@@ -48,8 +48,8 @@ class _HashtagLoadingPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
       child: Text(
         'Loading hashtags...',
         style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
@@ -78,7 +78,7 @@ class _HashtagChipList extends StatelessWidget {
             child: Center(
               child: Text(
                 'Trending',
-                style: VineTheme.titleSmallFont(color: VineTheme.primaryText),
+                style: VineTheme.titleSmallFont(),
               ),
             ),
           );
@@ -101,7 +101,7 @@ class _HashtagChipList extends StatelessWidget {
 }
 
 /// Accent colors used for hashtag chip backgrounds.
-const _accentColors = [
+const List<Color> _accentColors = [
   VineTheme.accentYellow,
   VineTheme.accentLime,
   VineTheme.accentPink,

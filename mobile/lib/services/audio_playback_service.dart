@@ -306,18 +306,17 @@ class AudioPlaybackService {
       final session = await AudioSession.instance;
 
       await session.configure(
-        AudioSessionConfiguration(
+        const AudioSessionConfiguration(
           avAudioSessionCategory: AVAudioSessionCategory.playback,
           avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.none,
           avAudioSessionMode: AVAudioSessionMode.defaultMode,
           avAudioSessionRouteSharingPolicy:
               AVAudioSessionRouteSharingPolicy.defaultPolicy,
           avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
-          androidAudioAttributes: const AndroidAudioAttributes(
+          androidAudioAttributes: AndroidAudioAttributes(
             contentType: AndroidAudioContentType.music,
             usage: AndroidAudioUsage.media,
           ),
-          androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
           androidWillPauseWhenDucked: true,
         ),
       );

@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 ///
 /// Used for overlay panels like font selector, color picker, etc.
 class VideoEditorBlurredPanel extends StatelessWidget {
-  const VideoEditorBlurredPanel({super.key, required this.child, this.height});
+  const VideoEditorBlurredPanel({required this.child, super.key, this.height});
 
   /// The content to display inside the blurred panel.
   final Widget child;

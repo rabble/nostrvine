@@ -1,12 +1,12 @@
 // ABOUTME: Comprehensive widget test for ALL settings screens scaffold structure
 // ABOUTME: Ensures all settings screens use consistent Vine theme (green AppBar, black background)
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/screens/relay_settings_screen.dart';
-import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/relay_settings_screen.dart';
 
 void main() {
   group('All Settings Screens Scaffold Consistency', () {

@@ -1,0 +1,84 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.gen.dart"
+    - "**/*.mocks.dart"
+    - "**/generated/**"
+    - "**/l10n/**"
+    - "**/packages/**"
+  errors:
+    argument_type_not_assignable: ignore
+    avoid_catches_without_on_clauses: ignore
+    avoid_equals_and_hash_code_on_mutable_classes: ignore
+    avoid_positional_boolean_parameters: ignore
+    avoid_returning_this: ignore
+    avoid_setters_without_getters: ignore
+    avoid_types_on_closure_parameters: ignore
+    avoid_unused_constructor_parameters: ignore
+    avoid_web_libraries_in_flutter: ignore
+    cascade_invocations: ignore
+    comment_references: ignore
+    constant_identifier_names: ignore
+    discarded_futures: ignore
+    document_ignores: ignore
+    dot_shorthand_missing_context: ignore
+    final_not_initialized_constructor: ignore
+    inference_failure_on_collection_literal: ignore
+    inference_failure_on_function_invocation: ignore
+    inference_failure_on_function_return_type: ignore
+    inference_failure_on_instance_creation: ignore
+    inference_failure_on_untyped_parameter: ignore
+    instance_member_access_from_factory: ignore
+    invalid_annotation_target: ignore
+    invalid_assignment: ignore
+    join_return_with_assignment: ignore
+    library_annotations: ignore
+    list_element_type_not_assignable: ignore
+    map_value_type_not_assignable: ignore
+    matching_super_parameters: ignore
+    non_bool_condition: ignore
+    non_bool_negation_expression: ignore
+    non_bool_operand: ignore
+    non_constant_identifier_names: ignore
+    only_throw_errors: ignore
+    prefer_asserts_with_message: ignore
+    prefer_int_literals: ignore
+    return_of_invalid_type: ignore
+    return_of_invalid_type_from_closure: ignore
+    sort_constructors_first: ignore
+    strict_raw_type: ignore
+    strict_top_level_inference: ignore
+    type_annotate_public_apis: ignore
+    unawaited_futures: ignore
+    unchecked_use_of_nullable_value: ignore
+    undefined_getter: ignore
+    use_is_even_rather_than_modulo: ignore
+
+linter:
+  rules:
+    avoid_dynamic_calls: false
+    avoid_print: false
+    avoid_slow_async_io: false
+    cancel_subscriptions: false
+    depend_on_referenced_packages: false
+    flutter_style_todos: false
+    implementation_imports: false
+    lines_longer_than_80_chars: false
+    missing_code_block_language_in_doc_comment: false
+    no_default_cases: false
+    one_member_abstracts: false
+    parameter_assignments: false
+    prefer_constructors_over_static_methods: false
+    prefer_foreach: false
+    public_member_api_docs: false
+    sort_pub_dependencies: false
+    unintended_html_in_doc_comment: false
+    unreachable_from_main: false
+    use_build_context_synchronously: false
+    use_named_constants: false
+    omit_local_variable_types: false
+    use_setters_to_change_properties: false
+

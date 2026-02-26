@@ -236,7 +236,7 @@ void main() {
 
     group('userSpecificKeys', () {
       test('contains expected key categories', () {
-        final keys = UserDataCleanupService.userSpecificKeys;
+        const keys = UserDataCleanupService.userSpecificKeys;
 
         // List-related
         expect(keys, contains('curated_lists'));
@@ -263,7 +263,7 @@ void main() {
       });
 
       test('does NOT contain device/app settings', () {
-        final keys = UserDataCleanupService.userSpecificKeys;
+        const keys = UserDataCleanupService.userSpecificKeys;
 
         // These should NOT be in the cleanup list
         expect(keys, isNot(contains('relay_url')));
@@ -274,14 +274,14 @@ void main() {
 
     group('identityChangePrefixes', () {
       test('contains expected prefix categories', () {
-        final prefixes = UserDataCleanupService.identityChangePrefixes;
+        const prefixes = UserDataCleanupService.identityChangePrefixes;
 
         expect(prefixes, contains('following_list_'));
         expect(prefixes, contains('relay_discovery_'));
       });
 
       test('does NOT contain non-dynamic prefixes', () {
-        final prefixes = UserDataCleanupService.identityChangePrefixes;
+        const prefixes = UserDataCleanupService.identityChangePrefixes;
 
         // Static keys should not be in prefix list
         expect(prefixes, isNot(contains('curated_lists')));

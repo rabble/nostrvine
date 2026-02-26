@@ -67,7 +67,7 @@ class WatermarkImageGenerator {
 
       // Draw wordmark - right-aligned
       final wordmarkPaint = ui.Paint()
-        ..color = ui.Color.fromRGBO(255, 255, 255, _watermarkOpacity);
+        ..color = const ui.Color.fromRGBO(255, 255, 255, _watermarkOpacity);
 
       final wordmarkLeft = blockRight - wordmarkDrawWidth;
       final wordmarkTop = blockTop;
@@ -138,7 +138,7 @@ class WatermarkImageGenerator {
           )
           ..pushStyle(
             ui.TextStyle(
-              color: ui.Color.fromRGBO(255, 255, 255, _watermarkOpacity),
+              color: const ui.Color.fromRGBO(255, 255, 255, _watermarkOpacity),
               fontSize: fontSize,
               fontWeight: ui.FontWeight.w600,
             ),
