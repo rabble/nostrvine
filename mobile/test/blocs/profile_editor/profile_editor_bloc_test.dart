@@ -90,7 +90,6 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).thenAnswer((_) async => createTestProfile());
           },
@@ -121,7 +120,6 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).called(1);
             verifyNever(
@@ -184,7 +182,6 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).thenAnswer((_) async => createTestProfile());
           },
@@ -216,7 +213,6 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).called(1);
           },
@@ -236,7 +232,6 @@ void main() {
                 about: testAbout,
                 username: testUsername,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
@@ -272,7 +267,6 @@ void main() {
                 about: testAbout,
                 username: testUsername,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).called(1);
             verify(
@@ -294,7 +288,6 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).thenThrow(const ProfilePublishFailedException('Network error'));
           },
@@ -335,7 +328,6 @@ void main() {
                 about: testAbout,
                 username: testUsername,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).thenThrow(const ProfilePublishFailedException('Network error'));
           },
@@ -487,7 +479,6 @@ void main() {
                 about: testAbout,
                 username: testUsername,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
@@ -498,7 +489,6 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ).thenAnswer((_) async => createTestProfile());
           },
@@ -519,13 +509,11 @@ void main() {
                 about: testAbout,
                 username: testUsername,
                 picture: testPicture,
-                currentProfile: null,
               ),
               () => mockProfileRepository.saveProfileEvent(
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
-                currentProfile: null,
               ),
             ]);
           },
@@ -1276,7 +1264,6 @@ void main() {
               about: testAbout,
               nip05: 'alice@example.com',
               picture: testPicture,
-              currentProfile: null,
             ),
           ).thenAnswer((_) async => createTestProfile());
         },
@@ -1310,7 +1297,6 @@ void main() {
               about: testAbout,
               nip05: 'alice@example.com',
               picture: testPicture,
-              currentProfile: null,
             ),
           ).called(1);
           verifyNever(
@@ -1334,7 +1320,6 @@ void main() {
               about: testAbout,
               nip05: 'alice@example.com',
               picture: testPicture,
-              currentProfile: null,
             ),
           ).thenAnswer((_) async => createTestProfile());
         },
@@ -1370,7 +1355,6 @@ void main() {
               about: testAbout,
               nip05: 'alice@example.com',
               picture: testPicture,
-              currentProfile: null,
             ),
           ).called(1);
           // No username claim should be attempted
@@ -1409,7 +1393,6 @@ void main() {
         const state = ProfileEditorState(
           username: 'alice',
           initialUsername: 'alice',
-          usernameStatus: UsernameStatus.idle,
         );
         expect(state.isUsernameSaveReady, isTrue);
       });
@@ -1418,7 +1401,6 @@ void main() {
         const state = ProfileEditorState(
           username: 'Alice',
           initialUsername: 'alice',
-          usernameStatus: UsernameStatus.idle,
         );
         expect(state.isUsernameSaveReady, isTrue);
       });
@@ -1443,7 +1425,6 @@ void main() {
       test('returns false when no initial username and status is idle', () {
         const state = ProfileEditorState(
           username: 'someuser',
-          usernameStatus: UsernameStatus.idle,
         );
         expect(state.isUsernameSaveReady, isFalse);
       });
@@ -1476,7 +1457,6 @@ void main() {
     group('isSaveReady', () {
       test('delegates to isUsernameSaveReady in divine mode', () {
         const state = ProfileEditorState(
-          nip05Mode: Nip05Mode.divine,
           username: 'alice',
           usernameStatus: UsernameStatus.available,
         );

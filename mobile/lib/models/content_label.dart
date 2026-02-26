@@ -60,7 +60,8 @@ enum ContentLabel {
   misleading('misleading', 'Misleading'),
 
   /// Contains other sensitive content not covered above.
-  other('content-warning', 'Sensitive Content');
+  other('content-warning', 'Sensitive Content')
+  ;
 
   const ContentLabel(this.value, this.displayName);
 

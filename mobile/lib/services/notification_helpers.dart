@@ -1,8 +1,8 @@
 // ABOUTME: Pure helper functions for notification event processing
 // ABOUTME: Extracted from NotificationServiceEnhanced to reduce duplication and improve testability
 
-import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/event.dart';
 
 /// Extracts the video event ID from a Nostr event's tags
 /// For NIP-22 comments (kind 1111), looks for uppercase 'E' tag (root scope)

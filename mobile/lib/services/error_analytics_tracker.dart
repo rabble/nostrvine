@@ -93,9 +93,9 @@ class ErrorAnalyticsTracker {
           0,
           errorMessage.length > 150 ? 150 : errorMessage.length,
         ),
-        if (expectedCount != null) 'expected_count': expectedCount,
-        if (actualCount != null) 'actual_count': actualCount,
-        if (loadTimeMs != null) 'load_time_ms': loadTimeMs,
+        'expected_count': ?expectedCount,
+        'actual_count': ?actualCount,
+        'load_time_ms': ?loadTimeMs,
         if (additionalContext != null) ...additionalContext,
       },
     );
@@ -149,8 +149,8 @@ class ErrorAnalyticsTracker {
           errorMessage.length > 150 ? 150 : errorMessage.length,
         ),
         if (url != null) 'url_domain': Uri.tryParse(url)?.host ?? 'unknown',
-        if (statusCode != null) 'status_code': statusCode,
-        if (retryAttempt != null) 'retry_attempt': retryAttempt,
+        'status_code': ?statusCode,
+        'retry_attempt': ?retryAttempt,
       },
     );
   }
@@ -177,7 +177,7 @@ class ErrorAnalyticsTracker {
           0,
           errorMessage.length > 150 ? 150 : errorMessage.length,
         ),
-        if (subscriptionType != null) 'subscription_type': subscriptionType,
+        'subscription_type': ?subscriptionType,
       },
     );
   }
@@ -202,7 +202,7 @@ class ErrorAnalyticsTracker {
         ),
         if (videoUrl != null)
           'video_url_domain': Uri.tryParse(videoUrl)?.host ?? 'unknown',
-        if (attemptTimeMs != null) 'attempt_time_ms': attemptTimeMs,
+        'attempt_time_ms': ?attemptTimeMs,
       },
     );
   }
@@ -227,7 +227,7 @@ class ErrorAnalyticsTracker {
         'duration_ms': durationMs,
         'threshold_ms': thresholdMs,
         'slowness_ratio': (durationMs / thresholdMs).toStringAsFixed(2),
-        if (location != null) 'location': location,
+        'location': ?location,
         if (context != null) ...context,
       },
     );
@@ -249,7 +249,7 @@ class ErrorAnalyticsTracker {
           userMessage.length > 100 ? 100 : userMessage.length,
         ),
         'location': location,
-        if (actionTaken != null) 'action_taken': actionTaken,
+        'action_taken': ?actionTaken,
       },
     );
 

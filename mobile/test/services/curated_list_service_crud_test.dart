@@ -6,12 +6,12 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/curated_list_ext.dart';
 import 'package:openvine/utils/nostr_event_ext.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -59,7 +59,7 @@ void main() {
       // Mock subscribeToEvents for relay sync
       when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
 
       // Mock event creation
       when(
@@ -207,7 +207,7 @@ void main() {
             }
           }
 
-          return Stream.empty();
+          return const Stream.empty();
         });
 
         expect(service.hasDefaultList(), isFalse);
@@ -332,7 +332,6 @@ void main() {
         // Create list, add a video, then verify publish
         final list = await service.createList(
           name: 'Public List',
-          isPublic: true,
         );
 
         // Add a video to the list so it will publish
@@ -352,7 +351,7 @@ void main() {
       });
 
       test('does not publish empty public list to Nostr', () async {
-        await service.createList(name: 'Empty Public List', isPublic: true);
+        await service.createList(name: 'Empty Public List');
 
         // Empty lists should not be published to avoid relay spam
         verifyNever(
@@ -382,7 +381,7 @@ void main() {
       test('does not publish when user not authenticated', () async {
         when(() => mockAuth.isAuthenticated).thenReturn(false);
 
-        await service.createList(name: 'Test List', isPublic: true);
+        await service.createList(name: 'Test List');
 
         // Should not attempt to publish
         verifyNever(
@@ -476,7 +475,6 @@ void main() {
       test('publishes update to Nostr for public list with videos', () async {
         final list = await service.createList(
           name: 'Test List',
-          isPublic: true,
         );
         // Add a video so the list will be published (empty lists don't publish)
         await service.addVideoToList(list!.id, 'test_video_id');
@@ -648,7 +646,7 @@ void main() {
             CuratedList(
               id: 'fake_id',
               name: 'Fake List',
-              videoEventIds: [],
+              videoEventIds: const [],
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
             ),

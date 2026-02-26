@@ -7,17 +7,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/router/app_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -323,18 +323,18 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         builder: (context, state) {
           if (state.status == FullscreenFeedStatus.initial ||
               !state.hasVideos) {
-            return Scaffold(
+            return const Scaffold(
               backgroundColor: Colors.black,
-              appBar: const _FullscreenAppBar(),
-              body: const Center(child: BrandedLoadingIndicator(size: 60)),
+              appBar: _FullscreenAppBar(),
+              body: Center(child: BrandedLoadingIndicator(size: 60)),
             );
           }
 
           if (!state.hasPooledVideos) {
-            return Scaffold(
+            return const Scaffold(
               backgroundColor: Colors.black,
-              appBar: const _FullscreenAppBar(),
-              body: const Center(
+              appBar: _FullscreenAppBar(),
+              body: Center(
                 child: Text(
                   'No videos available',
                   style: TextStyle(color: Colors.white),
@@ -536,7 +536,7 @@ class _PooledFullscreenItemContentState
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
-    final isPortrait = video.dimensions != null ? video.isPortrait : false;
+    final isPortrait = video.dimensions != null && video.isPortrait;
 
     return ColoredBox(
       color: Colors.black,
@@ -625,8 +625,7 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
           Image.network(
             url,
             fit: boxFit,
-            alignment: Alignment.center,
-            errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
+            errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
           )
         else
           const ColoredBox(color: Colors.black),

@@ -12,7 +12,7 @@ void main() {
       return CuratedList(
         id: id,
         name: name,
-        videoEventIds: ['video1', 'video2'],
+        videoEventIds: const ['video1', 'video2'],
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -108,7 +108,7 @@ void main() {
       }).firstOrNull;
 
       expect(chipContainer, isNotNull);
-      final decoration = chipContainer!.decoration as BoxDecoration;
+      final decoration = chipContainer!.decoration! as BoxDecoration;
       expect(decoration.borderRadius, equals(BorderRadius.circular(12)));
     });
 
@@ -163,7 +163,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: ListAttributionChip(
-              listIds: {'list1'},
+              listIds: const {'list1'},
               listLookup: (id) => id == 'list1' ? testList : null,
               onListTap: (listId, listName) {
                 tapped = true;
@@ -203,7 +203,7 @@ void main() {
       }).firstOrNull;
 
       expect(chipContainer, isNotNull);
-      final decoration = chipContainer!.decoration as BoxDecoration;
+      final decoration = chipContainer!.decoration! as BoxDecoration;
       // VineTheme.cardBackground is Color(0xFF1A1A1A)
       expect(decoration.color, equals(const Color(0xFF1A1A1A)));
     });

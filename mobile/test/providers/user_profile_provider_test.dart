@@ -5,8 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -170,7 +170,7 @@ void main() {
       final testProfile = UserProfile(
         pubkey: pubkey,
         name: 'Cached User',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'cached-event-id',
       );
@@ -276,7 +276,7 @@ void main() {
       final oldProfile = UserProfile(
         pubkey: pubkey,
         name: 'Old Name',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now().subtract(const Duration(hours: 1)),
         eventId: 'old-event-id',
       );
@@ -379,7 +379,7 @@ void main() {
         pubkey: pubkey,
         name: 'Test User',
         picture: 'https://example.com/avatar.jpg',
-        rawData: {
+        rawData: const {
           'name': 'Test User',
           'picture': 'https://example.com/avatar.jpg',
         },

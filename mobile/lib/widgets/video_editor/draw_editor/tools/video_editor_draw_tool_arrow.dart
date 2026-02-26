@@ -10,9 +10,9 @@ import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item
 class DrawToolArrow extends StatelessWidget {
   /// Creates an arrow tool button.
   const DrawToolArrow({
-    super.key,
     required this.isSelected,
     required this.onTap,
+    super.key,
   });
 
   /// Whether this tool is currently selected.

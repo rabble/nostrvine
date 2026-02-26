@@ -109,7 +109,6 @@ class _ActionButton extends StatelessWidget {
               ),
               child: DivineIcon(
                 icon: icon,
-                size: 24,
                 color: VineTheme.whiteText,
               ),
             ),

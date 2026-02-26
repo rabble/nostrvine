@@ -126,7 +126,7 @@ void main() {
       blocTest<DivineAuthCubit, DivineAuthState>(
         'toggles obscurePassword from true to false',
         build: buildCubit,
-        seed: () => const DivineAuthFormState(obscurePassword: true),
+        seed: () => const DivineAuthFormState(),
         act: (cubit) => cubit.togglePasswordVisibility(),
         expect: () => [const DivineAuthFormState(obscurePassword: false)],
       );
@@ -136,7 +136,7 @@ void main() {
         build: buildCubit,
         seed: () => const DivineAuthFormState(obscurePassword: false),
         act: (cubit) => cubit.togglePasswordVisibility(),
-        expect: () => [const DivineAuthFormState(obscurePassword: true)],
+        expect: () => [const DivineAuthFormState()],
       );
 
       blocTest<DivineAuthCubit, DivineAuthState>(

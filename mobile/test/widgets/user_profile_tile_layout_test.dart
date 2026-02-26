@@ -1,25 +1,24 @@
 // ABOUTME: Layout-focused TDD tests for UserProfileTile addressing widget display bugs
 // ABOUTME: Tests responsive layout, element positioning, state visibility, and edge case rendering
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/widgets/user_profile_tile.dart';
-import 'package:openvine/widgets/user_avatar.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/user_profile_service.dart';
-import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
+import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/user_profile_tile.dart';
+
 import '../helpers/test_provider_overrides.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() {
-    _setupPlatformMocks();
-  });
+  setUpAll(_setupPlatformMocks);
 
   group('UserProfileTile - Layout & Display Bug Tests', () {
     late TestUserProfileService testUserProfileService;
@@ -38,10 +37,10 @@ void main() {
       testProfile = UserProfile(
         pubkey: testPubkey,
         rawData: const {
-          "name": "Test User",
-          "display_name": "Test Display Name",
-          "about": "Short bio",
-          "picture": "https://example.com/avatar.jpg",
+          'name': 'Test User',
+          'display_name': 'Test Display Name',
+          'about': 'Short bio',
+          'picture': 'https://example.com/avatar.jpg',
         },
         eventId: 'test_event_id',
         name: 'Test User',
@@ -54,9 +53,9 @@ void main() {
       longContentProfile = UserProfile(
         pubkey: 'npub1long123456789',
         rawData: const {
-          "name": "Very Long Username",
-          "display_name": "Extremely Long Display Name",
-          "about": "Very long bio",
+          'name': 'Very Long Username',
+          'display_name': 'Extremely Long Display Name',
+          'about': 'Very long bio',
         },
         eventId: 'long_event_id',
         name: 'Very Long Username That Should Not Break Layout',
@@ -100,7 +99,7 @@ void main() {
 
         // Verify container decoration
         expect(container.decoration, isA<BoxDecoration>());
-        final BoxDecoration decoration = container.decoration as BoxDecoration;
+        final BoxDecoration decoration = container.decoration! as BoxDecoration;
         expect(decoration.color, equals(VineTheme.cardBackground));
         expect(decoration.borderRadius, equals(BorderRadius.circular(12)));
       });
@@ -168,7 +167,7 @@ void main() {
           _buildTestWidget(
             testUserProfileService,
             testAuthService,
-            const UserProfileTile(pubkey: testPubkey, showFollowButton: true),
+            const UserProfileTile(pubkey: testPubkey),
           ),
         );
 
@@ -245,8 +244,8 @@ void main() {
         final profileNoBio = UserProfile(
           pubkey: 'npub1nobio123',
           rawData: const {
-            "name": "No Bio User",
-            "display_name": "No Bio Display",
+            'name': 'No Bio User',
+            'display_name': 'No Bio Display',
           },
           eventId: 'nobio_event_id',
           name: 'No Bio User',
@@ -401,7 +400,7 @@ void main() {
           _buildTestWidget(
             testUserProfileService,
             testAuthService,
-            const UserProfileTile(pubkey: testPubkey, showFollowButton: true),
+            const UserProfileTile(pubkey: testPubkey),
           ),
         );
 
@@ -421,7 +420,6 @@ void main() {
             testAuthService,
             const UserProfileTile(
               pubkey: currentUserPubkey,
-              showFollowButton: true,
             ),
           ),
         );
@@ -467,10 +465,10 @@ void main() {
                 ),
                 authServiceProvider.overrideWithValue(testAuthService),
               ],
-              child: Scaffold(
+              child: const Scaffold(
                 body: SizedBox(
                   width: 200, // Very narrow
-                  child: const UserProfileTile(pubkey: testPubkey),
+                  child: UserProfileTile(pubkey: testPubkey),
                 ),
               ),
             ),
@@ -500,10 +498,10 @@ void main() {
                 ),
                 authServiceProvider.overrideWithValue(testAuthService),
               ],
-              child: Scaffold(
+              child: const Scaffold(
                 body: SizedBox(
                   width: 1000, // Very wide
-                  child: const UserProfileTile(pubkey: testPubkey),
+                  child: UserProfileTile(pubkey: testPubkey),
                 ),
               ),
             ),
@@ -600,7 +598,7 @@ void main() {
           _buildTestWidget(
             testUserProfileService,
             testAuthService,
-            const UserProfileTile(pubkey: testPubkey, showFollowButton: true),
+            const UserProfileTile(pubkey: testPubkey),
           ),
         );
 

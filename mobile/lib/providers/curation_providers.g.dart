@@ -229,7 +229,7 @@ final class CurationProvider
   }
 }
 
-String _$curationHash() => r'ac57ca4fa72232ccf104c8b4739ec94c91aaa3d8';
+String _$curationHash() => r'f087b9f6e22d89d4943da5d76a894887b6f0b015';
 
 /// Main curation provider that manages curated content sets
 /// keepAlive ensures provider persists across tab navigation
@@ -386,7 +386,7 @@ final class AnalyticsTrendingProvider
   }
 }
 
-String _$analyticsTrendingHash() => r'909addcc224236f8aa50ebaf2423662094bc0da9';
+String _$analyticsTrendingHash() => r'd43d939228af77d34a04f3ad400af7357207e513';
 
 /// Provider for analytics-based trending videos with cursor pagination
 

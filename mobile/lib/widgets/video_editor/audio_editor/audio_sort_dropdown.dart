@@ -6,7 +6,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 enum AudioSortOption {
   newest('Newest'),
   longest('Longest'),
-  shortest('Shortest');
+  shortest('Shortest')
+  ;
 
   const AudioSortOption(this.label);
   final String label;
@@ -15,9 +16,9 @@ enum AudioSortOption {
 /// A dropdown button for selecting audio sort order with animations.
 class AudioSortDropdown extends StatefulWidget {
   const AudioSortDropdown({
-    super.key,
     required this.value,
     required this.onChanged,
+    super.key,
   });
 
   final AudioSortOption value;
@@ -200,7 +201,7 @@ class _DropdownButton extends StatelessWidget {
                 'assets/icon/funnel_simple.svg',
                 width: 24,
                 height: 24,
-                colorFilter: .mode(VineTheme.primary, .srcIn),
+                colorFilter: const .mode(VineTheme.primary, .srcIn),
               ),
               Text(
                 label,
@@ -226,7 +227,7 @@ class _DropdownMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: .symmetric(horizontal: 16),
+      margin: const .symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
         borderRadius: .circular(16),
@@ -275,7 +276,7 @@ class _DropdownMenuItem extends StatelessWidget {
           padding: const .all(16),
           decoration: BoxDecoration(
             color: isSelected ? VineTheme.primary.withAlpha(25) : null,
-            border: Border(
+            border: const Border(
               top: BorderSide(color: VineTheme.outlineMuted),
               bottom: BorderSide(color: VineTheme.outlineMuted),
             ),

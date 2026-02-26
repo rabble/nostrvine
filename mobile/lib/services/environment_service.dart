@@ -2,14 +2,15 @@
 // ABOUTME: Handles developer mode unlock and environment switching
 
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/models/environment_config.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service for managing app environment configuration
 class EnvironmentService extends ChangeNotifier {
   static const _keyDeveloperMode = 'developer_mode_enabled';
   static const _keyEnvironment = 'app_environment';
 
+  // ignore: use_late_for_private_fields_and_variables
   SharedPreferences? _prefs;
   bool _developerModeEnabled = false;
   EnvironmentConfig _currentConfig = EnvironmentConfig.production;

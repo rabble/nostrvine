@@ -13,7 +13,7 @@ import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart'
 import 'package:openvine/widgets/video_editor/audio_editor/audio_sort_dropdown.dart';
 
 class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
-  const AudioSelectionBottomSheet({super.key, required this.scrollController});
+  const AudioSelectionBottomSheet({required this.scrollController, super.key});
 
   final ScrollController scrollController;
 
@@ -24,7 +24,7 @@ class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
 
 class _AudioSelectionBottomSheetState
     extends ConsumerState<AudioSelectionBottomSheet> {
-  String _searchQuery = '';
+  final String _searchQuery = '';
   AudioSortOption _sortOption = AudioSortOption.newest;
   String? _playingSoundId;
   AudioPlaybackService? _audioService;
@@ -149,9 +149,8 @@ class _AudioSelectionBottomSheetState
     // Convert bundled VineSounds to AudioEvents
     final bundledSounds =
         bundledSoundsAsync.whenOrNull(
-          data: (service) => service.sounds
-              .map((s) => AudioEvent.fromBundledSound(s))
-              .toList(),
+          data: (service) =>
+              service.sounds.map(AudioEvent.fromBundledSound).toList(),
         ) ??
         <AudioEvent>[];
 
@@ -191,7 +190,7 @@ class _AudioSelectionBottomSheetState
               onPlayPause: _togglePlayPause,
               onSelect: _selectSound,
             )
-          : const Center(child: BrandedLoadingIndicator(size: 80)),
+          : const Center(child: BrandedLoadingIndicator()),
       error: (error, stack) => bundledSounds.isNotEmpty
           ? _SoundsContent(
               scrollController: widget.scrollController,
@@ -257,8 +256,8 @@ class _SoundsContent extends StatelessWidget {
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: const Divider(height: 1, color: VineTheme.outlineDisabled),
+        const SliverToBoxAdapter(
+          child: Divider(height: 1, color: VineTheme.outlineDisabled),
         ),
         SliverList.separated(
           itemCount: filteredSounds.length,
@@ -284,13 +283,13 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16),
+          Text(
             // TODO(l10n): Replace with context.l10n when localization is added.
             'No sounds available',
             style: TextStyle(
@@ -299,7 +298,7 @@ class _EmptyState extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             // TODO(l10n): Replace with context.l10n when localization is added.
             'Sounds will appear here when creators share audio',
@@ -317,13 +316,13 @@ class _NoResultsState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.search_off, size: 64, color: VineTheme.secondaryText),
-          const SizedBox(height: 16),
-          const Text(
+          SizedBox(height: 16),
+          Text(
             // TODO(l10n): Replace with context.l10n when localization is added.
             'No sounds found',
             style: TextStyle(
@@ -332,7 +331,7 @@ class _NoResultsState extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             // TODO(l10n): Replace with context.l10n when localization is added.
             'Try a different search term',
@@ -357,7 +356,7 @@ class _ErrorState extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
+            const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
             const Text(
               // TODO(l10n): Replace with context.l10n when localization is added.
@@ -371,7 +370,10 @@ class _ErrorState extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,

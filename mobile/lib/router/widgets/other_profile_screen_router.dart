@@ -13,6 +13,7 @@ import 'package:openvine/widgets/branded_loading_scaffold.dart';
 class OtherProfileScreenRouter extends ConsumerWidget {
   const OtherProfileScreenRouter({
     required this.npub,
+    super.key,
     this.displayNameHint,
     this.avatarUrlHint,
   });

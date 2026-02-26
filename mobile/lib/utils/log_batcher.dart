@@ -37,7 +37,7 @@ class LogBatcher {
   static void flush() {
     if (_batches.isEmpty) return;
 
-    for (var batch in _batches.values) {
+    for (final batch in _batches.values) {
       batch.flush();
     }
 
@@ -137,7 +137,7 @@ class _BatchedMessage {
     // Add any remaining fields not in priority list
     data.forEach((key, value) {
       if (!priorityFields.contains(key) && parts.length < 4) {
-        parts.add('$key:${value.toString()}');
+        parts.add('$key:$value');
       }
     });
 
@@ -161,7 +161,7 @@ extension VideoEventLogBatcher on LogBatcher {
         'id': eventId,
         'author': authorPubkey,
         'subscription': subscriptionType,
-        if (kind != null) 'kind': kind,
+        'kind': ?kind,
       },
     );
   }

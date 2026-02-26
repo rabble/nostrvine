@@ -3,10 +3,10 @@
 
 import 'package:flutter/material.dart';
 
-import 'block_confirmation_view.dart';
-import 'more_sheet_menu.dart';
-import 'more_sheet_result.dart';
-import 'unblock_confirmation_view.dart';
+import 'package:openvine/widgets/profile/more_sheet/block_confirmation_view.dart';
+import 'package:openvine/widgets/profile/more_sheet/more_sheet_menu.dart';
+import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
+import 'package:openvine/widgets/profile/more_sheet/unblock_confirmation_view.dart';
 
 /// The current mode of the More sheet.
 enum MoreSheetMode {

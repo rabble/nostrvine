@@ -10,9 +10,9 @@ class _MockVineDraft extends Mock implements VineDraft {}
 class _MockVideoPublishService extends Mock implements VideoPublishService {}
 
 void main() {
-  final defaultVieoPublishServiceFactory =
-      ({required OnProgressChanged onProgress}) =>
-          Future.value(_MockVideoPublishService());
+  Future<_MockVideoPublishService> defaultVieoPublishServiceFactory({
+    required OnProgressChanged onProgress,
+  }) => Future.value(_MockVideoPublishService());
 
   group('BackgroundPublishState', () {
     group('hasUploadInProgress', () {
@@ -98,7 +98,7 @@ void main() {
           act: (bloc) => bloc.add(
             BackgroundPublishRequested(
               draft: draft,
-              publishmentProcess: Future.value(PublishSuccess()),
+              publishmentProcess: Future.value(const PublishSuccess()),
             ),
           ),
           expect: () => [
@@ -107,7 +107,7 @@ void main() {
                 BackgroundUpload(draft: draft, result: null, progress: 0),
               ],
             ),
-            BackgroundPublishState(uploads: []),
+            const BackgroundPublishState(),
           ],
         );
       });
@@ -121,7 +121,7 @@ void main() {
           act: (bloc) => bloc.add(
             BackgroundPublishRequested(
               draft: draft,
-              publishmentProcess: Future.value(PublishError('ops')),
+              publishmentProcess: Future.value(const PublishError('ops')),
             ),
           ),
           expect: () => [
@@ -134,7 +134,7 @@ void main() {
               uploads: [
                 BackgroundUpload(
                   draft: draft,
-                  result: PublishError('ops'),
+                  result: const PublishError('ops'),
                   progress: 1.0,
                 ),
               ],
@@ -194,12 +194,12 @@ void main() {
           act: (bloc) => bloc.add(
             BackgroundPublishRequested(
               draft: draft,
-              publishmentProcess: Future.value(PublishSuccess()),
+              publishmentProcess: Future.value(const PublishSuccess()),
             ),
           ),
           expect: () => [
             // Only emits the final state after success, no duplicate added
-            BackgroundPublishState(uploads: []),
+            const BackgroundPublishState(),
           ],
         );
       });
@@ -321,7 +321,7 @@ void main() {
           ],
         ),
         act: (bloc) => bloc.add(BackgroundPublishVanished(draftId: draftId)),
-        expect: () => [BackgroundPublishState(uploads: [])],
+        expect: () => [const BackgroundPublishState()],
       );
     });
 
@@ -363,7 +363,7 @@ void main() {
             bloc.add(BackgroundPublishRetryRequested(draftId: draftId)),
         expect: () => [
           // First: old failed upload is cleared
-          BackgroundPublishState(uploads: []),
+          const BackgroundPublishState(),
           // Then: new upload is added (from BackgroundPublishRequested)
           BackgroundPublishState(
             uploads: [
@@ -371,7 +371,7 @@ void main() {
             ],
           ),
           // Finally: successful retry removes the upload
-          BackgroundPublishState(uploads: []),
+          const BackgroundPublishState(),
         ],
         verify: (_) {
           verify(() => mockPublishService.publishVideo(draft: draft)).called(1);

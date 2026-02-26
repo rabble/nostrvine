@@ -1,17 +1,17 @@
 // ABOUTME: Shared bottom navigation bar widget for app shell and profile screens
 // ABOUTME: Provides consistent bottom nav across screens with/without shell
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';

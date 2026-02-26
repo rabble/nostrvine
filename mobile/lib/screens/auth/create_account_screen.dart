@@ -38,7 +38,7 @@ class CreateAccountScreen extends ConsumerWidget {
         oauthClient: oauthClient,
         authService: authService,
         pendingVerificationService: pendingVerificationService,
-      )..initialize(isSignIn: false),
+      )..initialize(),
       child: const _CreateAccountView(),
     );
   }
@@ -229,7 +229,6 @@ class _SkipConfirmationSheet extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Drag handle
           Container(
@@ -286,7 +285,7 @@ class _SkipConfirmationSheet extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const Text(
-            "You can access your key in the app, but, if "
+            'You can access your key in the app, but, if '
             "you're not technical we recommend adding an "
             'email and password now. It makes it easier to '
             'sign in and restore your account if you lose or '

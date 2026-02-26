@@ -4,9 +4,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
+
 import '../test_setup.dart';
 
 class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
@@ -46,7 +47,6 @@ void main() {
       authService = AuthService(
         userDataCleanupService: mockCleanupService,
         keyStorage: mockKeyStorage,
-        oauthClient: null,
       );
 
       // Act
@@ -89,7 +89,6 @@ void main() {
       // Mock: session exists but has no access token
       final sessionWithoutToken = KeycastSession(
         bunkerUrl: 'https://bunker.example.com',
-        accessToken: null,
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
       when(

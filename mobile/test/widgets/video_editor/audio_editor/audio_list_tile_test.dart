@@ -65,7 +65,7 @@ void main() {
       testWidgets('renders "Untitled sound" when title is null', (
         tester,
       ) async {
-        final audio = _createTestAudioEvent(title: null);
+        final audio = _createTestAudioEvent();
         await tester.pumpWidget(buildWidget(audio: audio));
         await tester.pumpAndSettle();
 
@@ -81,7 +81,7 @@ void main() {
       });
 
       testWidgets('renders "--:--" when duration is null', (tester) async {
-        final audio = _createTestAudioEvent(duration: null);
+        final audio = _createTestAudioEvent();
         await tester.pumpWidget(buildWidget(audio: audio));
         await tester.pumpAndSettle();
 
@@ -120,7 +120,7 @@ void main() {
     group('Play/Pause state', () {
       testWidgets('shows play icon when not playing', (tester) async {
         final audio = _createTestAudioEvent();
-        await tester.pumpWidget(buildWidget(audio: audio, isPlaying: false));
+        await tester.pumpWidget(buildWidget(audio: audio));
         await tester.pumpAndSettle();
 
         // The play icon button should have play semantics

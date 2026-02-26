@@ -2,8 +2,8 @@
 // ABOUTME: Validates processing indicators, error states, and user messaging for video uploads
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -44,7 +44,7 @@ void main() {
             overrides: [
               uploadManagerProvider.overrideWith((ref) => mockUploadManager),
             ],
-            child: MaterialApp(
+            child: const MaterialApp(
               home: Scaffold(
                 body: VideoProcessingStatusWidget(uploadId: 'test_upload_123'),
               ),
@@ -86,7 +86,7 @@ void main() {
             overrides: [
               uploadManagerProvider.overrideWith((ref) => mockUploadManager),
             ],
-            child: MaterialApp(
+            child: const MaterialApp(
               home: Scaffold(
                 body: VideoProcessingStatusWidget(uploadId: 'test_upload_456'),
               ),
@@ -129,7 +129,7 @@ void main() {
           overrides: [
             uploadManagerProvider.overrideWith((ref) => mockUploadManager),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
               body: VideoProcessingStatusWidget(uploadId: 'test_upload_789'),
             ),
@@ -170,7 +170,7 @@ void main() {
           overrides: [
             uploadManagerProvider.overrideWith((ref) => mockUploadManager),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
               body: VideoProcessingStatusWidget(uploadId: 'test_upload_error'),
             ),
@@ -211,7 +211,7 @@ void main() {
           overrides: [
             uploadManagerProvider.overrideWith((ref) => mockUploadManager),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
               body: VideoProcessingStatusWidget(uploadId: 'dynamic_upload'),
             ),
@@ -246,7 +246,7 @@ void main() {
           overrides: [
             uploadManagerProvider.overrideWith((ref) => mockUploadManager),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(
               body: VideoProcessingStatusWidget(uploadId: 'dynamic_upload'),
             ),

@@ -93,8 +93,8 @@ void main() {
 
       testWidgets('shows ListView when results are available', (tester) async {
         final testProfiles = [
-          createTestProfile('${'a' * 64}', 'Alice'),
-          createTestProfile('${'b' * 64}', 'Bob'),
+          createTestProfile('a' * 64, 'Alice'),
+          createTestProfile('b' * 64, 'Bob'),
         ];
 
         when(() => mockBloc.state).thenReturn(

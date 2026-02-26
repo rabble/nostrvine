@@ -8,15 +8,15 @@ import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
-import 'package:models/models.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
@@ -175,7 +175,7 @@ void main() {
             ),
           ).thenAnswer((_) async => thread);
         },
-        build: () => createBloc(),
+        build: createBloc,
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
         expect: () => [
           isA<CommentsState>().having(
@@ -200,7 +200,7 @@ void main() {
             ),
           ).thenAnswer((_) async => CommentThread.empty(validId('root')));
         },
-        build: () => createBloc(),
+        build: createBloc,
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
         expect: () => [
           isA<CommentsState>().having(
@@ -225,7 +225,7 @@ void main() {
             ),
           ).thenThrow(Exception('Network error'));
         },
-        build: () => createBloc(),
+        build: createBloc,
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
         expect: () => [
           isA<CommentsState>().having(
@@ -277,7 +277,7 @@ void main() {
             ),
           ).thenAnswer((_) async => thread);
         },
-        build: () => createBloc(),
+        build: createBloc,
         act: (bloc) => bloc.add(const CommentsLoadRequested()),
         verify: (bloc) {
           // Should have 2 total comments (1 parent + 1 reply)
@@ -332,8 +332,6 @@ void main() {
         build: createBloc,
         seed: () => const CommentsState(
           status: CommentsStatus.success,
-          hasMoreContent: true,
-          commentsById: {},
         ),
         act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
         expect: () => <CommentsState>[],
@@ -377,7 +375,6 @@ void main() {
           );
           return CommentsState(
             status: CommentsStatus.success,
-            hasMoreContent: true,
             commentsById: {existingComment.id: existingComment},
           );
         },
@@ -433,7 +430,6 @@ void main() {
           );
           return CommentsState(
             status: CommentsStatus.success,
-            hasMoreContent: true,
             commentsById: {existingComment.id: existingComment},
           );
         },
@@ -474,7 +470,6 @@ void main() {
           );
           return CommentsState(
             status: CommentsStatus.success,
-            hasMoreContent: true,
             commentsById: {existingComment.id: existingComment},
           );
         },
@@ -517,7 +512,6 @@ void main() {
           );
           return CommentsState(
             status: CommentsStatus.success,
-            hasMoreContent: true,
             commentsById: {existingComment.id: existingComment},
           );
         },
@@ -590,7 +584,6 @@ void main() {
           );
           return CommentsState(
             status: CommentsStatus.success,
-            hasMoreContent: true,
             commentsById: {existingComment.id: existingComment},
           );
         },
@@ -718,8 +711,6 @@ void main() {
               rootEventId: any(named: 'rootEventId'),
               rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
-              replyToEventId: null,
-              replyToAuthorPubkey: null,
             ),
           ).called(1);
         },
@@ -780,7 +771,7 @@ void main() {
 
       blocTest<CommentsBloc, CommentsState>(
         'does nothing when text is empty',
-        seed: () => const CommentsState(mainInputText: ''),
+        seed: () => const CommentsState(),
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
         expect: () => <CommentsState>[],
@@ -824,7 +815,6 @@ void main() {
         },
         seed: () => const CommentsState(
           mainInputText: 'Test comment',
-          commentsById: {},
         ),
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
@@ -922,7 +912,6 @@ void main() {
             status: CommentsStatus.success,
             commentsById: {comment.id: comment},
             commentLikeCounts: {comment.id: 5},
-            likedCommentIds: const {},
           );
         },
         act: (bloc) => bloc.add(
@@ -1061,7 +1050,6 @@ void main() {
             status: CommentsStatus.success,
             commentsById: {comment.id: comment},
             commentLikeCounts: {comment.id: 5},
-            likedCommentIds: const {},
           );
         },
         act: (bloc) => bloc.add(
@@ -1230,7 +1218,6 @@ void main() {
         build: createBloc,
         seed: () => const CommentsState(
           status: CommentsStatus.success,
-          commentsById: {},
         ),
         act: (bloc) => bloc.add(const CommentLikeCountsFetchRequested()),
         expect: () => <CommentsState>[],
@@ -1329,7 +1316,6 @@ void main() {
           rootAuthorPubkey: validId('author'),
         );
         final state = CommentsState(
-          sortMode: CommentsSortMode.newest,
           commentsById: {older.id: older, newer.id: newer},
         );
 
@@ -1769,8 +1755,7 @@ void main() {
 
       blocTest<CommentsBloc, CommentsState>(
         'works without profile service (null)',
-        build: () =>
-            createBloc(userProfileService: null, followRepository: null),
+        build: createBloc,
         seed: () {
           final comment = Comment(
             id: validId('comment1'),
@@ -1887,8 +1872,6 @@ void main() {
               rootEventId: any(named: 'rootEventId'),
               rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
-              replyToEventId: null,
-              replyToAuthorPubkey: null,
             ),
           ).called(1);
         },
@@ -1980,8 +1963,6 @@ void main() {
               rootEventId: any(named: 'rootEventId'),
               rootEventKind: any(named: 'rootEventKind'),
               rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
-              replyToEventId: null,
-              replyToAuthorPubkey: null,
             ),
           ).called(1);
         },
@@ -2418,7 +2399,6 @@ void main() {
       );
 
       final state = CommentsState(
-        sortMode: CommentsSortMode.newest,
         commentsById: {older.id: older, newer.id: newer},
       );
 
@@ -2430,17 +2410,15 @@ void main() {
 
   group('CommentsState', () {
     test('supports value equality', () {
-      final state1 = CommentsState(
+      const state1 = CommentsState(
         status: CommentsStatus.success,
         rootEventId: 'event1',
         rootAuthorPubkey: 'author1',
-        commentsById: const {},
       );
-      final state2 = CommentsState(
+      const state2 = CommentsState(
         status: CommentsStatus.success,
         rootEventId: 'event1',
         rootAuthorPubkey: 'author1',
-        commentsById: const {},
       );
 
       expect(state1, equals(state2));
@@ -2448,7 +2426,6 @@ void main() {
 
     test('copyWith creates copy with updated values', () {
       const state = CommentsState(
-        status: CommentsStatus.initial,
         rootEventId: 'event1',
         rootAuthorPubkey: 'author1',
       );
@@ -2516,7 +2493,6 @@ void main() {
 
     test('isReplyPosting returns false when not posting', () {
       const state = CommentsState(
-        isPosting: false,
         activeReplyCommentId: 'comment1',
       );
 
@@ -2587,12 +2563,12 @@ void main() {
     test(
       'clearActiveReply clears mention query, suggestions, and activeMentions',
       () {
-        final state = CommentsState(
+        const state = CommentsState(
           activeReplyCommentId: 'comment1',
           replyInputText: 'draft',
           mentionQuery: 'test',
-          mentionSuggestions: [const MentionSuggestion(pubkey: 'abc')],
-          activeMentions: const {'Alice': 'npub1alice'},
+          mentionSuggestions: [MentionSuggestion(pubkey: 'abc')],
+          activeMentions: {'Alice': 'npub1alice'},
         );
 
         final updated = state.clearActiveReply();
@@ -2604,10 +2580,10 @@ void main() {
     );
 
     test('copyWith preserves mention fields when not specified', () {
-      final state = CommentsState(
+      const state = CommentsState(
         mentionQuery: 'test',
-        mentionSuggestions: [const MentionSuggestion(pubkey: 'abc')],
-        activeMentions: const {'Alice': 'npub1alice'},
+        mentionSuggestions: [MentionSuggestion(pubkey: 'abc')],
+        activeMentions: {'Alice': 'npub1alice'},
       );
 
       final updated = state.copyWith(mainInputText: 'hello');
@@ -2963,12 +2939,12 @@ void main() {
 
   group('clearActiveReply preserves state', () {
     test('preserves like counts and sort mode', () {
-      final state = CommentsState(
+      const state = CommentsState(
         activeReplyCommentId: 'comment1',
         replyInputText: 'draft',
         sortMode: CommentsSortMode.topEngagement,
-        commentLikeCounts: const {'c1': 5},
-        likedCommentIds: const {'c1'},
+        commentLikeCounts: {'c1': 5},
+        likedCommentIds: {'c1'},
       );
 
       final updated = state.clearActiveReply();

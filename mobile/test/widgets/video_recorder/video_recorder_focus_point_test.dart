@@ -30,7 +30,9 @@ void main() {
             () => VideoRecorderNotifier(mockCamera),
           ),
         ],
-        child: MaterialApp(home: Scaffold(body: VideoRecorderFocusPoint())),
+        child: const MaterialApp(
+          home: Scaffold(body: VideoRecorderFocusPoint()),
+        ),
       );
     }
 
@@ -65,7 +67,7 @@ void main() {
     });
 
     testWidgets('renders focus point at correct position', (tester) async {
-      final cameraSize = Size(400, 600);
+      const cameraSize = Size(400, 600);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -74,7 +76,7 @@ void main() {
               // Set initial state with a focus point
               Future.microtask(() {
                 notifier.state = notifier.state.copyWith(
-                  focusPoint: Offset(0.5, 0.5),
+                  focusPoint: const Offset(0.5, 0.5),
                 );
               });
               return notifier;
@@ -85,7 +87,7 @@ void main() {
               body: SizedBox(
                 width: cameraSize.width,
                 height: cameraSize.height,
-                child: VideoRecorderFocusPoint(),
+                child: const VideoRecorderFocusPoint(),
               ),
             ),
           ),
@@ -102,7 +104,7 @@ void main() {
         ),
       );
 
-      final indicatorSize = VideoRecorderFocusPoint.indicatorSize;
+      const indicatorSize = VideoRecorderFocusPoint.indicatorSize;
 
       expect(positioned.left, equals(cameraSize.width / 2 - indicatorSize / 2));
       expect(positioned.top, equals(cameraSize.height / 2 - indicatorSize / 2));

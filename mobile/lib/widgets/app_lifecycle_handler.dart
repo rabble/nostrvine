@@ -3,15 +3,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Handles app lifecycle events for video playback
 class AppLifecycleHandler extends ConsumerStatefulWidget {
@@ -118,7 +118,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
 
         // Pause all videos and clear visibility state
         // Execute async to prevent blocking scene update
-        Future.microtask(() => visibilityManager.pauseAllVideos());
+        Future.microtask(visibilityManager.pauseAllVideos);
 
       case AppLifecycleState.detached:
         // App is being terminated

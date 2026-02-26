@@ -49,7 +49,7 @@ void main() {
           actorPubkey: 'user123',
           actorName: 'Test User',
           message: 'liked your video',
-          timestamp: DateTime(2024, 1, 1),
+          timestamp: DateTime(2024),
         );
 
         // Act
@@ -74,8 +74,7 @@ void main() {
           actorPubkey: 'user123',
           actorName: 'Test User',
           message: 'liked your video',
-          timestamp: DateTime(2024, 1, 1),
-          isRead: false,
+          timestamp: DateTime(2024),
         );
 
         final notification2 = notification1.copyWith(isRead: true);
@@ -108,7 +107,7 @@ void main() {
           actorPubkey: 'user123',
           actorName: 'User 1',
           message: 'liked your video',
-          timestamp: DateTime(2024, 1, 1),
+          timestamp: DateTime(2024),
         );
 
         final notification2 = NotificationModel(
@@ -140,7 +139,7 @@ void main() {
           actorPubkey: 'user123',
           actorName: 'Valid User',
           message: 'liked',
-          timestamp: DateTime(2024, 1, 1),
+          timestamp: DateTime(2024),
         );
 
         await testBox.put('valid', validNotification.toJson());
@@ -183,7 +182,7 @@ void main() {
           actorPubkey: 'user123',
           actorName: 'User 1',
           message: 'liked',
-          timestamp: DateTime(2024, 1, 1),
+          timestamp: DateTime(2024),
         );
 
         await persistence.saveNotification(notification1);
@@ -212,7 +211,7 @@ void main() {
           actorPubkey: 'user1',
           actorName: 'Old User',
           message: 'old',
-          timestamp: DateTime(2024, 1, 1),
+          timestamp: DateTime(2024),
         );
 
         final recent = NotificationModel(
@@ -228,7 +227,7 @@ void main() {
         await persistence.saveNotification(recent);
 
         // Act - clear notifications older than 6 months from Dec 31
-        final cutoff = DateTime(2024, 6, 1);
+        final cutoff = DateTime(2024, 6);
         await persistence.clearOlderThan(cutoff);
 
         // Assert
@@ -244,7 +243,7 @@ void main() {
           actorPubkey: 'user1',
           actorName: 'User 1',
           message: 'liked',
-          timestamp: DateTime(2024, 10, 1),
+          timestamp: DateTime(2024, 10),
         );
 
         final notification2 = NotificationModel(
@@ -253,14 +252,14 @@ void main() {
           actorPubkey: 'user2',
           actorName: 'User 2',
           message: 'liked',
-          timestamp: DateTime(2024, 11, 1),
+          timestamp: DateTime(2024, 11),
         );
 
         await persistence.saveNotification(notification1);
         await persistence.saveNotification(notification2);
 
         // Act - cutoff is before all notifications
-        final cutoff = DateTime(2024, 1, 1);
+        final cutoff = DateTime(2024);
         await persistence.clearOlderThan(cutoff);
 
         // Assert

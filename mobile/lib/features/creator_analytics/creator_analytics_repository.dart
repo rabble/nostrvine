@@ -193,8 +193,9 @@ class FunnelcakeCreatorAnalyticsRepository
   Future<_HydrationResult> _enrichVideosWithBulkStats(
     List<VideoEvent> videos,
   ) async {
-    if (videos.isEmpty)
+    if (videos.isEmpty) {
       return const _HydrationResult(videos: [], hydratedCount: 0);
+    }
 
     final ids = videos.map((video) => video.id).where((id) => id.isNotEmpty);
     final chunks = _chunkStrings(ids.toList(), 100);
@@ -236,8 +237,9 @@ class FunnelcakeCreatorAnalyticsRepository
   }
 
   Future<_HydrationResult> _hydrateVideoViews(List<VideoEvent> videos) async {
-    if (videos.isEmpty)
+    if (videos.isEmpty) {
       return const _HydrationResult(videos: [], hydratedCount: 0);
+    }
 
     final missingViewVideos = videos.where((video) {
       final hasViews = extractViewLikeCount(video) != null;

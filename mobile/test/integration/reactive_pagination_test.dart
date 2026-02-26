@@ -4,10 +4,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/services/video_event_service.dart';
+import 'package:models/models.dart' hide LogCategory, LogLevel;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
-import 'package:models/models.dart' hide LogCategory, LogLevel;
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -53,7 +53,7 @@ void main() {
         final onComplete =
             invocation.namedArguments[const Symbol('onComplete')]
                 as void Function();
-        Future.delayed(Duration(milliseconds: 10), onComplete);
+        Future.delayed(const Duration(milliseconds: 10), onComplete);
         return 'test-subscription-id';
       });
 
@@ -103,7 +103,6 @@ void main() {
             onError: any(named: 'onError'),
             onComplete: any(named: 'onComplete'),
             timeout: any(named: 'timeout'),
-            priority: 5,
           ),
         ).called(1);
 

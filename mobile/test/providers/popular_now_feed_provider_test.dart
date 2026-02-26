@@ -3,11 +3,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/providers/popular_now_feed_provider.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:models/models.dart';
 import 'package:riverpod/riverpod.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
@@ -75,7 +75,7 @@ void main() {
         // Arrange
         final video1 = _createMockVideo(
           id: 'v1',
-          createdAt: DateTime(2025, 1, 1),
+          createdAt: DateTime(2025),
         );
         final video2 = _createMockVideo(
           id: 'v2',
@@ -102,7 +102,7 @@ void main() {
         // Arrange
         final video1 = _createMockVideo(
           id: 'v1',
-          createdAt: DateTime(2025, 1, 1),
+          createdAt: DateTime(2025),
         );
         final video2 = _createMockVideo(
           id: 'v2',

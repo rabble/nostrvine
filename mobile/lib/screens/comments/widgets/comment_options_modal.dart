@@ -291,7 +291,6 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
                   child: Text(
                     'Submit',
                     style: VineTheme.bodyFont(
-                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: _selectedReason != null
                           ? VineTheme.backgroundColor
@@ -358,7 +357,6 @@ class _ReasonRadioTile extends StatelessWidget {
               child: Text(
                 _getReasonDisplayName(reason),
                 style: VineTheme.bodyFont(
-                  fontSize: 16,
                   color: isSelected
                       ? VineTheme.onSurface
                       : VineTheme.onSurfaceVariant,

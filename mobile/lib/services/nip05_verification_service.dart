@@ -141,9 +141,10 @@ class Nip05VerificationService extends ChangeNotifier {
 
     // Debounce batch execution
     _batchDebounceTimer?.cancel();
-    _batchDebounceTimer = Timer(const Duration(milliseconds: 200), () {
-      _executeBatch();
-    });
+    _batchDebounceTimer = Timer(
+      const Duration(milliseconds: 200),
+      _executeBatch,
+    );
 
     return completer.future;
   }

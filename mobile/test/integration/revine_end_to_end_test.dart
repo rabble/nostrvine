@@ -1,9 +1,9 @@
 // ABOUTME: End-to-end test for revine functionality to verify the complete fix
-import 'package:openvine/utils/unified_logger.dart';
 // ABOUTME: Tests from revining a video to seeing it appear in the user's profile
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   group('Revine End-to-End Integration Test', () {
@@ -24,11 +24,10 @@ void main() {
         title: 'Test Video',
         videoUrl: 'https://cdn.example.com/video.mp4',
         thumbnailUrl: 'https://cdn.example.com/thumb.jpg',
-        hashtags: ['funny', 'viral'],
-        isRepost: false,
+        hashtags: const ['funny', 'viral'],
       );
 
-      Log.info('   ✓ Original video created by ${authorPubkey}...');
+      Log.info('   ✓ Original video created by $authorPubkey...');
       Log.info('   ✓ Video URL: ${originalVideo.videoUrl}');
       Log.info('   ✓ isRepost: ${originalVideo.isRepost}\n');
 
@@ -59,7 +58,6 @@ void main() {
           content: 'Other video',
           timestamp: DateTime.now(),
           videoUrl: 'https://cdn.example.com/other.mp4',
-          isRepost: false,
         ),
         // Add another user's revine to test filtering
         VideoEvent.createRepostEvent(
@@ -135,7 +133,6 @@ void main() {
         content: 'Video 1',
         timestamp: DateTime.now(),
         videoUrl: 'https://cdn.example.com/video1.mp4',
-        isRepost: false,
       );
 
       final video2 = VideoEvent(
@@ -145,7 +142,6 @@ void main() {
         content: 'Video 2',
         timestamp: DateTime.now(),
         videoUrl: 'https://cdn.example.com/video2.mp4',
-        isRepost: false,
       );
 
       final revine1 = VideoEvent.createRepostEvent(
@@ -194,7 +190,6 @@ void main() {
         content: 'Content',
         timestamp: DateTime.now(),
         isRepost: true, // Marked as repost but missing reposter info
-        reposterPubkey: null, // Missing!
       );
 
       final feedWithIncomplete = [video1, incompleteRevine];

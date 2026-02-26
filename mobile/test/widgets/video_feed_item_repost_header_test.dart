@@ -39,8 +39,7 @@ void main() {
         thumbnailUrl: 'https://example.com/thumb.jpg',
         title: 'Test Video',
         duration: 15,
-        hashtags: ['test'],
-        isRepost: false,
+        hashtags: const ['test'],
       );
 
       // Create reposted version
@@ -54,7 +53,7 @@ void main() {
         thumbnailUrl: 'https://example.com/thumb.jpg',
         title: 'Test Video',
         duration: 15,
-        hashtags: ['test'],
+        hashtags: const ['test'],
         isRepost: true,
         reposterPubkey: reposterPubkey,
         reposterId: 'repost_event_999',

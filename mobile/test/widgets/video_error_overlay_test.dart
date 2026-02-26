@@ -156,7 +156,6 @@ void main() {
       await tester.pumpWidget(
         buildWidget(
           errorDescription: 'HttpException: Invalid statusCode: 401',
-          isActive: true,
         ),
       );
 

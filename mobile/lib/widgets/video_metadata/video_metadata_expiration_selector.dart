@@ -27,7 +27,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
       context: context,
       selectedValue: currentOption.name,
       // TODO(l10n): Replace with context.l10n when localization is added.
-      title: Text('Expiration'),
+      title: const Text('Expiration'),
       options: VideoMetadataExpiration.values.map((option) {
         return VineBottomSheetSelectionOptionData(
           label: option.description,

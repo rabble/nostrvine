@@ -1,9 +1,9 @@
 // ABOUTME: Confirmation dialog shown after successfully blocking a user
 // ABOUTME: Displays block success message with link to safety information
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Confirmation dialog shown after successfully blocking a user
@@ -13,11 +13,11 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: Row(
+    title: const Row(
       children: [
         Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
-        const SizedBox(width: 12),
-        const Text(
+        SizedBox(width: 12),
+        Text(
           'User Blocked',
           style: TextStyle(color: VineTheme.whiteText),
         ),
@@ -28,7 +28,7 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'You won\'t see content from this user in your feeds.',
+          "You won't see content from this user in your feeds.",
           style: TextStyle(color: VineTheme.whiteText, fontSize: 16),
         ),
         const SizedBox(height: 16),
@@ -51,11 +51,11 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: VineTheme.vineGreen),
             ),
-            child: Row(
+            child: const Row(
               children: [
                 Icon(Icons.info_outline, color: VineTheme.vineGreen, size: 20),
-                const SizedBox(width: 8),
-                const Expanded(
+                SizedBox(width: 8),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -87,7 +87,10 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
     actions: [
       TextButton(
         onPressed: context.pop,
-        child: Text('Close', style: TextStyle(color: VineTheme.vineGreen)),
+        child: const Text(
+          'Close',
+          style: TextStyle(color: VineTheme.vineGreen),
+        ),
       ),
     ],
   );

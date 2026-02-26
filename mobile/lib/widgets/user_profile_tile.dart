@@ -2,14 +2,14 @@
 // ABOUTME: Shows avatar, name, and follow button with tap handling for navigation
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:models/models.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/image_cache_manager.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
 
 /// A tile widget for displaying user profile information in lists.
@@ -20,8 +20,8 @@ import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
 /// Set [showFollowButton] to false to hide the follow button entirely.
 class UserProfileTile extends ConsumerWidget {
   const UserProfileTile({
-    super.key,
     required this.pubkey,
+    super.key,
     this.onTap,
     this.showFollowButton = true,
     this.isFollowing,
@@ -75,7 +75,6 @@ class UserProfileTile extends ConsumerWidget {
           identifier: 'user_profile_tile_$pubkey',
           label: displayName,
           container: true,
-          explicitChildNodes: false,
           child: GestureDetector(
             onTap: onTap,
             child: Container(
@@ -90,7 +89,6 @@ class UserProfileTile extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(15),
                       border: Border.all(
                         color: VineTheme.onSurfaceDisabled,
-                        width: 1,
                       ),
                     ),
                     child: ClipRRect(

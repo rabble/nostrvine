@@ -42,7 +42,7 @@ void main() {
       });
 
       testWidgets('has correct semantics', (tester) async {
-        await tester.pumpWidget(buildDropdown(value: AudioSortOption.newest));
+        await tester.pumpWidget(buildDropdown());
 
         final semantics = tester.getSemantics(find.byType(InkWell));
         expect(semantics.label, contains('Sort by Newest'));
@@ -86,7 +86,6 @@ void main() {
 
         await tester.pumpWidget(
           buildDropdown(
-            value: AudioSortOption.newest,
             onChanged: (option) => selectedOption = option,
           ),
         );
@@ -104,7 +103,7 @@ void main() {
 
       testWidgets('closes dropdown after selection', (tester) async {
         await tester.pumpWidget(
-          buildDropdown(value: AudioSortOption.newest, onChanged: (_) {}),
+          buildDropdown(onChanged: (_) {}),
         );
 
         // Open dropdown

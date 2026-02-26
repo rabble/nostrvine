@@ -1,11 +1,11 @@
 // ABOUTME: Progress bar showing video clips as proportional segments
 // ABOUTME: Each segment width reflects clip duration with rounded corners
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// Displays a progress bar showing all video clips as segments.
 class VideoClipEditorProgressBar extends ConsumerWidget {
@@ -145,7 +145,6 @@ class _ClipProgressOverlayState extends ConsumerState<_ClipProgressOverlay> {
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(end: clipProgress),
       duration: isReset ? Duration.zero : const Duration(milliseconds: 90),
-      curve: Curves.linear,
       child: Stack(
         alignment: .centerRight,
         children: [

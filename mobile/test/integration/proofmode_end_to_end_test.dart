@@ -2,18 +2,19 @@
 // ABOUTME: Verifies proof data flows from recording → draft → upload → Nostr publish
 
 import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
-import 'package:openvine/models/pending_upload.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 
 void main() {
   group('ProofMode End-to-End Flow', () {
     test('Draft with ProofMode → Upload with ProofMode → Publish with tags', () {
       // Step 1: Create native proof data (simulating what native library returns)
-      final nativeProof = NativeProofData(
+      const nativeProof = NativeProofData(
         videoHash: 'abc123def456',
         sensorDataCsv: 'timestamp,lat,lon\n2025-01-01,40.7,-74.0',
         pgpSignature:
@@ -42,7 +43,7 @@ void main() {
           RecordingClip(
             id: 'id',
             video: EditorVideo.file('/tmp/test.mp4'),
-            duration: Duration(seconds: 4),
+            duration: const Duration(seconds: 4),
             recordedAt: .now(),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,
@@ -127,7 +128,7 @@ void main() {
           RecordingClip(
             id: 'id',
             video: EditorVideo.file('/tmp/test.mp4'),
-            duration: Duration(seconds: 4),
+            duration: const Duration(seconds: 4),
             recordedAt: .now(),
             targetAspectRatio: .vertical,
             originalAspectRatio: 9 / 16,

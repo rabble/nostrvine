@@ -143,8 +143,8 @@ void main() {
       expect(deleteAccountTile, findsOneWidget);
 
       final listTile = tester.widget<ListTile>(deleteAccountTile);
-      final leadingIcon = listTile.leading as Icon;
-      final titleText = listTile.title as Text;
+      final leadingIcon = listTile.leading! as Icon;
+      final titleText = listTile.title! as Text;
 
       expect(leadingIcon.color, equals(Colors.red));
       expect(leadingIcon.icon, equals(Icons.delete_forever));

@@ -2,17 +2,17 @@
 // ABOUTME: Displays sound info, preview/use buttons, and grid of related videos.
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -143,7 +143,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to play preview: ${e.toString()}'),
+            content: Text('Failed to play preview: $e'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -250,8 +250,8 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                 const Divider(color: VineTheme.cardBackground, height: 1),
 
                 // Videos section header
-                Padding(
-                  padding: const EdgeInsets.all(16),
+                const Padding(
+                  padding: EdgeInsets.all(16),
                   child: Row(
                     children: [
                       Icon(
@@ -259,8 +259,8 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                         color: VineTheme.vineGreen,
                         size: 20,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
+                      SizedBox(width: 8),
+                      Text(
                         'Videos using this sound',
                         style: TextStyle(
                           color: Colors.white,
@@ -522,7 +522,7 @@ class _VideosGrid extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
+            const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
             const Text(
               'Failed to load videos',
@@ -686,7 +686,6 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
               crossAxisCount: 3,
               crossAxisSpacing: 2,
               mainAxisSpacing: 2,
-              childAspectRatio: 1,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
               final video = videosList[index];
@@ -827,7 +826,7 @@ class _SoundVideoFeedOverlayState extends State<_SoundVideoFeedOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ColoredBox(
       color: Colors.black,
       child: SafeArea(
         child: Stack(

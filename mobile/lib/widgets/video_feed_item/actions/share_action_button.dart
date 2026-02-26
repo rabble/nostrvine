@@ -244,7 +244,7 @@ class _ShareMenuHeader extends ConsumerWidget {
               size: 40,
             ),
             loading: () => const UserAvatar(size: 40),
-            error: (_, __) => const UserAvatar(size: 40),
+            error: (_, _) => const UserAvatar(size: 40),
           ),
           const SizedBox(width: 12),
           Expanded(

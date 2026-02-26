@@ -7,8 +7,9 @@ import 'package:golden_toolkit/golden_toolkit.dart';
 import 'package:openvine/services/thumbnail_api_service.dart'
     show ThumbnailSize;
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
-import '../../helpers/golden_test_devices.dart';
+
 import '../../builders/test_video_event_builder.dart';
+import '../../helpers/golden_test_devices.dart';
 
 void main() {
   group('VideoThumbnailWidget Golden Tests', () {
@@ -36,7 +37,7 @@ void main() {
       final builder = GoldenBuilder.grid(columns: 3, widthToHeightRatio: 0.75)
         ..addScenario(
           'With Blurhash',
-          Container(
+          SizedBox(
             width: 150,
             height: 200,
             child: VideoThumbnailWidget(
@@ -48,7 +49,7 @@ void main() {
         )
         ..addScenario(
           'With Play Icon',
-          Container(
+          SizedBox(
             width: 150,
             height: 200,
             child: VideoThumbnailWidget(
@@ -61,7 +62,7 @@ void main() {
         )
         ..addScenario(
           'Minimal Fallback',
-          Container(
+          SizedBox(
             width: 150,
             height: 200,
             child: VideoThumbnailWidget(
@@ -73,7 +74,7 @@ void main() {
         )
         ..addScenario(
           'Small Size',
-          Container(
+          SizedBox(
             width: 100,
             height: 100,
             child: VideoThumbnailWidget(
@@ -86,7 +87,7 @@ void main() {
         )
         ..addScenario(
           'Large Size',
-          Container(
+          SizedBox(
             width: 200,
             height: 200,
             child: VideoThumbnailWidget(
@@ -99,7 +100,7 @@ void main() {
         )
         ..addScenario(
           'With Border Radius',
-          Container(
+          SizedBox(
             width: 150,
             height: 200,
             child: VideoThumbnailWidget(

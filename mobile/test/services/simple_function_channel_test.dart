@@ -17,7 +17,7 @@ void main() {
   group('Function Channel vs WebSocket', () {
     test('REQUIREMENT: App must NOT use localhost:7447 WebSocket', () {
       // Create config with function channel DISABLED (current state)
-      final oldConfig = NostrConnectionConfig(useFunctionChannel: false);
+      final oldConfig = NostrConnectionConfig();
       expect(
         oldConfig.usesLocalWebSocket,
         isTrue,
@@ -35,7 +35,7 @@ void main() {
 
     test('REQUIREMENT: iOS must NOT need NSLocalNetworkUsageDescription', () {
       // Old approach needs permission
-      final oldConfig = NostrConnectionConfig(useFunctionChannel: false);
+      final oldConfig = NostrConnectionConfig();
       expect(oldConfig.requiresLocalNetworkPermission, isTrue);
 
       // New approach does NOT need permission

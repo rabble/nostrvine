@@ -106,11 +106,9 @@ class ScreenAnalyticsService {
     );
 
     // Record to page load history
-    final contentVisibleMs = session.contentVisibleTime != null
-        ? session.contentVisibleTime!
-              .difference(session.loadStartTime)
-              .inMilliseconds
-        : null;
+    final contentVisibleMs = session.contentVisibleTime
+        ?.difference(session.loadStartTime)
+        .inMilliseconds;
     PageLoadHistory().addOrUpdate(
       PageLoadRecord(
         screenName: screenName,
@@ -202,7 +200,7 @@ class ScreenAnalyticsService {
       parameters: {
         'from_screen': from,
         'to_screen': to,
-        if (trigger != null) 'trigger': trigger,
+        'trigger': ?trigger,
       },
     );
 
@@ -225,7 +223,7 @@ class ScreenAnalyticsService {
         'screen_name': screenName,
         'scroll_depth': scrollDepth,
         'items_viewed': itemsViewed,
-        if (totalItems != null) 'total_items': totalItems,
+        'total_items': ?totalItems,
       },
     );
   }

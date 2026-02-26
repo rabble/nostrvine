@@ -157,7 +157,7 @@ class _CollaboratorLabel extends ConsumerWidget {
         color: VineTheme.whiteText,
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        shadows: [Shadow(blurRadius: 4, color: VineTheme.backgroundColor)],
+        shadows: [Shadow(blurRadius: 4)],
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,

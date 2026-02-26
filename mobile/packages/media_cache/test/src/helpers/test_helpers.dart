@@ -58,7 +58,7 @@ void _setupPathProviderMock() {
 
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(pathProviderChannel, (
-        MethodCall methodCall,
+        methodCall,
       ) async {
         switch (methodCall.method) {
           case 'getTemporaryDirectory':

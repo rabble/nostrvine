@@ -35,7 +35,7 @@ class C2paSigningService {
   C2paSigningService();
 
   final C2pa _c2pa = C2pa();
-  static const String CLAIM_GENERATOR = "DiVine/1.0";
+  static const String CLAIM_GENERATOR = 'DiVine/1.0';
 
   /// Signs a video file with C2PA content credentials.
   ///
@@ -62,22 +62,23 @@ class C2paSigningService {
         );
       }
 
-      PackageInfo packageInfo = await PackageInfo.fromPlatform();
-      String claimGenerator = "${packageInfo.appName}/${packageInfo.version}";
+      final PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      final String claimGenerator =
+          '${packageInfo.appName}/${packageInfo.version}';
 
       // Generate output path for signed video
       final directory = inputFile.parent.path;
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final signedPath = '$directory/c2pa_signed_$timestamp.mp4';
 
-      var filename = inputFile.path.split("/").last;
+      final filename = inputFile.path.split('/').last;
       // Build manifest JSON for digital capture
       final manifestJsonSource = _buildManifestJson(
         claimGenerator,
         filename,
         DigitalSourceType.digitalCapture.url,
       );
-      Log.info("prepared C2PA manifest json: $manifestJsonSource");
+      Log.info('prepared C2PA manifest json: $manifestJsonSource');
 
       // Create signer for RemoteSigning against proofsign.proofmode.org
       final signer = _createSigner();
@@ -101,10 +102,10 @@ class C2paSigningService {
       }
 
       // Log.debug("replacing original video $videoPath with signed file $signedFile");
-      inputFile.renameSync(inputFile.path + ".old");
+      inputFile.renameSync('${inputFile.path}.old');
       // Log.debug("original file renamed: ${iFileNew.path} ");
-      var sFileNew = signedFile.renameSync(inputFile.path);
-      Log.debug("signed file renamed: ${sFileNew.path} ");
+      final sFileNew = signedFile.renameSync(inputFile.path);
+      Log.debug('signed file renamed: ${sFileNew.path} ');
 
       final signedSize = await sFileNew.length();
       Log.info(
@@ -212,39 +213,38 @@ class C2paSigningService {
   /// - Store certificates securely
   /// - Support user-provided certificates via enrollment API
   Future<C2paSigner> _createSigner() async {
-    var args = "?platform=";
+    var args = '?platform=';
     if (Platform.isAndroid) {
       // Android-specific code
-      args += "android";
+      args += 'android';
     } else if (Platform.isIOS) {
       // iOS-specific code
-      args += "ios";
+      args += 'ios';
     }
 
-    var keyAlias = "c2pa_signing_divine";
-    var filesDir = await getApplicationDocumentsDirectory();
-    var certFile = File('${filesDir.path}/$keyAlias.cert');
+    const keyAlias = 'c2pa_signing_divine';
+    final filesDir = await getApplicationDocumentsDirectory();
+    final certFile = File('${filesDir.path}/$keyAlias.cert');
     if (certFile.existsSync()) {
-      var certificateChainPem = await certFile.readAsStringSync();
+      final certificateChainPem = certFile.readAsStringSync();
       return HardwareSigner(
         certificateChainPem: certificateChainPem,
         keyAlias: keyAlias,
       );
-    } else
+    } else {
       return RemoteSigner(
         configurationUrl: SIGNING_SERVER_ENDPOINT + args,
         bearerToken: SIGNING_SERVER_TOKEN,
       );
+    }
   }
 
   // add ?platform=android or ios
   static const String SIGNING_SERVER_ENDPOINT = String.fromEnvironment(
     'PROOFMODE_SIGNING_SERVER_ENDPOINT',
-    defaultValue: '',
   );
 
   static const String SIGNING_SERVER_TOKEN = String.fromEnvironment(
     'PROOFMODE_SIGNING_SERVER_TOKEN',
-    defaultValue: '',
   );
 }

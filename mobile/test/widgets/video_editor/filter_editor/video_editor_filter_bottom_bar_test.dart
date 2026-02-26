@@ -39,7 +39,6 @@ void main() {
     test('isSelected returns true for None when selectedFilter is null', () {
       final state = VideoEditorFilterState(
         filters: presetFiltersList,
-        selectedFilter: null,
       );
       expect(state.isSelected(PresetFilters.none), isTrue);
     });

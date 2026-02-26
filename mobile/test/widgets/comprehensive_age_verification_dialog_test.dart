@@ -2,10 +2,10 @@
 // ABOUTME: verification types. Tests both creation (16+) and adult content
 // ABOUTME: (18+) verification flows with edge cases.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/age_verification_dialog.dart';
 
 /// Helper to create a test widget with GoRouter for dialog interaction tests.
@@ -46,7 +46,7 @@ void main() {
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(
-              body: AgeVerificationDialog(type: AgeVerificationType.creation),
+              body: AgeVerificationDialog(),
             ),
           ),
         );
@@ -357,7 +357,7 @@ void main() {
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(
-              body: AgeVerificationDialog(type: AgeVerificationType.creation),
+              body: AgeVerificationDialog(),
             ),
           ),
         );

@@ -4,10 +4,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart' as nostr_sdk;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/nostr_list_service_mixin.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,7 +22,8 @@ enum ContentFilterReason {
   falseInformation('Misinformation'),
   csam('Child safety concern'),
   aiGenerated('Suspected AI-generated content'),
-  other('Other violation');
+  other('Other violation')
+  ;
 
   const ContentFilterReason(this.description);
   final String description;
@@ -529,19 +530,15 @@ class ContentModerationService with NostrListServiceMixin {
         case 'p': // Mute pubkey
           internalType = 'pubkey';
           filterReason = ContentFilterReason.harassment;
-          break;
         case 'e': // Mute event
           internalType = 'event';
           filterReason = ContentFilterReason.spam;
-          break;
         case 'word': // Mute keyword
           internalType = 'keyword';
           filterReason = ContentFilterReason.spam;
-          break;
         case 't': // Mute hashtag
           internalType = 'keyword'; // Treat hashtags as keywords
           filterReason = ContentFilterReason.spam;
-          break;
         default:
           // Skip unknown tag types
           continue;

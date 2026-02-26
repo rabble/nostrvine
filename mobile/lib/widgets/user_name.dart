@@ -1,10 +1,10 @@
-import 'package:models/models.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 class UserName extends ConsumerWidget {
   const UserName._({
@@ -114,7 +114,7 @@ class UserName extends ConsumerWidget {
 
     final textStyle =
         style ??
-        TextStyle(
+        const TextStyle(
           color: VineTheme.secondaryText,
           fontSize: 10,
           fontWeight: FontWeight.w400,

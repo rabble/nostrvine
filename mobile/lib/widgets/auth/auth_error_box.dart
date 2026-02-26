@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 /// Displays error text in a red-tinted container with a red border,
 /// centered text, and consistent styling across all auth screens.
 class AuthErrorBox extends StatelessWidget {
-  const AuthErrorBox({super.key, required this.message});
+  const AuthErrorBox({required this.message, super.key});
 
   /// The error message to display.
   final String message;
@@ -26,7 +26,7 @@ class AuthErrorBox extends StatelessWidget {
       ),
       child: Text(
         message,
-        style: TextStyle(color: VineTheme.error, fontSize: 14),
+        style: const TextStyle(color: VineTheme.error, fontSize: 14),
         textAlign: TextAlign.center,
       ),
     );

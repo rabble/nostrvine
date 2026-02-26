@@ -554,12 +554,12 @@ void main() {
         testGoldens('UserAvatar - across devices', (tester) async {
           final widget = Scaffold(
             appBar: AppBar(title: const Text('User Avatars')),
-            body: Padding(
-              padding: const EdgeInsets.all(16),
+            body: const Padding(
+              padding: EdgeInsets.all(16),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       UserAvatar(name: 'Alice', size: 50),
@@ -567,8 +567,8 @@ void main() {
                       UserAvatar(name: 'Charlie', size: 50),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  const Row(
+                  SizedBox(height: 20),
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       UserAvatar(name: '', size: 50),
