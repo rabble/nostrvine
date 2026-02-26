@@ -152,8 +152,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       _nextCursor = _getOldestTimestamp(newVideos);
 
       // Deduplicate against existing videos
-      final existingIds =
-          currentState.videos.map((v) => v.id.toLowerCase()).toSet();
+      final existingIds = currentState.videos
+          .map((v) => v.id.toLowerCase())
+          .toSet();
       final dedupedNew = newVideos
           .where((v) => !existingIds.contains(v.id.toLowerCase()))
           .toList();
@@ -192,8 +193,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       state = AsyncData(
         VideoFeedState(
           videos: allVideos,
-          hasMoreContent:
-              newVideos.length >= AppConstants.paginationBatchSize,
+          hasMoreContent: newVideos.length >= AppConstants.paginationBatchSize,
           isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
