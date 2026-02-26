@@ -2,15 +2,14 @@
 // ABOUTME: Opens unified share sheet with horizontal contacts row, message
 // ABOUTME: input, and more actions (save, copy, share via, report, etc.).
 
-import 'dart:convert';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:nostr_sdk/nip19/nip19_tlv.dart';
+import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -91,7 +90,7 @@ class ShareActionButton extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Unified Share Sheet
+// Unified Share Sheet (Page — creates BLoC, handles side effects)
 // ---------------------------------------------------------------------------
 
 class _UnifiedShareSheet extends ConsumerStatefulWidget {
@@ -105,16 +104,27 @@ class _UnifiedShareSheet extends ConsumerStatefulWidget {
 
 class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   final TextEditingController _messageController = TextEditingController();
-  ShareableUser? _selectedRecipient;
-  List<ShareableUser> _contacts = [];
-  bool _contactsLoaded = false;
-  bool _isSending = false;
-  final Set<String> _sentToPubkeys = {};
+  late final ShareSheetBloc _bloc;
 
   @override
   void initState() {
     super.initState();
-    _loadContacts();
+    final bookmarkService = ref.read(bookmarkServiceProvider).value;
+
+    _bloc = ShareSheetBloc(
+      video: widget.video,
+      videoSharingService: ref.read(videoSharingServiceProvider),
+      userProfileService: ref.read(userProfileServiceProvider),
+      followRepository: ref.read(followRepositoryProvider),
+      bookmarkService: bookmarkService,
+    )..add(const ShareSheetContactsLoadRequested());
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _bloc.close();
+    super.dispose();
   }
 
   void _safePop(BuildContext ctx) {
@@ -131,243 +141,54 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: VineTheme.surfaceBackground,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _DragIndicator(),
-              _ShareSheetHeader(video: widget.video),
-              const Divider(color: VineTheme.cardBackground, height: 1),
-              _ShareWithSection(
-                contacts: _contacts,
-                contactsLoaded: _contactsLoaded,
-                selectedRecipient: _selectedRecipient,
-                sentPubkeys: _sentToPubkeys,
-                onFindPeople: _handleFindPeople,
-                onContactTapped: _handleContactTapped,
-              ),
-              if (_selectedRecipient != null)
-                _MessageInput(
-                  controller: _messageController,
-                  recipient: _selectedRecipient!,
-                  isSending: _isSending,
-                  onSend: _handleSend,
-                ),
-              if (_selectedRecipient == null) ...[
-                const Divider(color: VineTheme.cardBackground, height: 1),
-                _MoreActionsSection(
-                  video: widget.video,
-                  onSave: _handleSave,
-                  onAddToList: _handleAddToList,
-                  onCopyLink: _handleCopyLink,
-                  onShareVia: _handleShareVia,
-                  onReport: _handleReport,
-                  onCopyEventJson: _handleCopyEventJson,
-                  onCopyEventId: _handleCopyEventId,
-                ),
-              ],
-              const SizedBox(height: 8),
-            ],
-          ),
+    return BlocProvider.value(
+      value: _bloc,
+      child: BlocListener<ShareSheetBloc, ShareSheetState>(
+        listenWhen: (prev, curr) =>
+            curr.actionResult != null && prev.actionResult != curr.actionResult,
+        listener: _handleActionResult,
+        child: _UnifiedShareSheetView(
+          video: widget.video,
+          messageController: _messageController,
+          onFindPeople: _handleFindPeople,
+          onAddToList: _handleAddToList,
+          onReport: _handleReport,
         ),
       ),
     );
   }
 
-  // --------------------------------------------------------------------------
-  // Contact loading
-  // --------------------------------------------------------------------------
+  void _handleActionResult(BuildContext context, ShareSheetState state) {
+    final result = state.actionResult;
+    if (result == null) return;
 
-  Future<void> _loadContacts() async {
-    try {
-      final followRepository = ref.read(followRepositoryProvider);
-      final userProfileService = ref.read(userProfileServiceProvider);
-      final sharingService = ref.read(videoSharingServiceProvider);
+    final messenger = ScaffoldMessenger.of(context);
 
-      // Start with recently shared-with users
-      final recentUsers = sharingService.recentlySharedWith;
-
-      final followList = followRepository?.followingPubkeys ?? [];
-      final recentPubkeys = recentUsers.map((u) => u.pubkey).toSet();
-
-      // Remaining contacts from follow list (excluding already-recent users)
-      final remainingFollows = followList
-          .where((pk) => !recentPubkeys.contains(pk))
-          .toList();
-
-      // Batch-fetch uncached profiles
-      final allPubkeys = [...recentPubkeys, ...remainingFollows];
-      final uncached = allPubkeys
-          .where((pk) => !userProfileService.hasProfile(pk))
-          .toList();
-      if (uncached.isNotEmpty) {
-        await Future.wait(uncached.map(userProfileService.fetchProfile));
-      }
-
-      final contacts = <ShareableUser>[];
-
-      // Add recent users first (already ShareableUser objects)
-      contacts.addAll(recentUsers);
-
-      // Add remaining follows
-      for (final pubkey in remainingFollows) {
-        final profile = userProfileService.getCachedProfile(pubkey);
-        contacts.add(
-          ShareableUser(
-            pubkey: pubkey,
-            displayName: profile?.bestDisplayName,
-            picture: profile?.picture,
-          ),
-        );
-      }
-
-      if (mounted) {
-        setState(() {
-          _contacts = contacts;
-          _contactsLoaded = true;
-        });
-      }
-    } catch (e) {
-      Log.error(
-        'Error loading contacts: $e',
-        name: 'UnifiedShareSheet',
-        category: LogCategory.ui,
-      );
-      if (mounted) {
-        setState(() {
-          _contacts = [];
-          _contactsLoaded = true;
-        });
-      }
+    switch (result) {
+      case ShareSheetSendSuccess(:final recipientName, :final shouldDismiss):
+        if (shouldDismiss) _safePop(context);
+        messenger.showSnackBar(_shareSuccessSnackBar(messenger, recipientName));
+      case ShareSheetSendFailure(:final error):
+        messenger.showSnackBar(_styledSnackBar(error));
+      case ShareSheetSaveSuccess():
+        _safePop(context);
+        messenger.showSnackBar(_styledSnackBar('Added to bookmarks'));
+      case ShareSheetSaveFailure():
+        _safePop(context);
+        messenger.showSnackBar(_styledSnackBar('Failed to add bookmark'));
+      case ShareSheetCopiedToClipboard(:final label, :final text):
+        Clipboard.setData(ClipboardData(text: text));
+        _safePop(context);
+        messenger.showSnackBar(_styledSnackBar(label));
+      case ShareSheetShareViaTriggered(:final shareText):
+        SharePlus.instance.share(ShareParams(text: shareText));
     }
   }
-
-  // --------------------------------------------------------------------------
-  // Share with user handlers
-  // --------------------------------------------------------------------------
 
   Future<void> _handleFindPeople() async {
     final selectedUser = await FindPeopleSheet.show(context);
     if (selectedUser != null && mounted) {
-      setState(() {
-        _selectedRecipient = selectedUser;
-        // Add to front of contacts if not already present
-        _contacts.removeWhere((c) => c.pubkey == selectedUser.pubkey);
-        _contacts.insert(0, selectedUser);
-      });
-    }
-  }
-
-  Future<void> _handleContactTapped(ShareableUser user) async {
-    if (_isSending || _sentToPubkeys.contains(user.pubkey)) return;
-
-    // Clear any Find People selection so More Actions stays visible
-    if (_selectedRecipient != null) {
-      setState(() => _selectedRecipient = null);
-    }
-
-    setState(() => _isSending = true);
-    final messenger = ScaffoldMessenger.of(context);
-
-    try {
-      final sharingService = ref.read(videoSharingServiceProvider);
-      final result = await sharingService.shareVideoWithUser(
-        video: widget.video,
-        recipientPubkey: user.pubkey,
-      );
-
-      if (!mounted) return;
-      setState(() => _isSending = false);
-
-      final recipientName = user.displayName ?? 'user';
-      if (result.success) {
-        setState(() => _sentToPubkeys.add(user.pubkey));
-        messenger.showSnackBar(_shareSuccessSnackBar(messenger, recipientName));
-      } else {
-        messenger.showSnackBar(
-          _styledSnackBar('Failed to send: ${result.error}'),
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to quick-send video: $e',
-        name: 'UnifiedShareSheet',
-        category: LogCategory.ui,
-      );
-      if (mounted) setState(() => _isSending = false);
-      messenger.showSnackBar(_styledSnackBar('Failed to send video'));
-    }
-  }
-
-  Future<void> _handleSend() async {
-    if (_selectedRecipient == null || _isSending) return;
-
-    final messenger = ScaffoldMessenger.of(context);
-    setState(() => _isSending = true);
-
-    try {
-      final sharingService = ref.read(videoSharingServiceProvider);
-      final result = await sharingService.shareVideoWithUser(
-        video: widget.video,
-        recipientPubkey: _selectedRecipient!.pubkey,
-        personalMessage: _messageController.text.trim().isEmpty
-            ? null
-            : _messageController.text.trim(),
-      );
-
-      final recipientName = _selectedRecipient!.displayName ?? 'user';
-      if (mounted) _safePop(context);
-      if (result.success) {
-        messenger.showSnackBar(_shareSuccessSnackBar(messenger, recipientName));
-      } else {
-        messenger.showSnackBar(
-          _styledSnackBar('Failed to send: ${result.error}'),
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to send video: $e',
-        name: 'UnifiedShareSheet',
-        category: LogCategory.ui,
-      );
-      if (mounted) {
-        setState(() => _isSending = false);
-      }
-      messenger.showSnackBar(_styledSnackBar('Failed to send video'));
-    }
-  }
-
-  // --------------------------------------------------------------------------
-  // More actions handlers
-  // --------------------------------------------------------------------------
-
-  Future<void> _handleSave() async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final bookmarkService = await ref.read(bookmarkServiceProvider.future);
-      final success = await bookmarkService.addVideoToGlobalBookmarks(
-        widget.video.id,
-      );
-
-      if (mounted) _safePop(context);
-      messenger.showSnackBar(
-        _styledSnackBar(
-          success ? 'Added to bookmarks' : 'Failed to add bookmark',
-        ),
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to add bookmark: $e',
-        name: 'UnifiedShareSheet',
-        category: LogCategory.ui,
-      );
-      if (mounted) _safePop(context);
-      messenger.showSnackBar(_styledSnackBar('Failed to add bookmark'));
+      _bloc.add(ShareSheetRecipientSelected(selectedUser));
     }
   }
 
@@ -379,94 +200,12 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     );
   }
 
-  Future<void> _handleCopyLink() async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final sharingService = ref.read(videoSharingServiceProvider);
-      final url = sharingService.generateShareUrl(widget.video);
-      await Clipboard.setData(ClipboardData(text: url));
-
-      if (mounted) _safePop(context);
-      messenger.showSnackBar(
-        _styledSnackBar('Link to post copied to clipboard'),
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to copy link: $e',
-        name: 'UnifiedShareSheet',
-        category: LogCategory.ui,
-      );
-    }
-  }
-
-  Future<void> _handleShareVia() async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final sharingService = ref.read(videoSharingServiceProvider);
-      final shareText = sharingService.generateShareText(widget.video);
-      await SharePlus.instance.share(ShareParams(text: shareText));
-    } catch (e) {
-      Log.error(
-        'Failed to share externally: $e',
-        name: 'UnifiedShareSheet',
-        category: LogCategory.ui,
-      );
-      messenger.showSnackBar(_styledSnackBar('Failed to share video'));
-    }
-  }
-
   void _handleReport() {
     _safePop(context);
     showDialog<void>(
       context: context,
       builder: (context) => ReportContentDialog(video: widget.video),
     );
-  }
-
-  Future<void> _handleCopyEventJson() async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final json = const JsonEncoder.withIndent(
-        '  ',
-      ).convert(widget.video.toJson());
-      await Clipboard.setData(ClipboardData(text: json));
-
-      if (mounted) _safePop(context);
-      messenger.showSnackBar(
-        _styledSnackBar('Nostr event JSON copied to clipboard'),
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to copy event JSON: $e',
-        name: 'UnifiedShareSheet',
-        category: LogCategory.ui,
-      );
-    }
-  }
-
-  Future<void> _handleCopyEventId() async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final nevent = NIP19Tlv.encodeNevent(
-        Nevent(
-          id: widget.video.id,
-          author: widget.video.pubkey,
-          relays: ['wss://relay.divine.video'],
-        ),
-      );
-      await Clipboard.setData(ClipboardData(text: nevent));
-
-      if (mounted) _safePop(context);
-      messenger.showSnackBar(
-        _styledSnackBar('Nostr event ID copied to clipboard'),
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to copy event ID: $e',
-        name: 'UnifiedShareSheet',
-        category: LogCategory.ui,
-      );
-    }
   }
 
   SnackBar _styledSnackBar(String message) => SnackBar(
@@ -508,11 +247,90 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     duration: const Duration(seconds: 4),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Unified Share Sheet View (pure UI — reads BLoC state)
+// ---------------------------------------------------------------------------
+
+class _UnifiedShareSheetView extends StatelessWidget {
+  const _UnifiedShareSheetView({
+    required this.video,
+    required this.messageController,
+    required this.onFindPeople,
+    required this.onAddToList,
+    required this.onReport,
+  });
+
+  final VideoEvent video;
+  final TextEditingController messageController;
+  final VoidCallback onFindPeople;
+  final VoidCallback onAddToList;
+  final VoidCallback onReport;
 
   @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    return Material(
+      color: VineTheme.surfaceBackground,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: BlocBuilder<ShareSheetBloc, ShareSheetState>(
+            builder: (context, state) {
+              final bloc = context.read<ShareSheetBloc>();
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _DragIndicator(),
+                  _ShareSheetHeader(video: video),
+                  const Divider(color: VineTheme.cardBackground, height: 1),
+                  _ShareWithSection(
+                    contacts: state.contacts,
+                    contactsLoaded: state.contactsLoaded,
+                    selectedRecipient: state.selectedRecipient,
+                    sentPubkeys: state.sentPubkeys,
+                    onFindPeople: onFindPeople,
+                    onContactTapped: (user) =>
+                        bloc.add(ShareSheetQuickSendRequested(user)),
+                  ),
+                  if (state.selectedRecipient != null)
+                    _MessageInput(
+                      controller: messageController,
+                      recipient: state.selectedRecipient!,
+                      isSending: state.isSending,
+                      onSend: () => bloc.add(
+                        ShareSheetSendRequested(
+                          message: messageController.text,
+                        ),
+                      ),
+                    ),
+                  if (state.selectedRecipient == null) ...[
+                    const Divider(color: VineTheme.cardBackground, height: 1),
+                    _MoreActionsSection(
+                      video: video,
+                      onSave: () => bloc.add(const ShareSheetSaveRequested()),
+                      onAddToList: onAddToList,
+                      onCopyLink: () =>
+                          bloc.add(const ShareSheetCopyLinkRequested()),
+                      onShareVia: () =>
+                          bloc.add(const ShareSheetShareViaRequested()),
+                      onReport: onReport,
+                      onCopyEventJson: () =>
+                          bloc.add(const ShareSheetCopyEventJsonRequested()),
+                      onCopyEventId: () =>
+                          bloc.add(const ShareSheetCopyEventIdRequested()),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
   }
 }
 
