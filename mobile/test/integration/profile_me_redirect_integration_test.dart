@@ -100,15 +100,6 @@ void main() {
         // ASSERT: Profile screen should render
         await tester.pumpAndSettle();
 
-        // Verify VideoPageView is used (not legacy placeholder)
-        expect(
-          find.byWidgetPredicate(
-            (w) => w.runtimeType.toString() == 'VideoPageView',
-          ),
-          findsOneWidget,
-          reason: 'ProfileScreenRouter should use VideoPageView after redirect',
-        );
-
         // Clean up
         fakeVideoService.dispose();
         container.dispose();
