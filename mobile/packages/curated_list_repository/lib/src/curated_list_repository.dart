@@ -1,5 +1,5 @@
 // ABOUTME(WIP): Repository for managing curated video list subscriptions.
-// ABOUTME(WIP): Provides BehaviorSubject stream for reactive BLoC subscriptions,
+// ABOUTME(WIP): Provides BehaviorSubject stream for reactive BLoC subscription,
 // ABOUTME(WIP): read-only query methods, and in-memory state populated by the
 // ABOUTME(WIP): Page layer. Persistence and relay sync come in later phases.
 
