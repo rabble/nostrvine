@@ -17,6 +17,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
@@ -122,9 +123,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Profile Section
               if (isAuthenticated) ...[
                 const _SectionHeader(title: 'Profile'),
+                // Show session expired tile for divineOAuth users
+                // whose refresh token also expired
+                if (authService.hasExpiredOAuthSession)
+                  _SettingsTile(
+                    icon: Icons.refresh,
+                    title: 'Session Expired',
+                    subtitle: 'Sign in again to restore full access',
+                    onTap: () => context.go(WelcomeScreen.loginOptionsPath),
+                    iconColor: VineTheme.accentOrange,
+                  )
                 // Show register tile for anonymous users
-                // Only shown when headless auth feature is enabled
-                if (authService.isAnonymous)
+                else if (authService.isAnonymous)
                   _SettingsTile(
                     icon: Icons.security,
                     title: 'Secure Your Account',
