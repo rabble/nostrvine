@@ -2,8 +2,7 @@
 // ABOUTME: Verifies fix for feeds going empty when app resumes from background
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -14,7 +13,9 @@ import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:riverpod/riverpod.dart';
 
-import 'feed_background_preservation_test.mocks.dart';
+class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 /// Test override for FunnelcakeAvailable that always returns false
 /// (forces Nostr fallback path for simpler mocking)
@@ -23,11 +24,15 @@ class _TestFunnelcakeUnavailable extends FunnelcakeAvailable {
   Future<bool> build() async => false;
 }
 
-@GenerateMocks([AnalyticsApiService, VideoEventService])
 void main() {
+  setUpAll(() {
+    registerFallbackValue(SubscriptionType.discovery);
+    registerFallbackValue(<VideoEvent>[]);
+  });
+
   group('Feed background state preservation', () {
-    late MockAnalyticsApiService mockAnalyticsService;
-    late MockVideoEventService mockVideoEventService;
+    late _MockAnalyticsApiService mockAnalyticsService;
+    late _MockVideoEventService mockVideoEventService;
 
     // Test videos with originalLoops for ClassicVines Nostr fallback
     final testVideos = List.generate(
@@ -49,25 +54,27 @@ void main() {
     );
 
     setUp(() {
-      mockAnalyticsService = MockAnalyticsApiService();
-      mockVideoEventService = MockVideoEventService();
+      mockAnalyticsService = _MockAnalyticsApiService();
+      mockVideoEventService = _MockVideoEventService();
 
-      when(mockAnalyticsService.isAvailable).thenReturn(false);
+      when(() => mockAnalyticsService.isAvailable).thenReturn(false);
 
       // Nostr fallback data: discoveryVideos for ClassicVines
-      when(mockVideoEventService.discoveryVideos).thenReturn(testVideos);
-      when(mockVideoEventService.popularNowVideos).thenReturn(testVideos);
-      when(mockVideoEventService.addListener(any)).thenReturn(null);
-      when(mockVideoEventService.removeListener(any)).thenReturn(null);
-      when(mockVideoEventService.addVideoUpdateListener(any)).thenReturn(() {});
+      when(() => mockVideoEventService.discoveryVideos).thenReturn(testVideos);
+      when(() => mockVideoEventService.popularNowVideos).thenReturn(testVideos);
+      when(() => mockVideoEventService.addListener(any())).thenReturn(null);
+      when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
       when(
-        mockVideoEventService.filterVideoList(any),
+        () => mockVideoEventService.addVideoUpdateListener(any()),
+      ).thenReturn(() {});
+      when(
+        () => mockVideoEventService.filterVideoList(any()),
       ).thenAnswer((inv) => inv.positionalArguments.first as List<VideoEvent>);
       when(
-        mockVideoEventService.subscribeToVideoFeed(
-          subscriptionType: anyNamed('subscriptionType'),
-          limit: anyNamed('limit'),
-          sortBy: anyNamed('sortBy'),
+        () => mockVideoEventService.subscribeToVideoFeed(
+          subscriptionType: any(named: 'subscriptionType'),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
         ),
       ).thenAnswer((_) async {});
     });

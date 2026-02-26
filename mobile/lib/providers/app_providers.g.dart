@@ -2779,7 +2779,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'59ccfaf4522b9c8534a1ee5b9f51b851614f9425';
+String _$followRepositoryHash() => r'5a9ff80dec0621bc321f78694cd2ae0c448bb2a2';
 
 /// Provider for HashtagRepository instance.
 ///

@@ -4,32 +4,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-@GenerateMocks([AuthService])
-import 'settings_screen_test.mocks.dart';
+class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
   group('SettingsScreen Tests', () {
-    late MockAuthService mockAuthService;
+    late _MockAuthService mockAuthService;
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
-      mockAuthService = MockAuthService();
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.isAnonymous).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
-      when(mockAuthService.authState).thenReturn(AuthState.authenticated);
+      mockAuthService = _MockAuthService();
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.isAnonymous).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(
-        mockAuthService.authStateStream,
+        () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
     });
 

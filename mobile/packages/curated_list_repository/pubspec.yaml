@@ -9,6 +9,8 @@ environment:
 
 dependencies:
   models:
+  nostr_sdk:
+  rxdart: ^0.28.0
 
 dev_dependencies:
   mocktail: ^1.0.4

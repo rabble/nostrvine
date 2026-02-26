@@ -4,32 +4,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 
-import 'hashtag_feed_screen_tdd_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-@GenerateMocks([VideoEventService, HashtagService])
+class _MockHashtagService extends Mock implements HashtagService {}
+
 void main() {
   group('HashtagFeedScreen TDD Tests', () {
-    late MockVideoEventService mockVideoEventService;
-    late MockHashtagService mockHashtagService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockHashtagService mockHashtagService;
 
     setUp(() {
-      mockVideoEventService = MockVideoEventService();
-      mockHashtagService = MockHashtagService();
+      mockVideoEventService = _MockVideoEventService();
+      mockHashtagService = _MockHashtagService();
 
       // Setup default mock behavior
-      when(mockVideoEventService.isLoading).thenReturn(false);
-      when(mockHashtagService.getVideosByHashtags(any)).thenReturn([]);
-      when(mockHashtagService.getHashtagStats(any)).thenReturn(null);
+      when(() => mockVideoEventService.isLoading).thenReturn(false);
+      when(() => mockHashtagService.getVideosByHashtags(any())).thenReturn([]);
+      when(() => mockHashtagService.getHashtagStats(any())).thenReturn(null);
       when(
-        mockHashtagService.subscribeToHashtagVideos(any),
+        () => mockHashtagService.subscribeToHashtagVideos(any()),
       ).thenAnswer((_) async {});
     });
 
@@ -49,8 +49,10 @@ void main() {
       'should show "Fetching from relays" message when loading hashtag videos',
       (WidgetTester tester) async {
         // Given: Loading state with no videos yet
-        when(mockVideoEventService.isLoading).thenReturn(true);
-        when(mockHashtagService.getVideosByHashtags(['bts'])).thenReturn([]);
+        when(() => mockVideoEventService.isLoading).thenReturn(true);
+        when(
+          () => mockHashtagService.getVideosByHashtags(['bts']),
+        ).thenReturn([]);
 
         // When: Screen is displayed
         await tester.pumpWidget(createTestWidget('bts'));
@@ -74,7 +76,7 @@ void main() {
     ) async {
       // Given: Mock service setup
       when(
-        mockHashtagService.subscribeToHashtagVideos(any),
+        () => mockHashtagService.subscribeToHashtagVideos(any()),
       ).thenAnswer((_) async {});
 
       // When: Screen is displayed
@@ -82,7 +84,9 @@ void main() {
       await tester.pump(); // Allow post-frame callback
 
       // Then: Should have called subscription
-      verify(mockHashtagService.subscribeToHashtagVideos(['funny'])).called(1);
+      verify(
+        () => mockHashtagService.subscribeToHashtagVideos(['funny']),
+      ).called(1);
     });
 
     testWidgets(
@@ -91,9 +95,9 @@ void main() {
         // Given: Videos available for hashtag - use simple test data
         final testVideos = <VideoEvent>[];
 
-        when(mockVideoEventService.isLoading).thenReturn(false);
+        when(() => mockVideoEventService.isLoading).thenReturn(false);
         when(
-          mockHashtagService.getVideosByHashtags(['comedy']),
+          () => mockHashtagService.getVideosByHashtags(['comedy']),
         ).thenReturn(testVideos);
 
         // When: Screen is displayed
@@ -109,8 +113,10 @@ void main() {
       'should show "No videos found" only after loading completes with no results',
       (WidgetTester tester) async {
         // Given: Loading completed with no videos
-        when(mockVideoEventService.isLoading).thenReturn(false);
-        when(mockHashtagService.getVideosByHashtags(['rare'])).thenReturn([]);
+        when(() => mockVideoEventService.isLoading).thenReturn(false);
+        when(
+          () => mockHashtagService.getVideosByHashtags(['rare']),
+        ).thenReturn([]);
 
         // When: Screen is displayed
         await tester.pumpWidget(createTestWidget('rare'));
@@ -129,8 +135,10 @@ void main() {
       WidgetTester tester,
     ) async {
       // Given: Initial loading state
-      when(mockVideoEventService.isLoading).thenReturn(true);
-      when(mockHashtagService.getVideosByHashtags(['viral'])).thenReturn([]);
+      when(() => mockVideoEventService.isLoading).thenReturn(true);
+      when(
+        () => mockHashtagService.getVideosByHashtags(['viral']),
+      ).thenReturn([]);
 
       await tester.pumpWidget(createTestWidget('viral'));
 

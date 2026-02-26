@@ -4,45 +4,46 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/subscribed_list_video_cache.dart';
-import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 import '../builders/test_video_event_builder.dart';
-import 'subscribed_list_video_cache_test.mocks.dart';
 
-@GenerateMocks([
-  NostrClient,
-  VideoEventService,
-  CuratedListService,
-  SubscriptionManager,
-])
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockCuratedListService extends Mock implements CuratedListService {}
+
 void main() {
   late SubscribedListVideoCache cache;
-  late MockNostrClient mockNostrService;
-  late MockVideoEventService mockVideoEventService;
-  late MockCuratedListService mockCuratedListService;
+  late _MockNostrClient mockNostrService;
+  late _MockVideoEventService mockVideoEventService;
+  late _MockCuratedListService mockCuratedListService;
+
+  setUpAll(() {
+    registerFallbackValue(<dynamic>[]);
+  });
 
   setUp(() {
-    mockNostrService = MockNostrClient();
-    mockVideoEventService = MockVideoEventService();
-    mockCuratedListService = MockCuratedListService();
+    mockNostrService = _MockNostrClient();
+    mockVideoEventService = _MockVideoEventService();
+    mockCuratedListService = _MockCuratedListService();
 
     // Setup default mock behaviors
-    when(mockNostrService.isInitialized).thenReturn(true);
-    when(mockCuratedListService.subscribedListIds).thenReturn({});
-    when(mockCuratedListService.subscribedLists).thenReturn([]);
+    when(() => mockNostrService.isInitialized).thenReturn(true);
+    when(() => mockCuratedListService.subscribedListIds).thenReturn({});
+    when(() => mockCuratedListService.subscribedLists).thenReturn([]);
 
     // Setup VideoEventService cache getters
-    when(mockVideoEventService.discoveryVideos).thenReturn([]);
-    when(mockVideoEventService.homeFeedVideos).thenReturn([]);
-    when(mockVideoEventService.profileVideos).thenReturn([]);
+    when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
+    when(() => mockVideoEventService.homeFeedVideos).thenReturn([]);
+    when(() => mockVideoEventService.profileVideos).thenReturn([]);
 
     cache = SubscribedListVideoCache(
       nostrService: mockNostrService,
@@ -82,12 +83,16 @@ void main() {
         );
 
         // Mock VideoEventService to return videos from cache
-        when(mockVideoEventService.getVideoById(video1Id)).thenReturn(video1);
-        when(mockVideoEventService.getVideoById(video2Id)).thenReturn(video2);
+        when(
+          () => mockVideoEventService.getVideoById(video1Id),
+        ).thenReturn(video1);
+        when(
+          () => mockVideoEventService.getVideoById(video2Id),
+        ).thenReturn(video2);
 
         // Mock Nostr service to not need relay fetch (all cached)
         when(
-          mockNostrService.subscribe(any),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream<Event>.empty());
 
         // Sync list with these video IDs
@@ -115,9 +120,11 @@ void main() {
           pubkey: 'author1',
         );
 
-        when(mockVideoEventService.getVideoById(video1Id)).thenReturn(video1);
         when(
-          mockNostrService.subscribe(any),
+          () => mockVideoEventService.getVideoById(video1Id),
+        ).thenReturn(video1);
+        when(
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream<Event>.empty());
 
         // Add video to two different lists
@@ -145,18 +152,20 @@ void main() {
 
           // Video is in cache
           when(
-            mockVideoEventService.getVideoById(cachedVideoId),
+            () => mockVideoEventService.getVideoById(cachedVideoId),
           ).thenReturn(cachedVideo);
 
           // Subscribe should still be called but for empty list
           when(
-            mockNostrService.subscribe(any),
+            () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => Stream<Event>.empty());
 
           await cache.syncList('list1', [cachedVideoId]);
 
           // Verify cache was checked
-          verify(mockVideoEventService.getVideoById(cachedVideoId)).called(1);
+          verify(
+            () => mockVideoEventService.getVideoById(cachedVideoId),
+          ).called(1);
 
           // Video should be in cache
           final videos = cache.getVideos();
@@ -170,7 +179,7 @@ void main() {
             'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
         // Video not in cache
-        when(mockVideoEventService.getVideoById(any)).thenReturn(null);
+        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
 
         // Use valid 64-char hex pubkey for Nostr event
         const validPubkey =
@@ -190,7 +199,7 @@ void main() {
 
         // Setup stream to emit the event
         final controller = StreamController<Event>();
-        when(mockNostrService.subscribe(any)).thenAnswer((_) {
+        when(() => mockNostrService.subscribe(any())).thenAnswer((_) {
           // Emit event and close after a delay
           Future.delayed(const Duration(milliseconds: 10), () {
             controller.add(mockEvent);
@@ -202,13 +211,13 @@ void main() {
         await cache.syncList('list1', [missingVideoId]);
 
         // Verify subscribe was called
-        verify(mockNostrService.subscribe(any)).called(1);
+        verify(() => mockNostrService.subscribe(any())).called(1);
       });
 
       test('separates event IDs from addressable coordinates', () async {
-        when(mockVideoEventService.getVideoById(any)).thenReturn(null);
+        when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
         when(
-          mockNostrService.subscribe(any),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream<Event>.empty());
 
         const eventId =
@@ -218,7 +227,7 @@ void main() {
         await cache.syncList('list1', [eventId, addressableCoord]);
 
         // Verify subscribe was called - should handle both types
-        verify(mockNostrService.subscribe(any)).called(1);
+        verify(() => mockNostrService.subscribe(any())).called(1);
       });
 
       test('notifies listeners after sync', () async {
@@ -230,9 +239,11 @@ void main() {
           pubkey: 'author1',
         );
 
-        when(mockVideoEventService.getVideoById(videoId)).thenReturn(video);
         when(
-          mockNostrService.subscribe(any),
+          () => mockVideoEventService.getVideoById(videoId),
+        ).thenReturn(video);
+        when(
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream<Event>.empty());
 
         var notified = false;
@@ -269,15 +280,21 @@ void main() {
           updatedAt: DateTime.now(),
         );
 
-        when(mockCuratedListService.subscribedLists).thenReturn([list1, list2]);
+        when(
+          () => mockCuratedListService.subscribedLists,
+        ).thenReturn([list1, list2]);
 
         final video1 = TestVideoEventBuilder.create(id: video1Id);
         final video2 = TestVideoEventBuilder.create(id: video2Id);
 
-        when(mockVideoEventService.getVideoById(video1Id)).thenReturn(video1);
-        when(mockVideoEventService.getVideoById(video2Id)).thenReturn(video2);
         when(
-          mockNostrService.subscribe(any),
+          () => mockVideoEventService.getVideoById(video1Id),
+        ).thenReturn(video1);
+        when(
+          () => mockVideoEventService.getVideoById(video2Id),
+        ).thenReturn(video2);
+        when(
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream<Event>.empty());
 
         await cache.syncAllSubscribedLists();
@@ -304,10 +321,14 @@ void main() {
           pubkey: 'author2',
         );
 
-        when(mockVideoEventService.getVideoById(video1Id)).thenReturn(video1);
-        when(mockVideoEventService.getVideoById(video2Id)).thenReturn(video2);
         when(
-          mockNostrService.subscribe(any),
+          () => mockVideoEventService.getVideoById(video1Id),
+        ).thenReturn(video1);
+        when(
+          () => mockVideoEventService.getVideoById(video2Id),
+        ).thenReturn(video2);
+        when(
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream<Event>.empty());
 
         // Sync two lists
@@ -339,9 +360,11 @@ void main() {
             pubkey: 'author1',
           );
 
-          when(mockVideoEventService.getVideoById(videoId)).thenReturn(video1);
           when(
-            mockNostrService.subscribe(any),
+            () => mockVideoEventService.getVideoById(videoId),
+          ).thenReturn(video1);
+          when(
+            () => mockNostrService.subscribe(any()),
           ).thenAnswer((_) => Stream<Event>.empty());
 
           // Add video1 to both lists
@@ -365,9 +388,11 @@ void main() {
             'cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd';
 
         final video = TestVideoEventBuilder.create(id: videoId);
-        when(mockVideoEventService.getVideoById(videoId)).thenReturn(video);
         when(
-          mockNostrService.subscribe(any),
+          () => mockVideoEventService.getVideoById(videoId),
+        ).thenReturn(video);
+        when(
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream<Event>.empty());
 
         await cache.syncList('list1', [videoId]);
@@ -394,10 +419,10 @@ void main() {
         );
 
         when(
-          mockVideoEventService.getVideoById(sharedVideoId),
+          () => mockVideoEventService.getVideoById(sharedVideoId),
         ).thenReturn(video1);
         when(
-          mockNostrService.subscribe(any),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => Stream<Event>.empty());
 
         // Add same video to three lists

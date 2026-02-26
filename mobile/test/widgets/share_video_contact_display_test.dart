@@ -3,8 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mocktail/mocktail.dart' as mocktail;
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -13,28 +12,24 @@ import 'package:profile_repository/profile_repository.dart';
 import 'package:rxdart/rxdart.dart';
 
 import '../helpers/test_provider_overrides.dart';
-import '../helpers/test_provider_overrides.mocks.dart';
 
 /// Mocktail mock for FollowRepository
-class _MockFollowRepository extends mocktail.Mock implements FollowRepository {}
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 /// Mocktail mock for ProfileRepository
-class _MockProfileRepository extends mocktail.Mock
-    implements ProfileRepository {}
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 /// Creates a mock FollowRepository with the given following pubkeys
 _MockFollowRepository _createMockFollowRepository(
   List<String> followingPubkeys,
 ) {
   final mock = _MockFollowRepository();
-  mocktail.when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
-  mocktail
-      .when(() => mock.followingStream)
-      .thenAnswer(
-        (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
-      );
-  mocktail.when(() => mock.isInitialized).thenReturn(true);
-  mocktail.when(() => mock.followingCount).thenReturn(followingPubkeys.length);
+  when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
+  when(() => mock.followingStream).thenAnswer(
+    (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
+  );
+  when(() => mock.isInitialized).thenReturn(true);
+  when(() => mock.followingCount).thenReturn(followingPubkeys.length);
   return mock;
 }
 
@@ -92,9 +87,11 @@ void main() {
         rawData: {},
       );
 
-      when(mockUserProfileService.hasProfile(testPubkey)).thenReturn(true);
       when(
-        mockUserProfileService.getCachedProfile(testPubkey),
+        () => mockUserProfileService.hasProfile(testPubkey),
+      ).thenReturn(true);
+      when(
+        () => mockUserProfileService.getCachedProfile(testPubkey),
       ).thenReturn(testProfile);
 
       await tester.pumpWidget(buildSubject());
@@ -127,9 +124,11 @@ void main() {
         rawData: {},
       );
 
-      when(mockUserProfileService.hasProfile(testPubkey)).thenReturn(true);
       when(
-        mockUserProfileService.getCachedProfile(testPubkey),
+        () => mockUserProfileService.hasProfile(testPubkey),
+      ).thenReturn(true);
+      when(
+        () => mockUserProfileService.getCachedProfile(testPubkey),
       ).thenReturn(testProfile);
 
       await tester.pumpWidget(buildSubject());
@@ -146,9 +145,11 @@ void main() {
     });
 
     testWidgets('shows npub fallback when no profile data', (tester) async {
-      when(mockUserProfileService.hasProfile(testPubkey)).thenReturn(false);
       when(
-        mockUserProfileService.getCachedProfile(testPubkey),
+        () => mockUserProfileService.hasProfile(testPubkey),
+      ).thenReturn(false);
+      when(
+        () => mockUserProfileService.getCachedProfile(testPubkey),
       ).thenReturn(null);
 
       await tester.pumpWidget(buildSubject());

@@ -991,9 +991,13 @@ FollowRepository? followRepository(Ref ref) {
   // Get analytics API service for fast REST-based following list bootstrap
   final analyticsService = ref.read(analyticsApiServiceProvider);
 
+  // Get FunnelcakeApiClient for direct API access
+  final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
+    funnelcakeApiClient: funnelcakeApiClient,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
         ? ({required bool isFollow, required String pubkey}) async {

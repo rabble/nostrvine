@@ -4,8 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
@@ -17,47 +16,50 @@ import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 
-@GenerateMocks([
-  NostrClient,
-  SubscriptionManager,
-  UserProfileService,
-  EventRouter,
-  RelayCapabilityService,
-])
-import 'video_event_service_sorted_queries_integration_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
+class _MockUserProfileService extends Mock implements UserProfileService {}
+
+class _MockEventRouter extends Mock implements EventRouter {}
+
+class _MockRelayCapabilityService extends Mock
+    implements RelayCapabilityService {}
 
 void main() {
   group('VideoEventService Sorted Queries Integration', () {
     late VideoEventService service;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
-    late MockUserProfileService mockUserProfileService;
-    late MockEventRouter mockEventRouter;
-    late MockRelayCapabilityService mockRelayCapabilityService;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
+    late _MockUserProfileService mockUserProfileService;
+    late _MockEventRouter mockEventRouter;
+    late _MockRelayCapabilityService mockRelayCapabilityService;
     late VideoFilterBuilder filterBuilder;
     late StreamController<Event> eventStreamController;
     late List<List<Filter>> capturedFiltersList;
 
+    setUpAll(() {
+      registerFallbackValue(<Filter>[]);
+    });
+
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
-      mockUserProfileService = MockUserProfileService();
-      mockEventRouter = MockEventRouter();
-      mockRelayCapabilityService = MockRelayCapabilityService();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
+      mockUserProfileService = _MockUserProfileService();
+      mockEventRouter = _MockEventRouter();
+      mockRelayCapabilityService = _MockRelayCapabilityService();
       eventStreamController = StreamController<Event>.broadcast();
       capturedFiltersList = [];
 
       // Mock NostrService as initialized
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.connectedRelayCount).thenReturn(1);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
       when(
-        mockNostrService.connectedRelays,
+        () => mockNostrService.connectedRelays,
       ).thenReturn([AppConstants.defaultRelayUrl]);
       when(
-        mockNostrService.subscribe(
-          argThat(anything),
-          onEose: anyNamed('onEose'),
-        ),
+        () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((invocation) {
         capturedFiltersList.add(
           invocation.positionalArguments[0] as List<Filter>,
@@ -97,7 +99,7 @@ void main() {
         );
 
         when(
-          mockRelayCapabilityService.getRelayCapabilities(
+          () => mockRelayCapabilityService.getRelayCapabilities(
             AppConstants.defaultRelayUrl,
           ),
         ).thenAnswer((_) async => divineCapabilities);
@@ -112,10 +114,7 @@ void main() {
 
         // Verify subscribeToEvents was called
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
 
         expect(capturedFiltersList.isNotEmpty, true);
@@ -142,10 +141,7 @@ void main() {
         );
 
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
 
         final filters = capturedFiltersList.last;
@@ -163,10 +159,7 @@ void main() {
         );
 
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
 
         final filters = capturedFiltersList.last;
@@ -184,10 +177,7 @@ void main() {
         );
 
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
 
         final filters = capturedFiltersList.last;
@@ -207,10 +197,7 @@ void main() {
         );
 
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
 
         final filters = capturedFiltersList.last;
@@ -231,10 +218,7 @@ void main() {
         );
 
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
 
         final filters = capturedFiltersList.last;
@@ -261,7 +245,7 @@ void main() {
         );
 
         when(
-          mockRelayCapabilityService.getRelayCapabilities(
+          () => mockRelayCapabilityService.getRelayCapabilities(
             AppConstants.defaultRelayUrl,
           ),
         ).thenAnswer((_) async => standardCapabilities);
@@ -277,10 +261,8 @@ void main() {
           );
 
           verify(
-            mockNostrService.subscribe(
-              argThat(anything),
-              onEose: anyNamed('onEose'),
-            ),
+            () =>
+                mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
           ).called(1);
 
           final filters = capturedFiltersList.last;
@@ -306,10 +288,7 @@ void main() {
 
         // Should still call subscribeToEvents (with standard filter)
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
       });
     });
@@ -320,7 +299,7 @@ void main() {
         () async {
           // Mock capability check failure
           when(
-            mockRelayCapabilityService.getRelayCapabilities(
+            () => mockRelayCapabilityService.getRelayCapabilities(
               AppConstants.defaultRelayUrl,
             ),
           ).thenThrow(
@@ -337,10 +316,8 @@ void main() {
           );
 
           verify(
-            mockNostrService.subscribe(
-              argThat(anything),
-              onEose: anyNamed('onEose'),
-            ),
+            () =>
+                mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
           ).called(1);
 
           final filters = capturedFiltersList.last;
@@ -370,10 +347,8 @@ void main() {
           );
 
           verify(
-            mockNostrService.subscribe(
-              argThat(anything),
-              onEose: anyNamed('onEose'),
-            ),
+            () =>
+                mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
           ).called(1);
 
           final filters = capturedFiltersList.last;
@@ -403,7 +378,7 @@ void main() {
         );
 
         when(
-          mockRelayCapabilityService.getRelayCapabilities(
+          () => mockRelayCapabilityService.getRelayCapabilities(
             AppConstants.defaultRelayUrl,
           ),
         ).thenAnswer((_) async => divineCapabilities);
@@ -418,10 +393,7 @@ void main() {
         );
 
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
 
         final filters = capturedFiltersList.last;
@@ -440,10 +412,7 @@ void main() {
         );
 
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
 
         final filters = capturedFiltersList.last;
@@ -462,10 +431,7 @@ void main() {
         );
 
         verify(
-          mockNostrService.subscribe(
-            argThat(anything),
-            onEose: anyNamed('onEose'),
-          ),
+          () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
         ).called(1);
 
         final filters = capturedFiltersList.last;

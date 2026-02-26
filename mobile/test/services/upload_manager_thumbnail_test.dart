@@ -3,29 +3,35 @@
 
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 
-@GenerateMocks([BlossomUploadService, VideoCircuitBreaker])
-import 'upload_manager_thumbnail_test.mocks.dart';
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
+
+class _MockVideoCircuitBreaker extends Mock implements VideoCircuitBreaker {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('UploadManager - Local Thumbnail Generation', () {
-    late MockBlossomUploadService mockBlossomService;
-    late MockVideoCircuitBreaker mockCircuitBreaker;
+    late _MockBlossomUploadService mockBlossomService;
+    late _MockVideoCircuitBreaker mockCircuitBreaker;
+
+    setUpAll(() {
+      registerFallbackValue(File(''));
+    });
 
     setUp(() {
-      mockBlossomService = MockBlossomUploadService();
-      mockCircuitBreaker = MockVideoCircuitBreaker();
+      mockBlossomService = _MockBlossomUploadService();
+      mockCircuitBreaker = _MockVideoCircuitBreaker();
 
       // Default circuit breaker behavior
-      when(mockCircuitBreaker.allowRequests).thenReturn(true);
-      when(mockCircuitBreaker.state).thenReturn(CircuitBreakerState.closed);
-      when(mockCircuitBreaker.failureRate).thenReturn(0.0);
+      when(() => mockCircuitBreaker.allowRequests).thenReturn(true);
+      when(
+        () => mockCircuitBreaker.state,
+      ).thenReturn(CircuitBreakerState.closed);
+      when(() => mockCircuitBreaker.failureRate).thenReturn(0.0);
     });
 
     test('BlossomUploadService has uploadImage method', () {
@@ -39,7 +45,7 @@ void main() {
       const testPubkey = 'test-pubkey-123';
 
       when(
-        mockBlossomService.uploadImage(
+        () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
           mimeType: 'image/jpeg',
@@ -72,11 +78,11 @@ void main() {
       final progressValues = <double>[];
 
       when(
-        mockBlossomService.uploadImage(
+        () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
           mimeType: 'image/jpeg',
-          onProgress: anyNamed('onProgress'),
+          onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer((invocation) async {
         final onProgress =
@@ -133,7 +139,7 @@ void main() {
       const testPubkey = 'test-pubkey-123';
 
       when(
-        mockBlossomService.uploadImage(
+        () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
           mimeType: 'image/jpeg',
@@ -160,7 +166,7 @@ void main() {
       const testPubkey = 'test-pubkey-123';
 
       when(
-        mockBlossomService.uploadImage(
+        () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
           mimeType: 'image/jpeg',
@@ -185,7 +191,7 @@ void main() {
       const testPubkey = 'test-pubkey-123';
 
       when(
-        mockBlossomService.uploadImage(
+        () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
           mimeType: 'image/png',
@@ -214,7 +220,7 @@ void main() {
       const fileHash = 'abc123hash';
 
       when(
-        mockBlossomService.uploadImage(
+        () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
           mimeType: 'image/jpeg',

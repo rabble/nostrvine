@@ -31,9 +31,12 @@ class RepostActionButton extends StatelessWidget {
     return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
       builder: (context, state) {
         final isReposted = state.isReposted;
-        final nostrReposts =
-            state.repostCount ?? (video.reposterPubkeys?.length ?? 0);
-        final totalReposts = nostrReposts + (video.originalReposts ?? 0);
+        // Use relay count when available; fall back to video metadata.
+        // Don't sum both — Funnelcake's originalReposts already includes
+        // Nostr reposts, so adding them would double-count.
+        final totalReposts =
+            state.repostCount ??
+            (video.reposterPubkeys?.length ?? 0) + (video.originalReposts ?? 0);
 
         return _ActionButton(
           isReposted: isReposted,

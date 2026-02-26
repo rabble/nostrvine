@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mocktail/mocktail.dart' as mocktail;
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
@@ -18,14 +16,24 @@ import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 
 import '../helpers/test_provider_overrides.dart';
-import 'report_content_dialog_test.mocks.dart';
 
-@GenerateMocks([ContentReportingService, ContentBlocklistService, MuteService])
+class _MockContentReportingService extends Mock
+    implements ContentReportingService {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
+
+class _MockMuteService extends Mock implements MuteService {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(ContentFilterReason.spam);
+  });
+
   late VideoEvent testVideo;
-  late MockContentReportingService mockReportingService;
-  late MockContentBlocklistService mockBlocklistService;
-  late MockMuteService mockMuteService;
+  late _MockContentReportingService mockReportingService;
+  late _MockContentBlocklistService mockBlocklistService;
+  late _MockMuteService mockMuteService;
 
   setUp(() {
     // Create test Nostr event with valid hex pubkey
@@ -46,38 +54,38 @@ void main() {
         'aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22';
 
     testVideo = VideoEvent.fromNostrEvent(testNostrEvent);
-    mockReportingService = MockContentReportingService();
-    mockBlocklistService = MockContentBlocklistService();
-    mockMuteService = MockMuteService();
+    mockReportingService = _MockContentReportingService();
+    mockBlocklistService = _MockContentBlocklistService();
+    mockMuteService = _MockMuteService();
 
     // Setup default mock behavior
     when(
-      mockReportingService.reportContent(
-        eventId: anyNamed('eventId'),
-        authorPubkey: anyNamed('authorPubkey'),
-        reason: anyNamed('reason'),
-        details: anyNamed('details'),
-        additionalContext: anyNamed('additionalContext'),
-        hashtags: anyNamed('hashtags'),
+      () => mockReportingService.reportContent(
+        eventId: any(named: 'eventId'),
+        authorPubkey: any(named: 'authorPubkey'),
+        reason: any(named: 'reason'),
+        details: any(named: 'details'),
+        additionalContext: any(named: 'additionalContext'),
+        hashtags: any(named: 'hashtags'),
       ),
     ).thenAnswer((_) async => ReportResult.createSuccess('test_report_id'));
 
     when(
-      mockReportingService.reportUser(
-        userPubkey: anyNamed('userPubkey'),
-        reason: anyNamed('reason'),
-        details: anyNamed('details'),
-        relatedEventIds: anyNamed('relatedEventIds'),
+      () => mockReportingService.reportUser(
+        userPubkey: any(named: 'userPubkey'),
+        reason: any(named: 'reason'),
+        details: any(named: 'details'),
+        relatedEventIds: any(named: 'relatedEventIds'),
       ),
     ).thenAnswer(
       (_) async => ReportResult.createSuccess('test_user_report_id'),
     );
 
     when(
-      mockMuteService.muteUser(
-        any,
-        reason: anyNamed('reason'),
-        duration: anyNamed('duration'),
+      () => mockMuteService.muteUser(
+        any(),
+        reason: any(named: 'reason'),
+        duration: any(named: 'duration'),
       ),
     ).thenAnswer((_) async => true);
   });
@@ -257,9 +265,7 @@ void main() {
 
     setUp(() {
       mockNostrClient = createMockNostrService();
-      mocktail
-          .when(() => mockNostrClient.publicKey)
-          .thenReturn('test_pubkey_hex');
+      when(() => mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
     });
 
     Widget buildSubject() {
@@ -324,13 +330,13 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        mockReportingService.reportContent(
-          eventId: anyNamed('eventId'),
-          authorPubkey: anyNamed('authorPubkey'),
-          reason: anyNamed('reason'),
-          details: anyNamed('details'),
-          additionalContext: anyNamed('additionalContext'),
-          hashtags: anyNamed('hashtags'),
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
         ),
       ).called(1);
     });
@@ -377,45 +383,45 @@ void main() {
 
       // Verify content report was made
       verify(
-        mockReportingService.reportContent(
-          eventId: anyNamed('eventId'),
-          authorPubkey: anyNamed('authorPubkey'),
-          reason: anyNamed('reason'),
-          details: anyNamed('details'),
-          additionalContext: anyNamed('additionalContext'),
-          hashtags: anyNamed('hashtags'),
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
         ),
       ).called(1);
 
       // Verify user report was made
       verify(
-        mockReportingService.reportUser(
-          userPubkey: anyNamed('userPubkey'),
-          reason: anyNamed('reason'),
-          details: anyNamed('details'),
-          relatedEventIds: anyNamed('relatedEventIds'),
+        () => mockReportingService.reportUser(
+          userPubkey: any(named: 'userPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          relatedEventIds: any(named: 'relatedEventIds'),
         ),
       ).called(1);
 
       // Verify mute was called
       verify(
-        mockMuteService.muteUser(
-          any,
-          reason: anyNamed('reason'),
-          duration: anyNamed('duration'),
+        () => mockMuteService.muteUser(
+          any(),
+          reason: any(named: 'reason'),
+          duration: any(named: 'duration'),
         ),
       ).called(1);
     });
 
     testWidgets('failed report shows error snackbar', (tester) async {
       when(
-        mockReportingService.reportContent(
-          eventId: anyNamed('eventId'),
-          authorPubkey: anyNamed('authorPubkey'),
-          reason: anyNamed('reason'),
-          details: anyNamed('details'),
-          additionalContext: anyNamed('additionalContext'),
-          hashtags: anyNamed('hashtags'),
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
         ),
       ).thenAnswer((_) async => ReportResult.failure('Server error'));
 
@@ -435,13 +441,13 @@ void main() {
 
     testWidgets('exception during report shows error snackbar', (tester) async {
       when(
-        mockReportingService.reportContent(
-          eventId: anyNamed('eventId'),
-          authorPubkey: anyNamed('authorPubkey'),
-          reason: anyNamed('reason'),
-          details: anyNamed('details'),
-          additionalContext: anyNamed('additionalContext'),
-          hashtags: anyNamed('hashtags'),
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
         ),
       ).thenThrow(Exception('Network error'));
 
@@ -476,13 +482,13 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        mockReportingService.reportContent(
-          eventId: anyNamed('eventId'),
-          authorPubkey: anyNamed('authorPubkey'),
-          reason: anyNamed('reason'),
-          details: captureAnyNamed('details'),
-          additionalContext: anyNamed('additionalContext'),
-          hashtags: anyNamed('hashtags'),
+        () => mockReportingService.reportContent(
+          eventId: any(named: 'eventId'),
+          authorPubkey: any(named: 'authorPubkey'),
+          reason: any(named: 'reason'),
+          details: captureAny(named: 'details'),
+          additionalContext: any(named: 'additionalContext'),
+          hashtags: any(named: 'hashtags'),
         ),
       ).called(1);
     });
@@ -545,23 +551,23 @@ void main() {
   // Unit test for Nostr event service calls
   group('Nostr Event Publishing', () {
     test('reportUser() and muteUser() are called when blocking', () async {
-      final mockReportingService = MockContentReportingService();
-      final mockMuteService = MockMuteService();
+      final mockReportingService = _MockContentReportingService();
+      final mockMuteService = _MockMuteService();
 
       when(
-        mockReportingService.reportUser(
-          userPubkey: anyNamed('userPubkey'),
-          reason: anyNamed('reason'),
-          details: anyNamed('details'),
-          relatedEventIds: anyNamed('relatedEventIds'),
+        () => mockReportingService.reportUser(
+          userPubkey: any(named: 'userPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          relatedEventIds: any(named: 'relatedEventIds'),
         ),
       ).thenAnswer((_) async => ReportResult.createSuccess('user_report_id'));
 
       when(
-        mockMuteService.muteUser(
-          any,
-          reason: anyNamed('reason'),
-          duration: anyNamed('duration'),
+        () => mockMuteService.muteUser(
+          any(),
+          reason: any(named: 'reason'),
+          duration: any(named: 'duration'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -582,19 +588,19 @@ void main() {
       expect(muteResult, isTrue);
 
       verify(
-        mockReportingService.reportUser(
-          userPubkey: anyNamed('userPubkey'),
-          reason: anyNamed('reason'),
-          details: anyNamed('details'),
-          relatedEventIds: anyNamed('relatedEventIds'),
+        () => mockReportingService.reportUser(
+          userPubkey: any(named: 'userPubkey'),
+          reason: any(named: 'reason'),
+          details: any(named: 'details'),
+          relatedEventIds: any(named: 'relatedEventIds'),
         ),
       ).called(1);
 
       verify(
-        mockMuteService.muteUser(
-          any,
-          reason: anyNamed('reason'),
-          duration: anyNamed('duration'),
+        () => mockMuteService.muteUser(
+          any(),
+          reason: any(named: 'reason'),
+          duration: any(named: 'duration'),
         ),
       ).called(1);
     });

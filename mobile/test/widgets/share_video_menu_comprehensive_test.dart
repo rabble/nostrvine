@@ -5,8 +5,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -18,8 +17,9 @@ import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dar
 
 import '../helpers/test_provider_overrides.dart';
 
-@GenerateMocks([BookmarkService, VideoSharingService])
-import 'share_video_menu_comprehensive_test.mocks.dart';
+class _MockBookmarkService extends Mock implements BookmarkService {}
+
+class _MockVideoSharingService extends Mock implements VideoSharingService {}
 
 /// Fake notifier that provides test data for curatedListsStateProvider
 List<CuratedList> _fakeLists = [];
@@ -34,8 +34,20 @@ class _FakeCuratedListsState extends CuratedListsState {
 
 void main() {
   late VideoEvent testVideo;
-  late MockBookmarkService mockBookmarkService;
-  late MockVideoSharingService mockVideoSharingService;
+  late _MockBookmarkService mockBookmarkService;
+  late _MockVideoSharingService mockVideoSharingService;
+
+  setUpAll(() {
+    registerFallbackValue(
+      VideoEvent(
+        id: 'fallback',
+        pubkey: 'fallback',
+        createdAt: 0,
+        content: '',
+        timestamp: DateTime.now(),
+      ),
+    );
+  });
 
   setUp(() {
     testVideo = VideoEvent(
@@ -49,20 +61,20 @@ void main() {
       title: 'Test Video Title',
     );
 
-    mockBookmarkService = MockBookmarkService();
-    mockVideoSharingService = MockVideoSharingService();
+    mockBookmarkService = _MockBookmarkService();
+    mockVideoSharingService = _MockVideoSharingService();
     _fakeLists = [];
 
     when(
-      mockBookmarkService.addVideoToGlobalBookmarks(any),
+      () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
     ).thenAnswer((_) async => true);
     when(
-      mockVideoSharingService.generateShareText(any),
+      () => mockVideoSharingService.generateShareText(any()),
     ).thenReturn('https://divine.video/video/test');
     when(
-      mockVideoSharingService.generateShareUrl(any),
+      () => mockVideoSharingService.generateShareUrl(any()),
     ).thenReturn('https://divine.video/video/test');
-    when(mockVideoSharingService.recentlySharedWith).thenReturn([]);
+    when(() => mockVideoSharingService.recentlySharedWith).thenReturn([]);
   });
 
   group('Unified share sheet', () {
@@ -153,7 +165,7 @@ void main() {
 
     testWidgets('tapping Save shows success snackbar', (tester) async {
       when(
-        mockBookmarkService.addVideoToGlobalBookmarks(any),
+        () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
       ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(buildSubject());
@@ -165,13 +177,13 @@ void main() {
 
       expect(find.text('Added to bookmarks'), findsOneWidget);
       verify(
-        mockBookmarkService.addVideoToGlobalBookmarks(testVideo.id),
+        () => mockBookmarkService.addVideoToGlobalBookmarks(testVideo.id),
       ).called(1);
     });
 
     testWidgets('tapping Save shows failure snackbar on error', (tester) async {
       when(
-        mockBookmarkService.addVideoToGlobalBookmarks(any),
+        () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
       ).thenAnswer((_) async => false);
 
       await tester.pumpWidget(buildSubject());
@@ -188,7 +200,7 @@ void main() {
       tester,
     ) async {
       when(
-        mockBookmarkService.addVideoToGlobalBookmarks(any),
+        () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
       ).thenThrow(Exception('Network error'));
 
       await tester.pumpWidget(buildSubject());
@@ -292,7 +304,7 @@ void main() {
 
     Widget buildSubjectWithContacts() {
       when(
-        mockVideoSharingService.recentlySharedWith,
+        () => mockVideoSharingService.recentlySharedWith,
       ).thenReturn([testContact]);
 
       return testProviderScope(
@@ -321,10 +333,10 @@ void main() {
 
     testWidgets('tapping contact quick-sends video', (tester) async {
       when(
-        mockVideoSharingService.shareVideoWithUser(
-          video: anyNamed('video'),
-          recipientPubkey: anyNamed('recipientPubkey'),
-          personalMessage: anyNamed('personalMessage'),
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
         ),
       ).thenAnswer(
         (_) async => ShareResult.createSuccess(
@@ -345,10 +357,10 @@ void main() {
 
       // Verify shareVideoWithUser was called
       verify(
-        mockVideoSharingService.shareVideoWithUser(
-          video: anyNamed('video'),
-          recipientPubkey: anyNamed('recipientPubkey'),
-          personalMessage: anyNamed('personalMessage'),
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
         ),
       ).called(1);
 
@@ -359,10 +371,10 @@ void main() {
 
     testWidgets('sent contact shows Sent label', (tester) async {
       when(
-        mockVideoSharingService.shareVideoWithUser(
-          video: anyNamed('video'),
-          recipientPubkey: anyNamed('recipientPubkey'),
-          personalMessage: anyNamed('personalMessage'),
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
         ),
       ).thenAnswer(
         (_) async => ShareResult.createSuccess(
@@ -384,10 +396,10 @@ void main() {
 
     testWidgets('sent contact ignores subsequent taps', (tester) async {
       when(
-        mockVideoSharingService.shareVideoWithUser(
-          video: anyNamed('video'),
-          recipientPubkey: anyNamed('recipientPubkey'),
-          personalMessage: anyNamed('personalMessage'),
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
         ),
       ).thenAnswer(
         (_) async => ShareResult.createSuccess(
@@ -409,20 +421,20 @@ void main() {
 
       // shareVideoWithUser only called once
       verify(
-        mockVideoSharingService.shareVideoWithUser(
-          video: anyNamed('video'),
-          recipientPubkey: anyNamed('recipientPubkey'),
-          personalMessage: anyNamed('personalMessage'),
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
         ),
       ).called(1);
     });
 
     testWidgets('quick-send shows failure snackbar on error', (tester) async {
       when(
-        mockVideoSharingService.shareVideoWithUser(
-          video: anyNamed('video'),
-          recipientPubkey: anyNamed('recipientPubkey'),
-          personalMessage: anyNamed('personalMessage'),
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
         ),
       ).thenAnswer((_) async => ShareResult.failure('Network timeout'));
 

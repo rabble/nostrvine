@@ -2,8 +2,7 @@
 // ABOUTME: Validates creation and publishing of NIP-51 video curation sets to Nostr
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
@@ -12,51 +11,59 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:likes_repository/likes_repository.dart';
 
-import 'curation_service_create_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([
-  NostrClient,
-  VideoEventService,
-  LikesRepository,
-  NostrKeyManager,
-  AuthService,
-])
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockLikesRepository extends Mock implements LikesRepository {}
+
+class _MockNostrKeyManager extends Mock implements NostrKeyManager {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CurationService.createCurationSet()', () {
-    late MockNostrClient mockNostrService;
-    late MockVideoEventService mockVideoEventService;
-    late MockLikesRepository mockLikesRepository;
-    late MockNostrKeyManager mockKeyManager;
-    late MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockLikesRepository mockLikesRepository;
+    late _MockNostrKeyManager mockKeyManager;
+    late _MockAuthService mockAuthService;
     late CurationService curationService;
     late Keychain testKeychain;
 
+    setUpAll(() {
+      registerFallbackValue(<dynamic>[]);
+      registerFallbackValue(Event('a' * 64, 0, [], ''));
+    });
+
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockVideoEventService = MockVideoEventService();
-      mockLikesRepository = MockLikesRepository();
-      mockKeyManager = MockNostrKeyManager();
-      mockAuthService = MockAuthService();
+      mockNostrService = _MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockLikesRepository = _MockLikesRepository();
+      mockKeyManager = _MockNostrKeyManager();
+      mockAuthService = _MockAuthService();
 
       // Setup default mock behaviors
-      when(mockVideoEventService.videoEvents).thenReturn([]);
-      when(mockVideoEventService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoEventService.videoEvents).thenReturn([]);
+      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
 
       // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
-      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
+      when(
+        () => mockLikesRepository.getLikeCounts(any()),
+      ).thenAnswer((_) async => {});
 
       // Stub subscribe for CurationService initialization (fetches Divine Team videos)
       when(
-        mockNostrService.subscribe(any),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => const Stream<Event>.empty());
 
       // Stub createAndSignEvent for AuthService (used in curation creation)
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
-          biometricPrompt: anyNamed('biometricPrompt'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+          biometricPrompt: any(named: 'biometricPrompt'),
         ),
       ).thenAnswer((_) async => null);
 
@@ -73,8 +80,10 @@ void main() {
 
     test('successfully creates and publishes curation set', () async {
       // Setup: Mock successful broadcast
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         return invocation.positionalArguments[0] as Event;
       });
 
@@ -91,7 +100,7 @@ void main() {
       expect(result, isTrue);
 
       // Verify: Broadcast was called
-      verify(mockNostrService.publishEvent(any)).called(1);
+      verify(() => mockNostrService.publishEvent(any())).called(1);
 
       // Verify: Local state was updated
       final storedSet = curationService.getCurationSet('test_list');
@@ -105,8 +114,10 @@ void main() {
     }, skip: true);
 
     test('creates event with correct kind 30005', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         return invocation.positionalArguments[0] as Event;
       });
 
@@ -118,15 +129,19 @@ void main() {
 
       // Verify: Event has correct kind
       final capturedEvent =
-          verify(mockNostrService.publishEvent(captureAny)).captured.single
+          verify(
+                () => mockNostrService.publishEvent(captureAny()),
+              ).captured.single
               as Event;
       expect(capturedEvent.kind, 30005);
       // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('creates event with correct tags', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         return invocation.positionalArguments[0] as Event;
       });
 
@@ -140,7 +155,9 @@ void main() {
 
       // Verify: Event has correct tags
       final capturedEvent =
-          verify(mockNostrService.publishEvent(captureAny)).captured.single
+          verify(
+                () => mockNostrService.publishEvent(captureAny()),
+              ).captured.single
               as Event;
 
       // Find specific tags
@@ -167,9 +184,11 @@ void main() {
     }, skip: true);
 
     test('returns false when broadcast fails', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
       // publishEvent returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => null);
 
       // Execute
       final result = await curationService.createCurationSet(
@@ -184,7 +203,7 @@ void main() {
 
     test('handles missing keypair gracefully', () async {
       // Setup: No keypair available
-      when(mockKeyManager.keyPair).thenReturn(null);
+      when(() => mockKeyManager.keyPair).thenReturn(null);
 
       // Execute
       final result = await curationService.createCurationSet(
@@ -197,13 +216,15 @@ void main() {
       expect(result, isFalse);
 
       // Verify: Does not attempt to broadcast
-      verifyNever(mockNostrService.publishEvent(any));
+      verifyNever(() => mockNostrService.publishEvent(any()));
     });
 
     test('does not update local state when broadcast fails', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
       // publishEvent returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => null);
 
       await curationService.createCurationSet(
         id: 'failed_list',
@@ -217,8 +238,10 @@ void main() {
     });
 
     test('uses curator pubkey from keyManager', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         return invocation.positionalArguments[0] as Event;
       });
 
@@ -230,7 +253,9 @@ void main() {
 
       // Verify: Event pubkey matches keypair
       final capturedEvent =
-          verify(mockNostrService.publishEvent(captureAny)).captured.single
+          verify(
+                () => mockNostrService.publishEvent(captureAny()),
+              ).captured.single
               as Event;
       expect(capturedEvent.pubkey, testKeychain.public);
 
@@ -241,8 +266,10 @@ void main() {
     }, skip: true);
 
     test('handles partial broadcast success', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         return invocation.positionalArguments[0] as Event;
       });
 
@@ -262,9 +289,9 @@ void main() {
     }, skip: true);
 
     test('handles broadcast exception', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
       when(
-        mockNostrService.publishEvent(any),
+        () => mockNostrService.publishEvent(any()),
       ).thenThrow(Exception('Network error'));
 
       // Execute - should not throw
@@ -283,8 +310,10 @@ void main() {
     });
 
     test('creates curation set with empty video list', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         return invocation.positionalArguments[0] as Event;
       });
 
@@ -305,8 +334,10 @@ void main() {
     }, skip: true);
 
     test('creates curation set with minimal parameters', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockKeyManager.keyPair).thenReturn(testKeychain);
+      when(() => mockNostrService.publishEvent(any())).thenAnswer((
+        invocation,
+      ) async {
         return invocation.positionalArguments[0] as Event;
       });
 

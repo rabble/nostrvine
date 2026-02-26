@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/services/build_configuration.dart';
@@ -18,16 +17,18 @@ import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'video_editor_route_test.mocks.dart';
+class _MockUserDataCleanupService extends Mock
+    implements UserDataCleanupService {}
 
-late MockUserDataCleanupService _mockCleanupService;
+late _MockUserDataCleanupService _mockCleanupService;
 
-@GenerateMocks([UserDataCleanupService])
 void main() {
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
-    _mockCleanupService = MockUserDataCleanupService();
-    when(_mockCleanupService.shouldClearDataForUser(any)).thenReturn(false);
+    _mockCleanupService = _MockUserDataCleanupService();
+    when(
+      () => _mockCleanupService.shouldClearDataForUser(any()),
+    ).thenReturn(false);
   });
 
   group('VideoEditorRoute - Edit Button Tests', () {

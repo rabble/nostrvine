@@ -3,8 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
@@ -12,14 +11,13 @@ import 'package:openvine/widgets/add_to_list_dialog.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
-@GenerateMocks([CuratedListService])
-import 'add_to_list_dialog_test.mocks.dart';
+class _MockCuratedListService extends Mock implements CuratedListService {}
 
 /// Test data for the fake notifier - set before each test
 List<CuratedList> _fakeLists = [];
 
 /// Mock service for the fake notifier - set before tests that need interactions
-MockCuratedListService? _fakeService;
+_MockCuratedListService? _fakeService;
 
 /// Fake notifier that provides test data for curatedListsStateProvider
 class _FakeCuratedListsState extends CuratedListsState {
@@ -33,7 +31,7 @@ class _FakeCuratedListsState extends CuratedListsState {
 void main() {
   group(SelectListDialog, () {
     late VideoEvent testVideo;
-    late MockCuratedListService mockListService;
+    late _MockCuratedListService mockListService;
 
     setUp(() {
       testVideo = VideoEvent(
@@ -47,7 +45,7 @@ void main() {
         title: 'Test Video',
       );
       _fakeLists = [];
-      mockListService = MockCuratedListService();
+      mockListService = _MockCuratedListService();
       _fakeService = mockListService;
     });
 
@@ -168,7 +166,7 @@ void main() {
       ];
 
       when(
-        mockListService.addVideoToList(any, any),
+        () => mockListService.addVideoToList(any(), any()),
       ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(buildSubject());
@@ -177,7 +175,9 @@ void main() {
       await tester.tap(find.text('My List'));
       await tester.pumpAndSettle();
 
-      verify(mockListService.addVideoToList(listId, testVideo.id)).called(1);
+      verify(
+        () => mockListService.addVideoToList(listId, testVideo.id),
+      ).called(1);
       expect(find.text('Added to My List'), findsOneWidget);
     });
 
@@ -201,7 +201,7 @@ void main() {
       ];
 
       when(
-        mockListService.removeVideoFromList(any, any),
+        () => mockListService.removeVideoFromList(any(), any()),
       ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(buildSubject());
@@ -211,7 +211,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        mockListService.removeVideoFromList(listId, testVideo.id),
+        () => mockListService.removeVideoFromList(listId, testVideo.id),
       ).called(1);
       expect(find.text('Removed from My List'), findsOneWidget);
     });
@@ -261,7 +261,7 @@ void main() {
 
   group(CreateListDialog, () {
     late VideoEvent testVideo;
-    late MockCuratedListService mockListService;
+    late _MockCuratedListService mockListService;
 
     setUp(() {
       testVideo = VideoEvent(
@@ -274,7 +274,7 @@ void main() {
         videoUrl: 'https://example.com/video.mp4',
         title: 'Test Video',
       );
-      mockListService = MockCuratedListService();
+      mockListService = _MockCuratedListService();
       _fakeService = mockListService;
     });
 
@@ -334,10 +334,10 @@ void main() {
 
       // Should not call createList
       verifyNever(
-        mockListService.createList(
-          name: anyNamed('name'),
-          description: anyNamed('description'),
-          isPublic: anyNamed('isPublic'),
+        () => mockListService.createList(
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          isPublic: any(named: 'isPublic'),
         ),
       );
     });

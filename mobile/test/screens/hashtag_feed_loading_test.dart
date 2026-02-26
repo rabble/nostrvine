@@ -4,33 +4,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/providers/app_providers.dart';
 
-import 'hashtag_feed_loading_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-@GenerateMocks([VideoEventService, HashtagService])
+class _MockHashtagService extends Mock implements HashtagService {}
+
 void main() {
   group('HashtagFeedScreen Per-Subscription Loading States', () {
-    late MockVideoEventService mockVideoEventService;
-    late MockHashtagService mockHashtagService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockHashtagService mockHashtagService;
 
     setUp(() {
-      mockVideoEventService = MockVideoEventService();
-      mockHashtagService = MockHashtagService();
+      mockVideoEventService = _MockVideoEventService();
+      mockHashtagService = _MockHashtagService();
 
       // Setup default mock behavior
-      when(mockVideoEventService.isLoading).thenReturn(false);
+      when(() => mockVideoEventService.isLoading).thenReturn(false);
       when(
-        mockVideoEventService.isLoadingForSubscription(any),
+        () => mockVideoEventService.isLoadingForSubscription(any()),
       ).thenReturn(false);
-      when(mockHashtagService.getVideosByHashtags(any)).thenReturn([]);
+      when(() => mockHashtagService.getVideosByHashtags(any())).thenReturn([]);
       when(
-        mockHashtagService.subscribeToHashtagVideos(any),
+        () => mockHashtagService.subscribeToHashtagVideos(any()),
       ).thenAnswer((_) async {});
     });
 
@@ -53,14 +53,16 @@ void main() {
 
         // Mock per-subscription loading state (to be implemented)
         when(
-          mockVideoEventService.isLoadingForSubscription(
+          () => mockVideoEventService.isLoadingForSubscription(
             SubscriptionType.hashtag,
           ),
         ).thenReturn(true);
         when(
-          mockVideoEventService.isLoading,
+          () => mockVideoEventService.isLoading,
         ).thenReturn(false); // Global state not loading
-        when(mockHashtagService.getVideosByHashtags(['nostr'])).thenReturn([]);
+        when(
+          () => mockHashtagService.getVideosByHashtags(['nostr']),
+        ).thenReturn([]);
 
         await tester.pumpWidget(buildTestWidget(testHashtag));
         await tester.pump(); // Let initState run
@@ -80,15 +82,15 @@ void main() {
         const testHashtag = 'bitcoin';
 
         // Global loading is true (other subscriptions loading)
-        when(mockVideoEventService.isLoading).thenReturn(true);
+        when(() => mockVideoEventService.isLoading).thenReturn(true);
         // But per-subscription loading is false (hashtag subscription complete)
         when(
-          mockVideoEventService.isLoadingForSubscription(
+          () => mockVideoEventService.isLoadingForSubscription(
             SubscriptionType.hashtag,
           ),
         ).thenReturn(false);
         when(
-          mockHashtagService.getVideosByHashtags(['bitcoin']),
+          () => mockHashtagService.getVideosByHashtags(['bitcoin']),
         ).thenReturn([]);
 
         await tester.pumpWidget(buildTestWidget(testHashtag));
@@ -113,7 +115,9 @@ void main() {
       await tester.pump(); // Let initState and postFrameCallback run
 
       // Should have called subscription with the hashtag
-      verify(mockHashtagService.subscribeToHashtagVideos(['test'])).called(1);
+      verify(
+        () => mockHashtagService.subscribeToHashtagVideos(['test']),
+      ).called(1);
     });
     // TODO(any): Fix and re-enable tests
   }, skip: true);

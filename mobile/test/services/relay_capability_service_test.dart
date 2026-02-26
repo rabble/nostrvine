@@ -3,20 +3,22 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 
-@GenerateMocks([http.Client])
-import 'relay_capability_service_test.mocks.dart';
+class _MockClient extends Mock implements http.Client {}
 
 void main() {
   group('RelayCapabilityService', () {
     late RelayCapabilityService service;
-    late MockClient mockHttpClient;
+    late _MockClient mockHttpClient;
+
+    setUpAll(() {
+      registerFallbackValue(Uri.parse('https://example.com'));
+    });
 
     setUp(() {
-      mockHttpClient = MockClient();
+      mockHttpClient = _MockClient();
       service = RelayCapabilityService(httpClient: mockHttpClient);
     });
 
@@ -64,7 +66,7 @@ void main() {
 ''';
 
         when(
-          mockHttpClient.get(
+          () => mockHttpClient.get(
             Uri.parse('https://staging-relay.divine.video'),
             headers: {'Accept': 'application/nostr+json'},
           ),
@@ -101,7 +103,7 @@ void main() {
 ''';
 
         when(
-          mockHttpClient.get(
+          () => mockHttpClient.get(
             Uri.parse('https://relay.example.com'),
             headers: {'Accept': 'application/nostr+json'},
           ),
@@ -123,7 +125,7 @@ void main() {
 
       test('converts wss:// to https:// for NIP-11 fetch', () async {
         when(
-          mockHttpClient.get(
+          () => mockHttpClient.get(
             Uri.parse('https://staging-relay.divine.video'),
             headers: {'Accept': 'application/nostr+json'},
           ),
@@ -132,7 +134,7 @@ void main() {
         await service.getRelayCapabilities('wss://staging-relay.divine.video');
 
         verify(
-          mockHttpClient.get(
+          () => mockHttpClient.get(
             Uri.parse('https://staging-relay.divine.video'),
             headers: {'Accept': 'application/nostr+json'},
           ),
@@ -141,7 +143,7 @@ void main() {
 
       test('handles HTTP errors gracefully', () async {
         when(
-          mockHttpClient.get(any, headers: anyNamed('headers')),
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response('Not Found', 404));
 
         expect(
@@ -152,7 +154,7 @@ void main() {
 
       test('handles network errors gracefully', () async {
         when(
-          mockHttpClient.get(any, headers: anyNamed('headers')),
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenThrow(Exception('Network error'));
 
         expect(
@@ -163,7 +165,7 @@ void main() {
 
       test('handles malformed JSON gracefully', () async {
         when(
-          mockHttpClient.get(any, headers: anyNamed('headers')),
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response('not json', 200));
 
         expect(
@@ -178,7 +180,7 @@ void main() {
         const nip11Response = '{"name": "Test Relay"}';
 
         when(
-          mockHttpClient.get(
+          () => mockHttpClient.get(
             Uri.parse('https://staging-relay.divine.video'),
             headers: {'Accept': 'application/nostr+json'},
           ),
@@ -192,7 +194,7 @@ void main() {
 
         // Should only fetch once
         verify(
-          mockHttpClient.get(
+          () => mockHttpClient.get(
             Uri.parse('https://staging-relay.divine.video'),
             headers: {'Accept': 'application/nostr+json'},
           ),
@@ -208,7 +210,7 @@ void main() {
         const nip11Response = '{"name": "Test Relay"}';
 
         when(
-          mockHttpClient.get(
+          () => mockHttpClient.get(
             Uri.parse('https://staging-relay.divine.video'),
             headers: {'Accept': 'application/nostr+json'},
           ),
@@ -229,7 +231,7 @@ void main() {
 
         // Should fetch twice
         verify(
-          mockHttpClient.get(
+          () => mockHttpClient.get(
             Uri.parse('https://staging-relay.divine.video'),
             headers: {'Accept': 'application/nostr+json'},
           ),
@@ -242,7 +244,7 @@ void main() {
         const nip11Response = '{"name": "Test Relay"}';
 
         when(
-          mockHttpClient.get(any, headers: anyNamed('headers')),
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response(nip11Response, 200));
 
         // Fetch and cache
@@ -255,7 +257,7 @@ void main() {
         await service.getRelayCapabilities('wss://staging-relay.divine.video');
 
         verify(
-          mockHttpClient.get(
+          () => mockHttpClient.get(
             Uri.parse('https://staging-relay.divine.video'),
             headers: {'Accept': 'application/nostr+json'},
           ),
@@ -276,7 +278,7 @@ void main() {
 ''';
 
         when(
-          mockHttpClient.get(any, headers: anyNamed('headers')),
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response(nip11Response, 200));
 
         final capabilities = await service.getRelayCapabilities(
@@ -300,7 +302,7 @@ void main() {
 ''';
 
         when(
-          mockHttpClient.get(any, headers: anyNamed('headers')),
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer((_) async => http.Response(nip11Response, 200));
 
         final capabilities = await service.getRelayCapabilities(
