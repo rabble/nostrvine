@@ -1,8 +1,8 @@
 // ABOUTME: Abstract base class providing shared event publishing patterns for social event services
 // ABOUTME: Handles event creation, signing, publishing, and caching with consistent error handling
 
-import 'package:nostr_sdk/event.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 
@@ -53,7 +53,7 @@ abstract class SocialEventServiceBase {
       throw Exception('Failed to create and sign event');
     }
 
-    return await broadcastAndCacheEvent(event);
+    return broadcastAndCacheEvent(event);
   }
 
   /// Publishes a deletion event (Kind 5) for the target event

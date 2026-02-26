@@ -12,7 +12,7 @@ import 'package:rxdart/rxdart.dart';
 
 // Re-export types from db_client for convenience
 export 'package:db_client/db_client.dart'
-    show PendingAction, PendingActionType, PendingActionStatus;
+    show PendingAction, PendingActionStatus, PendingActionType;
 
 /// Callback type for executing a pending action
 typedef ActionExecutor = Future<void> Function(PendingAction action);
@@ -402,7 +402,7 @@ class PendingActionService extends ChangeNotifier {
         maxDelay: _retryConfig.maxDelay,
         backoffMultiplier: _retryConfig.backoffMultiplier,
         debugName: 'Sync-${action.type}-${action.targetId}',
-        retryWhen: (error) => _isRetriableError(error),
+        retryWhen: _isRetriableError,
       );
 
       // Mark as completed

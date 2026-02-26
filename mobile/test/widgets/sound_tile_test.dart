@@ -1,10 +1,10 @@
 // ABOUTME: Tests for SoundTile widget - displays audio events in list and compact modes
 // ABOUTME: Verifies dark theme colors, duration formatting, callbacks, and accessibility
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 
 void main() {
@@ -271,7 +271,7 @@ void main() {
       });
 
       testWidgets('handles null duration', (tester) async {
-        final nullDurationSound = const AudioEvent(
+        const nullDurationSound = AudioEvent(
           id: 'null-duration-id-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
           pubkey:
               'null-duration-pubkey-0123456789abcdef0123456789abcdef0123456789abcdef0123',
@@ -295,7 +295,7 @@ void main() {
 
     group('Title handling', () {
       testWidgets('displays fallback for null title', (tester) async {
-        final noTitleSound = const AudioEvent(
+        const noTitleSound = AudioEvent(
           id: 'no-title-id-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
           pubkey:
               'no-title-pubkey-0123456789abcdef0123456789abcdef0123456789abcdef01234567',

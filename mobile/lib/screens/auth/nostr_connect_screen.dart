@@ -7,14 +7,14 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -114,9 +114,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     _isWaiting = true;
 
     final authService = ref.read(authServiceProvider);
-    final result = await authService.waitForNostrConnectResponse(
-      timeout: const Duration(minutes: 2),
-    );
+    final result = await authService.waitForNostrConnectResponse();
 
     _isWaiting = false;
     _elapsedTimer.stop();
@@ -130,7 +128,8 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     if (_switchedToBunker) return;
 
     if (result.success) {
-      context.go(HomeScreenRouter.pathForIndex(0));
+      // Navigate to home on success
+      context.go(VideoFeedPage.pathForIndex(0));
     } else {
       setState(() {
         _errorMessage = result.errorMessage;
@@ -161,7 +160,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     if (_connectUrl == null) return;
 
     await SharePlus.instance.share(
-      ShareParams(text: _connectUrl!, title: 'Connect to Divine'),
+      ShareParams(text: _connectUrl, title: 'Connect to Divine'),
     );
   }
 
@@ -246,8 +245,8 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     if (!NostrRemoteSignerInfo.isBunkerUrl(result)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
+        const SnackBar(
+          content: Text(
             'Invalid bunker URL. It should start with bunker://',
           ),
           backgroundColor: VineTheme.error,
@@ -277,7 +276,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       if (!mounted) return;
 
       if (authResult.success) {
-        context.go(HomeScreenRouter.pathForIndex(0));
+        context.go(VideoFeedPage.pathForIndex(0));
       } else {
         setState(() {
           _sessionState = NostrConnectState.error;
@@ -300,7 +299,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       body: SafeArea(
         child: switch (_sessionState) {
           NostrConnectState.idle || NostrConnectState.generating =>
-            _LoadingContent(message: 'Generating connection...'),
+            const _LoadingContent(message: 'Generating connection...'),
           NostrConnectState.listening => _QrContent(
             connectUrl: _connectUrl ?? '',
             elapsedSeconds: _elapsedTimer.elapsed.inSeconds,
@@ -309,7 +308,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
             onShareUrl: _shareUrl,
             onAddBunker: _showPasteBunkerDialog,
           ),
-          NostrConnectState.connected => _LoadingContent(
+          NostrConnectState.connected => const _LoadingContent(
             message: 'Connected! Authenticating...',
           ),
           NostrConnectState.timeout => _ErrorContent(
@@ -470,7 +469,6 @@ class _QrCodeCard extends StatelessWidget {
           ),
           child: QrImageView(
             data: connectUrl,
-            version: QrVersions.auto,
             size: 200,
             backgroundColor: Colors.white,
             errorCorrectionLevel: QrErrorCorrectLevel.M,
@@ -749,7 +747,11 @@ class _ErrorContent extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                Icon(Icons.error_outline, color: VineTheme.error, size: 64),
+                const Icon(
+                  Icons.error_outline,
+                  color: VineTheme.error,
+                  size: 64,
+                ),
                 const SizedBox(height: 24),
                 Text(
                   title,

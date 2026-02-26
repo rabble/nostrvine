@@ -11,45 +11,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
-import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
-import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
 import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
-import 'package:openvine/screens/comments/comments.dart';
-import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
@@ -57,19 +55,17 @@ import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
-import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-
-import '../video_thumbnail_widget.dart';
 
 /// Video feed item using individual controller architecture
 class VideoFeedItem extends ConsumerStatefulWidget {
   const VideoFeedItem({
-    super.key,
     required this.video,
     required this.index,
+    super.key,
     this.onTap,
     this.forceShowOverlay = false,
     this.hasBottomNavigation = true,
@@ -305,8 +301,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
           if (!mounted) return;
           // Re-read current override value (may have changed since listener setup)
           final currentOverride = widget.isActiveOverride;
-          if (currentOverride == null)
+          if (currentOverride == null) {
             return; // Widget rebuilt without override
+          }
           // Compute effective active state: override must be true AND no overlay visible
           final effectivelyActive = currentOverride && !next;
           Log.info(
@@ -445,6 +442,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       commentsRepository: commentsRepository,
       repostsRepository: repostsRepository,
       addressableId: addressableId,
+      initialLikeCount: widget.video.nostrLikeCount != null
+          ? widget.video.totalLikes
+          : null,
     );
     // Start listening for liked/reposted IDs changes
     _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
@@ -747,10 +747,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     switch (policy) {
       case OverlayPolicy.alwaysOn:
         overlayVisible = true;
-        break;
       case OverlayPolicy.alwaysOff:
         overlayVisible = false;
-        break;
       case OverlayPolicy.auto:
         // keep computed overlayVisible
         break;
@@ -857,7 +855,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               pageContext.whenData((ctx) {
                 // Build new route with same type but different index
                 final routePath = switch (ctx.type) {
-                  RouteType.home => HomeScreenRouter.pathForIndex(widget.index),
+                  RouteType.home => VideoFeedPage.pathForIndex(widget.index),
                   RouteType.explore => ExploreScreen.pathForIndex(widget.index),
                   RouteType.notifications => NotificationsScreen.pathForIndex(
                     widget.index,
@@ -928,12 +926,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         children: [
                           VideoThumbnailWidget(
                             video: video,
-                            fit: BoxFit.cover,
-                            showPlayIcon: false,
                           ),
-                          Container(
+                          const ColoredBox(
                             color: Colors.black54,
-                            child: const Center(
+                            child: Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -978,15 +974,13 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       if (isQualityVariant && fallbackUrl == null) {
                         // Fallback pending — show thumbnail + loading indicator
                         return SizedBox.expand(
-                          child: Container(
+                          child: ColoredBox(
                             color: Colors.black,
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
                                 VideoThumbnailWidget(
                                   video: video,
-                                  fit: BoxFit.cover,
-                                  showPlayIcon: false,
                                 ),
                                 if (isActive)
                                   const Center(
@@ -1034,7 +1028,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     // UNIFIED structure - use Offstage instead of conditional
                     // widgets to maintain stable widget tree during scroll
                     return SizedBox.expand(
-                      child: Container(
+                      child: ColoredBox(
                         color: Colors.black,
                         child: Stack(
                           fit: StackFit.expand,
@@ -1046,7 +1040,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 fit: useCoverFit
                                     ? BoxFit.cover
                                     : BoxFit.contain,
-                                alignment: Alignment.center,
                                 child: SizedBox(
                                   width: videoWidth,
                                   height: videoHeight,
@@ -1066,11 +1059,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             ),
                             // Buffering indicator
                             if (value.isInitialized && value.isBuffering)
-                              Positioned(
+                              const Positioned(
                                 bottom: 0,
                                 left: 0,
                                 right: 0,
-                                child: const LinearProgressIndicator(
+                                child: LinearProgressIndicator(
                                   minHeight: 12,
                                   backgroundColor: Colors.transparent,
                                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -1118,7 +1111,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 child: AnimatedOpacity(
                                   opacity: _pauseButtonOpacity,
                                   duration: const Duration(milliseconds: 500),
-                                  curve: Curves.linear,
                                   child: Container(
                                     width: 64,
                                     height: 64,
@@ -1182,11 +1174,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             if (isActive && video.hasSubtitles)
                               Consumer(
                                 builder: (context, ref, _) {
-                                  final visibilityMap = ref.watch(
+                                  final subtitlesVisible = ref.watch(
                                     subtitleVisibilityProvider,
                                   );
-                                  final subtitlesVisible =
-                                      visibilityMap[video.id] ?? false;
                                   return SubtitleOverlay(
                                     video: video,
                                     positionMs: value.position.inMilliseconds,
@@ -1311,12 +1301,6 @@ class _SafeVideoPlayer extends ConsumerWidget {
     );
 
     if (isDisposed) {
-      Log.debug(
-        'SafeVideoPlayer: controller for $videoId is marked disposed, '
-        'showing placeholder',
-        name: 'SafeVideoPlayer',
-        category: LogCategory.video,
-      );
       return const SizedBox.shrink();
     }
 
@@ -1327,10 +1311,10 @@ class _SafeVideoPlayer extends ConsumerWidget {
 /// Video overlay actions widget with working functionality
 class VideoOverlayActions extends ConsumerWidget {
   const VideoOverlayActions({
-    super.key,
     required this.video,
     required this.isVisible,
     required this.isActive,
+    super.key,
     this.hasBottomNavigation = true,
     this.contextTitle,
     this.isFullscreen = false,
@@ -1380,6 +1364,19 @@ class VideoOverlayActions extends ConsumerWidget {
         !isFullscreen && contextTitle != null && contextTitle!.isNotEmpty;
     final topOffset = hasListHeader ? 80.0 : 16.0;
 
+    // In fullscreen mode, ensure badges clear the status bar icons
+    // (battery, wifi, clock). viewPaddingOf may return 0 if a parent
+    // widget (Scaffold, SafeArea) has already consumed the safe area.
+    // Use the window's actual padding as a fallback minimum.
+    final viewPaddingTop = MediaQuery.viewPaddingOf(context).top;
+    final safeAreaTop = isFullscreen
+        ? (viewPaddingTop > 0
+              ? viewPaddingTop
+              : MediaQuery.of(context).padding.top > 0
+              ? MediaQuery.of(context).padding.top
+              : 54.0) // Fallback for Dynamic Island iPhones
+        : viewPaddingTop;
+
     // Calculate bottom offset based on navigation state
     final bottomOffset = hasBottomNavigation
         ? 14.0
@@ -1416,7 +1413,7 @@ class VideoOverlayActions extends ConsumerWidget {
         // Content warning badge below back button area
         if (video.hasContentWarning)
           Positioned(
-            top: MediaQuery.viewPaddingOf(context).top + topOffset + 56,
+            top: safeAreaTop + topOffset + 56,
             left: 16,
             child: GestureDetector(
               onTap: () => _showContentWarningDetails(
@@ -1431,13 +1428,13 @@ class VideoOverlayActions extends ConsumerWidget {
         // ProofMode and Vine badges in upper right corner (tappable)
         if (!isPreviewMode)
           Positioned(
-            top: MediaQuery.viewPaddingOf(context).top + topOffset,
+            top: safeAreaTop + topOffset,
             right: 16,
             child: GestureDetector(
               onTap: () {
                 _showBadgeExplanationModal(context, ref, video, isActive);
               },
-              child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
+              child: ProofModeBadgeRow(video: video),
             ),
           ),
         // Author info and video description overlay at bottom left
@@ -1473,15 +1470,13 @@ class VideoOverlayActions extends ConsumerWidget {
                     final displayName =
                         profile?.bestDisplayName ??
                         video.authorName ??
-                        NostrKeyUtils.truncateNpub(video.pubkey);
+                        UserProfile.generatedNameFor(video.pubkey);
                     final archivedLoops = video.originalLoops ?? 0;
                     final liveViews =
                         int.tryParse(video.rawTags['views'] ?? '') ?? 0;
-                    final isClassicVine =
-                        video.pubkey == AppConstants.classicVinesPubkey;
-                    final loopCount = isClassicVine
-                        ? archivedLoops + liveViews
-                        : (archivedLoops > 0 ? archivedLoops : liveViews);
+                    // Always sum archived (original Vine) and live (new diVine)
+                    // loops so migrated videos show their full combined count.
+                    final loopCount = archivedLoops + liveViews;
                     final hasLoopMetadata =
                         video.originalLoops != null ||
                         video.rawTags.containsKey('loops') ||
@@ -1500,7 +1495,6 @@ class VideoOverlayActions extends ConsumerWidget {
                     }
 
                     return Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Avatar with follow button overlay
                         SizedBox(
@@ -1534,10 +1528,10 @@ class VideoOverlayActions extends ConsumerWidget {
                                             height: 44,
                                             fit: BoxFit.cover,
                                             placeholder: (context, url) =>
-                                                Container(
+                                                const ColoredBox(
                                                   color:
                                                       VineTheme.cardBackground,
-                                                  child: const Icon(
+                                                  child: Icon(
                                                     Icons.person,
                                                     color: Colors.white54,
                                                     size: 24,
@@ -1545,19 +1539,19 @@ class VideoOverlayActions extends ConsumerWidget {
                                                 ),
                                             errorWidget:
                                                 (context, url, error) =>
-                                                    Container(
+                                                    const ColoredBox(
                                                       color: VineTheme
                                                           .cardBackground,
-                                                      child: const Icon(
+                                                      child: Icon(
                                                         Icons.person,
                                                         color: Colors.white54,
                                                         size: 24,
                                                       ),
                                                     ),
                                           )
-                                        : Container(
+                                        : const ColoredBox(
                                             color: VineTheme.cardBackground,
-                                            child: const Icon(
+                                            child: Icon(
                                               Icons.person,
                                               color: Colors.white54,
                                               size: 24,
@@ -1600,7 +1594,6 @@ class VideoOverlayActions extends ConsumerWidget {
                                           style: VineTheme.titleFont(
                                             fontSize: 14,
                                             height: 20 / 14,
-                                            color: Colors.white,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -1694,7 +1687,7 @@ class VideoOverlayActions extends ConsumerWidget {
                         height: 20 / 14,
                         letterSpacing: 0.25,
                       ),
-                      hashtagStyle: TextStyle(
+                      hashtagStyle: const TextStyle(
                         fontFamily: 'Inter',
                         color: VineTheme.vineGreen,
                         fontSize: 14,
@@ -1730,197 +1723,63 @@ class VideoOverlayActions extends ConsumerWidget {
         ),
         // Action buttons at bottom right
         Positioned(
-          bottom: bottomOffset,
+          bottom: bottomOffset - 6,
           right: 16,
-          child: AnimatedOpacity(
-            opacity: isActive ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: IgnorePointer(
-              ignoring: false, // Action buttons SHOULD receive taps
-              child: Column(
-                children: [
-                  // Edit button (only show for owned videos when feature is enabled)
-                  // Hide in fullscreen mode since it's shown in AppBar instead
-                  if (!isFullscreen && !isPreviewMode)
-                    _VideoEditButton(video: video),
+          child: SafeArea(
+            child: AnimatedOpacity(
+              opacity: isActive ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: IgnorePointer(
+                ignoring: false, // Action buttons SHOULD receive taps
+                child: Column(
+                  children: [
+                    // Edit button (only show for owned videos when feature
+                    // is enabled)
+                    // Hide in fullscreen mode since it's shown in AppBar
+                    if (!isFullscreen && !isPreviewMode)
+                      _VideoEditButton(video: video),
 
-                  // Flag/Report button for content moderation
-                  Semantics(
-                    identifier: 'report_button',
-                    container: true,
-                    explicitChildNodes: true,
-                    button: true,
-                    label: 'Report video',
-                    child: IconButton(
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints.tightFor(
-                        width: 48,
-                        height: 48,
-                      ),
-                      style: IconButton.styleFrom(
-                        highlightColor: Colors.transparent,
-                        splashFactory: NoSplash.splashFactory,
-                      ),
-                      onPressed: () {
-                        Log.info(
-                          '🚩 Report button tapped for ${video.id}',
-                          name: 'VideoFeedItem',
-                          category: LogCategory.ui,
-                        );
-                        context.showVideoPausingDialog(
-                          builder: (context) =>
-                              ReportContentDialog(video: video),
-                        );
-                      },
-                      icon: DecoratedBox(
-                        decoration: BoxDecoration(
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 15,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: SvgPicture.asset(
-                          'assets/icon/content-controls/flag.svg',
-                          width: 32,
-                          height: 32,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ),
+                    // CC (subtitles) button
+                    CcActionButton(video: video),
+
+                    const SizedBox(height: 4),
+
+                    // Like button
+                    LikeActionButton(
+                      video: video,
+                      isPreviewMode: isPreviewMode,
                     ),
-                  ),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // CC (subtitles) button
-                  CcActionButton(video: video),
+                    // Comment button with count
+                    _CommentActionButton(video: video, ref: ref),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // Share button
-                  Semantics(
-                    identifier: 'share_button',
-                    container: true,
-                    explicitChildNodes: true,
-                    button: true,
-                    label: 'Share video',
-                    child: IconButton(
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints.tightFor(
-                        width: 48,
-                        height: 48,
-                      ),
-                      style: IconButton.styleFrom(
-                        highlightColor: Colors.transparent,
-                        splashFactory: NoSplash.splashFactory,
-                      ),
-                      onPressed: () {
-                        Log.info(
-                          '📤 Share button tapped for ${video.id}',
-                          name: 'VideoFeedItem',
-                          category: LogCategory.ui,
-                        );
-                        _showShareMenu(context, ref, video, isActive);
-                      },
-                      icon: DecoratedBox(
-                        decoration: BoxDecoration(
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 15,
-                              spreadRadius: 1,
-                            ),
-                          ],
-                        ),
-                        child: SvgPicture.asset(
-                          'assets/icon/content-controls/share.svg',
-                          width: 32,
-                          height: 32,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ),
+                    // Repost button
+                    RepostActionButton(
+                      video: video,
+                      isPreviewMode: isPreviewMode,
                     ),
-                  ),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // Repost button
-                  RepostActionButton(
-                    video: video,
-                    isPreviewMode: isPreviewMode,
-                  ),
+                    // Share button
+                    ShareActionButton(video: video),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // Comment button with count
-                  _CommentActionButton(video: video, ref: ref),
-
-                  const SizedBox(height: 4),
-
-                  // Like button
-                  LikeActionButton(video: video, isPreviewMode: isPreviewMode),
-                ],
+                    // More button (report, mute, block, etc.)
+                    MoreActionButton(video: video),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ],
     );
-  }
-
-  Future<void> _showShareMenu(
-    BuildContext context,
-    WidgetRef ref,
-    VideoEvent video,
-    bool isActive,
-  ) async {
-    // Pause video before showing share menu
-    bool wasPaused = false;
-    try {
-      final controllerParams = VideoControllerParams(
-        videoId: video.id,
-        videoUrl: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
-        cacheUrl: video.videoUrl,
-        videoEvent: video,
-      );
-      final controller = ref.read(
-        individualVideoControllerProvider(controllerParams),
-      );
-      if (controller.value.isInitialized && controller.value.isPlaying) {
-        wasPaused = await safePause(controller, video.id);
-        if (wasPaused) {
-          Log.info(
-            '🎬 Paused video for share menu',
-            name: 'VideoFeedItem',
-            category: LogCategory.ui,
-          );
-        }
-      }
-    } catch (e) {
-      final errorStr = e.toString().toLowerCase();
-      if (!errorStr.contains('no active player') &&
-          !errorStr.contains('disposed')) {
-        Log.error(
-          'Failed to pause video for share menu: $e',
-          name: 'VideoFeedItem',
-          category: LogCategory.ui,
-        );
-      }
-    }
-
-    await context.showVideoPausingVineBottomSheet<void>(
-      builder: (context) => ShareVideoMenu(video: video),
-    );
-
-    // Video resumes when modal closes via overlay visibility provider
   }
 
   Future<void> _showContentWarningDetails(
@@ -1930,7 +1789,6 @@ class VideoOverlayActions extends ConsumerWidget {
     bool isActive,
   ) async {
     await context.showVideoPausingDialog<void>(
-      barrierDismissible: true,
       builder: (context) => _ContentWarningDetailsSheet(labels: labels),
     );
   }
@@ -1979,7 +1837,6 @@ class VideoOverlayActions extends ConsumerWidget {
     }
 
     await context.showVideoPausingDialog<void>(
-      barrierDismissible: true,
       builder: (context) => BadgeExplanationModal(video: video),
     );
 
@@ -2082,8 +1939,8 @@ class _VideoEditButton extends ConsumerWidget {
 /// Displays the video author's name (tappable to go to profile) and a follow button.
 class VideoAuthorRow extends ConsumerWidget {
   const VideoAuthorRow({
-    super.key,
     required this.video,
+    super.key,
     this.isFullscreen = false,
     this.hideFollowButtonIfFollowing = false,
   });
@@ -2158,7 +2015,7 @@ class VideoAuthorRow extends ConsumerWidget {
 
 /// Repost header banner showing who reposted the video.
 class VideoRepostHeader extends ConsumerWidget {
-  const VideoRepostHeader({super.key, required this.reposterPubkey});
+  const VideoRepostHeader({required this.reposterPubkey, super.key});
 
   final String reposterPubkey;
 
@@ -2295,30 +2152,36 @@ class _CommentActionButton extends StatelessWidget {
                   }
                 }
               }
+              final interactionsBloc = context.read<VideoInteractionsBloc?>();
               CommentsScreen.show(
                 context,
                 video,
                 initialCommentCount: totalComments,
+                onCommentCountChanged: interactionsBloc == null
+                    ? null
+                    : (count) {
+                        if (!interactionsBloc.isClosed) {
+                          interactionsBloc.add(
+                            VideoInteractionsCommentCountUpdated(count),
+                          );
+                        }
+                      },
               );
             },
             icon: DecoratedBox(
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
+                    color: VineTheme.backgroundColor.withValues(alpha: 0.15),
                     blurRadius: 15,
                     spreadRadius: 1,
                   ),
                 ],
               ),
-              child: SvgPicture.asset(
-                'assets/icon/content-controls/comment.svg',
-                width: 32,
-                height: 32,
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
-                  BlendMode.srcIn,
-                ),
+              child: const DivineIcon(
+                icon: DivineIconName.chat,
+                size: 32,
+                color: VineTheme.whiteText,
               ),
             ),
           ),
@@ -2523,13 +2386,12 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                   'Content Warnings',
                   style: VineTheme.titleFont(
                     fontSize: 18,
-                    color: VineTheme.whiteText,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               'The creator applied these labels:',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
             ),
@@ -2565,7 +2427,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             _ContentWarningBadge._describe(label),
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 13,
                             ),
@@ -2654,7 +2516,7 @@ class _ContentWarningOverlay extends StatelessWidget {
                     Text(
                       labels.map(_ContentWarningBadge._humanize).join(', '),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: VineTheme.secondaryText,
                         fontSize: 14,
                       ),

@@ -4,18 +4,17 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 
-import 'upload_manager_cancel_test.mocks.dart';
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
-@GenerateMocks([BlossomUploadService])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockBlossomUploadService mockBlossomService;
+  late _MockBlossomUploadService mockBlossomService;
   late UploadManager uploadManager;
   late Directory testDir;
 
@@ -37,7 +36,7 @@ void main() {
     }
 
     // Create mocks
-    mockBlossomService = MockBlossomUploadService();
+    mockBlossomService = _MockBlossomUploadService();
 
     // Create upload manager
     uploadManager = UploadManager(blossomService: mockBlossomService);

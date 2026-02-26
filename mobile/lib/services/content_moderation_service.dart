@@ -4,10 +4,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart' as nostr_sdk;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/nostr_list_service_mixin.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,12 +16,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// Aligned with the 6 design categories for flag/report flows.
 enum ContentFilterReason {
-  spam('Spam'),
-  harassment('Harassment & Profanity'),
-  nsfw('NSFW'),
-  illegal('Illegal'),
-  impersonation('Impersonation'),
-  other('Other');
+  spam('Spam or unwanted content'),
+  harassment('Harassment, bullying, or threats'),
+  violence('Violent or extremist content'),
+  sexualContent('Sexual or adult content'),
+  copyright('Copyright violation'),
+  falseInformation('Misinformation'),
+  csam('Child safety concern'),
+  aiGenerated('Suspected AI-generated content'),
+  other('Other violation')
+  ;
 
   const ContentFilterReason(this.description);
   final String description;
@@ -384,7 +388,7 @@ class ContentModerationService with NostrListServiceMixin {
         MuteListEntry(
           type: 'keyword',
           value: 'nsfw',
-          reason: ContentFilterReason.nsfw,
+          reason: ContentFilterReason.sexualContent,
           severity: ContentSeverity.warning,
           createdAt: DateTime.now(),
           note: 'Adult content warning',
@@ -528,19 +532,15 @@ class ContentModerationService with NostrListServiceMixin {
         case 'p': // Mute pubkey
           internalType = 'pubkey';
           filterReason = ContentFilterReason.harassment;
-          break;
         case 'e': // Mute event
           internalType = 'event';
           filterReason = ContentFilterReason.spam;
-          break;
         case 'word': // Mute keyword
           internalType = 'keyword';
           filterReason = ContentFilterReason.spam;
-          break;
         case 't': // Mute hashtag
           internalType = 'keyword'; // Treat hashtags as keywords
           filterReason = ContentFilterReason.spam;
-          break;
         default:
           // Skip unknown tag types
           continue;
@@ -595,12 +595,18 @@ class ContentModerationService with NostrListServiceMixin {
         baseMessage = 'This content may be spam';
       case ContentFilterReason.harassment:
         baseMessage = 'This content may contain harassment';
-      case ContentFilterReason.nsfw:
-        baseMessage = 'This content may contain nudity or violence';
-      case ContentFilterReason.illegal:
-        baseMessage = 'This content may violate the law';
-      case ContentFilterReason.impersonation:
-        baseMessage = 'This user may be impersonating someone';
+      case ContentFilterReason.violence:
+        baseMessage = 'This content may contain violence';
+      case ContentFilterReason.sexualContent:
+        baseMessage = 'This content may be sensitive';
+      case ContentFilterReason.copyright:
+        baseMessage = 'This content may violate copyright';
+      case ContentFilterReason.falseInformation:
+        baseMessage = 'This content may contain misinformation';
+      case ContentFilterReason.csam:
+        baseMessage = 'This content violates child safety policies';
+      case ContentFilterReason.aiGenerated:
+        baseMessage = 'This content may be AI-generated';
       case ContentFilterReason.other:
         baseMessage = 'This content may violate community guidelines';
     }

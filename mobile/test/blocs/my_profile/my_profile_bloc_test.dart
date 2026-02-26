@@ -513,6 +513,105 @@ void main() {
           ],
         );
       });
+
+      group('external NIP-05 extraction', () {
+        blocTest<MyProfileBloc, MyProfileState>(
+          'extracts external NIP-05 for non-divine domain',
+          setUp: () {
+            final profile = createTestProfile(nip05: 'alice@example.com');
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => profile);
+            when(
+              () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => profile);
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const MyProfileLoadRequested()),
+          expect: () => [
+            isA<MyProfileLoading>()
+                .having(
+                  (s) => s.externalNip05,
+                  'externalNip05',
+                  'alice@example.com',
+                )
+                .having(
+                  (s) => s.extractedUsername,
+                  'extractedUsername',
+                  isNull,
+                ),
+            isA<MyProfileLoaded>()
+                .having(
+                  (s) => s.externalNip05,
+                  'externalNip05',
+                  'alice@example.com',
+                )
+                .having(
+                  (s) => s.extractedUsername,
+                  'extractedUsername',
+                  isNull,
+                ),
+          ],
+        );
+
+        blocTest<MyProfileBloc, MyProfileState>(
+          'returns null externalNip05 for divine.video domain',
+          setUp: () {
+            final profile = createTestProfile(nip05: '_@alice.divine.video');
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => profile);
+            when(
+              () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => profile);
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const MyProfileLoadRequested()),
+          expect: () => [
+            isA<MyProfileLoading>()
+                .having((s) => s.externalNip05, 'externalNip05', isNull)
+                .having(
+                  (s) => s.extractedUsername,
+                  'extractedUsername',
+                  'alice',
+                ),
+            isA<MyProfileLoaded>()
+                .having((s) => s.externalNip05, 'externalNip05', isNull)
+                .having(
+                  (s) => s.extractedUsername,
+                  'extractedUsername',
+                  'alice',
+                ),
+          ],
+        );
+
+        blocTest<MyProfileBloc, MyProfileState>(
+          'returns null externalNip05 when NIP-05 is null',
+          setUp: () {
+            final profile = createTestProfile();
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => profile);
+            when(
+              () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => profile);
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const MyProfileLoadRequested()),
+          expect: () => [
+            isA<MyProfileLoading>().having(
+              (s) => s.externalNip05,
+              'externalNip05',
+              isNull,
+            ),
+            isA<MyProfileLoaded>().having(
+              (s) => s.externalNip05,
+              'externalNip05',
+              isNull,
+            ),
+          ],
+        );
+      });
     });
   });
 }

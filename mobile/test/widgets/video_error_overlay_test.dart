@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
@@ -13,14 +12,19 @@ import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 
 import '../builders/test_video_event_builder.dart';
-import 'video_error_overlay_test.mocks.dart';
 
-@GenerateMocks([AgeVerificationService])
+class _MockAgeVerificationService extends Mock
+    implements AgeVerificationService {}
+
 void main() {
   group('VideoErrorOverlay', () {
     late VideoEvent testVideo;
     late VideoControllerParams controllerParams;
-    late MockAgeVerificationService mockAgeVerification;
+    late _MockAgeVerificationService mockAgeVerification;
+
+    setUpAll(() {
+      registerFallbackValue(Object());
+    });
 
     setUp(() {
       testVideo = TestVideoEventBuilder.create(
@@ -34,7 +38,7 @@ void main() {
         videoEvent: testVideo,
       );
 
-      mockAgeVerification = MockAgeVerificationService();
+      mockAgeVerification = _MockAgeVerificationService();
     });
 
     Widget buildWidget({
@@ -152,7 +156,6 @@ void main() {
       await tester.pumpWidget(
         buildWidget(
           errorDescription: 'HttpException: Invalid statusCode: 401',
-          isActive: true,
         ),
       );
 
@@ -164,7 +167,7 @@ void main() {
       tester,
     ) async {
       when(
-        mockAgeVerification.verifyAdultContentAccess(any),
+        () => mockAgeVerification.verifyAdultContentAccess(any()),
       ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(
@@ -176,7 +179,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify age verification service was called
-      verify(mockAgeVerification.verifyAdultContentAccess(any)).called(1);
+      verify(
+        () => mockAgeVerification.verifyAdultContentAccess(any()),
+      ).called(1);
       // TODO(any): Fix and re-enable these tests
     }, skip: true);
 

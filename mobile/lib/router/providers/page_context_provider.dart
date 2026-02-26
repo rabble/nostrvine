@@ -3,17 +3,19 @@
 
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
@@ -25,7 +27,6 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
-import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -34,10 +35,8 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:riverpod/riverpod.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/screens/developer_options_screen.dart';
+import 'package:riverpod/riverpod.dart';
 
 /// Route types supported by the app
 enum RouteType {
@@ -75,7 +74,6 @@ enum RouteType {
   creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
   secureAccount,
-  newVideoFeed,
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
   videoDetail, // Video detail screen (deep link to specific video)
 }
@@ -149,7 +147,6 @@ RouteContext parseRoute(String path) {
       return RouteContext(
         type: RouteType.profile,
         npub: npub,
-        videoIndex: null,
       );
 
     case 'notifications':
@@ -312,9 +309,6 @@ RouteContext parseRoute(String path) {
     case 'secure-account':
       return const RouteContext(type: RouteType.secureAccount);
 
-    case 'new-video-feed':
-      return const RouteContext(type: RouteType.newVideoFeed);
-
     case 'pooled-video-feed':
       return const RouteContext(type: RouteType.pooledVideoFeed);
 
@@ -337,7 +331,7 @@ String buildRoute(RouteContext context) {
     case RouteType.home:
       final rawIndex = context.videoIndex ?? 0;
       final index = rawIndex < 0 ? 0 : rawIndex;
-      return HomeScreenRouter.pathForIndex(index);
+      return VideoFeedPage.pathForIndex(index);
 
     case RouteType.explore:
       if (context.videoIndex != null) {
@@ -484,9 +478,6 @@ String buildRoute(RouteContext context) {
 
     case RouteType.secureAccount:
       return SecureAccountScreen.path;
-
-    case RouteType.newVideoFeed:
-      return VideoFeedPage.path;
 
     case RouteType.pooledVideoFeed:
       return PooledFullscreenVideoFeedScreen.path;

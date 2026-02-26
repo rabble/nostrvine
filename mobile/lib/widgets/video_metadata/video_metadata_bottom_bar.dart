@@ -8,7 +8,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -23,7 +23,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   /// Saves the final rendered video to the device gallery.
   Future<void> _saveToGallery(WidgetRef ref) async {
     final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
-    if (finalRenderedClip == null) return null;
+    if (finalRenderedClip == null) return;
 
     final gallerySaveService = ref.read(gallerySaveServiceProvider);
     await gallerySaveService.saveVideoToGallery(finalRenderedClip.video);
@@ -85,7 +85,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
     );
 
     if (saveSuccess) {
-      router.go(HomeScreenRouter.pathForIndex(0));
+      router.go(VideoFeedPage.pathForIndex(0));
       // Clear editor state after navigation animation completes (~600ms)
       Future.delayed(
         const Duration(milliseconds: 600),

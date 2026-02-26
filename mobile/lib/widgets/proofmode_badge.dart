@@ -10,8 +10,8 @@ enum VerificationLevel { verifiedMobile, verifiedWeb, basicProof, unverified }
 /// ProofMode verification badge widget
 class ProofModeBadge extends StatelessWidget {
   const ProofModeBadge({
-    super.key,
     required this.level,
+    super.key,
     this.size = BadgeSize.small,
   });
 
@@ -31,7 +31,7 @@ class ProofModeBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: config.backgroundColor,
         borderRadius: BorderRadius.circular(dimensions.borderRadius),
-        border: Border.all(color: config.borderColor, width: 1),
+        border: Border.all(color: config.borderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -55,7 +55,7 @@ class ProofModeBadge extends StatelessWidget {
     switch (level) {
       case VerificationLevel.verifiedMobile:
         return const _BadgeConfig(
-          label: 'Fully Verified',
+          label: 'Human Made',
           icon: Icons.verified,
           backgroundColor: Color(0xFFD4EDDA), // Light green
           borderColor: Color(0xFF28A745), // Green
@@ -147,7 +147,6 @@ class OriginalContentBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(dimensions.borderRadius),
         border: Border.all(
           color: const Color(0xFF0097A7), // Darker cyan border
-          width: 1,
         ),
       ),
       child: Row(
@@ -300,7 +299,7 @@ class NotDivineBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black,
         borderRadius: BorderRadius.circular(dimensions.borderRadius),
-        border: Border.all(color: Colors.grey.shade700, width: 1),
+        border: Border.all(color: Colors.grey.shade700),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

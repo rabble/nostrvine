@@ -255,7 +255,7 @@ void main() {
       testWidgets('screen reacts to recording state changes', (tester) async {
         await tester.pumpWidget(
           buildTestWidgetWithOverrides([
-            videoRecorderProvider.overrideWith(() => VideoRecorderNotifier()),
+            videoRecorderProvider.overrideWith(VideoRecorderNotifier.new),
           ]),
         );
 

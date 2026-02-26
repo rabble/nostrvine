@@ -45,7 +45,7 @@ void main() {
         banner: 'https://example.com/banner.jpg',
         nip05: 'test@example.com',
         lud16: 'test@lightning.com',
-        rawData: {'custom': 'data'},
+        rawData: const {'custom': 'data'},
         createdAt: now,
         eventId: 'event_123',
       );
@@ -70,7 +70,7 @@ void main() {
         pubkey: 'test_pubkey_456',
         displayName: 'Original Name',
         name: 'original',
-        rawData: {},
+        rawData: const {},
         createdAt: now,
         eventId: 'event_1',
       );
@@ -82,7 +82,7 @@ void main() {
         displayName: 'Updated Name',
         name: 'updated',
         about: 'New bio',
-        rawData: {},
+        rawData: const {},
         createdAt: now,
         eventId: 'event_2',
       );
@@ -106,7 +106,7 @@ void main() {
     );
 
     test('watchProfile emits profile after insert', () async {
-      final pubkey = 'test_pubkey_789';
+      const pubkey = 'test_pubkey_789';
       final stream = db.userProfilesDao.watchProfile(pubkey);
 
       // Skip the initial null emission
@@ -117,7 +117,7 @@ void main() {
         pubkey: pubkey,
         displayName: 'Watched User',
         name: 'watched',
-        rawData: {},
+        rawData: const {},
         createdAt: now,
         eventId: 'event_watch_1',
       );
@@ -131,7 +131,7 @@ void main() {
     });
 
     test('watchProfile emits updated profile after update', () async {
-      final pubkey = 'test_pubkey_update';
+      const pubkey = 'test_pubkey_update';
       final now = DateTime.now();
 
       // Insert initial profile
@@ -139,7 +139,7 @@ void main() {
         pubkey: pubkey,
         displayName: 'Original',
         name: 'original',
-        rawData: {},
+        rawData: const {},
         createdAt: now,
         eventId: 'event_1',
       );
@@ -155,7 +155,7 @@ void main() {
         pubkey: pubkey,
         displayName: 'Updated',
         name: 'updated',
-        rawData: {},
+        rawData: const {},
         createdAt: now,
         eventId: 'event_2',
       );
@@ -174,7 +174,7 @@ void main() {
           pubkey: 'pubkey_1',
           displayName: 'User 1',
           name: 'user1',
-          rawData: {},
+          rawData: const {},
           createdAt: now,
           eventId: 'event_1',
         ),
@@ -182,7 +182,7 @@ void main() {
           pubkey: 'pubkey_2',
           displayName: 'User 2',
           name: 'user2',
-          rawData: {},
+          rawData: const {},
           createdAt: now,
           eventId: 'event_2',
         ),
@@ -190,7 +190,7 @@ void main() {
           pubkey: 'pubkey_3',
           displayName: 'User 3',
           name: 'user3',
-          rawData: {},
+          rawData: const {},
           createdAt: now,
           eventId: 'event_3',
         ),
@@ -214,7 +214,7 @@ void main() {
         pubkey: 'delete_me',
         displayName: 'Delete User',
         name: 'deleteuser',
-        rawData: {},
+        rawData: const {},
         createdAt: now,
         eventId: 'event_delete',
       );
@@ -246,7 +246,7 @@ void main() {
         pubkey: 'watch_all_test',
         displayName: 'Test User',
         name: 'test',
-        rawData: {},
+        rawData: const {},
         createdAt: now,
         eventId: 'event_test',
       );

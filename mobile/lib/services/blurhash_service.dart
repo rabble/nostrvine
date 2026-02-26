@@ -1,10 +1,11 @@
 // ABOUTME: Blurhash service for generating image placeholders and smooth loading transitions
 // ABOUTME: Creates compact representations of images for better UX during vine loading
 
-import 'dart:ui' as ui;
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
+import 'dart:ui' as ui;
+
 import 'package:blurhash_dart/blurhash_dart.dart' as blurhash_dart;
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -195,7 +196,7 @@ class BlurhashService {
     if (pixels.isEmpty) return colors;
 
     // Sample a few pixels to get representative colors
-    final sampleCount = 4; // Sample 4 colors
+    const sampleCount = 4; // Sample 4 colors
     final totalPixels = width * height;
     final step = totalPixels ~/ sampleCount;
 

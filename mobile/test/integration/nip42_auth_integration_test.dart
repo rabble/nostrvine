@@ -4,10 +4,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/client_utils/keys.dart' as keys;
-import 'package:openvine/main.dart' as app;
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
+import 'package:openvine/main.dart' as app;
 import 'package:openvine/utils/unified_logger.dart';
 
 void main() {

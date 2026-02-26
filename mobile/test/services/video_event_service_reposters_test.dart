@@ -4,30 +4,34 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import './video_event_service_reposters_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, SubscriptionManager])
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('VideoEventService getRepostersForVideo', () {
     late VideoEventService videoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
       // Setup default mock behaviors
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.connectedRelayCount).thenReturn(3);
-      when(mockNostrService.connectedRelays).thenReturn([
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(3);
+      when(() => mockNostrService.connectedRelays).thenReturn([
         'wss://relay1.example.com',
         'wss://relay2.example.com',
         'wss://relay3.example.com',
@@ -44,11 +48,11 @@ void main() {
     });
 
     test('should query with correct filter (kind 6, e tag)', () async {
-      final videoId = 'abc123def456';
+      const videoId = 'abc123def456';
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       // Call the method
@@ -61,9 +65,9 @@ void main() {
 
       // Verify the filter
       verify(
-        mockNostrService.subscribe(
-          argThat(
-            predicate<List<Filter>>((filters) {
+        () => mockNostrService.subscribe(
+          any(
+            that: predicate<List<Filter>>((filters) {
               if (filters.isEmpty) return false;
               final filter = filters.first;
               return filter.kinds != null &&
@@ -77,22 +81,22 @@ void main() {
     });
 
     test('should extract pubkeys correctly from Kind 16 events', () async {
-      final videoId =
+      const videoId =
           'abc123def456789012345678901234567890123456789012345678901234';
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       // Create repost events with valid hex pubkeys (64 chars)
-      final reposter1Pubkey =
+      const reposter1Pubkey =
           '1111111111111111111111111111111111111111111111111111111111111111';
-      final reposter2Pubkey =
+      const reposter2Pubkey =
           '2222222222222222222222222222222222222222222222222222222222222222';
-      final reposter3Pubkey =
+      const reposter3Pubkey =
           '3333333333333333333333333333333333333333333333333333333333333333';
-      final originalAuthorPubkey =
+      const originalAuthorPubkey =
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
       final repost1 = Event(
@@ -157,11 +161,11 @@ void main() {
     }, skip: true);
 
     test('should handle empty results when no reposts exist', () async {
-      final videoId = 'abc123def456';
+      const videoId = 'abc123def456';
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       // Call the method
@@ -179,17 +183,17 @@ void main() {
     test(
       'should deduplicate pubkeys when same user reposts multiple times',
       () async {
-        final videoId =
+        const videoId =
             'abc123def456789012345678901234567890123456789012345678901234';
         final eventStreamController = StreamController<Event>.broadcast();
 
         when(
-          mockNostrService.subscribe(argThat(anything)),
+          () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => eventStreamController.stream);
 
-        final reposter1Pubkey =
+        const reposter1Pubkey =
             '1111111111111111111111111111111111111111111111111111111111111111';
-        final reposter2Pubkey =
+        const reposter2Pubkey =
             '2222222222222222222222222222222222222222222222222222222222222222';
 
         // Create multiple reposts from same user
@@ -252,11 +256,11 @@ void main() {
     );
 
     test('should handle timeout when relay does not respond', () async {
-      final videoId = 'abc123def456';
+      const videoId = 'abc123def456';
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
       // Call the method
@@ -276,19 +280,19 @@ void main() {
     });
 
     test('should ignore non-Kind-6 events in stream', () async {
-      final videoId =
+      const videoId =
           'abc123def456789012345678901234567890123456789012345678901234';
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
-      final reposterPubkey =
+      const reposterPubkey =
           '1111111111111111111111111111111111111111111111111111111111111111';
-      final someonePubkey =
+      const someonePubkey =
           '2222222222222222222222222222222222222222222222222222222222222222';
-      final creatorPubkey =
+      const creatorPubkey =
           '3333333333333333333333333333333333333333333333333333333333333333';
 
       // Create a Kind 16 repost

@@ -37,6 +37,9 @@ class CameraLinuxService extends CameraService {
   bool get canSwitchCamera => false;
 
   @override
+  bool get isSwitchingCamera => false;
+
+  @override
   bool get hasFlash => false;
 
   @override

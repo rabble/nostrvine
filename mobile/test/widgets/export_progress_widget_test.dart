@@ -12,7 +12,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.concatenating,
@@ -29,7 +29,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.applyingTextOverlay,
@@ -46,7 +46,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.mixingAudio,
@@ -63,7 +63,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.generatingThumbnail,
@@ -80,7 +80,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.complete,
@@ -97,7 +97,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(stage: ExportStage.error, progress: 0.0),
           ),
@@ -109,7 +109,7 @@ void main() {
 
     testWidgets('displays progress percentage', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.concatenating,
@@ -126,7 +126,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.concatenating,
@@ -173,7 +173,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.concatenating,
@@ -190,7 +190,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.complete,
@@ -207,7 +207,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.concatenating,
@@ -224,7 +224,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(stage: ExportStage.error, progress: 0.0),
           ),
@@ -236,7 +236,7 @@ void main() {
 
     testWidgets('uses dark theme colors', (WidgetTester tester) async {
       await tester.pumpWidget(
-        MaterialApp(
+        const MaterialApp(
           home: Scaffold(
             body: ExportProgressWidget(
               stage: ExportStage.concatenating,
@@ -247,16 +247,16 @@ void main() {
       );
 
       // Verify dark background overlay exists
-      final container = tester.widget<Container>(
+      final container = tester.widget<ColoredBox>(
         find
             .descendant(
               of: find.byType(ExportProgressWidget),
-              matching: find.byType(Container),
+              matching: find.byType(ColoredBox),
             )
             .first,
       );
 
-      expect(container.color?.a, closeTo(0.9, 0.01));
+      expect(container.color.a, closeTo(0.9, 0.01));
     });
   });
 }

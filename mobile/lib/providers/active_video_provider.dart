@@ -8,12 +8,12 @@ import 'package:openvine/providers/hashtag_feed_providers.dart';
 import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
-import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:riverpod/src/providers/provider.dart';
 
 /// Active video ID derived from router state and app lifecycle
 /// Returns null when app is backgrounded, overlay is visible, or no valid video at current index
@@ -65,28 +65,24 @@ final activeVideoIdProvider = Provider<String?>((ref) {
   AsyncValue<VideoFeedState> videosAsync;
   switch (ctx.type) {
     case RouteType.home:
-      // Use homeFeedProvider directly instead of videosForHomeRouteProvider.
-      // videosForHomeRouteProvider gates on pageContextProvider which
-      // oscillates during post-login transitions, causing the active video
-      // to flicker between null and the correct value. homeFeedProvider
-      // has no such dependency and provides a stable video list.
-      videosAsync = ref.watch(homeFeedProvider);
-      break;
+      // Home feed uses PooledVideoFeed which manages its own playback
+      // via VideoFeedController. Return null to let it handle internally.
+      Log.debug(
+        '[ACTIVE] Home route (self-managed by PooledVideoFeed)',
+        name: 'ActiveVideoProvider',
+        category: LogCategory.system,
+      );
+      return null;
     case RouteType.profile:
       videosAsync = ref.watch(videosForProfileRouteProvider);
-      break;
     case RouteType.hashtag:
       videosAsync = ref.watch(hashtagFeedProvider);
-      break;
     case RouteType.explore:
       videosAsync = ref.watch(videosForExploreRouteProvider);
-      break;
     case RouteType.search:
       videosAsync = ref.watch(videosForSearchRouteProvider);
-      break;
     case RouteType.likedVideos:
       videosAsync = ref.watch(likedVideosFeedProvider);
-      break;
     case RouteType.videoFeed:
     case RouteType.pooledVideoFeed:
     case RouteType.videoDetail:
@@ -125,7 +121,6 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.creatorAnalytics:
     case RouteType.sound:
     case RouteType.secureAccount:
-    case RouteType.newVideoFeed:
       // Non-video routes - return null
       Log.debug(
         '[ACTIVE] ❌ Non-video route: ${ctx.type}',
@@ -180,10 +175,11 @@ final activeVideoIdProvider = Provider<String?>((ref) {
 
 /// Per-video active state (for efficient VideoFeedItem updates)
 /// Returns true if the given videoId matches the current active video
-final isVideoActiveProvider = Provider.family<bool, String>((ref, videoId) {
-  final activeVideoId = ref.watch(activeVideoIdProvider);
-  return activeVideoId == videoId;
-});
+final ProviderFamily<bool, String> isVideoActiveProvider =
+    Provider.family<bool, String>((ref, videoId) {
+      final activeVideoId = ref.watch(activeVideoIdProvider);
+      return activeVideoId == videoId;
+    });
 
 /// Auto-cleanup provider that disposes all video controllers when navigating
 /// between different screens (e.g., home → explore, home → camera).
@@ -221,5 +217,5 @@ final videoControllerAutoCleanupProvider = Provider<void>((ref) {
       // Dispose all controllers when leaving a video feed screen
       disposeAllVideoControllers(ref.container);
     }
-  }, fireImmediately: false);
+  });
 });

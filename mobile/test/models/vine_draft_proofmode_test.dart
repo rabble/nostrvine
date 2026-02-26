@@ -2,17 +2,18 @@
 // ABOUTME: Validates that native proof JSON is stored and retrieved correctly
 
 import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:models/models.dart' show AspectRatio, NativeProofData;
 import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/vine_draft.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:models/models.dart' show NativeProofData, AspectRatio;
 
 void main() {
   group('VineDraft NativeProof serialization', () {
     test('should serialize and deserialize proofManifestJson correctly', () {
       // Create a sample NativeProofData
-      final proofData = NativeProofData(
+      const proofData = NativeProofData(
         videoHash: 'abc123def456',
         sensorDataCsv: 'timestamp,lat,lng\n2025-01-01,0.0,0.0',
         pgpSignature: 'pgp_signature_data',
@@ -29,7 +30,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -67,7 +68,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -113,7 +114,7 @@ void main() {
     });
 
     test('should preserve proofManifestJson through copyWith', () {
-      final proofData = NativeProofData(
+      const proofData = NativeProofData(
         videoHash: 'hash_123',
         pgpSignature: 'sig_123',
         publicKey: 'key_123',
@@ -126,7 +127,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -153,7 +154,7 @@ void main() {
 
     test('NativeProofData verification level should work correctly', () {
       // Full verification with mobile attestation
-      final fullProof = NativeProofData(
+      const fullProof = NativeProofData(
         videoHash: 'hash',
         pgpSignature: 'sig',
         publicKey: 'key',
@@ -165,7 +166,7 @@ void main() {
       expect(fullProof.hasMobileAttestation, true);
 
       // Web verification (no attestation)
-      final webProof = NativeProofData(
+      const webProof = NativeProofData(
         videoHash: 'hash',
         pgpSignature: 'sig',
         publicKey: 'key',
@@ -176,7 +177,7 @@ void main() {
       expect(webProof.hasMobileAttestation, false);
 
       // Basic proof (sensor data only)
-      final basicProof = NativeProofData(
+      const basicProof = NativeProofData(
         videoHash: 'hash',
         sensorDataCsv: 'csv',
       );

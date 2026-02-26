@@ -3,6 +3,8 @@
 // ABOUTME: Uses NostrClient for relay operations and organizes comments
 // chronologically.
 
+import 'dart:async';
+
 import 'package:comments_repository/src/exceptions.dart';
 import 'package:comments_repository/src/models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -38,6 +40,9 @@ class CommentsRepository {
   }) : _nostrClient = nostrClient;
 
   final NostrClient _nostrClient;
+
+  /// Subscription ID for the active comment watch, if any.
+  String? _watchSubscriptionId;
 
   /// Loads comments for a root event and returns them in a flat list.
   ///
@@ -114,12 +119,17 @@ class CommentsRepository {
           eventMap.values.toList(),
           rootEventId,
           rootEventKind,
+          rootAddressableId: rootAddressableId,
         );
       }
 
       // No addressable ID - just query by E tag
       final events = await _nostrClient.queryEvents([filterByE]);
-      return _buildThreadFromEvents(events, rootEventId, rootEventKind);
+      return _buildThreadFromEvents(
+        events,
+        rootEventId,
+        rootEventKind,
+      );
     } on Exception catch (e) {
       throw LoadCommentsFailedException('Failed to load comments: $e');
     }
@@ -318,6 +328,78 @@ class CommentsRepository {
     }
   }
 
+  /// Watches for new comments in real-time via a persistent Nostr subscription.
+  ///
+  /// Opens a subscription for Kind 1111 events matching the root event,
+  /// returning a [Stream<Comment>] that emits each new comment as it arrives.
+  ///
+  /// Parameters:
+  /// - [rootEventId]: The ID of the root event to watch comments for
+  /// - [rootEventKind]: The kind of the root event (e.g., 34236 for videos)
+  /// - [rootAddressableId]: Optional addressable identifier (format:
+  ///   `kind:pubkey:d-tag`). When provided, subscribes to both E and A tags.
+  /// - [since]: Only receive comments created after this time
+  ///
+  /// Returns a [Stream<Comment>] that emits new comments as they arrive.
+  /// Call [stopWatchingComments] to close the subscription.
+  ///
+  /// Throws [WatchCommentsFailedException] if the subscription fails.
+  Stream<Comment> watchComments({
+    required String rootEventId,
+    required int rootEventKind,
+    required DateTime since,
+    String? rootAddressableId,
+  }) {
+    try {
+      final sinceTimestamp = since.millisecondsSinceEpoch ~/ 1000;
+
+      final filters = <Filter>[
+        Filter(
+          kinds: const [_commentKind],
+          uppercaseE: [rootEventId],
+          since: sinceTimestamp,
+        ),
+        if (rootAddressableId != null && rootAddressableId.isNotEmpty)
+          Filter(
+            kinds: const [_commentKind],
+            uppercaseA: [rootAddressableId],
+            since: sinceTimestamp,
+          ),
+      ];
+
+      _watchSubscriptionId = 'comments_watch_$rootEventId';
+
+      final eventStream = _nostrClient.subscribe(
+        filters,
+        subscriptionId: _watchSubscriptionId,
+      );
+
+      // When dual-filter subscriptions are active (E + A tags), the same
+      // comment event can arrive from both filters. Deduplicate by event ID
+      // to prevent consumers from processing duplicates.
+      final seenIds = <String>{};
+
+      return eventStream
+          .where((event) => seenIds.add(event.id))
+          .map((event) => _eventToComment(event, rootEventId, rootEventKind))
+          .where((comment) => comment != null)
+          .cast<Comment>();
+    } on Exception catch (e) {
+      throw WatchCommentsFailedException('Failed to watch comments: $e');
+    }
+  }
+
+  /// Stops watching for new comments.
+  ///
+  /// Closes the persistent Nostr subscription opened by [watchComments].
+  Future<void> stopWatchingComments() async {
+    final id = _watchSubscriptionId;
+    if (id != null) {
+      await _nostrClient.unsubscribe(id);
+      _watchSubscriptionId = null;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
@@ -402,15 +484,44 @@ class CommentsRepository {
     }
   }
 
+  /// Checks whether an event's uppercase `E` or `A` tag matches the queried
+  /// root. This provides client-side filtering for relays that do not support
+  /// NIP-22 uppercase tag filters and return all Kind 1111 events.
+  bool _eventMatchesRoot(
+    Event event,
+    String rootEventId,
+    String? rootAddressableId,
+  ) {
+    for (final rawTag in event.tags) {
+      final tag = rawTag as List<dynamic>;
+      if (tag.length < 2) continue;
+      final tagType = tag[0] as String;
+      final tagValue = tag[1] as String;
+      if (tagType == 'E' && tagValue == rootEventId) return true;
+      if (tagType == 'A' &&
+          rootAddressableId != null &&
+          tagValue == rootAddressableId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Builds a CommentThread from a list of Nostr events.
+  ///
+  /// Events that do not reference the queried root (via uppercase `E` or `A`
+  /// tags) are filtered out to guard against relays that ignore uppercase tag
+  /// filters.
   CommentThread _buildThreadFromEvents(
     List<Event> events,
     String rootEventId,
-    int rootEventKind,
-  ) {
+    int rootEventKind, {
+    String? rootAddressableId,
+  }) {
     final commentMap = <String, Comment>{};
 
     for (final event in events) {
+      if (!_eventMatchesRoot(event, rootEventId, rootAddressableId)) continue;
       final comment = _eventToComment(event, rootEventId, rootEventKind);
       if (comment != null) {
         commentMap[comment.id] = comment;

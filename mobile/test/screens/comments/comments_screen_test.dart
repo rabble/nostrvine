@@ -7,9 +7,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
-import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
@@ -90,11 +90,10 @@ void main() {
 
       // Default state
       when(() => mockCommentsBloc.state).thenReturn(
-        CommentsState(
+        const CommentsState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          commentsById: {},
         ),
       );
     });
@@ -225,7 +224,7 @@ void main() {
         final testProfile = UserProfile(
           pubkey: TestCommentIds.author1Pubkey,
           displayName: 'TestUser',
-          rawData: {},
+          rawData: const {},
           createdAt: DateTime.now(),
           eventId: 'test_event_id',
         );
@@ -247,7 +246,6 @@ void main() {
           status: CommentsStatus.success,
           commentsById: {comment.id: comment},
           activeReplyCommentId: TestCommentIds.comment1Id,
-          replyInputText: '',
         );
 
         await tester.pumpWidget(buildTestWidget(commentsState: commentsState));
@@ -263,7 +261,7 @@ void main() {
       testWidgets('shows correct initial count during loading state', (
         tester,
       ) async {
-        final state = CommentsState(
+        const state = CommentsState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.loading,
@@ -304,7 +302,7 @@ void main() {
       });
 
       testWidgets('shows singular "Comment" for count of 1', (tester) async {
-        final state = CommentsState(
+        const state = CommentsState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.loading,
@@ -358,7 +356,7 @@ void main() {
       testWidgets('shows loading indicator in list when loading', (
         tester,
       ) async {
-        final state = CommentsState(
+        const state = CommentsState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.loading,
@@ -371,11 +369,10 @@ void main() {
       });
 
       testWidgets('shows empty state when no comments', (tester) async {
-        final state = CommentsState(
+        const state = CommentsState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          commentsById: {},
         );
 
         await tester.pumpWidget(buildTestWidget(commentsState: state));

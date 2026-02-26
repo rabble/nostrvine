@@ -67,7 +67,7 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) async => [createTestProfile('${'a' * 64}', 'Alice')],
+            (_) async => [createTestProfile('a' * 64, 'Alice')],
           );
         },
         build: createBloc,
@@ -471,19 +471,114 @@ void main() {
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
-            (_) async => [createTestProfile('${'a' * 64}', 'Alice')],
+            (_) async => [createTestProfile('a' * 64, 'Alice')],
           );
         },
         build: createBloc,
         seed: () => UserSearchState(
           status: UserSearchStatus.success,
           query: 'alice',
-          results: [createTestProfile('${'a' * 64}', 'Alice')],
+          results: [createTestProfile('a' * 64, 'Alice')],
           offset: 1,
-          hasMore: false,
         ),
         act: (bloc) => bloc.add(const UserSearchCleared()),
         expect: () => [const UserSearchState()],
+      );
+    });
+
+    group('hasVideos parameter', () {
+      const debounceDuration = Duration(milliseconds: 400);
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'passes hasVideos: false to profileRepository when configured',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'test',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) async => []);
+        },
+        build: () => UserSearchBloc(
+          profileRepository: mockProfileRepository,
+          hasVideos: false,
+        ),
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
+        wait: debounceDuration,
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.searchUsers(
+              query: 'test',
+              limit: 50,
+              sortBy: 'followers',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'passes hasVideos: false to profileRepository on load more',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'alice',
+              limit: 50,
+              offset: 50,
+              sortBy: 'followers',
+            ),
+          ).thenAnswer((_) async => createTestProfiles(10));
+        },
+        build: () => UserSearchBloc(
+          profileRepository: mockProfileRepository,
+          hasVideos: false,
+        ),
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: createTestProfiles(50),
+          offset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const UserSearchLoadMore()),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.searchUsers(
+              query: 'alice',
+              limit: 50,
+              offset: 50,
+              sortBy: 'followers',
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'defaults hasVideos to true when not specified',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'test',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
+        wait: debounceDuration,
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.searchUsers(
+              query: 'test',
+              limit: 50,
+              sortBy: 'followers',
+              hasVideos: true,
+            ),
+          ).called(1);
+        },
       );
     });
 
@@ -511,7 +606,7 @@ void main() {
         final state = UserSearchState(
           status: UserSearchStatus.success,
           query: 'test',
-          results: [createTestProfile('${'a' * 64}', 'Alice')],
+          results: [createTestProfile('a' * 64, 'Alice')],
           offset: 10,
           hasMore: true,
           isLoadingMore: true,
@@ -528,14 +623,13 @@ void main() {
       });
 
       test('props includes all fields', () {
-        final profile = createTestProfile('${'a' * 64}', 'Alice');
+        final profile = createTestProfile('a' * 64, 'Alice');
         final state = UserSearchState(
           status: UserSearchStatus.success,
           query: 'alice',
           results: [profile],
           offset: 1,
           hasMore: true,
-          isLoadingMore: false,
         );
 
         expect(state.props, [

@@ -15,18 +15,18 @@ env:
 # 4. Tap on the Reposts tab: Validate tab is loaded and VIDEO_TITLE listed
 
 # 1. Open specific video VIDEO_TITLE
-- runFlow: ../utils/openSpecificVideo.yml
+- runFlow: ../utils/openSpecificVideo.yaml
 
 # 2. Tap on Repost: Validate video reposted is selected
-- runFlow: "../asserts/assertVideoRepost.yml"
+- runFlow: "../asserts/assertVideoRepost.yaml"
 - tapOn:
     id: repost_button
-- runFlow: "../asserts/assertVideoReposted.yml"
+- runFlow: "../asserts/assertVideoReposted.yaml"
 
 # 3. Tap on the profile: Validate profile is loaded
 - tapOn:
     id: profile_tab
-- runFlow: ../asserts/assertProfile.yml
+- runFlow: ../asserts/assertProfile.yaml
 # 4. Tap on the Reposts tab: Validate tab is loaded and VIDEO_TITLE listed
 - tapOn: Tab 3 of 3
 - tapOn:

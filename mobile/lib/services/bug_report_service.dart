@@ -420,7 +420,6 @@ class BugReportService {
           return BugReportResult(
             success: true,
             reportId: data.reportId,
-            messageEventId: null,
             timestamp: DateTime.now(),
             error:
                 'Uploaded to Blossom but DM failed: ${result.error}. URL: $bugReportUrl',

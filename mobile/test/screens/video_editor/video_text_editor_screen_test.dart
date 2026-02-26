@@ -153,7 +153,6 @@ void main() {
             color: Colors.red,
             background: Colors.blue,
             colorMode: LayerBackgroundMode.onlyColor,
-            align: TextAlign.left,
             fontScale: 1.5,
             textStyle: const TextStyle(fontFamily: 'Test'),
           );
@@ -178,7 +177,6 @@ void main() {
             background: Colors.blue,
             colorMode: LayerBackgroundMode.onlyColor,
             align: TextAlign.center,
-            fontScale: 1.0,
             textStyle: const TextStyle(),
           );
 
@@ -208,7 +206,6 @@ void main() {
             background: Colors.blue,
             colorMode: LayerBackgroundMode.background,
             align: TextAlign.center,
-            fontScale: 1.0,
             textStyle: const TextStyle(),
           );
 
@@ -361,7 +358,7 @@ void main() {
       final mockBloc = MockVideoEditorTextBloc();
       when(
         () => mockBloc.state,
-      ).thenReturn(const VideoEditorTextState(fontSize: 0.5));
+      ).thenReturn(const VideoEditorTextState());
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
@@ -375,7 +372,7 @@ void main() {
       await tester.pump();
 
       final textEditor = tester.widget<TextEditor>(find.byType(TextEditor));
-      final expectedFontScale =
+      const expectedFontScale =
           VideoEditorConstants.minFontScale +
           (0.5 *
               (VideoEditorConstants.maxFontScale -

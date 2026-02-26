@@ -170,7 +170,7 @@ class _CommentInputState extends State<CommentInput> {
               color: VineTheme.iconButtonBackground,
               borderRadius: BorderRadius.circular(20),
             ),
-            constraints: BoxConstraints(minHeight: 48),
+            constraints: const BoxConstraints(minHeight: 48),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -245,7 +245,7 @@ class _CommentTextField extends StatelessWidget {
     final isMultiline = isReplying || isEditing;
 
     return Padding(
-      padding: EdgeInsets.only(left: 16, bottom: 14, top: 14),
+      padding: const EdgeInsets.only(left: 16, bottom: 14, top: 14),
       child: Semantics(
         identifier: 'comment_text_field',
         textField: true,
@@ -258,7 +258,6 @@ class _CommentTextField extends StatelessWidget {
           onTapOutside: (_) => FocusScope.of(context).unfocus(),
           enableInteractiveSelection: true,
           style: VineTheme.bodyFont(
-            fontSize: 16,
             color: VineTheme.onSurface,
             height: 20 / 16,
           ),
@@ -266,7 +265,6 @@ class _CommentTextField extends StatelessWidget {
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle: VineTheme.bodyFont(
-              fontSize: 16,
               color: const Color.fromARGB(128, 228, 219, 219),
             ),
             border: InputBorder.none,
@@ -299,7 +297,7 @@ class _SendButton extends StatelessWidget {
       child: Container(
         width: 40,
         height: 40,
-        margin: EdgeInsets.only(right: 4, bottom: 4),
+        margin: const EdgeInsets.only(right: 4, bottom: 4),
         decoration: BoxDecoration(
           color: VineTheme.tabIndicatorGreen,
           borderRadius: BorderRadius.circular(17),
@@ -387,7 +385,7 @@ class _ReplyIndicator extends StatelessWidget {
     return GestureDetector(
       onTap: onCancel,
       child: Padding(
-        padding: EdgeInsets.only(left: 16, right: 16, bottom: 8),
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
         child: Row(
           children: [
             Flexible(
@@ -397,7 +395,6 @@ class _ReplyIndicator extends StatelessWidget {
                   fontSize: 12,
                   color: VineTheme.tabIndicatorGreen,
                   height: 16 / 12,
-                  fontWeight: FontWeight.w400,
                 ).copyWith(letterSpacing: 0.4),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,

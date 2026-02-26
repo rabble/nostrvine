@@ -2,17 +2,18 @@
 // ABOUTME: Includes search bar, scrollable sound list, import from device, and None option
 
 import 'dart:io';
+
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:uuid/uuid.dart';
 import 'package:openvine/models/vine_sound.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
-import 'package:openvine/widgets/sound_picker/sound_list_item.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/sound_picker/sound_list_item.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 class SoundPickerModal extends ConsumerStatefulWidget {
   const SoundPickerModal({
@@ -295,23 +296,24 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          _isImporting
-              ? const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  ),
-                )
-              : IconButton(
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  tooltip: 'Import audio from device',
-                  onPressed: _handleImportAudio,
+          if (_isImporting)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.white,
                 ),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.add, color: Colors.white),
+              tooltip: 'Import audio from device',
+              onPressed: _handleImportAudio,
+            ),
         ],
       ),
       body: Column(
@@ -341,7 +343,7 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
           Expanded(
             child: ListView(
               children: [
-                Container(
+                ColoredBox(
                   color: widget.selectedSoundId == null
                       ? Colors.green.withValues(alpha: 0.2)
                       : Colors.transparent,

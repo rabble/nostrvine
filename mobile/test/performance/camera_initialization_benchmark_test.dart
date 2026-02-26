@@ -2,9 +2,10 @@
 // ABOUTME: Measures initialization time, memory usage, and resource allocation
 
 import 'dart:io';
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 
 void main() {
@@ -101,7 +102,7 @@ void main() {
         // Simulate 50 recording segments
         for (int i = 0; i < 50; i++) {
           await notifier.startRecording();
-          await Future.delayed(Duration(milliseconds: 100));
+          await Future.delayed(const Duration(milliseconds: 100));
           await notifier.stopRecording();
         }
 

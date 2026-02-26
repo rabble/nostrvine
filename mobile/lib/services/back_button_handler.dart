@@ -9,7 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 
@@ -28,7 +28,7 @@ class BackButtonHandler {
     if (!kIsWeb && Platform.isAndroid) {
       _channel.setMethodCallHandler((call) async {
         if (call.method == 'onBackPressed') {
-          return await _handleBackButton();
+          return _handleBackButton();
         }
         return false;
       });
@@ -77,7 +77,7 @@ class BackButtonHandler {
         RouteType.notifications => NotificationsScreen.pathForIndex(0),
         RouteType.explore => ExploreScreen.path,
         RouteType.profile => ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
-        RouteType.home => HomeScreenRouter.pathForIndex(0),
+        RouteType.home => VideoFeedPage.pathForIndex(0),
         _ => ExploreScreen.path,
       };
 
@@ -103,18 +103,15 @@ class BackButtonHandler {
       // Navigate to previous tab
       switch (previousTab) {
         case 0:
-          _router!.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0));
-          break;
+          _router!.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
         case 1:
           if (lastIndex != null) {
             _router!.go(ExploreScreen.pathForIndex(lastIndex));
           } else {
             _router!.go(ExploreScreen.path);
           }
-          break;
         case 2:
           _router!.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
-          break;
         case 3:
           // Get current user's npub for profile
           final authService = _ref.read(authServiceProvider);
@@ -122,9 +119,8 @@ class BackButtonHandler {
           if (currentNpub != null) {
             _router!.go(ProfileScreenRouter.pathForNpub(currentNpub));
           } else {
-            _router!.go(HomeScreenRouter.pathForIndex(0));
+            _router!.go(VideoFeedPage.pathForIndex(0));
           }
-          break;
       }
       return true; // Handled
     }
@@ -134,7 +130,7 @@ class BackButtonHandler {
     final currentTab = _tabIndexFromRouteType(ctx.type);
     if (currentTab != null && currentTab != 0) {
       // Go to home first
-      _router!.go(HomeScreenRouter.pathForIndex(0));
+      _router!.go(VideoFeedPage.pathForIndex(0));
       return true; // Handled
     }
 

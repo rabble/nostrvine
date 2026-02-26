@@ -1,6 +1,7 @@
 // ABOUTME: Composable video grid widget with automatic broken video filtering
 // ABOUTME: Reusable component for Explore, Hashtag, and Search screens
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -9,7 +10,6 @@ import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
@@ -20,9 +20,9 @@ import 'package:openvine/widgets/video_thumbnail_widget.dart';
 /// Supports infinite scroll pagination via [onLoadMore] callback.
 class ComposableVideoGrid extends ConsumerStatefulWidget {
   const ComposableVideoGrid({
-    super.key,
     required this.videos,
     required this.onVideoTap,
+    super.key,
     this.crossAxisCount = 2,
     this.thumbnailAspectRatio = 1,
     this.useMasonryLayout = false,
@@ -117,8 +117,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
     final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
 
     return brokenTrackerAsync.when(
-      loading: () =>
-          Center(child: CircularProgressIndicator(color: VineTheme.vineGreen)),
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      ),
       error: (error, stack) {
         // Fallback: show all videos if tracker fails
         return _buildGrid(context, widget.videos);
@@ -209,9 +210,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
         semanticsLabel: 'searching for more videos',
         onRefresh: widget.onRefresh!,
         displacement: 70,
-        child: gridView,
         color: VineTheme.onPrimary,
         backgroundColor: VineTheme.vineGreen,
+        child: gridView,
       );
     }
 
@@ -242,9 +243,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.more_vert, color: VineTheme.whiteText),
+                  const Icon(Icons.more_vert, color: VineTheme.whiteText),
                   const SizedBox(width: 12),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'Video Options',
                       style: TextStyle(
@@ -256,7 +257,10 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
                   ),
                   IconButton(
                     onPressed: context.pop,
-                    icon: Icon(Icons.close, color: VineTheme.secondaryText),
+                    icon: const Icon(
+                      Icons.close,
+                      color: VineTheme.secondaryText,
+                    ),
                   ),
                 ],
               ),
@@ -271,16 +275,20 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
                   color: VineTheme.cardBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.edit, color: VineTheme.vineGreen, size: 20),
+                child: const Icon(
+                  Icons.edit,
+                  color: VineTheme.vineGreen,
+                  size: 20,
+                ),
               ),
-              title: Text(
+              title: const Text(
                 'Edit Video',
                 style: TextStyle(
                   color: VineTheme.whiteText,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              subtitle: Text(
+              subtitle: const Text(
                 'Update title, description, and hashtags',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
@@ -299,16 +307,20 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
                   color: VineTheme.cardBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                child: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                  size: 20,
+                ),
               ),
-              title: Text(
+              title: const Text(
                 'Delete Video',
                 style: TextStyle(
                   color: VineTheme.whiteText,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              subtitle: Text(
+              subtitle: const Text(
                 'Permanently remove this content',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
               ),
@@ -334,11 +346,11 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: Text(
+        title: const Text(
           'Delete Video',
           style: TextStyle(color: VineTheme.whiteText),
         ),
-        content: Column(
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -356,12 +368,12 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => context.pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text('Delete'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -382,7 +394,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
       // Show loading snackbar
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Row(
               children: [
                 SizedBox(
@@ -423,7 +435,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
                   result.success ? Icons.check_circle : Icons.error,
                   color: Colors.white,
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     result.success
@@ -539,7 +551,6 @@ class _VideoInfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        spacing: 0,
         children: [
           // Always show username - UserName.fromPubKey uses bestDisplayName
           // which falls back to truncated npub when no profile name is set
@@ -552,7 +563,7 @@ class _VideoInfoSection extends StatelessWidget {
               video.pubkey,
               embeddedName: video.authorName,
               maxLines: 1,
-              style: VineTheme.titleTinyFont(color: Colors.white).copyWith(
+              style: VineTheme.titleTinyFont().copyWith(
                 shadows: const [
                   Shadow(
                     offset: Offset(0, 1),
@@ -602,13 +613,13 @@ class _VideoThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return ColoredBox(
       color: VineTheme.cardBackground,
       child: video.thumbnailUrl != null
           ? VideoThumbnailWidget(video: video)
-          : AspectRatio(
+          : const AspectRatio(
               aspectRatio: 2 / 3,
-              child: Container(
+              child: ColoredBox(
                 color: VineTheme.cardBackground,
                 child: Icon(
                   Icons.videocam,
@@ -633,7 +644,7 @@ class _LoadingMoreIndicator extends StatelessWidget {
       height: 60,
       alignment: Alignment.center,
       child: isLoading
-          ? SizedBox(
+          ? const SizedBox(
               width: 24,
               height: 24,
               child: CircularProgressIndicator(

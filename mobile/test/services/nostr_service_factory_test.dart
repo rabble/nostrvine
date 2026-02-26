@@ -39,7 +39,7 @@ void main() {
       test(
         'creates client with empty public key when keyContainer is null',
         () {
-          final client = NostrServiceFactory.create(keyContainer: null);
+          final client = NostrServiceFactory.create();
 
           expect(client, isA<NostrClient>());
           expect(client.publicKey, isEmpty);

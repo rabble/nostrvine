@@ -1,57 +1,73 @@
 // ABOUTME: Unit tests for CuratedListService query operations
 // ABOUTME: Tests searching, filtering, and retrieving lists
 
-// ignore_for_file: invalid_use_of_null_value
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'curated_list_service_query_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CuratedListService - Query Operations', () {
     late CuratedListService service;
-    late MockNostrClient mockNostr;
-    late MockAuthService mockAuth;
+    late _MockNostrClient mockNostr;
+    late _MockAuthService mockAuth;
     late SharedPreferences prefs;
+
+    setUpAll(() {
+      registerFallbackValue(
+        Event.fromJson({
+          'id': 'fallback_event_id',
+          'pubkey':
+              'aabbccdd00112233445566778899aabbccdd00112233445566778899aabbccdd',
+          'created_at': 0,
+          'kind': 1,
+          'tags': <List<String>>[],
+          'content': '',
+          'sig': '',
+        }),
+      );
+      registerFallbackValue(<Filter>[]);
+    });
 
     setUp(() async {
       // CRITICAL: Reset SharedPreferences mock completely for each test
       SharedPreferences.setMockInitialValues({});
 
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
+      mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
       prefs = await SharedPreferences.getInstance();
 
       // Setup common mocks
-      when(mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(
-        mockAuth.currentPublicKeyHex,
+        () => mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
       // Mock successful event publishing
-      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
 
       // Mock subscribeToEvents for relay sync
       when(
-        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
-      ).thenAnswer((_) => Stream.empty());
+        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+      ).thenAnswer((_) => const Stream.empty());
 
       // Mock event creation
       when(
-        mockAuth.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuth.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer(
         (_) async => Event.fromJson({
@@ -76,9 +92,9 @@ void main() {
     group('searchLists()', () {
       test('finds lists by name', () async {
         // FIXME: Test isolation issue - passes individually, fails in batch
-        await service.createList(name: 'Cooking Videos', isPublic: true);
-        await service.createList(name: 'Travel Adventures', isPublic: true);
-        await service.createList(name: 'Cooking Recipes', isPublic: true);
+        await service.createList(name: 'Cooking Videos');
+        await service.createList(name: 'Travel Adventures');
+        await service.createList(name: 'Cooking Recipes');
 
         final results = service.searchLists('cooking');
 
@@ -92,12 +108,10 @@ void main() {
         await service.createList(
           name: 'Random List',
           description: 'Videos about cooking',
-          isPublic: true,
         );
         await service.createList(
           name: 'Another List',
           description: 'Travel videos',
-          isPublic: true,
         );
 
         final results = service.searchLists('cooking');
@@ -110,12 +124,10 @@ void main() {
         await service.createList(
           name: 'List 1',
           tags: ['tech', 'tutorial'],
-          isPublic: true,
         );
         await service.createList(
           name: 'List 2',
           tags: ['cooking', 'food'],
-          isPublic: true,
         );
 
         final results = service.searchLists('tech');
@@ -123,11 +135,12 @@ void main() {
         expect(results.length, 1);
         expect(results.first.name, 'List 1');
         // TODO(Any): Fix and re-enable these tests
-        // This test fails only when the whole suite is run, likely due to test isolation issues
+        // This test fails only when the whole suite is run, likely due
+        // to test isolation issues
       }, skip: true);
 
       test('is case-insensitive', () async {
-        await service.createList(name: 'Cooking Videos', isPublic: true);
+        await service.createList(name: 'Cooking Videos');
 
         final results1 = service.searchLists('COOKING');
         final results2 = service.searchLists('cooking');
@@ -139,8 +152,8 @@ void main() {
       });
 
       test('returns empty list for no matches', () async {
-        await service.createList(name: 'Cooking Videos', isPublic: true);
-        await service.createList(name: 'Travel Adventures', isPublic: true);
+        await service.createList(name: 'Cooking Videos');
+        await service.createList(name: 'Travel Adventures');
 
         final results = service.searchLists('programming');
 
@@ -148,7 +161,7 @@ void main() {
       });
 
       test('returns empty list for empty query', () async {
-        await service.createList(name: 'Test List', isPublic: true);
+        await service.createList(name: 'Test List');
 
         final results = service.searchLists('');
 
@@ -156,7 +169,7 @@ void main() {
       });
 
       test('returns empty list for whitespace-only query', () async {
-        await service.createList(name: 'Test List', isPublic: true);
+        await service.createList(name: 'Test List');
 
         final results = service.searchLists('   ');
 
@@ -164,7 +177,7 @@ void main() {
       });
 
       test('only returns public lists', () async {
-        await service.createList(name: 'Public Cooking', isPublic: true);
+        await service.createList(name: 'Public Cooking');
         await service.createList(name: 'Private Cooking', isPublic: false);
 
         final results = service.searchLists('cooking');
@@ -178,7 +191,6 @@ void main() {
           name: 'Tech Videos',
           description: 'Programming tutorials',
           tags: ['coding'],
-          isPublic: true,
         );
 
         final byName = service.searchLists('tech');
@@ -196,19 +208,16 @@ void main() {
         await service.createList(
           name: 'List 1',
           tags: ['tech', 'tutorial'],
-          isPublic: true,
         );
         await Future.delayed(const Duration(milliseconds: 5));
         await service.createList(
           name: 'List 2',
           tags: ['cooking', 'food'],
-          isPublic: true,
         );
         await Future.delayed(const Duration(milliseconds: 5));
         await service.createList(
           name: 'List 3',
           tags: ['tech', 'news'],
-          isPublic: true,
         );
 
         final results = service.getListsByTag('tech');
@@ -221,7 +230,6 @@ void main() {
         await service.createList(
           name: 'Test List',
           tags: ['tech'], // Tags stored lowercase
-          isPublic: true,
         );
 
         final results1 = service.getListsByTag('tech');
@@ -237,7 +245,6 @@ void main() {
         await service.createList(
           name: 'Test List',
           tags: ['tech'],
-          isPublic: true,
         );
 
         final results = service.getListsByTag('cooking');
@@ -249,7 +256,6 @@ void main() {
         await service.createList(
           name: 'Public List',
           tags: ['tech'],
-          isPublic: true,
         );
         await service.createList(
           name: 'Private List',
@@ -269,19 +275,16 @@ void main() {
         await service.createList(
           name: 'List 1',
           tags: ['tech', 'tutorial'],
-          isPublic: true,
         );
         await Future.delayed(const Duration(milliseconds: 5));
         await service.createList(
           name: 'List 2',
           tags: ['cooking', 'food'],
-          isPublic: true,
         );
         await Future.delayed(const Duration(milliseconds: 5));
         await service.createList(
           name: 'List 3',
           tags: ['tech', 'news'],
-          isPublic: true,
         );
 
         final tags = service.getAllTags();
@@ -297,12 +300,10 @@ void main() {
         await service.createList(
           name: 'List 1',
           tags: ['tech', 'tutorial'],
-          isPublic: true,
         );
         await service.createList(
           name: 'List 2',
           tags: ['tech', 'news'],
-          isPublic: true,
         );
 
         final tags = service.getAllTags();
@@ -314,7 +315,6 @@ void main() {
         await service.createList(
           name: 'List 1',
           tags: ['zebra', 'alpha', 'middle'],
-          isPublic: true,
         );
 
         final tags = service.getAllTags();
@@ -326,7 +326,6 @@ void main() {
         await service.createList(
           name: 'Public List',
           tags: ['public_tag'],
-          isPublic: true,
         );
         await service.createList(
           name: 'Private List',
@@ -341,7 +340,7 @@ void main() {
       });
 
       test('returns empty list when no tags', () async {
-        await service.createList(name: 'Test List', isPublic: true);
+        await service.createList(name: 'Test List');
 
         final tags = service.getAllTags();
 
@@ -352,10 +351,9 @@ void main() {
         await service.createList(
           name: 'List 1',
           tags: ['tag1'],
-          isPublic: true,
         );
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(name: 'List 2', tags: [], isPublic: true);
+        await service.createList(name: 'List 2', tags: []);
 
         final tags = service.getAllTags();
 
@@ -366,58 +364,13 @@ void main() {
     });
 
     group('fetchPublicListsContainingVideo()', () {
-      // TODO(any): Fix and re-enable this test
-      //test('queries Nostr for lists containing specific video', () async {
-      //  // Setup: Create mock kind 30005 events containing the target video
-      //  final targetVideoId = 'target_video_event_id_123456789abcdef';
-      //  final mockListEvent = Event.fromJson({
-      //    'id': 'list_event_id_1',
-      //    'pubkey': 'other_user_pubkey_123456789abcdef',
-      //    'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      //    'kind': 30005,
-      //    'tags': [
-      //      ['d', 'test-list-1'],
-      //      ['title', 'Nature Videos'],
-      //      ['description', 'Beautiful nature content'],
-      //      ['e', targetVideoId],
-      //      ['e', 'other_video_id_123'],
-      //    ],
-      //    'content': '',
-      //    'sig': 'test_sig',
-      //  });
-
-      //  // Setup mock to return list events when queried with #e filter
-      //  when(
-      //    mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
-      //  ).thenAnswer((_) => Stream.fromIterable([mockListEvent]));
-
-      //  // Act
-      //  final lists = await service.fetchPublicListsContainingVideo(
-      //    targetVideoId,
-      //  );
-
-      //  // Assert: Verify filter includes the video ID
-      //  final captured = verify(
-      //    mockNostr.subscribe(captureAny(), onEose: anyNamed('onEose')),
-      //  ).captured;
-      //  expect(captured, isNotEmpty);
-      //  final filters = captured.first as List<Filter>;
-      //  expect(filters[0].kinds, contains(30005));
-      //  expect(filters[0].e, contains(targetVideoId));
-
-      //  // Assert: Results parsed correctly
-      //  expect(lists.length, 1);
-      //  expect(lists.first.name, 'Nature Videos');
-      //  expect(lists.first.videoEventIds, contains(targetVideoId));
-      //});
-
       test('returns empty list when no public lists contain video', () async {
-        final targetVideoId = 'orphan_video_id_123456789abcdef';
+        const targetVideoId = 'orphan_video_id_123456789abcdef';
 
         // Setup mock to return empty stream
         when(
-          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
-        ).thenAnswer((_) => Stream.empty());
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+        ).thenAnswer((_) => const Stream.empty());
 
         // Act
         final lists = await service.fetchPublicListsContainingVideo(
@@ -429,7 +382,7 @@ void main() {
       });
 
       test('returns stream for progressive loading', () async {
-        final targetVideoId = 'target_video_123456789abcdef';
+        const targetVideoId = 'target_video_123456789abcdef';
         final mockListEvent1 = Event.fromJson({
           'id': 'list_1',
           'pubkey': 'user1_pubkey_123456789abcdef',
@@ -459,7 +412,7 @@ void main() {
 
         // Setup mock to return events progressively
         when(
-          mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+          () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
         ).thenAnswer(
           (_) => Stream.fromIterable([mockListEvent1, mockListEvent2]),
         );
@@ -481,8 +434,8 @@ void main() {
 
     group('Query Operations - Edge Cases', () {
       test('search handles special characters', () async {
-        await service.createList(name: 'C++ Programming', isPublic: true);
-        await service.createList(name: 'C# Development', isPublic: true);
+        await service.createList(name: 'C++ Programming');
+        await service.createList(name: 'C# Development');
 
         final results1 = service.searchLists('c++');
         final results2 = service.searchLists('c#');
@@ -493,8 +446,8 @@ void main() {
       }, skip: true);
 
       test('search handles unicode characters', () async {
-        await service.createList(name: 'Español Videos', isPublic: true);
-        await service.createList(name: '日本語 Content', isPublic: true);
+        await service.createList(name: 'Español Videos');
+        await service.createList(name: '日本語 Content');
 
         final results1 = service.searchLists('español');
         final results2 = service.searchLists('日本語');
@@ -505,7 +458,7 @@ void main() {
       }, skip: true);
 
       test('search with partial match', () async {
-        await service.createList(name: 'Programming Tutorials', isPublic: true);
+        await service.createList(name: 'Programming Tutorials');
 
         final results = service.searchLists('program');
 
@@ -517,7 +470,6 @@ void main() {
         await service.createList(
           name: 'Test List',
           tags: ['with spaces'],
-          isPublic: true,
         );
 
         final results = service.getListsByTag('with spaces');
@@ -529,7 +481,6 @@ void main() {
         await service.createList(
           name: 'Test List',
           tags: ['valid', '', 'another'],
-          isPublic: true,
         );
 
         final tags = service.getAllTags();
@@ -538,14 +489,14 @@ void main() {
       });
 
       test('search performance with many lists', () async {
-        // FIXME: Test isolation issue - passes individually, fails in batch
+        // FIXME: Test isolation issue - passes individually,
+        // fails in batch
         // Create 50 lists
         for (var i = 0; i < 50; i++) {
           await service.createList(
             name: 'List $i',
             description: i % 2 == 0 ? 'even number' : 'odd number',
             tags: ['tag$i'],
-            isPublic: true,
           );
         }
 
@@ -567,9 +518,11 @@ void main() {
         // Setup: Mock events arriving one at a time
         final event1 = Event.fromJson({
           'id':
-              'event1_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
+              'event1_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345678',
           'pubkey':
-              'pubkey1_123456789abcdef0123456789abcdef0123456789abcdef012345',
+              'pubkey1_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -583,9 +536,11 @@ void main() {
 
         final event2 = Event.fromJson({
           'id':
-              'event2_id_123456789abcdef0123456789abcdef0123456789abcdef012345678',
+              'event2_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345678',
           'pubkey':
-              'pubkey2_123456789abcdef0123456789abcdef0123456789abcdef012345',
+              'pubkey2_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -599,7 +554,7 @@ void main() {
 
         // Mock subscribe to return events as a stream
         when(
-          mockNostr.subscribe(any),
+          () => mockNostr.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([event1, event2]));
 
         // Act: Collect streamed results
@@ -618,9 +573,11 @@ void main() {
       test('deduplicates by d-tag keeping newest', () async {
         final olderEvent = Event.fromJson({
           'id':
-              'older_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
+              'older_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef0123456',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'created_at':
               DateTime.now()
                   .subtract(const Duration(hours: 1))
@@ -638,9 +595,11 @@ void main() {
 
         final newerEvent = Event.fromJson({
           'id':
-              'newer_id_123456789abcdef0123456789abcdef0123456789abcdef0123456',
+              'newer_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef0123456',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -654,13 +613,15 @@ void main() {
 
         // Send older first, then newer
         when(
-          mockNostr.subscribe(any),
+          () => mockNostr.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([olderEvent, newerEvent]));
 
         List<CuratedList>? finalLists;
         await for (final lists in service.streamPublicListsFromRelays()) {
           finalLists = lists;
-          if (lists.isNotEmpty && lists.first.name == 'New Title') break;
+          if (lists.isNotEmpty && lists.first.name == 'New Title') {
+            break;
+          }
         }
 
         // Should only have one list with the newer title
@@ -671,9 +632,11 @@ void main() {
       test('filters out empty lists', () async {
         final emptyList = Event.fromJson({
           'id':
-              'empty_id_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'empty_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -687,9 +650,11 @@ void main() {
 
         final nonEmptyList = Event.fromJson({
           'id':
-              'nonempty_id_123456789abcdef0123456789abcdef0123456789abcdef0123',
+              'nonempty_id_123456789abcdef0123456789abcdef'
+              '0123456789abcdef0123',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
           'created_at': DateTime.now().millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
@@ -702,7 +667,7 @@ void main() {
         });
 
         when(
-          mockNostr.subscribe(any),
+          () => mockNostr.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([emptyList, nonEmptyList]));
 
         List<CuratedList>? finalLists;
@@ -719,10 +684,12 @@ void main() {
       test('supports pagination with until parameter', () async {
         final oldEvent = Event.fromJson({
           'id':
-              'old_event_123456789abcdef0123456789abcdef0123456789abcdef012345',
+              'old_event_123456789abcdef0123456789abcdef'
+              '0123456789abcdef012345',
           'pubkey':
-              'pubkey_123456789abcdef0123456789abcdef0123456789abcdef01234567',
-          'created_at': DateTime(2024, 1, 1).millisecondsSinceEpoch ~/ 1000,
+              'pubkey_123456789abcdef0123456789abcdef'
+              '0123456789abcdef01234567',
+          'created_at': DateTime(2024).millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
             ['d', 'old-list'],
@@ -734,11 +701,11 @@ void main() {
         });
 
         when(
-          mockNostr.subscribe(any),
+          () => mockNostr.subscribe(any()),
         ).thenAnswer((_) => Stream.fromIterable([oldEvent]));
 
         // Act: Request with until date
-        final until = DateTime(2024, 6, 1);
+        final until = DateTime(2024, 6);
         List<CuratedList>? results;
         await for (final lists in service.streamPublicListsFromRelays(
           until: until,
@@ -748,7 +715,7 @@ void main() {
         }
 
         // Verify subscribe was called (filter construction is internal)
-        verify(mockNostr.subscribe(any)).called(1);
+        verify(() => mockNostr.subscribe(any())).called(1);
         expect(results?.isNotEmpty, true);
       });
     });

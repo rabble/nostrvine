@@ -2,30 +2,30 @@
 // ABOUTME: Ensures videos play inline instead of opening as modal overlay
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'hashtag_feed_embedded_navigation_test.mocks.dart';
+class _MockHashtagService extends Mock implements HashtagService {}
 
-@GenerateMocks([HashtagService, VideoEventService])
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
 void main() {
   group('HashtagFeedScreen embedded navigation', () {
-    late MockHashtagService mockHashtagService;
-    late MockVideoEventService mockVideoEventService;
+    late _MockHashtagService mockHashtagService;
+    late _MockVideoEventService mockVideoEventService;
 
     setUp(() {
-      mockHashtagService = MockHashtagService();
-      mockVideoEventService = MockVideoEventService();
+      mockHashtagService = _MockHashtagService();
+      mockVideoEventService = _MockVideoEventService();
 
-      when(mockVideoEventService.isLoading).thenReturn(false);
-      when(mockHashtagService.getVideosByHashtags(any)).thenReturn([]);
+      when(() => mockVideoEventService.isLoading).thenReturn(false);
+      when(() => mockHashtagService.getVideosByHashtags(any())).thenReturn([]);
     });
 
     testWidgets(
@@ -50,7 +50,7 @@ void main() {
         ];
 
         when(
-          mockHashtagService.getVideosByHashtags(['funny']),
+          () => mockHashtagService.getVideosByHashtags(['funny']),
         ).thenReturn(testVideos);
 
         List<VideoEvent>? callbackVideos;
@@ -107,7 +107,7 @@ void main() {
       ];
 
       when(
-        mockHashtagService.getVideosByHashtags(['funny']),
+        () => mockHashtagService.getVideosByHashtags(['funny']),
       ).thenReturn(testVideos);
 
       await tester.pumpWidget(
@@ -116,10 +116,9 @@ void main() {
             hashtagServiceProvider.overrideWithValue(mockHashtagService),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: HashtagFeedScreen(
               hashtag: 'funny',
-              embedded: false, // NOT embedded
             ),
           ),
         ),
@@ -161,7 +160,7 @@ void main() {
         ];
 
         when(
-          mockHashtagService.getVideosByHashtags(['funny']),
+          () => mockHashtagService.getVideosByHashtags(['funny']),
         ).thenReturn(testVideos);
 
         List<VideoEvent>? callbackVideos;

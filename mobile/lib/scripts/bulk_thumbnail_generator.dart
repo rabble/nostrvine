@@ -2,11 +2,12 @@
 // ABOUTME: Fetches video events from default relay and generates thumbnails via API service
 
 import 'dart:io';
+
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/nostr_service_factory.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -18,7 +19,7 @@ import 'package:openvine/utils/unified_logger.dart';
 /// 3. Makes API requests to generate thumbnails via api.openvine.co thumbnail service
 /// 4. Reports progress and statistics
 class BulkThumbnailGenerator {
-  static final String relayUrl = AppConstants.defaultRelayUrl;
+  static const String relayUrl = AppConstants.defaultRelayUrl;
   static const String apiBaseUrl = 'https://api.openvine.co';
   static const int batchSize =
       10; // Process videos in batches to avoid overwhelming the server
@@ -308,7 +309,6 @@ Examples:
       final thumbnailUrl = await ThumbnailApiService.getThumbnailWithFallback(
         event.id,
         timeSeconds: timeOffset,
-        size: ThumbnailSize.medium,
       );
 
       if (thumbnailUrl != null) {
@@ -382,9 +382,8 @@ Examples:
       timestamp: DateTime.now(),
       videoUrl:
           'https://blossom.primal.net/87444ba2b07f28f29a8df3e9b358712e434a9d94bc67b08db5d4de61e6205344.mp4',
-      thumbnailUrl: null, // No thumbnail
       duration: 5,
-      hashtags: ['sample', 'test'],
+      hashtags: const ['sample', 'test'],
     ),
   ];
 }

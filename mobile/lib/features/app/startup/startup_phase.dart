@@ -17,7 +17,8 @@ enum StartupPhase implements Comparable<StartupPhase> {
 
   /// Can be loaded after UI is responsive
   /// Examples: Analytics, caching, optimization services
-  deferred(3, 'Deferred services');
+  deferred(3, 'Deferred services')
+  ;
 
   final int priority;
   final String description;

@@ -11,9 +11,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -119,7 +118,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
       body: videosAsync.when(
         data: (videos) {
           if (videos.isEmpty) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -128,7 +127,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                     size: 64,
                     color: VineTheme.secondaryText,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'No videos in this list',
                     style: TextStyle(
@@ -137,7 +136,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Add some videos to get started',
                     style: TextStyle(
@@ -163,12 +162,12 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           // Otherwise show grid
           return _buildVideoGrid(videos);
         },
-        loading: () => Center(
+        loading: () => const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               CircularProgressIndicator(color: VineTheme.vineGreen),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               Text(
                 'Loading videos...',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
@@ -180,9 +179,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+              const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Failed to load list',
                 style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
               ),
@@ -191,7 +190,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Text(
                   error.toString(),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 12,
                   ),
@@ -234,7 +233,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         // Refresh by invalidating the provider
         ref.invalidate(curatedListVideoEventsProvider(widget.listId));
       },
-      emptyBuilder: () => Center(
+      emptyBuilder: () => const Center(
         child: Text(
           'No videos available',
           style: TextStyle(color: VineTheme.secondaryText),
@@ -245,7 +244,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
 
   Widget _buildVideoPlayer(List<VideoEvent> videos) {
     if (videos.isEmpty || _activeVideoIndex! >= videos.length) {
-      return Center(
+      return const Center(
         child: Text(
           'Video not available',
           style: TextStyle(color: VineTheme.secondaryText),
@@ -260,7 +259,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
           startingVideo: videos[_activeVideoIndex!],
           videoList: videos,
           contextTitle: widget.listName,
-          startingIndex: _activeVideoIndex!,
+          startingIndex: _activeVideoIndex,
           useLocalActiveState:
               true, // Use local state since not using URL routing
         ),
@@ -411,9 +410,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     });
 
     try {
-      final service = await ref
-          .read(curatedListsStateProvider.notifier)
-          .service;
+      final service = ref.read(curatedListsStateProvider.notifier).service;
       final isSubscribed = service?.isSubscribedToList(widget.listId) ?? false;
 
       if (isSubscribed) {

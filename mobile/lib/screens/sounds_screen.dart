@@ -1,6 +1,7 @@
 // ABOUTME: Sounds browser screen for discovering and selecting sounds for recordings
 // ABOUTME: Features bundled sounds, trending Nostr sounds, search, and sound selection
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +11,6 @@ import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/audio_playback_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
@@ -173,7 +173,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to play preview: ${e.toString()}'),
+            content: Text('Failed to play preview: $e'),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -289,9 +289,8 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
     // Convert bundled VineSounds to AudioEvents
     final bundledSounds =
         bundledSoundsAsync.whenOrNull(
-          data: (service) => service.sounds
-              .map((s) => AudioEvent.fromBundledSound(s))
-              .toList(),
+          data: (service) =>
+              service.sounds.map(AudioEvent.fromBundledSound).toList(),
         ) ??
         <AudioEvent>[];
 
@@ -302,7 +301,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       ),
       loading: () => bundledSounds.isNotEmpty
           ? _buildSoundsContent(bundledSounds: bundledSounds, nostrSounds: [])
-          : const Center(child: BrandedLoadingIndicator(size: 80)),
+          : const Center(child: BrandedLoadingIndicator()),
       error: (error, stack) => bundledSounds.isNotEmpty
           ? _buildSoundsContent(bundledSounds: bundledSounds, nostrSounds: [])
           : _buildErrorState(error),
@@ -369,13 +368,13 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Featured Sounds',
                 style: TextStyle(
                   color: Colors.white,
@@ -404,8 +403,6 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
                   isPlaying: _previewingSoundId == sound.id,
                   onTap: () => _onSoundTap(sound),
                   onPlayPreview: () => _onPreviewTap(sound),
-                  // No detail tap for bundled sounds (they don't have Nostr pages)
-                  onDetailTap: null,
                 ),
               );
             },
@@ -427,8 +424,8 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               Icon(
@@ -436,8 +433,8 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
                 color: VineTheme.vineGreen,
                 size: 20,
               ),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Trending Sounds',
                 style: TextStyle(
                   color: Colors.white,
@@ -485,7 +482,11 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Icon(Icons.music_note, color: VineTheme.vineGreen, size: 20),
+              const Icon(
+                Icons.music_note,
+                color: VineTheme.vineGreen,
+                size: 20,
+              ),
               const SizedBox(width: 8),
               Text(
                 _searchQuery.isEmpty ? 'All Sounds' : 'Search Results',
@@ -584,7 +585,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
+            const Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
             const Text(
               'Failed to load sounds',

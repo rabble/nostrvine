@@ -84,7 +84,6 @@ void main() {
             width: 400,
             child: UploadProgressIndicator(
               upload: uploadingState,
-              showActions: true,
               onPause: () {},
             ),
           ),
@@ -95,7 +94,6 @@ void main() {
             width: 400,
             child: UploadProgressIndicator(
               upload: pausedState,
-              showActions: true,
               onResume: () {},
             ),
           ),
@@ -106,7 +104,6 @@ void main() {
             width: 400,
             child: UploadProgressIndicator(
               upload: failedState,
-              showActions: true,
               onRetry: () {},
               onCancel: () {},
               onDelete: () {},
@@ -211,13 +208,11 @@ void main() {
             children: [
               UploadProgressIndicator(
                 upload: uploadingState,
-                showActions: true,
                 onPause: () {},
               ),
               const SizedBox(height: 8),
               UploadProgressIndicator(
                 upload: failedState,
-                showActions: true,
                 onRetry: () {},
                 onCancel: () {},
               ),
@@ -258,7 +253,6 @@ void main() {
               width: 400,
               child: UploadProgressIndicator(
                 upload: uploadingState,
-                showActions: true,
                 onPause: () {},
               ),
             ),
@@ -274,7 +268,6 @@ void main() {
               width: 400,
               child: UploadProgressIndicator(
                 upload: uploadingState,
-                showActions: true,
                 onPause: () {},
               ),
             ),

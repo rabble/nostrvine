@@ -131,6 +131,7 @@ final class CommentsState extends Equatable {
     this.activeMentions = const {},
     this.activeEditCommentId,
     this.editInputText = '',
+    this.newCommentCount = 0,
   });
 
   /// The current status of the comments
@@ -192,6 +193,10 @@ final class CommentsState extends Equatable {
 
   /// Text content of the edit input buffer.
   final String editInputText;
+
+  /// Number of new comments received from the real-time subscription
+  /// that the user has not yet acknowledged (scrolled to top / tapped pill).
+  final int newCommentCount;
 
   /// Returns a comparator for sorting comments based on [sortMode].
   Comparator<Comment> get _commentComparator {
@@ -325,6 +330,7 @@ final class CommentsState extends Equatable {
     Map<String, String>? activeMentions,
     String? activeEditCommentId,
     String? editInputText,
+    int? newCommentCount,
   }) {
     return CommentsState(
       status: status ?? this.status,
@@ -354,11 +360,12 @@ final class CommentsState extends Equatable {
       activeMentions: activeMentions ?? this.activeMentions,
       activeEditCommentId: activeEditCommentId ?? this.activeEditCommentId,
       editInputText: editInputText ?? this.editInputText,
+      newCommentCount: newCommentCount ?? this.newCommentCount,
     );
   }
 
   /// Creates a copy with the active reply cleared.
-  /// Preserves vote data, sort mode, and reply counts.
+  /// Preserves vote data, sort mode, reply counts, and new comment count.
   CommentsState clearActiveReply({
     CommentsStatus? status,
     Map<String, Comment>? commentsById,
@@ -372,7 +379,6 @@ final class CommentsState extends Equatable {
       rootAddressableId: rootAddressableId,
       commentsById: commentsById ?? this.commentsById,
       mainInputText: mainInputText,
-      replyInputText: '',
       isPosting: isPosting ?? this.isPosting,
       isLoadingMore: isLoadingMore,
       hasMoreContent: hasMoreContent,
@@ -387,6 +393,7 @@ final class CommentsState extends Equatable {
       activeMentions: const {},
       activeEditCommentId: activeEditCommentId,
       editInputText: editInputText,
+      newCommentCount: newCommentCount,
     );
   }
 
@@ -421,6 +428,7 @@ final class CommentsState extends Equatable {
       mentionQuery: mentionQuery,
       mentionSuggestions: mentionSuggestions,
       activeMentions: activeMentions,
+      newCommentCount: newCommentCount,
     );
   }
 
@@ -451,5 +459,6 @@ final class CommentsState extends Equatable {
     activeMentions,
     activeEditCommentId,
     editInputText,
+    newCommentCount,
   ];
 }

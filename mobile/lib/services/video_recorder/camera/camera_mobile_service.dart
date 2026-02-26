@@ -21,7 +21,7 @@ class CameraMobileService extends CameraService {
 
   bool _isInitialized = false;
   String? _initializationError;
-  final _camera = DivineCamera.instance;
+  final DivineCamera _camera = DivineCamera.instance;
 
   @override
   Future<void> initialize({
@@ -178,6 +178,7 @@ class CameraMobileService extends CameraService {
   @override
   Future<bool> switchCamera() async {
     if (!_isInitialized) return false;
+    _isSwitchingCamera = true;
     try {
       Log.info(
         '📷 Switching camera',
@@ -201,6 +202,8 @@ class CameraMobileService extends CameraService {
         category: .video,
       );
       return false;
+    } finally {
+      _isSwitchingCamera = false;
     }
   }
 
@@ -345,6 +348,11 @@ class CameraMobileService extends CameraService {
 
   @override
   bool get canSwitchCamera => _camera.canSwitchCamera;
+
+  bool _isSwitchingCamera = false;
+
+  @override
+  bool get isSwitchingCamera => _isSwitchingCamera;
 
   @override
   DivineCameraLens get currentLens => _camera.state.lens;

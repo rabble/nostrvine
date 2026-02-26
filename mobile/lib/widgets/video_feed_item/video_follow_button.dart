@@ -1,6 +1,7 @@
 // ABOUTME: Follow button widget for video overlay using BLoC pattern.
 // ABOUTME: Circular 20x20 button positioned near author avatar.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +9,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Page widget that creates the [MyFollowingBloc] and provides it to the view.
@@ -18,8 +18,8 @@ import 'package:openvine/utils/unified_logger.dart';
 /// build. The BLoC is created once and reused.
 class VideoFollowButton extends ConsumerStatefulWidget {
   const VideoFollowButton({
-    super.key,
     required this.pubkey,
+    super.key,
     this.hideIfFollowing = false,
   });
 
@@ -121,6 +121,7 @@ class VideoFollowButtonView extends StatelessWidget {
   @visibleForTesting
   const VideoFollowButtonView({
     required this.pubkey,
+    super.key,
     this.hideIfFollowing = false,
   });
 

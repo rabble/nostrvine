@@ -20,7 +20,7 @@ part 'hashtag_feed_providers.g.dart';
 /// - Route changes (different hashtag)
 /// - User pulls to refresh
 /// - VideoEventService updates with new hashtag videos
-@Riverpod(keepAlive: false) // Auto-dispose when no listeners
+@Riverpod() // Auto-dispose when no listeners
 class HashtagFeed extends _$HashtagFeed {
   static int _buildCounter = 0;
   Timer? _rebuildDebounceTimer;
@@ -42,20 +42,18 @@ class HashtagFeed extends _$HashtagFeed {
     // Get hashtag from route context
     final ctx = ref.watch(pageContextProvider).asData?.value;
     if (ctx == null || ctx.type != RouteType.hashtag) {
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     }
 
     final raw = (ctx.hashtag ?? '').trim();
     final tag = raw.toLowerCase(); // normalize
     if (tag.isEmpty) {
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     }
 
@@ -108,7 +106,7 @@ class HashtagFeed extends _$HashtagFeed {
     // Get video event service and subscribe to hashtag via WebSocket
     // This fetches actual video events (REST API only provides IDs)
     final videoEventService = ref.watch(videoEventServiceProvider);
-    await videoEventService.subscribeToHashtagVideos([tag], limit: 100);
+    await videoEventService.subscribeToHashtagVideos([tag]);
 
     // Set up continuous listening for video updates
     // Track last known count to avoid rebuilding on unrelated changes
@@ -134,8 +132,6 @@ class HashtagFeed extends _$HashtagFeed {
               VideoFeedState(
                 videos: videos,
                 hasMoreContent: videos.length >= 10,
-                isLoadingMore: false,
-                error: null,
                 lastUpdated: DateTime.now(),
               ),
             );
@@ -193,10 +189,9 @@ class HashtagFeed extends _$HashtagFeed {
     stabilityTimer?.cancel();
 
     if (!ref.mounted) {
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     }
 
@@ -218,8 +213,6 @@ class HashtagFeed extends _$HashtagFeed {
     return VideoFeedState(
       videos: videos,
       hasMoreContent: videos.length >= 10,
-      isLoadingMore: false,
-      error: null,
       lastUpdated: DateTime.now(),
     );
   }
@@ -356,7 +349,6 @@ class HashtagFeed extends _$HashtagFeed {
       // Force new subscription to get fresh data from relay
       await videoEventService.subscribeToHashtagVideos(
         [tag],
-        limit: 100,
         force: true, // Force refresh bypasses duplicate detection
       );
     }

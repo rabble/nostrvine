@@ -1,20 +1,20 @@
 // ABOUTME: Reusable row of ProofMode and Vine badges for consistent display across video UI
 // ABOUTME: Automatically shows appropriate badges based on VideoEvent metadata
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';
+import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/user_name.dart';
 
 /// Reusable badge row for displaying ProofMode verification and Vine badges
 class ProofModeBadgeRow extends StatelessWidget {
   const ProofModeBadgeRow({
-    super.key,
     required this.video,
+    super.key,
     this.size = BadgeSize.small,
     this.spacing = 8.0,
     this.mainAxisAlignment = MainAxisAlignment.start,
@@ -61,7 +61,6 @@ class ProofModeBadgeRow extends StatelessWidget {
     return Wrap(
       spacing: spacing,
       runSpacing: spacing,
-      alignment: WrapAlignment.start,
       children: badges,
     );
   }
@@ -105,7 +104,7 @@ class ProofModeBadgeRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'This video is hosted on:',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
             ),
@@ -119,7 +118,7 @@ class ProofModeBadgeRow extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'Published by:',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
             ),

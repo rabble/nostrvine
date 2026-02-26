@@ -2,35 +2,50 @@
 // ABOUTME: Tests the complete flow from local video file through Blossom upload to Nostr event creation
 
 import 'dart:io';
-import 'package:flutter_test/flutter_test.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart' as keys;
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_publisher.dart';
+
 import '../helpers/real_integration_test_helper.dart';
 
-import 'upload_publish_e2e_comprehensive_test.mocks.dart';
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
-@GenerateMocks([BlossomUploadService, AuthService, NostrClient])
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
+/// Fake [Event] for use with registerFallbackValue.
+class _FakeEvent extends Fake implements Event {}
+
+/// Fake [File] for use with registerFallbackValue.
+class _FakeFile extends Fake implements File {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    registerFallbackValue(_FakeEvent());
+    registerFallbackValue(_FakeFile());
+  });
 
   group('Upload → Publish E2E Comprehensive Test', () {
     late ProviderContainer container;
     late File testVideoFile;
     late String testPrivateKey;
     late String testPublicKey;
-    late MockBlossomUploadService mockBlossomService;
-    late MockAuthService mockAuthService;
-    late MockNostrClient mockNostrService;
+    late _MockBlossomUploadService mockBlossomService;
+    late _MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
 
     setUpAll(() async {
       await RealIntegrationTestHelper.setupTestEnvironment();
@@ -42,7 +57,7 @@ void main() {
       testPrivateKey = keys.generatePrivateKey();
       testPublicKey = keys.getPublicKey(testPrivateKey);
 
-      print('🔑 Test keypair: ${testPublicKey}...');
+      print('🔑 Test keypair: $testPublicKey...');
 
       // Create test video file
       testVideoFile = File(
@@ -53,9 +68,9 @@ void main() {
       print('📹 Test video created: ${testVideoFile.path}');
 
       // Setup mocks
-      mockBlossomService = MockBlossomUploadService();
-      mockAuthService = MockAuthService();
-      mockNostrService = MockNostrClient();
+      mockBlossomService = _MockBlossomUploadService();
+      mockAuthService = _MockAuthService();
+      mockNostrService = _MockNostrClient();
 
       // Configure mock behaviors
       _configureMockBlossomService(mockBlossomService);
@@ -182,10 +197,10 @@ void main() {
 
         // Verify createAndSignEvent was called with correct parameters
         final createEventCall = verify(
-          mockAuthService.createAndSignEvent(
-            kind: captureAnyNamed('kind'),
-            content: captureAnyNamed('content'),
-            tags: captureAnyNamed('tags'),
+          () => mockAuthService.createAndSignEvent(
+            kind: captureAny(named: 'kind'),
+            content: captureAny(named: 'content'),
+            tags: captureAny(named: 'tags'),
           ),
         );
 
@@ -314,7 +329,7 @@ void main() {
         // PHASE 4: Verify event was broadcast to relays
         print('📤 PHASE 4: Verifying relay broadcast...');
 
-        verify(mockNostrService.publishEvent(any)).called(1);
+        verify(() => mockNostrService.publishEvent(any())).called(1);
 
         print('✅ Event was broadcast to relays');
 
@@ -341,14 +356,14 @@ void main() {
 
       // Configure Blossom to fail thumbnail upload
       when(
-        mockBlossomService.uploadImage(
-          imageFile: anyNamed('imageFile'),
-          nostrPubkey: anyNamed('nostrPubkey'),
-          mimeType: anyNamed('mimeType'),
-          onProgress: anyNamed('onProgress'),
+        () => mockBlossomService.uploadImage(
+          imageFile: any(named: 'imageFile'),
+          nostrPubkey: any(named: 'nostrPubkey'),
+          mimeType: any(named: 'mimeType'),
+          onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer(
-        (_) async => BlossomUploadResult(
+        (_) async => const BlossomUploadResult(
           success: false,
           errorMessage: 'Thumbnail upload failed',
         ),
@@ -385,10 +400,10 @@ void main() {
 
       // Verify event has imeta without thumbnail
       final createEventCall = verify(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: captureAnyNamed('tags'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: captureAny(named: 'tags'),
         ),
       );
 
@@ -478,25 +493,25 @@ void main() {
 }
 
 /// Configure mock Blossom service with realistic responses
-void _configureMockBlossomService(MockBlossomUploadService mock) {
+void _configureMockBlossomService(_MockBlossomUploadService mock) {
   // Mock Blossom enabled
-  when(mock.isBlossomEnabled()).thenAnswer((_) async => true);
+  when(() => mock.isBlossomEnabled()).thenAnswer((_) async => true);
 
   // Mock Blossom server
   when(
-    mock.getBlossomServer(),
+    () => mock.getBlossomServer(),
   ).thenAnswer((_) async => 'https://cdn.divine.video');
 
   // Mock video upload success
   when(
-    mock.uploadVideo(
-      videoFile: anyNamed('videoFile'),
-      nostrPubkey: anyNamed('nostrPubkey'),
-      title: anyNamed('title'),
-      description: anyNamed('description'),
-      hashtags: anyNamed('hashtags'),
-      proofManifestJson: anyNamed('proofManifestJson'),
-      onProgress: anyNamed('onProgress'),
+    () => mock.uploadVideo(
+      videoFile: any(named: 'videoFile'),
+      nostrPubkey: any(named: 'nostrPubkey'),
+      title: any(named: 'title'),
+      description: any(named: 'description'),
+      hashtags: any(named: 'hashtags'),
+      proofManifestJson: any(named: 'proofManifestJson'),
+      onProgress: any(named: 'onProgress'),
     ),
   ).thenAnswer((invocation) async {
     // Simulate progress updates
@@ -506,7 +521,7 @@ void _configureMockBlossomService(MockBlossomUploadService mock) {
     onProgress?.call(0.6);
     onProgress?.call(0.8);
 
-    return BlossomUploadResult(
+    return const BlossomUploadResult(
       success: true,
       videoId: 'test_video_hash_abc123',
       fallbackUrl: 'https://cdn.divine.video/test_video_hash_abc123.mp4',
@@ -515,11 +530,11 @@ void _configureMockBlossomService(MockBlossomUploadService mock) {
 
   // Mock thumbnail upload success
   when(
-    mock.uploadImage(
-      imageFile: anyNamed('imageFile'),
-      nostrPubkey: anyNamed('nostrPubkey'),
-      mimeType: anyNamed('mimeType'),
-      onProgress: anyNamed('onProgress'),
+    () => mock.uploadImage(
+      imageFile: any(named: 'imageFile'),
+      nostrPubkey: any(named: 'nostrPubkey'),
+      mimeType: any(named: 'mimeType'),
+      onProgress: any(named: 'onProgress'),
     ),
   ).thenAnswer((invocation) async {
     // Simulate progress updates
@@ -528,7 +543,7 @@ void _configureMockBlossomService(MockBlossomUploadService mock) {
     onProgress?.call(0.5);
     onProgress?.call(1.0);
 
-    return BlossomUploadResult(
+    return const BlossomUploadResult(
       success: true,
       videoId: 'test_thumbnail_hash_xyz789',
       fallbackUrl: 'https://cdn.divine.video/test_thumbnail_hash_xyz789.jpg',
@@ -537,15 +552,15 @@ void _configureMockBlossomService(MockBlossomUploadService mock) {
 }
 
 /// Configure mock auth service to create test events
-void _configureMockAuthService(MockAuthService mock, String testPublicKey) {
-  when(mock.isAuthenticated).thenReturn(true);
+void _configureMockAuthService(_MockAuthService mock, String testPublicKey) {
+  when(() => mock.isAuthenticated).thenReturn(true);
 
   when(
-    mock.createAndSignEvent(
-      kind: anyNamed('kind'),
-      content: anyNamed('content'),
-      tags: anyNamed('tags'),
-      biometricPrompt: anyNamed('biometricPrompt'),
+    () => mock.createAndSignEvent(
+      kind: any(named: 'kind'),
+      content: any(named: 'content'),
+      tags: any(named: 'tags'),
+      biometricPrompt: any(named: 'biometricPrompt'),
     ),
   ).thenAnswer((invocation) async {
     final kind = invocation.namedArguments[#kind] as int;
@@ -566,8 +581,8 @@ void _configureMockAuthService(MockAuthService mock, String testPublicKey) {
 }
 
 /// Configure mock Nostr service to simulate relay publishing
-void _configureMockNostrService(MockNostrClient mock) {
-  when(mock.publishEvent(any)).thenAnswer((invocation) async {
+void _configureMockNostrService(_MockNostrClient mock) {
+  when(() => mock.publishEvent(any())).thenAnswer((invocation) async {
     return invocation.positionalArguments[0] as Event;
   });
 }

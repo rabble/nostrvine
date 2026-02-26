@@ -127,7 +127,7 @@ class _BackToCameraButton extends StatelessWidget {
       child: GestureDetector(
         behavior: .opaque,
         onTap: onTap,
-        child: Row(
+        child: const Row(
           spacing: 6,
           children: [
             DivineIcon(icon: .caretLeft, size: 32, color: VineTheme.whiteText),
@@ -156,7 +156,7 @@ class _CloseButton extends StatelessWidget {
       label: 'Close video editor',
       child: GestureDetector(
         onTap: onTap,
-        child: DivineIcon(icon: .x, size: 32, color: VineTheme.whiteText),
+        child: const DivineIcon(icon: .x, size: 32, color: VineTheme.whiteText),
       ),
     );
   }

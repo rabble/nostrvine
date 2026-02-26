@@ -10,7 +10,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -33,7 +33,7 @@ Future<void> waitForPageContext(ProviderContainer container) async {
 void main() {
   test('selects author videos when profile route active', () async {
     // Test fixture
-    final testNpub =
+    const testNpub =
         'npub1l5sga6xg72phsz5422ykujprejwud075ggrr3z2hwyrfgr7eylqstegx9z';
     final testHex = npubToHexOrNull(testNpub)!;
 
@@ -89,7 +89,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         routerLocationStreamProvider.overrideWithValue(
-          Stream.value(HomeScreenRouter.pathForIndex(0)), // Not a profile route
+          Stream.value(VideoFeedPage.pathForIndex(0)), // Not a profile route
         ),
       ],
     );

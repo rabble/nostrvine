@@ -4,20 +4,24 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
-import 'package:openvine/widgets/clickable_hashtag_text.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/utils/hashtag_extractor.dart';
+import 'package:openvine/widgets/clickable_hashtag_text.dart';
 
-import 'comprehensive_clickable_hashtag_text_test.mocks.dart';
+class _MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
-@GenerateNiceMocks([MockSpec<NavigatorObserver>()])
+class _FakeRoute extends Fake implements Route<dynamic> {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeRoute());
+  });
+
   group('ClickableHashtagText - Comprehensive Tests', () {
-    late MockNavigatorObserver mockObserver;
+    late _MockNavigatorObserver mockObserver;
 
     setUp(() {
-      mockObserver = MockNavigatorObserver();
+      mockObserver = _MockNavigatorObserver();
     });
 
     group('Text Display and Structure', () {
@@ -27,7 +31,7 @@ void main() {
         const plainText = 'This is plain text without hashtags';
 
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(body: ClickableHashtagText(text: plainText)),
           ),
         );
@@ -44,7 +48,7 @@ void main() {
         const textWithHashtag = 'Check out this #vine video';
 
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(body: ClickableHashtagText(text: textWithHashtag)),
           ),
         );
@@ -52,7 +56,7 @@ void main() {
         final text = tester.widget<Text>(find.byType(Text));
         expect(text.data, isNull); // Should use textSpan, not data
         expect(text.textSpan, isNotNull);
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         expect(textSpan.children, isNotNull);
         expect(
           textSpan.children!.length,
@@ -66,13 +70,13 @@ void main() {
         const textWithHashtag = 'Text #hashtag more text';
 
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(body: ClickableHashtagText(text: textWithHashtag)),
           ),
         );
 
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
 
         expect(spans[0].text, 'Text ');
@@ -98,13 +102,13 @@ void main() {
         const textWithHashtags = '#first and #second hashtags';
 
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(body: ClickableHashtagText(text: textWithHashtags)),
           ),
         );
 
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
 
         expect(spans.length, 4); // "#first", " and ", "#second", " hashtags"
@@ -120,7 +124,7 @@ void main() {
         const testStyle = TextStyle(fontSize: 16, color: Colors.red);
 
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(
               body: ClickableHashtagText(text: 'Plain text', style: testStyle),
             ),
@@ -135,7 +139,7 @@ void main() {
         const hashtagStyle = TextStyle(fontSize: 18, color: Colors.green);
 
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(
               body: ClickableHashtagText(
                 text: 'Text with #hashtag',
@@ -146,7 +150,7 @@ void main() {
         );
 
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
         final hashtagSpan = spans.firstWhere(
           (span) => span.text!.startsWith('#'),
@@ -159,7 +163,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(
               body: ClickableHashtagText(text: 'Text with #hashtag'),
             ),
@@ -167,7 +171,7 @@ void main() {
         );
 
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
         final hashtagSpan = spans.firstWhere(
           (span) => span.text!.startsWith('#'),
@@ -184,7 +188,7 @@ void main() {
             'This is very long text with #hashtag that should wrap multiple lines';
 
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(
               body: SizedBox(
                 width: 200, // Force text wrapping
@@ -219,12 +223,12 @@ void main() {
 
         // Find and tap the hashtag
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
         final hashtagSpan = spans.firstWhere(
           (span) => span.text!.startsWith('#'),
         );
-        final tapRecognizer = hashtagSpan.recognizer as TapGestureRecognizer;
+        final tapRecognizer = hashtagSpan.recognizer! as TapGestureRecognizer;
 
         tapRecognizer.onTap!();
         await tester.pumpAndSettle();
@@ -239,24 +243,26 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             navigatorObservers: [mockObserver],
-            home: Scaffold(body: ClickableHashtagText(text: 'Check out #test')),
+            home: const Scaffold(
+              body: ClickableHashtagText(text: 'Check out #test'),
+            ),
           ),
         );
 
         // Find and tap the hashtag
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
         final hashtagSpan = spans.firstWhere(
           (span) => span.text!.startsWith('#'),
         );
-        final tapRecognizer = hashtagSpan.recognizer as TapGestureRecognizer;
+        final tapRecognizer = hashtagSpan.recognizer! as TapGestureRecognizer;
 
         tapRecognizer.onTap!();
         await tester.pumpAndSettle();
 
         // Verify navigation occurred
-        verify(mockObserver.didPush(any, any));
+        verify(() => mockObserver.didPush(any(), any()));
         // TODO(Any): Fix and re-enable these tests
       }, skip: true);
 
@@ -277,7 +283,7 @@ void main() {
         );
 
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
 
         // Tap first hashtag
@@ -285,7 +291,7 @@ void main() {
           (span) => span.text == '#first',
         );
         final firstTapRecognizer =
-            firstHashtagSpan.recognizer as TapGestureRecognizer;
+            firstHashtagSpan.recognizer! as TapGestureRecognizer;
         firstTapRecognizer.onTap!();
         await tester.pumpAndSettle();
 
@@ -294,12 +300,12 @@ void main() {
           (span) => span.text == '#second',
         );
         final secondTapRecognizer =
-            secondHashtagSpan.recognizer as TapGestureRecognizer;
+            secondHashtagSpan.recognizer! as TapGestureRecognizer;
         secondTapRecognizer.onTap!();
         await tester.pumpAndSettle();
 
         // Verify both navigation calls
-        verify(mockObserver.didPush(any, any)).called(2);
+        verify(() => mockObserver.didPush(any(), any())).called(2);
         // TODO(Any): Fix and re-enable these tests
       }, skip: true);
     });
@@ -307,7 +313,7 @@ void main() {
     group('Edge Cases', () {
       testWidgets('handles empty text', (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(body: ClickableHashtagText(text: '')),
           ),
         );
@@ -318,7 +324,7 @@ void main() {
 
       testWidgets('handles text with only spaces', (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(body: ClickableHashtagText(text: '   ')),
           ),
         );
@@ -331,7 +337,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(
               body: ClickableHashtagText(text: 'Test #vine_2024 and #test_123'),
             ),
@@ -339,7 +345,7 @@ void main() {
         );
 
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
 
         expect(spans.any((span) => span.text == '#vine_2024'), isTrue);
@@ -348,7 +354,7 @@ void main() {
 
       testWidgets('handles consecutive hashtags', (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(
               body: ClickableHashtagText(text: '#first#second hashtags'),
             ),
@@ -356,7 +362,7 @@ void main() {
         );
 
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
 
         expect(spans.any((span) => span.text == '#first'), isTrue);
@@ -365,7 +371,7 @@ void main() {
 
       testWidgets('ignores hashtags in URLs', (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(
               body: ClickableHashtagText(
                 text: 'Visit https://example.com/#anchor not a hashtag',
@@ -377,7 +383,7 @@ void main() {
         // This test would need enhancement of the hashtag regex to ignore URL fragments
         // Current implementation would incorrectly identify #anchor as a hashtag
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
 
         // Should have spans but #anchor should not be clickable in ideal implementation
@@ -386,7 +392,7 @@ void main() {
 
       testWidgets('handles single hashtag character', (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(
               body: ClickableHashtagText(text: 'Just a # character'),
             ),
@@ -412,13 +418,13 @@ void main() {
         );
 
         await tester.pumpWidget(
-          MaterialApp(
+          const MaterialApp(
             home: Scaffold(body: ClickableHashtagText(text: textWithHashtags)),
           ),
         );
 
         final text = tester.widget<Text>(find.byType(Text));
-        final textSpan = text.textSpan as TextSpan;
+        final textSpan = text.textSpan! as TextSpan;
         final spans = textSpan.children!.cast<TextSpan>();
         final clickableSpans = spans
             .where((span) => span.recognizer != null)

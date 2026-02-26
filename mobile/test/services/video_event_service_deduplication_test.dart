@@ -1,30 +1,35 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/video_event_service.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/subscription_manager.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/video_event_service.dart';
 
-@GenerateMocks([NostrClient, SubscriptionManager])
-import 'video_event_service_deduplication_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('VideoEventService Subscription Deduplication', () {
     late VideoEventService videoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
       // Setup mock NostrService
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.connectedRelayCount).thenReturn(1);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.connectedRelayCount).thenReturn(1);
       when(
-        mockNostrService.subscribe(argThat(anything)),
-      ).thenAnswer((_) => Stream<Event>.empty());
+        () => mockNostrService.subscribe(any()),
+      ).thenAnswer((_) => const Stream<Event>.empty());
 
       videoEventService = VideoEventService(
         mockNostrService,
@@ -37,15 +42,15 @@ void main() {
       // Note: In production, we'd test this indirectly through behavior
 
       // First subscription
-      videoEventService.subscribeToDiscovery(limit: 100);
+      videoEventService.subscribeToDiscovery();
 
       // Give it a moment to process
-      Future.delayed(Duration(milliseconds: 100), () {
+      Future.delayed(const Duration(milliseconds: 100), () {
         // Second identical subscription
-        videoEventService.subscribeToDiscovery(limit: 100);
+        videoEventService.subscribeToDiscovery();
 
         // Verify NostrService was only called once (reused existing)
-        verify(mockNostrService.subscribe(argThat(anything))).called(1);
+        verify(() => mockNostrService.subscribe(any())).called(1);
       });
     });
 
@@ -53,13 +58,13 @@ void main() {
       'should generate different IDs for different subscription types',
       () async {
         // Subscribe to discovery
-        await videoEventService.subscribeToDiscovery(limit: 100);
+        await videoEventService.subscribeToDiscovery();
 
         // Subscribe to home feed with same limit
-        await videoEventService.subscribeToHomeFeed(['author1'], limit: 100);
+        await videoEventService.subscribeToHomeFeed(['author1']);
 
         // Both should create separate subscriptions
-        verify(mockNostrService.subscribe(argThat(anything))).called(2);
+        verify(() => mockNostrService.subscribe(any())).called(2);
       },
       // TODO(any): Fix and re-enable this test
       skip: true,
@@ -70,16 +75,16 @@ void main() {
       await videoEventService.subscribeToHomeFeed([
         'author1',
         'author2',
-      ], limit: 100);
+      ]);
 
       // Subscribe with different authors
       await videoEventService.subscribeToHomeFeed([
         'author3',
         'author4',
-      ], limit: 100);
+      ]);
 
       // Both should create separate subscriptions
-      verify(mockNostrService.subscribe(argThat(anything))).called(2);
+      verify(() => mockNostrService.subscribe(any())).called(2);
       // TODO(any): Fix and re-enable this test
     }, skip: true);
 
@@ -89,7 +94,7 @@ void main() {
         'author1',
         'author2',
         'author3',
-      ], limit: 100);
+      ]);
 
       // Clear and subscribe with authors in different order
       await videoEventService.unsubscribeFromVideoFeed();
@@ -97,22 +102,22 @@ void main() {
         'author3',
         'author1',
         'author2',
-      ], limit: 100);
+      ]);
 
       // Should reuse the subscription pattern (2 calls total, not 3)
-      verify(mockNostrService.subscribe(argThat(anything))).called(2);
+      verify(() => mockNostrService.subscribe(any())).called(2);
       // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('should generate different IDs for different hashtags', () async {
       // Subscribe with first hashtag
-      await videoEventService.subscribeToHashtagVideos(['funny'], limit: 100);
+      await videoEventService.subscribeToHashtagVideos(['funny']);
 
       // Subscribe with different hashtag
-      await videoEventService.subscribeToHashtagVideos(['music'], limit: 100);
+      await videoEventService.subscribeToHashtagVideos(['music']);
 
       // Both should create separate subscriptions
-      verify(mockNostrService.subscribe(argThat(anything))).called(2);
+      verify(() => mockNostrService.subscribe(any())).called(2);
       // TODO(any): Fix and re-enable this test
     }, skip: true);
 
@@ -121,21 +126,21 @@ void main() {
       final futures = <Future>[];
 
       for (int i = 0; i < 5; i++) {
-        futures.add(videoEventService.subscribeToDiscovery(limit: 100));
+        futures.add(videoEventService.subscribeToDiscovery());
       }
 
       await Future.wait(futures);
 
       // Should only create one subscription despite 5 calls
-      verify(mockNostrService.subscribe(argThat(anything))).called(1);
+      verify(() => mockNostrService.subscribe(any())).called(1);
       // TODO(any): Fix and re-enable this test
     }, skip: true);
 
     test('subscription count should stay reasonable', () async {
       // Create various subscription types
-      await videoEventService.subscribeToDiscovery(limit: 100);
-      await videoEventService.subscribeToHomeFeed(['author1'], limit: 100);
-      await videoEventService.subscribeToHashtagVideos(['funny'], limit: 100);
+      await videoEventService.subscribeToDiscovery();
+      await videoEventService.subscribeToHomeFeed(['author1']);
+      await videoEventService.subscribeToHashtagVideos(['funny']);
 
       // Get connection status to check subscription count
       final status = videoEventService.getConnectionStatus();
@@ -154,10 +159,10 @@ void main() {
       await videoEventService.subscribeToDiscovery(limit: 50);
 
       // Replace with different parameters
-      await videoEventService.subscribeToDiscovery(limit: 100);
+      await videoEventService.subscribeToDiscovery();
 
       // Should create two subscriptions (old one cancelled, new one created)
-      verify(mockNostrService.subscribe(argThat(anything))).called(2);
+      verify(() => mockNostrService.subscribe(any())).called(2);
 
       // But only one should be active
       final status = videoEventService.getConnectionStatus();

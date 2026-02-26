@@ -48,3 +48,9 @@ class DeleteCommentFailedException extends CommentsRepositoryException {
   /// Creates a new delete comment failed exception.
   const DeleteCommentFailedException([super.message]);
 }
+
+/// Exception thrown when watching comments fails.
+class WatchCommentsFailedException extends CommentsRepositoryException {
+  /// Creates a new watch comments failed exception.
+  const WatchCommentsFailedException([super.message]);
+}

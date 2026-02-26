@@ -1,30 +1,42 @@
 // ABOUTME: Tests for VideoSharingService social features integration
-// ABOUTME: Covers getShareableUsers and searchUsersToShareWith with TDD approach
+// ABOUTME: Covers getShareableUsers, searchUsersToShareWith, shareVideoWithUser,
+// ABOUTME: and sharing utilities.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 
-import 'video_sharing_service_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-// Note: SocialService mock removed - following list now handled by FollowRepository
-// These tests are mostly skipped and need updating to use FollowRepository
-@GenerateMocks([NostrClient, AuthService, UserProfileService])
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockUserProfileService extends Mock implements UserProfileService {}
+
+const _testPubkey =
+    'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+
+const _recipientPubkey =
+    'b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3';
+
 void main() {
   late VideoSharingService service;
-  late MockNostrClient mockNostrService;
-  late MockAuthService mockAuthService;
-  late MockUserProfileService mockUserProfileService;
+  late _MockNostrClient mockNostrService;
+  late _MockAuthService mockAuthService;
+  late _MockUserProfileService mockUserProfileService;
+
+  setUpAll(() {
+    registerFallbackValue(Event(_testPubkey, 4, <List<String>>[], ''));
+  });
 
   setUp(() {
-    mockNostrService = MockNostrClient();
-    mockAuthService = MockAuthService();
-    mockUserProfileService = MockUserProfileService();
+    mockNostrService = _MockNostrClient();
+    mockAuthService = _MockAuthService();
+    mockUserProfileService = _MockUserProfileService();
 
     service = VideoSharingService(
       nostrService: mockNostrService,
@@ -34,231 +46,117 @@ void main() {
   });
 
   group('getShareableUsers', () {
-    test(
-      'returns recently shared users when no following list exists',
-      () async {
-        // Arrange
-        // Note: Following list mock removed - tests need updating to use FollowRepository
+    test('returns empty list when no recent shares exist', () async {
+      final result = await service.getShareableUsers();
 
-        // Act
-        final result = await service.getShareableUsers(limit: 20);
+      expect(result, isEmpty);
+    });
 
-        // Assert
-        expect(result, isEmpty);
-        // Note: Verification removed - tests need updating to use FollowRepository
-      },
-      // TODO(Any): Fix and re-enable these tests
-      skip: true,
-    );
-
-    test('returns following list with profile data', () async {
-      // Arrange
-      final followingPubkeys = [
-        'pubkey1' * 8, // 64 chars
-        'pubkey2' * 8,
-        'pubkey3' * 8,
-      ];
-
-      final profile1 = UserProfile(
-        pubkey: followingPubkeys[0],
-        rawData: const {},
-        createdAt: DateTime.now(),
-        eventId: 'event1',
-        name: 'Alice',
-        displayName: 'Alice Smith',
-        picture: 'https://example.com/alice.jpg',
+    test('returns recently shared users after sharing', () async {
+      // Arrange - set up successful share
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+      );
+      when(() => mockNostrService.publishEvent(any())).thenAnswer(
+        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+      );
+      when(
+        () => mockUserProfileService.fetchProfile(_recipientPubkey),
+      ).thenAnswer(
+        (_) async => UserProfile(
+          pubkey: _recipientPubkey,
+          rawData: const {},
+          createdAt: DateTime.now(),
+          eventId: 'event1',
+          displayName: 'Alice',
+          picture: 'https://example.com/alice.jpg',
+        ),
       );
 
-      final profile2 = UserProfile(
-        pubkey: followingPubkeys[1],
-        rawData: const {},
-        createdAt: DateTime.now(),
-        eventId: 'event2',
-        name: 'Bob',
-        displayName: 'Bob Jones',
-      );
-
-      // Note: Following list mocks removed - tests need updating to use FollowRepository
-      when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[0]),
-      ).thenReturn(profile1);
-      when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[1]),
-      ).thenReturn(profile2);
-      when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[2]),
-      ).thenReturn(null);
-
-      // Act
-      final result = await service.getShareableUsers(limit: 20);
-
-      // Assert
-      expect(result.length, 3);
-      expect(result[0].pubkey, followingPubkeys[0]);
-      expect(result[0].displayName, 'Alice Smith');
-      expect(result[0].picture, 'https://example.com/alice.jpg');
-      expect(result[0].isFollowing, true);
-
-      expect(result[1].pubkey, followingPubkeys[1]);
-      expect(result[1].displayName, 'Bob Jones');
-      expect(result[1].isFollowing, true);
-
-      expect(result[2].pubkey, followingPubkeys[2]);
-      expect(result[2].displayName, null);
-      expect(result[2].isFollowing, true);
-      // TODO(Any): Fix and re-enable these tests
-    }, skip: true);
-
-    test('prioritizes recently shared users over following list', () async {
-      // Arrange
-      final followingPubkeys = ['pubkey1' * 8, 'pubkey2' * 8];
-
-      // Note: Following list mocks removed - tests need updating to use FollowRepository
-      when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
-
-      // Share with one user to add to recent
       final now = DateTime.now();
       final testVideo = VideoEvent(
         id: 'video1',
-        pubkey: 'author123',
+        pubkey: _testPubkey,
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
         content: 'Test video',
       );
 
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
-        ),
-      ).thenAnswer((_) async => null);
-
+      // Act - share a video, which populates recently shared list
       await service.shareVideoWithUser(
         video: testVideo,
-        recipientPubkey: followingPubkeys[0],
+        recipientPubkey: _recipientPubkey,
       );
 
-      // Act
-      final result = await service.getShareableUsers(limit: 20);
+      final result = await service.getShareableUsers();
 
       // Assert
-      expect(
-        result,
-        isNotEmpty,
-        reason: 'Should return at least one shareable user from following list',
-      );
-      // Recently shared should appear first
-      expect(result.first.pubkey, followingPubkeys[0]);
-      // TODO(Any): Fix and re-enable these tests
-    }, skip: true);
+      expect(result, hasLength(1));
+      expect(result[0].pubkey, _recipientPubkey);
+      expect(result[0].displayName, 'Alice');
+      expect(result[0].picture, 'https://example.com/alice.jpg');
+    });
 
     test('respects limit parameter', () async {
-      // Arrange
-      // ignore: unused_local_variable - test is skipped, needs updating
-      final followingPubkeys = List.generate(25, (i) => 'pubkey$i' * 8);
+      // Arrange - share with multiple users
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+      );
+      when(() => mockNostrService.publishEvent(any())).thenAnswer(
+        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+      );
+      when(
+        () => mockUserProfileService.fetchProfile(any()),
+      ).thenAnswer((_) async => null);
 
-      // Note: Following list mocks removed - tests need updating to use FollowRepository
-      when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
+      final now = DateTime.now();
+      final testVideo = VideoEvent(
+        id: 'video1',
+        pubkey: _testPubkey,
+        createdAt: now.millisecondsSinceEpoch ~/ 1000,
+        timestamp: now,
+        content: 'Test video',
+      );
 
-      // Act
-      final result = await service.getShareableUsers(limit: 10);
+      // Share with 6 users to exceed the limit of 5 recent
+      for (var i = 0; i < 6; i++) {
+        final hexI = i.toRadixString(16).padLeft(64, '0');
+        await service.shareVideoWithUser(
+          video: testVideo,
+          recipientPubkey: hexI,
+        );
+      }
 
-      // Assert
-      expect(result.length, 10);
-      // TODO(Any): Fix and re-enable these tests
-    }, skip: true);
+      // Act - request with limit 3
+      final result = await service.getShareableUsers(limit: 3);
+
+      // Assert - getShareableUsers takes up to 5 recent, then limits
+      expect(result.length, 3);
+    });
   });
 
   group('searchUsersToShareWith', () {
     test('returns empty list for empty query', () async {
-      // Act
       final result = await service.searchUsersToShareWith('');
 
-      // Assert
       expect(result, isEmpty);
     });
 
-    test('searches by display name in following list', () async {
-      // Arrange
-      final followingPubkeys = ['pubkey1' * 8, 'pubkey2' * 8, 'pubkey3' * 8];
-
-      final profile1 = UserProfile(
-        pubkey: followingPubkeys[0],
-        rawData: const {},
-        createdAt: DateTime.now(),
-        eventId: 'event1',
-        displayName: 'Alice Smith',
-      );
-
-      final profile2 = UserProfile(
-        pubkey: followingPubkeys[1],
-        rawData: const {},
-        createdAt: DateTime.now(),
-        eventId: 'event2',
-        displayName: 'Bob Jones',
-      );
-
-      final profile3 = UserProfile(
-        pubkey: followingPubkeys[2],
-        rawData: const {},
-        createdAt: DateTime.now(),
-        eventId: 'event3',
-        displayName: 'Alice Johnson',
-      );
-
-      // Note: Following list mock removed - tests need updating to use FollowRepository
-      when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[0]),
-      ).thenReturn(profile1);
-      when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[1]),
-      ).thenReturn(profile2);
-      when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[2]),
-      ).thenReturn(profile3);
-
-      // Act
-      final result = await service.searchUsersToShareWith('alice');
-
-      // Assert
-      expect(result.length, 2);
-      expect(result[0].displayName, 'Alice Smith');
-      expect(result[1].displayName, 'Alice Johnson');
-      // TODO(Any): Fix and re-enable these tests
-    }, skip: true);
-
-    test('searches by name field if displayName is null', () async {
-      // Arrange
-      final followingPubkeys = ['pubkey1' * 8];
-
-      final profile = UserProfile(
-        pubkey: followingPubkeys[0],
-        rawData: const {},
-        createdAt: DateTime.now(),
-        eventId: 'event1',
-        name: 'alice',
-        displayName: null,
-      );
-
-      // Note: Following list mock removed - tests need updating to use FollowRepository
-      when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[0]),
-      ).thenReturn(profile);
-
-      // Act
-      final result = await service.searchUsersToShareWith('alice');
-
-      // Assert
-      expect(result.length, 1);
-      // Implementation falls back to name when displayName is null for better UX
-      expect(result[0].displayName, 'alice');
-      // TODO(Any): Fix and re-enable these tests
-    }, skip: true);
-
-    test('returns user by hex pubkey lookup as fallback', () async {
-      // Arrange
+    test('returns user by hex pubkey lookup', () async {
       final hexPubkey = 'a' * 64;
       final profile = UserProfile(
         pubkey: hexPubkey,
@@ -266,64 +164,265 @@ void main() {
         createdAt: DateTime.now(),
         eventId: 'event1',
         displayName: 'Charlie',
+        picture: 'https://example.com/charlie.jpg',
       );
 
-      // Note: Following list mock removed - tests need updating to use FollowRepository
       when(
-        mockUserProfileService.fetchProfile(hexPubkey),
+        () => mockUserProfileService.fetchProfile(hexPubkey),
       ).thenAnswer((_) async => profile);
 
-      // Act
       final result = await service.searchUsersToShareWith(hexPubkey);
 
-      // Assert
-      expect(result.length, 1);
+      expect(result, hasLength(1));
       expect(result[0].pubkey, hexPubkey);
       expect(result[0].displayName, 'Charlie');
-      verify(mockUserProfileService.fetchProfile(hexPubkey)).called(1);
+      expect(result[0].picture, 'https://example.com/charlie.jpg');
+      verify(() => mockUserProfileService.fetchProfile(hexPubkey)).called(1);
     });
 
-    test('is case insensitive for display name search', () async {
-      // Arrange
-      final followingPubkeys = ['pubkey1' * 8];
+    test(
+      'returns user with null profile data for unknown hex pubkey',
+      () async {
+        final hexPubkey = 'b' * 64;
 
-      final profile = UserProfile(
-        pubkey: followingPubkeys[0],
-        rawData: const {},
-        createdAt: DateTime.now(),
-        eventId: 'event1',
-        displayName: 'Alice Smith',
+        when(
+          () => mockUserProfileService.fetchProfile(hexPubkey),
+        ).thenAnswer((_) async => null);
+
+        final result = await service.searchUsersToShareWith(hexPubkey);
+
+        // Implementation always returns a ShareableUser for hex pubkeys,
+        // even when profile is null
+        expect(result, hasLength(1));
+        expect(result[0].pubkey, hexPubkey);
+        expect(result[0].displayName, isNull);
+      },
+    );
+
+    test('returns empty list for non-hex text queries', () async {
+      // Name-based search is not yet implemented
+      final result = await service.searchUsersToShareWith('alice');
+
+      expect(result, isEmpty);
+    });
+
+    test('returns empty list for short hex-like queries', () async {
+      // Must be exactly 64 chars to be treated as a pubkey
+      final result = await service.searchUsersToShareWith('abcdef');
+
+      expect(result, isEmpty);
+    });
+  });
+
+  group('shareVideoWithUser', () {
+    test('returns failure when user is not authenticated', () async {
+      when(() => mockAuthService.isAuthenticated).thenReturn(false);
+
+      final now = DateTime.now();
+      final result = await service.shareVideoWithUser(
+        video: VideoEvent(
+          id: 'video1',
+          pubkey: _testPubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          content: 'Test',
+        ),
+        recipientPubkey: _recipientPubkey,
       );
 
-      // Note: Following list mock removed - tests need updating to use FollowRepository
+      expect(result.success, isFalse);
+      expect(result.error, contains('not authenticated'));
+    });
+
+    test('returns failure when event creation fails', () async {
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        mockUserProfileService.getCachedProfile(followingPubkeys[0]),
-      ).thenReturn(profile);
-
-      // Act
-      final result = await service.searchUsersToShareWith('ALICE');
-
-      // Assert
-      expect(result.length, 1);
-      expect(result[0].displayName, 'Alice Smith');
-      // TODO(Any): Fix and re-enable these tests
-    }, skip: true);
-
-    test('returns empty list when hex pubkey not found', () async {
-      // Arrange
-      final hexPubkey = 'a' * 64;
-
-      // Note: Following list mock removed - tests need updating to use FollowRepository
-      when(
-        mockUserProfileService.fetchProfile(hexPubkey),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
       ).thenAnswer((_) async => null);
 
+      final now = DateTime.now();
+      final result = await service.shareVideoWithUser(
+        video: VideoEvent(
+          id: 'video1',
+          pubkey: _testPubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          content: 'Test',
+        ),
+        recipientPubkey: _recipientPubkey,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Failed to create'));
+    });
+
+    test('returns success on successful publish', () async {
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      final signedEvent = Event(_testPubkey, 4, <List<String>>[], 'test');
+      signedEvent.id = 'signed_event_id';
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockUserProfileService.fetchProfile(any()),
+      ).thenAnswer((_) async => null);
+
+      final now = DateTime.now();
+      final result = await service.shareVideoWithUser(
+        video: VideoEvent(
+          id: 'video1',
+          pubkey: _testPubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          content: 'Test',
+        ),
+        recipientPubkey: _recipientPubkey,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.messageEventId, equals('signed_event_id'));
+    });
+
+    test('returns failure when publish fails', () async {
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+      );
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => null);
+
+      final now = DateTime.now();
+      final result = await service.shareVideoWithUser(
+        video: VideoEvent(
+          id: 'video1',
+          pubkey: _testPubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          content: 'Test',
+        ),
+        recipientPubkey: _recipientPubkey,
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('Failed to publish'));
+    });
+  });
+
+  group('sharing utilities', () {
+    test('generateShareUrl uses stableId', () {
+      final now = DateTime.now();
+      final video = VideoEvent(
+        id: 'video1',
+        pubkey: _testPubkey,
+        createdAt: now.millisecondsSinceEpoch ~/ 1000,
+        timestamp: now,
+        content: 'Test',
+        vineId: 'my-vine-id',
+      );
+
+      final url = service.generateShareUrl(video);
+
+      // stableId returns vineId when set, otherwise falls back to id
+      expect(url, equals('https://divine.video/video/my-vine-id'));
+    });
+
+    test('hasSharedWithRecently returns false for unknown user', () {
+      expect(service.hasSharedWithRecently('unknown'), isFalse);
+    });
+
+    test('hasSharedWithRecently returns true after sharing', () async {
+      // Arrange
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+      );
+      when(() => mockNostrService.publishEvent(any())).thenAnswer(
+        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+      );
+      when(
+        () => mockUserProfileService.fetchProfile(any()),
+      ).thenAnswer((_) async => null);
+
+      final now = DateTime.now();
+      await service.shareVideoWithUser(
+        video: VideoEvent(
+          id: 'video1',
+          pubkey: _testPubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          content: 'Test',
+        ),
+        recipientPubkey: _recipientPubkey,
+      );
+
+      expect(service.hasSharedWithRecently(_recipientPubkey), isTrue);
+    });
+
+    test('clearSharingHistory removes all data', () async {
+      // Arrange - populate some history
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer(
+        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+      );
+      when(() => mockNostrService.publishEvent(any())).thenAnswer(
+        (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
+      );
+      when(
+        () => mockUserProfileService.fetchProfile(any()),
+      ).thenAnswer((_) async => null);
+
+      final now = DateTime.now();
+      await service.shareVideoWithUser(
+        video: VideoEvent(
+          id: 'video1',
+          pubkey: _testPubkey,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          timestamp: now,
+          content: 'Test',
+        ),
+        recipientPubkey: _recipientPubkey,
+      );
+
       // Act
-      final result = await service.searchUsersToShareWith(hexPubkey);
+      service.clearSharingHistory();
 
       // Assert
-      expect(result, isEmpty);
-      // TODO(Any): Fix and re-enable these tests
-    }, skip: true);
+      expect(service.recentlySharedWith, isEmpty);
+      expect(service.hasSharedWithRecently(_recipientPubkey), isFalse);
+
+      final shareableUsers = await service.getShareableUsers();
+      expect(shareableUsers, isEmpty);
+    });
   });
 }

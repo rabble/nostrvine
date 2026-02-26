@@ -1,5 +1,4 @@
 // ABOUTME: Test to verify the revine fix works correctly
-import 'package:openvine/utils/unified_logger.dart';
 // ABOUTME: Tests that enabling includeReposts allows Kind 6 events to be processed
 
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 import 'mocks/mock_nostr_service.dart';
 
@@ -32,7 +32,6 @@ void main() {
           title: 'Test Video',
           videoUrl: 'https://example.com/video.mp4',
           thumbnailUrl: 'https://example.com/thumb.jpg',
-          isRepost: false,
         );
 
         // Create repost event using the factory method
@@ -79,7 +78,6 @@ void main() {
         content: 'Video 1',
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video1.mp4',
-        isRepost: false,
       );
 
       final originalVideo2 = VideoEvent(
@@ -89,7 +87,6 @@ void main() {
         content: 'Video 2',
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video2.mp4',
-        isRepost: false,
       );
 
       // User reposts video1

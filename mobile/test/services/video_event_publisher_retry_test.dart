@@ -162,7 +162,7 @@ void main() {
 
           await RetryExecutor.executeWithRetry(
             operation: () async => true,
-            onRetry: (_, __) {
+            onRetry: (_, _) {
               retryCalled = true;
             },
           );
@@ -189,19 +189,19 @@ void main() {
     group('Exponential backoff calculation', () {
       test('attempt 1 delay is 2 seconds', () {
         const attempt = 1;
-        final delaySeconds = attempt * 2;
+        const delaySeconds = attempt * 2;
         expect(delaySeconds, equals(2));
       });
 
       test('attempt 2 delay is 4 seconds', () {
         const attempt = 2;
-        final delaySeconds = attempt * 2;
+        const delaySeconds = attempt * 2;
         expect(delaySeconds, equals(4));
       });
 
       test('attempt 3 would be 6 seconds (but no delay on last attempt)', () {
         const attempt = 3;
-        final delaySeconds = attempt * 2;
+        const delaySeconds = attempt * 2;
         expect(delaySeconds, equals(6));
         // Note: In actual implementation, delay is not applied after last attempt
       });

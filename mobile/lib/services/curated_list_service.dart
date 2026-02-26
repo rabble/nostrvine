@@ -15,168 +15,15 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/curated_list_ext.dart';
 import 'package:openvine/utils/nostr_event_ext.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-/// Enum for playlist ordering options
-enum PlayOrder {
-  chronological, // Order by date added
-  reverse, // Reverse chronological order
-  manual, // Custom manual order
-  shuffle, // Randomized order
-}
-
-/// Extension for PlayOrder serialization
-extension PlayOrderExtension on PlayOrder {
-  String get value {
-    switch (this) {
-      case PlayOrder.chronological:
-        return 'chronological';
-      case PlayOrder.reverse:
-        return 'reverse';
-      case PlayOrder.manual:
-        return 'manual';
-      case PlayOrder.shuffle:
-        return 'shuffle';
-    }
-  }
-
-  static PlayOrder fromString(String value) {
-    switch (value) {
-      case 'chronological':
-        return PlayOrder.chronological;
-      case 'reverse':
-        return PlayOrder.reverse;
-      case 'manual':
-        return PlayOrder.manual;
-      case 'shuffle':
-        return PlayOrder.shuffle;
-      default:
-        return PlayOrder.chronological;
-    }
-  }
-}
-
-/// Represents a curated list of videos with enhanced playlist features
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
-class CuratedList {
-  const CuratedList({
-    required this.id,
-    required this.name,
-    required this.videoEventIds,
-    required this.createdAt,
-    required this.updatedAt,
-    this.pubkey,
-    this.description,
-    this.imageUrl,
-    this.isPublic = true,
-    this.nostrEventId,
-    this.tags = const [],
-    this.isCollaborative = false,
-    this.allowedCollaborators = const [],
-    this.thumbnailEventId,
-    this.playOrder = PlayOrder.chronological,
-  });
-
-  final String id;
-  final String name;
-  final String? pubkey; // Creator's pubkey for attribution
-  final String? description;
-  final String? imageUrl;
-  final List<String> videoEventIds;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-
-  /// Whether to publish this list to Nostr relays.
-  /// WARNING: isPublic=false means LOCAL-ONLY storage (SharedPreferences).
-  /// Private lists have NO backup - lost on app uninstall or device change.
-  /// TODO: Implement NIP-44 encrypted lists for true private + backed up lists.
-  final bool isPublic;
-  final String? nostrEventId;
-  final List<String> tags; // Tags for categorization and discovery
-  final bool isCollaborative; // Allow others to add videos
-  final List<String> allowedCollaborators; // Pubkeys allowed to collaborate
-  final String? thumbnailEventId; // Featured video as thumbnail
-  final PlayOrder playOrder; // How videos should be ordered
-
-  CuratedList copyWith({
-    String? id,
-    String? name,
-    String? pubkey,
-    String? description,
-    String? imageUrl,
-    List<String>? videoEventIds,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    bool? isPublic,
-    String? nostrEventId,
-    List<String>? tags,
-    bool? isCollaborative,
-    List<String>? allowedCollaborators,
-    String? thumbnailEventId,
-    PlayOrder? playOrder,
-  }) => CuratedList(
-    id: id ?? this.id,
-    name: name ?? this.name,
-    pubkey: pubkey ?? this.pubkey,
-    description: description ?? this.description,
-    imageUrl: imageUrl ?? this.imageUrl,
-    videoEventIds: videoEventIds ?? this.videoEventIds,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-    isPublic: isPublic ?? this.isPublic,
-    nostrEventId: nostrEventId ?? this.nostrEventId,
-    tags: tags ?? this.tags,
-    isCollaborative: isCollaborative ?? this.isCollaborative,
-    allowedCollaborators: allowedCollaborators ?? this.allowedCollaborators,
-    thumbnailEventId: thumbnailEventId ?? this.thumbnailEventId,
-    playOrder: playOrder ?? this.playOrder,
-  );
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'pubkey': pubkey,
-    'description': description,
-    'imageUrl': imageUrl,
-    'videoEventIds': videoEventIds,
-    'createdAt': createdAt.toIso8601String(),
-    'updatedAt': updatedAt.toIso8601String(),
-    'isPublic': isPublic,
-    'nostrEventId': nostrEventId,
-    'tags': tags,
-    'isCollaborative': isCollaborative,
-    'allowedCollaborators': allowedCollaborators,
-    'thumbnailEventId': thumbnailEventId,
-    'playOrder': playOrder.value,
-  };
-
-  static CuratedList fromJson(Map<String, dynamic> json) => CuratedList(
-    id: json['id'],
-    name: json['name'],
-    pubkey: json['pubkey'],
-    description: json['description'],
-    imageUrl: json['imageUrl'],
-    videoEventIds: List<String>.from(json['videoEventIds'] ?? []),
-    createdAt: DateTime.parse(json['createdAt']),
-    updatedAt: DateTime.parse(json['updatedAt']),
-    isPublic: json['isPublic'] ?? true,
-    nostrEventId: json['nostrEventId'],
-    tags: List<String>.from(json['tags'] ?? []),
-    isCollaborative: json['isCollaborative'] ?? false,
-    allowedCollaborators: List<String>.from(json['allowedCollaborators'] ?? []),
-    thumbnailEventId: json['thumbnailEventId'],
-    playOrder: PlayOrderExtension.fromString(
-      json['playOrder'] ?? 'chronological',
-    ),
-  );
-}
 
 /// Callback type for list subscription events
 /// Called with listId and the video IDs in that list
@@ -371,7 +218,7 @@ class CuratedListService extends ChangeNotifier {
         name: name,
         description: description,
         imageUrl: imageUrl,
-        videoEventIds: [],
+        videoEventIds: const [],
         createdAt: now,
         updatedAt: now,
         isPublic: isPublic,
@@ -1185,7 +1032,7 @@ class CuratedListService extends ChangeNotifier {
     if (userPubkey == null) return;
 
     Log.info(
-      '📋 Fetching user\'s curated lists from relays for pubkey: $userPubkey',
+      "📋 Fetching user's curated lists from relays for pubkey: $userPubkey",
       name: 'CuratedListService',
       category: LogCategory.system,
     );
@@ -1581,25 +1428,18 @@ class CuratedListService extends ChangeNotifier {
         switch (tag[0]) {
           case 'title':
             if (tag.length > 1) title = tag[1];
-            break;
           case 'description':
             if (tag.length > 1) description = tag[1];
-            break;
           case 'image':
             if (tag.length > 1) imageUrl = tag[1];
-            break;
           case 'thumbnail':
             if (tag.length > 1) thumbnailEventId = tag[1];
-            break;
           case 'playorder':
             if (tag.length > 1) playOrderStr = tag[1];
-            break;
           case 't':
             if (tag.length > 1) tags.add(tag[1]);
-            break;
           case 'e':
             if (tag.length > 1) videoEventIds.add(tag[1]);
-            break;
           case 'a':
             // Handle 'a' tags for addressable events (format: kind:pubkey:d-tag)
             // NIP-71 video kinds: 34235 (horizontal), 34236 (vertical), 34237 (live)
@@ -1616,13 +1456,10 @@ class CuratedListService extends ChangeNotifier {
                 }
               }
             }
-            break;
           case 'collaborative':
             if (tag.length > 1 && tag[1] == 'true') isCollaborative = true;
-            break;
           case 'collaborator':
             if (tag.length > 1) allowedCollaborators.add(tag[1]);
-            break;
         }
       }
 
@@ -1650,7 +1487,6 @@ class CuratedListService extends ChangeNotifier {
         videoEventIds: videoEventIds,
         createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
         updatedAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
-        isPublic: true, // Lists from relays are public
         nostrEventId: event.id,
         tags: tags,
         isCollaborative: isCollaborative,

@@ -18,7 +18,7 @@ void main() {
     late CameraService cameraService;
 
     setUpAll(() async {
-      final service = PermissionHandlerPermissionsService();
+      const service = PermissionHandlerPermissionsService();
       await service.requestCameraPermission();
       await service.requestMicrophonePermission();
     });
@@ -37,14 +37,14 @@ void main() {
 
     testWidgets('handles app pause', (tester) async {
       await cameraService.handleAppLifecycleState(.paused);
-      await tester.pump(Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Should complete without error
     });
 
     testWidgets('handles app resume', (tester) async {
       await cameraService.handleAppLifecycleState(.resumed);
-      await tester.pump(Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Camera should still be initialized
       expect(cameraService.isInitialized, isTrue);
@@ -52,10 +52,10 @@ void main() {
 
     testWidgets('handles pause-resume cycle', (tester) async {
       await cameraService.handleAppLifecycleState(.paused);
-      await tester.pump(Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
 
       await cameraService.handleAppLifecycleState(.resumed);
-      await tester.pump(Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Camera should recover
       expect(cameraService.isInitialized, isTrue);
@@ -74,7 +74,7 @@ void main() {
 
       for (final state in states) {
         await cameraService.handleAppLifecycleState(state);
-        await tester.pump(Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
       }
 
       // Should handle all transitions gracefully
@@ -84,16 +84,16 @@ void main() {
     testWidgets('can record after lifecycle changes', (tester) async {
       // Simulate app going to background and back
       await cameraService.handleAppLifecycleState(.paused);
-      await tester.pump(Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
 
       await cameraService.handleAppLifecycleState(.resumed);
-      await tester.pump(Duration(milliseconds: 200));
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Should still be able to record
       expect(cameraService.canRecord, isTrue);
 
       await cameraService.startRecording();
-      await tester.pump(Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
 
       final video = await cameraService.stopRecording();
       expect(video, anyOf(isNull, isA<Object>()));
@@ -101,7 +101,7 @@ void main() {
 
     testWidgets('handles detached state', (tester) async {
       await cameraService.handleAppLifecycleState(.detached);
-      await tester.pump(Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Verify no exceptions occurred during the operations
       expect(tester.takeException(), isNull);

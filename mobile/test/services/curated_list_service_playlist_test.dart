@@ -2,48 +2,66 @@
 // ABOUTME: Tests video ordering, reordering, and play order modes
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'curated_list_service_playlist_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CuratedListService - Playlist Features', () {
     late CuratedListService service;
-    late MockNostrClient mockNostr;
-    late MockAuthService mockAuth;
+    late _MockNostrClient mockNostr;
+    late _MockAuthService mockAuth;
     late SharedPreferences prefs;
+
+    setUpAll(() {
+      registerFallbackValue(
+        Event.fromJson({
+          'id': 'fallback_event_id',
+          'pubkey':
+              'aabbccdd00112233445566778899aabbccdd00112233445566778899aabbccdd',
+          'created_at': 0,
+          'kind': 1,
+          'tags': <List<String>>[],
+          'content': '',
+          'sig': '',
+        }),
+      );
+      registerFallbackValue(<Filter>[]);
+    });
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
+      mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
       prefs = await SharedPreferences.getInstance();
 
-      when(mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(
-        mockAuth.currentPublicKeyHex,
+        () => mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
-      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
 
       when(
-        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
-      ).thenAnswer((_) => Stream.empty());
+        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+      ).thenAnswer((_) => const Stream.empty());
 
       when(
-        mockAuth.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuth.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer(
         (_) async => Event.fromJson({
@@ -85,7 +103,6 @@ void main() {
       test('sets play order to manual after reordering', () async {
         final list = await service.createList(
           name: 'Test List',
-          playOrder: PlayOrder.chronological,
         );
         await service.addVideoToList(list!.id, 'video_1');
         await service.addVideoToList(list.id, 'video_2');
@@ -141,15 +158,20 @@ void main() {
       test('publishes update to Nostr for public list', () async {
         final list = await service.createList(
           name: 'Test List',
-          isPublic: true,
         );
         await service.addVideoToList(list!.id, 'video_1');
         await service.addVideoToList(list.id, 'video_2');
         reset(mockNostr);
 
+        when(() => mockNostr.publishEvent(any())).thenAnswer((
+          invocation,
+        ) async {
+          return invocation.positionalArguments[0] as Event;
+        });
+
         await service.reorderVideos(list.id, ['video_2', 'video_1']);
 
-        verify(mockNostr.publishEvent(any)).called(1);
+        verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
       test('updates updatedAt timestamp', () async {
@@ -242,7 +264,6 @@ void main() {
       test('creates list with specific play order', () async {
         final list1 = await service.createList(
           name: 'Chronological',
-          playOrder: PlayOrder.chronological,
         );
         final list2 = await service.createList(
           name: 'Reverse',
@@ -266,7 +287,6 @@ void main() {
       test('updates play order via updateList', () async {
         final list = await service.createList(
           name: 'Test List',
-          playOrder: PlayOrder.chronological,
         );
 
         await service.updateList(
@@ -317,24 +337,24 @@ void main() {
         expect(service.getListById(listId)!.videoEventIds, isEmpty);
       });
 
-      test(
-        'reorder with duplicate videos in new order is accepted (duplicates removed)',
-        () async {
-          final list = await service.createList(name: 'Test List');
-          await service.addVideoToList(list!.id, 'video_1');
-          await service.addVideoToList(list.id, 'video_2');
+      test('reorder with duplicate videos in new order is accepted '
+          '(duplicates removed)', () async {
+        final list = await service.createList(name: 'Test List');
+        await service.addVideoToList(list!.id, 'video_1');
+        await service.addVideoToList(list.id, 'video_2');
 
-          // Duplicate video_1 - implementation uses Set which deduplicates
-          final result = await service.reorderVideos(list.id, [
-            'video_1',
-            'video_1',
-            'video_2',
-          ]);
+        // Duplicate video_1 - implementation uses Set which deduplicates
+        final result = await service.reorderVideos(list.id, [
+          'video_1',
+          'video_1',
+          'video_2',
+        ]);
 
-          // Implementation accepts because Set(['video_1', 'video_1', 'video_2']) == Set(['video_1', 'video_2'])
-          expect(result, isTrue);
-        },
-      );
+        // Implementation accepts because
+        // Set(['video_1', 'video_1', 'video_2']) ==
+        // Set(['video_1', 'video_2'])
+        expect(result, isTrue);
+      });
 
       test(
         'getOrderedVideoIds respects playOrder after manual reorder',
@@ -384,7 +404,8 @@ void main() {
         final order2 = service.getOrderedVideoIds(listId);
         final order3 = service.getOrderedVideoIds(listId);
 
-        // At least one should be different (very high probability with 10 items)
+        // At least one should be different
+        // (very high probability with 10 items)
         final allSame =
             order1.toString() == order2.toString() &&
             order2.toString() == order3.toString();

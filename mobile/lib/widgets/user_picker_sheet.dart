@@ -27,6 +27,7 @@ Future<UserProfile?> showUserPickerSheet(
   BuildContext context, {
   required UserPickerFilterMode filterMode,
   String? title,
+  Set<String> excludePubkeys = const {},
 }) {
   return showModalBottomSheet<UserProfile>(
     context: context,
@@ -44,6 +45,7 @@ Future<UserProfile?> showUserPickerSheet(
         filterMode: filterMode,
         title: title,
         scrollController: scrollController,
+        excludePubkeys: excludePubkeys,
       ),
     ),
   );
@@ -56,6 +58,7 @@ class UserPickerSheet extends ConsumerStatefulWidget {
     required this.filterMode,
     this.title,
     this.scrollController,
+    this.excludePubkeys = const {},
     super.key,
   });
 
@@ -64,6 +67,9 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 
   /// Optional title displayed at the top.
   final String? title;
+
+  /// Pubkeys to exclude from results (e.g. already-selected collaborators).
+  final Set<String> excludePubkeys;
 
   /// Scroll controller for the draggable sheet.
   final ScrollController? scrollController;
@@ -122,9 +128,15 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     );
 
     if (mounted) {
+      // Remove already-selected users from results
+      final filtered = widget.excludePubkeys.isEmpty
+          ? profiles
+          : profiles
+                .where((p) => !widget.excludePubkeys.contains(p.pubkey))
+                .toList();
       setState(() {
-        _followProfiles = profiles;
-        _filteredFollowProfiles = profiles;
+        _followProfiles = filtered;
+        _filteredFollowProfiles = filtered;
         _followListLoaded = true;
       });
     }
@@ -196,7 +208,6 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
           child: Text(
             widget.title ?? defaultTitle,
             style: VineTheme.bodyFont(
-              color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w700,
               height: 1.33,
@@ -338,12 +349,17 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   }
 
   Widget _buildResultsList(UserSearchState state) {
+    final results = widget.excludePubkeys.isEmpty
+        ? state.results
+        : state.results
+              .where((p) => !widget.excludePubkeys.contains(p.pubkey))
+              .toList();
     return ListView.builder(
       controller: widget.scrollController,
-      itemCount: state.results.length,
+      itemCount: results.length,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemBuilder: (context, index) {
-        final profile = state.results[index];
+        final profile = results[index];
         return _UserSearchTile(
           profile: profile,
           onTap: () => _onUserSelected(profile),
@@ -372,7 +388,6 @@ class _UserSearchTile extends StatelessWidget {
             UserAvatar(
               imageUrl: profile.picture,
               name: profile.bestDisplayName,
-              size: 44,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -384,7 +399,6 @@ class _UserSearchTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: VineTheme.bodyFont(
-                      color: VineTheme.whiteText,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       height: 1.33,

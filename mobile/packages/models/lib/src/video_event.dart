@@ -746,9 +746,14 @@ class VideoEvent {
   bool get shouldShowWarning => warnLabels.isNotEmpty;
 
   /// Whether this video has subtitle/caption data available.
+  ///
+  /// Returns true if any subtitle source exists: embedded VTT content,
+  /// a text-track reference (Kind 39307), or a sha256 hash (Blossom server
+  /// may have auto-generated VTT at `{server}/{sha256}/vtt`).
   bool get hasSubtitles =>
       (textTrackRef != null && textTrackRef!.isNotEmpty) ||
-      (textTrackContent != null && textTrackContent!.isNotEmpty);
+      (textTrackContent != null && textTrackContent!.isNotEmpty) ||
+      (sha256 != null && sha256!.isNotEmpty);
 
   /// Whether this video has collaborators.
   bool get hasCollaborators => collaboratorPubkeys.isNotEmpty;

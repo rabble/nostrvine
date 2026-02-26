@@ -20,7 +20,7 @@ void main() {
       // Request permissions once at the start of all tests
       // On Android, this will show the permission dialog once
       // After granting, all subsequent tests will run without dialogs
-      final service = PermissionHandlerPermissionsService();
+      const service = PermissionHandlerPermissionsService();
       await service.requestCameraPermission();
       await service.requestMicrophonePermission();
     });

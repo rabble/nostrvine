@@ -26,7 +26,8 @@ enum HttpMethod {
   post('POST'),
   put('PUT'),
   delete('DELETE'),
-  patch('PATCH');
+  patch('PATCH')
+  ;
 
   const HttpMethod(this.value);
   final String value;

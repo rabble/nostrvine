@@ -2,22 +2,22 @@
 // ABOUTME: Tests that reposted videos show "X reposted" header with reposter's name
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/widget_test_helper.dart';
-import 'video_feed_item_repost_header_test.mocks.dart';
 
-@GenerateMocks([SharedPreferences])
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoFeedItem Repost Header - TDD', () {
     late VideoEvent originalVideo;
     late VideoEvent repostedVideo;
-    late MockSharedPreferences mockPrefs;
+    late _MockSharedPreferences mockPrefs;
 
     setUp(() {
       final now = DateTime.now();
@@ -39,8 +39,7 @@ void main() {
         thumbnailUrl: 'https://example.com/thumb.jpg',
         title: 'Test Video',
         duration: 15,
-        hashtags: ['test'],
-        isRepost: false,
+        hashtags: const ['test'],
       );
 
       // Create reposted version
@@ -54,14 +53,14 @@ void main() {
         thumbnailUrl: 'https://example.com/thumb.jpg',
         title: 'Test Video',
         duration: 15,
-        hashtags: ['test'],
+        hashtags: const ['test'],
         isRepost: true,
         reposterPubkey: reposterPubkey,
         reposterId: 'repost_event_999',
         repostedAt: now,
       );
 
-      mockPrefs = MockSharedPreferences();
+      mockPrefs = _MockSharedPreferences();
       createMockSharedPreferences(mockPrefs);
     });
 

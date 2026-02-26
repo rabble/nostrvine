@@ -74,7 +74,6 @@ void main() {
         when(() => mockMyFollowingBloc.state).thenReturn(
           const MyFollowingState(
             status: MyFollowingStatus.success,
-            followingPubkeys: [],
           ),
         );
 
@@ -114,7 +113,6 @@ void main() {
         when(() => mockMyFollowingBloc.state).thenReturn(
           const MyFollowingState(
             status: MyFollowingStatus.success,
-            followingPubkeys: [],
           ),
         );
 
@@ -224,13 +222,11 @@ void main() {
           when(() => mockMyFollowingBloc.state).thenReturn(
             const MyFollowingState(
               status: MyFollowingStatus.success,
-              followingPubkeys: [],
             ),
           );
           when(() => mockOthersFollowersBloc.state).thenReturn(
             const OthersFollowersState(
               status: OthersFollowersStatus.success,
-              followersPubkeys: [],
             ),
           );
 
@@ -317,7 +313,6 @@ void main() {
           when(() => mockMyFollowingBloc.state).thenReturn(
             const MyFollowingState(
               status: MyFollowingStatus.success,
-              followingPubkeys: [],
             ),
           );
 

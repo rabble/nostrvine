@@ -16,7 +16,7 @@ void main() {
   group('VideoRecorderSegmentBar Widget Tests', () {
     testWidgets('renders segment bar widget', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
+        const ProviderScope(
           child: MaterialApp(
             home: Scaffold(body: Stack(children: [VideoRecorderSegmentBar()])),
           ),
@@ -28,7 +28,7 @@ void main() {
 
     testWidgets('initially shows empty bar with no segments', (tester) async {
       await tester.pumpWidget(
-        ProviderScope(
+        const ProviderScope(
           child: MaterialApp(
             home: Scaffold(body: Stack(children: [VideoRecorderSegmentBar()])),
           ),
@@ -45,7 +45,7 @@ void main() {
         RecordingClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
-          duration: Duration(seconds: 2),
+          duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
           targetAspectRatio: .vertical,
           originalAspectRatio: 9 / 16,
@@ -53,7 +53,7 @@ void main() {
         RecordingClip(
           id: 'clip2',
           video: EditorVideo.file('/test/clip2.mp4'),
-          duration: Duration(seconds: 3),
+          duration: const Duration(seconds: 3),
           recordedAt: DateTime.now(),
           targetAspectRatio: .vertical,
           originalAspectRatio: 9 / 16,
@@ -67,7 +67,7 @@ void main() {
               () => _TestClipManagerNotifier(testClips),
             ),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: Scaffold(body: Stack(children: [VideoRecorderSegmentBar()])),
           ),
         ),

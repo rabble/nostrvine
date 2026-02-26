@@ -3,21 +3,25 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show BugReportData, BugReportResult;
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 
-import 'bug_report_dialog_test.mocks.dart';
+class _MockBugReportService extends Mock implements BugReportService {}
 
-@GenerateMocks([BugReportService])
+class _FakeBugReportData extends Fake implements BugReportData {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeBugReportData());
+  });
+
   group('BugReportDialog', () {
-    late MockBugReportService mockBugReportService;
+    late _MockBugReportService mockBugReportService;
 
     setUp(() {
-      mockBugReportService = MockBugReportService();
+      mockBugReportService = _MockBugReportService();
     });
 
     testWidgets('should display title and description field', (tester) async {
@@ -108,15 +112,15 @@ void main() {
       );
 
       when(
-        mockBugReportService.collectDiagnostics(
-          userDescription: anyNamed('userDescription'),
-          currentScreen: anyNamed('currentScreen'),
-          userPubkey: anyNamed('userPubkey'),
-          additionalContext: anyNamed('additionalContext'),
+        () => mockBugReportService.collectDiagnostics(
+          userDescription: any(named: 'userDescription'),
+          currentScreen: any(named: 'currentScreen'),
+          userPubkey: any(named: 'userPubkey'),
+          additionalContext: any(named: 'additionalContext'),
         ),
       ).thenAnswer((_) async => testReportData);
 
-      when(mockBugReportService.sendBugReport(any)).thenAnswer(
+      when(() => mockBugReportService.sendBugReport(any())).thenAnswer(
         (_) async => BugReportResult(
           success: true,
           reportId: 'test-123',
@@ -142,15 +146,15 @@ void main() {
 
       // Verify service methods were called
       verify(
-        mockBugReportService.collectDiagnostics(
+        () => mockBugReportService.collectDiagnostics(
           userDescription: 'App crashed on startup',
-          currentScreen: anyNamed('currentScreen'),
-          userPubkey: anyNamed('userPubkey'),
-          additionalContext: anyNamed('additionalContext'),
+          currentScreen: any(named: 'currentScreen'),
+          userPubkey: any(named: 'userPubkey'),
+          additionalContext: any(named: 'additionalContext'),
         ),
       ).called(1);
 
-      verify(mockBugReportService.sendBugReport(any)).called(1);
+      verify(() => mockBugReportService.sendBugReport(any())).called(1);
     });
 
     testWidgets('should show loading indicator while submitting', (
@@ -158,11 +162,11 @@ void main() {
     ) async {
       // Setup mock with delay
       when(
-        mockBugReportService.collectDiagnostics(
-          userDescription: anyNamed('userDescription'),
-          currentScreen: anyNamed('currentScreen'),
-          userPubkey: anyNamed('userPubkey'),
-          additionalContext: anyNamed('additionalContext'),
+        () => mockBugReportService.collectDiagnostics(
+          userDescription: any(named: 'userDescription'),
+          currentScreen: any(named: 'currentScreen'),
+          userPubkey: any(named: 'userPubkey'),
+          additionalContext: any(named: 'additionalContext'),
         ),
       ).thenAnswer((_) async {
         await Future.delayed(const Duration(milliseconds: 100));
@@ -177,7 +181,9 @@ void main() {
         );
       });
 
-      when(mockBugReportService.sendBugReport(any)).thenAnswer((_) async {
+      when(() => mockBugReportService.sendBugReport(any())).thenAnswer((
+        _,
+      ) async {
         await Future.delayed(const Duration(milliseconds: 100));
         return BugReportResult.success(
           reportId: 'test-123',
@@ -209,11 +215,11 @@ void main() {
       'should show improved success message on successful submission',
       (tester) async {
         when(
-          mockBugReportService.collectDiagnostics(
-            userDescription: anyNamed('userDescription'),
-            currentScreen: anyNamed('currentScreen'),
-            userPubkey: anyNamed('userPubkey'),
-            additionalContext: anyNamed('additionalContext'),
+          () => mockBugReportService.collectDiagnostics(
+            userDescription: any(named: 'userDescription'),
+            currentScreen: any(named: 'currentScreen'),
+            userPubkey: any(named: 'userPubkey'),
+            additionalContext: any(named: 'additionalContext'),
           ),
         ).thenAnswer(
           (_) async => BugReportData(
@@ -227,7 +233,7 @@ void main() {
           ),
         );
 
-        when(mockBugReportService.sendBugReport(any)).thenAnswer(
+        when(() => mockBugReportService.sendBugReport(any())).thenAnswer(
           (_) async => BugReportResult(
             success: true,
             reportId: 'test-123',
@@ -263,11 +269,11 @@ void main() {
       tester,
     ) async {
       when(
-        mockBugReportService.collectDiagnostics(
-          userDescription: anyNamed('userDescription'),
-          currentScreen: anyNamed('currentScreen'),
-          userPubkey: anyNamed('userPubkey'),
-          additionalContext: anyNamed('additionalContext'),
+        () => mockBugReportService.collectDiagnostics(
+          userDescription: any(named: 'userDescription'),
+          currentScreen: any(named: 'currentScreen'),
+          userPubkey: any(named: 'userPubkey'),
+          additionalContext: any(named: 'additionalContext'),
         ),
       ).thenAnswer(
         (_) async => BugReportData(
@@ -281,7 +287,7 @@ void main() {
         ),
       );
 
-      when(mockBugReportService.sendBugReport(any)).thenAnswer(
+      when(() => mockBugReportService.sendBugReport(any())).thenAnswer(
         (_) async => BugReportResult(
           success: true,
           reportId: 'test-123',
@@ -336,11 +342,11 @@ void main() {
       'should change Send button to Close after successful submission',
       (tester) async {
         when(
-          mockBugReportService.collectDiagnostics(
-            userDescription: anyNamed('userDescription'),
-            currentScreen: anyNamed('currentScreen'),
-            userPubkey: anyNamed('userPubkey'),
-            additionalContext: anyNamed('additionalContext'),
+          () => mockBugReportService.collectDiagnostics(
+            userDescription: any(named: 'userDescription'),
+            currentScreen: any(named: 'currentScreen'),
+            userPubkey: any(named: 'userPubkey'),
+            additionalContext: any(named: 'additionalContext'),
           ),
         ).thenAnswer(
           (_) async => BugReportData(
@@ -354,7 +360,7 @@ void main() {
           ),
         );
 
-        when(mockBugReportService.sendBugReport(any)).thenAnswer(
+        when(() => mockBugReportService.sendBugReport(any())).thenAnswer(
           (_) async => BugReportResult(
             success: true,
             reportId: 'test-123',
@@ -392,11 +398,11 @@ void main() {
       tester,
     ) async {
       when(
-        mockBugReportService.collectDiagnostics(
-          userDescription: anyNamed('userDescription'),
-          currentScreen: anyNamed('currentScreen'),
-          userPubkey: anyNamed('userPubkey'),
-          additionalContext: anyNamed('additionalContext'),
+        () => mockBugReportService.collectDiagnostics(
+          userDescription: any(named: 'userDescription'),
+          currentScreen: any(named: 'currentScreen'),
+          userPubkey: any(named: 'userPubkey'),
+          additionalContext: any(named: 'additionalContext'),
         ),
       ).thenAnswer(
         (_) async => BugReportData(
@@ -410,7 +416,7 @@ void main() {
         ),
       );
 
-      when(mockBugReportService.sendBugReport(any)).thenAnswer(
+      when(() => mockBugReportService.sendBugReport(any())).thenAnswer(
         (_) async => BugReportResult.failure(
           'Could not create file',
           reportId: 'test-123',

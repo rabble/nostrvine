@@ -1,14 +1,13 @@
 // ABOUTME: Tests for overlay visibility provider (drawer, settings, modal tracking)
 // ABOUTME: Verifies overlays pause video playback via activeVideoIdProvider integration
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
-import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
-import 'package:openvine/router/router.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
@@ -132,26 +131,14 @@ void main() {
           // appForegroundProvider defaults to true (Notifier-based)
           pageContextProvider.overrideWithValue(
             const AsyncValue.data(
-              RouteContext(type: RouteType.home, videoIndex: 0),
+              RouteContext(type: RouteType.explore, videoIndex: 0),
             ),
           ),
-          videosForHomeRouteProvider.overrideWith((ref) {
+          videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
               VideoFeedState(
                 videos: videos,
                 hasMoreContent: false,
-                isLoadingMore: false,
-              ),
-            );
-          }),
-          homeFeedProvider.overrideWith(() {
-            return _TestHomeFeedNotifier(
-              AsyncData(
-                VideoFeedState(
-                  videos: videos,
-                  hasMoreContent: false,
-                  isLoadingMore: false,
-                ),
               ),
             );
           }),
@@ -168,11 +155,10 @@ void main() {
         // Create active subscription to force reactive chain evaluation
         container.listen(
           activeVideoIdProvider,
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 
-        // Allow async homeFeedProvider to resolve
         await pumpEventQueue();
 
         // No overlays - video should play
@@ -187,7 +173,7 @@ void main() {
       // Create active subscription to force reactive chain evaluation
       container.listen(
         activeVideoIdProvider,
-        (_, __) {},
+        (_, _) {},
         fireImmediately: true,
       );
 
@@ -205,7 +191,7 @@ void main() {
       // Create active subscription to force reactive chain evaluation
       container.listen(
         activeVideoIdProvider,
-        (_, __) {},
+        (_, _) {},
         fireImmediately: true,
       );
 
@@ -223,7 +209,7 @@ void main() {
       // Create active subscription to force reactive chain evaluation
       container.listen(
         activeVideoIdProvider,
-        (_, __) {},
+        (_, _) {},
         fireImmediately: true,
       );
 
@@ -241,26 +227,4 @@ void main() {
       expect(container.read(activeVideoIdProvider), 'v0');
     });
   });
-}
-
-/// Test notifier that returns a fixed state for homeFeedProvider overrides.
-class _TestHomeFeedNotifier extends HomeFeed {
-  _TestHomeFeedNotifier(this._state);
-
-  final AsyncValue<VideoFeedState> _state;
-
-  @override
-  Future<VideoFeedState> build() async {
-    return _state.when(
-      data: (data) => data,
-      loading: () => VideoFeedState(
-        videos: const [],
-        hasMoreContent: false,
-        isLoadingMore: false,
-        error: null,
-        lastUpdated: null,
-      ),
-      error: (e, s) => throw e,
-    );
-  }
 }

@@ -17,8 +17,8 @@ import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/router/router.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -77,7 +77,7 @@ class _MockUserProfileService extends Mock implements UserProfileService {}
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
-  Widget _shell(ProviderContainer c) => UncontrolledProviderScope(
+  Widget shell(ProviderContainer c) => UncontrolledProviderScope(
     container: c,
     child: MaterialApp.router(routerConfig: c.read(goRouterProvider)),
   );
@@ -123,7 +123,6 @@ void main() {
             VideoFeedState(
               videos: mockVideos,
               hasMoreContent: false,
-              isLoadingMore: false,
             ),
           );
         }),
@@ -131,7 +130,7 @@ void main() {
     );
     addTearDown(c.dispose);
 
-    await tester.pumpWidget(_shell(c));
+    await tester.pumpWidget(shell(c));
     c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
     await tester.pumpAndSettle();
 
@@ -153,11 +152,10 @@ void main() {
     final c = ProviderContainer(
       overrides: [
         videosForProfileRouteProvider.overrideWith((ref) {
-          return AsyncValue.data(
+          return const AsyncValue.data(
             VideoFeedState(
               videos: [],
               hasMoreContent: false,
-              isLoadingMore: false,
             ),
           );
         }),
@@ -165,7 +163,7 @@ void main() {
     );
     addTearDown(c.dispose);
 
-    await tester.pumpWidget(_shell(c));
+    await tester.pumpWidget(shell(c));
     c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 0));
     await tester.pumpAndSettle();
 
@@ -179,7 +177,7 @@ void main() {
     final prefetchedPubkeys = <String>[];
 
     final mockNotifier = FakeUserProfileNotifier(
-      onPrefetch: (pubkeys) => prefetchedPubkeys.addAll(pubkeys),
+      onPrefetch: prefetchedPubkeys.addAll,
     );
 
     final c = ProviderContainer(
@@ -189,7 +187,6 @@ void main() {
             VideoFeedState(
               videos: mockVideos,
               hasMoreContent: false,
-              isLoadingMore: false,
             ),
           );
         }),
@@ -198,7 +195,7 @@ void main() {
     );
     addTearDown(c.dispose);
 
-    await tester.pumpWidget(_shell(c));
+    await tester.pumpWidget(shell(c));
     c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
     await tester.pumpAndSettle();
 
@@ -220,7 +217,6 @@ void main() {
             VideoFeedState(
               videos: mockVideos,
               hasMoreContent: false,
-              isLoadingMore: false,
             ),
           );
         }),
@@ -228,7 +224,7 @@ void main() {
     );
     addTearDown(c.dispose);
 
-    await tester.pumpWidget(_shell(c));
+    await tester.pumpWidget(shell(c));
     c.read(goRouterProvider).go(ProfileScreenRouter.pathForIndex('npubXYZ', 1));
     await tester.pumpAndSettle();
 

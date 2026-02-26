@@ -12,7 +12,6 @@ import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Handles deferred initialization of notification service
-// ignore: avoid_classes_with_only_static_members
 class DeferredNotificationInitializer {
   static const Duration _webDeferralTime = Duration(seconds: 3);
 

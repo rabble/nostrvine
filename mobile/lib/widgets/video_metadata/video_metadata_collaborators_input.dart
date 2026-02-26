@@ -42,7 +42,6 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                 'Collaborators',
                 style: VineTheme.bodyFont(
                   color: VineTheme.onSurface,
-                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   height: 1.25,
                 ),
@@ -126,9 +125,13 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
   }
 
   Future<void> _addCollaborator(BuildContext context, WidgetRef ref) async {
+    final currentCollaborators = ref.read(
+      videoEditorProvider.select((s) => s.collaboratorPubkeys),
+    );
     final profile = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.mutualFollowsOnly,
+      excludePubkeys: currentCollaborators.toSet(),
       // TODO(l10n): Replace with context.l10n
       //   when localization is added.
       title: 'Add collaborator',
@@ -196,7 +199,6 @@ class _CollaboratorChip extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.bodyFont(
-                color: VineTheme.whiteText,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 height: 1.38,
@@ -270,7 +272,7 @@ class _AddCollaboratorButton extends StatelessWidget {
             Text(
               // TODO(l10n): Replace with context.l10n
               //   when localization is added.
-              'Add collaborator (${remainingSlots} left)',
+              'Add collaborator ($remainingSlots left)',
               style: VineTheme.bodyFont(
                 color: VineTheme.onSurfaceVariant,
                 fontSize: 13,

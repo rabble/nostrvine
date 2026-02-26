@@ -15,9 +15,9 @@ T _$identity<T>(T value) => value;
 mixin _$CurationState {
 
 /// Editor's picks videos (classic vines)
- List<VideoEvent> get editorsPicks;/// Trending videos (popular now)
- List<VideoEvent> get trending;/// Whether curation data is loading
- bool get isLoading;/// All available curation sets
+ List<VideoEvent> get editorsPicks;/// Whether curation data is loading
+ bool get isLoading;/// Trending videos (popular now)
+ List<VideoEvent> get trending;/// All available curation sets
  List<CurationSet> get curationSets;/// Last refresh timestamp
  DateTime? get lastRefreshed;/// Error message if any
  String? get error;
@@ -31,16 +31,16 @@ $CurationStateCopyWith<CurationState> get copyWith => _$CurationStateCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CurationState&&const DeepCollectionEquality().equals(other.editorsPicks, editorsPicks)&&const DeepCollectionEquality().equals(other.trending, trending)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&const DeepCollectionEquality().equals(other.curationSets, curationSets)&&(identical(other.lastRefreshed, lastRefreshed) || other.lastRefreshed == lastRefreshed)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CurationState&&const DeepCollectionEquality().equals(other.editorsPicks, editorsPicks)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&const DeepCollectionEquality().equals(other.trending, trending)&&const DeepCollectionEquality().equals(other.curationSets, curationSets)&&(identical(other.lastRefreshed, lastRefreshed) || other.lastRefreshed == lastRefreshed)&&(identical(other.error, error) || other.error == error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(editorsPicks),const DeepCollectionEquality().hash(trending),isLoading,const DeepCollectionEquality().hash(curationSets),lastRefreshed,error);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(editorsPicks),isLoading,const DeepCollectionEquality().hash(trending),const DeepCollectionEquality().hash(curationSets),lastRefreshed,error);
 
 @override
 String toString() {
-  return 'CurationState(editorsPicks: $editorsPicks, trending: $trending, isLoading: $isLoading, curationSets: $curationSets, lastRefreshed: $lastRefreshed, error: $error)';
+  return 'CurationState(editorsPicks: $editorsPicks, isLoading: $isLoading, trending: $trending, curationSets: $curationSets, lastRefreshed: $lastRefreshed, error: $error)';
 }
 
 
@@ -51,7 +51,7 @@ abstract mixin class $CurationStateCopyWith<$Res>  {
   factory $CurationStateCopyWith(CurationState value, $Res Function(CurationState) _then) = _$CurationStateCopyWithImpl;
 @useResult
 $Res call({
- List<VideoEvent> editorsPicks, List<VideoEvent> trending, bool isLoading, List<CurationSet> curationSets, DateTime? lastRefreshed, String? error
+ List<VideoEvent> editorsPicks, bool isLoading, List<VideoEvent> trending, List<CurationSet> curationSets, DateTime? lastRefreshed, String? error
 });
 
 
@@ -68,12 +68,12 @@ class _$CurationStateCopyWithImpl<$Res>
 
 /// Create a copy of CurationState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? editorsPicks = null,Object? trending = null,Object? isLoading = null,Object? curationSets = null,Object? lastRefreshed = freezed,Object? error = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? editorsPicks = null,Object? isLoading = null,Object? trending = null,Object? curationSets = null,Object? lastRefreshed = freezed,Object? error = freezed,}) {
   return _then(_self.copyWith(
 editorsPicks: null == editorsPicks ? _self.editorsPicks : editorsPicks // ignore: cast_nullable_to_non_nullable
-as List<VideoEvent>,trending: null == trending ? _self.trending : trending // ignore: cast_nullable_to_non_nullable
 as List<VideoEvent>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
-as bool,curationSets: null == curationSets ? _self.curationSets : curationSets // ignore: cast_nullable_to_non_nullable
+as bool,trending: null == trending ? _self.trending : trending // ignore: cast_nullable_to_non_nullable
+as List<VideoEvent>,curationSets: null == curationSets ? _self.curationSets : curationSets // ignore: cast_nullable_to_non_nullable
 as List<CurationSet>,lastRefreshed: freezed == lastRefreshed ? _self.lastRefreshed : lastRefreshed // ignore: cast_nullable_to_non_nullable
 as DateTime?,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,
@@ -158,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<VideoEvent> editorsPicks,  List<VideoEvent> trending,  bool isLoading,  List<CurationSet> curationSets,  DateTime? lastRefreshed,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<VideoEvent> editorsPicks,  bool isLoading,  List<VideoEvent> trending,  List<CurationSet> curationSets,  DateTime? lastRefreshed,  String? error)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _CurationState() when $default != null:
-return $default(_that.editorsPicks,_that.trending,_that.isLoading,_that.curationSets,_that.lastRefreshed,_that.error);case _:
+return $default(_that.editorsPicks,_that.isLoading,_that.trending,_that.curationSets,_that.lastRefreshed,_that.error);case _:
   return orElse();
 
 }
@@ -179,10 +179,10 @@ return $default(_that.editorsPicks,_that.trending,_that.isLoading,_that.curation
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<VideoEvent> editorsPicks,  List<VideoEvent> trending,  bool isLoading,  List<CurationSet> curationSets,  DateTime? lastRefreshed,  String? error)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<VideoEvent> editorsPicks,  bool isLoading,  List<VideoEvent> trending,  List<CurationSet> curationSets,  DateTime? lastRefreshed,  String? error)  $default,) {final _that = this;
 switch (_that) {
 case _CurationState():
-return $default(_that.editorsPicks,_that.trending,_that.isLoading,_that.curationSets,_that.lastRefreshed,_that.error);}
+return $default(_that.editorsPicks,_that.isLoading,_that.trending,_that.curationSets,_that.lastRefreshed,_that.error);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -196,10 +196,10 @@ return $default(_that.editorsPicks,_that.trending,_that.isLoading,_that.curation
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<VideoEvent> editorsPicks,  List<VideoEvent> trending,  bool isLoading,  List<CurationSet> curationSets,  DateTime? lastRefreshed,  String? error)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<VideoEvent> editorsPicks,  bool isLoading,  List<VideoEvent> trending,  List<CurationSet> curationSets,  DateTime? lastRefreshed,  String? error)?  $default,) {final _that = this;
 switch (_that) {
 case _CurationState() when $default != null:
-return $default(_that.editorsPicks,_that.trending,_that.isLoading,_that.curationSets,_that.lastRefreshed,_that.error);case _:
+return $default(_that.editorsPicks,_that.isLoading,_that.trending,_that.curationSets,_that.lastRefreshed,_that.error);case _:
   return null;
 
 }
@@ -211,7 +211,7 @@ return $default(_that.editorsPicks,_that.trending,_that.isLoading,_that.curation
 
 
 class _CurationState extends CurationState {
-  const _CurationState({required final  List<VideoEvent> editorsPicks, final  List<VideoEvent> trending = const [], required this.isLoading, final  List<CurationSet> curationSets = const [], this.lastRefreshed, this.error}): _editorsPicks = editorsPicks,_trending = trending,_curationSets = curationSets,super._();
+  const _CurationState({required final  List<VideoEvent> editorsPicks, required this.isLoading, final  List<VideoEvent> trending = const [], final  List<CurationSet> curationSets = const [], this.lastRefreshed, this.error}): _editorsPicks = editorsPicks,_trending = trending,_curationSets = curationSets,super._();
   
 
 /// Editor's picks videos (classic vines)
@@ -223,6 +223,8 @@ class _CurationState extends CurationState {
   return EqualUnmodifiableListView(_editorsPicks);
 }
 
+/// Whether curation data is loading
+@override final  bool isLoading;
 /// Trending videos (popular now)
  final  List<VideoEvent> _trending;
 /// Trending videos (popular now)
@@ -232,8 +234,6 @@ class _CurationState extends CurationState {
   return EqualUnmodifiableListView(_trending);
 }
 
-/// Whether curation data is loading
-@override final  bool isLoading;
 /// All available curation sets
  final  List<CurationSet> _curationSets;
 /// All available curation sets
@@ -258,16 +258,16 @@ _$CurationStateCopyWith<_CurationState> get copyWith => __$CurationStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CurationState&&const DeepCollectionEquality().equals(other._editorsPicks, _editorsPicks)&&const DeepCollectionEquality().equals(other._trending, _trending)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&const DeepCollectionEquality().equals(other._curationSets, _curationSets)&&(identical(other.lastRefreshed, lastRefreshed) || other.lastRefreshed == lastRefreshed)&&(identical(other.error, error) || other.error == error));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _CurationState&&const DeepCollectionEquality().equals(other._editorsPicks, _editorsPicks)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&const DeepCollectionEquality().equals(other._trending, _trending)&&const DeepCollectionEquality().equals(other._curationSets, _curationSets)&&(identical(other.lastRefreshed, lastRefreshed) || other.lastRefreshed == lastRefreshed)&&(identical(other.error, error) || other.error == error));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_editorsPicks),const DeepCollectionEquality().hash(_trending),isLoading,const DeepCollectionEquality().hash(_curationSets),lastRefreshed,error);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_editorsPicks),isLoading,const DeepCollectionEquality().hash(_trending),const DeepCollectionEquality().hash(_curationSets),lastRefreshed,error);
 
 @override
 String toString() {
-  return 'CurationState(editorsPicks: $editorsPicks, trending: $trending, isLoading: $isLoading, curationSets: $curationSets, lastRefreshed: $lastRefreshed, error: $error)';
+  return 'CurationState(editorsPicks: $editorsPicks, isLoading: $isLoading, trending: $trending, curationSets: $curationSets, lastRefreshed: $lastRefreshed, error: $error)';
 }
 
 
@@ -278,7 +278,7 @@ abstract mixin class _$CurationStateCopyWith<$Res> implements $CurationStateCopy
   factory _$CurationStateCopyWith(_CurationState value, $Res Function(_CurationState) _then) = __$CurationStateCopyWithImpl;
 @override @useResult
 $Res call({
- List<VideoEvent> editorsPicks, List<VideoEvent> trending, bool isLoading, List<CurationSet> curationSets, DateTime? lastRefreshed, String? error
+ List<VideoEvent> editorsPicks, bool isLoading, List<VideoEvent> trending, List<CurationSet> curationSets, DateTime? lastRefreshed, String? error
 });
 
 
@@ -295,12 +295,12 @@ class __$CurationStateCopyWithImpl<$Res>
 
 /// Create a copy of CurationState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? editorsPicks = null,Object? trending = null,Object? isLoading = null,Object? curationSets = null,Object? lastRefreshed = freezed,Object? error = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? editorsPicks = null,Object? isLoading = null,Object? trending = null,Object? curationSets = null,Object? lastRefreshed = freezed,Object? error = freezed,}) {
   return _then(_CurationState(
 editorsPicks: null == editorsPicks ? _self._editorsPicks : editorsPicks // ignore: cast_nullable_to_non_nullable
-as List<VideoEvent>,trending: null == trending ? _self._trending : trending // ignore: cast_nullable_to_non_nullable
 as List<VideoEvent>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
-as bool,curationSets: null == curationSets ? _self._curationSets : curationSets // ignore: cast_nullable_to_non_nullable
+as bool,trending: null == trending ? _self._trending : trending // ignore: cast_nullable_to_non_nullable
+as List<VideoEvent>,curationSets: null == curationSets ? _self._curationSets : curationSets // ignore: cast_nullable_to_non_nullable
 as List<CurationSet>,lastRefreshed: freezed == lastRefreshed ? _self.lastRefreshed : lastRefreshed // ignore: cast_nullable_to_non_nullable
 as DateTime?,error: freezed == error ? _self.error : error // ignore: cast_nullable_to_non_nullable
 as String?,
