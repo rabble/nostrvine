@@ -2,8 +2,7 @@
 // ABOUTME: Validates subscription to SubscriptionType.popularNow with proper sorting
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
@@ -11,26 +10,29 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:models/models.dart';
 import 'package:riverpod/riverpod.dart';
 
-import 'popular_now_feed_provider_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-@GenerateMocks([VideoEventService])
 void main() {
+  setUpAll(() {
+    registerFallbackValue(SubscriptionType.popularNow);
+  });
+
   group('PopularNowFeed Provider', () {
-    late MockVideoEventService mockService;
+    late _MockVideoEventService mockService;
     late ProviderContainer container;
 
     setUp(() {
-      mockService = MockVideoEventService();
+      mockService = _MockVideoEventService();
 
       // Setup default behavior
-      when(mockService.addListener(any)).thenReturn(null);
-      when(mockService.removeListener(any)).thenReturn(null);
-      when(mockService.popularNowVideos).thenReturn([]);
+      when(() => mockService.addListener(any())).thenReturn(null);
+      when(() => mockService.removeListener(any())).thenReturn(null);
+      when(() => mockService.popularNowVideos).thenReturn([]);
       when(
-        mockService.subscribeToVideoFeed(
-          subscriptionType: anyNamed('subscriptionType'),
-          limit: anyNamed('limit'),
-          sortBy: anyNamed('sortBy'),
+        () => mockService.subscribeToVideoFeed(
+          subscriptionType: any(named: 'subscriptionType'),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
         ),
       ).thenAnswer((_) async => Future.value());
 
@@ -56,10 +58,10 @@ void main() {
 
         // Assert
         verify(
-          mockService.subscribeToVideoFeed(
+          () => mockService.subscribeToVideoFeed(
             subscriptionType: SubscriptionType.popularNow,
             limit: 100,
-            sortBy: argThat(isNotNull, named: 'sortBy'),
+            sortBy: any(named: 'sortBy', that: isNotNull),
           ),
         ).called(greaterThanOrEqualTo(1));
       },
@@ -79,14 +81,16 @@ void main() {
           id: 'v2',
           createdAt: DateTime(2025, 1, 2),
         );
-        when(mockService.popularNowVideos).thenReturn([video1, video2]);
+        when(() => mockService.popularNowVideos).thenReturn([video1, video2]);
 
         // Act
         final state = await container.read(popularNowFeedProvider.future);
 
         // Assert
         expect(state.videos.length, 2);
-        verify(mockService.popularNowVideos).called(greaterThanOrEqualTo(1));
+        verify(
+          () => mockService.popularNowVideos,
+        ).called(greaterThanOrEqualTo(1));
       },
       skip:
           'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
@@ -108,7 +112,9 @@ void main() {
           id: 'v3',
           createdAt: DateTime(2025, 1, 2),
         );
-        when(mockService.popularNowVideos).thenReturn([video1, video2, video3]);
+        when(
+          () => mockService.popularNowVideos,
+        ).thenReturn([video1, video2, video3]);
 
         // Act
         final state = await container.read(popularNowFeedProvider.future);
@@ -127,7 +133,7 @@ void main() {
       'should return empty feed when no videos',
       () async {
         // Arrange
-        when(mockService.popularNowVideos).thenReturn([]);
+        when(() => mockService.popularNowVideos).thenReturn([]);
 
         // Act
         final state = await container.read(popularNowFeedProvider.future);
@@ -151,7 +157,7 @@ void main() {
             createdAt: DateTime.now().subtract(Duration(hours: i)),
           ),
         );
-        when(mockService.popularNowVideos).thenReturn(videos);
+        when(() => mockService.popularNowVideos).thenReturn(videos);
 
         // Act
         final state = await container.read(popularNowFeedProvider.future);
@@ -169,18 +175,18 @@ void main() {
       () async {
         // Arrange
         final initialVideos = [_createMockVideo(id: 'v1')];
-        when(mockService.popularNowVideos).thenReturn(initialVideos);
+        when(() => mockService.popularNowVideos).thenReturn(initialVideos);
         when(
-          mockService.loadMoreEvents(
+          () => mockService.loadMoreEvents(
             SubscriptionType.popularNow,
-            limit: anyNamed('limit'),
+            limit: any(named: 'limit'),
           ),
         ).thenAnswer((_) async => Future.value());
 
         // Mock getEventCount to return different values on consecutive calls
         var callCount = 0;
         when(
-          mockService.getEventCount(SubscriptionType.popularNow),
+          () => mockService.getEventCount(SubscriptionType.popularNow),
         ).thenAnswer((_) => callCount++ == 0 ? 1 : 3);
 
         // Get initial state
@@ -191,7 +197,10 @@ void main() {
 
         // Assert
         verify(
-          mockService.loadMoreEvents(SubscriptionType.popularNow, limit: 50),
+          () => mockService.loadMoreEvents(
+            SubscriptionType.popularNow,
+            limit: 50,
+          ),
         ).called(1);
       },
       skip:
@@ -202,13 +211,13 @@ void main() {
       'should refresh feed when refresh is called',
       () async {
         // Arrange
-        when(mockService.popularNowVideos).thenReturn([]);
+        when(() => mockService.popularNowVideos).thenReturn([]);
         when(
-          mockService.subscribeToVideoFeed(
-            subscriptionType: anyNamed('subscriptionType'),
-            limit: anyNamed('limit'),
-            sortBy: anyNamed('sortBy'),
-            force: anyNamed('force'),
+          () => mockService.subscribeToVideoFeed(
+            subscriptionType: any(named: 'subscriptionType'),
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+            force: any(named: 'force'),
           ),
         ).thenAnswer((_) async => Future.value());
 
@@ -220,10 +229,10 @@ void main() {
 
         // Assert
         verify(
-          mockService.subscribeToVideoFeed(
+          () => mockService.subscribeToVideoFeed(
             subscriptionType: SubscriptionType.popularNow,
             limit: 100,
-            sortBy: argThat(isNotNull, named: 'sortBy'),
+            sortBy: any(named: 'sortBy', that: isNotNull),
             force: true, // Should force refresh
           ),
         ).called(1);
@@ -251,10 +260,10 @@ void main() {
         true,
       ); // True because we assume content will load when ready
       verifyNever(
-        mockService.subscribeToVideoFeed(
-          subscriptionType: anyNamed('subscriptionType'),
-          limit: anyNamed('limit'),
-          sortBy: anyNamed('sortBy'),
+        () => mockService.subscribeToVideoFeed(
+          subscriptionType: any(named: 'subscriptionType'),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
         ),
       );
 

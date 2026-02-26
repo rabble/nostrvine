@@ -991,9 +991,13 @@ FollowRepository? followRepository(Ref ref) {
   // Get analytics API service for fast REST-based following list bootstrap
   final analyticsService = ref.read(analyticsApiServiceProvider);
 
+  // Get FunnelcakeApiClient for direct API access
+  final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
+    funnelcakeApiClient: funnelcakeApiClient,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
         ? ({required bool isFollow, required String pubkey}) async {
@@ -1591,7 +1595,6 @@ LikesRepository likesRepository(Ref ref) {
   // This ensures the provider rebuilds when authentication completes
   ref.watch(currentAuthStateProvider);
 
-  final isAuthenticated = authService.isAuthenticated;
   final userPubkey = authService.currentPublicKeyHex;
 
   final nostrClient = ref.watch(nostrServiceProvider);
@@ -1607,11 +1610,6 @@ LikesRepository likesRepository(Ref ref) {
     );
   }
 
-  // Map AuthState stream to bool stream for repository
-  final authBoolStream = authService.authStateStream.map(
-    (state) => state == AuthState.authenticated,
-  );
-
   // Get connection status and pending action service for offline support
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
@@ -1619,8 +1617,6 @@ LikesRepository likesRepository(Ref ref) {
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    authStateStream: authBoolStream,
-    isAuthenticated: isAuthenticated,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
         ? ({
@@ -1658,6 +1654,15 @@ LikesRepository likesRepository(Ref ref) {
     );
   }
 
+  // Initialize: load from local storage + set up persistent subscription
+  repository.initialize().catchError((Object e) {
+    Log.error(
+      'Failed to initialize LikesRepository',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
   ref.onDispose(repository.dispose);
 
   return repository;
@@ -1678,7 +1683,6 @@ RepostsRepository repostsRepository(Ref ref) {
   // Watch auth state to react to auth changes (login/logout)
   ref.watch(currentAuthStateProvider);
 
-  final isAuthenticated = authService.isAuthenticated;
   final userPubkey = authService.currentPublicKeyHex;
 
   final nostrClient = ref.watch(nostrServiceProvider);
@@ -1694,11 +1698,6 @@ RepostsRepository repostsRepository(Ref ref) {
     );
   }
 
-  // Map AuthState stream to bool stream for repository
-  final authBoolStream = authService.authStateStream.map(
-    (state) => state == AuthState.authenticated,
-  );
-
   // Get connection status and pending action service for offline support
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
@@ -1706,8 +1705,6 @@ RepostsRepository repostsRepository(Ref ref) {
   final repository = RepostsRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    authStateStream: authBoolStream,
-    isAuthenticated: isAuthenticated,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
         ? ({
@@ -1744,6 +1741,15 @@ RepostsRepository repostsRepository(Ref ref) {
       ),
     );
   }
+
+  // Initialize: load from local storage + set up persistent subscription
+  repository.initialize().catchError((Object e) {
+    Log.error(
+      'Failed to initialize RepostsRepository',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
 
   ref.onDispose(repository.dispose);
 

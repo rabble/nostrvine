@@ -240,7 +240,8 @@ void main() {
           if (content.contains('class Mock') ||
               content.contains('extends Mock') ||
               content.contains('with Mock') ||
-              content.contains("import 'package:mockito/mockito.dart'")) {
+              content.contains("import 'package:mockito/mockito.dart'") ||
+              content.contains("import 'package:mocktail/mocktail.dart'")) {
             mockFiles.add(entity.path);
           }
         }

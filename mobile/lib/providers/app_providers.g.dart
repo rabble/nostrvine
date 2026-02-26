@@ -2779,7 +2779,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'59ccfaf4522b9c8534a1ee5b9f51b851614f9425';
+String _$followRepositoryHash() => r'5a9ff80dec0621bc321f78694cd2ae0c448bb2a2';
 
 /// Provider for HashtagRepository instance.
 ///
@@ -4324,7 +4324,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'9376994f8bb85d89e5356830c093f4b3673a3368';
+String _$likesRepositoryHash() => r'66aaef86246fb3bb43815502ca215b16454387b7';
 
 /// Provider for RepostsRepository instance
 ///
@@ -4397,4 +4397,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'66177802944101f3bdf06e338e3730047ddda2cd';
+String _$repostsRepositoryHash() => r'03658f5c9263b40e6279c5dd325fdbcfd54b4068';

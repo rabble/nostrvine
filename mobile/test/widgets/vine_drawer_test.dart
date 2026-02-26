@@ -5,27 +5,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mocktail/mocktail.dart' as mocktail;
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 
 import '../helpers/go_router.dart';
-import 'vine_drawer_test.mocks.dart';
 
-@GenerateMocks([AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('VineDrawer Branding', () {
-    late MockAuthService mockAuthService;
+    late _MockAuthService mockAuthService;
 
     setUp(() {
-      mockAuthService = MockAuthService();
-      when(mockAuthService.isAuthenticated).thenReturn(true);
+      mockAuthService = _MockAuthService();
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        mockAuthService.currentPublicKeyHex,
+        () => mockAuthService.currentPublicKeyHex,
       ).thenReturn('test_pubkey_' + '0' * 54);
     });
 
@@ -126,18 +124,16 @@ void main() {
 
   group('VineDrawer Settings navigation', () {
     late MockGoRouter mockGoRouter;
-    late MockAuthService mockAuthService;
+    late _MockAuthService mockAuthService;
 
     setUp(() {
       mockGoRouter = MockGoRouter();
-      mocktail
-          .when(() => mockGoRouter.push(mocktail.any()))
-          .thenAnswer((_) async => null);
+      when(() => mockGoRouter.push(any())).thenAnswer((_) async => null);
 
-      mockAuthService = MockAuthService();
-      when(mockAuthService.isAuthenticated).thenReturn(true);
+      mockAuthService = _MockAuthService();
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
-        mockAuthService.currentPublicKeyHex,
+        () => mockAuthService.currentPublicKeyHex,
       ).thenReturn('test_pubkey_' + '0' * 54);
     });
 
@@ -148,9 +144,7 @@ void main() {
         var didDrawerClose = false;
 
         // Track call order to verify push happens before drawer closes
-        mocktail
-            .when(() => mockGoRouter.push(mocktail.any()))
-            .thenAnswer((_) => Future.value());
+        when(() => mockGoRouter.push(any())).thenAnswer((_) => Future.value());
 
         await tester.pumpWidget(
           ProviderScope(
@@ -189,7 +183,7 @@ void main() {
         expect(didDrawerClose, isTrue);
 
         // Verify GoRouter.push was called with settings path
-        mocktail.verify(() => mockGoRouter.push(SettingsScreen.path)).called(1);
+        verify(() => mockGoRouter.push(SettingsScreen.path)).called(1);
       },
     );
   });

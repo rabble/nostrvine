@@ -5,8 +5,7 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -17,44 +16,57 @@ import 'package:openvine/utils/curated_list_ext.dart';
 import 'package:openvine/utils/nostr_event_ext.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'curated_list_service_crud_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateNiceMocks([MockSpec<NostrClient>(), MockSpec<AuthService>()])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CuratedListService - CRUD Operations', () {
     late CuratedListService service;
-    late MockNostrClient mockNostr;
-    late MockAuthService mockAuth;
+    late _MockNostrClient mockNostr;
+    late _MockAuthService mockAuth;
     late SharedPreferences prefs;
 
+    setUpAll(() {
+      registerFallbackValue(
+        Event(
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          1,
+          <List<String>>[],
+          '',
+        ),
+      );
+      registerFallbackValue(<Filter>[]);
+    });
+
     setUp(() async {
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
+      mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
 
       // Setup common mocks
-      when(mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(
-        mockAuth.currentPublicKeyHex,
+        () => mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
       // Mock successful event publishing
-      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
 
       // Mock subscribeToEvents for relay sync
       when(
-        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       // Mock event creation
       when(
-        mockAuth.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuth.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer(
         (_) async => Event.fromJson({
@@ -111,10 +123,10 @@ void main() {
         final lists = <CuratedList>[];
 
         when(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).thenAnswer((invocation) {
           final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
@@ -144,15 +156,15 @@ void main() {
           return Future.value(event);
         });
 
-        when(mockNostr.publishEvent(any)).thenAnswer((invocation) {
+        when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) {
           final event = invocation.positionalArguments[0] as Event;
           lists.add(event.toCuratedList());
           return Future.value(event);
         });
 
         // Mock subscription to return collected lists
-        when(mockNostr.subscribe(argThat(anything))).thenAnswer((invocation) {
-          final filters = invocation.namedArguments[#filters] as List<Filter>;
+        when(() => mockNostr.subscribe(any())).thenAnswer((invocation) {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
 
           if (filters.isNotEmpty) {
             final filter = filters.first;
@@ -235,7 +247,7 @@ void main() {
       });
 
       test('does nothing when user not authenticated', () async {
-        when(mockAuth.isAuthenticated).thenReturn(false);
+        when(() => mockAuth.isAuthenticated).thenReturn(false);
 
         await service.initialize();
 
@@ -245,7 +257,7 @@ void main() {
 
       test('calls fetchUserListsFromRelays during initialization', () async {
         // Mock subscription for relay sync
-        when(mockNostr.subscribe(argThat(anything))).thenAnswer(
+        when(() => mockNostr.subscribe(any())).thenAnswer(
           (_) => Stream.value(
             Event.fromJson({
               'id': 'relay_list_event',
@@ -265,7 +277,7 @@ void main() {
         await service.initialize();
 
         // Should have called subscribeToEvents
-        verify(mockNostr.subscribe(argThat(anything))).called(1);
+        verify(() => mockNostr.subscribe(any())).called(1);
       });
     });
 
@@ -328,15 +340,15 @@ void main() {
 
         // Should create and sign event when video is added (not when empty)
         verify(
-          mockAuth.createAndSignEvent(
+          () => mockAuth.createAndSignEvent(
             kind: 30005,
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         ).called(1);
 
         // Should publish event
-        verify(mockNostr.publishEvent(any)).called(1);
+        verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
       test('does not publish empty public list to Nostr', () async {
@@ -344,13 +356,13 @@ void main() {
 
         // Empty lists should not be published to avoid relay spam
         verifyNever(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         );
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('does not publish private list to Nostr', () async {
@@ -358,26 +370,26 @@ void main() {
 
         // Should not create or broadcast event
         verifyNever(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         );
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('does not publish when user not authenticated', () async {
-        when(mockAuth.isAuthenticated).thenReturn(false);
+        when(() => mockAuth.isAuthenticated).thenReturn(false);
 
         await service.createList(name: 'Test List', isPublic: true);
 
         // Should not attempt to publish
         verifyNever(
-          mockAuth.createAndSignEvent(
-            kind: anyNamed('kind'),
-            content: anyNamed('content'),
-            tags: anyNamed('tags'),
+          () => mockAuth.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
           ),
         );
       });
@@ -470,9 +482,16 @@ void main() {
         await service.addVideoToList(list!.id, 'test_video_id');
         reset(mockNostr); // Clear previous invocations
 
+        // Re-setup mocks after reset
+        when(() => mockNostr.publishEvent(any())).thenAnswer((
+          invocation,
+        ) async {
+          return invocation.positionalArguments[0] as Event;
+        });
+
         await service.updateList(listId: list.id, name: 'Updated Name');
 
-        verify(mockNostr.publishEvent(any)).called(1);
+        verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
       test('does not publish update for private list', () async {
@@ -484,7 +503,7 @@ void main() {
 
         await service.updateList(listId: list!.id, name: 'Updated Name');
 
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('returns false for non-existent list', () async {

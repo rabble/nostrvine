@@ -11,6 +11,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/nostr_event_kinds.dart';
@@ -53,6 +55,7 @@ class FollowRepository {
   FollowRepository({
     required NostrClient nostrClient,
     PersonalEventCacheService? personalEventCache,
+    FunnelcakeApiClient? funnelcakeApiClient,
     IsOnlineCallback? isOnline,
     QueueOfflineFollowCallback? queueOfflineAction,
     FetchFollowingFromApiCallback? fetchFollowingFromApi,
@@ -61,6 +64,7 @@ class FollowRepository {
     List<String>? indexerRelayUrls,
   }) : _nostrClient = nostrClient,
        _personalEventCache = personalEventCache,
+       _funnelcakeApiClient = funnelcakeApiClient,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
        _fetchFollowingFromApi = fetchFollowingFromApi,
@@ -71,6 +75,7 @@ class FollowRepository {
 
   final NostrClient _nostrClient;
   final PersonalEventCacheService? _personalEventCache;
+  final FunnelcakeApiClient? _funnelcakeApiClient;
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
@@ -195,6 +200,60 @@ class FollowRepository {
       );
       return 0;
     }
+  }
+
+  /// Fetches follower/following counts from the Funnelcake REST API.
+  ///
+  /// Returns [SocialCounts] or null if the API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<SocialCounts?> getSocialCounts(String pubkey) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getSocialCounts(pubkey);
+  }
+
+  /// Fetches paginated followers from the Funnelcake REST API.
+  ///
+  /// Unlike [getFollowers] which merges multiple sources,
+  /// this returns paginated results from the API only.
+  /// Returns null if the API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<PaginatedPubkeys?> getFollowersFromApi({
+    required String pubkey,
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getFollowers(
+      pubkey: pubkey,
+      limit: limit,
+      offset: offset,
+    );
+  }
+
+  /// Fetches paginated following list from the Funnelcake REST API.
+  ///
+  /// Returns null if the API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<PaginatedPubkeys?> getFollowingFromApi({
+    required String pubkey,
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getFollowing(
+      pubkey: pubkey,
+      limit: limit,
+      offset: offset,
+    );
   }
 
   /// Timeout for fetching followers from relays

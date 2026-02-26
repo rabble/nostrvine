@@ -4,9 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_cache/media_cache.dart';
-import 'package:mocktail/mocktail.dart' as mocktail;
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
@@ -21,20 +19,22 @@ import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 
-// Generate mocks for test dependencies
-@GenerateMocks([
-  SharedPreferences,
-  SocialService,
-  AuthService,
-  UserProfileService,
-  SubscriptionManager,
-  BlossomAuthService,
-  MediaCacheManager,
-])
-import 'test_provider_overrides.mocks.dart';
+// Mock classes (public because they are imported by many test files)
+class MockSharedPreferences extends Mock implements SharedPreferences {}
 
-// Mocktail mock for NostrClient (migrated from Mockito code generation)
-class MockNostrClient extends mocktail.Mock implements NostrClient {}
+class MockSocialService extends Mock implements SocialService {}
+
+class MockAuthService extends Mock implements AuthService {}
+
+class MockUserProfileService extends Mock implements UserProfileService {}
+
+class MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
+class MockBlossomAuthService extends Mock implements BlossomAuthService {}
+
+class MockMediaCacheManager extends Mock implements MediaCacheManager {}
+
+class MockNostrClient extends Mock implements NostrClient {}
 
 /// Creates a properly stubbed MockSharedPreferences for testing
 MockSharedPreferences createMockSharedPreferences() {
@@ -42,28 +42,32 @@ MockSharedPreferences createMockSharedPreferences() {
 
   // Stub all FeatureFlag methods to return sensible defaults
   for (final flag in FeatureFlag.values) {
-    when(mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
+    when(() => mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
     when(
-      mockPrefs.setBool('ff_${flag.name}', any),
+      () => mockPrefs.setBool('ff_${flag.name}', any()),
     ).thenAnswer((_) async => true);
-    when(mockPrefs.remove('ff_${flag.name}')).thenAnswer((_) async => true);
-    when(mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
+    when(
+      () => mockPrefs.remove('ff_${flag.name}'),
+    ).thenAnswer((_) async => true);
+    when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
   }
 
   // Add common SharedPreferences stubs that tests might need
-  when(mockPrefs.getBool(any)).thenReturn(null);
-  when(mockPrefs.setBool(any, any)).thenAnswer((_) async => true);
-  when(mockPrefs.getString(any)).thenReturn(null);
-  when(mockPrefs.setString(any, any)).thenAnswer((_) async => true);
-  when(mockPrefs.getInt(any)).thenReturn(null);
-  when(mockPrefs.setInt(any, any)).thenAnswer((_) async => true);
-  when(mockPrefs.getDouble(any)).thenReturn(null);
-  when(mockPrefs.setDouble(any, any)).thenAnswer((_) async => true);
-  when(mockPrefs.getStringList(any)).thenReturn(null);
-  when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
-  when(mockPrefs.remove(any)).thenAnswer((_) async => true);
-  when(mockPrefs.clear()).thenAnswer((_) async => true);
-  when(mockPrefs.containsKey(any)).thenReturn(false);
+  when(() => mockPrefs.getBool(any())).thenReturn(null);
+  when(() => mockPrefs.setBool(any(), any())).thenAnswer((_) async => true);
+  when(() => mockPrefs.getString(any())).thenReturn(null);
+  when(() => mockPrefs.setString(any(), any())).thenAnswer((_) async => true);
+  when(() => mockPrefs.getInt(any())).thenReturn(null);
+  when(() => mockPrefs.setInt(any(), any())).thenAnswer((_) async => true);
+  when(() => mockPrefs.getDouble(any())).thenReturn(null);
+  when(() => mockPrefs.setDouble(any(), any())).thenAnswer((_) async => true);
+  when(() => mockPrefs.getStringList(any())).thenReturn(null);
+  when(
+    () => mockPrefs.setStringList(any(), any()),
+  ).thenAnswer((_) async => true);
+  when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
+  when(() => mockPrefs.clear()).thenAnswer((_) async => true);
+  when(() => mockPrefs.containsKey(any())).thenReturn(false);
 
   return mockPrefs;
 }
@@ -73,8 +77,8 @@ MockAuthService createMockAuthService() {
   final mockAuth = MockAuthService();
 
   // Stub common auth methods with sensible defaults
-  when(mockAuth.isAuthenticated).thenReturn(false);
-  when(mockAuth.currentPublicKeyHex).thenReturn(null);
+  when(() => mockAuth.isAuthenticated).thenReturn(false);
+  when(() => mockAuth.currentPublicKeyHex).thenReturn(null);
 
   return mockAuth;
 }
@@ -85,9 +89,9 @@ MockSocialService createMockSocialService() {
 
   // Stub common methods to return empty results by default
   when(
-    mockSocial.getFollowerStats(any),
+    () => mockSocial.getFollowerStats(any()),
   ).thenAnswer((_) async => {'followers': 0, 'following': 0});
-  when(mockSocial.getUserVideoCount(any)).thenAnswer((_) async => 0);
+  when(() => mockSocial.getUserVideoCount(any())).thenAnswer((_) async => 0);
 
   return mockSocial;
 }
@@ -97,11 +101,11 @@ MockUserProfileService createMockUserProfileService() {
   final mockProfile = MockUserProfileService();
 
   // Stub common methods
-  when(mockProfile.getCachedProfile(any)).thenReturn(null);
-  when(mockProfile.hasProfile(any)).thenReturn(false);
-  when(mockProfile.shouldSkipProfileFetch(any)).thenReturn(false);
-  when(mockProfile.fetchProfile(any)).thenAnswer((_) async => null);
-  when(mockProfile.fetchMultipleProfiles(any)).thenAnswer((_) async {});
+  when(() => mockProfile.getCachedProfile(any())).thenReturn(null);
+  when(() => mockProfile.hasProfile(any())).thenReturn(false);
+  when(() => mockProfile.shouldSkipProfileFetch(any())).thenReturn(false);
+  when(() => mockProfile.fetchProfile(any())).thenAnswer((_) async => null);
+  when(() => mockProfile.fetchMultipleProfiles(any())).thenAnswer((_) async {});
 
   return mockProfile;
 }
@@ -111,25 +115,25 @@ MockNostrClient createMockNostrService() {
   final mockNostr = MockNostrClient();
 
   // Stub common properties
-  mocktail.when(() => mockNostr.isInitialized).thenReturn(true);
-  mocktail.when(() => mockNostr.connectedRelayCount).thenReturn(1);
-  mocktail.when(() => mockNostr.configuredRelays).thenReturn(<String>[]);
+  when(() => mockNostr.isInitialized).thenReturn(true);
+  when(() => mockNostr.connectedRelayCount).thenReturn(1);
+  when(() => mockNostr.configuredRelays).thenReturn(<String>[]);
 
-  // Stub subscribe() to return empty stream (never null) so SubscriptionManager
-  // and UserProfileService batch fetch do not get type 'Null' is not a subtype of type 'Stream<Event>'
-  mocktail
-      .when(() => mockNostr.subscribe(mocktail.any()))
-      .thenAnswer((_) => Stream<Event>.empty());
+  // Stub subscribe() to return empty stream (never null) so
+  // SubscriptionManager and UserProfileService batch fetch do not get
+  // type 'Null' is not a subtype of type 'Stream<Event>'
+  when(
+    () => mockNostr.subscribe(any()),
+  ).thenAnswer((_) => Stream<Event>.empty());
 
-  // Stub queryEvents() to return empty list (never null) so FollowRepository
-  // getFollowers/getMyFollowers do not get type 'Null' is not a subtype of type 'Future<List<String>>'
-  mocktail
-      .when(() => mockNostr.queryEvents(mocktail.any()))
-      .thenAnswer((_) async => <Event>[]);
+  // Stub queryEvents() to return empty list (never null) so
+  // FollowRepository getFollowers/getMyFollowers do not get
+  // type 'Null' is not a subtype of type 'Future<List<String>>'
+  when(() => mockNostr.queryEvents(any())).thenAnswer((_) async => <Event>[]);
 
   // Stub publicKey with empty string default so tests that access it
   // do not get type 'Null' is not a subtype of type 'String'
-  mocktail.when(() => mockNostr.publicKey).thenReturn('');
+  when(() => mockNostr.publicKey).thenReturn('');
   return mockNostr;
 }
 
@@ -139,16 +143,17 @@ MockSubscriptionManager createMockSubscriptionManager() {
 
   // Stub createSubscription to return a valid subscription id (never null)
   // and immediately call onComplete to simulate empty results, so
-  // UserProfileService batch fetch does not get type 'Null' is not a subtype of type 'Future<String>'.
+  // UserProfileService batch fetch does not get
+  // type 'Null' is not a subtype of type 'Future<String>'.
   when(
-    mockSub.createSubscription(
-      name: anyNamed('name'),
-      filters: anyNamed('filters'),
-      onEvent: anyNamed('onEvent'),
-      onError: anyNamed('onError'),
-      onComplete: anyNamed('onComplete'),
-      timeout: anyNamed('timeout'),
-      priority: anyNamed('priority'),
+    () => mockSub.createSubscription(
+      name: any(named: 'name'),
+      filters: any(named: 'filters'),
+      onEvent: any(named: 'onEvent'),
+      onError: any(named: 'onError'),
+      onComplete: any(named: 'onComplete'),
+      timeout: any(named: 'timeout'),
+      priority: any(named: 'priority'),
     ),
   ).thenAnswer((invocation) async {
     // Call onComplete callback if provided to signal subscription finished
@@ -162,7 +167,7 @@ MockSubscriptionManager createMockSubscriptionManager() {
   });
 
   // Stub cancelSubscription to do nothing
-  when(mockSub.cancelSubscription(any)).thenAnswer((_) async {});
+  when(() => mockSub.cancelSubscription(any())).thenAnswer((_) async {});
 
   return mockSub;
 }
@@ -173,11 +178,11 @@ MockSubscriptionManager createMockSubscriptionManager() {
 MockBlossomAuthService createMockBlossomAuthService() {
   final mockBlossom = MockBlossomAuthService();
 
-  // Stub common methods - use anyNamed for named parameters
+  // Stub common methods - use named parameters
   when(
-    mockBlossom.createGetAuthHeader(
-      sha256Hash: anyNamed('sha256Hash'),
-      serverUrl: anyNamed('serverUrl'),
+    () => mockBlossom.createGetAuthHeader(
+      sha256Hash: any(named: 'sha256Hash'),
+      serverUrl: any(named: 'serverUrl'),
     ),
   ).thenAnswer((_) async => null);
 
@@ -189,10 +194,11 @@ MockMediaCacheManager createMockMediaCacheManager() {
   final mockCache = MockMediaCacheManager();
 
   // Stub common methods to return null (cache miss)
-  when(mockCache.getCachedFileSync(any)).thenReturn(null);
-  // Note: downloadFile is not stubbed because it returns non-nullable FileInfo.
-  // The FullscreenFeedBloc uses unawaited() for background caching, so this
-  // won't block tests. If a test needs it, stub with a real FileInfo mock.
+  when(() => mockCache.getCachedFileSync(any())).thenReturn(null);
+  // Note: downloadFile is not stubbed because it returns non-nullable
+  // FileInfo. The FullscreenFeedBloc uses unawaited() for background
+  // caching, so this won't block tests. If a test needs it, stub with
+  // a real FileInfo mock.
 
   return mockCache;
 }
@@ -221,9 +227,10 @@ List<dynamic> getStandardTestOverrides({
     // Override sharedPreferencesProvider which throws in production
     sharedPreferencesProvider.overrideWithValue(mockPrefs),
 
-    // Always override NostrClient and SubscriptionManager with stubbed mocks
-    // so UserProfileService/FollowRepository never get null Stream<Event> or
-    // Future<List<String>> (fixes type errors during ProfileCacheService use).
+    // Always override NostrClient and SubscriptionManager with stubbed
+    // mocks so UserProfileService/FollowRepository never get null
+    // Stream<Event> or Future<List<String>> (fixes type errors during
+    // ProfileCacheService use).
     nostrServiceProvider.overrideWithValue(mockNostr),
     subscriptionManagerProvider.overrideWithValue(mockSub),
 
@@ -245,7 +252,8 @@ List<dynamic> getStandardTestOverrides({
 
 /// Widget wrapper that provides all necessary provider overrides for testing
 ///
-/// Use this instead of raw ProviderScope in widget tests to avoid ProviderException.
+/// Use this instead of raw ProviderScope in widget tests to avoid
+/// ProviderException.
 ///
 /// Example:
 /// ```dart

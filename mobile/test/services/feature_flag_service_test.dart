@@ -2,32 +2,32 @@
 // ABOUTME: Validates initialization, flag management, persistence, and state notifications
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/services/build_configuration.dart';
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 
-import 'feature_flag_service_test.mocks.dart';
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
-@GenerateMocks([SharedPreferences])
 void main() {
   group('FeatureFlagService', () {
-    late MockSharedPreferences mockPrefs;
+    late _MockSharedPreferences mockPrefs;
     late FeatureFlagService service;
 
     setUp(() {
-      mockPrefs = MockSharedPreferences();
+      mockPrefs = _MockSharedPreferences();
 
       // Set up default stubs for all flags
       for (final flag in FeatureFlag.values) {
-        when(mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
+        when(() => mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
         when(
-          mockPrefs.setBool('ff_${flag.name}', any),
+          () => mockPrefs.setBool('ff_${flag.name}', any()),
         ).thenAnswer((_) async => true);
-        when(mockPrefs.remove('ff_${flag.name}')).thenAnswer((_) async => true);
-        when(mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
+        when(
+          () => mockPrefs.remove('ff_${flag.name}'),
+        ).thenAnswer((_) async => true);
+        when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
       }
 
       service = FeatureFlagService(mockPrefs, const BuildConfiguration());
@@ -35,8 +35,10 @@ void main() {
 
     group('initialization', () {
       test('should load saved flags from preferences', () async {
-        when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-        when(mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
+        when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+        when(
+          () => mockPrefs.getBool('ff_enhancedVideoPlayer'),
+        ).thenReturn(false);
 
         await service.initialize();
 
@@ -45,7 +47,7 @@ void main() {
       });
 
       test('should use build defaults when no saved preference', () async {
-        when(mockPrefs.getBool(any)).thenReturn(null);
+        when(() => mockPrefs.getBool(any())).thenReturn(null);
 
         await service.initialize();
 
@@ -57,7 +59,7 @@ void main() {
 
       test('should prefer user settings over build defaults', () async {
         // Build default is false, user set to true
-        when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+        when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
 
         await service.initialize();
 
@@ -69,7 +71,7 @@ void main() {
       test('should save flag changes to preferences', () async {
         await service.setFlag(FeatureFlag.newCameraUI, true);
 
-        verify(mockPrefs.setBool('ff_newCameraUI', true)).called(1);
+        verify(() => mockPrefs.setBool('ff_newCameraUI', true)).called(1);
       });
 
       test('should notify listeners on flag change', () async {
@@ -78,12 +80,14 @@ void main() {
       }, skip: true);
 
       test('should reset flag to build default', () async {
-        when(mockPrefs.remove('ff_newCameraUI')).thenAnswer((_) async => true);
+        when(
+          () => mockPrefs.remove('ff_newCameraUI'),
+        ).thenAnswer((_) async => true);
 
         await service.setFlag(FeatureFlag.newCameraUI, true);
         await service.resetFlag(FeatureFlag.newCameraUI);
 
-        verify(mockPrefs.remove('ff_newCameraUI')).called(1);
+        verify(() => mockPrefs.remove('ff_newCameraUI')).called(1);
         expect(
           service.isEnabled(FeatureFlag.newCameraUI),
           equals(
@@ -93,7 +97,7 @@ void main() {
       });
 
       test('should reset all flags', () async {
-        when(mockPrefs.remove(any)).thenAnswer((_) async => true);
+        when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
 
         await service.setFlag(FeatureFlag.newCameraUI, true);
         await service.setFlag(FeatureFlag.enhancedVideoPlayer, true);
@@ -101,15 +105,17 @@ void main() {
         await service.resetAllFlags();
 
         for (final flag in FeatureFlag.values) {
-          verify(mockPrefs.remove('ff_${flag.name}')).called(1);
+          verify(() => mockPrefs.remove('ff_${flag.name}')).called(1);
         }
       });
     });
 
     group('state queries', () {
       test('should identify user overrides', () async {
-        when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-        when(mockPrefs.containsKey('ff_enhancedVideoPlayer')).thenReturn(false);
+        when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+        when(
+          () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
+        ).thenReturn(false);
 
         expect(service.hasUserOverride(FeatureFlag.newCameraUI), isTrue);
         expect(

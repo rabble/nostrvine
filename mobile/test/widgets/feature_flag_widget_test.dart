@@ -4,39 +4,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/widgets/feature_flag_widget.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 
-import 'feature_flag_widget_test.mocks.dart';
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
-@GenerateMocks([SharedPreferences])
 void main() {
   group('FeatureFlagWidget', () {
-    late MockSharedPreferences mockPrefs;
+    late _MockSharedPreferences mockPrefs;
 
     setUp(() {
-      mockPrefs = MockSharedPreferences();
+      mockPrefs = _MockSharedPreferences();
 
       // Set up default stubs for all flags
       for (final flag in FeatureFlag.values) {
-        when(mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
+        when(() => mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
         when(
-          mockPrefs.setBool('ff_${flag.name}', any),
+          () => mockPrefs.setBool('ff_${flag.name}', any()),
         ).thenAnswer((_) async => true);
-        when(mockPrefs.remove('ff_${flag.name}')).thenAnswer((_) async => true);
-        when(mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
+        when(
+          () => mockPrefs.remove('ff_${flag.name}'),
+        ).thenAnswer((_) async => true);
+        when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
       }
     });
 
     testWidgets('should show child when flag enabled', (tester) async {
       // Set flag as enabled
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -137,8 +137,8 @@ void main() {
       expect(find.text('Enabled Content'), findsNothing);
 
       // Enable the flag
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
 
       // Trigger a rebuild by getting the service and changing the flag
       final container = ProviderScope.containerOf(
@@ -156,10 +156,12 @@ void main() {
 
     testWidgets('should handle multiple flags independently', (tester) async {
       // Set up different states for different flags
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(mockPrefs.containsKey('ff_enhancedVideoPlayer')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(

@@ -317,19 +317,21 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     switch (mode) {
       case FeedMode.forYou:
         final authors = _followRepository.followingPubkeys;
-        return _videosRepository.getHomeFeedVideos(
+        final result = await _videosRepository.getHomeFeedVideos(
           authors: authors,
           limit: _pageSize,
           until: until,
         );
+        return result.videos;
 
       case FeedMode.home:
         final authors = _followRepository.followingPubkeys;
-        return _videosRepository.getHomeFeedVideos(
+        final result = await _videosRepository.getHomeFeedVideos(
           authors: authors,
           limit: _pageSize,
           until: until,
         );
+        return result.videos;
 
       case FeedMode.latest:
         return _videosRepository.getNewVideos(limit: _pageSize, until: until);
