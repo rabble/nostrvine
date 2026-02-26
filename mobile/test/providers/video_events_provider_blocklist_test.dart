@@ -14,13 +14,10 @@ import 'package:openvine/providers/seen_videos_notifier.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
-
-class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 class _MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}
