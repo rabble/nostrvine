@@ -30,7 +30,6 @@ void main() {
         sensorDataCsv: 'location,network,device\n1,2,3',
         pgpSignature: 'pgp_signature_def',
         publicKey: 'EFGH5678901234EFGH5678901234EFGH5678901234',
-        deviceAttestation: null, // No hardware attestation
         timestamp: '2025-01-01T10:00:00Z',
       );
 
@@ -38,20 +37,12 @@ void main() {
       basicProofData = const NativeProofData(
         videoHash: 'video_hash_789',
         sensorDataCsv: 'location,network,device\n1,2,3',
-        pgpSignature: null, // No signature
-        publicKey: null,
-        deviceAttestation: null,
         timestamp: '2025-01-01T10:00:00Z',
       );
 
       // unverified: minimal data (no sensor data or signature)
       unverifiedData = const NativeProofData(
         videoHash: 'video_hash_000',
-        sensorDataCsv: null, // No sensor data
-        pgpSignature: null,
-        publicKey: null,
-        deviceAttestation: null,
-        timestamp: null,
       );
     });
 

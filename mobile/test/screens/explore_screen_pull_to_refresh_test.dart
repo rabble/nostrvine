@@ -3,10 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/providers/popular_now_feed_provider.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:models/models.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/popular_now_feed_provider.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:riverpod/riverpod.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
@@ -48,7 +48,7 @@ void main() {
     test('should call refresh() with force:true on pull-to-refresh', () async {
       // Arrange - Get initial state
       final initialVideos = [
-        _createMockVideo(id: 'v1', createdAt: DateTime(2025, 1, 1)),
+        _createMockVideo(id: 'v1', createdAt: DateTime(2025)),
         _createMockVideo(id: 'v2', createdAt: DateTime(2025, 1, 2)),
       ];
       when(() => mockService.popularNowVideos).thenReturn(initialVideos);

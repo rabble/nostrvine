@@ -16,7 +16,7 @@ class VideoThumbnailService {
   static const int _thumbnailQuality = 75;
   static const Size _thumbnailSize = Size.square(640);
 
-  static final _proVideoEditor = ProVideoEditor.instance;
+  static final ProVideoEditor _proVideoEditor = ProVideoEditor.instance;
 
   /// Extract a thumbnail from a video file at a specific timestamp
   ///
@@ -145,13 +145,13 @@ class VideoThumbnailService {
         timestamp: timestamp,
         delay: const Duration(milliseconds: 100),
       ),
-      _ThumbnailAttempt(
-        timestamp: const Duration(milliseconds: 50),
-        delay: const Duration(milliseconds: 200),
+      const _ThumbnailAttempt(
+        timestamp: Duration(milliseconds: 50),
+        delay: Duration(milliseconds: 200),
       ),
-      _ThumbnailAttempt(
+      const _ThumbnailAttempt(
         timestamp: null, // Will use video duration / 2
-        delay: const Duration(milliseconds: 300),
+        delay: Duration(milliseconds: 300),
         logToCrashlytics: true,
       ),
     ];
@@ -255,7 +255,6 @@ class VideoThumbnailService {
           video: EditorVideo.file(videoPath),
           outputSize: _thumbnailSize,
           timestamps: [timestamp],
-          outputFormat: .jpeg,
           jpegQuality: quality,
         ),
       );
@@ -333,7 +332,6 @@ class VideoThumbnailService {
         video: EditorVideo.file(videoPath),
         outputSize: _thumbnailSize,
         timestamps: timesToExtract,
-        outputFormat: .jpeg,
         jpegQuality: quality,
       ),
     );

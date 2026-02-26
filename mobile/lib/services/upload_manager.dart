@@ -4,18 +4,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb, ValueChanged;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show ValueChanged, kIsWeb;
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/vine_draft.dart';
-import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
+import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
-import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/async_utils.dart';
@@ -123,7 +123,7 @@ class UploadManager {
 
   /// Check if Blossom is available and configured
   Future<bool> isBlossomAvailable() async {
-    return await _blossomService.isBlossomEnabled();
+    return _blossomService.isBlossomEnabled();
   }
 
   /// Initialize the upload manager and load persisted uploads
@@ -748,9 +748,7 @@ class UploadManager {
         baseDelay: _retryConfig.initialDelay,
         maxDelay: _retryConfig.maxDelay,
         backoffMultiplier: _retryConfig.backoffMultiplier,
-        retryWhen: (error) {
-          return _isRetriableError(error);
-        },
+        retryWhen: _isRetriableError,
         debugName: 'Upload-${upload.id}',
       );
     } catch (e) {
@@ -1305,7 +1303,6 @@ class UploadManager {
     final resumedUpload = upload.copyWith(
       status: UploadStatus.pending,
       uploadProgress: 0, // Reset progress since we're starting over
-      errorMessage: null,
     );
 
     await _updateUpload(resumedUpload);
@@ -1350,8 +1347,6 @@ class UploadManager {
     // Reset status and error
     final resetUpload = upload.copyWith(
       status: UploadStatus.pending,
-      errorMessage: null,
-      uploadProgress: null,
     );
 
     await _updateUpload(resetUpload);
@@ -1380,7 +1375,6 @@ class UploadManager {
     final cancelledUpload = upload.copyWith(
       status: UploadStatus.failed,
       errorMessage: 'Upload cancelled by user',
-      uploadProgress: null,
     );
 
     await _updateUpload(cancelledUpload);
@@ -1533,8 +1527,6 @@ class UploadManager {
       // Reset to pending and restart
       final resetUpload = upload.copyWith(
         status: UploadStatus.pending,
-        uploadProgress: null,
-        errorMessage: null,
       );
 
       await _updateUpload(resetUpload);
@@ -1898,7 +1890,6 @@ class UploadManager {
     final updatedUpload = upload.copyWith(
       status: UploadStatus.pending,
       retryCount: newRetryCount,
-      errorMessage: null,
     );
 
     await _updateUpload(updatedUpload);
@@ -2100,9 +2091,7 @@ class UploadManager {
         'cdn_url': upload.cdnUrl,
         'upload_progress': upload.uploadProgress,
         'created_at': upload.createdAt.toIso8601String(),
-        'file_exists': kIsWeb
-            ? false
-            : File(upload.localVideoPath).existsSync(),
+        'file_exists': !kIsWeb && File(upload.localVideoPath).existsSync(),
         // Network connectivity information
         'network_type': _getNetworkTypeString(connectivity),
         'network_status': connectivity.toString(),
@@ -2265,9 +2254,8 @@ UploadManager Initialization Failure:
         'timeout_retry_count': upload.retryCount ?? 0,
         'timeout_upload_status': upload.status.toString(),
         'timeout_platform': _getPlatformName(),
-        'timeout_file_exists': kIsWeb
-            ? false
-            : File(upload.localVideoPath).existsSync(),
+        'timeout_file_exists':
+            !kIsWeb && File(upload.localVideoPath).existsSync(),
         'timeout_timestamp': DateTime.now().toIso8601String(),
       };
 
@@ -2370,7 +2358,6 @@ Upload Timeout Failure:
       final uploadResult = await _blossomService.uploadImage(
         imageFile: thumbnailFile,
         nostrPubkey: nostrPubkey,
-        mimeType: 'image/jpeg',
         onProgress: (progress) {
           // Map thumbnail progress to 85%-100% of total upload
           _updateUploadProgress(upload.id, 0.85 + (progress * 0.15));

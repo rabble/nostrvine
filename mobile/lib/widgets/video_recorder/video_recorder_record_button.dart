@@ -5,7 +5,7 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 
 /// Circular record button for starting/stopping video recording.
 class RecordButton extends ConsumerWidget {
-  const RecordButton();
+  const RecordButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

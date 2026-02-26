@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
+import 'package:openvine/providers/video_events_providers.dart';
 
 import '../helpers/real_integration_test_helper.dart';
 

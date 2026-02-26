@@ -1,14 +1,13 @@
 // ABOUTME: Tests for SubscriptionManager smart event cache pruning
 // ABOUTME: Verifies that cached events are not re-requested from relay
 
-// ignore_for_file: invalid_use_of_null_value
-
 import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -132,7 +131,7 @@ void main() {
         await manager.createSubscription(
           name: 'test_subscription',
           filters: [filter],
-          onEvent: (event) => deliveredEvents.add(event),
+          onEvent: deliveredEvents.add,
           onComplete: () => completeCalled = true,
         );
 

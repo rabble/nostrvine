@@ -2,12 +2,12 @@
 // ABOUTME: Ensures videos play inline instead of opening as modal overlay
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -116,10 +116,9 @@ void main() {
             hashtagServiceProvider.overrideWithValue(mockHashtagService),
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           ],
-          child: MaterialApp(
+          child: const MaterialApp(
             home: HashtagFeedScreen(
               hashtag: 'funny',
-              embedded: false, // NOT embedded
             ),
           ),
         ),

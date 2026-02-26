@@ -88,7 +88,6 @@ class ProfileLikedGrid extends StatelessWidget {
                     crossAxisCount: 3,
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 4,
-                    childAspectRatio: 1,
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     if (index >= likedVideos.length) {
@@ -205,7 +204,7 @@ class _LikedGridTile extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(
-          decoration: BoxDecoration(color: VineTheme.cardBackground),
+          decoration: const BoxDecoration(color: VineTheme.cardBackground),
           child: _LikedThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
         ),
       ),

@@ -228,7 +228,7 @@ class AudioExtractionService {
   /// Uses ProVideoEditor to analyze the media and check for an audio track.
   Future<bool> _hasAudioStream(String videoPath) async {
     try {
-      bool hasAudio = await ProVideoEditor.instance.hasAudioTrack(
+      final bool hasAudio = await ProVideoEditor.instance.hasAudioTrack(
         EditorVideo.file(videoPath),
       );
 

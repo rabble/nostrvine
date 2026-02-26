@@ -1,8 +1,8 @@
 // ABOUTME: Stats row widget for profile page showing loops and likes counts
 // ABOUTME: Displays animated stat values with loading states
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:openvine/utils/string_utils.dart';
 
 /// Individual stat column widget for videos/followers/following counts

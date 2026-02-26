@@ -7,8 +7,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_analytics_providers.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -253,7 +253,7 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.analytics_outlined,
               color: VineTheme.onSurfaceMuted,
               size: 40,
@@ -1062,7 +1062,8 @@ enum _AnalyticsWindow {
   last7Days('7D', Duration(days: 7)),
   last28Days('28D', Duration(days: 28)),
   last90Days('90D', Duration(days: 90)),
-  allTime('All', null);
+  allTime('All', null)
+  ;
 
   const _AnalyticsWindow(this.label, this.duration);
 

@@ -3,11 +3,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:models/models.dart';
 
 class _MockNostrService extends Mock implements NostrClient {}
 
@@ -60,7 +60,7 @@ void main() {
 
     test('allows non-expired events into discovery feed', () {
       // Create a future-expiring event (1 hour from now)
-      final oneHourFromNow = DateTime.now().add(Duration(hours: 1));
+      final oneHourFromNow = DateTime.now().add(const Duration(hours: 1));
       final expirationTimestamp = oneHourFromNow.millisecondsSinceEpoch ~/ 1000;
 
       final futureEvent = Event.fromJson({

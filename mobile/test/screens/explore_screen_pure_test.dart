@@ -32,13 +32,13 @@ void main() {
       test('ExploreScreen class should exist', () {
         // GREEN: Should now pass - class exists
         expect(() {
-          ExploreScreen();
+          const ExploreScreen();
         }, returnsNormally);
       });
 
       test('ExploreScreen should have constructor', () {
         // GREEN: Constructor works
-        final screen = ExploreScreen();
+        const screen = ExploreScreen();
         expect(screen, isA<ConsumerStatefulWidget>());
       });
     });
@@ -142,14 +142,14 @@ void main() {
         final testContainer = ProviderContainer(
           overrides: [
             // Mock videoEventsProvider to return empty stream instead of loading indefinitely
-            videoEventsProvider.overrideWith(() => VideoEventsMock()),
+            videoEventsProvider.overrideWith(VideoEventsMock.new),
           ],
         );
 
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: testContainer,
-            child: MaterialApp(home: ExploreScreen()),
+            child: const MaterialApp(home: ExploreScreen()),
           ),
         );
 

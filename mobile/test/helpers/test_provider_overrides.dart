@@ -5,19 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/services/blossom_auth_service.dart';
-import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/services/social_service.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/blossom_auth_service.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
+import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/user_profile_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Mock classes (public because they are imported by many test files)
 class MockSharedPreferences extends Mock implements SharedPreferences {}
@@ -66,7 +66,7 @@ MockSharedPreferences createMockSharedPreferences() {
     () => mockPrefs.setStringList(any(), any()),
   ).thenAnswer((_) async => true);
   when(() => mockPrefs.remove(any())).thenAnswer((_) async => true);
-  when(() => mockPrefs.clear()).thenAnswer((_) async => true);
+  when(mockPrefs.clear).thenAnswer((_) async => true);
   when(() => mockPrefs.containsKey(any())).thenReturn(false);
 
   return mockPrefs;
@@ -124,7 +124,7 @@ MockNostrClient createMockNostrService() {
   // type 'Null' is not a subtype of type 'Stream<Event>'
   when(
     () => mockNostr.subscribe(any()),
-  ).thenAnswer((_) => Stream<Event>.empty());
+  ).thenAnswer((_) => const Stream<Event>.empty());
 
   // Stub queryEvents() to return empty list (never null) so
   // FollowRepository getFollowers/getMyFollowers do not get

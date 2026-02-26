@@ -84,7 +84,7 @@ void main() {
     });
 
     test('setError preserves other state values', () {
-      notifier..setError('Test error');
+      notifier.setError('Test error');
 
       final state = container.read(videoPublishProvider);
       expect(state.publishState, VideoPublishState.error);

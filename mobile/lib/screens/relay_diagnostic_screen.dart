@@ -3,6 +3,8 @@
 
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -14,7 +16,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Result for a single FunnelCake API endpoint test
@@ -176,7 +177,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         );
       } catch (e) {
         setState(() {
-          _networkTests[relayUrl] = 'FAILED: ${e.toString()}';
+          _networkTests[relayUrl] = 'FAILED: $e';
         });
 
         Log.error('❌ Relay $relayUrl unreachable: $e', name: 'RelayDiagnostic');
@@ -410,12 +411,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
   }
 
   List<dynamic> _decodeJsonList(String body) {
-    // ignore: avoid_dynamic_calls
     return (const JsonDecoder().convert(body)) as List<dynamic>;
   }
 
   Map<String, dynamic> _decodeJsonMap(String body) {
-    // ignore: avoid_dynamic_calls
     return (const JsonDecoder().convert(body)) as Map<String, dynamic>;
   }
 
@@ -471,7 +470,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Query failed: ${e.toString()}'),
+            content: Text('Query failed: $e'),
             backgroundColor: Colors.red[700],
           ),
         );
@@ -520,7 +519,6 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         final videoService = ref.read(videoEventServiceProvider);
         await videoService.subscribeToVideoFeed(
           subscriptionType: SubscriptionType.discovery,
-          replace: true,
         );
       }
     } catch (e) {
@@ -528,7 +526,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Connection retry failed: ${e.toString()}'),
+            content: Text('Connection retry failed: $e'),
             backgroundColor: Colors.red[700],
           ),
         );
@@ -688,7 +686,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                       isConnected,
                       isAuthenticated,
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
 
@@ -764,7 +762,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                         entry.value,
                         textColor: isOk ? Colors.green : Colors.red,
                       );
-                    }).toList(),
+                    }),
                 ],
               ),
 
@@ -864,7 +862,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     const Divider(color: Colors.grey),
                     // Individual endpoint results
                     ..._funnelCakeResults!.endpoints.map(
-                      (e) => _buildEndpointResultRow(e),
+                      _buildEndpointResultRow,
                     ),
                     const SizedBox(height: 12),
                     Center(

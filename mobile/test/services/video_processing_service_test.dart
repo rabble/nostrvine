@@ -44,7 +44,7 @@ void main() {
             return Response(
               statusCode: 202,
               data: 'Not Ready',
-              requestOptions: RequestOptions(path: ''),
+              requestOptions: RequestOptions(),
             );
           } else {
             return Response(
@@ -56,7 +56,7 @@ void main() {
                 'thumbnail':
                     'https://stream.cloudflare.com/$videoId/thumbnail.jpg',
               },
-              requestOptions: RequestOptions(path: ''),
+              requestOptions: RequestOptions(),
             );
           }
         });
@@ -105,7 +105,7 @@ void main() {
         (_) async => Response(
           statusCode: 202,
           data: 'Not Ready',
-          requestOptions: RequestOptions(path: ''),
+          requestOptions: RequestOptions(),
         ),
       );
 
@@ -142,14 +142,14 @@ void main() {
         callCount++;
         if (callCount == 1) {
           throw DioException(
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
             type: DioExceptionType.connectionTimeout,
           );
         } else if (callCount == 2) {
           return Response(
             statusCode: 202,
             data: 'Not Ready',
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
           );
         } else {
           return Response(
@@ -158,7 +158,7 @@ void main() {
               'sha256': fileHash,
               'url': 'https://stream.cloudflare.com/$videoId.mp4',
             },
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
           );
         }
       });
@@ -199,7 +199,7 @@ void main() {
           return Response(
             statusCode: 202,
             data: 'Not Ready',
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
           );
         } else {
           return Response(
@@ -208,7 +208,7 @@ void main() {
               'sha256': fileHash,
               'url': 'https://stream.cloudflare.com/$videoId.mp4',
             },
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
           );
         }
       });
@@ -219,7 +219,7 @@ void main() {
         videoId: videoId,
         maxAttempts: 5,
         pollInterval: const Duration(milliseconds: 100),
-        onProgress: (progress) => progressCalls.add(progress),
+        onProgress: progressCalls.add,
       );
 
       expect(result.success, true);

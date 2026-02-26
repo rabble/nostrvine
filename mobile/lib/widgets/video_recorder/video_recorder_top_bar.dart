@@ -75,7 +75,7 @@ class VideoRecorderTopBar extends ConsumerWidget {
                     children: [
                       // Close button
                       VideoEditorIconButton(
-                        backgroundColor: Color(0x26000000),
+                        backgroundColor: const Color(0x26000000),
                         // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticLabel: 'Close video recorder',
                         iconSize: 24,

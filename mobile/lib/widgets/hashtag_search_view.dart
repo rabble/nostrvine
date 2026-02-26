@@ -47,12 +47,12 @@ class _HashtagSearchEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.tag, size: 64, color: VineTheme.secondaryText),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'Search for hashtags',
             style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
@@ -111,15 +111,15 @@ class _HashtagResultTile extends StatelessWidget {
     return Card(
       color: VineTheme.cardBackground,
       child: ListTile(
-        leading: Icon(Icons.tag, color: VineTheme.vineGreen),
+        leading: const Icon(Icons.tag, color: VineTheme.vineGreen),
         title: Text(
           '#$hashtag',
-          style: TextStyle(
+          style: const TextStyle(
             color: VineTheme.primaryText,
             fontWeight: FontWeight.bold,
           ),
         ),
-        subtitle: Text(
+        subtitle: const Text(
           'Tap to view videos with this hashtag',
           style: TextStyle(color: VineTheme.secondaryText),
         ),
@@ -146,11 +146,15 @@ class _HashtagSearchNoResultsState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.tag_outlined, size: 64, color: VineTheme.secondaryText),
+          const Icon(
+            Icons.tag_outlined,
+            size: 64,
+            color: VineTheme.secondaryText,
+          ),
           const SizedBox(height: 16),
           Text(
             'No hashtags found for "$query"',
-            style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
+            style: const TextStyle(color: VineTheme.primaryText, fontSize: 18),
           ),
         ],
       ),

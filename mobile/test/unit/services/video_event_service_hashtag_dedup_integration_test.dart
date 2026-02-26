@@ -16,7 +16,7 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         content: 'Dog video',
         timestamp: DateTime.now(),
-        hashtags: ['dog', 'cute'],
+        hashtags: const ['dog', 'cute'],
         videoUrl: 'https://example.com/video1.mp4',
       );
 
@@ -27,7 +27,7 @@ void main() {
         createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         content: 'Cat video',
         timestamp: DateTime.now(),
-        hashtags: ['cat', 'cute'],
+        hashtags: const ['cat', 'cute'],
         videoUrl: 'https://example.com/video2.mp4',
       );
 

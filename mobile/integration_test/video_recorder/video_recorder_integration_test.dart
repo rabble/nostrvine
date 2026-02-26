@@ -35,7 +35,7 @@ void main() {
     late CameraService cameraService;
 
     setUpAll(() async {
-      final service = PermissionHandlerPermissionsService();
+      const service = PermissionHandlerPermissionsService();
       await service.requestCameraPermission();
       await service.requestMicrophonePermission();
     });
@@ -67,14 +67,14 @@ void main() {
       await cameraService.startRecording();
 
       // Give recording a moment to start
-      await tester.pump(Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 100));
     });
 
     testWidgets('can stop recording after starting', (tester) async {
       await cameraService.startRecording();
 
       // Record for 2 seconds
-      await tester.pump(Duration(seconds: 2));
+      await tester.pump(const Duration(seconds: 2));
 
       final video = await cameraService.stopRecording();
 
@@ -85,7 +85,7 @@ void main() {
     testWidgets('can start and stop multiple recordings', (tester) async {
       for (var i = 0; i < 3; i++) {
         await cameraService.startRecording();
-        await tester.pump(Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 500));
 
         final video = await cameraService.stopRecording();
 
@@ -93,7 +93,7 @@ void main() {
         expect(video, anyOf(isNull, isA<Object>()));
 
         // Wait between recordings
-        await tester.pump(Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
       }
     });
 
@@ -108,7 +108,7 @@ void main() {
 
   group('Video Recorder Widget Tests', () {
     setUpAll(() async {
-      final service = PermissionHandlerPermissionsService();
+      const service = PermissionHandlerPermissionsService();
       await service.requestCameraPermission();
       await service.requestMicrophonePermission();
     });
@@ -117,7 +117,7 @@ void main() {
       await tester.pumpWidget(_buildTestWidget());
 
       // Wait for camera to initialize
-      await tester.pumpAndSettle(Duration(seconds: 2));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       final container = ProviderScope.containerOf(
         tester.element(find.byType(VideoRecorderScreen)),
@@ -127,7 +127,7 @@ void main() {
 
       // Simulate pinch zoom out (scale > 1)
       final center = tester.getCenter(find.byType(VideoRecorderScreen));
-      final pointer1 = TestPointer(1);
+      final pointer1 = TestPointer();
       final pointer2 = TestPointer(2);
 
       // Start with two fingers close together
@@ -136,9 +136,13 @@ void main() {
       await tester.pump();
 
       // Move fingers apart (zoom in)
-      await tester.sendEventToBinding(pointer1.move(center + Offset(-50, 0)));
-      await tester.sendEventToBinding(pointer2.move(center + Offset(50, 0)));
-      await tester.pump(Duration(milliseconds: 100));
+      await tester.sendEventToBinding(
+        pointer1.move(center + const Offset(-50, 0)),
+      );
+      await tester.sendEventToBinding(
+        pointer2.move(center + const Offset(50, 0)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Release
       await tester.sendEventToBinding(pointer1.up());
@@ -158,7 +162,7 @@ void main() {
       await tester.pumpWidget(_buildTestWidget());
 
       // Wait for camera to initialize and zoom limits to load
-      await tester.pumpAndSettle(Duration(seconds: 3));
+      await tester.pumpAndSettle(const Duration(seconds: 3));
       // Extra pump to ensure postFrameCallback completes
       await tester.pump();
       await tester.pump();
@@ -178,7 +182,7 @@ void main() {
       final buttonCenter = tester.getCenter(recordButton);
       final gesture = await tester.startGesture(buttonCenter);
       await tester.pump(
-        Duration(milliseconds: 600),
+        const Duration(milliseconds: 600),
       ); // Wait for long press to trigger
 
       // Check recording state while still pressing
@@ -190,10 +194,10 @@ void main() {
 
       // Move finger up (should zoom in)
       await gesture.moveBy(
-        Offset(0, -200),
-        timeStamp: Duration(milliseconds: 600),
+        const Offset(0, -200),
+        timeStamp: const Duration(milliseconds: 600),
       );
-      await tester.pump(Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
 
       // Check zoom changed
       final zoomAfterMove = container.read(videoRecorderProvider).zoomLevel;
@@ -215,7 +219,7 @@ void main() {
       await tester.pumpWidget(_buildTestWidget());
 
       // Wait for camera to initialize
-      await tester.pumpAndSettle(Duration(seconds: 2));
+      await tester.pumpAndSettle(const Duration(seconds: 2));
 
       final container = ProviderScope.containerOf(
         tester.element(find.byType(VideoRecorderScreen)),
@@ -230,13 +234,15 @@ void main() {
 
       // Start long press
       final gesture = await tester.startGesture(buttonCenter);
-      await tester.pump(Duration(milliseconds: 600)); // Trigger long press
+      await tester.pump(
+        const Duration(milliseconds: 600),
+      ); // Trigger long press
 
       final initialZoom = container.read(videoRecorderProvider).zoomLevel;
 
       // Move finger up (should zoom in)
-      await gesture.moveBy(Offset(0, -100));
-      await tester.pump(Duration(milliseconds: 100));
+      await gesture.moveBy(const Offset(0, -100));
+      await tester.pump(const Duration(milliseconds: 100));
 
       final zoomAfterMove = container.read(videoRecorderProvider).zoomLevel;
 

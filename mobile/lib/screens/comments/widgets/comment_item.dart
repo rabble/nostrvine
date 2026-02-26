@@ -74,7 +74,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           _isHeld = false;
         });
       },
-      child: Container(
+      child: ColoredBox(
         color: _isHeld ? VineTheme.containerLow : Colors.transparent,
         child: IntrinsicHeight(
           child: Row(
@@ -232,7 +232,6 @@ class _CommentHeader extends ConsumerWidget {
         currentUserPubkey.isNotEmpty && currentUserPubkey == authorPubkey;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         UserAvatar(size: avatarSize, imageUrl: profile?.picture),
         const SizedBox(width: 8),
@@ -328,7 +327,7 @@ class _CommentContent extends StatelessWidget {
 
   TextSpan _buildContentSpans(BuildContext context) {
     // Match nostr:npub1... pattern
-    final mentionPattern = RegExp(r'nostr:(npub1[a-zA-Z0-9]{58,})');
+    final mentionPattern = RegExp('nostr:(npub1[a-zA-Z0-9]{58,})');
     final spans = <InlineSpan>[];
     var lastEnd = 0;
 
@@ -589,7 +588,7 @@ class _ReplyIndicator extends ConsumerWidget {
             ),
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
             child: Text(
-              '$displayName',
+              displayName,
               style: VineTheme.bodyFont(
                 fontSize: 14,
                 color: VineTheme.tabIndicatorGreen,

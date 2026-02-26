@@ -180,7 +180,6 @@ void main() {
         final video = createTestVideoEvent(
           id: 'event_id_fallback',
           pubkey: creatorPubkey,
-          vineId: null,
         );
 
         await publisher.publishViewEvent(

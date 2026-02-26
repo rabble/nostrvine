@@ -20,9 +20,9 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -457,7 +457,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     if (tags != null) {
       // User manually edited tags - use only what they provided
       allTags = tags
-          .map((tag) => tag.replaceAll(RegExp(r'[^a-zA-Z0-9]'), ''))
+          .map((tag) => tag.replaceAll(RegExp('[^a-zA-Z0-9]'), ''))
           .where((tag) => tag.isNotEmpty)
           .take(tagLimit)
           .toSet();
@@ -717,7 +717,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       await _draftService.saveDraft(draft);
 
       Log.info(
-        '✅ Autosave completed - ${clipCount} clip(s), '
+        '✅ Autosave completed - $clipCount clip(s), '
         'title: "${state.title.isEmpty ? "(empty)" : state.title}"',
         name: 'VideoEditorNotifier',
         category: .video,

@@ -17,11 +17,9 @@ void main() {
         content: 'Test video',
         timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
         videoUrl: 'https://example.com/video.mp4',
-        originalLoops: null, // REST API has no loops field
         originalLikes: 0, // REST API reactions:0
         originalComments: 0, // REST API comments:0
         originalReposts: 0, // REST API reposts:0
-        rawTags: const {}, // REST API has no raw tags
       );
 
       // Simulate a Nostr-parsed video with correct engagement tags
@@ -86,7 +84,6 @@ void main() {
         content: 'Test video',
         timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
         videoUrl: 'https://example.com/video.mp4',
-        originalLikes: null, // No likes tag in Nostr event
         rawTags: const {'d': 'some-id'},
       );
 

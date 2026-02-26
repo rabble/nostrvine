@@ -89,7 +89,6 @@ void main() {
             id: 'test_video_id',
             pubkey: 'test_pubkey',
             title: 'Deep Link Video',
-            videoUrl: 'https://example.com/video.mp4',
           );
 
           when(

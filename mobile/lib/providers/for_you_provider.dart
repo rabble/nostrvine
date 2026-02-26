@@ -52,10 +52,9 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     }
 
@@ -69,10 +68,9 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     }
 
@@ -92,10 +90,9 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     }
 
@@ -103,7 +100,6 @@ class ForYouFeed extends _$ForYouFeed {
       final result = await analyticsService.getRecommendations(
         pubkey: currentUserPubkey,
         limit: _currentLimit,
-        fallback: 'popular',
       );
 
       Log.info(
@@ -121,7 +117,6 @@ class ForYouFeed extends _$ForYouFeed {
       return VideoFeedState(
         videos: filteredVideos,
         hasMoreContent: filteredVideos.length >= 20,
-        isLoadingMore: false,
         lastUpdated: DateTime.now(),
       );
     } catch (e) {
@@ -133,7 +128,6 @@ class ForYouFeed extends _$ForYouFeed {
       return VideoFeedState(
         videos: const [],
         hasMoreContent: false,
-        isLoadingMore: false,
         error: e.toString(),
       );
     }
@@ -169,7 +163,6 @@ class ForYouFeed extends _$ForYouFeed {
       final result = await analyticsService.getRecommendations(
         pubkey: currentUserPubkey,
         limit: newLimit,
-        fallback: 'popular',
       );
 
       if (!ref.mounted) return;
@@ -193,7 +186,6 @@ class ForYouFeed extends _$ForYouFeed {
         VideoFeedState(
           videos: filteredVideos,
           hasMoreContent: newEventsLoaded > 0,
-          isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
       );

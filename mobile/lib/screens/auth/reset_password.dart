@@ -20,7 +20,7 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
   /// Path for navigation
   static const String path = '/reset-password';
 
-  const ResetPasswordScreen({super.key, required this.token});
+  const ResetPasswordScreen({required this.token, super.key});
 
   final String token;
 

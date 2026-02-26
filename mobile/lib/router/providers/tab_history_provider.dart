@@ -40,7 +40,7 @@ class TabHistory extends Notifier<List<int>> {
       newHistory.add(tabIndex);
 
       Log.debug(
-        'Tab history updated: ${newHistory.map((i) => _tabName(i)).join(" → ")}',
+        'Tab history updated: ${newHistory.map(_tabName).join(" → ")}',
         name: 'TabHistory',
         category: LogCategory.ui,
       );

@@ -4,8 +4,8 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nostr_list_service_mixin.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -775,16 +775,12 @@ class BookmarkService with NostrListServiceMixin {
         switch (tag[0]) {
           case 'd':
             dTag = tag[1];
-            break;
           case 'title':
             title = tag[1];
-            break;
           case 'description':
             description = tag[1];
-            break;
           case 'image':
             imageUrl = tag[1];
-            break;
         }
       }
     }

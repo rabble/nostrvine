@@ -24,39 +24,29 @@ extension NostrEventExt on Event {
       switch (tag[0]) {
         case 'd':
           if (tag.length > 1) dTag = tag[1];
-          break;
         case 'title':
           if (tag.length > 1) title = tag[1];
-          break;
         case 'description':
           if (tag.length > 1) description = tag[1];
-          break;
         case 'image':
           if (tag.length > 1) imageUrl = tag[1];
-          break;
         case 'thumbnail':
           if (tag.length > 1) thumbnailEventId = tag[1];
-          break;
         case 'playorder':
           if (tag.length > 1) playOrderStr = tag[1];
-          break;
         case 't':
           if (tag.length > 1) tags.add(tag[1]);
-          break;
         case 'e':
           if (tag.length > 1) videoEventIds.add(tag[1]);
-          break;
         case 'collaborative':
           if (tag.length > 1 && tag[1] == 'true') isCollaborative = true;
-          break;
         case 'collaborator':
           if (tag.length > 1) allowedCollaborators.add(tag[1]);
-          break;
       }
     }
 
     if (dTag == null) {
-      throw Exception('List event missing d tag: ${id}');
+      throw Exception('List event missing d tag: $id');
     }
 
     // Use title or fall back to content or default
@@ -73,7 +63,6 @@ extension NostrEventExt on Event {
       videoEventIds: videoEventIds,
       createdAt: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(createdAt * 1000),
-      isPublic: true, // Lists from relays are public
       nostrEventId: id,
       tags: tags,
       isCollaborative: isCollaborative,

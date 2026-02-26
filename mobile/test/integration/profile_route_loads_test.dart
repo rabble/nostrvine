@@ -13,11 +13,11 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/analytics_service.dart';
-import 'package:openvine/services/view_event_publisher.dart'
-    show ViewTrafficSource;
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_prewarmer.dart';
+import 'package:openvine/services/view_event_publisher.dart'
+    show ViewTrafficSource;
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -42,7 +42,7 @@ Future<void> waitFor<T>(
 void main() {
   testWidgets('profile route renders videos & overlays', (tester) async {
     // Test fixture
-    final testNpub =
+    const testNpub =
         'npub1l5sga6xg72phsz5422ykujprejwud075ggrr3z2hwyrfgr7eylqstegx9z';
     final testHex = npubToHexOrNull(testNpub)!;
 

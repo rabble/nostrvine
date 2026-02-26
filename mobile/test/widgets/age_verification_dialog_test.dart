@@ -2,10 +2,10 @@
 // ABOUTME: Covers element rendering, button interactions, non-dismissibility,
 // ABOUTME: VineTheme colors, and dialog constraints.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/age_verification_dialog.dart';
 
 /// Helper to create a test widget with GoRouter for dialog interaction tests.

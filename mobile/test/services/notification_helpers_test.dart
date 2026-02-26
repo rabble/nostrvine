@@ -2,8 +2,8 @@
 // ABOUTME: Pure function tests for video ID extraction and actor name resolution
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/notification_helpers.dart';
 
 void main() {
@@ -313,7 +313,7 @@ void main() {
       // Arrange
       final profile = UserProfile(
         pubkey: 'test123',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'event1',
         name: 'Alice',
@@ -332,7 +332,7 @@ void main() {
       // Arrange
       final profile = UserProfile(
         pubkey: 'test123',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'event1',
         displayName: 'Bob Builder',
@@ -350,7 +350,7 @@ void main() {
       // Arrange
       final profile = UserProfile(
         pubkey: 'test123',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'event1',
         nip05: 'charlie@nostr.com',
@@ -367,7 +367,7 @@ void main() {
       // Arrange
       final profile = UserProfile(
         pubkey: 'test123',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'event1',
         nip05: 'username@example.org',
@@ -392,7 +392,7 @@ void main() {
       // Arrange
       final profile = UserProfile(
         pubkey: 'test123',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'event1',
       );
@@ -408,7 +408,7 @@ void main() {
       // Arrange
       final profile = UserProfile(
         pubkey: 'test123',
-        rawData: {},
+        rawData: const {},
         createdAt: DateTime.now(),
         eventId: 'event1',
         nip05: 'plainname',

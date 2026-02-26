@@ -11,7 +11,6 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
@@ -59,8 +58,6 @@ class VideoExploreTile extends ConsumerWidget {
                   video: video,
                   width: constraints.maxWidth,
                   height: constraints.maxHeight,
-                  fit: BoxFit.cover,
-                  showPlayIcon: false,
                   borderRadius: BorderRadius.circular(borderRadius),
                 );
               },
@@ -70,7 +67,7 @@ class VideoExploreTile extends ConsumerWidget {
             Positioned(
               top: 8,
               left: 8,
-              child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
+              child: ProofModeBadgeRow(video: video),
             ),
 
             // Video info overlay - conditionally shown

@@ -51,7 +51,7 @@ final class ClassicVinesFeedProvider
   ClassicVinesFeed create() => ClassicVinesFeed();
 }
 
-String _$classicVinesFeedHash() => r'a1a9c9e36891db8c142b0f9d80789d6fc2f4d3eb';
+String _$classicVinesFeedHash() => r'995948cbf1c26ec7bf7fabc6fa101a0978b13f75';
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
@@ -274,4 +274,4 @@ final class TopClassicVinersProvider
   }
 }
 
-String _$topClassicVinersHash() => r'90b684e574cff9f8f46ac85a9c8b78fe5640cfb9';
+String _$topClassicVinersHash() => r'9db1ae4a1f431c64437d2042277d25d3086cace4';

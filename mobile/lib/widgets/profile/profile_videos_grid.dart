@@ -5,18 +5,18 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -178,15 +178,15 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
               crossAxisCount: 3,
               crossAxisSpacing: 4,
               mainAxisSpacing: 4,
-              childAspectRatio: 1,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
               final videoEntry = allVideos[index];
               return switch (videoEntry) {
-                _GridUploadingVideoEntry uploadEntry => _VideoGridUploadingTile(
-                  backgroundUpload: uploadEntry.backgroundUpload,
-                ),
-                _GridVideoEventEntry eventEntry => _VideoGridTile(
+                final _GridUploadingVideoEntry uploadEntry =>
+                  _VideoGridUploadingTile(
+                    backgroundUpload: uploadEntry.backgroundUpload,
+                  ),
+                final _GridVideoEventEntry eventEntry => _VideoGridTile(
                   videoEvent: eventEntry.videoEvent,
                   userIdHex: widget.userIdHex,
                   index: index,
@@ -283,7 +283,7 @@ class _VideoGridUploadingTile extends StatelessWidget {
             Image.file(
               File(thumbnailPath),
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const _ThumbnailPlaceholder(),
+              errorBuilder: (_, _, _) => const _ThumbnailPlaceholder(),
             )
           else
             const _ThumbnailPlaceholder(),
@@ -317,7 +317,7 @@ class _VideoGridTile extends StatelessWidget {
     child: ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(
-        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        decoration: const BoxDecoration(color: VineTheme.cardBackground),
         child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),

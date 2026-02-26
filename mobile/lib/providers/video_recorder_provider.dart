@@ -3,9 +3,10 @@
 
 import 'dart:async';
 
+import 'package:divine_camera/divine_camera.dart'
+    show DivineCameraLens, DivineVideoQuality;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/services/haptic_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -17,10 +18,9 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:divine_camera/divine_camera.dart'
-    show DivineCameraLens, DivineVideoQuality;
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/services/audio_playback_service.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -83,9 +83,10 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         );
 
     // Listen for sound selection changes to pause/resume remote control
-    ref.listen<AudioEvent?>(selectedSoundProvider, (previous, next) {
-      _handleSoundSelectionChanged(previous, next);
-    });
+    ref.listen<AudioEvent?>(
+      selectedSoundProvider,
+      _handleSoundSelectionChanged,
+    );
 
     // Setup cleanup when provider is disposed
     ref.onDispose(() async {
@@ -872,13 +873,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     state = VideoRecorderProviderState(
       cameraRebuildCount: cameraRebuildCount ?? state.cameraRebuildCount,
-      countdownValue: 0,
-      zoomLevel: 1,
-      focusPoint: .zero,
       aspectRatio: aspectRatio ?? state.aspectRatio,
       flashMode: .off,
-      timerDuration: .off,
-      recordingState: .idle,
       cameraSensorAspectRatio: _cameraService.cameraAspectRatio,
       canRecord: _cameraService.canRecord,
       isCameraInitialized: _cameraService.isInitialized,

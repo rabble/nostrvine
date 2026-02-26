@@ -1,8 +1,8 @@
 // ABOUTME: Unit tests for VideoRecorderProviderState and VideoRecorderNotifier
 // ABOUTME: Tests state getters, properties, and recording lifecycle
 
-import 'package:flutter/services.dart';
 import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
@@ -78,42 +78,38 @@ class NotifierTestSetup {
 void main() {
   group('VideoRecorderUIState AspectRatio', () {
     test('includes aspectRatio in state', () {
-      final state = VideoRecorderProviderState(
-        aspectRatio: AspectRatio.vertical,
-      );
+      const state = VideoRecorderProviderState();
 
       expect(state.aspectRatio, equals(AspectRatio.vertical));
     });
 
     test('default aspectRatio is vertical', () {
-      final state = VideoRecorderProviderState();
+      const state = VideoRecorderProviderState();
 
       expect(state.aspectRatio, equals(AspectRatio.vertical));
     });
 
     test('copyWith updates aspectRatio', () {
-      final state = VideoRecorderProviderState(aspectRatio: AspectRatio.square);
+      const state = VideoRecorderProviderState(aspectRatio: AspectRatio.square);
 
       final updated = state.copyWith(aspectRatio: AspectRatio.vertical);
       expect(updated.aspectRatio, equals(AspectRatio.vertical));
     });
 
     test('copyWith preserves aspectRatio when not provided', () {
-      final state = VideoRecorderProviderState(aspectRatio: AspectRatio.square);
+      const state = VideoRecorderProviderState(aspectRatio: AspectRatio.square);
 
       final updated = state.copyWith(canRecord: true);
       expect(updated.aspectRatio, equals(AspectRatio.square));
     });
 
     test('all AspectRatio values can be used', () {
-      final squareState = VideoRecorderProviderState(
+      const squareState = VideoRecorderProviderState(
         aspectRatio: AspectRatio.square,
       );
       expect(squareState.aspectRatio, equals(AspectRatio.square));
 
-      final verticalState = VideoRecorderProviderState(
-        aspectRatio: AspectRatio.vertical,
-      );
+      const verticalState = VideoRecorderProviderState();
       expect(verticalState.aspectRatio, equals(AspectRatio.vertical));
     });
   });
@@ -127,7 +123,6 @@ void main() {
       );
 
       const idleState = VideoRecorderProviderState(
-        recordingState: VideoRecorderState.idle,
         isCameraInitialized: true,
         aspectRatio: AspectRatio.square,
       );
@@ -138,16 +133,12 @@ void main() {
 
     test('isInitialized should require camera initialization', () {
       const initializedState = VideoRecorderProviderState(
-        recordingState: VideoRecorderState.idle,
         isCameraInitialized: true,
         canRecord: true,
         aspectRatio: AspectRatio.square,
       );
 
       const uninitializedState = VideoRecorderProviderState(
-        recordingState: VideoRecorderState.idle,
-        isCameraInitialized: false,
-        canRecord: false,
         aspectRatio: AspectRatio.square,
       );
 
@@ -173,7 +164,6 @@ void main() {
       );
 
       const idleState = VideoRecorderProviderState(
-        recordingState: VideoRecorderState.idle,
         isCameraInitialized: true,
         aspectRatio: AspectRatio.square,
       );
@@ -190,7 +180,6 @@ void main() {
       );
 
       const idleState = VideoRecorderProviderState(
-        recordingState: VideoRecorderState.idle,
         isCameraInitialized: true,
         aspectRatio: AspectRatio.square,
       );
@@ -201,7 +190,6 @@ void main() {
 
     test('canRecord should reflect ability to start recording', () {
       const canRecordState = VideoRecorderProviderState(
-        recordingState: VideoRecorderState.idle,
         canRecord: true,
         isCameraInitialized: true,
         aspectRatio: AspectRatio.square,
@@ -209,7 +197,6 @@ void main() {
 
       const cannotRecordState = VideoRecorderProviderState(
         recordingState: VideoRecorderState.recording,
-        canRecord: false,
         isCameraInitialized: true,
         aspectRatio: AspectRatio.square,
       );
@@ -251,9 +238,7 @@ void main() {
         aspectRatio: AspectRatio.square,
       );
 
-      const verticalState = VideoRecorderProviderState(
-        aspectRatio: AspectRatio.vertical,
-      );
+      const verticalState = VideoRecorderProviderState();
 
       expect(squareState.aspectRatio, equals(AspectRatio.square));
       expect(verticalState.aspectRatio, equals(AspectRatio.vertical));
@@ -261,7 +246,6 @@ void main() {
 
     test('flashMode should be customizable', () {
       const autoFlash = VideoRecorderProviderState(
-        flashMode: DivineFlashMode.auto,
         aspectRatio: AspectRatio.square,
       );
 
@@ -282,7 +266,6 @@ void main() {
 
     test('timerDuration should be customizable', () {
       const offTimer = VideoRecorderProviderState(
-        timerDuration: TimerDuration.off,
         aspectRatio: AspectRatio.square,
       );
 
@@ -303,7 +286,6 @@ void main() {
 
     test('countdownValue should be settable', () {
       const noCountdown = VideoRecorderProviderState(
-        countdownValue: 0,
         aspectRatio: AspectRatio.square,
       );
 
@@ -318,8 +300,6 @@ void main() {
 
     test('copyWith should update specific fields', () {
       const initialState = VideoRecorderProviderState(
-        recordingState: VideoRecorderState.idle,
-        zoomLevel: 1.0,
         canRecord: true,
         aspectRatio: AspectRatio.square,
       );
@@ -337,7 +317,6 @@ void main() {
 
     test('canSwitchCamera should be configurable', () {
       const canSwitch = VideoRecorderProviderState(
-        canSwitchCamera: true,
         aspectRatio: AspectRatio.square,
       );
 
@@ -370,7 +349,7 @@ void main() {
   group('VideoRecorderNotifier - Concurrent Stop Handling', () {
     final setup = NotifierTestSetup();
 
-    setUp(() => setup.setUp());
+    setUp(setup.setUp);
     tearDown(setup.tearDown);
 
     test(
@@ -439,7 +418,7 @@ void main() {
   group('VideoRecorderNotifier - Recording Lifecycle', () {
     final setup = NotifierTestSetup();
 
-    setUp(() => setup.setUp());
+    setUp(setup.setUp);
     tearDown(setup.tearDown);
 
     test('can start and stop recording normally', () async {

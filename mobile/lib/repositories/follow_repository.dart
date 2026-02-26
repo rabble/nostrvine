@@ -416,7 +416,7 @@ class FollowRepository {
 
       final result = await completer.future.timeout(
         const Duration(seconds: 5),
-        onTimeout: () => followerPubkeys.toList(),
+        onTimeout: followerPubkeys.toList,
       );
 
       await relay.send(<dynamic>['CLOSE', subscriptionId]);

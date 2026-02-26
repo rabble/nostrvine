@@ -27,7 +27,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform(duration: null))),
+        const MaterialApp(home: Scaffold(body: AudioWaveform())),
       );
 
       expect(find.text('--:-- / --:--'), findsOneWidget);
@@ -174,7 +174,6 @@ void main() {
           home: Scaffold(
             body: AudioWaveform(
               duration: Duration(seconds: 6),
-              isPlaying: false,
             ),
           ),
         ),
@@ -295,7 +294,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform(duration: null))),
+        const MaterialApp(home: Scaffold(body: AudioWaveform())),
       );
 
       // Verify Semantics widget exists
@@ -327,7 +326,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AudioWaveform(duration: Duration(seconds: 6), barCount: 30),
+            body: AudioWaveform(duration: Duration(seconds: 6)),
           ),
         ),
       );
@@ -386,7 +385,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform(duration: null))),
+        const MaterialApp(home: Scaffold(body: AudioWaveform())),
       );
 
       final textWidget = tester.widget<Text>(find.text('--:-- / --:--'));

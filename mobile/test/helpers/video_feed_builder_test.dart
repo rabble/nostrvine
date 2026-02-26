@@ -5,8 +5,8 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:models/models.dart';
+import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
@@ -88,11 +88,11 @@ void main() {
           subscriptionType: SubscriptionType.popularNow,
           subscribe: (service) async {
             // Simulate delayed video arrival
-            Future.delayed(Duration(milliseconds: 100), () {
+            Future.delayed(const Duration(milliseconds: 100), () {
               videos.add(_createMockVideo(id: 'video1'));
               mockService.notifyListeners();
             });
-            Future.delayed(Duration(milliseconds: 200), () {
+            Future.delayed(const Duration(milliseconds: 200), () {
               videos.add(_createMockVideo(id: 'video2'));
               mockService.notifyListeners();
             });
@@ -128,7 +128,7 @@ void main() {
             subscriptionType: SubscriptionType.discovery,
             subscribe: (service) async {
               // Continuously add videos - never stabilize
-              Timer.periodic(Duration(milliseconds: 100), (timer) {
+              Timer.periodic(const Duration(milliseconds: 100), (timer) {
                 // Keep changing count
               });
             },
@@ -153,7 +153,7 @@ void main() {
         // Arrange
         final video1 = _createMockVideo(
           id: 'v1',
-          createdAt: DateTime(2025, 1, 1),
+          createdAt: DateTime(2025),
         );
         final video2 = _createMockVideo(
           id: 'v2',

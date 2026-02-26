@@ -1,6 +1,7 @@
 // ABOUTME: Router-aware liked videos screen that shows grid or feed based on URL
 // ABOUTME: Reads route context to determine grid mode vs feed mode
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,6 @@ import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 

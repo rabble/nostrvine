@@ -93,7 +93,6 @@ void main() {
         timestamp: DateTime.now(),
         createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
         videoUrl: 'https://example.com/video.mp4',
-        thumbnailUrl: null,
         blurhash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
         title: 'Test Video',
       );

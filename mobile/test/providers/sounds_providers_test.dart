@@ -57,7 +57,7 @@ void main() {
           any(),
           subscriptionId: any(named: 'subscriptionId'),
         ),
-      ).thenAnswer((_) => Stream<Event>.empty());
+      ).thenAnswer((_) => const Stream<Event>.empty());
       when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
     });
 
@@ -148,7 +148,7 @@ void main() {
       test('fetches trending sounds from repository', () async {
         final testSounds = [
           createTestAudioEvent(id: 'trend-1', createdAt: 1704067300),
-          createTestAudioEvent(id: 'trend-2', createdAt: 1704067200),
+          createTestAudioEvent(id: 'trend-2'),
         ];
 
         when(
@@ -274,7 +274,7 @@ void main() {
 
     group('soundsByCreatorProvider', () {
       test('returns sounds by creator pubkey', () async {
-        final creatorPubkey = 'creator-pubkey-123';
+        const creatorPubkey = 'creator-pubkey-123';
         final creatorSounds = [
           createTestAudioEvent(id: 'creator-sound-1', pubkey: creatorPubkey),
           createTestAudioEvent(id: 'creator-sound-2', pubkey: creatorPubkey),
@@ -381,7 +381,7 @@ void main() {
         });
 
         // Start listening to provider
-        final subscription = container.listen(soundsStreamProvider, (_, __) {});
+        final subscription = container.listen(soundsStreamProvider, (_, _) {});
 
         // Emit data through stream
         streamController.add(testSounds);

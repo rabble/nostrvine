@@ -12,7 +12,8 @@ enum TimerDuration {
   three,
 
   /// 10 second delay.
-  ten;
+  ten
+  ;
 
   /// Icon representing the timer duration.
   DivineIconName get icon => switch (this) {

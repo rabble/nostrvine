@@ -2,9 +2,9 @@
 // ABOUTME: Tests server-side filtering and client-side hashtag processing
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -41,6 +41,7 @@ class MinimalMockNostrService implements NostrClient {
 
   void removeListener(listener) {}
 
+  @override
   Future<void> dispose() async {}
 
   bool get hasListeners => false;
@@ -48,6 +49,7 @@ class MinimalMockNostrService implements NostrClient {
   void notifyListeners() {}
 
   // Implement required methods as no-ops for testing
+  @override
   Future<void> initialize({List<String>? customRelays}) async {}
 
   Stream<Event> subscribeToEvents({
@@ -56,6 +58,7 @@ class MinimalMockNostrService implements NostrClient {
     void Function()? onEose,
   }) => const Stream<Event>.empty();
 
+  @override
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 

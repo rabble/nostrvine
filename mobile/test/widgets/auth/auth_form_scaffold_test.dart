@@ -41,7 +41,7 @@ void main() {
           routes: [
             GoRoute(
               path: '/',
-              builder: (_, __) => AuthFormScaffold(
+              builder: (_, _) => AuthFormScaffold(
                 title: title,
                 emailController: emailController,
                 passwordController: passwordController,

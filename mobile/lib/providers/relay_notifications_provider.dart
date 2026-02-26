@@ -6,9 +6,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/notification_model_converter.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/services/notification_model_converter.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -73,7 +73,7 @@ class NotificationFeedState {
 /// - Pauses when all listeners detach (ref.onCancel)
 /// - Resumes when a new listener attaches (ref.onResume)
 /// - Cancels on dispose
-@Riverpod(keepAlive: false)
+@Riverpod()
 class RelayNotifications extends _$RelayNotifications {
   // Pagination state
   String? _nextCursor;
@@ -178,14 +178,13 @@ class RelayNotifications extends _$RelayNotifications {
 
     // Emit initial loading state
     state = const AsyncData(
-      NotificationFeedState(notifications: [], isInitialLoad: true),
+      NotificationFeedState(notifications: []),
     );
 
     try {
       // Fetch initial notifications from REST API
       final response = await apiService.getNotifications(
         pubkey: currentUserPubkey,
-        limit: 50,
       );
 
       if (!ref.mounted) {
@@ -226,7 +225,6 @@ class RelayNotifications extends _$RelayNotifications {
         notifications: enrichedNotifications,
         unreadCount: response.unreadCount,
         hasMoreContent: response.hasMore,
-        isLoadingMore: false,
         isInitialLoad: false,
         lastUpdated: DateTime.now(),
       );
@@ -238,7 +236,7 @@ class RelayNotifications extends _$RelayNotifications {
       );
       keepAliveLink.close();
       return NotificationFeedState(
-        notifications: [],
+        notifications: const [],
         error: e.toString(),
         isInitialLoad: false,
       );
@@ -292,7 +290,6 @@ class RelayNotifications extends _$RelayNotifications {
 
       final response = await apiService.getNotifications(
         pubkey: currentUserPubkey,
-        limit: 50,
         before: _nextCursor,
       );
 
@@ -418,7 +415,6 @@ class RelayNotifications extends _$RelayNotifications {
     try {
       final response = await apiService.getNotifications(
         pubkey: currentUserPubkey,
-        limit: 50,
       );
 
       if (!ref.mounted) return;
