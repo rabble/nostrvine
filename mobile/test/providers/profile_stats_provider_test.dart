@@ -2,15 +2,12 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/social_service.dart';
 
-// Generate mocks
-@GenerateMocks([SocialService])
-import 'profile_stats_provider_test.mocks.dart';
+class _MockSocialService extends Mock implements SocialService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,10 +31,10 @@ void main() {
 
   group('ProfileStatsProvider', () {
     late ProviderContainer container;
-    late MockSocialService mockSocialService;
+    late _MockSocialService mockSocialService;
 
     setUp(() {
-      mockSocialService = MockSocialService();
+      mockSocialService = _MockSocialService();
       container = ProviderContainer(
         overrides: [socialServiceProvider.overrideWithValue(mockSocialService)],
       );
@@ -62,10 +59,10 @@ void main() {
       test('should auto-fetch stats when watched', () async {
         // Mock social service responses
         when(
-          mockSocialService.getFollowerStats(testPubkey),
+          () => mockSocialService.getFollowerStats(testPubkey),
         ).thenAnswer((_) async => {'followers': 100, 'following': 50});
         when(
-          mockSocialService.getUserVideoCount(testPubkey),
+          () => mockSocialService.getUserVideoCount(testPubkey),
         ).thenAnswer((_) async => 25);
 
         // Keep the provider alive by listening to it
@@ -87,8 +84,8 @@ void main() {
         expect(asyncValue.totalViews, 0);
 
         // Verify service calls happened automatically
-        verify(mockSocialService.getFollowerStats(testPubkey)).called(1);
-        verify(mockSocialService.getUserVideoCount(testPubkey)).called(1);
+        verify(() => mockSocialService.getFollowerStats(testPubkey)).called(1);
+        verify(() => mockSocialService.getUserVideoCount(testPubkey)).called(1);
 
         // Clean up
         sub.close();
@@ -98,10 +95,10 @@ void main() {
       test('should use cache on subsequent watches', () async {
         // First watch - should fetch
         when(
-          mockSocialService.getFollowerStats(testPubkey),
+          () => mockSocialService.getFollowerStats(testPubkey),
         ).thenAnswer((_) async => {'followers': 100, 'following': 50});
         when(
-          mockSocialService.getUserVideoCount(testPubkey),
+          () => mockSocialService.getUserVideoCount(testPubkey),
         ).thenAnswer((_) async => 25);
 
         final stats1 = await container.read(
@@ -109,9 +106,6 @@ void main() {
         );
         expect(stats1.videoCount, 25);
         expect(stats1.followers, 100);
-
-        // Clear interactions to verify no new calls
-        clearInteractions(mockSocialService);
 
         // Second watch - should use cache
         final stats2 = await container.read(
@@ -121,8 +115,8 @@ void main() {
         expect(stats2.followers, 100);
 
         // Should NOT have called services again (cache hit)
-        verifyNever(mockSocialService.getFollowerStats(any));
-        verifyNever(mockSocialService.getUserVideoCount(any));
+        verifyNever(() => mockSocialService.getFollowerStats(any()));
+        verifyNever(() => mockSocialService.getUserVideoCount(any()));
         // TODO(any): Fix and re-enable this test
       }, skip: true);
     });

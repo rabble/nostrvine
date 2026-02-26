@@ -4,31 +4,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/auth_service.dart';
 
-import 'settings_delete_account_test.mocks.dart';
+class _MockAccountDeletionService extends Mock
+    implements AccountDeletionService {}
 
-@GenerateMocks([AccountDeletionService, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('SettingsScreen - Delete Account', () {
-    late MockAccountDeletionService mockDeletionService;
-    late MockAuthService mockAuthService;
+    late _MockAccountDeletionService mockDeletionService;
+    late _MockAuthService mockAuthService;
 
     setUp(() {
-      mockDeletionService = MockAccountDeletionService();
-      mockAuthService = MockAuthService();
+      mockDeletionService = _MockAccountDeletionService();
+      mockAuthService = _MockAuthService();
     });
 
     testWidgets('should show Delete Account option when authenticated', (
       tester,
     ) async {
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentProfile).thenReturn(null);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentProfile).thenReturn(null);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -57,7 +58,7 @@ void main() {
     testWidgets('should hide Delete Account when not authenticated', (
       tester,
     ) async {
-      when(mockAuthService.isAuthenticated).thenReturn(false);
+      when(() => mockAuthService.isAuthenticated).thenReturn(false);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -87,8 +88,8 @@ void main() {
     testWidgets('should show warning dialog when Delete Account tapped', (
       tester,
     ) async {
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentProfile).thenReturn(null);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentProfile).thenReturn(null);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -108,7 +109,7 @@ void main() {
       await tester.tap(find.text('Delete Account'));
       await tester.pumpAndSettle();
 
-      expect(find.text('⚠️ Delete Account?'), findsOneWidget);
+      expect(find.text('\u26A0\uFE0F Delete Account?'), findsOneWidget);
       expect(find.textContaining('PERMANENT'), findsOneWidget);
       // TODO(any): Fix and re-enable these tests
     }, skip: true);
@@ -116,8 +117,8 @@ void main() {
     testWidgets('Delete Account tile should have red icon and text', (
       tester,
     ) async {
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentProfile).thenReturn(null);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentProfile).thenReturn(null);
 
       await tester.pumpWidget(
         ProviderScope(

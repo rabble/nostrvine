@@ -2,23 +2,24 @@
 // ABOUTME: Verifies that importing an nsec triggers fetching contacts from specific relays
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../test_setup.dart';
-import 'nostr_key_manager_contacts_fetch_test.mocks.dart';
 
-// Generate mocks for dependencies
-@GenerateMocks([SecureKeyStorage, UserDataCleanupService])
+class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
+
+class _MockUserDataCleanupService extends Mock
+    implements UserDataCleanupService {}
+
 void main() {
   setupTestEnvironment();
 
   group('AuthService Contact List Fetching After Import', () {
-    late MockSecureKeyStorage mockKeyStorage;
-    late MockUserDataCleanupService mockCleanupService;
+    late _MockSecureKeyStorage mockKeyStorage;
+    late _MockUserDataCleanupService mockCleanupService;
     late AuthService authService;
 
     // Test nsec from a known keypair
@@ -27,8 +28,8 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      mockKeyStorage = MockSecureKeyStorage();
-      mockCleanupService = MockUserDataCleanupService();
+      mockKeyStorage = _MockSecureKeyStorage();
+      mockCleanupService = _MockUserDataCleanupService();
 
       // Create AuthService with mock key storage
       authService = AuthService(
@@ -45,9 +46,9 @@ void main() {
 
         // Setup successful import
         when(
-          mockKeyStorage.importFromNsec(
-            any,
-            biometricPrompt: anyNamed('biometricPrompt'),
+          () => mockKeyStorage.importFromNsec(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
           ),
         ).thenAnswer((_) async => keyContainer);
 
@@ -70,9 +71,9 @@ void main() {
     test('should not fetch contacts if import fails', () async {
       // Arrange: Setup failed import
       when(
-        mockKeyStorage.importFromNsec(
-          any,
-          biometricPrompt: anyNamed('biometricPrompt'),
+        () => mockKeyStorage.importFromNsec(
+          any(),
+          biometricPrompt: any(named: 'biometricPrompt'),
         ),
       ).thenThrow(Exception('Invalid nsec format'));
 
@@ -93,9 +94,9 @@ void main() {
 
         // Setup successful import
         when(
-          mockKeyStorage.importFromNsec(
-            any,
-            biometricPrompt: anyNamed('biometricPrompt'),
+          () => mockKeyStorage.importFromNsec(
+            any(),
+            biometricPrompt: any(named: 'biometricPrompt'),
           ),
         ).thenAnswer((_) async => keyContainer);
 

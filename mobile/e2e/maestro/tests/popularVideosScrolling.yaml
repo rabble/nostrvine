@@ -15,18 +15,18 @@ appId: co.openvine.app
 - tapOn: |-
     Popular
     Tab 3 of 5
-- runFlow: ../asserts/assertExplore.yml
+- runFlow: ../asserts/assertExplore.yaml
 
 # 2. Tap on the 1st video: Validate playback
 - tapOn:
     id: play_button
-- runFlow: ../asserts/assertVideoPlayback.yml
+- runFlow: ../asserts/assertVideoPlayback.yaml
 
 # 3. Tap on the Popular Videos tab: Validate the screen again
 - tapOn: |-
     Popular
     Tab 3 of 5
-- runFlow: ../asserts/assertExplore.yml
+- runFlow: ../asserts/assertExplore.yaml
 
 # 4. Scroll downwards till "coffee" video is displayed: Validate screen
 - scrollUntilVisible:

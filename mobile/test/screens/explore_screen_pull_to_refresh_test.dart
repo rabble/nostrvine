@@ -2,35 +2,37 @@
 // ABOUTME: Ensures pull-to-refresh forces a new subscription to get fresh videos
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:models/models.dart';
 import 'package:riverpod/riverpod.dart';
 
-import 'explore_screen_pull_to_refresh_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-@GenerateMocks([VideoEventService])
 void main() {
   group('ExploreScreen Pull-to-Refresh', () {
-    late MockVideoEventService mockService;
+    late _MockVideoEventService mockService;
     late ProviderContainer container;
 
+    setUpAll(() {
+      registerFallbackValue(SubscriptionType.popularNow);
+    });
+
     setUp(() {
-      mockService = MockVideoEventService();
+      mockService = _MockVideoEventService();
 
       // Setup default behavior
-      when(mockService.addListener(any)).thenReturn(null);
-      when(mockService.removeListener(any)).thenReturn(null);
-      when(mockService.popularNowVideos).thenReturn([]);
+      when(() => mockService.addListener(any())).thenReturn(null);
+      when(() => mockService.removeListener(any())).thenReturn(null);
+      when(() => mockService.popularNowVideos).thenReturn([]);
       when(
-        mockService.subscribeToVideoFeed(
-          subscriptionType: anyNamed('subscriptionType'),
-          limit: anyNamed('limit'),
-          sortBy: anyNamed('sortBy'),
-          force: anyNamed('force'),
+        () => mockService.subscribeToVideoFeed(
+          subscriptionType: any(named: 'subscriptionType'),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
+          force: any(named: 'force'),
         ),
       ).thenAnswer((_) async => Future.value());
 
@@ -49,7 +51,7 @@ void main() {
         _createMockVideo(id: 'v1', createdAt: DateTime(2025, 1, 1)),
         _createMockVideo(id: 'v2', createdAt: DateTime(2025, 1, 2)),
       ];
-      when(mockService.popularNowVideos).thenReturn(initialVideos);
+      when(() => mockService.popularNowVideos).thenReturn(initialVideos);
       await container.read(popularNowFeedProvider.future);
 
       // Clear previous invocations so we can test refresh behavior
@@ -61,10 +63,10 @@ void main() {
 
       // Assert - Should call subscribeToVideoFeed with force:true to get fresh videos
       verify(
-        mockService.subscribeToVideoFeed(
+        () => mockService.subscribeToVideoFeed(
           subscriptionType: SubscriptionType.popularNow,
           limit: 100,
-          sortBy: argThat(isNotNull, named: 'sortBy'),
+          sortBy: any(that: isNotNull, named: 'sortBy'),
           force: true, // CRITICAL: Must force refresh to bypass caching
         ),
       ).called(1);
@@ -74,7 +76,7 @@ void main() {
       'should call subscribeToVideoFeed with force:true on refresh',
       () async {
         // Arrange - Get initial state
-        when(mockService.popularNowVideos).thenReturn([]);
+        when(() => mockService.popularNowVideos).thenReturn([]);
         await container.read(popularNowFeedProvider.future);
 
         // Clear previous invocations
@@ -86,10 +88,10 @@ void main() {
         // Assert - Should call subscribeToVideoFeed with force:true
         // This bypasses the "Skipping re-subscribe" logic and gets fresh videos
         verify(
-          mockService.subscribeToVideoFeed(
+          () => mockService.subscribeToVideoFeed(
             subscriptionType: SubscriptionType.popularNow,
             limit: 100,
-            sortBy: argThat(isNotNull, named: 'sortBy'),
+            sortBy: any(that: isNotNull, named: 'sortBy'),
             force: true, // CRITICAL: Must force refresh to bypass caching
           ),
         ).called(1);
@@ -98,7 +100,7 @@ void main() {
 
     test('should invalidate and rebuild provider on refresh', () async {
       // Arrange
-      when(mockService.popularNowVideos).thenReturn([]);
+      when(() => mockService.popularNowVideos).thenReturn([]);
       await container.read(popularNowFeedProvider.future);
 
       // Track how many times build() is called by counting subscribeToVideoFeed calls
@@ -112,11 +114,11 @@ void main() {
       // 1. Once for the forced refresh in refresh() method
       // 2. Once for the rebuild after invalidateSelf()
       verify(
-        mockService.subscribeToVideoFeed(
-          subscriptionType: anyNamed('subscriptionType'),
-          limit: anyNamed('limit'),
-          sortBy: anyNamed('sortBy'),
-          force: anyNamed('force'),
+        () => mockService.subscribeToVideoFeed(
+          subscriptionType: any(named: 'subscriptionType'),
+          limit: any(named: 'limit'),
+          sortBy: any(named: 'sortBy'),
+          force: any(named: 'force'),
         ),
       ).called(greaterThanOrEqualTo(1));
     });

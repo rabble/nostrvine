@@ -4,13 +4,12 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'video_feed_builder_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 // Helper to create mock VideoEvent for testing
 VideoEvent _createMockVideo({
@@ -31,14 +30,13 @@ VideoEvent _createMockVideo({
   );
 }
 
-@GenerateMocks([VideoEventService])
 void main() {
   group('VideoFeedBuilder', () {
-    late MockVideoEventService mockService;
+    late _MockVideoEventService mockService;
     late VideoFeedBuilder builder;
 
     setUp(() {
-      mockService = MockVideoEventService();
+      mockService = _MockVideoEventService();
       builder = VideoFeedBuilder(mockService);
     });
 
@@ -62,7 +60,7 @@ void main() {
           );
 
           when(
-            mockService.subscribeToVideoFeed(
+            () => mockService.subscribeToVideoFeed(
               subscriptionType: SubscriptionType.popularNow,
               limit: 100,
             ),
@@ -73,7 +71,7 @@ void main() {
 
           // Assert
           verify(
-            mockService.subscribeToVideoFeed(
+            () => mockService.subscribeToVideoFeed(
               subscriptionType: SubscriptionType.popularNow,
               limit: 100,
             ),
@@ -104,7 +102,7 @@ void main() {
           sortVideos: (videos) => videos,
         );
 
-        when(mockService.addListener(any)).thenAnswer((invocation) {
+        when(() => mockService.addListener(any())).thenAnswer((invocation) {
           // Capture listener and simulate calls
           listenerCallCount++;
         });
@@ -251,7 +249,7 @@ void main() {
         expect(onUpdateCallCount, isZero);
 
         // Verify that a listener was added to the service
-        verify(mockService.addListener(any)).called(1);
+        verify(() => mockService.addListener(any())).called(1);
       });
 
       test('should track last known video count', () {
@@ -270,8 +268,9 @@ void main() {
 
         // Assert
         // Verify that the initial count was captured
-        // (This is checked internally by the builder but we can't directly test private fields)
-        verify(mockService.addListener(any)).called(1);
+        // (This is checked internally by the builder but we can't directly
+        // test private fields)
+        verify(() => mockService.addListener(any())).called(1);
       });
     });
 
@@ -291,7 +290,9 @@ void main() {
         builder.cleanup();
 
         // Assert
-        verify(mockService.removeListener(any)).called(greaterThanOrEqualTo(1));
+        verify(
+          () => mockService.removeListener(any()),
+        ).called(greaterThanOrEqualTo(1));
       });
     });
   });

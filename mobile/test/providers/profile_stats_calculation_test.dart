@@ -3,8 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:hive_ce/hive.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -12,8 +11,9 @@ import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import '../builders/video_event_builder.dart';
 
-@GenerateMocks([SocialService, VideoEventService])
-import 'profile_stats_calculation_test.mocks.dart';
+class _MockSocialService extends Mock implements SocialService {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
   setUpAll(() async {
@@ -56,22 +56,25 @@ void main() {
       ];
 
       // Create mocks
-      final mockSocialService = MockSocialService();
-      final mockVideoEventService = MockVideoEventService();
+      final mockSocialService = _MockSocialService();
+      final mockVideoEventService = _MockVideoEventService();
 
       // Stub social service
       when(
-        mockSocialService.getCachedFollowerStats(testPubkey),
+        () => mockSocialService.getCachedFollowerStats(testPubkey),
       ).thenReturn({'followers': 10, 'following': 20});
       when(
-        mockSocialService.getFollowerStats(testPubkey),
+        () => mockSocialService.getFollowerStats(testPubkey),
       ).thenAnswer((_) async => {'followers': 10, 'following': 20});
 
       // Stub video event service
       when(
-        mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
+        () =>
+            mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
       ).thenAnswer((_) async => {});
-      when(mockVideoEventService.authorVideos(testPubkey)).thenReturn(videos);
+      when(
+        () => mockVideoEventService.authorVideos(testPubkey),
+      ).thenReturn(videos);
 
       final container = ProviderContainer(
         overrides: [
@@ -122,20 +125,23 @@ void main() {
         ).fromUser(testPubkey).build(),
       ];
 
-      final mockSocialService = MockSocialService();
-      final mockVideoEventService = MockVideoEventService();
+      final mockSocialService = _MockSocialService();
+      final mockVideoEventService = _MockVideoEventService();
 
       when(
-        mockSocialService.getCachedFollowerStats(testPubkey),
+        () => mockSocialService.getCachedFollowerStats(testPubkey),
       ).thenReturn({'followers': 0, 'following': 0});
       when(
-        mockSocialService.getFollowerStats(testPubkey),
+        () => mockSocialService.getFollowerStats(testPubkey),
       ).thenAnswer((_) async => {'followers': 0, 'following': 0});
 
       when(
-        mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
+        () =>
+            mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
       ).thenAnswer((_) async => {});
-      when(mockVideoEventService.authorVideos(testPubkey)).thenReturn(videos);
+      when(
+        () => mockVideoEventService.authorVideos(testPubkey),
+      ).thenReturn(videos);
 
       final container = ProviderContainer(
         overrides: [
@@ -163,20 +169,21 @@ void main() {
     });
 
     test('handles empty video list', () async {
-      final mockSocialService = MockSocialService();
-      final mockVideoEventService = MockVideoEventService();
+      final mockSocialService = _MockSocialService();
+      final mockVideoEventService = _MockVideoEventService();
 
       when(
-        mockSocialService.getCachedFollowerStats(testPubkey),
+        () => mockSocialService.getCachedFollowerStats(testPubkey),
       ).thenReturn({'followers': 5, 'following': 10});
       when(
-        mockSocialService.getFollowerStats(testPubkey),
+        () => mockSocialService.getFollowerStats(testPubkey),
       ).thenAnswer((_) async => {'followers': 5, 'following': 10});
 
       when(
-        mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
+        () =>
+            mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
       ).thenAnswer((_) async => {});
-      when(mockVideoEventService.authorVideos(testPubkey)).thenReturn([]);
+      when(() => mockVideoEventService.authorVideos(testPubkey)).thenReturn([]);
 
       final container = ProviderContainer(
         overrides: [
@@ -215,20 +222,23 @@ void main() {
         ).fromUser(testPubkey).build(),
       ];
 
-      final mockSocialService = MockSocialService();
-      final mockVideoEventService = MockVideoEventService();
+      final mockSocialService = _MockSocialService();
+      final mockVideoEventService = _MockVideoEventService();
 
       when(
-        mockSocialService.getCachedFollowerStats(testPubkey),
+        () => mockSocialService.getCachedFollowerStats(testPubkey),
       ).thenReturn({'followers': 0, 'following': 0});
       when(
-        mockSocialService.getFollowerStats(testPubkey),
+        () => mockSocialService.getFollowerStats(testPubkey),
       ).thenAnswer((_) async => {'followers': 0, 'following': 0});
 
       when(
-        mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
+        () =>
+            mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
       ).thenAnswer((_) async => {});
-      when(mockVideoEventService.authorVideos(testPubkey)).thenReturn(videos);
+      when(
+        () => mockVideoEventService.authorVideos(testPubkey),
+      ).thenReturn(videos);
 
       final container = ProviderContainer(
         overrides: [
@@ -262,16 +272,16 @@ void main() {
         ).fromUser(testPubkey).build(),
       ];
 
-      final mockSocialService = MockSocialService();
-      final mockVideoEventService = MockVideoEventService();
+      final mockSocialService = _MockSocialService();
+      final mockVideoEventService = _MockVideoEventService();
 
       // Mock cached stats
       when(
-        mockSocialService.getCachedFollowerStats(testPubkey),
+        () => mockSocialService.getCachedFollowerStats(testPubkey),
       ).thenReturn({'followers': 100, 'following': 200});
 
       // Network call should complete later (simulating 8s delay)
-      when(mockSocialService.getFollowerStats(testPubkey)).thenAnswer((
+      when(() => mockSocialService.getFollowerStats(testPubkey)).thenAnswer((
         _,
       ) async {
         await Future.delayed(const Duration(seconds: 8));
@@ -279,9 +289,12 @@ void main() {
       });
 
       when(
-        mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
+        () =>
+            mockVideoEventService.subscribeToUserVideos(testPubkey, limit: 100),
       ).thenAnswer((_) async => {});
-      when(mockVideoEventService.authorVideos(testPubkey)).thenReturn(videos);
+      when(
+        () => mockVideoEventService.authorVideos(testPubkey),
+      ).thenReturn(videos);
 
       final container = ProviderContainer(
         overrides: [

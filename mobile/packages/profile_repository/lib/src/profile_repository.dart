@@ -96,10 +96,15 @@ class ProfileRepository {
 
   /// Publishes profile metadata to Nostr relays and updates the local cache.
   ///
-  /// When [username] is provided, the repository constructs the NIP-05
-  /// identifier (`_@<username>.divine.video`) internally. When [username] is
-  /// `null` and a [currentProfile] is supplied, the existing NIP-05 value is
-  /// preserved from `currentProfile.rawData`.
+  /// Supports two NIP-05 modes:
+  /// - **Divine.video username**: When [username] is provided, constructs the
+  ///   NIP-05 identifier as `_@<username>.divine.video`.
+  /// - **External NIP-05**: When [nip05] is provided, uses it directly as the
+  ///   full NIP-05 identifier (e.g., `alice@example.com`).
+  ///
+  /// If both [nip05] and [username] are provided, [nip05] takes precedence.
+  /// When neither is provided and a [currentProfile] is supplied, the existing
+  /// NIP-05 value is preserved from `currentProfile.rawData`.
   ///
   /// After successful publish, the profile is cached locally for immediate
   /// subsequent reads.
@@ -109,20 +114,21 @@ class ProfileRepository {
     required String displayName,
     String? about,
     String? username,
+    String? nip05,
     String? picture,
     String? banner,
     UserProfile? currentProfile,
   }) async {
-    final normalizedUsername = username?.toLowerCase();
-    final nip05 = normalizedUsername != null
-        ? '_@$normalizedUsername.divine.video'
-        : null;
+    // External NIP-05 takes precedence when provided.
+    final resolvedNip05 =
+        nip05 ??
+        (username != null ? '_@${username.toLowerCase()}.divine.video' : null);
 
     final profileContent = {
       if (currentProfile != null) ...currentProfile.rawData,
       'display_name': displayName,
       'about': ?about,
-      'nip05': ?nip05,
+      'nip05': ?resolvedNip05,
       'picture': ?picture,
       'banner': ?banner,
     };
@@ -407,6 +413,37 @@ class ProfileRepository {
     return unblockedProfiles.where((profile) {
       return profile.bestDisplayName.toLowerCase().contains(queryLower);
     }).toList();
+  }
+
+  /// Fetches a user profile from the Funnelcake REST API.
+  ///
+  /// Returns profile data as a map, or null if not found.
+  /// Returns null if Funnelcake API is not available.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<Map<String, dynamic>?> getUserProfileFromApi({
+    required String pubkey,
+  }) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getUserProfile(pubkey);
+  }
+
+  /// Fetches multiple user profiles in bulk from the Funnelcake REST API.
+  ///
+  /// Returns a [BulkProfilesResponse] containing a map of pubkey to profile
+  /// data.
+  /// Returns null if Funnelcake API is not available.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<BulkProfilesResponse?> getBulkProfilesFromApi(
+    List<String> pubkeys,
+  ) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getBulkProfiles(pubkeys);
   }
 
   /// Enriches search results from the local SQLite cache.

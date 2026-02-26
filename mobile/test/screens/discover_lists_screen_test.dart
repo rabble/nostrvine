@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
 
 import '../helpers/test_provider_overrides.dart';

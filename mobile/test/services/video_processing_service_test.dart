@@ -3,21 +3,23 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/video_processing_service.dart';
 
-@GenerateMocks([Dio])
-import 'video_processing_service_test.mocks.dart';
+class _MockDio extends Mock implements Dio {}
 
 void main() {
   group('VideoProcessingService', () {
     late VideoProcessingService service;
-    late MockDio mockDio;
+    late _MockDio mockDio;
 
     setUp(() {
-      mockDio = MockDio();
+      mockDio = _MockDio();
       service = VideoProcessingService(dio: mockDio);
+    });
+
+    setUpAll(() {
+      registerFallbackValue(Options());
     });
 
     test(
@@ -32,7 +34,10 @@ void main() {
         // Mock sequence: 202 -> 202 -> 200 (processing -> processing -> ready)
         var callCount = 0;
         when(
-          mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+          () => mockDio.get(
+            '$serverUrl/$fileHash',
+            options: any(named: 'options'),
+          ),
         ).thenAnswer((_) async {
           callCount++;
           if (callCount <= 2) {
@@ -78,7 +83,10 @@ void main() {
 
         // Should have polled 3 times (202, 202, 200)
         verify(
-          mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+          () => mockDio.get(
+            '$serverUrl/$fileHash',
+            options: any(named: 'options'),
+          ),
         ).called(3);
       },
     );
@@ -91,7 +99,8 @@ void main() {
 
       // Mock always returning 202 (never completes)
       when(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).thenAnswer(
         (_) async => Response(
           statusCode: 202,
@@ -113,7 +122,8 @@ void main() {
 
       // Should have polled 3 times then given up
       verify(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).called(3);
     });
 
@@ -126,7 +136,8 @@ void main() {
       // Mock sequence: network error -> 202 -> 200 (error -> processing -> ready)
       var callCount = 0;
       when(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).thenAnswer((_) async {
         callCount++;
         if (callCount == 1) {
@@ -165,7 +176,8 @@ void main() {
 
       // Should have tried 3 times (error, 202, 200)
       verify(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).called(3);
     });
 
@@ -179,7 +191,8 @@ void main() {
 
       var callCount = 0;
       when(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).thenAnswer((_) async {
         callCount++;
         if (callCount == 1) {

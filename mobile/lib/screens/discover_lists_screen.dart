@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
-import 'package:openvine/services/curated_list_service.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';

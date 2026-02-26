@@ -86,9 +86,13 @@ void main() {
 
         // Act - Simulate video display triggering profile fetch
         await profileService.initialize();
-        final profileFuture = profileService.fetchProfile(testPubkey);
+        // fetchProfile adds the pubkey to a batch queue with a 100ms debounce
+        profileService.fetchProfile(testPubkey);
 
-        // Assert - Verify subscription was created for Kind 0 event
+        // Wait for the debounce timer to fire and execute the batch fetch
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        // Assert - Verify a batch subscription was created for Kind 0 event
         verify(
           () => mockSubscriptionManager.createSubscription(
             name: any(that: contains('profile'), named: 'name'),
@@ -97,8 +101,7 @@ void main() {
                 if (filters.isEmpty) return false;
                 final filter = filters.first;
                 return filter.kinds!.contains(0) &&
-                    filter.authors!.contains(testPubkey) &&
-                    filter.limit == 1;
+                    filter.authors!.contains(testPubkey);
               }),
               named: 'filters',
             ),
@@ -109,15 +112,9 @@ void main() {
           ),
         ).called(1);
 
-        // Verify profile is not yet available (async fetch)
-        final profile = await profileFuture;
-        expect(profile, isNull);
-
-        // Verify profile is marked as pending
+        // Verify profile is not yet available (batch fetch hasn't completed)
         expect(profileService.hasProfile(testPubkey), isFalse);
-        // TODO(any): Fix and enable this test
       },
-      skip: true,
     );
 
     test(

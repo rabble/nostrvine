@@ -289,7 +289,7 @@ class _SkipConfirmationSheet extends StatelessWidget {
             "You can access your key in the app, but, if "
             "you're not technical we recommend adding an "
             'email and password now. It makes it easier to '
-            'login and restore your account if you lose or '
+            'sign in and restore your account if you lose or '
             'reset this device.',
             textAlign: TextAlign.center,
             style: TextStyle(

@@ -3,7 +3,7 @@
 
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -12,20 +12,19 @@ import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import '../helpers/test_helpers.dart';
 
-@GenerateMocks([BlossomUploadService])
-import 'upload_manager_from_draft_test.mocks.dart';
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 void main() {
   group('UploadManager.startUploadFromDraft', () {
     late UploadManager uploadManager;
-    late MockBlossomUploadService mockBlossomService;
+    late _MockBlossomUploadService mockBlossomService;
 
     setUpAll(() async {
       await setupTestEnvironment();
     });
 
     setUp(() async {
-      mockBlossomService = MockBlossomUploadService();
+      mockBlossomService = _MockBlossomUploadService();
       uploadManager = UploadManager(blossomService: mockBlossomService);
       await uploadManager.initialize();
     });

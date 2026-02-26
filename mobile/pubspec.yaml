@@ -24,6 +24,7 @@ environment:
 
 workspace:
   - packages/comments_repository
+  - packages/curated_list_repository
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
@@ -203,7 +204,6 @@ dev_dependencies:
 
   # Testing
   mocktail: ^1.0.3
-  mockito: ^5.4.4
   bloc_test: ^10.0.0
 
   # Code generation

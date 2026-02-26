@@ -23,6 +23,13 @@ const _maxUsernameLength = 20;
 /// NIP-05 local parts are lowercase-only (a-z0-9-_.) per spec.
 final _usernamePattern = RegExp(r'^[a-z0-9._-]+$');
 
+/// External NIP-05 format: `local-part@domain` per NIP-05 spec.
+/// Local part: a-z0-9-_. (lowercase only).
+/// Domain: standard DNS format with at least one dot and 2+ char TLD.
+final _externalNip05Pattern = RegExp(
+  r'^[a-z0-9._-]+@([a-z0-9-]+\.)+[a-z]{2,}$',
+);
+
 /// Debounce duration for username validation
 const _debounceDuration = Duration(milliseconds: 500);
 
@@ -50,6 +57,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       _onUsernameChanged,
       transformer: _debounceRestartable(),
     );
+    on<Nip05ModeChanged>(_onNip05ModeChanged);
+    on<ExternalNip05Changed>(_onExternalNip05Changed);
+    on<InitialExternalNip05Set>(_onInitialExternalNip05Set);
   }
 
   final ProfileRepository _profileRepository;
@@ -220,6 +230,79 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     }
   }
 
+  void _onNip05ModeChanged(
+    Nip05ModeChanged event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    if (event.mode == Nip05Mode.divine) {
+      // Switching back to divine mode — clear external NIP-05 state
+      emit(
+        state.copyWith(
+          nip05Mode: Nip05Mode.divine,
+          externalNip05: '',
+          externalNip05Error: null,
+        ),
+      );
+    } else {
+      // Switching to external mode — reset divine username status to idle
+      emit(
+        state.copyWith(
+          nip05Mode: Nip05Mode.external_,
+          usernameStatus: UsernameStatus.idle,
+          usernameError: null,
+        ),
+      );
+    }
+  }
+
+  void _onExternalNip05Changed(
+    ExternalNip05Changed event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    final nip05 = event.nip05.trim().toLowerCase();
+
+    if (nip05.isEmpty) {
+      emit(state.copyWith(externalNip05: nip05, externalNip05Error: null));
+      return;
+    }
+
+    // Validate format: must match local-part@domain per NIP-05 spec
+    if (!_externalNip05Pattern.hasMatch(nip05)) {
+      emit(
+        state.copyWith(
+          externalNip05: nip05,
+          externalNip05Error: ExternalNip05ValidationError.invalidFormat,
+        ),
+      );
+      return;
+    }
+
+    // Reject divine.video / openvine.co domains — use divine mode instead
+    final domain = nip05.split('@').last;
+    if (domain == 'divine.video' ||
+        domain.endsWith('.divine.video') ||
+        domain == 'openvine.co' ||
+        domain.endsWith('.openvine.co')) {
+      emit(
+        state.copyWith(
+          externalNip05: nip05,
+          externalNip05Error: ExternalNip05ValidationError.divineDomain,
+        ),
+      );
+      return;
+    }
+
+    // Valid format — no API check needed for external NIP-05
+    emit(state.copyWith(externalNip05: nip05, externalNip05Error: null));
+  }
+
+  void _onInitialExternalNip05Set(
+    InitialExternalNip05Set event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(initialExternalNip05: event.nip05));
+  }
+
   /// Core profile save logic (extracted for reuse)
   Future<void> _saveProfile(
     ProfileSaved event,
@@ -229,9 +312,16 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     final displayName = event.displayName.trim();
     final about = (event.about?.trim().isEmpty ?? true) ? null : event.about;
-    final username = (event.username?.trim().isEmpty ?? true)
+
+    // Bloc decides which NIP-05 value to use based on current mode
+    final isExternal = state.nip05Mode == Nip05Mode.external_;
+    final username = isExternal || (event.username?.trim().isEmpty ?? true)
         ? null
         : event.username;
+    final externalNip05 =
+        !isExternal || (event.externalNip05?.trim().isEmpty ?? true)
+        ? null
+        : event.externalNip05?.trim().toLowerCase();
     final picture = (event.picture?.trim().isEmpty ?? true)
         ? null
         : event.picture;
@@ -243,7 +333,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     Log.info(
       '📝 saveProfile: displayName=$displayName, '
-      'username=$username, currentNip05=${currentProfile?.nip05}',
+      'username=$username, externalNip05=$externalNip05, '
+      'currentNip05=${currentProfile?.nip05}',
       name: 'ProfileEditorBloc',
     );
 
@@ -254,6 +345,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         displayName: displayName,
         about: about,
         username: username,
+        nip05: externalNip05,
         picture: picture,
         banner: banner,
         currentProfile: currentProfile,
@@ -276,9 +368,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       return;
     }
 
-    // 2. No username to claim - done
+    // 2. No username to claim - done (external NIP-05 or no NIP-05)
     if (username == null) {
-      Log.info('📝 No username to claim, SUCCESS', name: 'ProfileEditorBloc');
+      Log.info(
+        '📝 No username to claim '
+        '${externalNip05 != null ? "(external NIP-05)" : ""}, SUCCESS',
+        name: 'ProfileEditorBloc',
+      );
       emit(state.copyWith(status: ProfileEditorStatus.success));
       return;
     }

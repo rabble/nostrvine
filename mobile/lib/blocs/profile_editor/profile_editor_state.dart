@@ -79,6 +79,31 @@ enum UsernameValidationError {
   networkError,
 }
 
+/// Whether the profile editor is in divine.video username or external NIP-05
+/// mode.
+enum Nip05Mode {
+  /// Using divine.video username (default). The username is claimed via API.
+  divine,
+
+  /// Using an external NIP-05 identifier (e.g., `alice@example.com`).
+  /// No username claiming is performed.
+  external_,
+}
+
+/// Validation errors for external NIP-05 input.
+///
+/// The UI layer should map these to localized strings.
+enum ExternalNip05ValidationError {
+  /// NIP-05 format is invalid (must be `local-part@domain`).
+  ///
+  /// Valid local-part characters: a-z, 0-9, -, _, . (lowercase only per
+  /// NIP-05 spec). Domain must be a valid DNS name.
+  invalidFormat,
+
+  /// Domain belongs to divine.video or openvine.co — use divine mode instead.
+  divineDomain,
+}
+
 /// State for the ProfileEditorBloc.
 final class ProfileEditorState extends Equatable {
   const ProfileEditorState({
@@ -91,6 +116,10 @@ final class ProfileEditorState extends Equatable {
     this.usernameError,
     this.usernameFormatMessage,
     this.reservedUsernames = const {},
+    this.nip05Mode = Nip05Mode.divine,
+    this.externalNip05 = '',
+    this.initialExternalNip05,
+    this.externalNip05Error,
   });
 
   /// Current status of the operation.
@@ -102,7 +131,7 @@ final class ProfileEditorState extends Equatable {
   /// Pending event awaiting confirmation (for blank profile overwrite warning).
   final ProfileSaved? pendingEvent;
 
-  /// Current username being edited.
+  /// Current username being edited (divine.video mode).
   final String username;
 
   /// The user's existing claimed username, set once at BLoC creation.
@@ -120,7 +149,19 @@ final class ProfileEditorState extends Equatable {
   /// Cache of reserved usernames (403 responses from claim API).
   final Set<String> reservedUsernames;
 
-  /// Whether the username state allows saving the profile.
+  /// Whether the editor is in divine.video or external NIP-05 mode.
+  final Nip05Mode nip05Mode;
+
+  /// Current external NIP-05 being edited (e.g., `alice@example.com`).
+  final String externalNip05;
+
+  /// The user's existing external NIP-05, set once at profile load.
+  final String? initialExternalNip05;
+
+  /// Validation error for external NIP-05 input.
+  final ExternalNip05ValidationError? externalNip05Error;
+
+  /// Whether the username state allows saving the profile (divine.video mode).
   bool get isUsernameSaveReady {
     if (usernameStatus == UsernameStatus.checking) return false;
     if (username.isEmpty) return true;
@@ -130,6 +171,20 @@ final class ProfileEditorState extends Equatable {
       return true;
     }
     return false;
+  }
+
+  /// Whether the external NIP-05 state allows saving the profile.
+  bool get isExternalNip05SaveReady {
+    if (externalNip05.isEmpty) return true;
+    return externalNip05Error == null;
+  }
+
+  /// Whether the profile can be saved in the current mode.
+  bool get isSaveReady {
+    return switch (nip05Mode) {
+      Nip05Mode.divine => isUsernameSaveReady,
+      Nip05Mode.external_ => isExternalNip05SaveReady,
+    };
   }
 
   /// Creates a copy with updated values.
@@ -143,6 +198,10 @@ final class ProfileEditorState extends Equatable {
     UsernameValidationError? usernameError,
     String? usernameFormatMessage,
     Set<String>? reservedUsernames,
+    Nip05Mode? nip05Mode,
+    String? externalNip05,
+    String? initialExternalNip05,
+    ExternalNip05ValidationError? externalNip05Error,
   }) {
     return ProfileEditorState(
       status: status ?? this.status,
@@ -154,6 +213,10 @@ final class ProfileEditorState extends Equatable {
       usernameError: usernameError,
       usernameFormatMessage: usernameFormatMessage,
       reservedUsernames: reservedUsernames ?? this.reservedUsernames,
+      nip05Mode: nip05Mode ?? this.nip05Mode,
+      externalNip05: externalNip05 ?? this.externalNip05,
+      initialExternalNip05: initialExternalNip05 ?? this.initialExternalNip05,
+      externalNip05Error: externalNip05Error,
     );
   }
 
@@ -167,5 +230,9 @@ final class ProfileEditorState extends Equatable {
     usernameStatus,
     usernameError,
     usernameFormatMessage,
+    nip05Mode,
+    externalNip05,
+    initialExternalNip05,
+    externalNip05Error,
   ];
 }

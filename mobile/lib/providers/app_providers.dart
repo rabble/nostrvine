@@ -46,6 +46,7 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -990,9 +991,13 @@ FollowRepository? followRepository(Ref ref) {
   // Get analytics API service for fast REST-based following list bootstrap
   final analyticsService = ref.read(analyticsApiServiceProvider);
 
+  // Get FunnelcakeApiClient for direct API access
+  final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
+    funnelcakeApiClient: funnelcakeApiClient,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
         ? ({required bool isFollow, required String pubkey}) async {
@@ -1552,18 +1557,21 @@ VideoLocalStorage videoLocalStorage(Ref ref) {
 /// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
+/// - FunnelcakeApiClient for trending/popular video sorting
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final localStorage = ref.watch(videoLocalStorageProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(ageVerificationService),
+    funnelcakeApiClient: funnelcakeClient,
   );
 }
 

@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/curated_list_service.dart';
+import 'package:models/models.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 
 void main() {

@@ -316,7 +316,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   }) async {
     switch (mode) {
       case FeedMode.forYou:
-        return _videosRepository.getPopularVideos(
+        final authors = _followRepository.followingPubkeys;
+        return _videosRepository.getHomeFeedVideos(
+          authors: authors,
           limit: _pageSize,
           until: until,
         );

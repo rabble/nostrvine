@@ -5,27 +5,29 @@
 
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 
-@GenerateNiceMocks([MockSpec<NostrClient>()])
-import 'subscription_manager_cache_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
 void main() {
   group('SubscriptionManager Event Cache Pruning', () {
-    late MockNostrClient mockNostrService;
+    late _MockNostrClient mockNostrService;
     late StreamController<Event> eventController;
 
+    setUpAll(() {
+      registerFallbackValue(<Filter>[]);
+    });
+
     setUp(() {
-      mockNostrService = MockNostrClient();
+      mockNostrService = _MockNostrClient();
       eventController = StreamController<Event>.broadcast();
 
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventController.stream);
     });
 
@@ -92,7 +94,7 @@ void main() {
 
     //    // Assert: Relay subscription should only request uncached event
     //    final captured = verify(
-    //      mockNostrService.subscribe(captureAny()),
+    //      () => mockNostrService.subscribe(captureAny()),
     //    ).captured;
     //    expect(captured, isNotEmpty);
     //    final capturedFilter = captured.first as List<Filter>;
@@ -141,7 +143,7 @@ void main() {
         expect(deliveredEvents[0].id, cachedEvent1.id);
 
         // Assert: No relay subscription created
-        verifyNever(mockNostrService.subscribe(argThat(anything)));
+        verifyNever(() => mockNostrService.subscribe(any()));
 
         // Assert: onComplete was called immediately
         expect(completeCalled, true);
@@ -169,7 +171,7 @@ void main() {
 
     //    // Assert: Filter passed through unchanged
     //    final captured = verify(
-    //      mockNostrService.subscribe(captureAny()),
+    //      () => mockNostrService.subscribe(captureAny()),
     //    ).captured;
     //    expect(captured, isNotEmpty);
     //    final capturedFilter = captured.first as List<Filter>;
@@ -199,7 +201,7 @@ void main() {
 
     //    // Assert: All event IDs passed to relay (no caching)
     //    final captured = verify(
-    //      mockNostrService.subscribe(captureAny()),
+    //      () => mockNostrService.subscribe(captureAny()),
     //    ).captured;
     //    expect(captured, isNotEmpty);
     //    final capturedFilter = captured.first as List<Filter>;
@@ -244,7 +246,7 @@ void main() {
 
     //  // Assert: Both filters sent to relay (filter1 pruned, filter2 unchanged)
     //  final captured = verify(
-    //    mockNostrService.subscribe(captureAny()),
+    //    () => mockNostrService.subscribe(captureAny()),
     //  ).captured;
     //  expect(captured, isNotEmpty);
     //  final capturedFilters = captured.first as List<Filter>;

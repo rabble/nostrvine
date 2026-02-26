@@ -95,12 +95,14 @@ class _ProfileSetupScreenViewState
   final _bioController = TextEditingController();
   final _pictureController = TextEditingController();
   final _nip05Controller = TextEditingController();
+  final _externalNip05Controller = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
   // Focus nodes for tracking field focus state
   final _nameFocusNode = FocusNode();
   final _bioFocusNode = FocusNode();
   final _usernameFocusNode = FocusNode();
+  final _externalNip05FocusNode = FocusNode();
 
   bool _isUploadingImage = false;
   File? _selectedImage;
@@ -116,6 +118,7 @@ class _ProfileSetupScreenViewState
     _nameFocusNode.addListener(_onFocusChange);
     _bioFocusNode.addListener(_onFocusChange);
     _usernameFocusNode.addListener(_onFocusChange);
+    _externalNip05FocusNode.addListener(_onFocusChange);
   }
 
   void _onFocusChange() {
@@ -129,12 +132,15 @@ class _ProfileSetupScreenViewState
     _bioController.dispose();
     _pictureController.dispose();
     _nip05Controller.dispose();
+    _externalNip05Controller.dispose();
     _nameFocusNode.removeListener(_onFocusChange);
     _bioFocusNode.removeListener(_onFocusChange);
     _usernameFocusNode.removeListener(_onFocusChange);
+    _externalNip05FocusNode.removeListener(_onFocusChange);
     _nameFocusNode.dispose();
     _bioFocusNode.dispose();
     _usernameFocusNode.dispose();
+    _externalNip05FocusNode.dispose();
 
     super.dispose();
   }
@@ -152,6 +158,7 @@ class _ProfileSetupScreenViewState
 
             final profile = myProfileState.profile;
             final extractedUsername = myProfileState.extractedUsername;
+            final externalNip05 = myProfileState.externalNip05;
 
             setState(() {
               _nameController.text = profile.displayName ?? profile.name ?? '';
@@ -162,12 +169,20 @@ class _ProfileSetupScreenViewState
               if (extractedUsername != null) {
                 _nip05Controller.text = extractedUsername;
               }
+              if (externalNip05 != null) {
+                _externalNip05Controller.text = externalNip05;
+              }
             });
 
+            final editorBloc = context.read<ProfileEditorBloc>();
             if (extractedUsername != null) {
-              context.read<ProfileEditorBloc>().add(
-                InitialUsernameSet(extractedUsername),
-              );
+              editorBloc.add(InitialUsernameSet(extractedUsername));
+            }
+            if (externalNip05 != null) {
+              editorBloc
+                ..add(InitialExternalNip05Set(externalNip05))
+                ..add(const Nip05ModeChanged(Nip05Mode.external_))
+                ..add(ExternalNip05Changed(externalNip05));
             }
           },
         ),
@@ -791,96 +806,142 @@ class _ProfileSetupScreenViewState
                               const SizedBox(height: 16),
 
                               // NIP-05 Username (optional)
-                              Padding(
-                                padding: const EdgeInsets.only(left: 16),
-                                child: Text(
-                                  'Username (Optional)',
-                                  style: VineTheme.labelMediumFont(
-                                    color: _usernameFocusNode.hasFocus
-                                        ? VineTheme.primary
-                                        : VineTheme.onSurfaceMuted,
-                                  ),
-                                ),
-                              ),
-                              TextFormField(
-                                controller: _nip05Controller,
-                                focusNode: _usernameFocusNode,
-                                style: VineTheme.bodyLargeFont(
-                                  color: VineTheme.onSurface,
-                                ),
-                                autovalidateMode:
-                                    AutovalidateMode.onUserInteraction,
-                                decoration: InputDecoration(
-                                  isCollapsed: true,
-                                  hintText: 'username',
-                                  hintStyle: TextStyle(color: Colors.grey[600]),
-                                  border: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  enabledBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  errorBorder: const UnderlineInputBorder(
-                                    borderRadius: BorderRadius.zero,
-                                    borderSide: BorderSide(
-                                      color: VineTheme.neutral10,
-                                    ),
-                                  ),
-                                  focusedErrorBorder:
-                                      const UnderlineInputBorder(
-                                        borderRadius: BorderRadius.zero,
-                                        borderSide: BorderSide(
-                                          color: VineTheme.neutral10,
-                                        ),
-                                      ),
-                                  contentPadding: const EdgeInsets.all(16),
-                                  prefixText: '@',
-                                  prefixStyle: VineTheme.bodyLargeFont(
-                                    color: VineTheme.onSurfaceMuted,
-                                  ),
-                                  suffixText: '.divine.video',
-                                  suffixStyle: VineTheme.bodyLargeFont(
-                                    color: VineTheme.onSurfaceMuted,
-                                  ),
-                                  errorMaxLines: 2,
-                                ),
-                                // Only allow valid subdomain characters
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'[a-zA-Z0-9-]'),
-                                  ),
-                                ],
-                                textInputAction: TextInputAction.next,
-                                onFieldSubmitted: (_) =>
-                                    FocusScope.of(context).nextFocus(),
-                                onChanged: (value) => context
-                                    .read<ProfileEditorBloc>()
-                                    .add(UsernameChanged(value)),
-                              ),
-                              // Username status indicators
                               BlocBuilder<
                                 ProfileEditorBloc,
                                 ProfileEditorState
                               >(
-                                builder: (context, state) =>
-                                    UsernameStatusIndicator(
-                                      status: state.usernameStatus,
-                                      error: state.usernameError,
-                                      formatMessage:
-                                          state.usernameFormatMessage,
-                                    ),
+                                buildWhen: (prev, curr) =>
+                                    prev.nip05Mode != curr.nip05Mode,
+                                builder: (context, editorState) {
+                                  final isExternal =
+                                      editorState.nip05Mode ==
+                                      Nip05Mode.external_;
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          left: 16,
+                                        ),
+                                        child: Text(
+                                          'Username (Optional)',
+                                          style: VineTheme.labelMediumFont(
+                                            color:
+                                                _usernameFocusNode.hasFocus &&
+                                                    !isExternal
+                                                ? VineTheme.primary
+                                                : VineTheme.onSurfaceMuted,
+                                          ),
+                                        ),
+                                      ),
+                                      TextFormField(
+                                        controller: _nip05Controller,
+                                        focusNode: _usernameFocusNode,
+                                        enabled: !isExternal,
+                                        style: VineTheme.bodyLargeFont(
+                                          color: isExternal
+                                              ? VineTheme.onSurfaceMuted
+                                              : VineTheme.onSurface,
+                                        ),
+                                        autovalidateMode:
+                                            AutovalidateMode.onUserInteraction,
+                                        decoration: InputDecoration(
+                                          isCollapsed: true,
+                                          hintText: 'username',
+                                          hintStyle: const TextStyle(
+                                            color: VineTheme.onSurfaceMuted,
+                                          ),
+                                          border: const UnderlineInputBorder(
+                                            borderRadius: BorderRadius.zero,
+                                            borderSide: BorderSide(
+                                              color: VineTheme.neutral10,
+                                            ),
+                                          ),
+                                          enabledBorder:
+                                              const UnderlineInputBorder(
+                                                borderRadius: BorderRadius.zero,
+                                                borderSide: BorderSide(
+                                                  color: VineTheme.neutral10,
+                                                ),
+                                              ),
+                                          disabledBorder:
+                                              const UnderlineInputBorder(
+                                                borderRadius: BorderRadius.zero,
+                                                borderSide: BorderSide(
+                                                  color: VineTheme.neutral10,
+                                                ),
+                                              ),
+                                          focusedBorder:
+                                              const UnderlineInputBorder(
+                                                borderRadius: BorderRadius.zero,
+                                                borderSide: BorderSide(
+                                                  color: VineTheme.neutral10,
+                                                ),
+                                              ),
+                                          errorBorder:
+                                              const UnderlineInputBorder(
+                                                borderRadius: BorderRadius.zero,
+                                                borderSide: BorderSide(
+                                                  color: VineTheme.neutral10,
+                                                ),
+                                              ),
+                                          focusedErrorBorder:
+                                              const UnderlineInputBorder(
+                                                borderRadius: BorderRadius.zero,
+                                                borderSide: BorderSide(
+                                                  color: VineTheme.neutral10,
+                                                ),
+                                              ),
+                                          contentPadding: const EdgeInsets.all(
+                                            16,
+                                          ),
+                                          prefixText: '@',
+                                          prefixStyle: VineTheme.bodyLargeFont(
+                                            color: VineTheme.onSurfaceMuted,
+                                          ),
+                                          suffixText: '.divine.video',
+                                          suffixStyle: VineTheme.bodyLargeFont(
+                                            color: VineTheme.onSurfaceMuted,
+                                          ),
+                                          errorMaxLines: 2,
+                                        ),
+                                        // Only allow valid subdomain characters
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.allow(
+                                            RegExp(r'[a-zA-Z0-9-]'),
+                                          ),
+                                        ],
+                                        textInputAction: TextInputAction.next,
+                                        onFieldSubmitted: (_) =>
+                                            FocusScope.of(context).nextFocus(),
+                                        onChanged: (value) => context
+                                            .read<ProfileEditorBloc>()
+                                            .add(UsernameChanged(value)),
+                                      ),
+                                      // Username status indicators
+                                      if (!isExternal)
+                                        BlocBuilder<
+                                          ProfileEditorBloc,
+                                          ProfileEditorState
+                                        >(
+                                          builder: (context, state) =>
+                                              UsernameStatusIndicator(
+                                                status: state.usernameStatus,
+                                                error: state.usernameError,
+                                                formatMessage:
+                                                    state.usernameFormatMessage,
+                                              ),
+                                        ),
+                                    ],
+                                  );
+                                },
+                              ),
+
+                              // External NIP-05 section
+                              _ExternalNip05Section(
+                                controller: _externalNip05Controller,
+                                focusNode: _externalNip05FocusNode,
                               ),
 
                               const SizedBox(height: 24),
@@ -966,19 +1027,22 @@ class _ProfileSetupScreenViewState
                         child: _SaveButton(
                           canSave:
                               _nameController.text.trim().isNotEmpty &&
-                              profileEditorState.isUsernameSaveReady,
-                          onSave: () => context.read<ProfileEditorBloc>().add(
-                            ProfileSaved(
-                              pubkey: pubkey,
-                              displayName: _nameController.text,
-                              about: _bioController.text,
-                              username: _nip05Controller.text,
-                              picture: _pictureController.text,
-                              banner: _selectedProfileColor != null
-                                  ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
-                                  : null,
-                            ),
-                          ),
+                              profileEditorState.isSaveReady,
+                          onSave: () {
+                            context.read<ProfileEditorBloc>().add(
+                              ProfileSaved(
+                                pubkey: pubkey,
+                                displayName: _nameController.text,
+                                about: _bioController.text,
+                                username: _nip05Controller.text,
+                                externalNip05: _externalNip05Controller.text,
+                                picture: _pictureController.text,
+                                banner: _selectedProfileColor != null
+                                    ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
+                                    : null,
+                              ),
+                            );
+                          },
                         ),
                       ),
                   ],
@@ -1819,5 +1883,139 @@ class _CustomColorButton extends StatelessWidget {
     if (result != null) {
       onColorPicked(result);
     }
+  }
+}
+
+/// Collapsible section for entering an external NIP-05 identifier.
+///
+/// Shows a toggle to switch between divine.video username mode and external
+/// NIP-05 mode. When expanded, displays a text field for entering the
+/// external NIP-05 (e.g., `alice@example.com`).
+class _ExternalNip05Section extends StatelessWidget {
+  const _ExternalNip05Section({
+    required this.controller,
+    required this.focusNode,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
+      buildWhen: (prev, curr) =>
+          prev.nip05Mode != curr.nip05Mode ||
+          prev.externalNip05Error != curr.externalNip05Error,
+      builder: (context, state) {
+        final isExternal = state.nip05Mode == Nip05Mode.external_;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            // Toggle button
+            GestureDetector(
+              onTap: () {
+                final newMode = isExternal
+                    ? Nip05Mode.divine
+                    : Nip05Mode.external_;
+                context.read<ProfileEditorBloc>()
+                  ..add(Nip05ModeChanged(newMode))
+                  ..add(
+                    ExternalNip05Changed(
+                      newMode == Nip05Mode.external_ ? controller.text : '',
+                    ),
+                  );
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isExternal
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
+                      color: isExternal
+                          ? VineTheme.vineGreen
+                          : VineTheme.onSurfaceMuted,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Use your own NIP-05 address',
+                      style: VineTheme.bodyMediumFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // External NIP-05 input field (visible when toggled)
+            if (isExternal) ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 16),
+                child: Text(
+                  'NIP-05 Address',
+                  style: VineTheme.labelMediumFont(
+                    color: focusNode.hasFocus
+                        ? VineTheme.primary
+                        : VineTheme.onSurfaceMuted,
+                  ),
+                ),
+              ),
+              TextFormField(
+                controller: controller,
+                focusNode: focusNode,
+                style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+                decoration: InputDecoration(
+                  isCollapsed: true,
+                  hintText: 'you@example.com',
+                  hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
+                  border: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  enabledBorder: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  errorBorder: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  focusedErrorBorder: const UnderlineInputBorder(
+                    borderRadius: BorderRadius.zero,
+                    borderSide: BorderSide(color: VineTheme.neutral10),
+                  ),
+                  contentPadding: const EdgeInsets.all(16),
+                  errorMaxLines: 2,
+                  errorText: switch (state.externalNip05Error) {
+                    ExternalNip05ValidationError.invalidFormat =>
+                      'Invalid NIP-05 format (e.g., name@domain.com)',
+                    ExternalNip05ValidationError.divineDomain =>
+                      'Use the username field above for divine.video',
+                    null => null,
+                  },
+                ),
+                keyboardType: TextInputType.emailAddress,
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                onChanged: (value) => context.read<ProfileEditorBloc>().add(
+                  ExternalNip05Changed(value),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
   }
 }

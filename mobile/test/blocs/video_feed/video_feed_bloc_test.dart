@@ -203,6 +203,49 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
+        'emits [loading, success] with forYou mode when specified',
+        setUp: () {
+          final videos = createTestVideos(5);
+          final authors = ['author1', 'author2'];
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(authors);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: authors,
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.forYou)),
+        expect: () => [
+          const VideoFeedState(
+            status: VideoFeedStatus.loading,
+            mode: FeedMode.forYou,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.mode, 'mode', FeedMode.forYou),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: ['author1', 'author2'],
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockVideosRepository.getPopularVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
         'emits [loading, success] with popular mode when specified',
         setUp: () {
           final videos = createTestVideos(5);
@@ -832,6 +875,18 @@ void main() {
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
           mode: FeedMode.popular,
+          videos: createTestVideos(5),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when mode is forYou',
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.forYou,
           videos: createTestVideos(5),
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),

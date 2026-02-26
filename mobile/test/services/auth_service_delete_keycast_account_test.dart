@@ -3,34 +3,41 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import '../test_setup.dart';
-import 'auth_service_delete_keycast_account_test.mocks.dart';
 
-// Generate mocks for dependencies
-@GenerateMocks([SecureKeyStorage, UserDataCleanupService, KeycastOAuth])
+class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
+
+class _MockUserDataCleanupService extends Mock
+    implements UserDataCleanupService {}
+
+class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
+
 void main() {
   setupTestEnvironment();
 
   group('AuthService deleteKeycastAccount', () {
-    late MockSecureKeyStorage mockKeyStorage;
-    late MockUserDataCleanupService mockCleanupService;
-    late MockKeycastOAuth mockOAuthClient;
+    late _MockSecureKeyStorage mockKeyStorage;
+    late _MockUserDataCleanupService mockCleanupService;
+    late _MockKeycastOAuth mockOAuthClient;
     late AuthService authService;
 
     setUp(() async {
-      mockKeyStorage = MockSecureKeyStorage();
-      mockCleanupService = MockUserDataCleanupService();
-      mockOAuthClient = MockKeycastOAuth();
+      mockKeyStorage = _MockSecureKeyStorage();
+      mockCleanupService = _MockUserDataCleanupService();
+      mockOAuthClient = _MockKeycastOAuth();
 
       // Setup default mock behaviors
-      when(mockCleanupService.shouldClearDataForUser(any)).thenReturn(false);
       when(
-        mockCleanupService.clearUserSpecificData(reason: anyNamed('reason')),
+        () => mockCleanupService.shouldClearDataForUser(any()),
+      ).thenReturn(false);
+      when(
+        () => mockCleanupService.clearUserSpecificData(
+          reason: any(named: 'reason'),
+        ),
       ).thenAnswer((_) async => 0);
     });
 
@@ -59,7 +66,7 @@ void main() {
       );
 
       // Mock: no session
-      when(mockOAuthClient.getSession()).thenAnswer((_) async => null);
+      when(() => mockOAuthClient.getSession()).thenAnswer((_) async => null);
 
       // Act
       final (success, error) = await authService.deleteKeycastAccount();
@@ -67,8 +74,8 @@ void main() {
       // Assert
       expect(success, isTrue);
       expect(error, isNull);
-      verify(mockOAuthClient.getSession()).called(1);
-      verifyNever(mockOAuthClient.deleteAccount(any));
+      verify(() => mockOAuthClient.getSession()).called(1);
+      verifyNever(() => mockOAuthClient.deleteAccount(any()));
     });
 
     test('returns success when session has no access token', () async {
@@ -86,7 +93,7 @@ void main() {
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
       when(
-        mockOAuthClient.getSession(),
+        () => mockOAuthClient.getSession(),
       ).thenAnswer((_) async => sessionWithoutToken);
 
       // Act
@@ -95,8 +102,8 @@ void main() {
       // Assert
       expect(success, isTrue);
       expect(error, isNull);
-      verify(mockOAuthClient.getSession()).called(1);
-      verifyNever(mockOAuthClient.deleteAccount(any));
+      verify(() => mockOAuthClient.getSession()).called(1);
+      verifyNever(() => mockOAuthClient.deleteAccount(any()));
     });
 
     test('returns success when account deletion succeeds', () async {
@@ -114,10 +121,12 @@ void main() {
         accessToken: testAccessToken,
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
-      when(mockOAuthClient.getSession()).thenAnswer((_) async => validSession);
+      when(
+        () => mockOAuthClient.getSession(),
+      ).thenAnswer((_) async => validSession);
 
       // Mock: successful deletion
-      when(mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
+      when(() => mockOAuthClient.deleteAccount(testAccessToken)).thenAnswer(
         (_) async => DeleteAccountResult(
           success: true,
           message: 'Account permanently deleted',
@@ -130,8 +139,8 @@ void main() {
       // Assert
       expect(success, isTrue);
       expect(error, isNull);
-      verify(mockOAuthClient.getSession()).called(1);
-      verify(mockOAuthClient.deleteAccount(testAccessToken)).called(1);
+      verify(() => mockOAuthClient.getSession()).called(1);
+      verify(() => mockOAuthClient.deleteAccount(testAccessToken)).called(1);
     });
 
     test('returns failure with error message when deletion fails', () async {
@@ -149,12 +158,14 @@ void main() {
         accessToken: testAccessToken,
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
-      when(mockOAuthClient.getSession()).thenAnswer((_) async => validSession);
+      when(
+        () => mockOAuthClient.getSession(),
+      ).thenAnswer((_) async => validSession);
 
       // Mock: failed deletion
       const errorMessage = 'Unauthorized: invalid or expired token';
       when(
-        mockOAuthClient.deleteAccount(testAccessToken),
+        () => mockOAuthClient.deleteAccount(testAccessToken),
       ).thenAnswer((_) async => DeleteAccountResult.error(errorMessage));
 
       // Act
@@ -163,8 +174,8 @@ void main() {
       // Assert
       expect(success, isFalse);
       expect(error, equals(errorMessage));
-      verify(mockOAuthClient.getSession()).called(1);
-      verify(mockOAuthClient.deleteAccount(testAccessToken)).called(1);
+      verify(() => mockOAuthClient.getSession()).called(1);
+      verify(() => mockOAuthClient.deleteAccount(testAccessToken)).called(1);
     });
 
     test('returns failure when exception is thrown', () async {
@@ -182,11 +193,13 @@ void main() {
         accessToken: testAccessToken,
         expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
-      when(mockOAuthClient.getSession()).thenAnswer((_) async => validSession);
+      when(
+        () => mockOAuthClient.getSession(),
+      ).thenAnswer((_) async => validSession);
 
       // Mock: exception during deletion
       when(
-        mockOAuthClient.deleteAccount(testAccessToken),
+        () => mockOAuthClient.deleteAccount(testAccessToken),
       ).thenThrow(Exception('Network error'));
 
       // Act

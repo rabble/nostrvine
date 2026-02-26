@@ -3,30 +3,32 @@
 
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-@GenerateNiceMocks([MockSpec<NostrClient>()])
-import 'subscription_manager_tdd_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
 void main() {
   group('SubscriptionManager TDD - Event Forwarding Bug', () {
-    late MockNostrClient mockNostrService;
+    late _MockNostrClient mockNostrService;
     late SubscriptionManager subscriptionManager;
     late StreamController<Event> testEventController;
 
+    setUpAll(() {
+      registerFallbackValue(<Filter>[]);
+    });
+
     setUp(() {
-      mockNostrService = MockNostrClient();
+      mockNostrService = _MockNostrClient();
       testEventController = StreamController<Event>.broadcast();
 
       // Mock the NostrService to return our test stream
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => testEventController.stream);
 
       subscriptionManager = SubscriptionManager(mockNostrService);

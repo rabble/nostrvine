@@ -487,6 +487,105 @@ void main() {
       );
     });
 
+    group('hasVideos parameter', () {
+      const debounceDuration = Duration(milliseconds: 400);
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'passes hasVideos: false to profileRepository when configured',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'test',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) async => []);
+        },
+        build: () => UserSearchBloc(
+          profileRepository: mockProfileRepository,
+          hasVideos: false,
+        ),
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
+        wait: debounceDuration,
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.searchUsers(
+              query: 'test',
+              limit: 50,
+              sortBy: 'followers',
+              hasVideos: false,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'passes hasVideos: false to profileRepository on load more',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'alice',
+              limit: 50,
+              offset: 50,
+              sortBy: 'followers',
+              hasVideos: false,
+            ),
+          ).thenAnswer((_) async => createTestProfiles(10));
+        },
+        build: () => UserSearchBloc(
+          profileRepository: mockProfileRepository,
+          hasVideos: false,
+        ),
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: createTestProfiles(50),
+          offset: 50,
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const UserSearchLoadMore()),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.searchUsers(
+              query: 'alice',
+              limit: 50,
+              offset: 50,
+              sortBy: 'followers',
+              hasVideos: false,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'defaults hasVideos to true when not specified',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'test',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('test')),
+        wait: debounceDuration,
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.searchUsers(
+              query: 'test',
+              limit: 50,
+              sortBy: 'followers',
+              hasVideos: true,
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('UserSearchState', () {
       test('copyWith creates copy with updated values', () {
         const state = UserSearchState();
