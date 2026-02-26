@@ -5,29 +5,27 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-
-import 'package:nostr_sdk/event.dart';
-import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/models/pending_upload.dart';
 import 'package:models/models.dart'
     hide LogCategory, NIP71VideoKinds, PendingUpload, UploadStatus;
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/blurhash_service.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/user_profile_service.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
-import 'package:openvine/services/personal_event_cache_service.dart';
-import 'package:openvine/services/upload_manager.dart';
-import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/services/profile_stats_cache_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/utils/proofmode_publishing_helpers.dart';
-import 'package:openvine/constants/nip71_migration.dart';
-
 //adding c2pa support for publishing c2pa manifest data into nostr
 import 'package:openvine/services/c2pa_signing_service.dart';
+import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/profile_stats_cache_service.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/utils/proofmode_publishing_helpers.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -351,9 +349,10 @@ class VideoEventPublisher {
       // Valid: .../play_360p.mp4, .../play_480p.mp4, etc.
       if (_isHttpUrl(upload.streamingMp4Url)) {
         final isValidBunnyMp4 =
-            upload.streamingMp4Url!.contains('stream.divine.video')
-            ? upload.streamingMp4Url!.contains(RegExp(r'play_\d+p\.mp4'))
-            : true; // Non-BunnyStream URLs are assumed valid
+            !upload.streamingMp4Url!.contains('stream.divine.video') ||
+            upload.streamingMp4Url!.contains(
+              RegExp(r'play_\d+p\.mp4'),
+            ); // Non-BunnyStream URLs are assumed valid
 
         if (isValidBunnyMp4) {
           imetaComponents.add('url ${upload.streamingMp4Url}');
@@ -491,7 +490,6 @@ class VideoEventPublisher {
           final thumbnailBytes =
               await VideoThumbnailService.extractThumbnailBytes(
                 videoPath: upload.localVideoPath,
-                quality: 75,
               ).timeout(
                 const Duration(seconds: 10),
                 onTimeout: () {
@@ -693,8 +691,8 @@ class VideoEventPublisher {
             );
 
             //check C2PA metadata
-            final C2paSigningService _c2paSigningService = C2paSigningService();
-            final manifestInfo = await _c2paSigningService.readManifest(
+            final C2paSigningService c2paSigningService = C2paSigningService();
+            final manifestInfo = await c2paSigningService.readManifest(
               upload.localVideoPath,
             );
             if (manifestInfo?.validationStatus != null) {
@@ -1241,7 +1239,7 @@ class VideoEventPublisher {
     // Start from the original Nostr event tags
     final tags = existingEvent.nostrEventTags
         .where((t) => t.isNotEmpty && t.first != 'text-track')
-        .map((t) => List<String>.from(t))
+        .map(List<String>.from)
         .toList();
 
     // Add the new text-track tag

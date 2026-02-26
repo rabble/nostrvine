@@ -2,30 +2,31 @@
 // ABOUTME: Verifies ProofMode data flows correctly from draft to upload
 
 import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:openvine/models/vine_draft.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
-import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
+
 import '../helpers/test_helpers.dart';
 
-@GenerateMocks([BlossomUploadService])
-import 'upload_manager_from_draft_test.mocks.dart';
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
 void main() {
   group('UploadManager.startUploadFromDraft', () {
     late UploadManager uploadManager;
-    late MockBlossomUploadService mockBlossomService;
+    late _MockBlossomUploadService mockBlossomService;
 
     setUpAll(() async {
       await setupTestEnvironment();
     });
 
     setUp(() async {
-      mockBlossomService = MockBlossomUploadService();
+      mockBlossomService = _MockBlossomUploadService();
       uploadManager = UploadManager(blossomService: mockBlossomService);
       await uploadManager.initialize();
     });
@@ -33,14 +34,14 @@ void main() {
     test('should create upload from draft with ProofMode data', () async {
       // Create draft with ProofMode JSON
       final testFile = File('test_video.mp4');
-      final proofJson = '{"segments":[],"deviceAttestation":null}';
+      const proofJson = '{"segments":[],"deviceAttestation":null}';
 
       final draft = VineDraft.create(
         clips: [
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -59,7 +60,7 @@ void main() {
       final upload = await uploadManager.startUploadFromDraft(
         draft: draft,
         nostrPubkey: 'test-pubkey',
-        videoDuration: Duration(seconds: 5),
+        videoDuration: const Duration(seconds: 5),
       );
 
       expect(upload.title, equals('Test Video'));
@@ -71,14 +72,14 @@ void main() {
 
     test('should preserve ProofMode data through draft copyWith', () async {
       final testFile = File('test_video.mp4');
-      final proofJson = '{"segments":[],"deviceAttestation":null}';
+      const proofJson = '{"segments":[],"deviceAttestation":null}';
 
       final originalDraft = VineDraft.create(
         clips: [
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -107,7 +108,7 @@ void main() {
       final upload = await uploadManager.startUploadFromDraft(
         draft: updatedDraft,
         nostrPubkey: 'test-pubkey',
-        videoDuration: Duration(seconds: 5),
+        videoDuration: const Duration(seconds: 5),
       );
 
       expect(upload.title, equals('Updated Title'));
@@ -122,7 +123,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: DateTime.now(),
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -140,7 +141,7 @@ void main() {
       final upload = await uploadManager.startUploadFromDraft(
         draft: draft,
         nostrPubkey: 'test-pubkey',
-        videoDuration: Duration(seconds: 5),
+        videoDuration: const Duration(seconds: 5),
       );
 
       expect(upload.title, equals('Test Video'));

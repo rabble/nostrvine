@@ -194,14 +194,14 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               color: Colors.black,
-              child: Row(
+              child: const Row(
                 children: [
                   Icon(
                     Icons.auto_awesome,
                     color: VineTheme.vineGreen,
                     size: 20,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Text(
                     'The Divine Algorithm',
                     style: TextStyle(
@@ -210,7 +210,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Icon(
                     Icons.info_outline,
                     color: VineTheme.secondaryText,
@@ -256,14 +256,14 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                 ),
               ),
               // Title
-              Row(
+              const Row(
                 children: [
                   Icon(
                     Icons.auto_awesome,
                     color: VineTheme.vineGreen,
                     size: 28,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'The Divine Algorithm',
@@ -277,7 +277,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'Powered by Gorse, an open-source recommendation engine',
                 style: TextStyle(
                   color: VineTheme.vineGreen,
@@ -371,11 +371,11 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                     color: VineTheme.vineGreen.withValues(alpha: 0.3),
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.code, color: VineTheme.vineGreen, size: 20),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +388,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             "We're building an open system where developers can implement their own algorithms, and you can choose which ones to use — or opt out entirely.",
                             style: TextStyle(
@@ -414,7 +414,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: TextStyle(
+      style: const TextStyle(
         color: VineTheme.whiteText,
         fontSize: 17,
         fontWeight: FontWeight.w600,
@@ -447,7 +447,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: VineTheme.whiteText,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -456,7 +456,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   description,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: VineTheme.secondaryText,
                     fontSize: 13,
                     height: 1.3,
@@ -476,7 +476,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
+          const Icon(
             Icons.check_circle_outline,
             color: VineTheme.vineGreen,
             size: 18,
@@ -489,7 +489,7 @@ class _AlgorithmExplainerSheet extends StatelessWidget {
   }
 
   static TextStyle get _bodyTextStyle =>
-      TextStyle(color: VineTheme.primaryText, fontSize: 14, height: 1.5);
+      const TextStyle(color: VineTheme.primaryText, fontSize: 14, height: 1.5);
 }
 
 /// Unavailable state when recommendations are not available
@@ -498,14 +498,14 @@ class _ForYouUnavailableState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.cloud_off, size: 64, color: VineTheme.secondaryText),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
             Text(
               'For You Unavailable',
               style: TextStyle(
@@ -515,7 +515,7 @@ class _ForYouUnavailableState extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               'Personalized recommendations require connection to Funnelcake.',
               style: TextStyle(
@@ -538,12 +538,12 @@ class _ForYouEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.auto_awesome, size: 64, color: VineTheme.secondaryText),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'No Recommendations Yet',
             style: TextStyle(
@@ -552,9 +552,9 @@ class _ForYouEmptyState extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               'Watch and like some videos to get personalized recommendations.',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
@@ -579,9 +579,9 @@ class _ForYouErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+          const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load recommendations',
             style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
           ),
@@ -590,7 +590,10 @@ class _ForYouErrorState extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               error,
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
             ),
           ),
@@ -606,6 +609,6 @@ class _ForYouLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: BrandedLoadingIndicator(size: 80));
+    return const Center(child: BrandedLoadingIndicator());
   }
 }

@@ -138,18 +138,18 @@ void main() {
 
     test('different canUndo values are not equal', () {
       const state1 = VideoEditorDrawState(canUndo: true);
-      const state2 = VideoEditorDrawState(canUndo: false);
+      const state2 = VideoEditorDrawState();
       expect(state1, isNot(equals(state2)));
     });
 
     test('different canRedo values are not equal', () {
       const state1 = VideoEditorDrawState(canRedo: true);
-      const state2 = VideoEditorDrawState(canRedo: false);
+      const state2 = VideoEditorDrawState();
       expect(state1, isNot(equals(state2)));
     });
 
     test('different selectedTool values are not equal', () {
-      const state1 = VideoEditorDrawState(selectedTool: DrawToolType.pencil);
+      const state1 = VideoEditorDrawState();
       const state2 = VideoEditorDrawState(selectedTool: DrawToolType.marker);
       expect(state1, isNot(equals(state2)));
     });
@@ -161,7 +161,7 @@ void main() {
     });
 
     test('different opacity values are not equal', () {
-      const state1 = VideoEditorDrawState(opacity: 1.0);
+      const state1 = VideoEditorDrawState();
       const state2 = VideoEditorDrawState(opacity: 0.7);
       expect(state1, isNot(equals(state2)));
     });
@@ -173,7 +173,7 @@ void main() {
     });
 
     test('different mode values are not equal', () {
-      const state1 = VideoEditorDrawState(mode: PaintMode.freeStyle);
+      const state1 = VideoEditorDrawState();
       const state2 = VideoEditorDrawState(mode: PaintMode.arrow);
       expect(state1, isNot(equals(state2)));
     });
@@ -196,35 +196,35 @@ void main() {
     );
 
     test('copyWith updates canUndo', () {
-      const original = VideoEditorDrawState(canUndo: false);
+      const original = VideoEditorDrawState();
       final copy = original.copyWith(canUndo: true);
       expect(copy.canUndo, isTrue);
       expect(original.canUndo, isFalse);
     });
 
     test('copyWith updates canRedo', () {
-      const original = VideoEditorDrawState(canRedo: false);
+      const original = VideoEditorDrawState();
       final copy = original.copyWith(canRedo: true);
       expect(copy.canRedo, isTrue);
       expect(original.canRedo, isFalse);
     });
 
     test('copyWith updates selectedTool', () {
-      const original = VideoEditorDrawState(selectedTool: DrawToolType.pencil);
+      const original = VideoEditorDrawState();
       final copy = original.copyWith(selectedTool: DrawToolType.eraser);
       expect(copy.selectedTool, DrawToolType.eraser);
       expect(original.selectedTool, DrawToolType.pencil);
     });
 
     test('copyWith updates strokeWidth', () {
-      const original = VideoEditorDrawState(strokeWidth: 8.0);
+      const original = VideoEditorDrawState();
       final copy = original.copyWith(strokeWidth: 16.0);
       expect(copy.strokeWidth, 16.0);
       expect(original.strokeWidth, 8.0);
     });
 
     test('copyWith updates opacity', () {
-      const original = VideoEditorDrawState(opacity: 1.0);
+      const original = VideoEditorDrawState();
       final copy = original.copyWith(opacity: 0.5);
       expect(copy.opacity, 0.5);
       expect(original.opacity, 1.0);
@@ -238,7 +238,7 @@ void main() {
     });
 
     test('copyWith updates mode', () {
-      const original = VideoEditorDrawState(mode: PaintMode.freeStyle);
+      const original = VideoEditorDrawState();
       final copy = original.copyWith(mode: PaintMode.eraser);
       expect(copy.mode, PaintMode.eraser);
       expect(original.mode, PaintMode.freeStyle);

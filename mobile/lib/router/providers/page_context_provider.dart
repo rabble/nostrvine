@@ -3,10 +3,13 @@
 
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -24,7 +27,6 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
-import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -33,10 +35,8 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/screens/auth/welcome_screen.dart';
-import 'package:riverpod/riverpod.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/screens/developer_options_screen.dart';
+import 'package:riverpod/riverpod.dart';
 
 /// Route types supported by the app
 enum RouteType {
@@ -147,7 +147,6 @@ RouteContext parseRoute(String path) {
       return RouteContext(
         type: RouteType.profile,
         npub: npub,
-        videoIndex: null,
       );
 
     case 'notifications':

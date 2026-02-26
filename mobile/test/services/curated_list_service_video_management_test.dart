@@ -3,11 +3,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -45,7 +45,7 @@ void main() {
 
       when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
     }
 
     setUp(() async {
@@ -68,7 +68,7 @@ void main() {
       // Mock subscribeToEvents for relay sync
       when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
 
       // Mock event creation
       when(
@@ -167,7 +167,6 @@ void main() {
       test('publishes update to Nostr for public list', () async {
         final list = await service.createList(
           name: 'Test List',
-          isPublic: true,
         );
         reset(mockNostr);
         stubMocks();
@@ -274,7 +273,6 @@ void main() {
       test('publishes update to Nostr for public list', () async {
         final list = await service.createList(
           name: 'Test List',
-          isPublic: true,
         );
         // Add 2 videos so list isn't empty after removal
         // (empty lists skip publish)

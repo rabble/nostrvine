@@ -1,9 +1,9 @@
 // ABOUTME: VideoFilterBuilder - centralized filter construction with relay capability detection
 // ABOUTME: Builds DivineFilter (sorted) when relay supports it, falls back to standard Filter otherwise
 
-import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart'
     show DivineFilter, IntRangeFilter, SortConfig, SortDirection;
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -25,7 +25,8 @@ enum VideoSortField {
   avgCompletion('avg_completion'),
 
   /// Newest videos first
-  createdAt('created_at');
+  createdAt('created_at')
+  ;
 
   const VideoSortField(this.fieldName);
   final String fieldName;
@@ -43,7 +44,8 @@ enum NIP50SortMode {
   rising('rising'),
 
   /// Events with mixed positive/negative reaction ratios
-  controversial('controversial');
+  controversial('controversial')
+  ;
 
   const NIP50SortMode(this.mode);
   final String mode;
@@ -210,7 +212,6 @@ class VideoFilterBuilder {
       baseFilter: baseFilter,
       relayUrl: relayUrl,
       sortBy: VideoSortField.loopCount,
-      sortDirection: SortDirection.desc,
       intFilters: minLoops != null
           ? {'loop_count': IntRangeFilter(gte: minLoops)}
           : null,
@@ -227,7 +228,6 @@ class VideoFilterBuilder {
       baseFilter: baseFilter,
       relayUrl: relayUrl,
       sortBy: VideoSortField.likes,
-      sortDirection: SortDirection.desc,
       intFilters: minLikes != null
           ? {'likes': IntRangeFilter(gte: minLikes)}
           : null,
@@ -244,7 +244,6 @@ class VideoFilterBuilder {
       baseFilter: baseFilter,
       relayUrl: relayUrl,
       sortBy: VideoSortField.views,
-      sortDirection: SortDirection.desc,
       intFilters: minViews != null
           ? {'views': IntRangeFilter(gte: minViews)}
           : null,
@@ -260,7 +259,6 @@ class VideoFilterBuilder {
       baseFilter: baseFilter,
       relayUrl: relayUrl,
       sortBy: VideoSortField.createdAt,
-      sortDirection: SortDirection.desc,
     );
   }
 }

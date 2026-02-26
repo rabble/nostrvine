@@ -695,6 +695,27 @@ void main() {
 
         expect(videoEvent.content, equals(''));
       });
+
+      test('maps API reactions count to originalLikes as fallback', () {
+        final stats = VideoStats(
+          id: 'test-id',
+          pubkey: 'test-pubkey',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          kind: 34236,
+          dTag: 'test-dtag',
+          title: 'Test Video',
+          thumbnail: 'https://example.com/thumb.jpg',
+          videoUrl: 'https://example.com/video.mp4',
+          reactions: 500,
+          comments: 20,
+          reposts: 5,
+          engagementScore: 525,
+        );
+
+        final videoEvent = stats.toVideoEvent();
+
+        expect(videoEvent.originalLikes, equals(500));
+      });
     });
 
     group('equality', () {

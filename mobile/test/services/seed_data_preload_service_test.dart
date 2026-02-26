@@ -2,12 +2,13 @@
 // ABOUTME: Verifies service skips load when DB non-empty and loads when empty
 
 import 'dart:convert';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:openvine/services/seed_data_preload_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

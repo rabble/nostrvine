@@ -394,7 +394,7 @@ class AsyncUtils {
         final elapsed = DateTime.now().difference(lastExecutionTime);
         final remaining = minInterval - elapsed;
 
-        if (remaining.isNegative == false && remaining.inMicroseconds > 0) {
+        if (!remaining.isNegative && remaining.inMicroseconds > 0) {
           // Use Timer-based delay instead of Future.delayed
           final completer = Completer<void>();
           Timer(remaining, completer.complete);

@@ -3,21 +3,23 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/video_processing_service.dart';
 
-@GenerateMocks([Dio])
-import 'video_processing_service_test.mocks.dart';
+class _MockDio extends Mock implements Dio {}
 
 void main() {
   group('VideoProcessingService', () {
     late VideoProcessingService service;
-    late MockDio mockDio;
+    late _MockDio mockDio;
 
     setUp(() {
-      mockDio = MockDio();
+      mockDio = _MockDio();
       service = VideoProcessingService(dio: mockDio);
+    });
+
+    setUpAll(() {
+      registerFallbackValue(Options());
     });
 
     test(
@@ -32,14 +34,17 @@ void main() {
         // Mock sequence: 202 -> 202 -> 200 (processing -> processing -> ready)
         var callCount = 0;
         when(
-          mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+          () => mockDio.get(
+            '$serverUrl/$fileHash',
+            options: any(named: 'options'),
+          ),
         ).thenAnswer((_) async {
           callCount++;
           if (callCount <= 2) {
             return Response(
               statusCode: 202,
               data: 'Not Ready',
-              requestOptions: RequestOptions(path: ''),
+              requestOptions: RequestOptions(),
             );
           } else {
             return Response(
@@ -51,7 +56,7 @@ void main() {
                 'thumbnail':
                     'https://stream.cloudflare.com/$videoId/thumbnail.jpg',
               },
-              requestOptions: RequestOptions(path: ''),
+              requestOptions: RequestOptions(),
             );
           }
         });
@@ -78,7 +83,10 @@ void main() {
 
         // Should have polled 3 times (202, 202, 200)
         verify(
-          mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+          () => mockDio.get(
+            '$serverUrl/$fileHash',
+            options: any(named: 'options'),
+          ),
         ).called(3);
       },
     );
@@ -91,12 +99,13 @@ void main() {
 
       // Mock always returning 202 (never completes)
       when(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).thenAnswer(
         (_) async => Response(
           statusCode: 202,
           data: 'Not Ready',
-          requestOptions: RequestOptions(path: ''),
+          requestOptions: RequestOptions(),
         ),
       );
 
@@ -113,7 +122,8 @@ void main() {
 
       // Should have polled 3 times then given up
       verify(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).called(3);
     });
 
@@ -126,19 +136,20 @@ void main() {
       // Mock sequence: network error -> 202 -> 200 (error -> processing -> ready)
       var callCount = 0;
       when(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).thenAnswer((_) async {
         callCount++;
         if (callCount == 1) {
           throw DioException(
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
             type: DioExceptionType.connectionTimeout,
           );
         } else if (callCount == 2) {
           return Response(
             statusCode: 202,
             data: 'Not Ready',
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
           );
         } else {
           return Response(
@@ -147,7 +158,7 @@ void main() {
               'sha256': fileHash,
               'url': 'https://stream.cloudflare.com/$videoId.mp4',
             },
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
           );
         }
       });
@@ -165,7 +176,8 @@ void main() {
 
       // Should have tried 3 times (error, 202, 200)
       verify(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).called(3);
     });
 
@@ -179,14 +191,15 @@ void main() {
 
       var callCount = 0;
       when(
-        mockDio.get('$serverUrl/$fileHash', options: anyNamed('options')),
+        () =>
+            mockDio.get('$serverUrl/$fileHash', options: any(named: 'options')),
       ).thenAnswer((_) async {
         callCount++;
         if (callCount == 1) {
           return Response(
             statusCode: 202,
             data: 'Not Ready',
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
           );
         } else {
           return Response(
@@ -195,7 +208,7 @@ void main() {
               'sha256': fileHash,
               'url': 'https://stream.cloudflare.com/$videoId.mp4',
             },
-            requestOptions: RequestOptions(path: ''),
+            requestOptions: RequestOptions(),
           );
         }
       });
@@ -206,7 +219,7 @@ void main() {
         videoId: videoId,
         maxAttempts: 5,
         pollInterval: const Duration(milliseconds: 100),
-        onProgress: (progress) => progressCalls.add(progress),
+        onProgress: progressCalls.add,
       );
 
       expect(result.success, true);

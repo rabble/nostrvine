@@ -10,10 +10,10 @@ import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item
 class DrawToolPencil extends StatelessWidget {
   /// Creates a pencil tool button.
   const DrawToolPencil({
-    super.key,
     required this.isSelected,
     required this.color,
     required this.onTap,
+    super.key,
   });
 
   /// Whether this tool is currently selected.

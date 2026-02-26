@@ -109,7 +109,7 @@ void main() {
         final goRouter = MockGoRouter();
 
         // Arrange: Start with uploading status
-        var mockUpload = PendingUpload.create(
+        final mockUpload = PendingUpload.create(
           localVideoPath: '/test/video.mp4',
           nostrPubkey: 'test_pubkey',
         ).copyWith(status: UploadStatus.uploading, uploadProgress: 0.8);
@@ -174,7 +174,7 @@ void main() {
     ) async {
       // Arrange: Track how many times getUpload was called
       int pollCount = 0;
-      var mockUpload = PendingUpload.create(
+      final mockUpload = PendingUpload.create(
         localVideoPath: '/test/video.mp4',
         nostrPubkey: 'test_pubkey',
       ).copyWith(status: UploadStatus.uploading, uploadProgress: 0.3);
@@ -231,9 +231,9 @@ void main() {
 
 class _CountingMockUploadManager extends MockUploadManager {
   _CountingMockUploadManager({
-    required PendingUpload mockUpload,
+    required super.mockUpload,
     required this.onGetUpload,
-  }) : super(mockUpload: mockUpload);
+  });
 
   final VoidCallback onGetUpload;
 

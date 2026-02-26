@@ -1,10 +1,10 @@
 // ABOUTME: PopularNow feed provider showing newest videos with REST API + Nostr fallback
 // ABOUTME: Tries Funnelcake REST API first, falls back to Nostr subscription if unavailable
 
-import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -72,10 +72,9 @@ class PopularNowFeed extends _$PopularNowFeed {
         name: 'PopularNowFeedProvider',
         category: LogCategory.video,
       );
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: true,
-        isLoadingMore: false,
       );
     }
 
@@ -118,7 +117,6 @@ class PopularNowFeed extends _$PopularNowFeed {
             videos: enrichedVideos,
             hasMoreContent:
                 apiVideos.length >= AppConstants.paginationBatchSize,
-            isLoadingMore: false,
             lastUpdated: DateTime.now(),
           );
         }
@@ -175,10 +173,9 @@ class PopularNowFeed extends _$PopularNowFeed {
 
     // Check if still mounted after async gap
     if (!ref.mounted) {
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     }
 
@@ -248,7 +245,6 @@ class PopularNowFeed extends _$PopularNowFeed {
 
         // Use cursor (before parameter) for pagination
         final apiVideos = await analyticsService.getRecentVideos(
-          limit: 50,
           before: _nextCursor,
         );
 
@@ -288,7 +284,6 @@ class PopularNowFeed extends _$PopularNowFeed {
                 videos: allVideos,
                 hasMoreContent:
                     apiVideos.length >= AppConstants.paginationBatchSize,
-                isLoadingMore: false,
                 lastUpdated: DateTime.now(),
               ),
             );
@@ -394,7 +389,6 @@ class PopularNowFeed extends _$PopularNowFeed {
         videos: updatedVideos,
         hasMoreContent:
             updatedVideos.length >= AppConstants.hasMoreContentThreshold,
-        isLoadingMore: false,
         lastUpdated: DateTime.now(),
       ),
     );
@@ -442,7 +436,6 @@ class PopularNowFeed extends _$PopularNowFeed {
               videos: enrichedVideos,
               hasMoreContent:
                   apiVideos.length >= AppConstants.paginationBatchSize,
-              isLoadingMore: false,
               lastUpdated: DateTime.now(),
             ),
           );

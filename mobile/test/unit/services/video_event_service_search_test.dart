@@ -2,32 +2,32 @@
 // ABOUTME: Tests search capabilities including text queries, filters, and result processing
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:nostr_sdk/event.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'video_event_service_search_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateNiceMocks([MockSpec<NostrClient>(), MockSpec<SubscriptionManager>()])
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
 void main() {
   group('VideoEventService Search Tests', () {
     late VideoEventService videoEventService;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
       // Setup basic mocks
-      when(mockNostrService.isInitialized).thenReturn(true);
-      when(mockNostrService.hasKeys).thenReturn(true);
-      when(mockNostrService.publicKey).thenReturn('test_pubkey');
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.hasKeys).thenReturn(true);
+      when(() => mockNostrService.publicKey).thenReturn('test_pubkey');
 
       videoEventService = VideoEventService(
         mockNostrService,
@@ -43,7 +43,7 @@ void main() {
 
     group('Search Method Tests', () {
       test('should call searchVideos and handle empty query', () {
-        final searchQuery = '';
+        const searchQuery = '';
 
         expect(
           () => videoEventService.searchVideos(searchQuery),
@@ -54,28 +54,28 @@ void main() {
       test('should call searchVideosByHashtag with valid hashtag', () async {
         // Mock the nostr service to return an empty stream
         when(
-          mockNostrService.searchVideos(
-            any,
-            authors: anyNamed('authors'),
-            since: anyNamed('since'),
-            until: anyNamed('until'),
-            limit: anyNamed('limit'),
+          () => mockNostrService.searchVideos(
+            any(),
+            authors: any(named: 'authors'),
+            since: any(named: 'since'),
+            until: any(named: 'until'),
+            limit: any(named: 'limit'),
           ),
-        ).thenAnswer((_) => Stream<Event>.empty());
+        ).thenAnswer((_) => const Stream<Event>.empty());
 
-        final hashtag = '#bitcoin';
+        const hashtag = '#bitcoin';
 
         // Should not throw and should complete successfully
         await videoEventService.searchVideosByHashtag(hashtag);
 
         // Verify the service was called with the correct search query
         verify(
-          mockNostrService.searchVideos(
+          () => mockNostrService.searchVideos(
             '#bitcoin',
-            authors: anyNamed('authors'),
-            since: anyNamed('since'),
-            until: anyNamed('until'),
-            limit: anyNamed('limit'),
+            authors: any(named: 'authors'),
+            since: any(named: 'since'),
+            until: any(named: 'until'),
+            limit: any(named: 'limit'),
           ),
         ).called(1);
       });
@@ -85,16 +85,16 @@ void main() {
         () async {
           // Mock the nostr service to return an empty stream
           when(
-            mockNostrService.searchVideos(
-              any,
-              authors: anyNamed('authors'),
-              since: anyNamed('since'),
-              until: anyNamed('until'),
-              limit: anyNamed('limit'),
+            () => mockNostrService.searchVideos(
+              any(),
+              authors: any(named: 'authors'),
+              since: any(named: 'since'),
+              until: any(named: 'until'),
+              limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) => Stream<Event>.empty());
+          ).thenAnswer((_) => const Stream<Event>.empty());
 
-          final searchQuery = 'nostr';
+          const searchQuery = 'nostr';
           final authors = ['author1', 'author2'];
 
           await videoEventService.searchVideosWithFilters(
@@ -104,12 +104,12 @@ void main() {
 
           // Verify the service was called with correct parameters
           verify(
-            mockNostrService.searchVideos(
+            () => mockNostrService.searchVideos(
               searchQuery,
               authors: authors,
-              since: anyNamed('since'),
-              until: anyNamed('until'),
-              limit: anyNamed('limit'),
+              since: any(named: 'since'),
+              until: any(named: 'until'),
+              limit: any(named: 'limit'),
             ),
           ).called(1);
         },
@@ -157,17 +157,17 @@ void main() {
         () async {
           // Mock the nostr service to return an empty stream
           when(
-            mockNostrService.searchVideos(
-              any,
-              authors: anyNamed('authors'),
-              since: anyNamed('since'),
-              until: anyNamed('until'),
-              limit: anyNamed('limit'),
+            () => mockNostrService.searchVideos(
+              any(),
+              authors: any(named: 'authors'),
+              since: any(named: 'since'),
+              until: any(named: 'until'),
+              limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) => Stream<Event>.empty());
+          ).thenAnswer((_) => const Stream<Event>.empty());
 
-          final searchQuery = 'bitcoin';
-          final since = DateTime.now().subtract(Duration(days: 7));
+          const searchQuery = 'bitcoin';
+          final since = DateTime.now().subtract(const Duration(days: 7));
           final until = DateTime.now();
 
           await videoEventService.searchVideosWithTimeRange(
@@ -178,12 +178,12 @@ void main() {
 
           // Verify the underlying search was called with time parameters
           verify(
-            mockNostrService.searchVideos(
+            () => mockNostrService.searchVideos(
               searchQuery,
-              authors: anyNamed('authors'),
+              authors: any(named: 'authors'),
               since: since,
               until: until,
-              limit: anyNamed('limit'),
+              limit: any(named: 'limit'),
             ),
           ).called(1);
         },
@@ -194,27 +194,27 @@ void main() {
         () async {
           // Mock the nostr service to return an empty stream
           when(
-            mockNostrService.searchVideos(
-              any,
-              authors: anyNamed('authors'),
-              since: anyNamed('since'),
-              until: anyNamed('until'),
-              limit: anyNamed('limit'),
+            () => mockNostrService.searchVideos(
+              any(),
+              authors: any(named: 'authors'),
+              since: any(named: 'since'),
+              until: any(named: 'until'),
+              limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) => Stream<Event>.empty());
+          ).thenAnswer((_) => const Stream<Event>.empty());
 
-          final searchQuery = 'music language:en nsfw:false';
+          const searchQuery = 'music language:en nsfw:false';
 
           await videoEventService.searchVideosWithExtensions(searchQuery);
 
           // Verify the search was called with the extensions query
           verify(
-            mockNostrService.searchVideos(
+            () => mockNostrService.searchVideos(
               searchQuery,
-              authors: anyNamed('authors'),
-              since: anyNamed('since'),
-              until: anyNamed('until'),
-              limit: anyNamed('limit'),
+              authors: any(named: 'authors'),
+              since: any(named: 'since'),
+              until: any(named: 'until'),
+              limit: any(named: 'limit'),
             ),
           ).called(1);
         },

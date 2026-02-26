@@ -12,7 +12,7 @@ void main() {
         'f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5';
     final timestamp = DateTime(2025);
 
-    NotificationModel _createNotification({
+    NotificationModel createNotification({
       required NotificationType type,
       String? eventId,
     }) {
@@ -28,7 +28,7 @@ void main() {
 
     group('navigationAction', () {
       test('returns open_video for like with targetEventId', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.like,
           eventId: targetEventId,
         );
@@ -36,12 +36,12 @@ void main() {
       });
 
       test('returns open_profile for like without targetEventId', () {
-        final notification = _createNotification(type: NotificationType.like);
+        final notification = createNotification(type: NotificationType.like);
         expect(notification.navigationAction, equals('open_profile'));
       });
 
       test('returns open_video for comment with targetEventId', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.comment,
           eventId: targetEventId,
         );
@@ -49,14 +49,14 @@ void main() {
       });
 
       test('returns open_profile for comment without targetEventId', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.comment,
         );
         expect(notification.navigationAction, equals('open_profile'));
       });
 
       test('returns open_video for repost with targetEventId', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.repost,
           eventId: targetEventId,
         );
@@ -64,31 +64,31 @@ void main() {
       });
 
       test('returns open_profile for repost without targetEventId', () {
-        final notification = _createNotification(type: NotificationType.repost);
+        final notification = createNotification(type: NotificationType.repost);
         expect(notification.navigationAction, equals('open_profile'));
       });
 
       test('returns open_profile for follow', () {
-        final notification = _createNotification(type: NotificationType.follow);
+        final notification = createNotification(type: NotificationType.follow);
         expect(notification.navigationAction, equals('open_profile'));
       });
 
       test('returns open_profile for mention', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.mention,
         );
         expect(notification.navigationAction, equals('open_profile'));
       });
 
       test('returns none for system', () {
-        final notification = _createNotification(type: NotificationType.system);
+        final notification = createNotification(type: NotificationType.system);
         expect(notification.navigationAction, equals('none'));
       });
     });
 
     group('navigationTarget', () {
       test('returns targetEventId for like with targetEventId', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.like,
           eventId: targetEventId,
         );
@@ -96,12 +96,12 @@ void main() {
       });
 
       test('returns actorPubkey for like without targetEventId', () {
-        final notification = _createNotification(type: NotificationType.like);
+        final notification = createNotification(type: NotificationType.like);
         expect(notification.navigationTarget, equals(actorPubkey));
       });
 
       test('returns targetEventId for comment with targetEventId', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.comment,
           eventId: targetEventId,
         );
@@ -109,14 +109,14 @@ void main() {
       });
 
       test('returns actorPubkey for comment without targetEventId', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.comment,
         );
         expect(notification.navigationTarget, equals(actorPubkey));
       });
 
       test('returns targetEventId for repost with targetEventId', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.repost,
           eventId: targetEventId,
         );
@@ -124,24 +124,24 @@ void main() {
       });
 
       test('returns actorPubkey for repost without targetEventId', () {
-        final notification = _createNotification(type: NotificationType.repost);
+        final notification = createNotification(type: NotificationType.repost);
         expect(notification.navigationTarget, equals(actorPubkey));
       });
 
       test('returns actorPubkey for follow', () {
-        final notification = _createNotification(type: NotificationType.follow);
+        final notification = createNotification(type: NotificationType.follow);
         expect(notification.navigationTarget, equals(actorPubkey));
       });
 
       test('returns actorPubkey for mention', () {
-        final notification = _createNotification(
+        final notification = createNotification(
           type: NotificationType.mention,
         );
         expect(notification.navigationTarget, equals(actorPubkey));
       });
 
       test('returns null for system', () {
-        final notification = _createNotification(type: NotificationType.system);
+        final notification = createNotification(type: NotificationType.system);
         expect(notification.navigationTarget, isNull);
       });
     });
@@ -180,7 +180,7 @@ void main() {
 
     group('copyWith', () {
       test('copies with updated fields', () {
-        final original = _createNotification(
+        final original = createNotification(
           type: NotificationType.like,
           eventId: targetEventId,
         );

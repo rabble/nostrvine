@@ -102,7 +102,7 @@ void main() {
       });
 
       testWidgets('renders "Untitled" when title is null', (tester) async {
-        final sound = _createTestAudioEvent(title: null);
+        final sound = _createTestAudioEvent();
         await tester.pumpWidget(buildWidget(selectedSound: sound));
         await tester.pumpAndSettle();
 

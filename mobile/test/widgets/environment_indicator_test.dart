@@ -1,11 +1,11 @@
 // ABOUTME: Widget tests for environment indicator components
 // ABOUTME: Tests badge, banner visibility and behavior across environments
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 
 void main() {
@@ -137,7 +137,7 @@ void main() {
         ),
       );
 
-      final decoration = container.decoration as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(decoration.color, Color(stagingConfig.indicatorColorValue));
       expect(decoration.borderRadius, isA<BorderRadius>());
     });
@@ -164,7 +164,7 @@ void main() {
         ),
       );
 
-      final decoration = container.decoration as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(decoration.color, Color(pocConfig.indicatorColorValue));
     });
 
@@ -190,7 +190,7 @@ void main() {
         ),
       );
 
-      final decoration = container.decoration as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(decoration.color, Color(testConfig.indicatorColorValue));
     });
   });

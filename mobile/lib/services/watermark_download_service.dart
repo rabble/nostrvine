@@ -272,7 +272,6 @@ class WatermarkDownloadService {
       final task = VideoRenderData(
         id: '${videoId}_watermark',
         video: EditorVideo.file(videoFile),
-        enableAudio: true,
         shouldOptimizeForNetworkUse: true,
         imageBytes: watermarkBytes,
       );

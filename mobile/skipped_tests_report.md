@@ -16,12 +16,6 @@
 
 ## Category 1: Skipped Tests
 
-### packages/nostr_sdk/test/
-
-| File | Lines | Tests | Reason |
-|------|-------|-------|--------|
-| `integration/nip50_search_test.dart` | 85, 124, 148, 186 | 4 | `skip: true` |
-
 ### test/goldens/
 
 | File | Lines | Tests | Reason |
@@ -105,7 +99,6 @@
 | `video_controller_lifecycle_test.dart` | 198 | 1 | `skip: true` |
 | `video_events_listener_simple_test.dart` | 78, 115, 205, 242 | 4 | `skip: true` |
 | `video_events_provider_fresh_test.dart` | 158 | 1 | `skip: true` |
-| `video_events_provider_listener_test.dart` | 105, 168, 189, 211, 260, 342, 392, 414, 510 | 9 | `skip: true` |
 | `video_events_provider_test.dart` | 317 | 1 | `skip: true` |
 
 ### test/router/
@@ -162,8 +155,6 @@
 | `curated_list_service_persistence_test.dart` | 94 | 1 | `skip: true` |
 | `curated_list_service_persistence_test.dart` | 344 | 1 | `skip: 'Flaky: timestamp-based ID collision in concurrent creation'` |
 | `curated_list_service_query_test.dart` | 89, 127, 493, 505, 562 | 5 | `skip: true` |
-| `curation_publish_test.dart` | 105, 128, 160, 190, 209, 252, 277, 325, 358, 378, 456, 477 | 12 | `skip: true` |
-| `curation_service_create_test.dart` | 105, 125, 167, 241, 262, 305, 327 | 7 | `skip: true` |
 | `curation_service_editors_picks_test.dart` | 216 | 1 | `skip: true` |
 | `curation_service_kind_30005_test.dart` | 76, 146 | 2 | `skip: true` |
 | `curation_service_test.dart` | 71 | 1 | `skip: true` |
@@ -184,7 +175,6 @@
 | `video_event_service_replaceable_test.dart` | 276 | 1 | `skip: true` |
 | `video_event_service_repost_test.dart` | 420 | 1 | `skip: true` |
 | `video_event_service_reposters_test.dart` | 157, 251 | 2 | `skip: true` |
-| `video_sharing_service_test.dart` | 51, 110, 155, 171, 230, 258, 310, 327 | 8 | `skip: true` |
 
 ### test/startup/
 
@@ -214,11 +204,9 @@
 
 | File | Lines | Tests | Reason |
 |------|-------|-------|--------|
-| `age_verification_dialog_test.dart` | 34, 68, 102, 150 | 4 | `skip: true` |
 | `all_settings_screens_scaffold_test.dart` | 28, 68 | 2 | `skip: true` |
 | `bug_report_dialog_test.dart` | 333, 471 | 2 | `skip: true` |
 | `composable_video_grid_test.dart` | 107, 136, 198, 228, 254 | 5 | `skip: true` |
-| `comprehensive_age_verification_dialog_test.dart` | 40, 75, 110, 144, 179, 214, 314, 404, 458 | 9 | `skip: true` |
 | `comprehensive_clickable_hashtag_text_test.dart` | 180, 234, 261, 304 | 4 | `skip: true` |
 | `comprehensive_user_avatar_test.dart` | golden group | 4 | `skip: 'Golden tests require golden file generation and are maintained separately'` |
 | `original_content_badge_test.dart` | 157, 228 | 2 | `skip: true` |
@@ -267,7 +255,6 @@ These files have all test code commented out, leaving only `void main() {}`. Mos
 | `test/providers/home_feed_refresh_on_follow_test.dart` | 4 | Home feed refresh on follow/unfollow changes |
 | `test/providers/profile_feed_pagination_test.dart` | 6 | Profile feed cursor pagination (load, append, hasMore, dedup) |
 | `test/screens/explore_screen_missing_methods_test.dart` | 6 | ExploreScreen method TDD (hidden, visible, feed mode, hashtags) |
-| `test/screens/home_screen_router_test.dart` | 8 | HomeScreen router-driven tests (URL, PageView, refresh, prefetch) |
 | `test/services/event_router_test.dart` | multiple | EventRouter TDD tests (centralized event caching) |
 | `test/widgets/share_video_menu_comprehensive_test.dart` | multiple | ShareVideoMenu comprehensive TDD tests |
 
@@ -310,11 +297,5 @@ These files have some tests commented out while others remain active.
 | File | Skipped |
 |------|---------|
 | `test/widgets/comprehensive_user_avatar_test.dart` | 4 (golden tests only) |
-| `test/services/curation_publish_test.dart` | 12 |
-| `test/widgets/comprehensive_age_verification_dialog_test.dart` | 9 |
-| `test/providers/video_events_provider_listener_test.dart` | 9 |
 | `test/services/upload_manager_web_test.dart` | 9 (web-only) |
 | `test/services/upload_initialization_helper_web_test.dart` | 8 (web-only) |
-| `test/services/video_sharing_service_test.dart` | 8 |
-| `test/screens/home_screen_router_test.dart` | 8 (commented out) |
-| `test/services/curation_service_create_test.dart` | 7 |

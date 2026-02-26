@@ -1,9 +1,9 @@
 // ABOUTME: Reusable tile widget for displaying AudioEvent sounds in lists
 // ABOUTME: Supports normal mode for list display and compact mode for horizontal scroll
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// A tile widget for displaying a sound (AudioEvent) in various list contexts.
 ///

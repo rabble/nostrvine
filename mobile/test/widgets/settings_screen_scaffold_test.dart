@@ -1,28 +1,26 @@
 // ABOUTME: Widget test verifying settings screens use proper Vine scaffold structure
 // ABOUTME: Tests that settings screens have green AppBar and black background
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:openvine/screens/settings_screen.dart';
-import 'package:openvine/screens/notification_settings_screen.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/services/auth_service.dart';
 
-@GenerateMocks([AuthService])
-import 'settings_screen_scaffold_test.mocks.dart';
+class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
   group('Settings Screen Scaffold Structure', () {
-    late MockAuthService mockAuthService;
+    late _MockAuthService mockAuthService;
 
     setUp(() {
-      mockAuthService = MockAuthService();
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.isAnonymous).thenReturn(false);
+      mockAuthService = _MockAuthService();
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.isAnonymous).thenReturn(false);
     });
 
     testWidgets('SettingsScreen has nav green AppBar', (tester) async {

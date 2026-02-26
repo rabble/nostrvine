@@ -196,7 +196,6 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
           child: Text(
             widget.title ?? defaultTitle,
             style: VineTheme.bodyFont(
-              color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w700,
               height: 1.33,
@@ -372,7 +371,6 @@ class _UserSearchTile extends StatelessWidget {
             UserAvatar(
               imageUrl: profile.picture,
               name: profile.bestDisplayName,
-              size: 44,
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -384,7 +382,6 @@ class _UserSearchTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: VineTheme.bodyFont(
-                      color: VineTheme.whiteText,
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       height: 1.33,

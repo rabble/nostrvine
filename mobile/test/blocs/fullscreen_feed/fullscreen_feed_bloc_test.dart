@@ -105,7 +105,6 @@ void main() {
       test('currentVideo returns null when videos empty', () {
         const state = FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
-          currentIndex: 0,
         );
 
         expect(state.currentVideo, isNull);
@@ -320,7 +319,7 @@ void main() {
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'does nothing when onLoadMore is null',
-        build: () => createBloc(onLoadMore: null),
+        build: createBloc,
         act: (bloc) => bloc.add(const FullscreenFeedLoadMoreRequested()),
         expect: () => <FullscreenFeedState>[],
       );
@@ -379,7 +378,6 @@ void main() {
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [createTestVideo('video1')],
-          currentIndex: 0,
         ),
         act: (bloc) => bloc.add(const FullscreenFeedIndexChanged(-5)),
         expect: () => <FullscreenFeedState>[],
@@ -391,7 +389,6 @@ void main() {
         seed: () => FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: [createTestVideo('video1')],
-          currentIndex: 0,
         ),
         act: (bloc) => bloc.add(const FullscreenFeedIndexChanged(0)),
         expect: () => <FullscreenFeedState>[],
@@ -541,7 +538,6 @@ void main() {
             () => mockMediaCache.downloadFile(
               'https://example.com/video_video1.mp4',
               key: 'video1',
-              authHeaders: null,
             ),
           ).called(1);
         },

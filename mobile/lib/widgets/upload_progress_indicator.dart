@@ -1,9 +1,9 @@
 // ABOUTME: Widget for displaying video upload progress with status indicators
 // ABOUTME: Shows upload progress, processing state, and error handling UI
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// Widget that displays upload progress for a video
 class UploadProgressIndicator extends StatelessWidget {
@@ -108,9 +108,9 @@ class UploadProgressIndicator extends StatelessWidget {
       case UploadStatus.processing:
         return const Icon(Icons.settings, color: Colors.blue);
       case UploadStatus.readyToPublish:
-        return Icon(Icons.publish, color: VineTheme.vineGreen);
+        return const Icon(Icons.publish, color: VineTheme.vineGreen);
       case UploadStatus.published:
-        return Icon(Icons.check_circle, color: VineTheme.vineGreen);
+        return const Icon(Icons.check_circle, color: VineTheme.vineGreen);
       case UploadStatus.failed:
         return const Icon(Icons.error, color: Colors.red);
       case UploadStatus.paused:

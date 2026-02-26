@@ -2,8 +2,8 @@
 // ABOUTME: Tests separate caching service with priority-based insertion and deduplication
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/constants/app_constants.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/app_constants.dart';
 
 import '../../helpers/test_helpers.dart';
 

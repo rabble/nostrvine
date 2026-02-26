@@ -101,21 +101,18 @@ void main() {
 
       setUp(() {
         mockBloc = _MockVideoInteractionsBloc();
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoInteractionsState(likeCount: 10));
         when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
       });
 
       testWidgets(
         'renders with VideoInteractionsBloc when isPreviewMode is false',
         (tester) async {
+          when(
+            () => mockBloc.state,
+          ).thenReturn(const VideoInteractionsState(likeCount: 10));
+
           await tester.pumpWidget(
-            buildSubject(
-              video: testVideo,
-              isPreviewMode: false,
-              bloc: mockBloc,
-            ),
+            buildSubject(video: testVideo, bloc: mockBloc),
           );
 
           expect(find.byType(LikeActionButton), findsOneWidget);
@@ -123,15 +120,50 @@ void main() {
         },
       );
 
-      testWidgets('displays combined like count from bloc and video metadata', (
-        tester,
-      ) async {
-        // Bloc has 10 likes, video has 42 originalLikes = 52 total
-        await tester.pumpWidget(
-          buildSubject(video: testVideo, isPreviewMode: false, bloc: mockBloc),
+      testWidgets(
+        'displays state.likeCount when loaded, not video.totalLikes',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(
+            const VideoInteractionsState(
+              status: VideoInteractionsStatus.success,
+              likeCount: 50,
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildSubject(video: testVideo, bloc: mockBloc),
+          );
+
+          expect(find.text('50'), findsOneWidget);
+          expect(find.text('42'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'hides like count when nostrLikeCount is null and before BLoC has loaded',
+        (tester) async {
+          when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
+
+          await tester.pumpWidget(
+            buildSubject(video: testVideo, bloc: mockBloc),
+          );
+
+          expect(find.text('42'), findsNothing);
+          expect(find.byType(VideoActionButton), findsOneWidget);
+        },
+      );
+
+      testWidgets('hides count when both sources are 0', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            likeCount: 0,
+          ),
         );
 
-        expect(find.text('52'), findsOneWidget);
+        await tester.pumpWidget(buildSubject(video: testVideo, bloc: mockBloc));
+
+        expect(find.text('0'), findsNothing);
       });
     });
   });

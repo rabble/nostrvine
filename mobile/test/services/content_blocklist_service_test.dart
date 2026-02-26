@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -86,7 +86,7 @@ void main() {
 
       final filtered = service.filterContent(
         testItems,
-        (item) => item['pubkey'] as String,
+        (item) => item['pubkey']!,
       );
 
       expect(filtered.length, equals(1));
@@ -150,7 +150,7 @@ void main() {
         List<dynamic>? capturedFilters;
         when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
           capturedFilters = invocation.positionalArguments[0] as List;
-          return Stream.empty();
+          return const Stream.empty();
         });
 
         await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
@@ -172,7 +172,7 @@ void main() {
 
       when(
         () => mockNostrService.subscribe(any()),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
 
       await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
       await service.syncMuteListsInBackground(mockNostrService, ourPubkey);

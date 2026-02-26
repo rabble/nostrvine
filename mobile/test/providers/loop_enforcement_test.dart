@@ -2,15 +2,18 @@
 // ABOUTME: Validates constants, timer creation logic, and seek behavior
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
-import 'package:video_player/video_player.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
+import 'package:video_player/video_player.dart';
 
-@GenerateNiceMocks([MockSpec<VideoPlayerController>()])
-import 'loop_enforcement_test.mocks.dart';
+class _MockVideoPlayerController extends Mock
+    implements VideoPlayerController {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(Duration.zero);
+  });
+
   group('Loop Enforcement Constants', () {
     test('maxPlaybackDuration is 6.3 seconds', () {
       expect(maxPlaybackDuration, const Duration(milliseconds: 6300));
@@ -36,7 +39,7 @@ void main() {
   group('Loop Enforcement Logic', () {
     test('videos under 6.3s should not trigger loop enforcement', () {
       // Arrange - video is 5 seconds (under limit)
-      final videoDuration = const Duration(seconds: 5);
+      const videoDuration = Duration(seconds: 5);
 
       // Assert - duration should be less than maxPlaybackDuration
       expect(videoDuration < maxPlaybackDuration, isTrue);
@@ -45,7 +48,7 @@ void main() {
 
     test('videos exactly 6.3s should not trigger loop enforcement', () {
       // Arrange - video is exactly 6.3 seconds
-      final videoDuration = const Duration(milliseconds: 6300);
+      const videoDuration = Duration(milliseconds: 6300);
 
       // Assert - duration should NOT be greater than maxPlaybackDuration
       expect(videoDuration > maxPlaybackDuration, isFalse);
@@ -53,7 +56,7 @@ void main() {
 
     test('videos over 6.3s should trigger loop enforcement', () {
       // Arrange - video is 10 seconds (over limit)
-      final videoDuration = const Duration(seconds: 10);
+      const videoDuration = Duration(seconds: 10);
 
       // Assert - duration should be greater than maxPlaybackDuration
       expect(videoDuration > maxPlaybackDuration, isTrue);
@@ -99,21 +102,21 @@ void main() {
   });
 
   group('safeSeekTo for loop enforcement', () {
-    late MockVideoPlayerController mockController;
+    late _MockVideoPlayerController mockController;
 
     setUp(() {
-      mockController = MockVideoPlayerController();
+      mockController = _MockVideoPlayerController();
     });
 
     test('safeSeekTo returns true when seek succeeds', () async {
       // Arrange
-      when(mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+      when(() => mockController.value).thenReturn(
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
-      when(mockController.seekTo(Duration.zero)).thenAnswer((_) async {});
+      when(() => mockController.seekTo(Duration.zero)).thenAnswer((_) async {});
 
       // Act
       final result = await safeSeekTo(
@@ -124,13 +127,13 @@ void main() {
 
       // Assert
       expect(result, isTrue);
-      verify(mockController.seekTo(Duration.zero)).called(1);
+      verify(() => mockController.seekTo(Duration.zero)).called(1);
     });
 
     test('safeSeekTo returns false when controller is disposed', () async {
       // Arrange - simulate disposed controller
-      when(mockController.value).thenReturn(
-        const VideoPlayerValue(duration: Duration.zero, isInitialized: false),
+      when(() => mockController.value).thenReturn(
+        const VideoPlayerValue(duration: Duration.zero),
       );
 
       // Act
@@ -142,19 +145,19 @@ void main() {
 
       // Assert
       expect(result, isFalse);
-      verifyNever(mockController.seekTo(any));
+      verifyNever(() => mockController.seekTo(any()));
     });
 
     test('safeSeekTo catches disposal errors gracefully', () async {
       // Arrange
-      when(mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+      when(() => mockController.value).thenReturn(
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
       when(
-        mockController.seekTo(Duration.zero),
+        () => mockController.seekTo(Duration.zero),
       ).thenThrow(Exception('Bad state: No active player with ID 42'));
 
       // Act
@@ -190,7 +193,7 @@ void main() {
       const perFrameChecksPerSecond = 60;
       const ourChecksPerSecond = 1000 ~/ 200; // 5
 
-      final reduction =
+      const reduction =
           (perFrameChecksPerSecond - ourChecksPerSecond) /
           perFrameChecksPerSecond *
           100;

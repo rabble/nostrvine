@@ -1,80 +1,134 @@
-// ABOUTME: Integration tests for NIP-50 full-text search functionality
-// ABOUTME: Tests search queries against real relays that support NIP-50
+// ABOUTME: Tests for NIP-50 full-text search functionality
+// ABOUTME: Tests search queries using mock relays that simulate NIP-50 responses
 
-import 'dart:developer';
+import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:nostr_sdk/relay/client_connected.dart';
+
+/// A test pubkey (valid 64-char hex).
+const _testPubkey =
+    'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+
+/// Creates a fake event JSON map with a deterministic id.
+Map<String, dynamic> _fakeEventJson({
+  required String content,
+  int kind = 1,
+  int? createdAt,
+}) {
+  final created = createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
+  final tags = <List<String>>[];
+  final serialized = json.encode([
+    0,
+    _testPubkey,
+    created,
+    kind,
+    tags,
+    content,
+  ]);
+  final id = sha256.convert(utf8.encode(serialized)).toString();
+  return {
+    'id': id,
+    'pubkey': _testPubkey,
+    'created_at': created,
+    'kind': kind,
+    'tags': tags,
+    'content': content,
+    'sig': '',
+  };
+}
+
+/// Mock relay that captures sent messages and can simulate EVENT responses.
+class _MockRelay extends RelayBase {
+  _MockRelay(String url) : super(url, RelayStatus(url));
+
+  final List<List<dynamic>> sentMessages = [];
+
+  /// Events to return when a REQ is received.
+  List<Map<String, dynamic>> eventsToReturn = [];
+
+  @override
+  Future<bool> doConnect() async {
+    relayStatus.connected = ClientConnected.connected;
+    return true;
+  }
+
+  @override
+  Future<void> disconnect() async {
+    relayStatus.connected = ClientConnected.disconnect;
+  }
+
+  @override
+  Future<bool> send(
+    List<dynamic> message, {
+    bool? forceSend,
+    bool queueIfFailed = true,
+  }) async {
+    sentMessages.add(message);
+
+    // When a REQ is received, simulate EVENT responses
+    if (message[0] == 'REQ' && eventsToReturn.isNotEmpty) {
+      final subId = message[1] as String;
+      Future.microtask(() async {
+        for (final eventJson in eventsToReturn) {
+          onMessage?.call(this, ['EVENT', subId, eventJson]);
+        }
+        // Send EOSE after all events
+        onMessage?.call(this, ['EOSE', subId]);
+      });
+    }
+
+    return true;
+  }
+}
 
 void main() {
-  group('NIP-50 Search Integration Tests', () {
+  group('NIP-50 Search Tests', () {
     late Nostr nostr;
     late LocalNostrSigner signer;
-    late String testPrivateKey;
+    late _MockRelay mockRelay;
 
-    // Known NIP-50 compatible relays
-    final searchRelays = [
-      'wss://relay.nostr.band',
-      'wss://relay.noswhere.com',
-      'wss://search.nos.today',
-    ];
+    const testPrivateKey =
+        '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12';
 
     setUp(() async {
-      // Create a test keypair
-      testPrivateKey =
-          '5ee1c8000ab28edd64d74a7d951ac2dd559814887b1b9e1ac7c5f89e96125c12';
       signer = LocalNostrSigner(testPrivateKey);
-
-      nostr = Nostr(
-        signer,
-        [], // no filters initially
-        (url) => RelayBase(url, RelayStatus(url)),
-      );
+      nostr = Nostr(signer, [], (url) => _MockRelay(url));
       await nostr.refreshPublicKey();
 
-      // Connect to search-enabled relays
-      for (final url in searchRelays) {
-        await nostr.relayPool.add(RelayBase(url, RelayStatus(url)));
-      }
-
-      // Wait for connections
-      await Future.delayed(Duration(seconds: 2));
-    });
-
-    tearDown(() async {
-      // No direct disconnect method on RelayPool
-      // Just let it clean up
+      mockRelay = _MockRelay('wss://search.test.relay');
     });
 
     test('Should search for text content in events', () async {
-      // Create a filter with search parameter using new field
-      final filter = Filter(
-        kinds: [1], // text notes
-        limit: 10,
-        search: 'bitcoin',
-      );
+      // Configure mock relay to return events containing 'bitcoin'
+      mockRelay.eventsToReturn = [
+        _fakeEventJson(content: 'I love bitcoin and crypto'),
+        _fakeEventJson(content: 'bitcoin is the future'),
+      ];
+      await nostr.relayPool.add(mockRelay);
 
-      // Send search query
+      final filter = Filter(kinds: [1], limit: 10, search: 'bitcoin');
+
       final events = <Event>[];
-
       final subscriptionId = nostr.relayPool.subscribe([filter.toJson()], (
         event,
       ) {
         events.add(event);
       });
 
-      // Wait for results
-      await Future.delayed(Duration(seconds: 5));
+      // Allow microtasks to complete
+      await Future<void>.delayed(Duration(milliseconds: 50));
       nostr.relayPool.unsubscribe(subscriptionId);
 
-      // Verify we got search results
       expect(
         events.isNotEmpty,
         isTrue,
         reason: 'Should receive events matching search query',
       );
+      expect(events, hasLength(2));
 
-      // Verify events contain search term
       for (final event in events) {
         expect(
           event.content.toLowerCase().contains('bitcoin'),
@@ -82,15 +136,35 @@ void main() {
           reason: 'Event content should contain search term',
         );
       }
-    }, skip: true);
+
+      // Verify the REQ included the search filter
+      final reqMessage = mockRelay.sentMessages.firstWhere(
+        (m) => m[0] == 'REQ',
+      );
+      final sentFilter = reqMessage[2] as Map<String, dynamic>;
+      expect(sentFilter['search'], equals('bitcoin'));
+    });
 
     test('Should combine search with other filters', () async {
-      // Search with additional constraints
+      final sinceTimestamp =
+          DateTime.now().subtract(Duration(days: 7)).millisecondsSinceEpoch ~/
+          1000;
+
+      mockRelay.eventsToReturn = [
+        _fakeEventJson(
+          content: 'The nostr protocol is amazing',
+          createdAt: sinceTimestamp + 3600,
+        ),
+        _fakeEventJson(
+          content: 'Building on nostr protocol today',
+          createdAt: sinceTimestamp + 7200,
+        ),
+      ];
+      await nostr.relayPool.add(mockRelay);
+
       final filter = Filter(
         kinds: [1],
-        since:
-            DateTime.now().subtract(Duration(days: 7)).millisecondsSinceEpoch ~/
-            1000,
+        since: sinceTimestamp,
         limit: 5,
         search: 'nostr protocol',
       );
@@ -102,64 +176,68 @@ void main() {
         events.add(event);
       });
 
-      await Future.delayed(Duration(seconds: 5));
+      await Future<void>.delayed(Duration(milliseconds: 50));
       nostr.relayPool.unsubscribe(subscriptionId);
 
-      // Verify we got results (relays may have different limit behaviors)
       expect(events.isNotEmpty, isTrue);
 
-      // Verify search term appears in results
       for (final event in events) {
         expect(event.kind, equals(1));
-        // Most results should contain the search term
         final containsSearch =
             event.content.toLowerCase().contains('nostr') ||
             event.content.toLowerCase().contains('protocol');
-        if (!containsSearch) {
-          log(
-            'Event without search term: ${event.content.substring(0, 100)}...',
-          );
-        }
+        expect(
+          containsSearch,
+          isTrue,
+          reason: 'Event should contain search terms',
+        );
       }
-    }, skip: true);
 
-    test('Should handle relays that don\'t support search', () async {
-      // Add a relay that doesn't support NIP-50
-      await nostr.relayPool.add(
-        RelayBase('wss://relay.damus.io', RelayStatus('wss://relay.damus.io')),
+      // Verify filter included both search and since
+      final reqMessage = mockRelay.sentMessages.firstWhere(
+        (m) => m[0] == 'REQ',
       );
+      final sentFilter = reqMessage[2] as Map<String, dynamic>;
+      expect(sentFilter['search'], equals('nostr protocol'));
+      expect(sentFilter['since'], equals(sinceTimestamp));
+      expect(sentFilter['kinds'], equals([1]));
+    });
+
+    test('Should handle relays that do not support search', () async {
+      // A relay that returns no events (simulating no NIP-50 support)
+      final nonSearchRelay = _MockRelay('wss://no-search.relay');
+      // eventsToReturn is empty by default — relay just ignores search
+      await nostr.relayPool.add(nonSearchRelay);
 
       final filter = Filter(kinds: [1], limit: 5, search: 'test query');
 
       final events = <Event>[];
-
       final subscriptionId = nostr.relayPool.subscribe([filter.toJson()], (
         event,
       ) {
         events.add(event);
       });
 
-      await Future.delayed(Duration(seconds: 3));
+      await Future<void>.delayed(Duration(milliseconds: 50));
       nostr.relayPool.unsubscribe(subscriptionId);
 
-      // Should still work on relays that support search
-      // Non-supporting relays might send NOTICE or just ignore the search param
-      log('Received ${events.length} events from search');
-    }, skip: true);
+      // Non-supporting relays return no events — no crash
+      expect(events, isEmpty);
+    });
 
     test('Search API should provide convenient method', () async {
-      // Wait a bit longer for relay connections
-      await Future.delayed(Duration(seconds: 3));
+      mockRelay.eventsToReturn = [
+        _fakeEventJson(content: 'bitcoin price is rising'),
+        _fakeEventJson(content: 'bitcoin fundamentals are strong'),
+      ];
+      await nostr.relayPool.add(mockRelay);
 
-      // Test the new searchEvents convenience method
       final results = await nostr.relayPool.searchEvents(
         'bitcoin',
         kinds: [1],
         limit: 10,
-        timeout: Duration(seconds: 10),
+        timeout: Duration(milliseconds: 200),
       );
-
-      log('SearchEvents returned ${results.length} results');
 
       expect(
         results.isNotEmpty,
@@ -167,7 +245,6 @@ void main() {
         reason: 'Should receive search results from convenience method',
       );
 
-      // Verify all results contain the search term
       for (final event in results) {
         expect(
           event.content.toLowerCase().contains('bitcoin'),
@@ -183,6 +260,6 @@ void main() {
         equals(results.length),
         reason: 'Results should be deduplicated by event ID',
       );
-    }, skip: true);
+    });
   });
 }

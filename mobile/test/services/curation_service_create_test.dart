@@ -2,66 +2,60 @@
 // ABOUTME: Validates creation and publishing of NIP-51 video curation sets to Nostr
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:likes_repository/likes_repository.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curation_service.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:likes_repository/likes_repository.dart';
 
-import 'curation_service_create_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([
-  NostrClient,
-  VideoEventService,
-  LikesRepository,
-  NostrKeyManager,
-  AuthService,
-])
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockLikesRepository extends Mock implements LikesRepository {}
+
+class _MockAuthService extends Mock implements AuthService {}
+
+const _testPubkey =
+    'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
+
 void main() {
   group('CurationService.createCurationSet()', () {
-    late MockNostrClient mockNostrService;
-    late MockVideoEventService mockVideoEventService;
-    late MockLikesRepository mockLikesRepository;
-    late MockNostrKeyManager mockKeyManager;
-    late MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
+    late _MockVideoEventService mockVideoEventService;
+    late _MockLikesRepository mockLikesRepository;
+    late _MockAuthService mockAuthService;
     late CurationService curationService;
-    late Keychain testKeychain;
+
+    setUpAll(() {
+      registerFallbackValue(Event(_testPubkey, 30005, <List<String>>[], ''));
+      registerFallbackValue(<Filter>[]);
+    });
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockVideoEventService = MockVideoEventService();
-      mockLikesRepository = MockLikesRepository();
-      mockKeyManager = MockNostrKeyManager();
-      mockAuthService = MockAuthService();
+      mockNostrService = _MockNostrClient();
+      mockVideoEventService = _MockVideoEventService();
+      mockLikesRepository = _MockLikesRepository();
+      mockAuthService = _MockAuthService();
 
-      // Setup default mock behaviors
-      when(mockVideoEventService.videoEvents).thenReturn([]);
-      when(mockVideoEventService.discoveryVideos).thenReturn([]);
-
-      // Mock getLikeCounts to return empty counts (replaced getCachedLikeCount)
-      when(mockLikesRepository.getLikeCounts(any)).thenAnswer((_) async => {});
-
-      // Stub subscribe for CurationService initialization (fetches Divine Team videos)
+      // Setup default mock behaviors for constructor initialization
+      when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
       when(
-        mockNostrService.subscribe(any),
+        () => mockLikesRepository.getLikeCounts(any()),
+      ).thenAnswer((_) async => {});
+      when(
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => const Stream<Event>.empty());
-
-      // Stub createAndSignEvent for AuthService (used in curation creation)
       when(
-        mockAuthService.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
-          biometricPrompt: anyNamed('biometricPrompt'),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer((_) async => null);
-
-      // Create test keypair
-      testKeychain = Keychain.generate();
 
       curationService = CurationService(
         nostrService: mockNostrService,
@@ -71,44 +65,54 @@ void main() {
       );
     });
 
-    test('successfully creates and publishes curation set', () async {
-      // Setup: Mock successful broadcast
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
-      });
+    test(
+      'returns true when event is signed and published successfully',
+      () async {
+        final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
+        signedEvent.id = 'signed_event_id';
 
-      // Execute
-      final result = await curationService.createCurationSet(
-        id: 'test_list',
-        title: 'Test Curation List',
-        videoIds: ['video1', 'video2', 'video3'],
-        description: 'A test curation set',
-        imageUrl: 'https://example.com/image.jpg',
-      );
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((_) async => signedEvent);
+        when(
+          () => mockNostrService.publishEvent(any()),
+        ).thenAnswer((_) async => signedEvent);
+        when(
+          () => mockNostrService.connectedRelays,
+        ).thenReturn(['wss://relay']);
 
-      // Verify: Returns true on success
-      expect(result, isTrue);
+        final result = await curationService.createCurationSet(
+          id: 'test_list',
+          title: 'Test Curation List',
+          videoIds: ['video1', 'video2', 'video3'],
+          description: 'A test curation set',
+          imageUrl: 'https://example.com/image.jpg',
+        );
 
-      // Verify: Broadcast was called
-      verify(mockNostrService.publishEvent(any)).called(1);
+        expect(result, isTrue);
+        verify(() => mockNostrService.publishEvent(any())).called(1);
+      },
+    );
 
-      // Verify: Local state was updated
-      final storedSet = curationService.getCurationSet('test_list');
-      expect(storedSet, isNotNull);
-      expect(storedSet!.id, 'test_list');
-      expect(storedSet.title, 'Test Curation List');
-      expect(storedSet.videoIds, ['video1', 'video2', 'video3']);
-      expect(storedSet.description, 'A test curation set');
-      expect(storedSet.imageUrl, 'https://example.com/image.jpg');
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+    test('calls createAndSignEvent with kind 30005', () async {
+      final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
+      signedEvent.id = 'event_id';
 
-    test('creates event with correct kind 30005', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
-      });
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => signedEvent);
+      when(() => mockNostrService.connectedRelays).thenReturn([]);
 
       await curationService.createCurationSet(
         id: 'test',
@@ -116,19 +120,32 @@ void main() {
         videoIds: ['video1'],
       );
 
-      // Verify: Event has correct kind
-      final capturedEvent =
-          verify(mockNostrService.publishEvent(captureAny)).captured.single
-              as Event;
-      expect(capturedEvent.kind, 30005);
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+      final captured = verify(
+        () => mockAuthService.createAndSignEvent(
+          kind: captureAny(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).captured;
+
+      expect(captured.single, 30005);
+    });
 
     test('creates event with correct tags', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
-      });
+      final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
+      signedEvent.id = 'event_id';
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => signedEvent);
+      when(() => mockNostrService.connectedRelays).thenReturn([]);
 
       await curationService.createCurationSet(
         id: 'my_list',
@@ -138,179 +155,163 @@ void main() {
         imageUrl: 'https://example.com/img.jpg',
       );
 
-      // Verify: Event has correct tags
-      final capturedEvent =
-          verify(mockNostrService.publishEvent(captureAny)).captured.single
-              as Event;
+      final captured = verify(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: captureAny(named: 'tags'),
+        ),
+      ).captured;
 
-      // Find specific tags
-      final dTag = capturedEvent.tags.firstWhere((tag) => tag[0] == 'd');
-      final titleTag = capturedEvent.tags.firstWhere(
-        (tag) => tag[0] == 'title',
-      );
-      final descTag = capturedEvent.tags.firstWhere(
-        (tag) => tag[0] == 'description',
-      );
-      final imageTag = capturedEvent.tags.firstWhere(
-        (tag) => tag[0] == 'image',
-      );
+      final tags = captured.single as List<List<String>>;
 
+      // Verify d tag (identifier)
+      final dTag = tags.firstWhere((tag) => tag[0] == 'd');
       expect(dTag[1], 'my_list');
+
+      // Verify title tag
+      final titleTag = tags.firstWhere((tag) => tag[0] == 'title');
       expect(titleTag[1], 'My List');
+
+      // Verify description tag
+      final descTag = tags.firstWhere((tag) => tag[0] == 'description');
       expect(descTag[1], 'Test description');
+
+      // Verify image tag
+      final imageTag = tags.firstWhere((tag) => tag[0] == 'image');
       expect(imageTag[1], 'https://example.com/img.jpg');
 
-      // Verify video references
-      final aTags = capturedEvent.tags.where((tag) => tag[0] == 'a').toList();
-      expect(aTags.length, 2);
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+      // Verify client attribution tag
+      final clientTag = tags.firstWhere((tag) => tag[0] == 'client');
+      expect(clientTag[1], 'diVine');
+
+      // Verify video references as 'e' tags
+      final eTags = tags.where((tag) => tag[0] == 'e').toList();
+      expect(eTags, hasLength(2));
+      expect(eTags[0][1], 'vid1');
+      expect(eTags[1][1], 'vid2');
+    });
 
     test('returns false when broadcast fails', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      // publishEvent returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+      final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
 
-      // Execute
-      final result = await curationService.createCurationSet(
-        id: 'test_list',
-        title: 'Test List',
-        videoIds: ['video1'],
-      );
-
-      // Verify: Returns false on failure
-      expect(result, isFalse);
-    });
-
-    test('handles missing keypair gracefully', () async {
-      // Setup: No keypair available
-      when(mockKeyManager.keyPair).thenReturn(null);
-
-      // Execute
-      final result = await curationService.createCurationSet(
-        id: 'test_list',
-        title: 'Test List',
-        videoIds: ['video1'],
-      );
-
-      // Verify: Returns false when no keys
-      expect(result, isFalse);
-
-      // Verify: Does not attempt to broadcast
-      verifyNever(mockNostrService.publishEvent(any));
-    });
-
-    test('does not update local state when broadcast fails', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      // publishEvent returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
-
-      await curationService.createCurationSet(
-        id: 'failed_list',
-        title: 'Failed List',
-        videoIds: ['video1'],
-      );
-
-      // Verify: Local state not updated on failure
-      final storedSet = curationService.getCurationSet('failed_list');
-      expect(storedSet, isNull);
-    });
-
-    test('uses curator pubkey from keyManager', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
-      });
-
-      await curationService.createCurationSet(
-        id: 'test',
-        title: 'Test',
-        videoIds: ['video1'],
-      );
-
-      // Verify: Event pubkey matches keypair
-      final capturedEvent =
-          verify(mockNostrService.publishEvent(captureAny)).captured.single
-              as Event;
-      expect(capturedEvent.pubkey, testKeychain.public);
-
-      // Verify: Stored curation set has correct curator pubkey
-      final storedSet = curationService.getCurationSet('test');
-      expect(storedSet!.curatorPubkey, testKeychain.public);
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
-
-    test('handles partial broadcast success', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
-      });
-
-      // Execute
-      final result = await curationService.createCurationSet(
-        id: 'partial_list',
-        title: 'Partial Success',
-        videoIds: ['video1'],
-      );
-
-      // Verify: Returns true if at least one relay succeeded
-      expect(result, isTrue);
-
-      // Verify: Local state updated even with partial success
-      final storedSet = curationService.getCurationSet('partial_list');
-      expect(storedSet, isNotNull);
-    }, skip: true);
-
-    test('handles broadcast exception', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
       when(
-        mockNostrService.publishEvent(any),
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => null);
+
+      final result = await curationService.createCurationSet(
+        id: 'test_list',
+        title: 'Test List',
+        videoIds: ['video1'],
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('returns false when event signing fails', () async {
+      // createAndSignEvent returns null (signing failure)
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final result = await curationService.createCurationSet(
+        id: 'test_list',
+        title: 'Test List',
+        videoIds: ['video1'],
+      );
+
+      expect(result, isFalse);
+      verifyNever(() => mockNostrService.publishEvent(any()));
+    });
+
+    test('returns false when publish throws exception', () async {
+      final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
       ).thenThrow(Exception('Network error'));
 
-      // Execute - should not throw
       final result = await curationService.createCurationSet(
         id: 'error_list',
         title: 'Error Test',
         videoIds: ['video1'],
       );
 
-      // Verify: Returns false on exception
       expect(result, isFalse);
-
-      // Verify: Local state not updated
-      final storedSet = curationService.getCurationSet('error_list');
-      expect(storedSet, isNull);
     });
 
     test('creates curation set with empty video list', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
-      });
+      final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
+      signedEvent.id = 'event_id';
 
-      // Execute: Create with no videos
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => signedEvent);
+      when(() => mockNostrService.connectedRelays).thenReturn([]);
+
       final result = await curationService.createCurationSet(
         id: 'empty_list',
         title: 'Empty List',
         videoIds: [],
       );
 
-      // Verify: Succeeds even with empty video list
       expect(result, isTrue);
 
-      final storedSet = curationService.getCurationSet('empty_list');
-      expect(storedSet, isNotNull);
-      expect(storedSet!.videoIds, isEmpty);
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+      // Verify no 'e' tags were added
+      final captured = verify(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: captureAny(named: 'tags'),
+        ),
+      ).captured;
+
+      final tags = captured.single as List<List<String>>;
+      final eTags = tags.where((tag) => tag[0] == 'e').toList();
+      expect(eTags, isEmpty);
+    });
 
     test('creates curation set with minimal parameters', () async {
-      when(mockKeyManager.keyPair).thenReturn(testKeychain);
-      when(mockNostrService.publishEvent(any)).thenAnswer((invocation) async {
-        return invocation.positionalArguments[0] as Event;
-      });
+      final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
+      signedEvent.id = 'event_id';
 
-      // Execute: Create with only required params
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => signedEvent);
+      when(() => mockNostrService.connectedRelays).thenReturn([]);
+
       final result = await curationService.createCurationSet(
         id: 'minimal',
         title: 'Minimal',
@@ -319,11 +320,135 @@ void main() {
 
       expect(result, isTrue);
 
-      final storedSet = curationService.getCurationSet('minimal');
-      expect(storedSet, isNotNull);
-      expect(storedSet!.description, isNull);
-      expect(storedSet.imageUrl, isNull);
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+      // Verify no description or image tags
+      final captured = verify(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: captureAny(named: 'tags'),
+        ),
+      ).captured;
+
+      final tags = captured.single as List<List<String>>;
+      final descTags = tags.where((tag) => tag[0] == 'description');
+      final imageTags = tags.where((tag) => tag[0] == 'image');
+      expect(descTags, isEmpty);
+      expect(imageTags, isEmpty);
+    });
+
+    test('updates publish status on successful publish', () async {
+      final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
+      signedEvent.id = 'published_event_id';
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => signedEvent);
+      when(() => mockNostrService.connectedRelays).thenReturn(['wss://relay']);
+
+      await curationService.createCurationSet(
+        id: 'status_test',
+        title: 'Status Test',
+        videoIds: ['video1'],
+      );
+
+      final status = curationService.getCurationPublishStatus('status_test');
+      expect(status.isPublished, isTrue);
+      expect(status.isPublishing, isFalse);
+      expect(status.publishedEventId, 'published_event_id');
+    });
+
+    test('updates publish status on failed publish', () async {
+      final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => null);
+
+      await curationService.createCurationSet(
+        id: 'fail_status',
+        title: 'Fail Status Test',
+        videoIds: ['video1'],
+      );
+
+      final status = curationService.getCurationPublishStatus('fail_status');
+      expect(status.isPublished, isFalse);
+      expect(status.isPublishing, isFalse);
+      expect(status.failedAttempts, 1);
+    });
+
+    test('uses content from description or title', () async {
+      final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
+      signedEvent.id = 'event_id';
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+      when(
+        () => mockNostrService.publishEvent(any()),
+      ).thenAnswer((_) async => signedEvent);
+      when(() => mockNostrService.connectedRelays).thenReturn([]);
+
+      // With description
+      await curationService.createCurationSet(
+        id: 'with_desc',
+        title: 'Title',
+        videoIds: ['video1'],
+        description: 'My description',
+      );
+
+      final capturedWithDesc = verify(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: captureAny(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).captured;
+
+      expect(capturedWithDesc.single, 'My description');
+
+      // Without description - uses title
+      reset(mockAuthService);
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => signedEvent);
+
+      await curationService.createCurationSet(
+        id: 'no_desc',
+        title: 'Just Title',
+        videoIds: ['video1'],
+      );
+
+      final capturedNoDesc = verify(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: captureAny(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).captured;
+
+      expect(capturedNoDesc.single, 'Just Title');
+    });
   });
 }

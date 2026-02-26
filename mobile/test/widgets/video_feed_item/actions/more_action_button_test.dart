@@ -6,9 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mocktail/mocktail.dart' as mocktail;
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
@@ -19,8 +17,11 @@ import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/video_feed_item/actions/more_action_button.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
-@GenerateMocks([ContentBlocklistService, MuteService])
-import 'more_action_button_test.mocks.dart';
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
+
+class _MockMuteService extends Mock implements MuteService {}
 
 void main() {
   late VideoEvent testVideo;
@@ -71,18 +72,16 @@ void main() {
   });
 
   group('VideoMoreMenu', () {
-    late MockContentBlocklistService mockBlocklistService;
-    late MockMuteService mockMuteService;
+    late _MockContentBlocklistService mockBlocklistService;
+    late _MockMuteService mockMuteService;
     late MockNostrClient mockNostrClient;
 
     setUp(() {
-      mockBlocklistService = MockContentBlocklistService();
-      mockMuteService = MockMuteService();
+      mockBlocklistService = _MockContentBlocklistService();
+      mockMuteService = _MockMuteService();
       mockNostrClient = createMockNostrService();
       // Stub publicKey so _handleBlock can access it
-      mocktail
-          .when(() => mockNostrClient.publicKey)
-          .thenReturn('test_pubkey_hex');
+      when(() => mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
     });
 
     Widget buildMenuWidget({bool debugToolsEnabled = false}) {
@@ -164,10 +163,10 @@ void main() {
       tester,
     ) async {
       when(
-        mockMuteService.muteUser(
-          any,
-          reason: anyNamed('reason'),
-          duration: anyNamed('duration'),
+        () => mockMuteService.muteUser(
+          any(),
+          reason: any(named: 'reason'),
+          duration: any(named: 'duration'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -183,10 +182,10 @@ void main() {
 
     testWidgets('tapping Mute shows error snackbar on failure', (tester) async {
       when(
-        mockMuteService.muteUser(
-          any,
-          reason: anyNamed('reason'),
-          duration: anyNamed('duration'),
+        () => mockMuteService.muteUser(
+          any(),
+          reason: any(named: 'reason'),
+          duration: any(named: 'duration'),
         ),
       ).thenThrow(Exception('Network error'));
 
@@ -235,9 +234,9 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        mockBlocklistService.blockUser(
+        () => mockBlocklistService.blockUser(
           testVideo.pubkey,
-          ourPubkey: anyNamed('ourPubkey'),
+          ourPubkey: any(named: 'ourPubkey'),
         ),
       ).called(1);
 
@@ -258,7 +257,10 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        mockBlocklistService.blockUser(any, ourPubkey: anyNamed('ourPubkey')),
+        () => mockBlocklistService.blockUser(
+          any(),
+          ourPubkey: any(named: 'ourPubkey'),
+        ),
       );
     });
 

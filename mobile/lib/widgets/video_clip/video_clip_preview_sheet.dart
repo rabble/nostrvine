@@ -20,7 +20,7 @@ import 'package:video_player/video_player.dart';
 /// Displays a looping video player with the clip's duration information
 /// and a delete button. The video automatically starts playing when opened.
 class VideoClipPreviewSheet extends ConsumerStatefulWidget {
-  const VideoClipPreviewSheet({super.key, required this.clip});
+  const VideoClipPreviewSheet({required this.clip, super.key});
 
   /// The clip to preview, containing file path, duration, and other metadata.
   final SavedClip clip;
@@ -120,11 +120,11 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
             behavior: SnackBarBehavior.floating,
-            content: const DivineSnackbarContainer(
+            content: DivineSnackbarContainer(
               label: 'Failed to save clip',
               error: true,
             ),
@@ -146,7 +146,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
         child: SafeArea(
           child: Center(
             child: Padding(
-              padding: .all(36),
+              padding: const .all(36),
               child: AspectRatio(
                 aspectRatio: widget.clip.aspectRatioValue,
                 child: ClipRRect(
@@ -165,7 +165,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
                         ),
 
                       // Progress-indicator
-                      Center(
+                      const Center(
                         child: CircularProgressIndicator(
                           color: VineTheme.vineGreen,
                         ),
@@ -183,7 +183,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
                               ],
                             ),
                         switchInCurve: Curves.easeInOut,
-                        duration: Duration(milliseconds: 120),
+                        duration: const Duration(milliseconds: 120),
                         child: _isInitialized && _controller != null
                             ? FittedBox(
                                 fit: .cover,
@@ -194,7 +194,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
                                   child: VideoPlayer(_controller!),
                                 ),
                               )
-                            : SizedBox.shrink(),
+                            : const SizedBox.shrink(),
                       ),
 
                       // Save to gallery button
@@ -243,14 +243,14 @@ class _SaveToGalleryButton extends StatelessWidget {
         ),
         tooltip: 'Save to ${GallerySaveService.destinationName}',
         icon: isSaving
-            ? SizedBox.square(
+            ? const SizedBox.square(
                 dimension: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: VineTheme.whiteText,
                 ),
               )
-            : Icon(Icons.download_rounded, color: VineTheme.whiteText),
+            : const Icon(Icons.download_rounded, color: VineTheme.whiteText),
       ),
     );
   }

@@ -3,8 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
@@ -12,14 +11,13 @@ import 'package:openvine/widgets/add_to_list_dialog.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
-@GenerateMocks([CuratedListService])
-import 'add_to_list_dialog_test.mocks.dart';
+class _MockCuratedListService extends Mock implements CuratedListService {}
 
 /// Test data for the fake notifier - set before each test
 List<CuratedList> _fakeLists = [];
 
 /// Mock service for the fake notifier - set before tests that need interactions
-MockCuratedListService? _fakeService;
+_MockCuratedListService? _fakeService;
 
 /// Fake notifier that provides test data for curatedListsStateProvider
 class _FakeCuratedListsState extends CuratedListsState {
@@ -33,7 +31,7 @@ class _FakeCuratedListsState extends CuratedListsState {
 void main() {
   group(SelectListDialog, () {
     late VideoEvent testVideo;
-    late MockCuratedListService mockListService;
+    late _MockCuratedListService mockListService;
 
     setUp(() {
       testVideo = VideoEvent(
@@ -47,7 +45,7 @@ void main() {
         title: 'Test Video',
       );
       _fakeLists = [];
-      mockListService = MockCuratedListService();
+      mockListService = _MockCuratedListService();
       _fakeService = mockListService;
     });
 
@@ -68,8 +66,7 @@ void main() {
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'My Test List',
           description: 'A test list',
-          isPublic: true,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -90,9 +87,7 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Contains Video',
-          description: null,
-          isPublic: true,
-          videoEventIds: [
+          videoEventIds: const [
             '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
           ],
           createdAt: DateTime.now(),
@@ -113,9 +108,7 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Empty List',
-          description: null,
-          isPublic: true,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -134,9 +127,7 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Three Videos',
-          description: null,
-          isPublic: true,
-          videoEventIds: ['vid1', 'vid2', 'vid3'],
+          videoEventIds: const ['vid1', 'vid2', 'vid3'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -151,7 +142,7 @@ void main() {
     testWidgets('tapping list item adds video and shows snackbar', (
       tester,
     ) async {
-      final listId =
+      const listId =
           'list0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
       _fakeLists = [
         CuratedList(
@@ -159,49 +150,14 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'My List',
-          description: null,
-          isPublic: true,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
       ];
 
       when(
-        mockListService.addVideoToList(any, any),
-      ).thenAnswer((_) async => true);
-
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('My List'));
-      await tester.pumpAndSettle();
-
-      verify(mockListService.addVideoToList(listId, testVideo.id)).called(1);
-      expect(find.text('Added to My List'), findsOneWidget);
-    });
-
-    testWidgets('tapping list item with video removes it and shows snackbar', (
-      tester,
-    ) async {
-      final listId =
-          'list0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
-      _fakeLists = [
-        CuratedList(
-          id: listId,
-          pubkey:
-              'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
-          name: 'My List',
-          description: null,
-          isPublic: true,
-          videoEventIds: [testVideo.id],
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        ),
-      ];
-
-      when(
-        mockListService.removeVideoFromList(any, any),
+        () => mockListService.addVideoToList(any(), any()),
       ).thenAnswer((_) async => true);
 
       await tester.pumpWidget(buildSubject());
@@ -211,7 +167,40 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(
-        mockListService.removeVideoFromList(listId, testVideo.id),
+        () => mockListService.addVideoToList(listId, testVideo.id),
+      ).called(1);
+      expect(find.text('Added to My List'), findsOneWidget);
+    });
+
+    testWidgets('tapping list item with video removes it and shows snackbar', (
+      tester,
+    ) async {
+      const listId =
+          'list0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+      _fakeLists = [
+        CuratedList(
+          id: listId,
+          pubkey:
+              'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+          name: 'My List',
+          videoEventIds: [testVideo.id],
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      ];
+
+      when(
+        () => mockListService.removeVideoFromList(any(), any()),
+      ).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('My List'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockListService.removeVideoFromList(listId, testVideo.id),
       ).called(1);
       expect(find.text('Removed from My List'), findsOneWidget);
     });
@@ -232,9 +221,7 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Favorites',
-          description: null,
-          isPublic: true,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -243,9 +230,8 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Watch Later',
-          description: null,
           isPublic: false,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -261,7 +247,7 @@ void main() {
 
   group(CreateListDialog, () {
     late VideoEvent testVideo;
-    late MockCuratedListService mockListService;
+    late _MockCuratedListService mockListService;
 
     setUp(() {
       testVideo = VideoEvent(
@@ -274,7 +260,7 @@ void main() {
         videoUrl: 'https://example.com/video.mp4',
         title: 'Test Video',
       );
-      mockListService = MockCuratedListService();
+      mockListService = _MockCuratedListService();
       _fakeService = mockListService;
     });
 
@@ -334,10 +320,10 @@ void main() {
 
       // Should not call createList
       verifyNever(
-        mockListService.createList(
-          name: anyNamed('name'),
-          description: anyNamed('description'),
-          isPublic: anyNamed('isPublic'),
+        () => mockListService.createList(
+          name: any(named: 'name'),
+          description: any(named: 'description'),
+          isPublic: any(named: 'isPublic'),
         ),
       );
     });

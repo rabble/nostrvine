@@ -2,9 +2,9 @@
 // ABOUTME: Tests real HTTP POST to Worker API endpoint
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/config/bug_report_config.dart';
 import 'package:models/models.dart'
     show BugReportData, LogCategory, LogEntry, LogLevel;
+import 'package:openvine/config/bug_report_config.dart';
 import 'package:openvine/services/bug_report_service.dart';
 
 void main() {
@@ -41,7 +41,6 @@ void main() {
           ],
           errorCounts: {'TestError': 1},
           currentScreen: 'TestScreen',
-          userPubkey: null,
         );
 
         // Send to Worker API

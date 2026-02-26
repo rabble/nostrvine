@@ -111,9 +111,7 @@ void main() {
       ) async {
         await tester.pumpWidget(
           buildSubject(
-            state: const FullscreenFeedState(
-              status: FullscreenFeedStatus.initial,
-            ),
+            state: const FullscreenFeedState(),
           ),
         );
 
@@ -128,7 +126,6 @@ void main() {
           buildSubject(
             state: const FullscreenFeedState(
               status: FullscreenFeedStatus.ready,
-              videos: [],
             ),
           ),
         );
@@ -171,7 +168,6 @@ void main() {
             state: FullscreenFeedState(
               status: FullscreenFeedStatus.ready,
               videos: videos,
-              currentIndex: 0,
             ),
           ),
         );
@@ -193,7 +189,6 @@ void main() {
             state: FullscreenFeedState(
               status: FullscreenFeedStatus.ready,
               videos: videos,
-              currentIndex: 0,
             ),
           ),
         );
@@ -205,7 +200,10 @@ void main() {
 
         // Simulate video change callback
         pooledVideoFeed.onActiveVideoChanged?.call(
-          VideoItem(id: testVideoId2, url: 'https://example.com/video2.mp4'),
+          const VideoItem(
+            id: testVideoId2,
+            url: 'https://example.com/video2.mp4',
+          ),
           1,
         );
 
@@ -224,7 +222,6 @@ void main() {
             state: FullscreenFeedState(
               status: FullscreenFeedStatus.ready,
               videos: videos,
-              currentIndex: 0,
               canLoadMore: true,
             ),
           ),
@@ -254,7 +251,6 @@ void main() {
           final initialState = FullscreenFeedState(
             status: FullscreenFeedStatus.ready,
             videos: videos,
-            currentIndex: 0,
           );
 
           await tester.pumpWidget(buildSubject(state: initialState));
@@ -264,7 +260,6 @@ void main() {
           final stateWithSeekCommand = FullscreenFeedState(
             status: FullscreenFeedStatus.ready,
             videos: videos,
-            currentIndex: 0,
             seekCommand: const SeekCommand(index: 0, position: Duration.zero),
           );
 
@@ -287,7 +282,6 @@ void main() {
         final state = FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: videos,
-          currentIndex: 0,
         );
 
         await tester.pumpWidget(buildSubject(state: state));
@@ -309,20 +303,18 @@ void main() {
         final initialState = FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: videos,
-          currentIndex: 0,
         );
 
         await tester.pumpWidget(buildSubject(state: initialState));
         await tester.pumpAndSettle();
 
-        final seekCommand = const SeekCommand(
+        const seekCommand = SeekCommand(
           index: 0,
           position: Duration.zero,
         );
         final stateWithSeekCommand = FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: videos,
-          currentIndex: 0,
           seekCommand: seekCommand,
         );
 
@@ -444,7 +436,6 @@ void main() {
             FullscreenFeedState(
               status: FullscreenFeedStatus.ready,
               videos: videos,
-              currentIndex: 0,
             ),
           );
 
@@ -478,7 +469,6 @@ void main() {
             FullscreenFeedState(
               status: FullscreenFeedStatus.ready,
               videos: videos,
-              currentIndex: 0,
             ),
           );
 

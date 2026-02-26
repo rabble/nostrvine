@@ -2,18 +2,18 @@
 // ABOUTME: Verifies the fix for videos showing blank when navigating from video back to tab
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:likes_repository/likes_repository.dart';
 import 'package:riverpod/riverpod.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -83,7 +83,7 @@ void main() {
         // ACT: Wait for initialization
         container.read(curationProvider);
         // Wait for initialization
-        await Future.delayed(Duration(milliseconds: 50));
+        await Future.delayed(const Duration(milliseconds: 50));
 
         final stateAfterInit = container.read(curationProvider);
         expect(
@@ -125,7 +125,7 @@ void main() {
     );
 
     test(
-      'navigating from video back to Editor\'s Pick tab triggers refresh',
+      "navigating from video back to Editor's Pick tab triggers refresh",
       () async {
         // This test documents the expected behavior:
         // 1. User opens Editor's Pick tab (provider initializes)
@@ -166,7 +166,7 @@ void main() {
 
         // ACT: Initialize and wait for async work
         container.read(curationProvider);
-        await Future.delayed(Duration(milliseconds: 50));
+        await Future.delayed(const Duration(milliseconds: 50));
 
         final stateBeforeNav = container.read(curationProvider);
         expect(

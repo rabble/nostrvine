@@ -7,20 +7,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
 import 'package:openvine/widgets/profile/profile_following_stat.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
-import 'package:openvine/providers/nip05_verification_provider.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -121,7 +121,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                 // Secure account banner for anonymous users (only on own profile)
                 // Only shown when headless auth feature is enabled
                 if (isOwnProfile && isAnonymous)
-                  _IdentityNotRecoverableBanner(),
+                  const _IdentityNotRecoverableBanner(),
 
                 // Profile picture and stats row
                 Row(
@@ -144,7 +144,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
                               count: videoCount,
                               label: 'Videos',
                               isLoading: false,
-                              onTap: null, // Videos aren't tappable
                             ),
                           ),
                           Flexible(
@@ -217,7 +216,7 @@ class _SetupProfileBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.person_add, color: VineTheme.whiteText, size: 24),
+          const Icon(Icons.person_add, color: VineTheme.whiteText, size: 24),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -303,10 +302,14 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
           ),
         );
       case EmailVerificationStatus.failure:
-        return Icon(Icons.error_outline, color: VineTheme.whiteText, size: 24);
+        return const Icon(
+          Icons.error_outline,
+          color: VineTheme.whiteText,
+          size: 24,
+        );
       case EmailVerificationStatus.initial:
       case EmailVerificationStatus.success:
-        return Icon(Icons.security, color: VineTheme.whiteText, size: 24);
+        return const Icon(Icons.security, color: VineTheme.whiteText, size: 24);
     }
   }
 
@@ -637,12 +640,11 @@ class _ProfileAvatarWithColor extends StatelessWidget {
   const _ProfileAvatarWithColor({required this.imageUrl, this.profileColor});
 
   final String? imageUrl;
-  // ignore: unused_field
   final Color? profileColor;
 
   @override
   Widget build(BuildContext context) {
     const avatarSize = 88.0;
-    return UserAvatar(imageUrl: imageUrl, name: null, size: avatarSize);
+    return UserAvatar(imageUrl: imageUrl, size: avatarSize);
   }
 }

@@ -1,6 +1,7 @@
 // ABOUTME: Screen displaying another user's followers list
 // ABOUTME: Uses OthersFollowersBloc for list + MyFollowingBloc for follow button state
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,6 @@ import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
@@ -20,9 +20,9 @@ import 'package:openvine/widgets/user_profile_tile.dart';
 /// (for follow button state) and provides them to the view.
 class OthersFollowersScreen extends ConsumerWidget {
   const OthersFollowersScreen({
-    super.key,
     required this.pubkey,
     required this.displayName,
+    super.key,
   });
 
   final String pubkey;

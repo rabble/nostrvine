@@ -12,8 +12,8 @@ import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 
@@ -151,21 +151,25 @@ class _NotificationTabContentState
     final asyncState = ref.watch(relayNotificationsProvider);
 
     return asyncState.when(
-      loading: () => Container(
+      loading: () => const ColoredBox(
         color: VineTheme.backgroundColor,
-        child: const Center(
+        child: Center(
           child: CircularProgressIndicator(color: VineTheme.vineGreen),
         ),
       ),
-      error: (error, _) => Container(
+      error: (error, _) => ColoredBox(
         color: VineTheme.backgroundColor,
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
+              const Icon(
+                Icons.error_outline,
+                size: 64,
+                color: VineTheme.lightText,
+              ),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Failed to load notifications',
                 style: TextStyle(fontSize: 18, color: VineTheme.secondaryText),
               ),
@@ -193,7 +197,7 @@ class _NotificationTabContentState
         );
 
         if (notifications.isEmpty) {
-          return Container(
+          return ColoredBox(
             color: VineTheme.backgroundColor,
             child: RefreshIndicator(
               semanticsLabel: 'checking for new notifications',
@@ -211,7 +215,7 @@ class _NotificationTabContentState
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.notifications_none,
                             size: 64,
                             color: VineTheme.lightText,
@@ -222,14 +226,14 @@ class _NotificationTabContentState
                                 ? 'No notifications yet'
                                 : 'No ${_getFilterName(widget.filter!)}'
                                       ' notifications',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 18,
                               color: VineTheme.secondaryText,
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            "When people interact with your content,\n"
+                          const Text(
+                            'When people interact with your content,\n'
                             "you'll see it here",
                             textAlign: TextAlign.center,
                             style: TextStyle(
@@ -247,7 +251,7 @@ class _NotificationTabContentState
           );
         }
 
-        return Container(
+        return ColoredBox(
           color: VineTheme.backgroundColor,
           child: RefreshIndicator(
             semanticsLabel: 'checking for new notifications',
@@ -289,7 +293,7 @@ class _NotificationTabContentState
                         padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                         child: Text(
                           _getDateHeader(notification.timestamp),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                             color: VineTheme.secondaryText,
@@ -311,7 +315,7 @@ class _NotificationTabContentState
                       },
                     ),
                     if (index < notifications.length - 1)
-                      Divider(
+                      const Divider(
                         height: 1,
                         thickness: 0.5,
                         color: VineTheme.onSurfaceMuted,
@@ -407,12 +411,10 @@ class _NotificationTabContentState
             notificationType: notification.type,
           );
         }
-        break;
       case 'open_profile':
         if (notification.navigationTarget != null) {
           _navigateToProfile(context, notification.navigationTarget!);
         }
-        break;
       case 'none':
         // System notifications don't need navigation
         break;

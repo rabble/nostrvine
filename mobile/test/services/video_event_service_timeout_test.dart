@@ -36,7 +36,7 @@ void main() {
         () => mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) {
         final controller = StreamController<Event>();
-        addTearDown(() => controller.close());
+        addTearDown(controller.close);
         return controller.stream;
       });
 
@@ -55,7 +55,7 @@ void main() {
             wasCancelled = true;
           },
         );
-        addTearDown(() => controller.close());
+        addTearDown(controller.close);
 
         // Override mock to use our tracked controller
         when(
@@ -84,7 +84,7 @@ void main() {
                 mockNostrService.subscribe(any(), onEose: any(named: 'onEose')),
           ).thenAnswer((_) {
             final c = StreamController<Event>();
-            addTearDown(() => c.close());
+            addTearDown(c.close);
             return c.stream;
           });
 
@@ -131,7 +131,6 @@ void main() {
           // 3. Try to subscribe again (simulate user coming back)
           videoEventService.subscribeToVideoFeed(
             subscriptionType: SubscriptionType.discovery,
-            force: false, // Default behavior relies on deduplication
           );
 
           async.flushMicrotasks();

@@ -56,5 +56,5 @@ final routeNormalizationProvider = Provider<void>((ref) {
   router.routerDelegate.addListener(listener);
   ref.onDispose(() => router.routerDelegate.removeListener(listener));
 
-  return null;
+  return;
 });

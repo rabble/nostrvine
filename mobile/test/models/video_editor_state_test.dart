@@ -37,7 +37,7 @@ void main() {
     test('copyWith preserves all fields when none specified', () {
       final state = VideoEditorProviderState(
         currentClipIndex: 2,
-        currentPosition: Duration(seconds: 5),
+        currentPosition: const Duration(seconds: 5),
         isEditing: true,
         isReordering: true,
         isOverDeleteZone: true,

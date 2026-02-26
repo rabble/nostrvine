@@ -5,15 +5,15 @@
 
 import 'dart:async';
 
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
-import 'package:openvine/services/relay_discovery_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Represents a follow set (NIP-51 Kind 30000)

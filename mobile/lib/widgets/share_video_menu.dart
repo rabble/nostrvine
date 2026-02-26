@@ -1,31 +1,30 @@
 // ABOUTME: Share menu for videos with list management, bookmarks, and social sharing
 // ABOUTME: Provides NIP-51 list management, bookmark sets, follow sets, and sharing features
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/social_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/widgets/user_avatar.dart';
-import 'package:openvine/widgets/user_picker_sheet.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:openvine/widgets/save_original_progress_sheet.dart';
-import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
-
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
+import 'package:openvine/widgets/save_original_progress_sheet.dart';
+import 'package:openvine/widgets/user_avatar.dart';
+import 'package:openvine/widgets/user_picker_sheet.dart';
+import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
+import 'package:share_plus/share_plus.dart';
 
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();
@@ -122,9 +121,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
   Widget _buildHeader() => Container(
     padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
+    decoration: const BoxDecoration(
       border: Border(
-        bottom: BorderSide(color: VineTheme.cardBackground, width: 1),
+        bottom: BorderSide(color: VineTheme.cardBackground),
       ),
     ),
     child: Row(
@@ -179,20 +178,24 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           color: Colors.orange.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(Icons.psychology_alt, color: Colors.orange, size: 20),
+        child: const Icon(Icons.psychology_alt, color: Colors.orange, size: 20),
       ),
-      title: Text(
+      title: const Text(
         'Report AI Content',
         style: TextStyle(
           color: VineTheme.whiteText,
           fontWeight: FontWeight.w600,
         ),
       ),
-      subtitle: Text(
+      subtitle: const Text(
         'Quick report suspected AI-generated content',
         style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
       ),
-      trailing: Icon(Icons.arrow_forward_ios, color: Colors.orange, size: 16),
+      trailing: const Icon(
+        Icons.arrow_forward_ios,
+        color: Colors.orange,
+        size: 16,
+      ),
       onTap: _quickReportAI,
     ),
   );
@@ -203,7 +206,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       // Show loading snackbar
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Row(
               children: [
                 SizedBox(
@@ -241,7 +244,6 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           // Show success confirmation dialog using root navigator
           showDialog(
             context: context,
-            useRootNavigator: true,
             builder: (context) => const ReportConfirmationDialog(),
           );
         } else {
@@ -338,15 +340,15 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    const Row(
                       children: [
                         Icon(
                           Icons.info_outline,
                           color: VineTheme.vineGreen,
                           size: 18,
                         ),
-                        const SizedBox(width: 8),
-                        const Text(
+                        SizedBox(width: 8),
+                        Text(
                           'Video Status',
                           style: TextStyle(
                             color: VineTheme.whiteText,
@@ -380,8 +382,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                       const SizedBox(height: 8),
                       InkWell(
                         onTap: () => _showAllListsDialog(listsContaining),
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 26),
+                        child: const Padding(
+                          padding: EdgeInsets.only(left: 26),
                           child: Text(
                             'View all lists →',
                             style: TextStyle(
@@ -398,11 +400,11 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
               );
             },
             loading: () => const _LoadingIndicator(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           );
         },
         loading: () => const _LoadingIndicator(),
-        error: (_, __) => const SizedBox.shrink(),
+        error: (_, _) => const SizedBox.shrink(),
       );
     },
   );
@@ -508,7 +510,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                     children: [
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.playlist_add_check,
                             color: VineTheme.vineGreen,
                             size: 18,
@@ -570,7 +572,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
               );
             },
             loading: () => const _LoadingIndicator(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           );
         },
       ),
@@ -597,9 +599,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   /// Remove video from a specific list
   Future<void> _removeFromList(String listId) async {
     try {
-      final listService = await ref
-          .read(curatedListsStateProvider.notifier)
-          .service;
+      final listService = ref.read(curatedListsStateProvider.notifier).service;
       await listService?.removeVideoFromList(listId, widget.video.id);
 
       if (mounted) {
@@ -939,7 +939,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   void _showDeleteDialog() {
     showDialog(
       context: context,
-      builder: (dialogContext) => _buildDeleteDialog(dialogContext),
+      builder: _buildDeleteDialog,
     );
   }
 
@@ -991,7 +991,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         actions: [
           TextButton(
             onPressed: context.pop,
-            child: Text('Close', style: TextStyle(color: VineTheme.vineGreen)),
+            child: const Text(
+              'Close',
+              style: TextStyle(color: VineTheme.vineGreen),
+            ),
           ),
         ],
       ),
@@ -1965,7 +1968,6 @@ class _EditCollaboratorChip extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.bodyFont(
-                color: VineTheme.whiteText,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -2136,7 +2138,6 @@ class _EditInspiredByDisplay extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.bodyFont(
-                color: VineTheme.whiteText,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -2191,7 +2192,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                         color: VineTheme.vineGreen.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(Icons.add, color: VineTheme.vineGreen),
+                      child: const Icon(Icons.add, color: VineTheme.vineGreen),
                     ),
                     title: const Text(
                       'Create New Set',
@@ -2290,7 +2291,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
           ),
         ),
-        error: (_, __) => const AlertDialog(
+        error: (_, _) => const AlertDialog(
           backgroundColor: VineTheme.cardBackground,
           title: Text('Error', style: TextStyle(color: VineTheme.whiteText)),
           content: Text(
@@ -2582,7 +2583,6 @@ class _UseThisSoundTile extends ConsumerWidget {
           'Loading...',
           style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
         ),
-        onTap: null,
         contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
       error: (error, stack) {

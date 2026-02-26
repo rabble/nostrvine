@@ -2,9 +2,10 @@
 // ABOUTME: Works on all platforms including iOS devices where shell scripts don't work
 
 import 'dart:io';
+
 import 'package:hive_ce/hive.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// Service to recover from corrupted app data and caches
 class CacheRecoveryService {
@@ -253,8 +254,9 @@ class CacheRecoveryService {
   static String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }

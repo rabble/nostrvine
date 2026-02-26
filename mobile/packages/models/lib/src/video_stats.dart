@@ -354,6 +354,9 @@ class VideoStats {
       authorAvatar: authorAvatar,
       blurhash: blurhash,
       originalLikes: reactions,
+      // When from Funnelcake, Nostr likes are added to originalLikes by default
+      // Setting to 0 here ensures VideoInteractionsBloc seeds the correct count
+      nostrLikeCount: 0,
       originalComments: comments,
       originalReposts: reposts,
       originalLoops: loops,

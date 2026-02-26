@@ -1,9 +1,9 @@
 // ABOUTME: Test to reproduce and verify revine display issue in profile screen
-import 'package:openvine/utils/unified_logger.dart';
 // ABOUTME: Tests that revined videos appear correctly in the user's profile revine tab
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   group('Revine Profile Display Tests', () {
@@ -23,7 +23,6 @@ void main() {
         title: 'Test Video',
         videoUrl: 'https://example.com/video.mp4',
         thumbnailUrl: 'https://example.com/thumb.jpg',
-        isRepost: false,
       );
 
       // Create repost event (what happens when user revines)
@@ -58,7 +57,6 @@ void main() {
         content: 'Video 1',
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video1.mp4',
-        isRepost: false,
       );
 
       final originalVideo2 = VideoEvent(
@@ -68,7 +66,6 @@ void main() {
         content: 'Video 2',
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video2.mp4',
-        isRepost: false,
       );
 
       // User reposts video1
@@ -123,7 +120,6 @@ void main() {
         content: 'Video content',
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video.mp4',
-        isRepost: false, // ❌ Should be true for revines
         reposterPubkey: testUserPubkey, // Set but isRepost is false
       );
 
@@ -148,7 +144,6 @@ void main() {
         timestamp: DateTime.now(),
         videoUrl: 'https://example.com/video.mp4',
         isRepost: true,
-        reposterPubkey: null, // ❌ Should be set
       );
 
       final problematicVideos = [

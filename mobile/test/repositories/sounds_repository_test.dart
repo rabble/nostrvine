@@ -78,7 +78,7 @@ void main() {
       repository.dispose();
     });
 
-    Event _createAudioEvent({
+    Event createAudioEvent({
       required String id,
       required String pubkey,
       int? createdAt,
@@ -116,7 +116,7 @@ void main() {
       test('does not reinitialize if already initialized', () async {
         when(() => mockNostrClient.queryEvents(any())).thenAnswer(
           (_) async => [
-            _createAudioEvent(
+            createAudioEvent(
               id: testEventId1,
               pubkey: testPubkey1,
               title: 'Test Sound',
@@ -149,13 +149,13 @@ void main() {
       });
 
       test('fetches and caches audio events', () async {
-        final event1 = _createAudioEvent(
+        final event1 = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'Sound 1',
           createdAt: 1000,
         );
-        final event2 = _createAudioEvent(
+        final event2 = createAudioEvent(
           id: testEventId2,
           pubkey: testPubkey2,
           title: 'Sound 2',
@@ -197,7 +197,7 @@ void main() {
       });
 
       test('skips events with wrong kind', () async {
-        final audioEvent = _createAudioEvent(
+        final audioEvent = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'Audio',
@@ -249,7 +249,7 @@ void main() {
       });
 
       test('returns sounds by specific creator', () async {
-        final event = _createAudioEvent(
+        final event = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'Creator Sound',
@@ -276,7 +276,7 @@ void main() {
 
       test('returns cached sound without network request', () async {
         // Pre-populate cache
-        final event = _createAudioEvent(
+        final event = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'Cached Sound',
@@ -297,7 +297,7 @@ void main() {
       });
 
       test('fetches from network when not in cache', () async {
-        final event = _createAudioEvent(
+        final event = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'Network Sound',
@@ -353,7 +353,7 @@ void main() {
       });
 
       test('returns sound when it is cached', () async {
-        final event = _createAudioEvent(
+        final event = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'Cached',
@@ -466,7 +466,7 @@ void main() {
       });
 
       test('emits updated list when sounds are fetched', () async {
-        final event = _createAudioEvent(
+        final event = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'Streamed Sound',
@@ -492,7 +492,7 @@ void main() {
 
     group('clearCache', () {
       test('clears all cached sounds', () async {
-        final event = _createAudioEvent(
+        final event = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'To Be Cleared',
@@ -514,12 +514,12 @@ void main() {
 
     group('refresh', () {
       test('clears cache and fetches fresh data', () async {
-        final event1 = _createAudioEvent(
+        final event1 = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'Old Sound',
         );
-        final event2 = _createAudioEvent(
+        final event2 = createAudioEvent(
           id: testEventId2,
           pubkey: testPubkey2,
           title: 'Fresh Sound',
@@ -581,7 +581,7 @@ void main() {
       test('caches events from real-time subscription', () async {
         await repository.initialize();
 
-        final event = _createAudioEvent(
+        final event = createAudioEvent(
           id: testEventId1,
           pubkey: testPubkey1,
           title: 'Real-time Sound',

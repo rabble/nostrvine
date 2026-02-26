@@ -33,10 +33,7 @@ void main() {
       final bloc = createBloc();
       expect(
         bloc.state,
-        const OthersFollowingState(
-          status: OthersFollowingStatus.initial,
-          followingPubkeys: [],
-        ),
+        const OthersFollowingState(),
       );
       bloc.close();
     });
@@ -97,7 +94,6 @@ void main() {
           ),
           OthersFollowingState(
             status: OthersFollowingStatus.success,
-            followingPubkeys: const [],
             targetPubkey: validPubkey('other'),
           ),
         ],
@@ -200,8 +196,6 @@ void main() {
 
     test('copyWith creates copy with updated values', () {
       const state = OthersFollowingState(
-        status: OthersFollowingStatus.initial,
-        followingPubkeys: [],
         targetPubkey: 'target1',
       );
 

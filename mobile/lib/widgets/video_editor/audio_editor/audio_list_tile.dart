@@ -6,11 +6,11 @@ import 'package:openvine/widgets/video_editor_icon_button.dart';
 
 class AudioListTile extends StatelessWidget {
   const AudioListTile({
-    super.key,
     required this.audio,
     required this.isPlaying,
     required this.onPlayPause,
     required this.onSelect,
+    super.key,
   });
 
   final AudioEvent audio;

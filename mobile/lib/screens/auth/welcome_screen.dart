@@ -8,10 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/welcome/welcome_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
-import 'package:models/models.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/auth/auth_hero_section.dart';
@@ -135,7 +135,7 @@ class _NewUserLayout extends StatelessWidget {
         const Expanded(child: Center(child: AuthHeroSection())),
 
         if (lastError != null) ...[
-          ErrorMessage(message: lastError!),
+          ErrorMessage(message: lastError),
           const SizedBox(height: 16),
         ],
 
@@ -206,7 +206,7 @@ class _ReturningUserLayout extends StatelessWidget {
     return Column(
       children: [
         // "Welcome back!" title — centered between top and profile
-        Expanded(
+        const Expanded(
           child: Center(
             child: Text(
               'Welcome back!',
@@ -237,7 +237,7 @@ class _ReturningUserLayout extends StatelessWidget {
         const Spacer(),
 
         if (lastError != null) ...[
-          ErrorMessage(message: lastError!),
+          ErrorMessage(message: lastError),
           const SizedBox(height: 16),
         ],
 

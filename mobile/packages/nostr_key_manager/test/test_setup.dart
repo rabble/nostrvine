@@ -28,7 +28,7 @@ void _setupSecureStorageMock() {
 
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(secureStorageChannel, (
-        MethodCall methodCall,
+        methodCall,
       ) async {
         final args = methodCall.arguments as Map<dynamic, dynamic>? ?? {};
         switch (methodCall.method) {
@@ -69,7 +69,7 @@ void _setupSecureStorageMock() {
 
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(capabilityChannel, (
-        MethodCall methodCall,
+        methodCall,
       ) async {
         switch (methodCall.method) {
           case 'getCapabilities':
@@ -94,7 +94,7 @@ void _setupPlatformChannelMocks() {
 
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(deviceInfoChannel, (
-        MethodCall methodCall,
+        methodCall,
       ) async {
         if (methodCall.method == 'getDeviceInfo') {
           return {
@@ -114,7 +114,7 @@ void _setupPlatformChannelMocks() {
 
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(pathProviderChannel, (
-        MethodCall methodCall,
+        methodCall,
       ) async {
         switch (methodCall.method) {
           case 'getTemporaryDirectory':

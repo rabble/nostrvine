@@ -1,6 +1,7 @@
 // ABOUTME: Screen displaying videos filtered by a specific hashtag
 // ABOUTME: Allows users to explore all videos with a particular hashtag
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,10 +11,9 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
-import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 class HashtagFeedScreen extends ConsumerStatefulWidget {
@@ -100,12 +100,10 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
       final results = await Future.wait([
         analyticsService.getVideosByHashtag(
           hashtag: widget.hashtag,
-          limit: 50,
           forceRefresh: forceRefresh,
         ),
         analyticsService.getClassicVideosByHashtag(
           hashtag: widget.hashtag,
-          limit: 50,
         ),
       ]).timeout(const Duration(seconds: 5));
 

@@ -207,7 +207,7 @@ void main() {
         final controller = StreamController<VideoEditorDrawState>.broadcast();
 
         when(() => mockBloc.state).thenReturn(
-          const VideoEditorDrawState(selectedTool: DrawToolType.pencil),
+          const VideoEditorDrawState(),
         );
         when(() => mockBloc.stream).thenAnswer((_) => controller.stream);
 

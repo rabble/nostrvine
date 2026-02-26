@@ -43,7 +43,7 @@ class VideoEditorScreen extends ConsumerStatefulWidget {
 
 class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   final _editorKey = GlobalKey<ProImageEditorState>();
-  final _removeAreaKey = GlobalKey();
+  final GlobalKey<State<StatefulWidget>> _removeAreaKey = GlobalKey();
 
   /// Manually managed instead of using [BlocProvider.create] so we can reuse
   /// it in contexts outside the widget tree (e.g., bottom sheets opened via

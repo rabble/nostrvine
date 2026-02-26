@@ -10,10 +10,10 @@ import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item
 class DrawToolMarker extends StatelessWidget {
   /// Creates a marker tool button.
   const DrawToolMarker({
-    super.key,
     required this.isSelected,
     required this.color,
     required this.onTap,
+    super.key,
   });
 
   /// Whether this tool is currently selected.
