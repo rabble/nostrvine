@@ -19,7 +19,7 @@ class FeedModeSwitch extends StatelessWidget {
   const FeedModeSwitch({super.key});
 
   /// Labels for each feed mode displayed in the UI.
-  static const feedModeLabels = {
+  static const Map<FeedMode, String> feedModeLabels = {
     FeedMode.forYou: 'For You',
     FeedMode.latest: 'New',
     FeedMode.popular: 'Popular',

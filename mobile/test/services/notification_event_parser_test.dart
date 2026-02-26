@@ -2,8 +2,8 @@
 // ABOUTME: Pure business logic tests without service dependencies
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/notification_event_parser.dart';
 
 void main() {
@@ -59,7 +59,7 @@ void main() {
 
       test('creates like notification with all fields', () {
         // Arrange
-        final actorPubkey =
+        const actorPubkey =
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
         final event = Event(
           actorPubkey,
@@ -73,7 +73,7 @@ void main() {
 
         final profile = UserProfile(
           pubkey: actorPubkey,
-          rawData: {},
+          rawData: const {},
           createdAt: DateTime.now(),
           eventId: 'profile1',
           name: 'Alice',
@@ -163,7 +163,7 @@ void main() {
 
       test('creates comment notification with metadata', () {
         // Arrange
-        final actorPubkey =
+        const actorPubkey =
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
         final event = Event(
           actorPubkey,
@@ -177,7 +177,7 @@ void main() {
 
         final profile = UserProfile(
           pubkey: actorPubkey,
-          rawData: {},
+          rawData: const {},
           createdAt: DateTime.now(),
           eventId: 'profile1',
           name: 'Bob',
@@ -203,13 +203,13 @@ void main() {
     group('parseFollowEvent', () {
       test('creates follow notification without video info', () {
         // Arrange
-        final actorPubkey =
+        const actorPubkey =
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
         final event = Event(actorPubkey, 3, [], '', createdAt: 1700000000);
 
         final profile = UserProfile(
           pubkey: actorPubkey,
-          rawData: {},
+          rawData: const {},
           createdAt: DateTime.now(),
           eventId: 'profile1',
           name: 'Charlie',
@@ -230,7 +230,7 @@ void main() {
     group('parseMentionEvent', () {
       test('creates mention notification with text metadata', () {
         // Arrange
-        final actorPubkey =
+        const actorPubkey =
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
         final event = Event(
           actorPubkey,
@@ -242,7 +242,7 @@ void main() {
 
         final profile = UserProfile(
           pubkey: actorPubkey,
-          rawData: {},
+          rawData: const {},
           createdAt: DateTime.now(),
           eventId: 'profile1',
           name: 'Dave',
@@ -283,7 +283,7 @@ void main() {
 
       test('creates repost notification', () {
         // Arrange
-        final actorPubkey =
+        const actorPubkey =
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
         final event = Event(
           actorPubkey,
@@ -297,7 +297,7 @@ void main() {
 
         final profile = UserProfile(
           pubkey: actorPubkey,
-          rawData: {},
+          rawData: const {},
           createdAt: DateTime.now(),
           eventId: 'profile1',
           name: 'Eve',

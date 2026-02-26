@@ -7,7 +7,6 @@ import 'dart:math';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/services/haptic_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
@@ -16,18 +15,19 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
+import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
-import 'package:openvine/platform_io.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:video_player/video_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:video_player/video_player.dart';
 
 /// The main canvas area for the video editor.
 ///
@@ -164,7 +164,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     // The player doesn't seek instantly, it usually takes just a few
     // milliseconds, but we use a slightly higher value to be safe.
     // In the worst case, the user might see a quick frame jump.
-    await Future.delayed(Duration(milliseconds: 200));
+    await Future.delayed(const Duration(milliseconds: 200));
     if (!mounted) return;
     await _videoPlayer!.setLooping(true);
     if (!mounted) return;
@@ -345,7 +345,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         ),
         dialogConfigs: DialogConfigs(
           widgets: DialogWidgets(
-            loadingDialog: (message, configs) => SizedBox.shrink(),
+            loadingDialog: (message, configs) => const SizedBox.shrink(),
           ),
         ),
         videoEditor: VideoEditorConfigs(
@@ -442,7 +442,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                   name: 'VideoEditorCanvas',
                   category: LogCategory.video,
                 );
-                scope.editor?.activeLayers.remove(_selectedLayer!);
+                scope.editor?.activeLayers.remove(_selectedLayer);
               }
 
               _onStateHistoryChange(scope, bloc);

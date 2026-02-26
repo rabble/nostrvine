@@ -214,7 +214,7 @@ class TestVideoFiles {
   static List<TestVideoScenario> getPerformanceScenarios() => [
     TestVideoScenario(
       name: 'Short vine (6 seconds, 30 frames)',
-      frames: createVideoFrames(frameCount: 30),
+      frames: createVideoFrames(),
       description: 'Standard vine recording',
       expectedProcessingTime: const Duration(milliseconds: 500),
     ),
@@ -227,7 +227,6 @@ class TestVideoFiles {
     TestVideoScenario(
       name: 'High resolution (1080p, 30 frames)',
       frames: createVideoFrames(
-        frameCount: 30,
         width: largeWidth,
         height: largeHeight,
       ),
@@ -237,7 +236,6 @@ class TestVideoFiles {
     TestVideoScenario(
       name: 'Low resolution (240p, 30 frames)',
       frames: createVideoFrames(
-        frameCount: 30,
         width: smallWidth,
         height: smallHeight,
       ),
@@ -250,7 +248,7 @@ class TestVideoFiles {
   static List<TestVideoScenario> getFormatScenarios() => [
     TestVideoScenario(
       name: 'RGB format',
-      frames: createVideoFrames(format: VideoTestFormat.rgb),
+      frames: createVideoFrames(),
       description: 'Standard RGB color format',
     ),
     TestVideoScenario(

@@ -3,14 +3,15 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/pending_upload.dart';
-import 'package:openvine/services/video_event_publisher.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/upload_manager.dart';
-import 'package:nostr_sdk/event.dart';
+
 import 'package:crypto/crypto.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/upload_manager.dart';
+import 'package:openvine/services/video_event_publisher.dart';
 
 /// Mock implementation of NostrClient for testing
 class MockNostrService implements NostrClient {
@@ -45,7 +46,7 @@ class MockAuthService implements AuthService {
 
     // Create minimal event for testing using fromJson
     return Event.fromJson({
-      'id': 'test_event_${timestamp}_${kind}',
+      'id': 'test_event_${timestamp}_$kind',
       'pubkey': 'test_pubkey_1234567890abcdef',
       'created_at': timestamp,
       'kind': kind,
@@ -198,7 +199,7 @@ void main() {
                 .substring('image data:image/jpeg;base64,'.length)
                 .length;
             print(
-              '   - image: data:image/jpeg;base64,... (${dataUriLength} chars, ${base64Length} base64 chars)',
+              '   - image: data:image/jpeg;base64,... ($dataUriLength chars, $base64Length base64 chars)',
             );
           } else if (component.startsWith('blurhash ')) {
             print('   - ${component.substring(0, 30)}...');
@@ -245,7 +246,7 @@ void main() {
 
             final thumbnailSizeKB = (decodedBytes.length / 1024)
                 .toStringAsFixed(1);
-            print('✅ Thumbnail decoded successfully: ${thumbnailSizeKB} KB\n');
+            print('✅ Thumbnail decoded successfully: $thumbnailSizeKB KB\n');
           } catch (e) {
             fail('Failed to decode base64 thumbnail: $e');
           }

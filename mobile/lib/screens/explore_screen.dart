@@ -1,11 +1,15 @@
 // ABOUTME: Explore screen with proper Vine theme and video grid functionality
 // ABOUTME: Pure Riverpod architecture for video discovery with grid/feed modes
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
@@ -20,16 +24,12 @@ import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
-import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_vines_tab.dart';
 import 'package:openvine/widgets/for_you_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
-import 'package:openvine/providers/classic_vines_provider.dart';
-import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/widgets/new_videos_tab.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
 
@@ -534,9 +534,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
           ],
         );
       },
-      loading: () => const Center(child: BrandedLoadingIndicator(size: 80)),
+      loading: () => const Center(child: BrandedLoadingIndicator()),
       error: (e, s) => Center(
-        child: Text('Error: $e', style: TextStyle(color: VineTheme.likeRed)),
+        child: Text(
+          'Error: $e',
+          style: const TextStyle(color: VineTheme.likeRed),
+        ),
       ),
     );
   }
@@ -552,7 +555,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     // Safety check: ensure we have videos and valid index
     if (videos.isEmpty || startIndex >= videos.length) {
-      return Center(
+      return const Center(
         child: Text(
           'No videos available',
           style: TextStyle(color: VineTheme.whiteText),
@@ -580,7 +583,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     return HashtagFeedScreen(
       hashtag: hashtag,
       embedded: true,
-      onVideoTap: (videos, index) => _enterFeedMode(videos, index),
+      onVideoTap: _enterFeedMode,
     );
   }
 
@@ -613,8 +616,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 disposeAllVideoControllers(ref);
                 context.push(DiscoverListsScreen.path);
               },
-              icon: Icon(Icons.search, color: VineTheme.backgroundColor),
-              label: Text(
+              icon: const Icon(Icons.search, color: VineTheme.backgroundColor),
+              label: const Text(
                 'Discover Lists',
                 style: TextStyle(
                   color: VineTheme.backgroundColor,
@@ -641,10 +644,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: VineTheme.vineGreen.withValues(alpha: 0.3),
-                width: 1,
               ),
             ),
-            child: Column(
+            child: const Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
@@ -654,7 +656,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                       color: VineTheme.vineGreen,
                       size: 20,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
                       'About Lists',
                       style: TextStyle(
@@ -665,7 +667,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   'Lists help you organize and curate Divine content in two ways:',
                   style: TextStyle(
@@ -674,12 +676,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     height: 1.5,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(Icons.group, color: VineTheme.vineGreen, size: 18),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -692,7 +694,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Follow groups of creators and see their latest videos',
                             style: TextStyle(
@@ -706,7 +708,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -715,7 +717,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                       color: VineTheme.vineGreen,
                       size: 18,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -728,7 +730,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Create playlists of your favorite videos to watch later',
                             style: TextStyle(
@@ -763,8 +765,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 children: [
                   // My Lists section
                   if (myLists.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
+                    const Padding(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
                       ),
@@ -775,7 +777,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                             color: VineTheme.vineGreen,
                             size: 20,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Text(
                             'My Lists',
                             style: TextStyle(
@@ -811,8 +813,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
                   // People Lists section
                   if (userLists.isNotEmpty) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
+                    const Padding(
+                      padding: EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 8,
                       ),
@@ -823,7 +825,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                             color: VineTheme.vineGreen,
                             size: 20,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Text(
                             'People Lists',
                             style: TextStyle(
@@ -867,7 +869,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               padding: const EdgeInsets.all(16),
               child: Text(
                 'Error loading lists: $error',
-                style: TextStyle(color: VineTheme.likeRed),
+                style: const TextStyle(color: VineTheme.likeRed),
               ),
             ),
           ),
@@ -886,8 +888,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     final service = ref.read(curatedListsStateProvider.notifier).service;
     // Wait for both to load subscribed lists
     if (!allListsAsync.hasValue || !serviceAsync.hasValue) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -898,7 +900,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   color: VineTheme.vineGreen,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Subscribed Lists',
                   style: TextStyle(
@@ -909,8 +911,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            const Center(child: BrandedLoadingIndicator(size: 60)),
+            SizedBox(height: 8),
+            Center(child: BrandedLoadingIndicator(size: 60)),
           ],
         ),
       );
@@ -930,8 +932,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(
             children: [
               Icon(
@@ -939,7 +941,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 color: VineTheme.vineGreen,
                 size: 20,
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 'Subscribed Lists',
                 style: TextStyle(
@@ -1052,7 +1054,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.arrow_upward,
                     color: VineTheme.backgroundColor,
                     size: 18,
@@ -1060,7 +1062,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   const SizedBox(width: 8),
                   Text(
                     '$bufferedCount new ${bufferedCount == 1 ? 'video' : 'videos'}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: VineTheme.backgroundColor,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,

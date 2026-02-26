@@ -28,7 +28,7 @@ class BackButtonHandler {
     if (!kIsWeb && Platform.isAndroid) {
       _channel.setMethodCallHandler((call) async {
         if (call.method == 'onBackPressed') {
-          return await _handleBackButton();
+          return _handleBackButton();
         }
         return false;
       });
@@ -104,17 +104,14 @@ class BackButtonHandler {
       switch (previousTab) {
         case 0:
           _router!.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
-          break;
         case 1:
           if (lastIndex != null) {
             _router!.go(ExploreScreen.pathForIndex(lastIndex));
           } else {
             _router!.go(ExploreScreen.path);
           }
-          break;
         case 2:
           _router!.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
-          break;
         case 3:
           // Get current user's npub for profile
           final authService = _ref.read(authServiceProvider);
@@ -124,7 +121,6 @@ class BackButtonHandler {
           } else {
             _router!.go(VideoFeedPage.pathForIndex(0));
           }
-          break;
       }
       return true; // Handled
     }

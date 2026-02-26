@@ -2,9 +2,9 @@
 // ABOUTME: Uses mock SharedPreferences for isolation
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/services/environment_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('EnvironmentService', () {

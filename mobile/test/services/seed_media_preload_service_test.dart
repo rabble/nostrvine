@@ -143,7 +143,7 @@ void main() {
 
       // Act & Assert: Should not throw, just log error
       expect(
-        () async => await SeedMediaPreloadService.loadSeedMediaIfNeeded(),
+        () async => SeedMediaPreloadService.loadSeedMediaIfNeeded(),
         returnsNormally,
         reason: 'Missing manifest should be non-critical',
       );
@@ -164,7 +164,7 @@ void main() {
 
         // Act & Assert: Should not throw
         expect(
-          () async => await SeedMediaPreloadService.loadSeedMediaIfNeeded(),
+          () async => SeedMediaPreloadService.loadSeedMediaIfNeeded(),
           returnsNormally,
           reason: 'Corrupted manifest should be non-critical',
         );
@@ -175,9 +175,9 @@ void main() {
       'loadSeedMediaIfNeeded uses eventId as filename in cache directory',
       () async {
         // Setup: Mock manifest with specific eventId
-        final testEventId =
+        const testEventId =
             'unique0000test1111cafe2222beef3333dead4444face5555abcd6666ef0012345678';
-        final testFilename = '$testEventId.mp4'; // Filename matches eventId
+        const testFilename = '$testEventId.mp4'; // Filename matches eventId
         final manifestJson = jsonEncode({
           'videos': [
             {

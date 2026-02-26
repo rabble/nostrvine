@@ -3,9 +3,9 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
@@ -54,8 +54,8 @@ void main() {
     test('should accept profile update with different event ID', () async {
       // Given
       final pubkey = 'a' * 64; // Valid 64-char hex pubkey
-      final oldEventId = 'old_event_123';
-      final newEventId = 'new_event_456';
+      const oldEventId = 'old_event_123';
+      const newEventId = 'new_event_456';
       final timestamp = DateTime.now();
 
       // Create old profile event
@@ -105,8 +105,8 @@ void main() {
     test('should accept profile update with newer timestamp', () async {
       // Given
       final pubkey = 'b' * 64; // Valid 64-char hex pubkey
-      final eventId1 = 'event_1';
-      final eventId2 = 'event_2';
+      const eventId1 = 'event_1';
+      const eventId2 = 'event_2';
       final oldTimestamp = DateTime.now().subtract(const Duration(minutes: 5));
       final newTimestamp = DateTime.now();
 
@@ -157,7 +157,7 @@ void main() {
     test('should reject older profile events with same event ID', () async {
       // Given
       final pubkey = 'c' * 64; // Valid 64-char hex pubkey
-      final eventId = 'same_event'; // Same event ID for both
+      const eventId = 'same_event'; // Same event ID for both
       final newerTimestamp = DateTime.now();
       final olderTimestamp = DateTime.now().subtract(const Duration(hours: 1));
 
@@ -208,8 +208,8 @@ void main() {
     test('should handle same-second profile updates', () async {
       // Given
       final pubkey = 'd' * 64; // Valid 64-char hex pubkey
-      final eventId1 = 'first_event';
-      final eventId2 = 'second_event';
+      const eventId1 = 'first_event';
+      const eventId2 = 'second_event';
       final timestamp = DateTime.now();
       final timestampSeconds = timestamp.millisecondsSinceEpoch ~/ 1000;
 
@@ -259,7 +259,7 @@ void main() {
     test('should force refresh profile with forceRefresh parameter', () async {
       // Given
       final pubkey = 'e' * 64; // Valid 64-char hex pubkey
-      final eventId = 'event_123';
+      const eventId = 'event_123';
 
       // Create profile event
       final profileEvent = Event(
@@ -297,7 +297,7 @@ void main() {
       service.handleProfileEventForTesting(profileEvent);
 
       // Verify profile is cached
-      var cachedProfile = service.getCachedProfile(pubkey);
+      final cachedProfile = service.getCachedProfile(pubkey);
       expect(cachedProfile, isNotNull);
       expect(cachedProfile!.name, equals('Test User'));
 

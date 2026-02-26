@@ -1,14 +1,15 @@
 // ABOUTME: Unit tests for profile stats calculation logic
 // ABOUTME: Tests summing loops and likes from videos using VideoEventService
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+
 import '../builders/video_event_builder.dart';
 
 class _MockSocialService extends Mock implements SocialService {}
@@ -113,16 +114,11 @@ void main() {
       final videos = [
         VideoEventBuilder(
           originalLoops: 100,
-          originalLikes: null, // null likes
         ).fromUser(testPubkey).build(),
         VideoEventBuilder(
-          originalLoops: null, // null loops
           originalLikes: 50,
         ).fromUser(testPubkey).build(),
-        VideoEventBuilder(
-          originalLoops: null,
-          originalLikes: null, // both null
-        ).fromUser(testPubkey).build(),
+        VideoEventBuilder().fromUser(testPubkey).build(),
       ];
 
       final mockSocialService = _MockSocialService();

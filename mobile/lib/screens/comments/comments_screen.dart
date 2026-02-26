@@ -137,7 +137,7 @@ class CommentsScreen extends ConsumerWidget {
           minChildSize: 0.5,
           maxChildSize: 0.93,
           snap: true,
-          snapSizes: [0.7, 0.93],
+          snapSizes: const [0.7, 0.93],
           builder: (context, scrollController) => CommentsScreen(
             videoEvent: video,
             sheetScrollController: scrollController,

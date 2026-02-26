@@ -49,9 +49,9 @@ class NostrEventBuilder {
     kind = 0;
     final profileData = {
       'name': name,
-      if (displayName != null) 'display_name': displayName,
-      if (picture != null) 'picture': picture,
-      if (about != null) 'about': about,
+      'display_name': ?displayName,
+      'picture': ?picture,
+      'about': ?about,
     };
     content = jsonEncode(profileData);
     return this;
@@ -116,9 +116,9 @@ class NostrEventBuilder {
     final videoData = {
       'url': videoUrl,
       'duration': duration,
-      if (title != null) 'title': title,
-      if (thumbnailUrl != null) 'thumbnail': thumbnailUrl,
-      if (gifUrl != null) 'gif': gifUrl,
+      'title': ?title,
+      'thumbnail': ?thumbnailUrl,
+      'gif': ?gifUrl,
     };
     content = jsonEncode(videoData);
     tags = [

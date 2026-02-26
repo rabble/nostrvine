@@ -6,9 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_font_selector.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_overlay_controls.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -119,7 +119,9 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
           left: 0,
           right: 0,
           height: MediaQuery.paddingOf(context).top,
-          child: ColoredBox(color: VideoEditorConstants.textEditorBackground),
+          child: const ColoredBox(
+            color: VideoEditorConstants.textEditorBackground,
+          ),
         ),
         Positioned.fill(
           child: BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
@@ -155,20 +157,17 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
                         ),
                       ),
                       configs: ProImageEditorConfigs(
-                        i18n: I18n(
+                        i18n: const I18n(
                           textEditor: I18nTextEditor(inputHintText: ''),
                         ),
                         textEditor: TextEditorConfigs(
-                          style: TextEditorStyle(
+                          style: const TextEditorStyle(
                             inputCursorColor: VineTheme.whiteText,
                             inputTextFieldPadding: .only(left: 16, right: 48),
-                            background:
-                                VideoEditorConstants.textEditorBackground,
                           ),
                           resizeToAvoidBottomInset: false,
                           minFontScale: VideoEditorConstants.minFontScale,
                           maxFontScale: VideoEditorConstants.maxFontScale,
-                          initFontSize: VideoEditorConstants.baseFontSize,
                           initFontScale: _getFontScale(fontSize),
                           initialBackgroundColorMode: backgroundStyle,
                           initialTextAlign: alignment,

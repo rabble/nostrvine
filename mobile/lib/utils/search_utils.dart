@@ -32,7 +32,7 @@ class SearchUtils {
 
     // Split camelCase before lowercasing
     var normalized = input.replaceAllMapped(
-      RegExp(r'([a-z])([A-Z])'),
+      RegExp('([a-z])([A-Z])'),
       (match) => '${match.group(1)} ${match.group(2)}',
     );
 

@@ -5,12 +5,12 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -56,7 +56,7 @@ void main() {
 
       when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
 
       when(
         () => mockAuth.createAndSignEvent(
@@ -184,7 +184,7 @@ void main() {
         final list = CuratedList(
           id: 'test_id',
           name: 'Saved List',
-          videoEventIds: ['video1', 'video2'],
+          videoEventIds: const ['video1', 'video2'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -222,11 +222,11 @@ void main() {
           name: 'Full List',
           description: 'Description',
           imageUrl: 'https://example.com/image.jpg',
-          videoEventIds: ['video1'],
+          videoEventIds: const ['video1'],
           createdAt: DateTime.parse('2024-01-01T12:00:00Z'),
           updatedAt: DateTime.parse('2024-01-02T12:00:00Z'),
           isPublic: false,
-          tags: ['tag1', 'tag2'],
+          tags: const ['tag1', 'tag2'],
           playOrder: PlayOrder.reverse,
         );
 

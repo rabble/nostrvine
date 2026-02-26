@@ -8,8 +8,8 @@ import 'package:flutter/rendering.dart';
 class ExtendedSliverFillViewport extends StatelessWidget {
   /// Creates a sliver whose box children that each fill the viewport.
   const ExtendedSliverFillViewport({
-    super.key,
     required this.delegate,
+    super.key,
     this.viewportFraction = 1.0,
     this.padEnds = true,
     this.preloadPaintCount = 0,

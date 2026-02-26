@@ -75,7 +75,7 @@ void main() {
     });
 
     test('returns null when no view-like value exists', () {
-      final event = _video(id: 'v3', loops: null);
+      final event = _video(id: 'v3');
       expect(extractViewLikeCount(event), isNull);
     });
   });
@@ -129,7 +129,7 @@ void main() {
       'keeps missing-view diagnostics when no view source is available',
       () async {
         final api = _FakeCreatorAnalyticsApi(
-          videos: [_video(id: 'c', loops: null)],
+          videos: [_video(id: 'c')],
           bulkStats: const {},
           viewsById: const {'c': null},
         );

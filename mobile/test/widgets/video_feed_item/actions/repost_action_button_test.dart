@@ -113,7 +113,6 @@ void main() {
           await tester.pumpWidget(
             buildSubject(
               video: testVideo,
-              isPreviewMode: false,
               bloc: mockBloc,
             ),
           );
@@ -129,7 +128,7 @@ void main() {
         // When bloc has repostCount (5), it takes precedence over
         // video metadata to avoid double-counting.
         await tester.pumpWidget(
-          buildSubject(video: testVideo, isPreviewMode: false, bloc: mockBloc),
+          buildSubject(video: testVideo, bloc: mockBloc),
         );
 
         expect(find.text('5'), findsOneWidget);

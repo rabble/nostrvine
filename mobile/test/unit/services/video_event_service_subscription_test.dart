@@ -6,9 +6,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -108,7 +108,6 @@ void main() {
             '25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856',
           ],
           limit: 100,
-          replace: true,
         );
 
         // Should have created one subscription
@@ -191,7 +190,6 @@ void main() {
           '25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856',
         ],
         limit: 100,
-        replace: true,
       );
 
       expect(subscriptionCalls.length, equals(1));
@@ -257,7 +255,6 @@ void main() {
       await videoEventService.subscribeToVideoFeed(
         subscriptionType: SubscriptionType.discovery,
         limit: 100,
-        replace: true,
       );
 
       expect(
@@ -324,7 +321,6 @@ void main() {
           '25315276cbaeb8f2ed998ed55d15ef8c9cf2027baea191d1253d9a5c69a2b856',
         ],
         limit: 100,
-        replace: true,
       );
 
       expect(subscriptionCalls.length, equals(1));

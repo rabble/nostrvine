@@ -72,7 +72,7 @@ void main() {
 
         container.listen(
           pageContextProvider,
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 
@@ -132,7 +132,7 @@ void main() {
 
         container.listen(
           pageContextProvider,
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 
@@ -202,7 +202,7 @@ void main() {
         activeVideoIds.add(next);
       }, fireImmediately: true);
 
-      container.listen(pageContextProvider, (_, __) {}, fireImmediately: true);
+      container.listen(pageContextProvider, (_, _) {}, fireImmediately: true);
 
       // Start with app in foreground (default) and navigate to video
       locationController.add(ExploreScreen.pathForIndex(0));
@@ -256,7 +256,7 @@ void main() {
         activeVideoIds.add(next);
       }, fireImmediately: true);
 
-      container.listen(pageContextProvider, (_, __) {}, fireImmediately: true);
+      container.listen(pageContextProvider, (_, _) {}, fireImmediately: true);
 
       // Start at explore video 0
       locationController.add(ExploreScreen.pathForIndex(0));
@@ -320,7 +320,7 @@ void main() {
 
         container.listen(
           pageContextProvider,
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 

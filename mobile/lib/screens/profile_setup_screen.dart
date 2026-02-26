@@ -254,7 +254,7 @@ class _ProfileSetupScreenViewState
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(dialogContext).pop(),
-                      child: Text(
+                      child: const Text(
                         'Cancel',
                         style: TextStyle(color: VineTheme.lightText),
                       ),
@@ -626,7 +626,6 @@ class _ProfileSetupScreenViewState
                               TextFormField(
                                 controller: _nameController,
                                 focusNode: _nameFocusNode,
-                                autofocus: false,
                                 autovalidateMode:
                                     AutovalidateMode.onUserInteraction,
                                 style: VineTheme.bodyLargeFont(
@@ -909,7 +908,7 @@ class _ProfileSetupScreenViewState
                                         // Only allow valid subdomain characters
                                         inputFormatters: [
                                           FilteringTextInputFormatter.allow(
-                                            RegExp(r'[a-zA-Z0-9-]'),
+                                            RegExp('[a-zA-Z0-9-]'),
                                           ),
                                         ],
                                         textInputAction: TextInputAction.next,
@@ -1285,7 +1284,6 @@ class _ProfileSetupScreenViewState
       final result = await uploadService.uploadImage(
         imageFile: _selectedImage!,
         nostrPubkey: authService.currentPublicKeyHex!,
-        mimeType: 'image/jpeg',
         onProgress: (progress) {
           // Only log at major milestones to reduce noise
           if (progress == 1.0 || progress == 0.0) {
@@ -1477,7 +1475,7 @@ class UsernameStatusIndicator extends StatelessWidget {
       UsernameStatus.checking => const _UsernameCheckingIndicator(),
       UsernameStatus.available => const _UsernameAvailableIndicator(),
       UsernameStatus.taken => const _UsernameTakenIndicator(),
-      UsernameStatus.reserved => _UsernameReservedIndicator(),
+      UsernameStatus.reserved => const _UsernameReservedIndicator(),
       UsernameStatus.invalidFormat => _UsernameErrorIndicator(
         message: errorText ?? 'Invalid username format',
       ),
@@ -1518,12 +1516,12 @@ class _UsernameAvailableIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
+    return const Padding(
+      padding: EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 16),
-          const SizedBox(width: 8),
+          Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 16),
+          SizedBox(width: 8),
           Text(
             'Username available!',
             style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
@@ -1652,7 +1650,7 @@ class _SaveButton extends StatelessWidget {
 
 @visibleForTesting
 class UsernameReservedDialog extends StatelessWidget {
-  const UsernameReservedDialog(this.username);
+  const UsernameReservedDialog(this.username, {super.key});
 
   final String username;
 
@@ -1666,7 +1664,7 @@ class UsernameReservedDialog extends StatelessWidget {
       ),
       content: RichText(
         text: TextSpan(
-          style: TextStyle(color: VineTheme.secondaryText),
+          style: const TextStyle(color: VineTheme.secondaryText),
           children: [
             TextSpan(text: 'The name $username is reserved. Please email '),
             WidgetSpan(
@@ -1687,7 +1685,7 @@ class UsernameReservedDialog extends StatelessWidget {
                     );
                   }
                 },
-                child: Text(
+                child: const Text(
                   'names@divine.video',
                   style: TextStyle(
                     color: VineTheme.vineGreen,
@@ -1706,7 +1704,10 @@ class UsernameReservedDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Close', style: TextStyle(color: VineTheme.lightText)),
+          child: const Text(
+            'Close',
+            style: TextStyle(color: VineTheme.lightText),
+          ),
         ),
       ],
     );
@@ -1724,7 +1725,7 @@ class _ProfileColorPicker extends StatelessWidget {
   final ValueChanged<Color?> onColorChanged;
 
   // Preset colors from VineTheme brand accent palette
-  static const _presetColors = [
+  static const List<Color> _presetColors = [
     VineTheme.vineGreen, // Green (brand primary)
     VineTheme.accentBlue, // Blue
     VineTheme.accentPurple, // Purple
@@ -1833,7 +1834,6 @@ class _CustomColorButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: Colors.white.withValues(alpha: 0.3),
-            width: 1,
           ),
         ),
         child: const Icon(Icons.colorize, color: Colors.white, size: 20),

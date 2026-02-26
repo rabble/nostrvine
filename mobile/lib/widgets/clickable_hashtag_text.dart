@@ -39,13 +39,13 @@ class ClickableHashtagText extends ConsumerWidget {
 
   /// Regex to detect nostr: URIs (npub and nprofile)
   static final _nostrUriRegex = RegExp(
-    r'nostr:(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)',
+    'nostr:(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)',
     caseSensitive: false,
   );
 
   /// Regex to detect plain @ mentions (legacy format from Vine)
   /// Matches @username where username is alphanumeric with underscores
-  static final _plainMentionRegex = RegExp(r'@([a-zA-Z][a-zA-Z0-9_]{0,30})');
+  static final _plainMentionRegex = RegExp('@([a-zA-Z][a-zA-Z0-9_]{0,30})');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

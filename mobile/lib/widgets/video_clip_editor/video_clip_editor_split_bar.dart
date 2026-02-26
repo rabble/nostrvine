@@ -130,8 +130,8 @@ class UniformTrackShape extends SliderTrackShape {
   @override
   Rect getPreferredRect({
     required RenderBox parentBox,
-    Offset offset = Offset.zero,
     required SliderThemeData sliderTheme,
+    Offset offset = Offset.zero,
     bool isEnabled = false,
     bool isDiscrete = false,
   }) {
@@ -153,10 +153,10 @@ class UniformTrackShape extends SliderTrackShape {
     required SliderThemeData sliderTheme,
     required Animation<double> enableAnimation,
     required Offset thumbCenter,
+    required TextDirection textDirection,
     Offset? secondaryOffset,
     bool isEnabled = false,
     bool isDiscrete = false,
-    required TextDirection textDirection,
   }) {
     final trackHeight = sliderTheme.trackHeight ?? 8;
     final trackRadius = Radius.circular(trackHeight / 2);

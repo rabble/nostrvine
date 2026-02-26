@@ -2,8 +2,8 @@
 // ABOUTME: Tests core caching functionality with simple video event creation
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/constants/app_constants.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/video_cache_service.dart';
 
 void main() {
@@ -27,7 +27,6 @@ void main() {
       title: title,
       videoUrl: 'https://example.com/video.mp4',
       thumbnailUrl: 'https://example.com/thumb.jpg',
-      hashtags: [],
     );
 
     test('should start with empty cache', () {

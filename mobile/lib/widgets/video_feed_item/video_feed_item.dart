@@ -37,7 +37,6 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
@@ -45,7 +44,6 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -58,17 +56,16 @@ import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-
-import '../video_thumbnail_widget.dart';
 
 /// Video feed item using individual controller architecture
 class VideoFeedItem extends ConsumerStatefulWidget {
   const VideoFeedItem({
-    super.key,
     required this.video,
     required this.index,
+    super.key,
     this.onTap,
     this.forceShowOverlay = false,
     this.hasBottomNavigation = true,
@@ -304,8 +301,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
           if (!mounted) return;
           // Re-read current override value (may have changed since listener setup)
           final currentOverride = widget.isActiveOverride;
-          if (currentOverride == null)
+          if (currentOverride == null) {
             return; // Widget rebuilt without override
+          }
           // Compute effective active state: override must be true AND no overlay visible
           final effectivelyActive = currentOverride && !next;
           Log.info(
@@ -753,10 +751,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     switch (policy) {
       case OverlayPolicy.alwaysOn:
         overlayVisible = true;
-        break;
       case OverlayPolicy.alwaysOff:
         overlayVisible = false;
-        break;
       case OverlayPolicy.auto:
         // keep computed overlayVisible
         break;
@@ -934,12 +930,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         children: [
                           VideoThumbnailWidget(
                             video: video,
-                            fit: BoxFit.cover,
-                            showPlayIcon: false,
                           ),
-                          Container(
+                          const ColoredBox(
                             color: Colors.black54,
-                            child: const Center(
+                            child: Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -984,15 +978,13 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       if (isQualityVariant && fallbackUrl == null) {
                         // Fallback pending — show thumbnail + loading indicator
                         return SizedBox.expand(
-                          child: Container(
+                          child: ColoredBox(
                             color: Colors.black,
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
                                 VideoThumbnailWidget(
                                   video: video,
-                                  fit: BoxFit.cover,
-                                  showPlayIcon: false,
                                 ),
                                 if (isActive)
                                   const Center(
@@ -1040,7 +1032,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     // UNIFIED structure - use Offstage instead of conditional
                     // widgets to maintain stable widget tree during scroll
                     return SizedBox.expand(
-                      child: Container(
+                      child: ColoredBox(
                         color: Colors.black,
                         child: Stack(
                           fit: StackFit.expand,
@@ -1052,7 +1044,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 fit: useCoverFit
                                     ? BoxFit.cover
                                     : BoxFit.contain,
-                                alignment: Alignment.center,
                                 child: SizedBox(
                                   width: videoWidth,
                                   height: videoHeight,
@@ -1072,11 +1063,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             ),
                             // Buffering indicator
                             if (value.isInitialized && value.isBuffering)
-                              Positioned(
+                              const Positioned(
                                 bottom: 0,
                                 left: 0,
                                 right: 0,
-                                child: const LinearProgressIndicator(
+                                child: LinearProgressIndicator(
                                   minHeight: 12,
                                   backgroundColor: Colors.transparent,
                                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -1124,7 +1115,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 child: AnimatedOpacity(
                                   opacity: _pauseButtonOpacity,
                                   duration: const Duration(milliseconds: 500),
-                                  curve: Curves.linear,
                                   child: Container(
                                     width: 64,
                                     height: 64,
@@ -1325,10 +1315,10 @@ class _SafeVideoPlayer extends ConsumerWidget {
 /// Video overlay actions widget with working functionality
 class VideoOverlayActions extends ConsumerWidget {
   const VideoOverlayActions({
-    super.key,
     required this.video,
     required this.isVisible,
     required this.isActive,
+    super.key,
     this.hasBottomNavigation = true,
     this.contextTitle,
     this.isFullscreen = false,
@@ -1435,7 +1425,7 @@ class VideoOverlayActions extends ConsumerWidget {
               onTap: () {
                 _showBadgeExplanationModal(context, ref, video, isActive);
               },
-              child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
+              child: ProofModeBadgeRow(video: video),
             ),
           ),
         // Author info and video description overlay at bottom left
@@ -1471,7 +1461,7 @@ class VideoOverlayActions extends ConsumerWidget {
                     final displayName =
                         profile?.bestDisplayName ??
                         video.authorName ??
-                        NostrKeyUtils.truncateNpub(video.pubkey);
+                        UserProfile.generatedNameFor(video.pubkey);
                     final archivedLoops = video.originalLoops ?? 0;
                     final liveViews =
                         int.tryParse(video.rawTags['views'] ?? '') ?? 0;
@@ -1496,7 +1486,6 @@ class VideoOverlayActions extends ConsumerWidget {
                     }
 
                     return Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         // Avatar with follow button overlay
                         SizedBox(
@@ -1530,10 +1519,10 @@ class VideoOverlayActions extends ConsumerWidget {
                                             height: 44,
                                             fit: BoxFit.cover,
                                             placeholder: (context, url) =>
-                                                Container(
+                                                const ColoredBox(
                                                   color:
                                                       VineTheme.cardBackground,
-                                                  child: const Icon(
+                                                  child: Icon(
                                                     Icons.person,
                                                     color: Colors.white54,
                                                     size: 24,
@@ -1541,19 +1530,19 @@ class VideoOverlayActions extends ConsumerWidget {
                                                 ),
                                             errorWidget:
                                                 (context, url, error) =>
-                                                    Container(
+                                                    const ColoredBox(
                                                       color: VineTheme
                                                           .cardBackground,
-                                                      child: const Icon(
+                                                      child: Icon(
                                                         Icons.person,
                                                         color: Colors.white54,
                                                         size: 24,
                                                       ),
                                                     ),
                                           )
-                                        : Container(
+                                        : const ColoredBox(
                                             color: VineTheme.cardBackground,
-                                            child: const Icon(
+                                            child: Icon(
                                               Icons.person,
                                               color: Colors.white54,
                                               size: 24,
@@ -1596,7 +1585,6 @@ class VideoOverlayActions extends ConsumerWidget {
                                           style: VineTheme.titleFont(
                                             fontSize: 14,
                                             height: 20 / 14,
-                                            color: Colors.white,
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -1690,7 +1678,7 @@ class VideoOverlayActions extends ConsumerWidget {
                         height: 20 / 14,
                         letterSpacing: 0.25,
                       ),
-                      hashtagStyle: TextStyle(
+                      hashtagStyle: const TextStyle(
                         fontFamily: 'Inter',
                         color: VineTheme.vineGreen,
                         fontSize: 14,
@@ -1792,7 +1780,6 @@ class VideoOverlayActions extends ConsumerWidget {
     bool isActive,
   ) async {
     await context.showVideoPausingDialog<void>(
-      barrierDismissible: true,
       builder: (context) => _ContentWarningDetailsSheet(labels: labels),
     );
   }
@@ -1841,7 +1828,6 @@ class VideoOverlayActions extends ConsumerWidget {
     }
 
     await context.showVideoPausingDialog<void>(
-      barrierDismissible: true,
       builder: (context) => BadgeExplanationModal(video: video),
     );
 
@@ -1944,8 +1930,8 @@ class _VideoEditButton extends ConsumerWidget {
 /// Displays the video author's name (tappable to go to profile) and a follow button.
 class VideoAuthorRow extends ConsumerWidget {
   const VideoAuthorRow({
-    super.key,
     required this.video,
+    super.key,
     this.isFullscreen = false,
     this.hideFollowButtonIfFollowing = false,
   });
@@ -2020,7 +2006,7 @@ class VideoAuthorRow extends ConsumerWidget {
 
 /// Repost header banner showing who reposted the video.
 class VideoRepostHeader extends ConsumerWidget {
-  const VideoRepostHeader({super.key, required this.reposterPubkey});
+  const VideoRepostHeader({required this.reposterPubkey, super.key});
 
   final String reposterPubkey;
 
@@ -2391,13 +2377,12 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                   'Content Warnings',
                   style: VineTheme.titleFont(
                     fontSize: 18,
-                    color: VineTheme.whiteText,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               'The creator applied these labels:',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
             ),
@@ -2433,7 +2418,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             _ContentWarningBadge._describe(label),
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: VineTheme.secondaryText,
                               fontSize: 13,
                             ),
@@ -2522,7 +2507,7 @@ class _ContentWarningOverlay extends StatelessWidget {
                     Text(
                       labels.map(_ContentWarningBadge._humanize).join(', '),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: VineTheme.secondaryText,
                         fontSize: 14,
                       ),

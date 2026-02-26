@@ -2,11 +2,12 @@
 // ABOUTME: Provides minimal Nostr functionality without real relay connections
 
 import 'dart:async';
+
+import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
-import 'package:models/models.dart';
 
 /// Test implementation of NostrService that doesn't connect to real relays
 class TestNostrService implements NostrClient {
@@ -331,7 +332,7 @@ class TestNostrService implements NostrClient {
     // Return sensible defaults for common return types
     final memberName = invocation.memberName.toString();
     if (memberName.contains('Future')) {
-      return Future.value(null);
+      return Future.value();
     }
     if (memberName.contains('Stream')) {
       return const Stream.empty();

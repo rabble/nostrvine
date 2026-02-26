@@ -25,7 +25,7 @@ void main() {
         createdAt: 1762865061,
         timestamp: now,
         title: 'Mercury Fitness',
-        hashtags: ['miró'],
+        hashtags: const ['miró'],
         dimensions: '720x1280', // Portrait: width < height
       );
 
@@ -69,7 +69,6 @@ void main() {
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
         title: 'Test Landscape',
-        hashtags: [],
         dimensions: '1920x1080', // Landscape: width > height
       );
 

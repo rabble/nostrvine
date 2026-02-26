@@ -2,14 +2,14 @@
 // ABOUTME: Tests branding (wordmark logo), navigation menu, and video pause behavior
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/screens/settings_screen.dart';
-import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/widgets/vine_drawer.dart';
 
 import '../helpers/go_router.dart';
 
@@ -24,7 +24,7 @@ void main() {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
         () => mockAuthService.currentPublicKeyHex,
-      ).thenReturn('test_pubkey_' + '0' * 54);
+      ).thenReturn('test_pubkey_${'0' * 54}');
     });
 
     testWidgets('displays Divine logo image in header', (tester) async {
@@ -134,7 +134,7 @@ void main() {
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(
         () => mockAuthService.currentPublicKeyHex,
-      ).thenReturn('test_pubkey_' + '0' * 54);
+      ).thenReturn('test_pubkey_${'0' * 54}');
     });
 
     testWidgets(

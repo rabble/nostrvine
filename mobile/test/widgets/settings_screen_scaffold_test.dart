@@ -1,15 +1,15 @@
 // ABOUTME: Widget test verifying settings screens use proper Vine scaffold structure
 // ABOUTME: Tests that settings screens have green AppBar and black background
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:openvine/screens/settings_screen.dart';
-import 'package:openvine/screens/notification_settings_screen.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/services/auth_service.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
 

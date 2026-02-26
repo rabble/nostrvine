@@ -4,8 +4,8 @@
 import 'dart:async';
 
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 

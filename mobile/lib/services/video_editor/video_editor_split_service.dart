@@ -6,8 +6,8 @@ import 'dart:async';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
-import 'package:path/path.dart' as p;
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Result of a clip split operation containing both resulting clips
@@ -219,7 +219,7 @@ class VideoEditorSplitService {
         // that we add a short delay to ensure the progress animation shows
         // to complete to the user. Without that it will look like a
         // flickering issue.
-        Future.delayed(Duration(milliseconds: 300)),
+        Future.delayed(const Duration(milliseconds: 300)),
       ]);
 
       Log.info(

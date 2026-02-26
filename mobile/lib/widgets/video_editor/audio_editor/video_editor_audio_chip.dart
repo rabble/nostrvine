@@ -5,7 +5,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 
 class VideoEditorAudioChip extends ConsumerWidget {
-  const VideoEditorAudioChip({super.key, required this.onTap});
+  const VideoEditorAudioChip({required this.onTap, super.key});
 
   final VoidCallback onTap;
 
@@ -18,7 +18,7 @@ class VideoEditorAudioChip extends ConsumerWidget {
       onTap: onTap,
       radius: 16,
       child: Container(
-        constraints: BoxConstraints(minHeight: 48),
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const .fromLTRB(16, 8, 8, 8),
         decoration: ShapeDecoration(
           color: VineTheme.scrim15,
@@ -27,16 +27,15 @@ class VideoEditorAudioChip extends ConsumerWidget {
         child: Row(
           mainAxisSize: .min,
           mainAxisAlignment: .center,
-          crossAxisAlignment: .center,
           children: [
-            Row(
+            const Row(
               spacing: 1.5,
               children: [
-                const _AudioBar(height: 7),
-                const _AudioBar(height: 16),
-                const _AudioBar(height: 13),
-                const _AudioBar(height: 7),
-                const _AudioBar(height: 10),
+                _AudioBar(height: 7),
+                _AudioBar(height: 16),
+                _AudioBar(height: 13),
+                _AudioBar(height: 7),
+                _AudioBar(height: 10),
               ],
             ),
             const SizedBox(width: 8),
@@ -72,7 +71,7 @@ class VideoEditorAudioChip extends ConsumerWidget {
               GestureDetector(
                 onTap: () => ref.read(selectedSoundProvider.notifier).clear(),
                 child: Container(
-                  padding: .all(8),
+                  padding: const .all(8),
                   decoration: ShapeDecoration(
                     shape: RoundedRectangleBorder(borderRadius: .circular(16)),
                   ),
@@ -80,7 +79,7 @@ class VideoEditorAudioChip extends ConsumerWidget {
                     'assets/icon/close.svg',
                     width: 16,
                     height: 16,
-                    colorFilter: .mode(VineTheme.whiteText, .srcIn),
+                    colorFilter: const .mode(VineTheme.whiteText, .srcIn),
                   ),
                 ),
               )
@@ -101,7 +100,7 @@ class _AudioBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 150),
       width: 2,
       height: height,
       decoration: BoxDecoration(

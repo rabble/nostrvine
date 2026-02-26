@@ -218,7 +218,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 alignment: Alignment.center,
                 child: widget.isLoadingMore
-                    ? SizedBox(
+                    ? const SizedBox(
                         width: 24,
                         height: 24,
                         child: CircularProgressIndicator(
@@ -254,7 +254,7 @@ class _ClassicVideosSliverGrid extends ConsumerWidget {
       loading: () => const SliverToBoxAdapter(
         child: Center(child: CircularProgressIndicator()),
       ),
-      error: (_, __) => _buildGrid(context, ref, videos),
+      error: (_, _) => _buildGrid(context, ref, videos),
       data: (tracker) {
         final filteredVideos = videos
             .where((video) => !tracker.isVideoBroken(video.id))
@@ -343,11 +343,11 @@ class _ClassicVideoItem extends StatelessWidget {
                   video.pubkey,
                   embeddedName: video.authorName,
                   maxLines: 1,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    shadows: const [
+                    shadows: [
                       Shadow(
                         offset: Offset(0, 1),
                         blurRadius: 3,
@@ -377,9 +377,13 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off, size: 64, color: VineTheme.secondaryText),
+            const Icon(
+              Icons.cloud_off,
+              size: 64,
+              color: VineTheme.secondaryText,
+            ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Classics Unavailable',
               style: TextStyle(
                 color: VineTheme.primaryText,
@@ -389,7 +393,7 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'Classics are only available when connected to Funnelcake relays.',
               style: TextStyle(
                 color: VineTheme.secondaryText,
@@ -408,14 +412,14 @@ class _ClassicVinesUnavailableState extends StatelessWidget {
                   color: VineTheme.vineGreen.withValues(alpha: 0.3),
                 ),
               ),
-              child: Column(
+              child: const Column(
                 children: [
                   Icon(
                     Icons.info_outline,
                     color: VineTheme.vineGreen,
                     size: 20,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Switch to a Funnelcake-enabled relay in Settings to access the Classics archive.',
                     style: TextStyle(
@@ -441,12 +445,12 @@ class _ClassicVinesEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.history, size: 64, color: VineTheme.secondaryText),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'No Classics Found',
             style: TextStyle(
@@ -455,7 +459,7 @@ class _ClassicVinesEmptyState extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'The Classics archive is being loaded',
             style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
@@ -478,16 +482,19 @@ class _ClassicVinesErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+          const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load Classics',
             style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(
             error,
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 12,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -502,6 +509,6 @@ class _ClassicVinesLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: BrandedLoadingIndicator(size: 80));
+    return const Center(child: BrandedLoadingIndicator());
   }
 }

@@ -11,10 +11,10 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -264,12 +264,12 @@ class _NewVideosEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.video_library, size: 64, color: VineTheme.secondaryText),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'No videos in New Videos',
             style: TextStyle(
@@ -278,7 +278,7 @@ class _NewVideosEmptyState extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Check back later for new content',
             style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
@@ -301,16 +301,19 @@ class _NewVideosErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+          const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load videos',
             style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
           ),
           const SizedBox(height: 8),
           Text(
             '$error',
-            style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+            style: const TextStyle(
+              color: VineTheme.secondaryText,
+              fontSize: 12,
+            ),
           ),
         ],
       ),
@@ -324,6 +327,6 @@ class _NewVideosLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(child: BrandedLoadingIndicator(size: 80));
+    return const Center(child: BrandedLoadingIndicator());
   }
 }

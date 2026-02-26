@@ -243,6 +243,11 @@ class DivineCameraPlugin :
             return
         }
         try {
+            // Suppress volume/Bluetooth triggers during camera switch.
+            // Camera reconfiguration can cause connected Bluetooth devices
+            // to send spurious play/pause events that would start recording.
+            volumeKeyHandler?.suppressTemporarily(3000)
+
             controller.switchCamera(lens) { state, error ->
                 if (error != null) {
                     result.error("SWITCH_ERROR", error, null)

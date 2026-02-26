@@ -30,7 +30,7 @@ void main() {
             () => VideoRecorderNotifier(mockCamera),
           ),
         ],
-        child: MaterialApp(
+        child: const MaterialApp(
           home: Scaffold(body: VideoRecorderCountdownOverlay()),
         ),
       );

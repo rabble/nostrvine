@@ -106,12 +106,12 @@ void main() {
       };
 
       // Check if event would match filter (has at least one matching hashtag)
-      final eventHashtags = (testEvent['tags'] as List)
+      final eventHashtags = (testEvent['tags']! as List)
           .where((tag) => tag[0] == 't')
           .map((tag) => tag[1] as String)
           .toList();
 
-      final matchesFilter = eventHashtags.any((tag) => hashtags.contains(tag));
+      final matchesFilter = eventHashtags.any(hashtags.contains);
       expect(matchesFilter, isTrue);
     });
   });

@@ -20,13 +20,13 @@ void main() {
       // Set up default mock behaviors
       when(
         () => mockPlayer.positionStream,
-      ).thenAnswer((_) => Stream<Duration>.empty());
+      ).thenAnswer((_) => const Stream<Duration>.empty());
       when(
         () => mockPlayer.durationStream,
-      ).thenAnswer((_) => Stream<Duration?>.empty());
+      ).thenAnswer((_) => const Stream<Duration?>.empty());
       when(
         () => mockPlayer.playingStream,
-      ).thenAnswer((_) => Stream<bool>.empty());
+      ).thenAnswer((_) => const Stream<bool>.empty());
       when(() => mockPlayer.duration).thenReturn(null);
       when(() => mockPlayer.dispose()).thenAnswer((_) async {});
     });
@@ -201,13 +201,13 @@ void main() {
       mockPlayer = MockAudioPlayer();
       when(
         () => mockPlayer.positionStream,
-      ).thenAnswer((_) => Stream<Duration>.empty());
+      ).thenAnswer((_) => const Stream<Duration>.empty());
       when(
         () => mockPlayer.durationStream,
-      ).thenAnswer((_) => Stream<Duration?>.empty());
+      ).thenAnswer((_) => const Stream<Duration?>.empty());
       when(
         () => mockPlayer.playingStream,
-      ).thenAnswer((_) => Stream<bool>.empty());
+      ).thenAnswer((_) => const Stream<bool>.empty());
       when(() => mockPlayer.duration).thenReturn(null);
       when(() => mockPlayer.dispose()).thenAnswer((_) async {});
     });
@@ -239,13 +239,13 @@ void main() {
       mockPlayer = MockAudioPlayer();
       when(
         () => mockPlayer.positionStream,
-      ).thenAnswer((_) => Stream<Duration>.empty());
+      ).thenAnswer((_) => const Stream<Duration>.empty());
       when(
         () => mockPlayer.durationStream,
-      ).thenAnswer((_) => Stream<Duration?>.empty());
+      ).thenAnswer((_) => const Stream<Duration?>.empty());
       when(
         () => mockPlayer.playingStream,
-      ).thenAnswer((_) => Stream<bool>.empty());
+      ).thenAnswer((_) => const Stream<bool>.empty());
       when(() => mockPlayer.duration).thenReturn(null);
       when(() => mockPlayer.dispose()).thenAnswer((_) async {});
     });

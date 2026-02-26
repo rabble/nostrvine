@@ -14,7 +14,7 @@ void main() {
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
-        recordedAt: DateTime(2025, 12, 13, 10, 0, 0),
+        recordedAt: DateTime(2025, 12, 13, 10),
         targetAspectRatio: .vertical,
         originalAspectRatio: 9 / 16,
       );
@@ -31,7 +31,7 @@ void main() {
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
-        recordedAt: DateTime(2025, 12, 13, 10, 0, 0),
+        recordedAt: DateTime(2025, 12, 13, 10),
         thumbnailPath: '/path/to/thumb.jpg',
         targetAspectRatio: model.AspectRatio.square,
         originalAspectRatio: 9 / 16,
@@ -126,7 +126,7 @@ void main() {
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(milliseconds: 2500),
-        recordedAt: DateTime(2025, 12, 13, 10, 0, 0),
+        recordedAt: DateTime(2025, 12, 13, 10),
         thumbnailPath: '/path/to/thumb.jpg',
         targetAspectRatio: model.AspectRatio.square,
         originalAspectRatio: 9 / 16,
@@ -149,7 +149,7 @@ void main() {
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(milliseconds: 2500),
-        recordedAt: DateTime(2025, 12, 13, 10, 0, 0),
+        recordedAt: DateTime(2025, 12, 13, 10),
         targetAspectRatio: .vertical,
         originalAspectRatio: 9 / 16,
       );
@@ -181,7 +181,7 @@ void main() {
       expect(filePath, endsWith('video.mp4'));
       expect(filePath, contains('path'));
       expect(clip.duration, equals(const Duration(milliseconds: 2500)));
-      expect(clip.recordedAt, equals(DateTime(2025, 12, 13, 10, 0, 0)));
+      expect(clip.recordedAt, equals(DateTime(2025, 12, 13, 10)));
       expect(clip.thumbnailPath, endsWith('thumb.jpg'));
       expect(clip.targetAspectRatio, equals(model.AspectRatio.square));
     });
@@ -205,7 +205,7 @@ void main() {
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(milliseconds: 2500),
-        recordedAt: DateTime(2025, 12, 13, 10, 0, 0),
+        recordedAt: DateTime(2025, 12, 13, 10),
         thumbnailPath: '/path/to/thumb.jpg',
         targetAspectRatio: model.AspectRatio.vertical,
         originalAspectRatio: 9 / 16,

@@ -91,9 +91,9 @@ class ZendeskSupportService {
   ///
   /// Returns true if identity was set successfully.
   static Future<bool> setUserIdentity({
+    required String npub,
     String? displayName,
     String? nip05,
-    required String npub,
   }) async {
     // Store for REST API fallback
     _userNpub = npub;
@@ -448,10 +448,10 @@ class ZendeskSupportService {
       };
 
       // Zendesk API URL for creating requests (end-user ticket creation)
-      final apiUrl = '${ZendeskConfig.zendeskUrl}/api/v2/requests.json';
+      const apiUrl = '${ZendeskConfig.zendeskUrl}/api/v2/requests.json';
 
       // Create Basic Auth header: email/token:api_token
-      final credentials =
+      const credentials =
           '${ZendeskConfig.apiEmail}/token:${ZendeskConfig.apiToken}';
       final encodedCredentials = base64Encode(utf8.encode(credentials));
 
@@ -509,16 +509,16 @@ class ZendeskSupportService {
     buffer.writeln('## Bug Report');
     buffer.writeln('**Report ID:** $reportId');
     buffer.writeln('**App Version:** $appVersion');
-    buffer.writeln('');
+    buffer.writeln();
     buffer.writeln('### User Description');
     buffer.writeln(userDescription);
-    buffer.writeln('');
+    buffer.writeln();
     buffer.writeln('### Device Information');
     deviceInfo.forEach((key, value) {
       buffer.writeln('- **$key:** $value');
     });
     if (currentScreen != null) {
-      buffer.writeln('');
+      buffer.writeln();
       buffer.writeln('**Current Screen:** $currentScreen');
     }
     // Include user pubkey - use passed value or stored npub
@@ -527,7 +527,7 @@ class ZendeskSupportService {
       buffer.writeln('**User Pubkey:** $effectivePubkey');
     }
     if (errorCounts != null && errorCounts.isNotEmpty) {
-      buffer.writeln('');
+      buffer.writeln();
       buffer.writeln('### Recent Error Summary');
       final sortedErrors = errorCounts.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
@@ -536,7 +536,7 @@ class ZendeskSupportService {
       }
     }
     if (logsSummary != null && logsSummary.isNotEmpty) {
-      buffer.writeln('');
+      buffer.writeln();
       buffer.writeln('### Recent Logs (Summary)');
       buffer.writeln('```');
       buffer.writeln(logsSummary);

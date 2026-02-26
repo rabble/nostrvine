@@ -16,9 +16,9 @@ import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
 /// Page widget that creates the [MyFollowingBloc] and provides it to the view.
 class FollowFromProfileButton extends ConsumerWidget {
   const FollowFromProfileButton({
-    super.key,
     required this.pubkey,
     required this.displayName,
+    super.key,
     this.onBlockedTap,
   });
 
@@ -71,6 +71,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
     required this.pubkey,
     required this.displayName,
     required this.currentUserPubkey,
+    super.key,
     this.isBlocked = false,
     this.onBlockedTap,
   });

@@ -36,7 +36,6 @@ class SoundWaveformBloc extends Bloc<SoundWaveformEvent, SoundWaveformState> {
 
       final configs = WaveformConfigs(
         video: video,
-        resolution: WaveformResolution.medium,
       );
 
       final waveformData = await ProVideoEditor.instance.getWaveform(configs);

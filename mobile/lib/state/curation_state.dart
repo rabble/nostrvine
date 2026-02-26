@@ -13,11 +13,11 @@ sealed class CurationState with _$CurationState {
     /// Editor's picks videos (classic vines)
     required List<VideoEvent> editorsPicks,
 
-    /// Trending videos (popular now)
-    @Default([]) List<VideoEvent> trending,
-
     /// Whether curation data is loading
     required bool isLoading,
+
+    /// Trending videos (popular now)
+    @Default([]) List<VideoEvent> trending,
 
     /// All available curation sets
     @Default([]) List<CurationSet> curationSets,

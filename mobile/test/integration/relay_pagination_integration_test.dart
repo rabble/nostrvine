@@ -64,7 +64,7 @@ void main() {
       // Poll for connection status instead of arbitrary delay
       for (int i = 0; i < 20; i++) {
         if (nostrService.connectedRelayCount > 0) break;
-        await Future.delayed(Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 100));
       }
 
       expect(nostrService.isInitialized, isTrue);
@@ -90,7 +90,6 @@ void main() {
           () => videoEventService
               .getVideos(SubscriptionType.discovery)
               .isNotEmpty,
-          timeout: Duration(seconds: 5),
         );
 
         // Get initial videos
@@ -146,7 +145,6 @@ void main() {
           () =>
               videoEventService.getVideos(SubscriptionType.discovery).length >
               initialVideos.length,
-          timeout: Duration(seconds: 5),
         );
 
         // Get all videos after pagination
@@ -201,7 +199,6 @@ void main() {
           () => videoEventService
               .getVideos(SubscriptionType.discovery)
               .isNotEmpty,
-          timeout: Duration(seconds: 5),
         );
 
         final videosAfterReset = videoEventService.getVideos(
@@ -248,7 +245,7 @@ void main() {
         );
         // All videos in OpenVine are kind 34236 by definition
       },
-      timeout: Timeout(Duration(seconds: 30)),
+      timeout: const Timeout(Duration(seconds: 30)),
     );
 
     test(
@@ -264,7 +261,7 @@ void main() {
           () => videoEventService
               .getVideos(SubscriptionType.discovery)
               .isNotEmpty,
-          timeout: Duration(seconds: 3),
+          timeout: const Duration(seconds: 3),
         );
 
         final initialCount = videoEventService
@@ -289,7 +286,7 @@ void main() {
             () =>
                 videoEventService.getVideos(SubscriptionType.discovery).length >
                 beforeCount,
-            timeout: Duration(seconds: 3),
+            timeout: const Duration(seconds: 3),
           ).catchError((_) => null); // Allow timeout if no new videos
 
           final currentCount = videoEventService
@@ -326,7 +323,7 @@ void main() {
           reason: 'Should not have duplicate videos',
         );
       },
-      timeout: Timeout(Duration(seconds: 30)),
+      timeout: const Timeout(Duration(seconds: 30)),
     );
     // TODO(any): Fix and reenable this test
   }, skip: true);

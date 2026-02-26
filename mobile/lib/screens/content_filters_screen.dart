@@ -1,6 +1,7 @@
 // ABOUTME: Per-category content filter settings screen with Show/Warn/Hide controls
 // ABOUTME: Bluesky-inspired grouped layout with segmented buttons per content category
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_filter_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 class ContentFiltersScreen extends ConsumerStatefulWidget {
   static const routeName = 'content-filters';
@@ -151,10 +151,10 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: VineTheme.onSurfaceDisabled, width: 0.5),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          const Icon(Icons.lock_outline, color: VineTheme.onSurfaceMuted),
-          const SizedBox(width: 12),
+          Icon(Icons.lock_outline, color: VineTheme.onSurfaceMuted),
+          SizedBox(width: 12),
           Expanded(
             child: Text(
               'Verify your age in Safety & Privacy settings to '

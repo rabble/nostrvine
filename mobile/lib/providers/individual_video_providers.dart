@@ -3,20 +3,21 @@
 
 import 'dart:async';
 import 'dart:io' show Platform;
+
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show ChangeNotifier, kIsWeb;
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:video_player/video_player.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:media_cache/media_cache.dart';
-import 'package:openvine/services/openvine_media_cache.dart';
-import 'package:openvine/services/broken_video_tracker.dart'
-    show BrokenVideoTracker;
-import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:models/models.dart' show VideoEvent;
+import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:openvine/services/broken_video_tracker.dart'
+    show BrokenVideoTracker;
+import 'package:openvine/services/openvine_media_cache.dart';
+import 'package:openvine/utils/unified_logger.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:video_player/video_player.dart';
 
 part 'individual_video_providers.g.dart';
 
@@ -302,9 +303,7 @@ VideoPlayerController individualVideoController(
     final timeout = !kIsWeb && Platform.isAndroid
         ? const Duration(seconds: 3)
         : const Duration(seconds: 15);
-    cacheTimer = Timer(timeout, () {
-      link.close(); // Allow autoDispose after timeout
-    });
+    cacheTimer = Timer(timeout, link.close);
   });
 
   ref.onResume(() {
@@ -449,9 +448,9 @@ VideoPlayerController individualVideoController(
 
   // Track significant video state changes only (initialization, errors, buffering)
   // Previous state tracking to avoid logging every frame update
-  bool? _lastIsInitialized;
-  bool? _lastIsBuffering;
-  bool? _lastHasError;
+  bool? lastIsInitialized;
+  bool? lastIsBuffering;
+  bool? lastHasError;
 
   void stateChangeListener() {
     // Guard against platform callbacks firing after player disposal.
@@ -471,9 +470,9 @@ VideoPlayerController individualVideoController(
     final hasError = value.hasError;
 
     // Log only when significant state changes occur
-    if (isInitialized != _lastIsInitialized ||
-        isBuffering != _lastIsBuffering ||
-        hasError != _lastHasError) {
+    if (isInitialized != lastIsInitialized ||
+        isBuffering != lastIsBuffering ||
+        hasError != lastHasError) {
       final position = value.position;
       final duration = value.duration;
       final buffered = value.buffered.isNotEmpty
@@ -493,9 +492,9 @@ VideoPlayerController individualVideoController(
         category: LogCategory.video,
       );
 
-      _lastIsInitialized = isInitialized;
-      _lastIsBuffering = isBuffering;
-      _lastHasError = hasError;
+      lastIsInitialized = isInitialized;
+      lastIsBuffering = isBuffering;
+      lastHasError = hasError;
     }
   }
 

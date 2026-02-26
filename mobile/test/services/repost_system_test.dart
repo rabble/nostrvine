@@ -92,9 +92,6 @@ void main() {
           content: 'Video content',
           timestamp: DateTime.now(),
           isRepost: true,
-          reposterId: null,
-          reposterPubkey: null,
-          repostedAt: null,
         );
 
         expect(videoEvent.isRepost, isTrue);
@@ -136,7 +133,7 @@ void main() {
           videoUrl: 'https://example.com/video.mp4',
           thumbnailUrl: 'https://example.com/thumb.jpg',
           duration: 30,
-          hashtags: ['test', 'video'],
+          hashtags: const ['test', 'video'],
         );
 
         final repostEvent = VideoEvent.createRepostEvent(

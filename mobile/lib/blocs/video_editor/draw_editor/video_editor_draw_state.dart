@@ -12,7 +12,8 @@ enum DrawToolType {
   arrow,
 
   /// Eraser tool.
-  eraser;
+  eraser
+  ;
 
   /// Returns the paint configuration (mode, opacity, stroke width) for this tool.
   DrawToolConfig get config => switch (this) {

@@ -1,13 +1,12 @@
 // ABOUTME: HTTP API service for communicating with the divine backend
-import 'package:flutter/foundation.dart'; // ABOUTME: Handles ready events polling, authentication, and error handling
-
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart'; // ABOUTME: Handles ready events polling, authentication, and error handling
 import 'package:http/http.dart' as http;
 import 'package:openvine/config/app_config.dart';
 import 'package:openvine/services/network/rate_limiter.dart'
-    show RateLimiter, RateLimitStatus;
+    show RateLimitStatus, RateLimiter;
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -122,7 +121,6 @@ class ApiService {
             uri,
             headers: await _getHeaders(
               url: uri.toString(),
-              method: HttpMethod.get,
             ),
           )
           .timeout(_defaultTimeout);
