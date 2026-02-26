@@ -76,5 +76,6 @@ linter:
     unreachable_from_main: false
     use_build_context_synchronously: false
     use_named_constants: false
+    omit_local_variable_types: false
     use_setters_to_change_properties: false
 
