@@ -157,10 +157,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: authors,
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
@@ -212,10 +213,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: authors,
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.forYou)),
@@ -232,6 +234,7 @@ void main() {
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: ['author1', 'author2'],
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -277,10 +280,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
@@ -306,6 +310,7 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -335,10 +340,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
@@ -361,10 +367,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
@@ -451,10 +458,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => moreVideos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
@@ -479,6 +487,7 @@ void main() {
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -546,10 +555,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => moreVideos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
@@ -579,10 +589,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
         seed: () => VideoFeedState(
@@ -618,13 +629,14 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
           ).thenAnswer((_) async {
             // Simulate network delay
             await Future<void>.delayed(const Duration(milliseconds: 50));
-            return moreVideos;
+            return HomeFeedResult(videos: moreVideos);
           });
         },
         build: createBloc,
@@ -647,6 +659,7 @@ void main() {
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -672,10 +685,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => overlappingVideos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: overlappingVideos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
@@ -710,6 +724,7 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -746,10 +761,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => freshVideos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: freshVideos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
@@ -776,6 +792,7 @@ void main() {
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: null,
             ),
@@ -792,10 +809,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         seed: () => const VideoFeedState(
@@ -828,10 +846,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
@@ -903,10 +922,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
@@ -940,10 +960,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
@@ -987,10 +1008,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         seed: () => const VideoFeedState(
@@ -1025,10 +1047,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
@@ -1088,10 +1111,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         seed: () => const VideoFeedState(
@@ -1128,10 +1152,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) async {

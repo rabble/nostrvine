@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   db_client:
+  equatable: ^2.0.8
   funnelcake_api_client:
   models:
   nostr_client:

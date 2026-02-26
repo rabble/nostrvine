@@ -496,9 +496,9 @@ void main() {
             userPubkey: 'my-pubkey',
           );
 
-          expect(result, hasLength(1));
+          expect(result.videos, hasLength(1));
           expect(
-            result.first.videoUrl,
+            result.videos.first.videoUrl,
             equals('https://example.com/video.mp4'),
           );
           verifyNever(() => mockNostrClient.queryEvents(any()));
@@ -570,8 +570,8 @@ void main() {
             userPubkey: 'my-pubkey',
           );
 
-          expect(result, hasLength(1));
-          expect(result.first.id, equals('nostr-video'));
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('nostr-video'));
           verify(() => mockNostrClient.queryEvents(any())).called(1);
         });
 
@@ -607,8 +607,8 @@ void main() {
             userPubkey: 'my-pubkey',
           );
 
-          expect(result, hasLength(1));
-          expect(result.first.id, equals('nostr-video'));
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('nostr-video'));
         });
 
         test('skips API when userPubkey is null', () async {
@@ -704,22 +704,22 @@ void main() {
             userPubkey: 'my-pubkey',
           );
 
-          expect(result, hasLength(1));
+          expect(result.videos, hasLength(1));
           expect(
-            result.first.videoUrl,
+            result.videos.first.videoUrl,
             equals('https://example.com/allowed.mp4'),
           );
         });
       });
 
-      test('returns empty list when authors is empty', () async {
+      test('returns empty result when authors is empty', () async {
         final result = await repository.getHomeFeedVideos(authors: []);
 
-        expect(result, isEmpty);
+        expect(result.videos, isEmpty);
         verifyNever(() => mockNostrClient.queryEvents(any()));
       });
 
-      test('returns empty list when no events found', () async {
+      test('returns empty result when no events found', () async {
         when(() => mockNostrClient.queryEvents(any())).thenAnswer(
           (_) async => <Event>[],
         );
@@ -728,7 +728,7 @@ void main() {
           authors: ['pubkey1', 'pubkey2'],
         );
 
-        expect(result, isEmpty);
+        expect(result.videos, isEmpty);
         verify(() => mockNostrClient.queryEvents(any())).called(1);
       });
 
@@ -786,9 +786,9 @@ void main() {
           authors: ['followed-user'],
         );
 
-        expect(result, hasLength(1));
-        expect(result.first.id, equals('home-video-123'));
-        expect(result.first.pubkey, equals('followed-user'));
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('home-video-123'));
+        expect(result.videos.first.pubkey, equals('followed-user'));
       });
 
       test('sorts videos by creation time (newest first)', () async {
@@ -813,9 +813,467 @@ void main() {
           authors: ['user1', 'user2'],
         );
 
+        expect(result.videos, hasLength(2));
+        expect(result.videos.first.id, equals('newer'));
+        expect(result.videos.last.id, equals('older'));
+      });
+    });
+
+    group('getHomeFeedVideos with videoRefs', () {
+      test('empty videoRefs returns only following videos', () async {
+        final event = _createVideoEvent(
+          id: 'following-video',
+          pubkey: 'followed-user',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [event],
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+        );
+
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('following-video'));
+        expect(result.videoListSources, isEmpty);
+        expect(result.listOnlyVideoIds, isEmpty);
+      });
+
+      test('merges list videos with following videos', () async {
+        final followingEvent = _createVideoEvent(
+          id: 'following-video',
+          pubkey: 'followed-user',
+          videoUrl: 'https://example.com/following.mp4',
+          createdAt: 1704067200,
+        );
+
+        final listEvent = _createVideoEvent(
+          id: 'list-video',
+          pubkey: 'list-author',
+          videoUrl: 'https://example.com/list.mp4',
+          createdAt: 1704067300,
+        );
+
+        // Following fetch
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (invocation) async {
+            final filters = invocation.positionalArguments[0] as List<Filter>;
+            if (filters.first.authors != null) {
+              return [followingEvent];
+            }
+            // Event ID fetch for list videos
+            return [listEvent];
+          },
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+          videoRefs: {
+            'list-a': ['list-video'],
+          },
+        );
+
+        expect(result.videos, hasLength(2));
+        // Sorted by createdAt desc: list-video (300) then following (200)
+        expect(result.videos.first.id, equals('list-video'));
+        expect(result.videos.last.id, equals('following-video'));
+        expect(result.videoListSources, hasLength(1));
+        expect(result.videoListSources['list-video'], contains('list-a'));
+        expect(result.listOnlyVideoIds, contains('list-video'));
+      });
+
+      test('deduplicates video in both following and list', () async {
+        final sharedEvent = _createVideoEvent(
+          id: 'shared-video',
+          pubkey: 'followed-user',
+          videoUrl: 'https://example.com/shared.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [sharedEvent],
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+          videoRefs: {
+            'list-a': ['shared-video'],
+          },
+        );
+
+        // Video appears only once (from following)
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('shared-video'));
+        // Still tracked in videoListSources (it IS in a list)
+        expect(result.videoListSources['shared-video'], contains('list-a'));
+        // NOT in listOnlyVideoIds (it's from a followed user)
+        expect(result.listOnlyVideoIds, isEmpty);
+      });
+
+      test('builds correct videoListSources for multi-list refs', () async {
+        final event = _createVideoEvent(
+          id: 'multi-list-video',
+          pubkey: 'some-author',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (invocation) async {
+            final filters = invocation.positionalArguments[0] as List<Filter>;
+            if (filters.first.authors != null) return <Event>[];
+            return [event];
+          },
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+          videoRefs: {
+            'list-a': ['multi-list-video'],
+            'list-b': ['multi-list-video'],
+          },
+        );
+
+        expect(result.videos, hasLength(1));
+        expect(
+          result.videoListSources['multi-list-video'],
+          containsAll(['list-a', 'list-b']),
+        );
+        expect(result.listOnlyVideoIds, contains('multi-list-video'));
+      });
+
+      test('handles addressable coordinate refs', () async {
+        final followingEvent = _createVideoEvent(
+          id: 'following-video',
+          pubkey: 'followed-user',
+          videoUrl: 'https://example.com/following.mp4',
+          createdAt: 1704067200,
+        );
+
+        final addressableEvent = _createVideoEventWithDTag(
+          id: 'addressable-event-id',
+          pubkey: 'list-author',
+          dTag: 'my-vine',
+          videoUrl: 'https://example.com/addressable.mp4',
+          createdAt: 1704067300,
+        );
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async {
+            callCount++;
+            if (callCount == 1) return [followingEvent]; // Following fetch
+            return [addressableEvent]; // Addressable fetch
+          },
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+          videoRefs: {
+            'list-a': ['34236:list-author:my-vine'],
+          },
+        );
+
+        expect(result.videos, hasLength(2));
+        expect(result.listOnlyVideoIds, contains('addressable-event-id'));
+      });
+
+      test('handles mixed event ID and addressable refs', () async {
+        final followingEvent = _createVideoEvent(
+          id: 'following-video',
+          pubkey: 'followed-user',
+          videoUrl: 'https://example.com/following.mp4',
+          createdAt: 1704067100,
+        );
+
+        final eventIdVideo = _createVideoEvent(
+          id: 'event-id-video',
+          pubkey: 'author-a',
+          videoUrl: 'https://example.com/event.mp4',
+          createdAt: 1704067200,
+        );
+
+        final addressableVideo = _createVideoEventWithDTag(
+          id: 'addressable-id',
+          pubkey: 'author-b',
+          dTag: 'vine-dtag',
+          videoUrl: 'https://example.com/addressable.mp4',
+          createdAt: 1704067300,
+        );
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async {
+            callCount++;
+            if (callCount == 1) return [followingEvent]; // Following
+            if (callCount == 2) return [eventIdVideo]; // Event IDs
+            return [addressableVideo]; // Addressable
+          },
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+          videoRefs: {
+            'list-a': ['event-id-video', '34236:author-b:vine-dtag'],
+          },
+        );
+
+        expect(result.videos, hasLength(3));
+        expect(result.listOnlyVideoIds, hasLength(2));
+        expect(
+          result.listOnlyVideoIds,
+          containsAll(['event-id-video', 'addressable-id']),
+        );
+      });
+
+      test('empty following + non-empty videoRefs', () async {
+        final listEvent = _createVideoEvent(
+          id: 'list-only-video',
+          pubkey: 'list-author',
+          videoUrl: 'https://example.com/list.mp4',
+          createdAt: 1704067200,
+        );
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async {
+            callCount++;
+            if (callCount == 1) return <Event>[]; // Following (empty)
+            return [listEvent]; // List video fetch
+          },
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+          videoRefs: {
+            'list-a': ['list-only-video'],
+          },
+        );
+
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('list-only-video'));
+        expect(result.listOnlyVideoIds, contains('list-only-video'));
+      });
+
+      test('sorted by createdAt descending after merge', () async {
+        final old = _createVideoEvent(
+          id: 'old-following',
+          pubkey: 'followed-user',
+          videoUrl: 'https://example.com/old.mp4',
+          createdAt: 1000,
+        );
+
+        final mid = _createVideoEvent(
+          id: 'mid-list',
+          pubkey: 'list-author',
+          videoUrl: 'https://example.com/mid.mp4',
+          createdAt: 2000,
+        );
+
+        final newest = _createVideoEvent(
+          id: 'new-following',
+          pubkey: 'followed-user',
+          videoUrl: 'https://example.com/new.mp4',
+          createdAt: 3000,
+        );
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async {
+            callCount++;
+            if (callCount == 1) return [old, newest]; // Following
+            return [mid]; // List videos
+          },
+        );
+
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+          videoRefs: {
+            'list-a': ['mid-list'],
+          },
+        );
+
+        expect(result.videos, hasLength(3));
+        expect(result.videos[0].id, equals('new-following'));
+        expect(result.videos[1].id, equals('mid-list'));
+        expect(result.videos[2].id, equals('old-following'));
+      });
+
+      test(
+        'case-insensitive dedup between following and list',
+        () async {
+          final followingEvent = _createVideoEvent(
+            id: 'AbCdEf',
+            pubkey: 'followed-user',
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1704067200,
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (invocation) async {
+              final filters = invocation.positionalArguments[0] as List<Filter>;
+              if (filters.first.authors != null) return [followingEvent];
+              return [followingEvent]; // Same video from list fetch
+            },
+          );
+
+          final result = await repository.getHomeFeedVideos(
+            authors: ['followed-user'],
+            videoRefs: {
+              'list-a': ['AbCdEf'],
+            },
+          );
+
+          // Video appears only once despite being in both
+          expect(result.videos, hasLength(1));
+          expect(result.listOnlyVideoIds, isEmpty);
+        },
+      );
+    });
+
+    group('getVideosForList', () {
+      test('returns empty list when videoRefs is empty', () async {
+        final result = await repository.getVideosForList([]);
+
+        expect(result, isEmpty);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
+      test('fetches event ID refs correctly', () async {
+        final event = _createVideoEvent(
+          id: 'event-1',
+          pubkey: 'author-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [event],
+        );
+
+        final result = await repository.getVideosForList(['event-1']);
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('event-1'));
+      });
+
+      test('fetches addressable refs correctly', () async {
+        final event = _createVideoEventWithDTag(
+          id: 'addr-event-id',
+          pubkey: 'author-1',
+          dTag: 'my-vine',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [event],
+        );
+
+        final result = await repository.getVideosForList(
+          ['34236:author-1:my-vine'],
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.vineId, equals('my-vine'));
+      });
+
+      test('fetches mixed ref types in parallel', () async {
+        final eventIdVideo = _createVideoEvent(
+          id: 'event-video',
+          pubkey: 'author-a',
+          videoUrl: 'https://example.com/event.mp4',
+          createdAt: 1704067200,
+        );
+
+        final addressableVideo = _createVideoEventWithDTag(
+          id: 'addr-video',
+          pubkey: 'author-b',
+          dTag: 'vine-dtag',
+          videoUrl: 'https://example.com/addressable.mp4',
+          createdAt: 1704067300,
+        );
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async {
+            callCount++;
+            if (callCount == 1) return [eventIdVideo];
+            return [addressableVideo];
+          },
+        );
+
+        final result = await repository.getVideosForList([
+          'event-video',
+          '34236:author-b:vine-dtag',
+        ]);
+
         expect(result, hasLength(2));
-        expect(result.first.id, equals('newer'));
-        expect(result.last.id, equals('older'));
+        expect(result[0].id, equals('event-video'));
+        expect(result[1].vineId, equals('vine-dtag'));
+      });
+
+      test('preserves ref order in result', () async {
+        final video1 = _createVideoEvent(
+          id: 'video-1',
+          pubkey: 'author',
+          videoUrl: 'https://example.com/1.mp4',
+          createdAt: 1000,
+        );
+
+        final video2 = _createVideoEvent(
+          id: 'video-2',
+          pubkey: 'author',
+          videoUrl: 'https://example.com/2.mp4',
+          createdAt: 3000,
+        );
+
+        final video3 = _createVideoEvent(
+          id: 'video-3',
+          pubkey: 'author',
+          videoUrl: 'https://example.com/3.mp4',
+          createdAt: 2000,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [video1, video2, video3],
+        );
+
+        // Request in specific order regardless of createdAt
+        final result = await repository.getVideosForList([
+          'video-3',
+          'video-1',
+          'video-2',
+        ]);
+
+        expect(result, hasLength(3));
+        expect(result[0].id, equals('video-3'));
+        expect(result[1].id, equals('video-1'));
+        expect(result[2].id, equals('video-2'));
+      });
+
+      test('omits unresolved refs from result', () async {
+        final video = _createVideoEvent(
+          id: 'found-video',
+          pubkey: 'author',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [video],
+        );
+
+        final result = await repository.getVideosForList([
+          'found-video',
+          'missing-video',
+        ]);
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('found-video'));
       });
     });
 
@@ -1623,8 +2081,8 @@ void main() {
           authors: [blockedPubkey, allowedPubkey],
         );
 
-        expect(result, hasLength(1));
-        expect(result.first.pubkey, equals(allowedPubkey));
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.pubkey, equals(allowedPubkey));
       });
 
       test('filters blocked pubkeys in popular feed', () async {
