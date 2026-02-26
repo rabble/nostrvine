@@ -245,7 +245,6 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     backgroundColor: VineTheme.containerLow,
     behavior: SnackBarBehavior.floating,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    duration: const Duration(seconds: 4),
   );
 }
 
@@ -527,7 +526,6 @@ class _FindPeopleItem extends StatelessWidget {
               child: const Center(
                 child: DivineIcon(
                   icon: DivineIconName.search,
-                  size: 24,
                   color: VineTheme.vineGreen,
                 ),
               ),
@@ -838,7 +836,7 @@ class _MoreActionsSection extends ConsumerWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: actions.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 4),
+              separatorBuilder: (_, _) => const SizedBox(width: 4),
               itemBuilder: (context, index) {
                 final action = actions[index];
                 return _ActionCircle(

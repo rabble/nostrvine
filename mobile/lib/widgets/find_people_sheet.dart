@@ -108,7 +108,7 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
 
     if (_searchController.text.isNotEmpty && _searchBloc != null) {
       return BlocBuilder<UserSearchBloc, UserSearchState>(
-        bloc: _searchBloc!,
+        bloc: _searchBloc,
         builder: (context, state) {
           return switch (state.status) {
             UserSearchStatus.loading => const Center(
