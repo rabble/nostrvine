@@ -84,9 +84,7 @@ void main() {
     }) => testProviderScope(
       mockUserProfileService: createMockUserProfileService(),
       additionalOverrides: [
-        bookmarkServiceProvider.overrideWith(
-          (ref) async => mockBookmarkService,
-        ),
+        bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
         videoSharingServiceProvider.overrideWith(
           (ref) => mockVideoSharingService,
         ),
@@ -311,9 +309,7 @@ void main() {
         mockUserProfileService: createMockUserProfileService(),
         additionalOverrides: [
           followRepositoryProvider.overrideWithValue(null),
-          bookmarkServiceProvider.overrideWith(
-            (ref) async => mockBookmarkService,
-          ),
+          bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
           videoSharingServiceProvider.overrideWith(
             (ref) => mockVideoSharingService,
           ),
