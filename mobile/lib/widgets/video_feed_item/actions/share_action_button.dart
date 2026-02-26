@@ -1,27 +1,39 @@
 // ABOUTME: Share action button for video feed overlay.
-// ABOUTME: Displays share icon, opens simplified share bottom sheet.
+// ABOUTME: Opens unified share sheet with horizontal contacts row, message
+// ABOUTME: input, and more actions (save, copy, share via, report, etc.).
+
+import 'dart:convert';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
-import 'package:openvine/widgets/send_to_user_dialog.dart';
+import 'package:openvine/widgets/find_people_sheet.dart';
+import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Share action button for video overlay.
 ///
-/// Shows a share icon that opens a simplified share bottom sheet with:
-/// Share with user, Add to list, Add to bookmarks, More options (native share).
+/// Shows a share icon that opens a unified share bottom sheet with:
+/// - Video context/preview header
+/// - "Share with" horizontal contact row with "Find people" search
+/// - Optional message input when a recipient is selected
+/// - "More actions" horizontal row (Save, Add to List, Copy, Share via,
+///   Report, Mute, Block, Event JSON, Event ID)
 class ShareActionButton extends StatelessWidget {
   const ShareActionButton({required this.video, super.key});
 
@@ -52,7 +64,7 @@ class ShareActionButton extends StatelessWidget {
                 category: LogCategory.ui,
               );
               context.showVideoPausingVineBottomSheet<void>(
-                builder: (context) => _SimpleShareMenu(video: video),
+                builder: (context) => _UnifiedShareSheet(video: video),
               );
             },
             icon: DecoratedBox(
@@ -78,58 +90,285 @@ class ShareActionButton extends StatelessWidget {
   }
 }
 
-class _SimpleShareMenu extends ConsumerStatefulWidget {
-  const _SimpleShareMenu({required this.video});
+// ---------------------------------------------------------------------------
+// Unified Share Sheet
+// ---------------------------------------------------------------------------
+
+class _UnifiedShareSheet extends ConsumerStatefulWidget {
+  const _UnifiedShareSheet({required this.video});
 
   final VideoEvent video;
 
   @override
-  ConsumerState<_SimpleShareMenu> createState() => _SimpleShareMenuState();
+  ConsumerState<_UnifiedShareSheet> createState() => _UnifiedShareSheetState();
 }
 
-class _SimpleShareMenuState extends ConsumerState<_SimpleShareMenu> {
+class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
+  final TextEditingController _messageController = TextEditingController();
+  ShareableUser? _selectedRecipient;
+  List<ShareableUser> _contacts = [];
+  bool _contactsLoaded = false;
+  bool _isSending = false;
+  final Set<String> _sentToPubkeys = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContacts();
+  }
+
   void _safePop(BuildContext ctx) {
-    if (ctx.canPop()) {
-      ctx.pop();
-    } else {
-      Navigator.of(ctx).maybePop();
+    try {
+      if (ctx.canPop()) {
+        ctx.pop();
+        return;
+      }
+    } catch (_) {
+      // GoRouter not found; fall through to Navigator.
     }
+    Navigator.of(ctx).maybePop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final showCuratedLists = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.curatedLists),
-    );
-
     return Material(
       color: VineTheme.surfaceBackground,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const _DragIndicator(),
-            _ShareMenuHeader(video: widget.video),
-            const Divider(color: VineTheme.cardBackground, height: 1),
-            _ShareMenuItems(
-              onShareWithUser: _handleShareWithUser,
-              onAddToList: showCuratedLists ? _handleAddToList : null,
-              onAddToBookmarks: _handleAddToBookmarks,
-              onMoreOptions: _handleMoreOptions,
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const _DragIndicator(),
+              _ShareSheetHeader(video: widget.video),
+              const Divider(color: VineTheme.cardBackground, height: 1),
+              _ShareWithSection(
+                contacts: _contacts,
+                contactsLoaded: _contactsLoaded,
+                selectedRecipient: _selectedRecipient,
+                sentPubkeys: _sentToPubkeys,
+                onFindPeople: _handleFindPeople,
+                onContactTapped: _handleContactTapped,
+              ),
+              if (_selectedRecipient != null)
+                _MessageInput(
+                  controller: _messageController,
+                  recipient: _selectedRecipient!,
+                  isSending: _isSending,
+                  onSend: _handleSend,
+                ),
+              if (_selectedRecipient == null) ...[
+                const Divider(color: VineTheme.cardBackground, height: 1),
+                _MoreActionsSection(
+                  video: widget.video,
+                  onSave: _handleSave,
+                  onAddToList: _handleAddToList,
+                  onCopyLink: _handleCopyLink,
+                  onShareVia: _handleShareVia,
+                  onReport: _handleReport,
+                  onCopyEventJson: _handleCopyEventJson,
+                  onCopyEventId: _handleCopyEventId,
+                ),
+              ],
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _handleShareWithUser() {
-    _safePop(context);
-    showDialog<void>(
-      context: context,
-      builder: (context) => SendToUserDialog(video: widget.video),
-    );
+  // --------------------------------------------------------------------------
+  // Contact loading
+  // --------------------------------------------------------------------------
+
+  Future<void> _loadContacts() async {
+    try {
+      final followRepository = ref.read(followRepositoryProvider);
+      final userProfileService = ref.read(userProfileServiceProvider);
+      final sharingService = ref.read(videoSharingServiceProvider);
+
+      // Start with recently shared-with users
+      final recentUsers = sharingService.recentlySharedWith;
+
+      final followList = followRepository?.followingPubkeys ?? [];
+      final recentPubkeys = recentUsers.map((u) => u.pubkey).toSet();
+
+      // Remaining contacts from follow list (excluding already-recent users)
+      final remainingFollows = followList
+          .where((pk) => !recentPubkeys.contains(pk))
+          .toList();
+
+      // Batch-fetch uncached profiles
+      final allPubkeys = [...recentPubkeys, ...remainingFollows];
+      final uncached = allPubkeys
+          .where((pk) => !userProfileService.hasProfile(pk))
+          .toList();
+      if (uncached.isNotEmpty) {
+        await Future.wait(uncached.map(userProfileService.fetchProfile));
+      }
+
+      final contacts = <ShareableUser>[];
+
+      // Add recent users first (already ShareableUser objects)
+      contacts.addAll(recentUsers);
+
+      // Add remaining follows
+      for (final pubkey in remainingFollows) {
+        final profile = userProfileService.getCachedProfile(pubkey);
+        contacts.add(
+          ShareableUser(
+            pubkey: pubkey,
+            displayName: profile?.bestDisplayName,
+            picture: profile?.picture,
+          ),
+        );
+      }
+
+      if (mounted) {
+        setState(() {
+          _contacts = contacts;
+          _contactsLoaded = true;
+        });
+      }
+    } catch (e) {
+      Log.error(
+        'Error loading contacts: $e',
+        name: 'UnifiedShareSheet',
+        category: LogCategory.ui,
+      );
+      if (mounted) {
+        setState(() {
+          _contacts = [];
+          _contactsLoaded = true;
+        });
+      }
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // Share with user handlers
+  // --------------------------------------------------------------------------
+
+  Future<void> _handleFindPeople() async {
+    final selectedUser = await FindPeopleSheet.show(context);
+    if (selectedUser != null && mounted) {
+      setState(() {
+        _selectedRecipient = selectedUser;
+        // Add to front of contacts if not already present
+        _contacts.removeWhere((c) => c.pubkey == selectedUser.pubkey);
+        _contacts.insert(0, selectedUser);
+      });
+    }
+  }
+
+  Future<void> _handleContactTapped(ShareableUser user) async {
+    if (_isSending || _sentToPubkeys.contains(user.pubkey)) return;
+
+    // Clear any Find People selection so More Actions stays visible
+    if (_selectedRecipient != null) {
+      setState(() => _selectedRecipient = null);
+    }
+
+    setState(() => _isSending = true);
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final sharingService = ref.read(videoSharingServiceProvider);
+      final result = await sharingService.shareVideoWithUser(
+        video: widget.video,
+        recipientPubkey: user.pubkey,
+      );
+
+      if (!mounted) return;
+      setState(() => _isSending = false);
+
+      final recipientName = user.displayName ?? 'user';
+      if (result.success) {
+        setState(() => _sentToPubkeys.add(user.pubkey));
+        messenger.showSnackBar(_shareSuccessSnackBar(messenger, recipientName));
+      } else {
+        messenger.showSnackBar(
+          _styledSnackBar('Failed to send: ${result.error}'),
+        );
+      }
+    } catch (e) {
+      Log.error(
+        'Failed to quick-send video: $e',
+        name: 'UnifiedShareSheet',
+        category: LogCategory.ui,
+      );
+      if (mounted) setState(() => _isSending = false);
+      messenger.showSnackBar(_styledSnackBar('Failed to send video'));
+    }
+  }
+
+  Future<void> _handleSend() async {
+    if (_selectedRecipient == null || _isSending) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isSending = true);
+
+    try {
+      final sharingService = ref.read(videoSharingServiceProvider);
+      final result = await sharingService.shareVideoWithUser(
+        video: widget.video,
+        recipientPubkey: _selectedRecipient!.pubkey,
+        personalMessage: _messageController.text.trim().isEmpty
+            ? null
+            : _messageController.text.trim(),
+      );
+
+      final recipientName = _selectedRecipient!.displayName ?? 'user';
+      if (mounted) _safePop(context);
+      if (result.success) {
+        messenger.showSnackBar(_shareSuccessSnackBar(messenger, recipientName));
+      } else {
+        messenger.showSnackBar(
+          _styledSnackBar('Failed to send: ${result.error}'),
+        );
+      }
+    } catch (e) {
+      Log.error(
+        'Failed to send video: $e',
+        name: 'UnifiedShareSheet',
+        category: LogCategory.ui,
+      );
+      if (mounted) {
+        setState(() => _isSending = false);
+      }
+      messenger.showSnackBar(_styledSnackBar('Failed to send video'));
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // More actions handlers
+  // --------------------------------------------------------------------------
+
+  Future<void> _handleSave() async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final bookmarkService = await ref.read(bookmarkServiceProvider.future);
+      final success = await bookmarkService.addVideoToGlobalBookmarks(
+        widget.video.id,
+      );
+
+      if (mounted) _safePop(context);
+      messenger.showSnackBar(
+        _styledSnackBar(
+          success ? 'Added to bookmarks' : 'Failed to add bookmark',
+        ),
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to add bookmark: $e',
+        name: 'UnifiedShareSheet',
+        category: LogCategory.ui,
+      );
+      if (mounted) _safePop(context);
+      messenger.showSnackBar(_styledSnackBar('Failed to add bookmark'));
+    }
   }
 
   void _handleAddToList() {
@@ -140,66 +379,146 @@ class _SimpleShareMenuState extends ConsumerState<_SimpleShareMenu> {
     );
   }
 
-  Future<void> _handleAddToBookmarks() async {
+  Future<void> _handleCopyLink() async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
-      final bookmarkService = await ref.read(bookmarkServiceProvider.future);
-      final success = await bookmarkService.addVideoToGlobalBookmarks(
-        widget.video.id,
-      );
+      final sharingService = ref.read(videoSharingServiceProvider);
+      final url = sharingService.generateShareUrl(widget.video);
+      await Clipboard.setData(ClipboardData(text: url));
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success ? 'Added to bookmarks!' : 'Failed to add bookmark',
-            ),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        _safePop(context);
-      }
+      if (mounted) _safePop(context);
+      messenger.showSnackBar(
+        _styledSnackBar('Link to post copied to clipboard'),
+      );
     } catch (e) {
       Log.error(
-        'Failed to add bookmark: $e',
-        name: 'SimpleShareMenu',
+        'Failed to copy link: $e',
+        name: 'UnifiedShareSheet',
         category: LogCategory.ui,
       );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to add bookmark'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
     }
   }
 
-  Future<void> _handleMoreOptions() async {
+  Future<void> _handleShareVia() async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final sharingService = ref.read(videoSharingServiceProvider);
       final shareText = sharingService.generateShareText(widget.video);
-
       await SharePlus.instance.share(ShareParams(text: shareText));
     } catch (e) {
       Log.error(
         'Failed to share externally: $e',
-        name: 'SimpleShareMenu',
+        name: 'UnifiedShareSheet',
         category: LogCategory.ui,
       );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to share video'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      messenger.showSnackBar(_styledSnackBar('Failed to share video'));
     }
   }
+
+  void _handleReport() {
+    _safePop(context);
+    showDialog<void>(
+      context: context,
+      builder: (context) => ReportContentDialog(video: widget.video),
+    );
+  }
+
+  Future<void> _handleCopyEventJson() async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final json = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(widget.video.toJson());
+      await Clipboard.setData(ClipboardData(text: json));
+
+      if (mounted) _safePop(context);
+      messenger.showSnackBar(
+        _styledSnackBar('Nostr event JSON copied to clipboard'),
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to copy event JSON: $e',
+        name: 'UnifiedShareSheet',
+        category: LogCategory.ui,
+      );
+    }
+  }
+
+  Future<void> _handleCopyEventId() async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final nevent = NIP19Tlv.encodeNevent(
+        Nevent(
+          id: widget.video.id,
+          author: widget.video.pubkey,
+          relays: ['wss://relay.divine.video'],
+        ),
+      );
+      await Clipboard.setData(ClipboardData(text: nevent));
+
+      if (mounted) _safePop(context);
+      messenger.showSnackBar(
+        _styledSnackBar('Nostr event ID copied to clipboard'),
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to copy event ID: $e',
+        name: 'UnifiedShareSheet',
+        category: LogCategory.ui,
+      );
+    }
+  }
+
+  SnackBar _styledSnackBar(String message) => SnackBar(
+    content: Text(message, style: const TextStyle(color: VineTheme.whiteText)),
+    backgroundColor: VineTheme.containerLow,
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    duration: const Duration(seconds: 2),
+  );
+
+  SnackBar _shareSuccessSnackBar(
+    ScaffoldMessengerState messenger,
+    String recipientName,
+  ) => SnackBar(
+    content: Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Post shared with $recipientName',
+            style: const TextStyle(color: VineTheme.whiteText),
+          ),
+        ),
+        GestureDetector(
+          onTap: () {
+            messenger.hideCurrentSnackBar();
+            // TODO: navigate to chat screen when implemented
+          },
+          child: Text(
+            'View Chat',
+            style: VineTheme.bodyMediumFont(
+              color: VineTheme.vineGreen,
+            ).copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    ),
+    backgroundColor: VineTheme.containerLow,
+    behavior: SnackBarBehavior.floating,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    duration: const Duration(seconds: 4),
+  );
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
 }
+
+// ---------------------------------------------------------------------------
+// Shared small widgets
+// ---------------------------------------------------------------------------
 
 class _DragIndicator extends StatelessWidget {
   const _DragIndicator();
@@ -220,8 +539,8 @@ class _DragIndicator extends StatelessWidget {
   }
 }
 
-class _ShareMenuHeader extends ConsumerWidget {
-  const _ShareMenuHeader({required this.video});
+class _ShareSheetHeader extends ConsumerWidget {
+  const _ShareSheetHeader({required this.video});
 
   final VideoEvent video;
 
@@ -274,97 +593,514 @@ class _ShareMenuHeader extends ConsumerWidget {
               ],
             ),
           ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 40,
+            height: 56,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: VideoThumbnailWidget(video: video, width: 40, height: 56),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _ShareMenuItems extends StatelessWidget {
-  const _ShareMenuItems({
-    required this.onShareWithUser,
-    required this.onAddToBookmarks,
-    required this.onMoreOptions,
-    this.onAddToList,
+// ---------------------------------------------------------------------------
+// "Share with" horizontal contact row
+// ---------------------------------------------------------------------------
+
+class _ShareWithSection extends StatelessWidget {
+  const _ShareWithSection({
+    required this.contacts,
+    required this.contactsLoaded,
+    required this.selectedRecipient,
+    required this.sentPubkeys,
+    required this.onFindPeople,
+    required this.onContactTapped,
   });
 
-  final VoidCallback onShareWithUser;
-  final VoidCallback? onAddToList;
-  final VoidCallback onAddToBookmarks;
-  final VoidCallback onMoreOptions;
+  final List<ShareableUser> contacts;
+  final bool contactsLoaded;
+  final ShareableUser? selectedRecipient;
+  final Set<String> sentPubkeys;
+  final VoidCallback onFindPeople;
+  final ValueChanged<ShareableUser> onContactTapped;
+
+  static const double _itemWidth = 72;
+  static const double _avatarSize = 48;
+  static const double _rowHeight = 90;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ShareMenuItem(
-          icon: const DivineIcon(
-            icon: DivineIconName.chats,
-            color: VineTheme.whiteText,
-          ),
-          label: 'Share with user',
-          onTap: onShareWithUser,
-        ),
-        if (onAddToList != null)
-          _ShareMenuItem(
-            icon: const DivineIcon(
-              icon: DivineIconName.listPlus,
-              color: VineTheme.whiteText,
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Share with',
+              style: TextStyle(
+                color: VineTheme.whiteText,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-            label: 'Add to list',
-            onTap: onAddToList!,
           ),
-        _ShareMenuItem(
-          icon: const DivineIcon(
-            icon: DivineIconName.bookmarkSimple,
-            color: VineTheme.whiteText,
+          const SizedBox(height: 12),
+          SizedBox(
+            height: _rowHeight,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: contactsLoaded ? contacts.length + 1 : 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _FindPeopleItem(onTap: onFindPeople);
+                }
+
+                final contact = contacts[index - 1];
+                final isSelected = selectedRecipient?.pubkey == contact.pubkey;
+                final isSent = sentPubkeys.contains(contact.pubkey);
+
+                return _ContactItem(
+                  user: contact,
+                  isSelected: isSelected,
+                  isSent: isSent,
+                  onTap: () => onContactTapped(contact),
+                );
+              },
+            ),
           ),
-          label: 'Add to bookmarks',
-          onTap: onAddToBookmarks,
-        ),
-        _ShareMenuItem(
-          icon: const DivineIcon(
-            icon: DivineIconName.shareFat,
-            color: VineTheme.whiteText,
-          ),
-          label: 'More options',
-          onTap: onMoreOptions,
-        ),
-        const SizedBox(height: 8),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _ShareMenuItem extends StatelessWidget {
-  const _ShareMenuItem({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
+class _FindPeopleItem extends StatelessWidget {
+  const _FindPeopleItem({required this.onTap});
 
-  final Widget icon;
-  final String label;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        child: Row(
+      child: SizedBox(
+        width: _ShareWithSection._itemWidth,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            icon,
-            const SizedBox(width: 16),
+            Container(
+              width: _ShareWithSection._avatarSize,
+              height: _ShareWithSection._avatarSize,
+              decoration: BoxDecoration(
+                color: VineTheme.vineGreen.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(
+                  _ShareWithSection._avatarSize * 0.286,
+                ),
+              ),
+              child: const Center(
+                child: DivineIcon(
+                  icon: DivineIconName.search,
+                  size: 24,
+                  color: VineTheme.vineGreen,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Find\npeople',
+              style: TextStyle(color: VineTheme.secondaryText, fontSize: 11),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ContactItem extends StatelessWidget {
+  const _ContactItem({
+    required this.user,
+    required this.isSelected,
+    required this.isSent,
+    required this.onTap,
+  });
+
+  final ShareableUser user;
+  final bool isSelected;
+  final bool isSent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: isSent ? null : onTap,
+      child: SizedBox(
+        width: _ShareWithSection._itemWidth,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              children: [
+                Opacity(
+                  opacity: isSent ? 0.5 : 1.0,
+                  child: UserAvatar(
+                    imageUrl: user.picture,
+                    name: user.displayName,
+                    size: _ShareWithSection._avatarSize,
+                  ),
+                ),
+                if (isSelected || isSent)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: const BoxDecoration(
+                        color: VineTheme.vineGreen,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 14,
+                        color: VineTheme.onPrimary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 6),
             Text(
-              label,
-              style: const TextStyle(
+              isSent ? 'Sent' : (user.displayName ?? 'User'),
+              style: TextStyle(
+                color: (isSelected || isSent)
+                    ? VineTheme.vineGreen
+                    : VineTheme.secondaryText,
+                fontSize: 11,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Message input (shown when a recipient is selected)
+// ---------------------------------------------------------------------------
+
+class _MessageInput extends StatelessWidget {
+  const _MessageInput({
+    required this.controller,
+    required this.recipient,
+    required this.isSending,
+    required this.onSend,
+  });
+
+  final TextEditingController controller;
+  final ShareableUser recipient;
+  final bool isSending;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                UserAvatar(
+                  imageUrl: recipient.picture,
+                  name: recipient.displayName,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Sending to ${recipient.displayName ?? 'user'}',
+                  style: const TextStyle(
+                    color: VineTheme.secondaryText,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  style: const TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Add optional message...',
+                    hintStyle: const TextStyle(color: VineTheme.secondaryText),
+                    filled: true,
+                    fillColor: VineTheme.containerLow,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 16,
+                    ),
+                  ),
+                  maxLines: 3,
+                  minLines: 1,
+                ),
+              ),
+              const SizedBox(width: 8),
+              _SendButton(isSending: isSending, onTap: onSend),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SendButton extends StatelessWidget {
+  const _SendButton({required this.isSending, required this.onTap});
+
+  final bool isSending;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: isSending ? null : onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: isSending
+              ? VineTheme.vineGreen.withValues(alpha: 0.5)
+              : VineTheme.vineGreen,
+          shape: BoxShape.circle,
+        ),
+        child: isSending
+            ? const Padding(
+                padding: EdgeInsets.all(10),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: VineTheme.onPrimary,
+                ),
+              )
+            : const Icon(
+                Icons.arrow_upward,
+                size: 22,
+                color: VineTheme.onPrimary,
+              ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// "More actions" horizontal row
+// ---------------------------------------------------------------------------
+
+class _MoreActionsSection extends ConsumerWidget {
+  const _MoreActionsSection({
+    required this.video,
+    required this.onSave,
+    required this.onAddToList,
+    required this.onCopyLink,
+    required this.onShareVia,
+    required this.onReport,
+    required this.onCopyEventJson,
+    required this.onCopyEventId,
+  });
+
+  final VideoEvent video;
+  final VoidCallback onSave;
+  final VoidCallback onAddToList;
+  final VoidCallback onCopyLink;
+  final VoidCallback onShareVia;
+  final VoidCallback onReport;
+  final VoidCallback onCopyEventJson;
+  final VoidCallback onCopyEventId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final showCuratedLists = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.curatedLists),
+    );
+    final showDebugTools = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.debugTools),
+    );
+
+    final actions = <_ActionData>[
+      _ActionData(
+        icon: DivineIconName.bookmarkSimple,
+        label: 'Save',
+        onTap: onSave,
+      ),
+      if (showCuratedLists)
+        _ActionData(
+          icon: DivineIconName.listPlus,
+          label: 'Add to List',
+          onTap: onAddToList,
+        ),
+      _ActionData(
+        icon: DivineIconName.linkSimple,
+        label: 'Copy',
+        onTap: onCopyLink,
+      ),
+      _ActionData(
+        icon: DivineIconName.shareFat,
+        label: 'Share via',
+        onTap: onShareVia,
+      ),
+      _ActionData(
+        icon: DivineIconName.flag,
+        label: 'Report',
+        onTap: onReport,
+        isDestructive: true,
+      ),
+      if (showDebugTools) ...[
+        _ActionData(
+          icon: DivineIconName.bracketsAngle,
+          label: 'Event JSON',
+          onTap: onCopyEventJson,
+        ),
+        _ActionData(
+          icon: DivineIconName.copySimple,
+          label: 'Event ID',
+          onTap: onCopyEventId,
+        ),
+      ],
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'More actions',
+              style: TextStyle(
                 color: VineTheme.whiteText,
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 86,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              itemCount: actions.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 4),
+              itemBuilder: (context, index) {
+                final action = actions[index];
+                return _ActionCircle(
+                  icon: action.icon,
+                  label: action.label,
+                  isDestructive: action.isDestructive,
+                  onTap: action.onTap,
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActionData {
+  const _ActionData({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  final DivineIconName icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+}
+
+class _ActionCircle extends StatelessWidget {
+  const _ActionCircle({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.isDestructive = false,
+  });
+
+  final DivineIconName icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDestructive;
+
+  static const double _circleSize = 48;
+
+  @override
+  Widget build(BuildContext context) {
+    final bgColor = isDestructive
+        ? VineTheme.error.withValues(alpha: 0.15)
+        : VineTheme.vineGreen.withValues(alpha: 0.15);
+    final iconColor = isDestructive ? VineTheme.error : VineTheme.vineGreen;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 68,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: _circleSize,
+              height: _circleSize,
+              decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
+              child: Center(
+                child: DivineIcon(icon: icon, size: 22, color: iconColor),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isDestructive
+                    ? VineTheme.error
+                    : VineTheme.secondaryText,
+                fontSize: 11,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
