@@ -16,6 +16,7 @@ analyzer:
     avoid_positional_boolean_parameters: ignore
     avoid_returning_this: ignore
     avoid_setters_without_getters: ignore
+    avoid_types_on_closure_parameters: ignore
     avoid_web_libraries_in_flutter: ignore
     cascade_invocations: ignore
     comment_references: ignore
