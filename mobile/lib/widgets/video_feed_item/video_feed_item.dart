@@ -366,6 +366,14 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         _handlePlaybackChange(next);
       });
 
+      // Pause/resume when modals open/close (provider-mode path)
+      ref.listenManual(hasVisibleOverlayProvider, (prev, next) {
+        if (!mounted) return;
+        final isActive = ref.read(isVideoActiveProvider(_stableVideoId));
+        final effectivelyActive = isActive && !next;
+        _handlePlaybackChange(effectivelyActive);
+      });
+
       // Also listen for controller recreation (e.g., after cache corruption retry)
       // When controller is recreated while video is active, re-trigger play setup
       if (widget.video.videoUrl != null) {
@@ -724,15 +732,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     // Use override if provided (for custom contexts like lists), otherwise use provider
     // IMPORTANT: When override is non-null, skip provider watch entirely to avoid
     // Riverpod rebuilds interfering with local state management
-    final bool isActiveFromProvider = widget.isActiveOverride != null
+    final bool isActive = widget.isActiveOverride != null
         ? widget.isActiveOverride!
         : ref.watch(isVideoActiveProvider(video.stableId));
-
-    // Check if a dialog/modal is covering this screen - if so, pause playback
-    // ModalRoute.of(context)?.isCurrent returns false when a dialog is on top
-    final modalRoute = ModalRoute.of(context);
-    final isCurrentRoute = modalRoute?.isCurrent ?? true;
-    final bool isActive = isActiveFromProvider && isCurrentRoute;
+    // Note: Modal/dialog pause is handled by hasVisibleOverlayProvider listener
+    // in initState — no ModalRoute.isCurrent check needed here.
 
     Log.debug(
       '📱 VideoFeedItem state: isActive=$isActive (override=${widget.isActiveOverride})',
