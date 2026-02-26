@@ -3563,8 +3563,8 @@ void main() {
         activeReplyCommentId: 'comment1',
         replyInputText: 'draft',
         sortMode: CommentsSortMode.topEngagement,
-        commentUpvoteCounts: {'c1': 5},
-        upvotedCommentIds: {'c1'},
+        commentUpvoteCounts: const {'c1': 5},
+        upvotedCommentIds: const {'c1'},
       );
 
       final updated = state.clearActiveReply();

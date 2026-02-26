@@ -233,7 +233,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       final result = await reportService.reportContent(
         eventId: widget.video.id,
         authorPubkey: widget.video.pubkey,
-        reason: ContentFilterReason.aiGenerated,
+        reason: ContentFilterReason.other,
         details: 'Suspected AI-generated content',
       );
 

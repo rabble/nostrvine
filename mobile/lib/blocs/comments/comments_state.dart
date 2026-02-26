@@ -429,6 +429,8 @@ final class CommentsState extends Equatable {
       mentionSuggestions: mentionSuggestions,
       activeMentions: activeMentions,
       newCommentCount: newCommentCount,
+      activeEditCommentId: activeEditCommentId,
+      editInputText: editInputText,
     );
   }
 

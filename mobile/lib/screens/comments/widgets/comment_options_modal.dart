@@ -377,15 +377,26 @@ class _ReasonRadioTile extends StatelessWidget {
 
 String _getReasonDisplayName(ContentFilterReason reason) {
   return switch (reason) {
-    ContentFilterReason.spam => 'Spam or Unwanted Content',
-    ContentFilterReason.harassment => 'Harassment, Bullying, or Threats',
-    ContentFilterReason.violence => 'Violent or Extremist Content',
-    ContentFilterReason.sexualContent => 'Sexual or Adult Content',
-    ContentFilterReason.copyright => 'Copyright Violation',
-    ContentFilterReason.falseInformation => 'False Information',
-    ContentFilterReason.csam => 'Child Safety Violation',
-    ContentFilterReason.aiGenerated => 'AI-Generated Content',
-    ContentFilterReason.other => 'Other Policy Violation',
+    ContentFilterReason.spam => 'Spam',
+    ContentFilterReason.harassment => 'Harassment & Profanity',
+    ContentFilterReason.nsfw => 'NSFW',
+    ContentFilterReason.illegal => 'Illegal',
+    ContentFilterReason.impersonation => 'Impersonation',
+    ContentFilterReason.other => 'Other',
+  };
+}
+
+String _getReasonDescription(ContentFilterReason reason) {
+  return switch (reason) {
+    ContentFilterReason.spam => 'Unsolicited or repetitive content',
+    ContentFilterReason.harassment =>
+      'Harmful and unwanted replies or mentions',
+    ContentFilterReason.nsfw => 'Nudity, porn, or violent content',
+    ContentFilterReason.illegal =>
+      'Content that violates the law in your country',
+    ContentFilterReason.impersonation =>
+      "User is stealing someone else's identity",
+    ContentFilterReason.other => 'Items not included above',
   };
 }
 
