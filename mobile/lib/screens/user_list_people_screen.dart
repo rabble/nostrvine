@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/user_list_service.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -90,12 +90,12 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
             )
           : null,
       body: widget.userList.pubkeys.isEmpty
-          ? Center(
+          ? const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.group, size: 64, color: VineTheme.secondaryText),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'No people in this list',
                     style: TextStyle(
@@ -104,7 +104,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Add some people to get started',
                     style: TextStyle(
@@ -131,7 +131,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
     return videosAsync.when(
       data: (videos) {
         if (videos.isEmpty) {
-          return Center(
+          return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -140,7 +140,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                   size: 64,
                   color: VineTheme.secondaryText,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Text(
                   'No videos yet',
                   style: TextStyle(
@@ -149,7 +149,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: 8),
                 Text(
                   'Videos from list members will appear here',
                   style: TextStyle(
@@ -190,7 +190,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                       userListMemberVideosProvider(widget.userList.pubkeys),
                     );
                   },
-                  emptyBuilder: () => Center(
+                  emptyBuilder: () => const Center(
                     child: Text(
                       'No videos available',
                       style: TextStyle(color: VineTheme.secondaryText),
@@ -215,22 +215,26 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
           ],
         );
       },
-      loading: () =>
-          Center(child: CircularProgressIndicator(color: VineTheme.vineGreen)),
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      ),
       error: (error, stack) => Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+            const Icon(Icons.error, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Failed to load videos',
               style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
             ),
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -247,7 +251,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
     return videosAsync.when(
       data: (videos) {
         if (videos.isEmpty || _activeVideoIndex! >= videos.length) {
-          return Center(
+          return const Center(
             child: Text(
               'Video not available',
               style: TextStyle(color: VineTheme.secondaryText),
@@ -261,7 +265,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
               startingVideo: videos[_activeVideoIndex!],
               videoList: videos,
               contextTitle: widget.userList.name,
-              startingIndex: _activeVideoIndex!,
+              startingIndex: _activeVideoIndex,
               useLocalActiveState:
                   true, // Use local state since not using URL routing
             ),
@@ -331,7 +335,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                             if (widget.userList.description != null)
                               Text(
                                 widget.userList.description!,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: VineTheme.secondaryText,
                                   fontSize: 12,
                                 ),
@@ -368,9 +372,10 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
           ],
         );
       },
-      loading: () =>
-          Center(child: CircularProgressIndicator(color: VineTheme.vineGreen)),
-      error: (error, stack) => Center(
+      loading: () => const Center(
+        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      ),
+      error: (error, stack) => const Center(
         child: Text(
           'Error loading videos',
           style: TextStyle(color: VineTheme.likeRed),
@@ -382,7 +387,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
 
 /// Horizontal carousel of people avatars for a user list.
 class _PeopleCarousel extends ConsumerWidget {
-  const _PeopleCarousel({super.key, required this.pubkeys});
+  const _PeopleCarousel({required this.pubkeys, super.key});
 
   final List<String> pubkeys;
 
@@ -390,7 +395,7 @@ class _PeopleCarousel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userProfileService = ref.watch(userProfileServiceProvider);
 
-    return Container(
+    return ColoredBox(
       color: VineTheme.backgroundColor,
       child: SizedBox(
         height: 100,
@@ -429,9 +434,7 @@ class _PeopleCarousel extends ConsumerWidget {
                             width: 70,
                             child: Text(
                               displayName,
-                              style: VineTheme.titleTinyFont(
-                                color: VineTheme.primaryText,
-                              ),
+                              style: VineTheme.titleTinyFont(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,

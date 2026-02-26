@@ -2,11 +2,13 @@
 // ABOUTME: Tests the actual upload flow by calling app functions directly
 
 import 'dart:io';
-import 'package:flutter_test/flutter_test.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:nostr_sdk/client_utils/keys.dart' as keys;
+import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:nostr_sdk/client_utils/keys.dart' as keys;
+import 'package:openvine/providers/app_providers.dart';
+
 import '../helpers/real_integration_test_helper.dart';
 
 void main() {
@@ -34,7 +36,7 @@ void main() {
       testPrivateKey = keys.generatePrivateKey();
       testPublicKey = keys.getPublicKey(testPrivateKey);
 
-      print('🔑 Generated test keypair: ${testPublicKey}...');
+      print('🔑 Generated test keypair: $testPublicKey...');
 
       // Create a small test video file in current directory
       testVideoFile = File(
@@ -76,7 +78,7 @@ void main() {
         // Get real upload manager from providers
         final uploadManager = container.read(uploadManagerProvider);
 
-        print('📤 Starting upload test with test user: ${testPublicKey}...');
+        print('📤 Starting upload test with test user: $testPublicKey...');
 
         // ACT: Call the actual upload function with test keypair
         final upload = await uploadManager.startUpload(

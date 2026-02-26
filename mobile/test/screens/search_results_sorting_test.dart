@@ -16,7 +16,6 @@ void main() {
           createdAt: 1000000, // Most recent
           content: 'New vine recent',
           timestamp: DateTime.fromMillisecondsSinceEpoch(1000000 * 1000),
-          originalLoops: null, // No loops = new vine
         );
 
         final newVineOlder = VideoEvent(
@@ -25,7 +24,6 @@ void main() {
           createdAt: 900000, // Older
           content: 'New vine older',
           timestamp: DateTime.fromMillisecondsSinceEpoch(900000 * 1000),
-          originalLoops: null, // No loops = new vine
         );
 
         final originalVineHighLoops = VideoEvent(

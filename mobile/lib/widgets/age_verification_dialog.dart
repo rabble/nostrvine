@@ -1,9 +1,9 @@
 // ABOUTME: Age verification dialog for camera access and adult content viewing
 // ABOUTME: Supports both 16+ creation and 18+ content viewing verification
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 enum AgeVerificationType {
   creation, // 16+ for creating content

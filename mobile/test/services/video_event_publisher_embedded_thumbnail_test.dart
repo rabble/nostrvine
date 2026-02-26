@@ -4,10 +4,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/blurhash_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 
 /// Helper to simulate the thumbnail extraction logic from VideoEventPublisher
 class EmbeddedThumbnailGenerator {
@@ -37,7 +38,7 @@ class EmbeddedThumbnailGenerator {
         // Create base64 data URI
         final base64Thumbnail = base64.encode(thumbnailResult.bytes);
         final thumbnailDataUri = 'data:image/jpeg;base64,$base64Thumbnail';
-        final thumbnailSizeKB = (thumbnailResult.bytes.length / 1024);
+        final thumbnailSizeKB = thumbnailResult.bytes.length / 1024;
 
         result['success'] = true;
         result['dataUri'] = thumbnailDataUri;
@@ -74,8 +75,6 @@ class EmbeddedThumbnailGenerator {
     if (upload.localVideoPath.isNotEmpty) {
       final thumbnailResult = await generateEmbeddedThumbnail(
         videoPath: upload.localVideoPath,
-        timeMs: 500,
-        quality: 75,
       );
 
       if (thumbnailResult['success'] == true &&
@@ -307,7 +306,7 @@ void main() {
 
     test('should handle thumbnail extraction failure gracefully', () async {
       // Arrange: Non-existent video file
-      final nonExistentPath = '/nonexistent/path/to/video.mp4';
+      const nonExistentPath = '/nonexistent/path/to/video.mp4';
 
       // Act: Attempt to extract thumbnail
       final result = await EmbeddedThumbnailGenerator.generateEmbeddedThumbnail(

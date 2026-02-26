@@ -3,10 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/user_profile_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}

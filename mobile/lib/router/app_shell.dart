@@ -1,37 +1,37 @@
 // ABOUTME: AppShell widget providing bottom navigation and dynamic header
 // ABOUTME: Header title uses Bricolage Grotesque font, camera button in bottom nav
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/vine_drawer.dart';
-import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/relay_notifications_provider.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/notification_badge.dart';
+import 'package:openvine/widgets/vine_drawer.dart';
 
 class AppShell extends ConsumerWidget {
-  const AppShell({super.key, required this.child, required this.currentIndex});
+  const AppShell({required this.child, required this.currentIndex, super.key});
 
   final Widget child;
   final int currentIndex;
@@ -436,7 +436,6 @@ class AppShell extends ConsumerWidget {
                               context.go(
                                 VideoFeedPage.pathForIndex(lastIndex ?? 0),
                               );
-                              break;
                             case 1:
                               if (lastIndex != null) {
                                 return context.go(

@@ -1282,18 +1282,15 @@ void main() {
       });
 
       test('returns PaginatedPubkeys on success', () async {
-        final testPaginatedPubkeys = PaginatedPubkeys(
+        const testPaginatedPubkeys = PaginatedPubkeys(
           pubkeys: [testTargetPubkey],
           total: 1,
-          hasMore: false,
         );
 
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getFollowers(
             pubkey: testCurrentUserPubkey,
-            limit: 100,
-            offset: 0,
           ),
         ).thenAnswer((_) async => testPaginatedPubkeys);
 
@@ -1312,8 +1309,6 @@ void main() {
         verify(
           () => mockFunnelcakeClient.getFollowers(
             pubkey: testCurrentUserPubkey,
-            limit: 100,
-            offset: 0,
           ),
         ).called(1);
       });
@@ -1357,7 +1352,7 @@ void main() {
       });
 
       test('passes limit and offset correctly', () async {
-        final testPaginatedPubkeys = PaginatedPubkeys(
+        const testPaginatedPubkeys = PaginatedPubkeys(
           pubkeys: [testTargetPubkey, testTargetPubkey2],
           total: 200,
           hasMore: true,
@@ -1433,18 +1428,15 @@ void main() {
       });
 
       test('returns PaginatedPubkeys on success', () async {
-        final testPaginatedPubkeys = PaginatedPubkeys(
+        const testPaginatedPubkeys = PaginatedPubkeys(
           pubkeys: [testTargetPubkey],
           total: 1,
-          hasMore: false,
         );
 
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: testCurrentUserPubkey,
-            limit: 100,
-            offset: 0,
           ),
         ).thenAnswer((_) async => testPaginatedPubkeys);
 
@@ -1463,8 +1455,6 @@ void main() {
         verify(
           () => mockFunnelcakeClient.getFollowing(
             pubkey: testCurrentUserPubkey,
-            limit: 100,
-            offset: 0,
           ),
         ).called(1);
       });
@@ -1508,7 +1498,7 @@ void main() {
       });
 
       test('passes limit and offset correctly', () async {
-        final testPaginatedPubkeys = PaginatedPubkeys(
+        const testPaginatedPubkeys = PaginatedPubkeys(
           pubkeys: [testTargetPubkey, testTargetPubkey2],
           total: 200,
           hasMore: true,

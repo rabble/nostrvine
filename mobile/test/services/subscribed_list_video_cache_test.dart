@@ -93,7 +93,7 @@ void main() {
         // Mock Nostr service to not need relay fetch (all cached)
         when(
           () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => Stream<Event>.empty());
+        ).thenAnswer((_) => const Stream<Event>.empty());
 
         // Sync list with these video IDs
         await cache.syncList('list1', [video1Id, video2Id]);
@@ -125,7 +125,7 @@ void main() {
         ).thenReturn(video1);
         when(
           () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => Stream<Event>.empty());
+        ).thenAnswer((_) => const Stream<Event>.empty());
 
         // Add video to two different lists
         await cache.syncList('list1', [video1Id]);
@@ -158,7 +158,7 @@ void main() {
           // Subscribe should still be called but for empty list
           when(
             () => mockNostrService.subscribe(any()),
-          ).thenAnswer((_) => Stream<Event>.empty());
+          ).thenAnswer((_) => const Stream<Event>.empty());
 
           await cache.syncList('list1', [cachedVideoId]);
 
@@ -218,7 +218,7 @@ void main() {
         when(() => mockVideoEventService.getVideoById(any())).thenReturn(null);
         when(
           () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => Stream<Event>.empty());
+        ).thenAnswer((_) => const Stream<Event>.empty());
 
         const eventId =
             'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
@@ -244,7 +244,7 @@ void main() {
         ).thenReturn(video);
         when(
           () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => Stream<Event>.empty());
+        ).thenAnswer((_) => const Stream<Event>.empty());
 
         var notified = false;
         cache.addListener(() {
@@ -268,14 +268,14 @@ void main() {
         final list1 = CuratedList(
           id: 'list1',
           name: 'List 1',
-          videoEventIds: [video1Id],
+          videoEventIds: const [video1Id],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
         final list2 = CuratedList(
           id: 'list2',
           name: 'List 2',
-          videoEventIds: [video2Id],
+          videoEventIds: const [video2Id],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
@@ -295,7 +295,7 @@ void main() {
         ).thenReturn(video2);
         when(
           () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => Stream<Event>.empty());
+        ).thenAnswer((_) => const Stream<Event>.empty());
 
         await cache.syncAllSubscribedLists();
 
@@ -329,7 +329,7 @@ void main() {
         ).thenReturn(video2);
         when(
           () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => Stream<Event>.empty());
+        ).thenAnswer((_) => const Stream<Event>.empty());
 
         // Sync two lists
         await cache.syncList('list1', [video1Id]);
@@ -365,7 +365,7 @@ void main() {
           ).thenReturn(video1);
           when(
             () => mockNostrService.subscribe(any()),
-          ).thenAnswer((_) => Stream<Event>.empty());
+          ).thenAnswer((_) => const Stream<Event>.empty());
 
           // Add video1 to both lists
           await cache.syncList('list1', [videoId]);
@@ -393,7 +393,7 @@ void main() {
         ).thenReturn(video);
         when(
           () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => Stream<Event>.empty());
+        ).thenAnswer((_) => const Stream<Event>.empty());
 
         await cache.syncList('list1', [videoId]);
 
@@ -423,7 +423,7 @@ void main() {
         ).thenReturn(video1);
         when(
           () => mockNostrService.subscribe(any()),
-        ).thenAnswer((_) => Stream<Event>.empty());
+        ).thenAnswer((_) => const Stream<Event>.empty());
 
         // Add same video to three lists
         await cache.syncList('list1', [sharedVideoId]);

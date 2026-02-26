@@ -3,19 +3,19 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 
 import '../helpers/go_router.dart';
@@ -249,13 +249,12 @@ void main() {
         // Note: testSound created inline in widget for direct testing
         await tester.pumpWidget(
           createTestWidget(
-            child: SoundDetailScreen(
+            child: const SoundDetailScreen(
               sound: AudioEvent(
                 id: 'sound1',
                 pubkey:
                     'test_pubkey_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
                 createdAt: 1700000000,
-                title: null,
                 duration: 6.0,
                 url: 'https://example.com/audio.m4a',
                 mimeType: 'audio/mp4',
@@ -575,20 +574,19 @@ void main() {
       });
 
       testWidgets('shows snackbar when sound has no URL', (tester) async {
-        final testSound = AudioEvent(
+        const testSound = AudioEvent(
           id: 'sound1',
           pubkey:
               'test_pubkey_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
           createdAt: 1700000000,
           title: 'No URL Sound',
           duration: 6.0,
-          url: null,
           mimeType: 'audio/mp4',
         );
 
         await tester.pumpWidget(
           createTestWidget(
-            child: SoundDetailScreen(sound: testSound),
+            child: const SoundDetailScreen(sound: testSound),
             overrides: [
               soundUsageCountProvider(
                 testSound.id,
@@ -1018,7 +1016,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Verify GoRouter.pop() was called
-          verify(() => mockGoRouter.pop<Object?>(null)).called(1);
+          verify(() => mockGoRouter.pop<Object?>()).called(1);
         },
       );
 
@@ -1089,7 +1087,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify GoRouter.pop() was called (preview stops in dispose)
-        verify(() => mockGoRouter.pop<Object?>(null)).called(1);
+        verify(() => mockGoRouter.pop<Object?>()).called(1);
       });
     });
   });

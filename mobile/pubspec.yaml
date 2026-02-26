@@ -195,12 +195,7 @@ dev_dependencies:
     sdk: flutter
   flutter_launcher_icons: ^0.14.4
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-  flutter_lints: ^6.0.0
+  very_good_analysis: ^10.2.0
 
   # Testing
   mocktail: ^1.0.3

@@ -8,6 +8,7 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:videos_repository/src/home_feed_result.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
@@ -57,36 +58,70 @@ class VideosRepository {
   final VideoContentFilter? _contentFilter;
   final FunnelcakeApiClient? _funnelcakeApiClient;
 
-  /// Fetches videos from followed users for the home feed.
+  /// Fetches videos from followed users for the home feed, optionally
+  /// merging in videos from subscribed curated lists.
   ///
-  /// This is the "Home" feed mode - shows videos only from users the
-  /// current user follows.
+  /// This is the "Home" feed mode - shows videos from followed users
+  /// plus any videos referenced by subscribed curated lists.
   ///
   /// Strategy:
   /// 1. If [userPubkey] is provided and Funnelcake API is available, tries
   ///    the REST API first (faster, pre-computed feeds)
   /// 2. Falls back to Nostr relay query with [authors] filter
+  /// 3. If [videoRefs] is non-empty, fetches list videos and merges them
+  ///    with following videos, building attribution metadata
   ///
   /// Parameters:
   /// - [authors]: List of pubkeys to filter by (followed users)
+  /// - [videoRefs]: Map of listId → video references from subscribed
+  ///   curated lists. References can be 64-char hex event IDs or
+  ///   addressable coordinates (`kind:pubkey:d-tag`). Defaults to empty.
   /// - [userPubkey]: The current user's pubkey for Funnelcake API lookups.
   ///   Required for API-first path; when null, goes directly to Nostr.
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
   ///
-  /// Returns a list of [VideoEvent] sorted by creation time (newest first).
-  /// Returns an empty list if [authors] is empty, no videos are found,
-  /// or on error.
-  Future<List<VideoEvent>> getHomeFeedVideos({
+  /// Returns a [HomeFeedResult] containing videos sorted by creation time
+  /// (newest first) plus attribution metadata mapping videos to their
+  /// source curated lists. Returns empty result if [authors] is empty.
+  Future<HomeFeedResult> getHomeFeedVideos({
+    required List<String> authors,
+    Map<String, List<String>> videoRefs = const {},
+    String? userPubkey,
+    int limit = _defaultLimit,
+    int? until,
+  }) async {
+    if (authors.isEmpty) return const HomeFeedResult(videos: []);
+
+    // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
+    final followingVideos = await _fetchFollowingVideos(
+      authors: authors,
+      userPubkey: userPubkey,
+      limit: limit,
+      until: until,
+    );
+
+    // 2. If no list refs, return following-only result
+    if (videoRefs.isEmpty) {
+      return HomeFeedResult(videos: followingVideos);
+    }
+
+    // 3. Merge list videos with following videos
+    return _mergeListVideos(
+      followingVideos: followingVideos,
+      videoRefs: videoRefs,
+    );
+  }
+
+  /// Fetches videos from followed users via Funnelcake API or Nostr relays.
+  Future<List<VideoEvent>> _fetchFollowingVideos({
     required List<String> authors,
     String? userPubkey,
     int limit = _defaultLimit,
     int? until,
   }) async {
-    if (authors.isEmpty) return [];
-
-    // 1. Try Funnelcake API first (if user pubkey provided)
+    // Try Funnelcake API first (if user pubkey provided)
     if (userPubkey != null &&
         _funnelcakeApiClient != null &&
         _funnelcakeApiClient.isAvailable) {
@@ -104,7 +139,7 @@ class VideosRepository {
       }
     }
 
-    // 2. Nostr fallback
+    // Nostr fallback
     final filter = Filter(
       kinds: [_videoKind],
       authors: authors,
@@ -115,6 +150,180 @@ class VideosRepository {
     final events = await _nostrClient.queryEvents([filter]);
 
     return _transformAndFilter(events);
+  }
+
+  /// Merges list videos with following videos and builds attribution.
+  ///
+  /// Deduplicates videos that appear in both following and lists.
+  /// Builds [HomeFeedResult.videoListSources] mapping each list video
+  /// to its source lists, and [HomeFeedResult.listOnlyVideoIds] for
+  /// videos present only because of list subscriptions.
+  ///
+  // TODO(curated-list-migration): Optimize by fetching following and list
+  // videos in parallel — currently list video fetches wait for following
+  // to complete even though they don't depend on each other. Refactor
+  // getHomeFeedVideos to launch both concurrently (Phase 3).
+  Future<HomeFeedResult> _mergeListVideos({
+    required List<VideoEvent> followingVideos,
+    required Map<String, List<String>> videoRefs,
+  }) async {
+    // Build set of following video IDs for dedup (case-insensitive)
+    final followingVideoIds = <String>{
+      for (final v in followingVideos) v.id.toLowerCase(),
+    };
+
+    // Flatten all refs and separate by type
+    final eventIds = <String>[];
+    final addressableIds = <String>[];
+
+    for (final refs in videoRefs.values) {
+      for (final ref in refs) {
+        if (ref.contains(':')) {
+          addressableIds.add(ref);
+        } else {
+          eventIds.add(ref);
+        }
+      }
+    }
+
+    // Deduplicate refs
+    final uniqueEventIds = eventIds.toSet().toList();
+    final uniqueAddressableIds = addressableIds.toSet().toList();
+
+    // Fetch list videos in parallel
+    final results = await Future.wait([
+      if (uniqueEventIds.isNotEmpty) getVideosByIds(uniqueEventIds),
+      if (uniqueAddressableIds.isNotEmpty)
+        getVideosByAddressableIds(uniqueAddressableIds),
+    ]);
+
+    // Build ref → video lookup
+    final refToVideo = <String, VideoEvent>{};
+    var resultIndex = 0;
+
+    if (uniqueEventIds.isNotEmpty) {
+      for (final video in results[resultIndex]) {
+        refToVideo[video.id] = video;
+      }
+      resultIndex++;
+    }
+    if (uniqueAddressableIds.isNotEmpty) {
+      // getVideosByAddressableIds returns videos in the same order as
+      // the input list (omitting not-found). Build a vineId → ref
+      // reverse lookup to map fetched videos back to their refs.
+      final vineIdToRef = <String, String>{};
+      for (final ref in uniqueAddressableIds) {
+        final parsed = AId.fromString(ref);
+        if (parsed != null) {
+          vineIdToRef[parsed.dTag] = ref;
+        }
+      }
+      for (final video in results[resultIndex]) {
+        final dTag = video.vineId ?? '';
+        final ref = vineIdToRef[dTag];
+        if (ref != null) {
+          refToVideo[ref] = video;
+        }
+      }
+    }
+
+    // Build attribution metadata
+    final videoListSources = <String, Set<String>>{};
+    final listOnlyVideoIds = <String>{};
+    final listOnlyVideos = <VideoEvent>[];
+    final seenListVideoIds = <String>{};
+
+    for (final entry in videoRefs.entries) {
+      final listId = entry.key;
+      for (final ref in entry.value) {
+        final video = refToVideo[ref];
+        if (video == null) continue;
+
+        // Track which lists reference this video
+        videoListSources.putIfAbsent(video.id, () => <String>{}).add(listId);
+
+        // If not from following, it's list-only
+        if (!followingVideoIds.contains(video.id.toLowerCase())) {
+          listOnlyVideoIds.add(video.id);
+
+          // Add to merge list (dedup across lists)
+          if (seenListVideoIds.add(video.id.toLowerCase())) {
+            listOnlyVideos.add(video);
+          }
+        }
+      }
+    }
+
+    // Merge following + list-only videos, sorted by createdAt descending
+    final merged = [...followingVideos, ...listOnlyVideos]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return HomeFeedResult(
+      videos: merged,
+      videoListSources: videoListSources,
+      listOnlyVideoIds: listOnlyVideoIds,
+    );
+  }
+
+  /// Fetches videos for a specific curated list.
+  ///
+  /// Separates [videoRefs] into event IDs and addressable coordinates,
+  /// fetches both, and returns videos in the ref order (preserving
+  /// the list's ordering).
+  ///
+  /// Returns an empty list if [videoRefs] is empty or no videos are found.
+  Future<List<VideoEvent>> getVideosForList(List<String> videoRefs) async {
+    if (videoRefs.isEmpty) return [];
+
+    // Separate refs by type
+    final eventIds = <String>[];
+    final addressableIds = <String>[];
+
+    for (final ref in videoRefs) {
+      if (ref.contains(':')) {
+        addressableIds.add(ref);
+      } else {
+        eventIds.add(ref);
+      }
+    }
+
+    // Fetch both types in parallel
+    final results = await Future.wait([
+      if (eventIds.isNotEmpty) getVideosByIds(eventIds),
+      if (addressableIds.isNotEmpty) getVideosByAddressableIds(addressableIds),
+    ]);
+
+    // Build lookup map: ref → video
+    final refToVideo = <String, VideoEvent>{};
+    var resultIndex = 0;
+
+    if (eventIds.isNotEmpty) {
+      for (final video in results[resultIndex]) {
+        refToVideo[video.id] = video;
+      }
+      resultIndex++;
+    }
+    if (addressableIds.isNotEmpty) {
+      final vineIdToRef = <String, String>{};
+      for (final ref in addressableIds) {
+        final parsed = AId.fromString(ref);
+        if (parsed != null) {
+          vineIdToRef[parsed.dTag] = ref;
+        }
+      }
+      for (final video in results[resultIndex]) {
+        final dTag = video.vineId ?? '';
+        final ref = vineIdToRef[dTag];
+        if (ref != null) {
+          refToVideo[ref] = video;
+        }
+      }
+    }
+
+    // Return in ref order, omitting unresolved refs
+    return [
+      for (final ref in videoRefs) ?refToVideo[ref],
+    ];
   }
 
   /// Fetches videos published by a specific author.

@@ -2,11 +2,12 @@
 // ABOUTME: Bridges Dart to native Android/iOS libProofMode implementations
 
 import 'dart:io';
+
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/services.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/services/c2pa_signing_service.dart';
-import 'package:crypto/crypto.dart' as crypto;
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for generating cryptographic proof using native ProofMode libraries
 ///
@@ -34,10 +35,10 @@ class NativeProofModeService {
         return null;
       }
 
-      final C2paSigningService _c2paSigningService = C2paSigningService();
+      final C2paSigningService c2paSigningService = C2paSigningService();
 
       try {
-        String proofHash = await generateSha256FileHash(videoFile.path);
+        final String proofHash = await generateSha256FileHash(videoFile.path);
         //print('SHA256 Hash of $path: $hash');
 
         // Read proof metadata from native library
@@ -59,20 +60,20 @@ class NativeProofModeService {
             name: 'VideoRecorderProofService',
             category: .video,
           );
-          final manifestInfo = await _c2paSigningService.readManifest(
+          final manifestInfo = await c2paSigningService.readManifest(
             videoFile.path,
           );
 
           if (manifestInfo?.activeManifest != null) {
-            String activeManifestId = manifestInfo!.activeManifest!;
+            final String activeManifestId = manifestInfo!.activeManifest!;
 
             Log.info(
-              '🔐 Found existing C2PA metadata manifest: ${activeManifestId}',
+              '🔐 Found existing C2PA metadata manifest: $activeManifestId',
               name: 'VideoRecorderProofService',
               category: .video,
             );
 
-            metadata.putIfAbsent("c2paManifestId", () => activeManifestId);
+            metadata.putIfAbsent('c2paManifestId', () => activeManifestId);
 
             // Create NativeProofData from metadata
             final proofData = NativeProofData.fromMetadata(metadata);
@@ -98,7 +99,7 @@ class NativeProofModeService {
         name: 'VideoRecorderProofService',
         category: LogCategory.video,
       );
-      final c2paResult = await _c2paSigningService.signVideo(
+      final c2paResult = await c2paSigningService.signVideo(
         videoPath: videoFile.path,
       );
 
@@ -116,11 +117,11 @@ class NativeProofModeService {
         );
       }
 
-      final manifestInfo = await _c2paSigningService.readManifest(
+      final manifestInfo = await c2paSigningService.readManifest(
         c2paResult.signedFilePath,
       );
       if (manifestInfo?.validationStatus != null) {
-        Log.debug("C2PA Active Manifest ID: ${manifestInfo?.activeManifest}");
+        Log.debug('C2PA Active Manifest ID: ${manifestInfo?.activeManifest}');
       }
 
       Log.info(
@@ -168,8 +169,8 @@ class NativeProofModeService {
       );
 
       if (manifestInfo?.activeManifest != null) {
-        String activeManifestId = manifestInfo!.activeManifest!;
-        metadata.putIfAbsent("c2paManifestId", () => activeManifestId);
+        final String activeManifestId = manifestInfo!.activeManifest!;
+        metadata.putIfAbsent('c2paManifestId', () => activeManifestId);
       }
 
       // Create NativeProofData from metadata
@@ -417,20 +418,20 @@ class NativeProofModeService {
   static Future<String> generateSha256FileHash(String filePath) async {
     final file = File(filePath);
     if (!await file.exists()) {
-      throw FileSystemException("File not found at path: $filePath");
+      throw FileSystemException('File not found at path: $filePath');
     }
 
     try {
       // Open the file as a stream of bytes
-      Stream<List<int>> fileStream = file.openRead();
+      final Stream<List<int>> fileStream = file.openRead();
 
       // Transform the stream using the SHA-256 converter
-      var digest = await fileStream.transform(crypto.sha256).first;
+      final digest = await fileStream.transform(crypto.sha256).first;
 
       // Convert the Digest object to a hexadecimal string for display/comparison
       return digest.toString();
     } catch (e) {
-      print("Error generating hash: $e");
+      print('Error generating hash: $e');
       rethrow;
     }
   }

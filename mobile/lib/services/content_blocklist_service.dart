@@ -1,9 +1,9 @@
 // ABOUTME: Content blocklist service for filtering unwanted content from feeds
 // ABOUTME: Maintains internal blocklist while allowing explicit profile visits
 
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for managing content blocklist
@@ -99,13 +99,13 @@ class ContentBlocklistService {
       _runtimeBlocklist.remove(pubkey);
 
       Log.info(
-        'Removed user from blocklist: ${pubkey}...',
+        'Removed user from blocklist: $pubkey...',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
     } else if (_internalBlocklist.contains(pubkey)) {
       Log.warning(
-        'Cannot unblock user from internal blocklist: ${pubkey}...',
+        'Cannot unblock user from internal blocklist: $pubkey...',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );

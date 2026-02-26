@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,9 +11,8 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/view_event_publisher.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class VideoDetailScreen extends ConsumerStatefulWidget {

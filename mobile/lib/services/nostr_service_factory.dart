@@ -3,8 +3,8 @@
 
 import 'package:db_client/db_client.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/services/auth_service_signer.dart';

@@ -3,13 +3,14 @@
 
 import 'dart:async';
 import 'dart:io';
+
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/event_router.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:path/path.dart' as p;
@@ -19,7 +20,7 @@ class MockNostrServiceWithDelay implements NostrClient {
   final StreamController<Event> _eventController =
       StreamController<Event>.broadcast();
   final List<String> _eventDeliveryOrder = []; // Track when events arrive
-  bool _isInitialized = true;
+  final bool _isInitialized = true;
   bool _eoseCalled = false;
 
   @override

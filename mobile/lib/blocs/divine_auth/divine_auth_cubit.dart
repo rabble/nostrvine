@@ -345,7 +345,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
   void returnToForm() {
     final current = state;
     if (current is DivineAuthEmailVerification) {
-      emit(DivineAuthFormState(email: current.email, isSignIn: false));
+      emit(DivineAuthFormState(email: current.email));
     } else {
       emit(const DivineAuthFormState());
     }

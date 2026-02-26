@@ -3,8 +3,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:video_player/video_player.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
+import 'package:video_player/video_player.dart';
 
 class _MockVideoPlayerController extends Mock
     implements VideoPlayerController {}
@@ -39,7 +39,7 @@ void main() {
   group('Loop Enforcement Logic', () {
     test('videos under 6.3s should not trigger loop enforcement', () {
       // Arrange - video is 5 seconds (under limit)
-      final videoDuration = const Duration(seconds: 5);
+      const videoDuration = Duration(seconds: 5);
 
       // Assert - duration should be less than maxPlaybackDuration
       expect(videoDuration < maxPlaybackDuration, isTrue);
@@ -48,7 +48,7 @@ void main() {
 
     test('videos exactly 6.3s should not trigger loop enforcement', () {
       // Arrange - video is exactly 6.3 seconds
-      final videoDuration = const Duration(milliseconds: 6300);
+      const videoDuration = Duration(milliseconds: 6300);
 
       // Assert - duration should NOT be greater than maxPlaybackDuration
       expect(videoDuration > maxPlaybackDuration, isFalse);
@@ -56,7 +56,7 @@ void main() {
 
     test('videos over 6.3s should trigger loop enforcement', () {
       // Arrange - video is 10 seconds (over limit)
-      final videoDuration = const Duration(seconds: 10);
+      const videoDuration = Duration(seconds: 10);
 
       // Assert - duration should be greater than maxPlaybackDuration
       expect(videoDuration > maxPlaybackDuration, isTrue);
@@ -111,8 +111,8 @@ void main() {
     test('safeSeekTo returns true when seek succeeds', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -133,7 +133,7 @@ void main() {
     test('safeSeekTo returns false when controller is disposed', () async {
       // Arrange - simulate disposed controller
       when(() => mockController.value).thenReturn(
-        const VideoPlayerValue(duration: Duration.zero, isInitialized: false),
+        const VideoPlayerValue(duration: Duration.zero),
       );
 
       // Act
@@ -151,8 +151,8 @@ void main() {
     test('safeSeekTo catches disposal errors gracefully', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -193,7 +193,7 @@ void main() {
       const perFrameChecksPerSecond = 60;
       const ourChecksPerSecond = 1000 ~/ 200; // 5
 
-      final reduction =
+      const reduction =
           (perFrameChecksPerSecond - ourChecksPerSecond) /
           perFrameChecksPerSecond *
           100;

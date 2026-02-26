@@ -1,8 +1,8 @@
 // ABOUTME: Loading state widget for profile screens
 // ABOUTME: Shows animated loading indicator with helpful message
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
 
 /// Loading view displayed while profile data is being fetched.
 class ProfileLoadingView extends StatelessWidget {
@@ -10,10 +10,10 @@ class ProfileLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
+        children: [
           CircularProgressIndicator(color: VineTheme.vineGreen),
           SizedBox(height: 24),
           Text(

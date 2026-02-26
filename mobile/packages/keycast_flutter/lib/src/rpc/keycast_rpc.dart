@@ -2,12 +2,12 @@
 // ABOUTME: Provides remote signing via Keycast server for Nostr events
 
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:nostr_sdk/nostr_sdk.dart';
 
-import '../oauth/oauth_config.dart';
-import '../models/keycast_session.dart';
-import '../models/exceptions.dart';
+import 'package:http/http.dart' as http;
+import 'package:keycast_flutter/src/models/exceptions.dart';
+import 'package:keycast_flutter/src/models/keycast_session.dart';
+import 'package:keycast_flutter/src/oauth/oauth_config.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 
 class KeycastRpc implements NostrSigner {
   final String nostrApi;

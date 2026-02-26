@@ -3,8 +3,8 @@
 //
 // USAGE: dart run scripts/generate_seed_data.dart
 
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
 
 const String editorPicksEventId =
     '5e2797304dda04159f8f9f6c36cc5d7f473abe3931f21d7b68fed1ab6a04db3a';
@@ -21,7 +21,7 @@ Future<void> main() async {
     print('[SEED GEN] ✅ Connected');
 
     // Step 1: Fetch Editor's Picks curation list (kind 30005)
-    print('[SEED GEN] Fetching Editor\'s Picks curation list...');
+    print("[SEED GEN] Fetching Editor's Picks curation list...");
     print('[SEED GEN] Looking for event ID: $editorPicksEventId');
 
     // Try multiple queries to find the curation list
@@ -48,7 +48,7 @@ Future<void> main() async {
           .where((e) => e['id'] == editorPicksEventId)
           .toList();
       if (editorPicksEvents.isNotEmpty) {
-        print('[SEED GEN] ✅ Found Editor\'s Picks in full query results');
+        print("[SEED GEN] ✅ Found Editor's Picks in full query results");
       } else {
         // Try to find any "Editor's Picks" by title
         for (final event in editorPicksEvents) {
@@ -58,7 +58,7 @@ Future<void> main() async {
                 tag.length >= 2 &&
                 tag[0].toString() == 'title' &&
                 tag[1].toString().toLowerCase().contains('editor')) {
-              print('[SEED GEN] ✅ Found Editor\'s Picks by title match');
+              print("[SEED GEN] ✅ Found Editor's Picks by title match");
               editorPicksEvents = [event];
               break;
             }
@@ -69,12 +69,12 @@ Future<void> main() async {
     }
 
     Map<String, dynamic>? editorPicksEvent;
-    List<String> editorPicksVideoIds = [];
+    final List<String> editorPicksVideoIds = [];
 
     if (editorPicksEvents.isNotEmpty) {
       editorPicksEvent = editorPicksEvents.first;
       print(
-        '[SEED GEN] ✅ Found Editor\'s Picks curation list (kind ${editorPicksEvent['kind']})',
+        "[SEED GEN] ✅ Found Editor's Picks curation list (kind ${editorPicksEvent['kind']})",
       );
 
       // Parse video IDs from 'a' and 'e' tags
@@ -94,17 +94,17 @@ Future<void> main() async {
       }
 
       print(
-        '[SEED GEN] 📋 Found ${editorPicksVideoIds.length} video references in Editor\'s Picks',
+        "[SEED GEN] 📋 Found ${editorPicksVideoIds.length} video references in Editor's Picks",
       );
     } else {
-      print('[SEED GEN] ⚠️ WARNING: Editor\'s Picks list not found!');
+      print("[SEED GEN] ⚠️ WARNING: Editor's Picks list not found!");
       print('[SEED GEN] Will proceed with only top videos by loop count...');
     }
 
     // Step 2: Fetch Editor's Picks videos (if we have any)
-    List<Map<String, dynamic>> editorPicksVideos = [];
+    final List<Map<String, dynamic>> editorPicksVideos = [];
     if (editorPicksVideoIds.isNotEmpty) {
-      print('[SEED GEN] Fetching Editor\'s Picks videos...');
+      print("[SEED GEN] Fetching Editor's Picks videos...");
 
       // Separate direct IDs from addressable references
       final directIds = <String>[];
@@ -126,7 +126,7 @@ Future<void> main() async {
         });
         editorPicksVideos.addAll(directEvents);
         print(
-          '[SEED GEN] ✅ Fetched ${directEvents.length} direct Editor\'s Picks videos',
+          "[SEED GEN] ✅ Fetched ${directEvents.length} direct Editor's Picks videos",
         );
       }
 
@@ -139,7 +139,7 @@ Future<void> main() async {
       }
 
       print(
-        '[SEED GEN] ✅ Total Editor\'s Picks videos fetched: ${editorPicksVideos.length}',
+        "[SEED GEN] ✅ Total Editor's Picks videos fetched: ${editorPicksVideos.length}",
       );
     }
 
@@ -209,7 +209,7 @@ Future<void> main() async {
     final finalVideos = selectedVideos.values.toList();
     print('[SEED GEN] ✅ Selected ${finalVideos.length} total videos');
     print(
-      '[SEED GEN]    - Editor\'s Picks: ${editorPicksVideos.length} videos',
+      "[SEED GEN]    - Editor's Picks: ${editorPicksVideos.length} videos",
     );
     print(
       '[SEED GEN]    - Popular videos: ${finalVideos.length - editorPicksVideos.length} videos',
@@ -228,7 +228,7 @@ Future<void> main() async {
       '[SEED GEN] Querying for author profiles (${authorPubkeys.length} authors)...',
     );
     final profileEvents = <Map<String, dynamic>>[];
-    final batchSize = 50;
+    const batchSize = 50;
 
     for (var i = 0; i < authorPubkeys.length; i += batchSize) {
       final batch = authorPubkeys.skip(i).take(batchSize).toList();
@@ -272,7 +272,7 @@ Future<void> main() async {
       '[SEED GEN]    Total events: ${finalVideos.length + profileEvents.length + (editorPicksEvent != null ? 1 : 0)}',
     );
     print(
-      '[SEED GEN]    File size: ${fileSizeMB.toStringAsFixed(2)} MB (${fileSize} bytes)',
+      '[SEED GEN]    File size: ${fileSizeMB.toStringAsFixed(2)} MB ($fileSize bytes)',
     );
 
     // Step 8: Download media files for top videos
@@ -297,7 +297,7 @@ Future<void> main() async {
       print(
         '[SEED GEN]    ⚠️ Failed downloads: ${mediaResult['failures'].length}',
       );
-      for (final failure in mediaResult['failures']) {
+      for (final failure in mediaResult['failures'] as List<dynamic>) {
         print('[SEED GEN]       - $failure');
       }
     }
@@ -321,7 +321,7 @@ String _generateSQL(
   buffer.writeln('-- Divine Seed Data');
   buffer.writeln('-- Generated: ${DateTime.now().toIso8601String()}');
   buffer.writeln('-- Videos: ${videos.length}');
-  buffer.writeln('--   Editor\'s Picks: $editorPicksCount');
+  buffer.writeln("--   Editor's Picks: $editorPicksCount");
   buffer.writeln('--   Popular: ${videos.length - editorPicksCount}');
   buffer.writeln('-- Profiles: ${profiles.length}');
   buffer.writeln('-- Curation lists: ${curationList != null ? 1 : 0}');
@@ -329,7 +329,7 @@ String _generateSQL(
 
   // Curation list event (Editor's Picks)
   if (curationList != null) {
-    buffer.writeln('-- Editor\'s Picks Curation List (kind 30005)');
+    buffer.writeln("-- Editor's Picks Curation List (kind 30005)");
     buffer.writeln(_generateEventInsert(curationList));
     buffer.writeln();
   }
@@ -472,9 +472,9 @@ Future<Map<String, dynamic>> _downloadMediaFiles(
   final failures = <String>[];
   final httpClient = HttpClient();
 
-  final videosList = manifestData['videos'] as List<Map<String, dynamic>>;
+  final videosList = manifestData['videos']! as List<Map<String, dynamic>>;
   final thumbnailsList =
-      manifestData['thumbnails'] as List<Map<String, dynamic>>;
+      manifestData['thumbnails']! as List<Map<String, dynamic>>;
 
   for (var i = 0; i < videos.length; i++) {
     final video = videos[i];
@@ -482,7 +482,7 @@ Future<Map<String, dynamic>> _downloadMediaFiles(
     final tags = video['tags'] as List;
 
     print(
-      '[SEED GEN]   Processing video ${i + 1}/${videos.length} (${eventId})...',
+      '[SEED GEN]   Processing video ${i + 1}/${videos.length} ($eventId)...',
     );
 
     // Extract video URL and thumbnail from tags

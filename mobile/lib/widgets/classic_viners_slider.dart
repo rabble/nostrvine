@@ -5,11 +5,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -33,11 +33,11 @@ class ClassicVinersSlider extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
+                const Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'OG Viners',
-                  style: VineTheme.titleSmallFont(color: VineTheme.primaryText),
+                  style: VineTheme.titleSmallFont(),
                 ),
               ],
             ),
@@ -53,7 +53,7 @@ class ClassicVinersSlider extends ConsumerWidget {
                 return _VinerAvatarList(viners: viners);
               },
               loading: () => const _VinersLoadingPlaceholder(),
-              error: (_, __) => const _VinersLoadingPlaceholder(),
+              error: (_, _) => const _VinersLoadingPlaceholder(),
             ),
           ),
         ],
@@ -167,7 +167,7 @@ class _VinerAvatar extends ConsumerWidget {
                 width: 70,
                 child: Text(
                   displayName,
-                  style: VineTheme.titleTinyFont(color: VineTheme.primaryText),
+                  style: VineTheme.titleTinyFont(),
                   textAlign: TextAlign.center,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -217,7 +217,7 @@ class _VinerAvatar extends ConsumerWidget {
     return cleaned.trim();
   }
 
-  void _onTap(BuildContext context, String? avatarUrl) async {
+  Future<void> _onTap(BuildContext context, String? avatarUrl) async {
     // Get current user's hex for normalization if needed
     final identifier = viner.pubkey;
     final container = ProviderScope.containerOf(context, listen: false);
@@ -239,7 +239,6 @@ class _VinerAvatar extends ConsumerWidget {
           RouteContext(
             type: RouteType.profile,
             npub: npub,
-            videoIndex: null, // Grid mode - no active video
           ),
         ),
       );

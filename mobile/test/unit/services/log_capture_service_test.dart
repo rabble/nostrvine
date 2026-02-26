@@ -60,7 +60,7 @@ void main() {
 
       // Add one more - should evict the first
       final newestEntry = LogEntry(
-        timestamp: DateTime.now().add(Duration(milliseconds: 50000)),
+        timestamp: DateTime.now().add(const Duration(milliseconds: 50000)),
         level: LogLevel.info,
         message: 'Log 50000',
       );
@@ -78,7 +78,7 @@ void main() {
       // Add entries out of order
       service.captureLog(
         LogEntry(
-          timestamp: now.add(Duration(seconds: 2)),
+          timestamp: now.add(const Duration(seconds: 2)),
           level: LogLevel.info,
           message: 'Third',
         ),
@@ -88,7 +88,7 @@ void main() {
       );
       service.captureLog(
         LogEntry(
-          timestamp: now.add(Duration(seconds: 1)),
+          timestamp: now.add(const Duration(seconds: 1)),
           level: LogLevel.info,
           message: 'Second',
         ),
@@ -203,14 +203,14 @@ void main() {
       );
       service.captureLog(
         LogEntry(
-          timestamp: DateTime.now().add(Duration(milliseconds: 1)),
+          timestamp: DateTime.now().add(const Duration(milliseconds: 1)),
           level: LogLevel.error,
           message: 'Error log',
         ),
       );
       service.captureLog(
         LogEntry(
-          timestamp: DateTime.now().add(Duration(milliseconds: 2)),
+          timestamp: DateTime.now().add(const Duration(milliseconds: 2)),
           level: LogLevel.warning,
           message: 'Warning log',
         ),

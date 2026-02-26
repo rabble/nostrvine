@@ -2,8 +2,8 @@
 // ABOUTME: Verifies support for Kind 1063 audio event references in Kind 34236 video events
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/event.dart';
 
 void main() {
   // Valid 64-character hex string for test pubkey

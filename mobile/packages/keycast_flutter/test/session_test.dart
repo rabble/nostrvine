@@ -9,7 +9,7 @@ void main() {
   group('KeycastSession', () {
     group('fromTokenResponse', () {
       test('creates session from token response', () {
-        final tokenResponse = TokenResponse(
+        const tokenResponse = TokenResponse(
           bunkerUrl: 'bunker://test',
           accessToken: 'test_token',
           expiresIn: 3600,
@@ -25,10 +25,9 @@ void main() {
       });
 
       test('handles zero expiresIn', () {
-        final tokenResponse = TokenResponse(
+        const tokenResponse = TokenResponse(
           bunkerUrl: 'bunker://test',
           accessToken: 'test_token',
-          expiresIn: 0,
         );
 
         final session = KeycastSession.fromTokenResponse(tokenResponse);
@@ -36,7 +35,7 @@ void main() {
       });
 
       test('handles missing accessToken', () {
-        final tokenResponse = TokenResponse(bunkerUrl: 'bunker://test');
+        const tokenResponse = TokenResponse(bunkerUrl: 'bunker://test');
 
         final session = KeycastSession.fromTokenResponse(tokenResponse);
         expect(session.accessToken, isNull);
@@ -45,10 +44,9 @@ void main() {
 
     group('isExpired', () {
       test('returns false when expiresAt is null', () {
-        final session = KeycastSession(
+        const session = KeycastSession(
           bunkerUrl: 'bunker://test',
           accessToken: 'token',
-          expiresAt: null,
         );
         expect(session.isExpired, isFalse);
       });
@@ -57,7 +55,7 @@ void main() {
         final session = KeycastSession(
           bunkerUrl: 'bunker://test',
           accessToken: 'token',
-          expiresAt: DateTime.now().add(Duration(hours: 1)),
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
         );
         expect(session.isExpired, isFalse);
       });
@@ -66,7 +64,7 @@ void main() {
         final session = KeycastSession(
           bunkerUrl: 'bunker://test',
           accessToken: 'token',
-          expiresAt: DateTime.now().subtract(Duration(hours: 1)),
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
         );
         expect(session.isExpired, isTrue);
       });
@@ -77,7 +75,7 @@ void main() {
         final session = KeycastSession(
           bunkerUrl: 'bunker://test',
           accessToken: 'token',
-          expiresAt: DateTime.now().add(Duration(hours: 1)),
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
         );
         expect(session.hasRpcAccess, isTrue);
       });
@@ -85,8 +83,7 @@ void main() {
       test('returns false when accessToken is null', () {
         final session = KeycastSession(
           bunkerUrl: 'bunker://test',
-          accessToken: null,
-          expiresAt: DateTime.now().add(Duration(hours: 1)),
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
         );
         expect(session.hasRpcAccess, isFalse);
       });
@@ -95,7 +92,7 @@ void main() {
         final session = KeycastSession(
           bunkerUrl: 'bunker://test',
           accessToken: 'token',
-          expiresAt: DateTime.now().subtract(Duration(hours: 1)),
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
         );
         expect(session.hasRpcAccess, isFalse);
       });
@@ -125,7 +122,7 @@ void main() {
       });
 
       test('handles null fields in serialization', () {
-        final original = KeycastSession(bunkerUrl: 'bunker://test');
+        const original = KeycastSession(bunkerUrl: 'bunker://test');
 
         final json = original.toJson();
         final restored = KeycastSession.fromJson(json);

@@ -18,7 +18,7 @@ class BackgroundPublishBloc
     })
     videoPublishServiceFactory,
   }) : _videoPublishServiceFactory = videoPublishServiceFactory,
-       super(BackgroundPublishState()) {
+       super(const BackgroundPublishState()) {
     on<BackgroundPublishRequested>(
       _onBackgroundPublishRequested,
       transformer: sequential(),

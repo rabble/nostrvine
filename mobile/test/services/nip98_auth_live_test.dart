@@ -73,7 +73,6 @@ void main() {
 
       final (status, body) = await curlGet(url, 'Nostr $token');
 
-      // ignore: avoid_print
       print('WITH payload, query params in u tag: $status $body');
 
       // 200 = empty notifications, 404 = user not found -> format accepted
@@ -96,7 +95,6 @@ void main() {
 
       final (status, body) = await curlGet('$url?limit=1', 'Nostr $token');
 
-      // ignore: avoid_print
       print('WITHOUT payload tag: $status $body');
     });
 
@@ -108,7 +106,6 @@ void main() {
 
       final (status, body) = await curlGet(urlWithQuery, 'Nostr $token');
 
-      // ignore: avoid_print
       print('WITH query params in u tag: $status $body');
     });
   });

@@ -187,8 +187,6 @@ void main() {
           ),
           const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.success,
-            videos: [],
-            repostedAddressableIds: [],
             hasMoreContent: false,
           ),
         ],
@@ -342,7 +340,7 @@ void main() {
                 addressableId1,
                 addressableId2,
               ],
-              addressableIdToRepostId: {},
+              addressableIdToRepostId: const {},
             ),
           );
           // VideosRepository preserves order from input
@@ -523,7 +521,6 @@ void main() {
           repostedAddressableIds: [
             createAddressableId(currentUserPubkey, 'd1'),
           ],
-          hasMoreContent: true,
         ),
         act: (bloc) => bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
         expect: () => [
@@ -562,7 +559,6 @@ void main() {
             createTestVideo(id: 'e1', pubkey: currentUserPubkey, vineId: 'd1'),
             createTestVideo(id: 'e2', pubkey: currentUserPubkey, vineId: 'd2'),
           ],
-          hasMoreContent: true,
         ),
         act: (bloc) => bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
         expect: () => [
@@ -614,8 +610,6 @@ void main() {
           ),
           const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.success,
-            videos: [],
-            repostedAddressableIds: [],
             hasMoreContent: false,
           ),
         ],
@@ -659,8 +653,6 @@ void main() {
           ),
           const ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.success,
-            videos: [],
-            repostedAddressableIds: [],
             hasMoreContent: false,
           ),
         ],

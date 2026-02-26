@@ -66,8 +66,7 @@ void main() {
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'My Test List',
           description: 'A test list',
-          isPublic: true,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -88,9 +87,7 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Contains Video',
-          description: null,
-          isPublic: true,
-          videoEventIds: [
+          videoEventIds: const [
             '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
           ],
           createdAt: DateTime.now(),
@@ -111,9 +108,7 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Empty List',
-          description: null,
-          isPublic: true,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -132,9 +127,7 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Three Videos',
-          description: null,
-          isPublic: true,
-          videoEventIds: ['vid1', 'vid2', 'vid3'],
+          videoEventIds: const ['vid1', 'vid2', 'vid3'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -149,7 +142,7 @@ void main() {
     testWidgets('tapping list item adds video and shows snackbar', (
       tester,
     ) async {
-      final listId =
+      const listId =
           'list0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
       _fakeLists = [
         CuratedList(
@@ -157,9 +150,7 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'My List',
-          description: null,
-          isPublic: true,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -184,7 +175,7 @@ void main() {
     testWidgets('tapping list item with video removes it and shows snackbar', (
       tester,
     ) async {
-      final listId =
+      const listId =
           'list0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
       _fakeLists = [
         CuratedList(
@@ -192,8 +183,6 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'My List',
-          description: null,
-          isPublic: true,
           videoEventIds: [testVideo.id],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
@@ -232,9 +221,7 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Favorites',
-          description: null,
-          isPublic: true,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),
@@ -243,9 +230,8 @@ void main() {
           pubkey:
               'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
           name: 'Watch Later',
-          description: null,
           isPublic: false,
-          videoEventIds: [],
+          videoEventIds: const [],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),

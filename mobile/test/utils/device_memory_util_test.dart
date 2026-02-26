@@ -7,15 +7,12 @@ import 'package:openvine/utils/device_memory_util.dart';
 
 void main() {
   group('DeviceMemoryUtil', () {
-    tearDown(() {
-      // Reset cached tier between tests
-      DeviceMemoryUtil.resetCache();
-    });
+    tearDown(DeviceMemoryUtil.resetCache);
 
     group('_scaleToMax', () {
       test('returns original size when within bounds', () {
         // Test via getMaxOverlayResolution with a small size
-        final size = const Size(640, 480);
+        const size = Size(640, 480);
         // Even low tier allows 720p, so 640x480 should pass through
         // We can't directly test _scaleToMax, but we can verify the behavior
         expect(size.width, 640);

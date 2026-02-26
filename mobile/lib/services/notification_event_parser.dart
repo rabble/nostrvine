@@ -1,8 +1,8 @@
 // ABOUTME: Parser for converting Nostr events into NotificationModel instances
 // ABOUTME: Pure business logic without external dependencies for easy testing
 
-import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/notification_helpers.dart';
 
 /// Parses Nostr events into notification models

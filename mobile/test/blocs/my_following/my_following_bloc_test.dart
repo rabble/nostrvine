@@ -65,7 +65,6 @@ void main() {
         bloc.state,
         const MyFollowingState(
           status: MyFollowingStatus.success,
-          followingPubkeys: [],
         ),
       );
       bloc.close();
@@ -187,10 +186,7 @@ void main() {
     });
 
     test('copyWith creates copy with updated values', () {
-      const state = MyFollowingState(
-        status: MyFollowingStatus.initial,
-        followingPubkeys: [],
-      );
+      const state = MyFollowingState();
 
       final updated = state.copyWith(
         status: MyFollowingStatus.success,

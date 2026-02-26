@@ -3,11 +3,11 @@
 
 import 'dart:convert';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:riverpod/src/providers/provider.dart';
 
 /// Checks if the current user has any following in cache.
 ///
@@ -66,32 +66,33 @@ final hasFollowingInCacheProvider = Provider<bool>((ref) {
 ///
 /// Returns the redirect path (/explore) or null if no redirect needed.
 /// This is a family provider that takes the current location as a parameter.
-final checkEmptyFollowingRedirectProvider = Provider.family<String?, String>((
-  ref,
-  location,
-) {
-  // Only redirect to explore when coming from WelcomeScreen if user follows
-  // nobody. After that, let users navigate to home freely (they'll see a
-  // message to follow people)
-  if (!location.startsWith(WelcomeScreen.path)) return null;
+final ProviderFamily<String?, String> checkEmptyFollowingRedirectProvider =
+    Provider.family<String?, String>((
+      ref,
+      location,
+    ) {
+      // Only redirect to explore when coming from WelcomeScreen if user follows
+      // nobody. After that, let users navigate to home freely (they'll see a
+      // message to follow people)
+      if (!location.startsWith(WelcomeScreen.path)) return null;
 
-  final hasFollowing = ref.watch(hasFollowingInCacheProvider);
+      final hasFollowing = ref.watch(hasFollowingInCacheProvider);
 
-  Log.debug(
-    'Empty contacts check: hasFollowing=$hasFollowing, '
-    'redirecting=${!hasFollowing}',
-    name: 'AppRouter',
-    category: LogCategory.ui,
-  );
+      Log.debug(
+        'Empty contacts check: hasFollowing=$hasFollowing, '
+        'redirecting=${!hasFollowing}',
+        name: 'AppRouter',
+        category: LogCategory.ui,
+      );
 
-  if (!hasFollowing) {
-    Log.debug(
-      'Redirecting to /explore because no following list found',
-      name: 'AppRouter',
-      category: LogCategory.ui,
-    );
-    return ExploreScreen.path;
-  }
+      if (!hasFollowing) {
+        Log.debug(
+          'Redirecting to /explore because no following list found',
+          name: 'AppRouter',
+          category: LogCategory.ui,
+        );
+        return ExploreScreen.path;
+      }
 
-  return null;
-});
+      return null;
+    });

@@ -3,10 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/user_profile_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -279,22 +279,22 @@ void main() {
       ];
 
       for (final testCase in testCases) {
-        final data = testCase['data'] as Map<String, String>;
-        final shouldFail = testCase['shouldFail'] as bool;
+        final data = testCase['data']! as Map<String, String>;
+        final shouldFail = testCase['shouldFail']! as bool;
 
         if (shouldFail) {
           // Should throw validation error
           expect(
             () => _validateProfileData(data),
             throwsA(isA<ArgumentError>()),
-            reason: testCase['name'] as String,
+            reason: testCase['name']! as String,
           );
         } else {
           // Should not throw
           expect(
             () => _validateProfileData(data),
             returnsNormally,
-            reason: testCase['name'] as String,
+            reason: testCase['name']! as String,
           );
         }
       }

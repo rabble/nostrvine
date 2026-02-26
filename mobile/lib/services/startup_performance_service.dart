@@ -5,8 +5,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Tracks performance timing for different startup phases
 class StartupPhaseTimer {
@@ -198,7 +198,7 @@ class StartupPerformanceService {
   }) async {
     // If UI is already ready, execute immediately
     if (_uiReadyTime != null) {
-      return await work();
+      return work();
     }
 
     final completer = Completer<T>();
@@ -207,13 +207,7 @@ class StartupPerformanceService {
     void checkUIReady() {
       if (_uiReadyTime != null) {
         // Execute the deferred work
-        work()
-            .then((result) {
-              completer.complete(result);
-            })
-            .catchError((error) {
-              completer.completeError(error);
-            });
+        work().then(completer.complete).catchError(completer.completeError);
       } else {
         // Check again on next frame
         WidgetsBinding.instance.addPostFrameCallback((_) => checkUIReady());

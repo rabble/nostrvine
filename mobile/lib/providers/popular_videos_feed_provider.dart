@@ -53,10 +53,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           return existing;
         }
       }
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: true,
-        isLoadingMore: false,
       );
     }
 
@@ -65,10 +64,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       final videos = await videosRepository.getPopularVideos(limit: 100);
 
       if (!ref.mounted) {
-        return VideoFeedState(
-          videos: const [],
+        return const VideoFeedState(
+          videos: [],
           hasMoreContent: true,
-          isLoadingMore: false,
         );
       }
 
@@ -93,7 +91,6 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         return VideoFeedState(
           videos: enrichedVideos,
           hasMoreContent: videos.length >= AppConstants.paginationBatchSize,
-          isLoadingMore: false,
           lastUpdated: DateTime.now(),
         );
       }
@@ -104,10 +101,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         category: LogCategory.video,
       );
 
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     } catch (e) {
       Log.error(
@@ -118,7 +114,6 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       return VideoFeedState(
         videos: const [],
         hasMoreContent: false,
-        isLoadingMore: false,
         error: e.toString(),
       );
     }
@@ -194,7 +189,6 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         VideoFeedState(
           videos: allVideos,
           hasMoreContent: newVideos.length >= AppConstants.paginationBatchSize,
-          isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
       );

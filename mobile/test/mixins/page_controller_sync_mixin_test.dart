@@ -11,7 +11,7 @@ void main() {
       tester,
     ) async {
       final mixin = TestPageControllerSyncMixin();
-      final controller = PageController(initialPage: 0);
+      final controller = PageController();
 
       await tester.pumpWidget(
         MaterialApp(
@@ -82,7 +82,7 @@ void main() {
       tester,
     ) async {
       final mixin = TestPageControllerSyncMixin();
-      final controller = PageController(initialPage: 0);
+      final controller = PageController();
 
       await tester.pumpWidget(
         MaterialApp(
@@ -148,7 +148,7 @@ void main() {
       tester,
     ) async {
       final mixin = TestPageControllerSyncMixin();
-      final controller = PageController(initialPage: 0);
+      final controller = PageController();
 
       // Controller not attached to any widget yet (no clients)
       expect(controller.hasClients, false);
@@ -168,7 +168,7 @@ void main() {
 
     testWidgets('SPEC: should track last synced index', (tester) async {
       final mixin = TestPageControllerSyncMixin();
-      final controller = PageController(initialPage: 0);
+      final controller = PageController();
 
       await tester.pumpWidget(
         MaterialApp(
@@ -228,7 +228,7 @@ void main() {
       'SPEC: shouldSync returns true when controller position mismatches',
       (tester) async {
         final mixin = TestPageControllerSyncMixin();
-        final controller = PageController(initialPage: 0);
+        final controller = PageController();
 
         await tester.pumpWidget(
           MaterialApp(

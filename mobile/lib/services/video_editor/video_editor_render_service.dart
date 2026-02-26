@@ -6,9 +6,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
-import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as path;
@@ -106,7 +106,10 @@ class _CropParameters {
     final inputAspectRatio = resolution.width / resolution.height;
     const targetRatio = 9.0 / 16.0;
 
-    final double cropX, cropY, cropWidth, cropHeight;
+    final double cropX;
+    final double cropY;
+    final double cropWidth;
+    final double cropHeight;
 
     if (inputAspectRatio > targetRatio) {
       // Input is wider than 9:16 - crop width, keep height
@@ -343,7 +346,7 @@ class VideoEditorRenderService {
         name: _logName,
         category: .video,
       );
-      return await video.safeFilePath();
+      return video.safeFilePath();
     }
 
     Log.debug(

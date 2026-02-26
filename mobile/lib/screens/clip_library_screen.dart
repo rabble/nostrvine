@@ -408,9 +408,8 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       context,
       PageRouteBuilder(
         opaque: false,
-        maintainState: true,
         pageBuilder: (_, _, _) => VideoClipPreviewSheet(clip: clip),
-        transitionsBuilder: (_, animation, __, child) {
+        transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
         },
         transitionDuration: const Duration(milliseconds: 200),
@@ -538,9 +537,8 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
                         ? [
                             // Save to gallery button
                             IconButton(
-                              icon: DivineIcon(
+                              icon: const DivineIcon(
                                 icon: .downloadSimple,
-                                size: 24,
                                 color: VineTheme.whiteText,
                               ),
                               onPressed: _saveSelectedClipsToGallery,
@@ -548,9 +546,8 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
                             ),
                             // Delete button
                             IconButton(
-                              icon: DivineIcon(
+                              icon: const DivineIcon(
                                 icon: .trash,
-                                size: 24,
                                 color: VineTheme.error,
                               ),
                               onPressed: _showDeleteConfirmationDialog,
@@ -585,9 +582,9 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
           ),
         ),
         if (_isDeleting)
-          Container(
+          const ColoredBox(
             color: Colors.black54,
-            child: const Center(
+            child: Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),
           ),
@@ -725,7 +722,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 }
 
 class _SelectionHeader extends ConsumerWidget {
-  _SelectionHeader({
+  const _SelectionHeader({
     required this.isSelectionMode,
     required this.selectedClipIds,
     required this.onCreate,
@@ -1041,7 +1038,7 @@ class _DraftListTile extends StatelessWidget {
                         child: Image.file(
                           File(draft.clips.first.thumbnailPath!),
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(
+                          errorBuilder: (_, _, _) => const Icon(
                             Icons.video_file,
                             color: Colors.grey,
                             size: 40,

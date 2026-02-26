@@ -39,8 +39,8 @@ class _ForgotPasswordSheetContentState extends State<ForgotPasswordSheetContent>
   late final TextEditingController _emailController;
   final _formKey = GlobalKey<FormState>();
 
-  var _mode = ForgotPasswordMode.form;
-  var _displayedMode = ForgotPasswordMode.form;
+  ForgotPasswordMode _mode = ForgotPasswordMode.form;
+  ForgotPasswordMode _displayedMode = ForgotPasswordMode.form;
   var _isSubmitting = false;
   String? _errorMessage;
 

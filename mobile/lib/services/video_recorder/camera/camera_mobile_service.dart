@@ -21,7 +21,7 @@ class CameraMobileService extends CameraService {
 
   bool _isInitialized = false;
   String? _initializationError;
-  final _camera = DivineCamera.instance;
+  final DivineCamera _camera = DivineCamera.instance;
 
   @override
   Future<void> initialize({

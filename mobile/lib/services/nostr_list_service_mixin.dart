@@ -1,10 +1,10 @@
 // ABOUTME: Universal mixin for loading all published events from relay
 // ABOUTME: Provides cached access to user's own published events for all list services
 
-import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr;
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 // Import Event from nostr_sdk
 typedef Event = nostr.Event;
@@ -45,7 +45,7 @@ mixin NostrListServiceMixin {
       }
 
       final now = DateTime.now();
-      final cacheExpiry = Duration(minutes: 5);
+      const cacheExpiry = Duration(minutes: 5);
 
       // Check if we have valid cached data
       if (_cachedMyEvents != null &&
@@ -61,7 +61,7 @@ mixin NostrListServiceMixin {
       }
 
       Log.info(
-        'Fetching all published events from relay for pubkey: ${ourPubkey}...',
+        'Fetching all published events from relay for pubkey: $ourPubkey...',
         name: 'NostrListServiceMixin',
         category: LogCategory.system,
       );

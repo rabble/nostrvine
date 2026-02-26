@@ -11,7 +11,7 @@ import 'package:openvine/utils/unified_logger.dart';
 class GeoBlockingGate extends ConsumerStatefulWidget {
   final Widget child;
 
-  const GeoBlockingGate({super.key, required this.child});
+  const GeoBlockingGate({required this.child, super.key});
 
   @override
   ConsumerState<GeoBlockingGate> createState() => _GeoBlockingGateState();
@@ -58,9 +58,9 @@ class _GeoBlockingGateState extends ConsumerState<GeoBlockingGate> {
   Widget build(BuildContext context) {
     // Show loading indicator while checking
     if (_isChecking) {
-      return Container(
+      return const ColoredBox(
         color: Colors.black,
-        child: const Center(
+        child: Center(
           child: CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
           ),

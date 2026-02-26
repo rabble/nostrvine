@@ -157,7 +157,7 @@ void main() {
       testWidgets('responds to vertical drag', (tester) async {
         double? changedValue;
         await tester.pumpWidget(
-          buildSlider(value: 0.5, onChanged: (value) => changedValue = value),
+          buildSlider(onChanged: (value) => changedValue = value),
         );
 
         // Find the GestureDetector
@@ -177,7 +177,7 @@ void main() {
 
       testWidgets('dragging up increases value', (tester) async {
         final values = <double>[];
-        await tester.pumpWidget(buildSlider(value: 0.5, onChanged: values.add));
+        await tester.pumpWidget(buildSlider(onChanged: values.add));
 
         final center = tester.getCenter(find.byType(VideoEditorVerticalSlider));
         await tester.dragFrom(center, const Offset(0, -100));
@@ -190,7 +190,7 @@ void main() {
 
       testWidgets('dragging down decreases value', (tester) async {
         final values = <double>[];
-        await tester.pumpWidget(buildSlider(value: 0.5, onChanged: values.add));
+        await tester.pumpWidget(buildSlider(onChanged: values.add));
 
         final center = tester.getCenter(find.byType(VideoEditorVerticalSlider));
         await tester.dragFrom(center, const Offset(0, 100));
@@ -203,7 +203,7 @@ void main() {
 
       testWidgets('value is clamped between 0 and 1', (tester) async {
         final values = <double>[];
-        await tester.pumpWidget(buildSlider(value: 0.5, onChanged: values.add));
+        await tester.pumpWidget(buildSlider(onChanged: values.add));
 
         final center = tester.getCenter(find.byType(VideoEditorVerticalSlider));
 
@@ -220,7 +220,6 @@ void main() {
         double? endValue;
         await tester.pumpWidget(
           buildSlider(
-            value: 0.5,
             onChanged: (_) {},
             onChangeEnd: (value) => endValue = value,
           ),

@@ -77,8 +77,8 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
           final scaffoldMessenger = ScaffoldMessenger.of(context);
 
           scaffoldMessenger.showSnackBar(
-            SnackBar(
-              content: const Text(
+            const SnackBar(
+              content: Text(
                 'Web authentication not supported in secure '
                 'mode. Please use mobile app for secure '
                 'key management.',
@@ -537,7 +537,7 @@ class _NostrHelpBox extends StatelessWidget {
         children: [
           Row(
             children: [
-              DivineIcon(
+              const DivineIcon(
                 icon: DivineIconName.info,
                 color: VineTheme.primary,
                 size: 20,

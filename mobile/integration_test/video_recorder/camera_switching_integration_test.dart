@@ -17,7 +17,7 @@ void main() {
     late CameraService cameraService;
 
     setUpAll(() async {
-      final service = PermissionHandlerPermissionsService();
+      const service = PermissionHandlerPermissionsService();
       await service.requestCameraPermission();
       await service.requestMicrophonePermission();
     });
@@ -59,7 +59,7 @@ void main() {
       }
 
       await cameraService.switchCamera();
-      await tester.pump(Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(cameraService.isInitialized, isTrue);
       expect(cameraService.canRecord, isTrue);
@@ -74,7 +74,7 @@ void main() {
         final success = await cameraService.switchCamera();
         expect(success, isTrue);
 
-        await tester.pump(Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
       }
 
       expect(cameraService.isInitialized, isTrue);
@@ -86,7 +86,7 @@ void main() {
       }
 
       await cameraService.switchCamera();
-      await tester.pump(Duration(milliseconds: 500));
+      await tester.pump(const Duration(milliseconds: 500));
 
       final newAspectRatio = cameraService.cameraAspectRatio;
 

@@ -29,8 +29,8 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 /// ```
 class VideoPageView extends ConsumerStatefulWidget {
   const VideoPageView({
-    super.key,
     required this.videos,
+    super.key,
     this.initialIndex = 0,
     this.onPageChanged,
     this.onLoadMore,
@@ -195,8 +195,6 @@ class _VideoPageViewState extends ConsumerState<VideoPageView>
         ref: ref,
         currentIndex: index,
         videos: widget.videos,
-        preInitBefore: 1,
-        preInitAfter: 2,
       );
       // Use configurable keep range for memory management
       disposeControllersOutsideRange(
@@ -220,7 +218,7 @@ class _VideoPageViewState extends ConsumerState<VideoPageView>
       );
     }
 
-    return Container(
+    return ColoredBox(
       color: Colors.black,
       child: PageView.builder(
         controller: _pageController,

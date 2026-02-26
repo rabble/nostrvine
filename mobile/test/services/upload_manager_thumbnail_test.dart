@@ -48,10 +48,9 @@ void main() {
         () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
-          mimeType: 'image/jpeg',
         ),
       ).thenAnswer(
-        (_) async => BlossomUploadResult(
+        (_) async => const BlossomUploadResult(
           success: true,
           videoId: 'image-hash',
           thumbnailUrl: 'https://blossom.example.com/image-hash.jpg',
@@ -62,7 +61,6 @@ void main() {
       final result = await mockBlossomService.uploadImage(
         imageFile: testFile,
         nostrPubkey: testPubkey,
-        mimeType: 'image/jpeg',
       );
 
       // Verify
@@ -81,7 +79,6 @@ void main() {
         () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
-          mimeType: 'image/jpeg',
           onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer((invocation) async {
@@ -93,7 +90,7 @@ void main() {
         onProgress?.call(0.5);
         onProgress?.call(1.0);
 
-        return BlossomUploadResult(
+        return const BlossomUploadResult(
           success: true,
           videoId: 'image-hash',
           thumbnailUrl: 'https://blossom.example.com/image-hash.jpg',
@@ -103,15 +100,14 @@ void main() {
       await mockBlossomService.uploadImage(
         imageFile: testFile,
         nostrPubkey: testPubkey,
-        mimeType: 'image/jpeg',
-        onProgress: (progress) => progressValues.add(progress),
+        onProgress: progressValues.add,
       );
 
       expect(progressValues, [0.1, 0.5, 1.0]);
     });
 
     test('BlossomUploadResult includes thumbnailUrl field', () {
-      final result = BlossomUploadResult(
+      const result = BlossomUploadResult(
         success: true,
         videoId: 'video-123',
         thumbnailUrl: 'https://cdn.example.com/thumbnail.jpg',
@@ -123,7 +119,7 @@ void main() {
     });
 
     test('BlossomUploadResult thumbnailUrl is optional', () {
-      final result = BlossomUploadResult(
+      const result = BlossomUploadResult(
         success: true,
         videoId: 'video-123',
         thumbnailUrl: 'https://cdn.example.com/video.mp4',
@@ -142,10 +138,9 @@ void main() {
         () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
-          mimeType: 'image/jpeg',
         ),
       ).thenAnswer(
-        (_) async => BlossomUploadResult(
+        (_) async => const BlossomUploadResult(
           success: false,
           errorMessage: 'Not authenticated',
         ),
@@ -154,7 +149,6 @@ void main() {
       final result = await mockBlossomService.uploadImage(
         imageFile: testFile,
         nostrPubkey: testPubkey,
-        mimeType: 'image/jpeg',
       );
 
       expect(result.success, isFalse);
@@ -169,17 +163,17 @@ void main() {
         () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
-          mimeType: 'image/jpeg',
         ),
       ).thenAnswer(
-        (_) async =>
-            BlossomUploadResult(success: false, errorMessage: 'Network error'),
+        (_) async => const BlossomUploadResult(
+          success: false,
+          errorMessage: 'Network error',
+        ),
       );
 
       final result = await mockBlossomService.uploadImage(
         imageFile: testFile,
         nostrPubkey: testPubkey,
-        mimeType: 'image/jpeg',
       );
 
       expect(result.success, isFalse);
@@ -197,7 +191,7 @@ void main() {
           mimeType: 'image/png',
         ),
       ).thenAnswer(
-        (_) async => BlossomUploadResult(
+        (_) async => const BlossomUploadResult(
           success: true,
           videoId: 'image-hash',
           thumbnailUrl: 'https://blossom.example.com/image-hash.png',
@@ -223,10 +217,9 @@ void main() {
         () => mockBlossomService.uploadImage(
           imageFile: testFile,
           nostrPubkey: testPubkey,
-          mimeType: 'image/jpeg',
         ),
       ).thenAnswer(
-        (_) async => BlossomUploadResult(
+        (_) async => const BlossomUploadResult(
           success: true,
           videoId: fileHash,
           thumbnailUrl: 'https://blossom.example.com/$fileHash',
@@ -236,7 +229,6 @@ void main() {
       final result = await mockBlossomService.uploadImage(
         imageFile: testFile,
         nostrPubkey: testPubkey,
-        mimeType: 'image/jpeg',
       );
 
       expect(result.success, isTrue);

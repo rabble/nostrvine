@@ -16,10 +16,10 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/curated_list_ext.dart';
 import 'package:openvine/utils/nostr_event_ext.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -218,7 +218,7 @@ class CuratedListService extends ChangeNotifier {
         name: name,
         description: description,
         imageUrl: imageUrl,
-        videoEventIds: [],
+        videoEventIds: const [],
         createdAt: now,
         updatedAt: now,
         isPublic: isPublic,
@@ -1032,7 +1032,7 @@ class CuratedListService extends ChangeNotifier {
     if (userPubkey == null) return;
 
     Log.info(
-      '📋 Fetching user\'s curated lists from relays for pubkey: $userPubkey',
+      "📋 Fetching user's curated lists from relays for pubkey: $userPubkey",
       name: 'CuratedListService',
       category: LogCategory.system,
     );
@@ -1428,25 +1428,18 @@ class CuratedListService extends ChangeNotifier {
         switch (tag[0]) {
           case 'title':
             if (tag.length > 1) title = tag[1];
-            break;
           case 'description':
             if (tag.length > 1) description = tag[1];
-            break;
           case 'image':
             if (tag.length > 1) imageUrl = tag[1];
-            break;
           case 'thumbnail':
             if (tag.length > 1) thumbnailEventId = tag[1];
-            break;
           case 'playorder':
             if (tag.length > 1) playOrderStr = tag[1];
-            break;
           case 't':
             if (tag.length > 1) tags.add(tag[1]);
-            break;
           case 'e':
             if (tag.length > 1) videoEventIds.add(tag[1]);
-            break;
           case 'a':
             // Handle 'a' tags for addressable events (format: kind:pubkey:d-tag)
             // NIP-71 video kinds: 34235 (horizontal), 34236 (vertical), 34237 (live)
@@ -1463,13 +1456,10 @@ class CuratedListService extends ChangeNotifier {
                 }
               }
             }
-            break;
           case 'collaborative':
             if (tag.length > 1 && tag[1] == 'true') isCollaborative = true;
-            break;
           case 'collaborator':
             if (tag.length > 1) allowedCollaborators.add(tag[1]);
-            break;
         }
       }
 
@@ -1497,7 +1487,6 @@ class CuratedListService extends ChangeNotifier {
         videoEventIds: videoEventIds,
         createdAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
         updatedAt: DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000),
-        isPublic: true, // Lists from relays are public
         nostrEventId: event.id,
         tags: tags,
         isCollaborative: isCollaborative,

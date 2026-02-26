@@ -1,6 +1,7 @@
 // ABOUTME: Tests for audio sharing preference toggle in settings screen
 // ABOUTME: Verifies toggle displays and persists user preference
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +11,6 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthService extends Mock implements AuthService {}
@@ -85,9 +85,9 @@ void main() {
         (widget) =>
             widget is SwitchListTile &&
             widget.title is Text &&
-            (widget.title as Text).data ==
+            (widget.title! as Text).data ==
                 'Make my audio available for reuse' &&
-            widget.value == false,
+            !widget.value,
       );
       expect(switchFinder, findsOneWidget);
     });
@@ -105,9 +105,9 @@ void main() {
         (widget) =>
             widget is SwitchListTile &&
             widget.title is Text &&
-            (widget.title as Text).data ==
+            (widget.title! as Text).data ==
                 'Make my audio available for reuse' &&
-            widget.value == true,
+            widget.value,
       );
       expect(switchFinder, findsOneWidget);
     });
@@ -128,7 +128,7 @@ void main() {
         (widget) =>
             widget is SwitchListTile &&
             widget.title is Text &&
-            (widget.title as Text).data == 'Make my audio available for reuse',
+            (widget.title! as Text).data == 'Make my audio available for reuse',
       );
 
       // Scroll until the switch is visible before tapping
@@ -157,7 +157,7 @@ void main() {
         (widget) =>
             widget is SwitchListTile &&
             widget.title is Text &&
-            (widget.title as Text).data ==
+            (widget.title! as Text).data ==
                 'Make my audio available for reuse' &&
             widget.activeThumbColor == VineTheme.vineGreen,
       );

@@ -2,8 +2,8 @@
 // ABOUTME: Provides consistent setup for VideoEventService, SocialService, and UserProfileService
 
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';

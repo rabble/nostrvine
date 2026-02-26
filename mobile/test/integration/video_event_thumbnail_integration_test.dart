@@ -1,11 +1,11 @@
 // ABOUTME: Integration test for VideoEvent thumbnail API integration
-import 'package:openvine/utils/unified_logger.dart';
 // ABOUTME: Tests the complete workflow from video events to automatic thumbnail generation
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   group('VideoEvent Thumbnail API Integration', () {
@@ -29,7 +29,6 @@ void main() {
             'https://blossom.primal.net/87444ba2b07f28f29a8df3e9b358712e434a9d94bc67b08db5d4de61e6205344.mp4',
         thumbnailUrl: 'https://existing-thumbnail.com/thumb.jpg',
         duration: 3,
-        hashtags: [],
       );
 
       // Create test video event without thumbnail
@@ -42,9 +41,7 @@ void main() {
         timestamp: DateTime.fromMillisecondsSinceEpoch(1747864092 * 1000),
         videoUrl:
             'https://blossom.primal.net/87444ba2b07f28f29a8df3e9b358712e434a9d94bc67b08db5d4de61e6205344.mp4',
-        thumbnailUrl: null, // No existing thumbnail
         duration: 3,
-        hashtags: [],
       );
     });
 
@@ -76,7 +73,7 @@ void main() {
         'attempts API generation when no thumbnail available',
         () async {
           final thumbnailUrl = await videoEventWithoutThumbnail
-              .getApiThumbnailUrl(timeSeconds: 2, size: ThumbnailSize.medium);
+              .getApiThumbnailUrl(timeSeconds: 2);
 
           // May return null if generation fails (expected for test environment)
           // or return a proper API URL if successful
@@ -136,10 +133,8 @@ void main() {
       });
 
       test('handles medium size correctly (no size param)', () {
-        final thumbnailUrl = videoEventWithoutThumbnail.getApiThumbnailUrlSync(
-          timeSeconds: 2.5,
-          size: ThumbnailSize.medium,
-        );
+        final thumbnailUrl = videoEventWithoutThumbnail
+            .getApiThumbnailUrlSync();
 
         expect(thumbnailUrl, startsWith('https://api.openvine.co/thumbnail/'));
         expect(thumbnailUrl, contains('t=2.5'));
@@ -163,15 +158,10 @@ void main() {
       test(
         'sync method provides immediate URL while async attempts generation',
         () async {
-          final syncUrl = videoEventWithoutThumbnail.getApiThumbnailUrlSync(
-            timeSeconds: 2.5,
-            size: ThumbnailSize.medium,
-          );
+          final syncUrl = videoEventWithoutThumbnail.getApiThumbnailUrlSync();
 
-          final asyncUrl = await videoEventWithoutThumbnail.getApiThumbnailUrl(
-            timeSeconds: 2.5,
-            size: ThumbnailSize.medium,
-          );
+          final asyncUrl = await videoEventWithoutThumbnail
+              .getApiThumbnailUrl();
 
           // Sync should always return a URL (constructed)
           expect(syncUrl, isA<String>());
@@ -198,8 +188,6 @@ void main() {
           createdAt: 1234567890,
           content: 'Test',
           timestamp: DateTime.now(),
-          thumbnailUrl: null,
-          hashtags: [],
         );
 
         final syncUrl = emptyIdEvent.getApiThumbnailUrlSync();
@@ -227,8 +215,6 @@ void main() {
             createdAt: 1234567890,
             content: 'Test',
             timestamp: DateTime.now(),
-            thumbnailUrl: null,
-            hashtags: [],
           );
 
           final thumbnailUrl = await invalidVideoEvent.getApiThumbnailUrl();
@@ -264,8 +250,6 @@ void main() {
           createdAt: 1234567890,
           content: 'Test',
           timestamp: DateTime.now(),
-          videoUrl: null,
-          hashtags: [],
         );
 
         expect(noVideoEvent.hasVideo, isFalse);
