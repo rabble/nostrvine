@@ -42,6 +42,7 @@ class VideoFeedPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
+    final curatedListRepository = ref.watch(curatedListRepositoryProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -52,6 +53,7 @@ class VideoFeedPage extends ConsumerWidget {
       create: (_) => VideoFeedBloc(
         videosRepository: videosRepository,
         followRepository: followRepository,
+        curatedListRepository: curatedListRepository,
       )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),
     );

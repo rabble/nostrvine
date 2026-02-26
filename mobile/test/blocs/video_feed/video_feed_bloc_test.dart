@@ -1,9 +1,12 @@
 // ABOUTME: Tests for VideoFeedBloc - unified video feed with mode switching
 // ABOUTME: Tests loading, pagination, mode switching, and following changes
 
+// ignore_for_file: prefer_const_literals_to_create_immutables
+
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -15,31 +18,47 @@ class _MockVideosRepository extends Mock implements VideosRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
+class _MockCuratedListRepository extends Mock
+    implements CuratedListRepository {}
+
 void main() {
   group('VideoFeedBloc', () {
     late _MockVideosRepository mockVideosRepository;
     late _MockFollowRepository mockFollowRepository;
+    late _MockCuratedListRepository mockCuratedListRepository;
     late StreamController<List<String>> followingController;
+    late StreamController<List<CuratedList>> curatedListsController;
 
     setUp(() {
       mockVideosRepository = _MockVideosRepository();
       mockFollowRepository = _MockFollowRepository();
+      mockCuratedListRepository = _MockCuratedListRepository();
       followingController = StreamController<List<String>>.broadcast();
+      curatedListsController = StreamController<List<CuratedList>>.broadcast();
 
       // Default stubs
       when(
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => followingController.stream);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+
+      when(
+        () => mockCuratedListRepository.subscribedListsStream,
+      ).thenAnswer((_) => curatedListsController.stream);
+      when(
+        () => mockCuratedListRepository.getSubscribedListVideoRefs(),
+      ).thenReturn({});
     });
 
     tearDown(() {
       followingController.close();
+      curatedListsController.close();
     });
 
     VideoFeedBloc createBloc() => VideoFeedBloc(
       videosRepository: mockVideosRepository,
       followRepository: mockFollowRepository,
+      curatedListRepository: mockCuratedListRepository,
     );
 
     VideoEvent createTestVideo(String id, {int? createdAt}) {
@@ -803,6 +822,7 @@ void main() {
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
           followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
           autoRefreshMinInterval: Duration.zero,
         ),
         seed: () => VideoFeedState(
@@ -873,6 +893,7 @@ void main() {
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
           followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
           // Large interval so data is always considered fresh
           autoRefreshMinInterval: const Duration(hours: 1),
         ),
@@ -910,6 +931,7 @@ void main() {
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
           followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
           autoRefreshMinInterval: Duration.zero,
         ),
         seed: () => VideoFeedState(
@@ -1088,6 +1110,209 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
+        ],
+      );
+    });
+
+    group('VideoFeedCuratedListsChanged', () {
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'refreshes home feed when curated lists change',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: createTestVideos(3),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
+        expect: () => [
+          const VideoFeedState(),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize)
+              .having((s) => s.mode, 'mode', FeedMode.home),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when mode is not home',
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.latest,
+          videos: createTestVideos(5),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when feed is still loading',
+        build: createBloc,
+        seed: () => const VideoFeedState(),
+        act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'subscribes to subscribedListsStream via emit.onEach on startup',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          // Wait for initial load to complete
+          await Future<void>.delayed(Duration.zero);
+          // First stream emission is skipped (BehaviorSubject replay)
+          curatedListsController.add(const []);
+          await Future<void>.delayed(Duration.zero);
+          // Second emission triggers the handler
+          curatedListsController.add(const []);
+        },
+        skip: 2, // Skip loading + success from VideoFeedStarted
+        expect: () => [
+          const VideoFeedState(),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'emits state with videoListSources and listOnlyVideoIds '
+        'from HomeFeedResult',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: videos,
+              videoListSources: {
+                'video-0': {'list-1'},
+              },
+              listOnlyVideoIds: {'video-0'},
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: createTestVideos(3),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedCuratedListsChanged()),
+        expect: () => [
+          const VideoFeedState(),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having(
+                (s) => s.videoListSources,
+                'videoListSources',
+                {
+                  'video-0': {'list-1'},
+                },
+              )
+              .having(
+                (s) => s.listOnlyVideoIds,
+                'listOnlyVideoIds',
+                {'video-0'},
+              ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'merges attribution metadata on load more',
+        setUp: () {
+          final moreVideos = createTestVideos(
+            pageSize,
+            startTimestamp: 1000,
+            idPrefix: 'more',
+          );
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(
+              videos: moreVideos,
+              videoListSources: {
+                'more-0': {'list-2'},
+              },
+              listOnlyVideoIds: {'more-0'},
+            ),
+          );
+        },
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          videos: createTestVideos(pageSize, startTimestamp: 2000),
+          videoListSources: const {
+            'existing-0': {'list-1'},
+          },
+          listOnlyVideoIds: const {'existing-0'},
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having(
+                (s) => s.videoListSources,
+                'videoListSources',
+                {
+                  'existing-0': {'list-1'},
+                  'more-0': {'list-2'},
+                },
+              )
+              .having(
+                (s) => s.listOnlyVideoIds,
+                'listOnlyVideoIds',
+                {'existing-0', 'more-0'},
+              ),
         ],
       );
     });

@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
+import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
@@ -1041,6 +1042,25 @@ FollowRepository? followRepository(Ref ref) {
 
   ref.onDispose(repository.dispose);
 
+  return repository;
+}
+
+/// Provider for [CuratedListRepository] instance.
+///
+/// Creates a repository that exposes subscribed curated lists via a
+/// [BehaviorSubject] stream for reactive BLoC subscription. Data is
+/// bridged from the legacy [CuratedListService] via [setSubscribedLists]
+/// until the repository owns its own persistence (Phase 1b).
+@Riverpod(keepAlive: true)
+CuratedListRepository curatedListRepository(Ref ref) {
+  final repository = CuratedListRepository();
+
+  // Bridge: push curated list updates from legacy service into repository
+  ref.listen(curatedListsStateProvider, (_, next) {
+    next.whenData(repository.setSubscribedLists);
+  });
+
+  ref.onDispose(repository.dispose);
   return repository;
 }
 

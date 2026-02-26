@@ -56,6 +56,8 @@ final class VideoFeedState extends Equatable {
     this.hasMore = true,
     this.isLoadingMore = false,
     this.error,
+    this.videoListSources = const {},
+    this.listOnlyVideoIds = const {},
   });
 
   /// The current loading status.
@@ -76,6 +78,18 @@ final class VideoFeedState extends Equatable {
   /// Error that occurred during loading, if any.
   final VideoFeedError? error;
 
+  /// Maps videoId to the set of curated list IDs that reference it.
+  ///
+  /// Populated when the home feed includes videos from subscribed lists.
+  /// Empty for non-home modes and when no lists are subscribed.
+  final Map<String, Set<String>> videoListSources;
+
+  /// Video IDs present only because of list subscriptions.
+  ///
+  /// These videos are not from followed authors — the UI shows
+  /// list attribution for them (Phase 4).
+  final Set<String> listOnlyVideoIds;
+
   /// Whether data has been successfully loaded.
   bool get isLoaded => status == VideoFeedStatus.success;
 
@@ -94,6 +108,8 @@ final class VideoFeedState extends Equatable {
     bool? isLoadingMore,
     VideoFeedError? error,
     bool clearError = false,
+    Map<String, Set<String>>? videoListSources,
+    Set<String>? listOnlyVideoIds,
   }) {
     return VideoFeedState(
       status: status ?? this.status,
@@ -102,6 +118,8 @@ final class VideoFeedState extends Equatable {
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
+      videoListSources: videoListSources ?? this.videoListSources,
+      listOnlyVideoIds: listOnlyVideoIds ?? this.listOnlyVideoIds,
     );
   }
 
@@ -113,5 +131,7 @@ final class VideoFeedState extends Equatable {
     hasMore,
     isLoadingMore,
     error,
+    videoListSources,
+    listOnlyVideoIds,
   ];
 }
