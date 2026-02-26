@@ -5,8 +5,8 @@ import 'dart:io';
 
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 /// A safe wrapper around JsonCacheInfoRepository that handles corrupted JSON files.
 ///
@@ -33,18 +33,18 @@ class SafeJsonCacheInfoRepository extends JsonCacheInfoRepository {
         category: LogCategory.system,
       );
       await _deleteCacheFile();
-      return await super.open();
+      return super.open();
     } catch (e) {
       // Handle other errors (null content, type errors, etc.)
       if (e.toString().contains('Unexpected end of input') ||
-          e.toString().contains('type \'Null\'')) {
+          e.toString().contains("type 'Null'")) {
         Log.warning(
           '⚠️ Cache JSON empty/null for $_databaseName, clearing cache: $e',
           name: 'SafeJsonCacheRepository',
           category: LogCategory.system,
         );
         await _deleteCacheFile();
-        return await super.open();
+        return super.open();
       }
       rethrow;
     }

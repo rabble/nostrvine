@@ -303,15 +303,15 @@ class _ThumbnailVisibility extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Only watch hasPlayedOnce for current clip
-    final hasPlayedOnce = isCurrentClip
-        ? ref.watch(videoEditorProvider.select((s) => s.hasPlayedOnce))
-        : false;
+    final hasPlayedOnce =
+        isCurrentClip &&
+        ref.watch(videoEditorProvider.select((s) => s.hasPlayedOnce));
 
     return AnimatedSwitcher(
       layoutBuilder: (currentChild, previousChildren) => Stack(
         fit: StackFit.expand,
         alignment: Alignment.center,
-        children: [...previousChildren, if (currentChild != null) currentChild],
+        children: [...previousChildren, ?currentChild],
       ),
       duration: const Duration(milliseconds: 150),
       child: hasPlayedOnce

@@ -2,15 +2,17 @@
 // ABOUTME: Tests video creation → Blossom upload → Nostr publish → relay verification
 
 import 'dart:io';
-import 'package:flutter_test/flutter_test.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/models/pending_upload.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:nostr_sdk/client_utils/keys.dart' as keys;
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/models/pending_upload.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+
 import '../helpers/real_integration_test_helper.dart';
 
 void main() {
@@ -42,7 +44,7 @@ void main() {
       testPrivateKey = keys.generatePrivateKey();
       testPublicKey = keys.getPublicKey(testPrivateKey);
 
-      print('🔑 Generated test keypair: ${testPublicKey}...');
+      print('🔑 Generated test keypair: $testPublicKey...');
 
       // Create a test video file with valid MP4 structure
       testVideoFile = File(
@@ -80,7 +82,7 @@ void main() {
         final nostrService = container.read(nostrServiceProvider);
 
         print('📤 Starting E2E test: upload → publish → verify');
-        print('   Test user: ${testPublicKey}...');
+        print('   Test user: $testPublicKey...');
         print('   Video file: ${testVideoFile.path}');
 
         // ACT 1: Start upload (this triggers both Blossom upload AND Nostr publishing)

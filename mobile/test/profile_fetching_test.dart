@@ -1,16 +1,17 @@
 // ABOUTME: Test for verifying profile fetching when videos are displayed
 // ABOUTME: Ensures Kind 0 events are fetched and cached when viewing videos
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/event.dart';
-import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
-import 'dart:convert';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -29,15 +30,6 @@ void main() {
     registerFallbackValue(
       UserProfile(
         pubkey: 'fallback',
-        name: null,
-        displayName: null,
-        about: null,
-        picture: null,
-        banner: null,
-        website: null,
-        lud06: null,
-        lud16: null,
-        nip05: null,
         createdAt: DateTime.now(),
         eventId: 'fallback_event_id',
         rawData: const {},
@@ -86,9 +78,13 @@ void main() {
 
         // Act - Simulate video display triggering profile fetch
         await profileService.initialize();
-        final profileFuture = profileService.fetchProfile(testPubkey);
+        // fetchProfile adds the pubkey to a batch queue with a 100ms debounce
+        profileService.fetchProfile(testPubkey);
 
-        // Assert - Verify subscription was created for Kind 0 event
+        // Wait for the debounce timer to fire and execute the batch fetch
+        await Future.delayed(const Duration(milliseconds: 200));
+
+        // Assert - Verify a batch subscription was created for Kind 0 event
         verify(
           () => mockSubscriptionManager.createSubscription(
             name: any(that: contains('profile'), named: 'name'),
@@ -97,8 +93,7 @@ void main() {
                 if (filters.isEmpty) return false;
                 final filter = filters.first;
                 return filter.kinds!.contains(0) &&
-                    filter.authors!.contains(testPubkey) &&
-                    filter.limit == 1;
+                    filter.authors!.contains(testPubkey);
               }),
               named: 'filters',
             ),
@@ -109,15 +104,9 @@ void main() {
           ),
         ).called(1);
 
-        // Verify profile is not yet available (async fetch)
-        final profile = await profileFuture;
-        expect(profile, isNull);
-
-        // Verify profile is marked as pending
+        // Verify profile is not yet available (batch fetch hasn't completed)
         expect(profileService.hasProfile(testPubkey), isFalse);
-        // TODO(any): Fix and enable this test
       },
-      skip: true,
     );
 
     test(
@@ -239,12 +228,6 @@ void main() {
         name: 'Cached User',
         displayName: 'CachedUser',
         about: 'Already cached',
-        picture: null,
-        banner: null,
-        website: null,
-        lud06: null,
-        lud16: null,
-        nip05: null,
         createdAt: DateTime.now(),
         eventId: 'cached_event_id',
         rawData: const {

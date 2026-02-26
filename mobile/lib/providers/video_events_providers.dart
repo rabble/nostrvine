@@ -4,19 +4,19 @@
 import 'dart:async';
 
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/seen_videos_notifier.dart';
-import 'package:openvine/state/seen_videos_state.dart';
-import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/readiness_gate_providers.dart';
+import 'package:openvine/providers/seen_videos_notifier.dart';
+import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
+import 'package:openvine/state/seen_videos_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'video_events_providers.g.dart';
 
@@ -45,7 +45,7 @@ class VideoEvents extends _$VideoEvents {
   Timer? _debounceTimer;
   List<VideoEvent>? _pendingEvents;
   List<VideoEvent>? _lastEmittedEvents;
-  bool get _canEmit => _subject != null && !(_subject!.isClosed);
+  bool get _canEmit => _subject != null && !_subject!.isClosed;
 
   // Buffer for new videos that arrive while user is browsing
   final List<VideoEvent> _bufferedEvents = [];
@@ -290,7 +290,6 @@ class VideoEvents extends _$VideoEvents {
       );
       // Use NIP-50 search for trending/popular discovery (otherstuff-relay)
       service.subscribeToDiscovery(
-        limit: 100,
         nip50Sort: NIP50SortMode.hot, // Recent events with high engagement
       );
       // NOTE: We don't set a local _isSubscribed flag here because we rely on
@@ -464,7 +463,6 @@ class VideoEvents extends _$VideoEvents {
     // Subscribe to discovery videos using NIP-50 search for trending/popular
     // NostrService now handles deduplication automatically
     videoEventService.subscribeToDiscovery(
-      limit: 100,
       nip50Sort: NIP50SortMode.hot, // Recent events with high engagement
     );
   }

@@ -45,7 +45,7 @@ class _MockEmptyRelayNotifications extends RelayNotifications {
   @override
   Future<NotificationFeedState> build() async {
     return NotificationFeedState(
-      notifications: [],
+      notifications: const [],
       isInitialLoad: false,
       lastUpdated: DateTime.now(),
     );
@@ -110,7 +110,7 @@ void main() {
             actorName: 'Charlie',
             message: 'Charlie commented on your video',
             timestamp: now.subtract(const Duration(hours: 1)),
-            metadata: {'comment': 'Great!'},
+            metadata: const {'comment': 'Great!'},
           ),
           NotificationModel(
             id: 'notif-oldest',
@@ -169,7 +169,7 @@ void main() {
             actorName: 'Charlie',
             message: 'Charlie commented on your video',
             timestamp: now.subtract(const Duration(minutes: 3)),
-            metadata: {'comment': 'Awesome!'},
+            metadata: const {'comment': 'Awesome!'},
           ),
         ];
 
@@ -212,7 +212,7 @@ void main() {
             actorName: 'Bob',
             message: 'Bob commented on your video',
             timestamp: now.subtract(const Duration(minutes: 2)),
-            metadata: {'comment': 'Cool!'},
+            metadata: const {'comment': 'Cool!'},
           ),
         ];
 
@@ -362,7 +362,6 @@ void main() {
             actorPubkey: pubkeyAlice,
             message: 'Welcome to diVine!',
             timestamp: now.subtract(const Duration(minutes: 1)),
-            isRead: false,
           ),
         ];
 

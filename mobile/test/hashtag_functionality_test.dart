@@ -2,21 +2,33 @@
 // ABOUTME: Ensures hashtags are sorted by video count and relay queries work correctly
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:models/models.dart';
-import 'package:mocktail/mocktail.dart';
 
 // Mock class for VideoEventService
 class MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(SubscriptionType.discovery);
+  });
+
   group('Hashtag Sorting Tests', () {
     late HashtagService hashtagService;
     late MockVideoEventService mockVideoService;
 
     setUp(() {
       mockVideoService = MockVideoEventService();
+
+      // Stub before constructing HashtagService, since the constructor
+      // immediately calls _updateHashtagStats() and addListener().
+      when(() => mockVideoService.discoveryVideos).thenReturn([]);
+      when(() => mockVideoService.homeFeedVideos).thenReturn([]);
+      when(() => mockVideoService.getEventCount(any())).thenReturn(0);
+      when(() => mockVideoService.getVideos(any())).thenReturn([]);
+
       hashtagService = HashtagService(mockVideoService);
     });
 
@@ -30,11 +42,8 @@ void main() {
         _createVideoWithHashtags(['rare']),
       ];
 
-      // Mock the video service to return our test videos
+      // Update mocks with test data
       when(() => mockVideoService.discoveryVideos).thenReturn(testVideos);
-      when(() => mockVideoService.homeFeedVideos).thenReturn([]);
-      when(() => mockVideoService.getEventCount(any())).thenReturn(0);
-      when(() => mockVideoService.getVideos(any())).thenReturn([]);
 
       // Act - Update hashtag stats
       hashtagService.refreshHashtagStats();
@@ -53,28 +62,21 @@ void main() {
       expect(popularStats?.videoCount, equals(3));
       expect(trendingStats?.videoCount, equals(2));
       expect(rareStats?.videoCount, equals(1));
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    });
 
-    test('should combine and sort hashtags from JSON and local cache', () {
-      // This test would verify that the explore screen properly combines
-      // hashtags from TopHashtagsService and local HashtagService
-      // and sorts them by total count
-
-      // Arrange
-      // Test data (not yet implemented - variables removed to fix warnings):
-      // jsonHashtags: {'vine': 1000, 'comedy': 800, 'dance': 600}
-      // localHashtags: {'vine': 50, 'local': 100, 'dance': 700}
-
-      // Expected result after combining and sorting:
-      // 'dance': 700 (from local, higher than JSON's 600)
-      // 'vine': 1050 (1000 from JSON + 50 from local)
-      // 'comedy': 800 (from JSON only)
-      // 'local': 100 (from local only)
-
-      // The actual implementation should sort these properly
-      // TODO(any): Fix and enable this test
-    }, skip: true);
+    test(
+      'should combine and sort hashtags from TopHashtagsService JSON '
+      'and local HashtagService cache',
+      // Not implemented: explore screen currently uses TopHashtagsService
+      // alone. This test documents a planned feature to merge JSON-sourced
+      // counts (e.g. {'vine': 1000, 'comedy': 800, 'dance': 600}) with
+      // locally observed counts (e.g. {'vine': 50, 'local': 100,
+      // 'dance': 700}) and sort by the combined total.
+      skip:
+          'Feature not yet implemented — explore screen only uses '
+          'TopHashtagsService',
+      () {},
+    );
   });
 
   group('Relay Hashtag Fetching Tests', () {
@@ -110,7 +112,6 @@ void main() {
         // Act
         await mockVideoService.subscribeToHashtagVideos(
           testHashtags,
-          limit: 100,
         );
         final videos = mockVideoService.getVideos(SubscriptionType.hashtag);
 
@@ -119,7 +120,6 @@ void main() {
         verify(
           () => mockVideoService.subscribeToHashtagVideos(
             testHashtags,
-            limit: 100,
           ),
         ).called(1);
 
@@ -132,7 +132,7 @@ void main() {
 
     test('should fetch videos from relay when hashtag is clicked', () async {
       // Arrange
-      final hashtag = 'viral';
+      const hashtag = 'viral';
       final expectedVideos = [
         _createVideoWithHashtags(['viral', 'trending']),
         _createVideoWithHashtags(['viral']),
@@ -150,13 +150,13 @@ void main() {
       ).thenReturn(expectedVideos);
 
       // Act - Simulate clicking a hashtag
-      await mockVideoService.subscribeToHashtagVideos([hashtag], limit: 100);
+      await mockVideoService.subscribeToHashtagVideos([hashtag]);
       final videos = mockVideoService.getVideos(SubscriptionType.hashtag);
 
       // Assert
       // Verify subscription was created with the hashtag
       verify(
-        () => mockVideoService.subscribeToHashtagVideos([hashtag], limit: 100),
+        () => mockVideoService.subscribeToHashtagVideos([hashtag]),
       ).called(1);
 
       // Verify videos with the hashtag are returned
@@ -166,21 +166,22 @@ void main() {
   });
 }
 
+// Auto-incrementing counter to guarantee unique IDs across calls.
+int _videoIdCounter = 0;
+
 // Helper function to create test video events
 VideoEvent _createVideoWithHashtags(List<String> hashtags) {
+  final id = _videoIdCounter++;
   final now = DateTime.now();
   final timestamp = now.millisecondsSinceEpoch ~/ 1000;
   return VideoEvent(
-    id: 'test_${DateTime.now().microsecondsSinceEpoch}',
+    id: 'test_video_$id',
     pubkey: 'test_pubkey',
     createdAt: timestamp,
     timestamp: now, // Required parameter - DateTime type
     content: 'Test video',
     videoUrl: 'https://example.com/video.mp4',
     hashtags: hashtags,
-    thumbnailUrl: null,
-    blurhash: null,
-    vineId: 'test_vine_$timestamp',
-    isRepost: false,
+    vineId: 'test_vine_$id',
   );
 }

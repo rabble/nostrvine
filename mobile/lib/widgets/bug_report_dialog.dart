@@ -2,17 +2,18 @@
 // ABOUTME: Collects user description, gathers diagnostics, and opens pre-filled email
 
 import 'dart:async';
+
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/services/bug_report_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Dialog for collecting and submitting bug reports
 class BugReportDialog extends StatefulWidget {
   const BugReportDialog({
-    super.key,
     required this.bugReportService,
+    super.key,
     this.currentScreen,
     this.userPubkey,
     this.testMode = false, // If true, sends to yourself instead of support
@@ -173,7 +174,6 @@ class _BugReportDialogState extends State<BugReportDialog> {
                       color: _isSuccess == true
                           ? VineTheme.vineGreen
                           : Colors.red,
-                      width: 1,
                     ),
                   ),
                   child: Text(

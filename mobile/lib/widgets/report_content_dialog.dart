@@ -1,6 +1,7 @@
 // ABOUTME: Standalone report content dialog for Apple-compliant content reporting
 // ABOUTME: Extracted from share_video_menu.dart for reuse across the app
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,15 +10,14 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Dialog for reporting content
 /// Public report content dialog that can be used from anywhere
 class ReportContentDialog extends ConsumerStatefulWidget {
   const ReportContentDialog({
-    super.key,
     required this.video,
+    super.key,
     this.isFromShareMenu = false,
   });
   final VideoEvent video;
@@ -207,7 +207,6 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           // Show success confirmation dialog using root navigator
           showDialog(
             context: context,
-            useRootNavigator: true,
             builder: (context) => const ReportConfirmationDialog(),
           );
         } else {
@@ -252,11 +251,11 @@ class ReportConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AlertDialog(
     backgroundColor: VineTheme.cardBackground,
-    title: Row(
+    title: const Row(
       spacing: 12,
       children: [
         Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
-        const Text(
+        Text(
           'Report Received',
           style: TextStyle(color: VineTheme.whiteText),
         ),
@@ -290,11 +289,11 @@ class ReportConfirmationDialog extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: VineTheme.vineGreen),
             ),
-            child: Row(
+            child: const Row(
               spacing: 8,
               children: [
                 Icon(Icons.info_outline, color: VineTheme.vineGreen, size: 20),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -326,7 +325,10 @@ class ReportConfirmationDialog extends StatelessWidget {
     actions: [
       TextButton(
         onPressed: context.pop,
-        child: Text('Close', style: TextStyle(color: VineTheme.vineGreen)),
+        child: const Text(
+          'Close',
+          style: TextStyle(color: VineTheme.vineGreen),
+        ),
       ),
     ],
   );

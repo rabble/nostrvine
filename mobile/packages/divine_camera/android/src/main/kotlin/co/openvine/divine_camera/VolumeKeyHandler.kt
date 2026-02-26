@@ -38,6 +38,16 @@ class VolumeKeyHandler(
     private var enabledTimestamp: Long = 0
     private val activationCooldownMs: Long = 800
 
+    // Temporary suppression during camera switch / audio route changes
+    @Volatile
+    private var isSuppressed = false
+    private val suppressHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var suppressRunnable: Runnable? = null
+
+    // Debounce between Bluetooth triggers to prevent rapid-fire events
+    private var lastBluetoothTriggerTimestamp: Long = 0
+    private val bluetoothDebounceMs: Long = 1000
+
     /**
      * Enables volume button listening.
      * Sets up Window.Callback wrapper for physical buttons and MediaSession for Bluetooth.
@@ -136,20 +146,28 @@ class VolumeKeyHandler(
         
         return when (event.keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP -> {
-                // Only intercept volume keys if enabled
+                // Only intercept volume keys if enabled and not suppressed
                 if (!volumeKeysEnabled) {
                     Log.d(TAG, "Volume up pressed but volume keys disabled - passing through")
                     return false
+                }
+                if (isSuppressed) {
+                    Log.d(TAG, "Volume up pressed but suppressed (camera switch) - consuming")
+                    return true  // Consume to prevent volume change, but don't trigger
                 }
                 Log.d(TAG, "Volume up button pressed")
                 onTrigger("volumeUp")
                 true
             }
             KeyEvent.KEYCODE_VOLUME_DOWN -> {
-                // Only intercept volume keys if enabled
+                // Only intercept volume keys if enabled and not suppressed
                 if (!volumeKeysEnabled) {
                     Log.d(TAG, "Volume down pressed but volume keys disabled - passing through")
                     return false
+                }
+                if (isSuppressed) {
+                    Log.d(TAG, "Volume down pressed but suppressed (camera switch) - consuming")
+                    return true  // Consume to prevent volume change, but don't trigger
                 }
                 Log.d(TAG, "Volume down button pressed")
                 onTrigger("volumeDown")
@@ -192,16 +210,51 @@ class VolumeKeyHandler(
             return true
         }
         
+        // Check suppression (camera switch in progress)
+        if (isSuppressed) {
+            Log.d(TAG, "Media button ignored - suppressed (camera switch in progress)")
+            return true
+        }
+
         // Check cooldown after activation
         val timeSinceEnabled = System.currentTimeMillis() - enabledTimestamp
         if (timeSinceEnabled < activationCooldownMs) {
             Log.d(TAG, "Media button ignored - within ${activationCooldownMs}ms cooldown (${timeSinceEnabled}ms since enabled)")
             return true
         }
-        
+
+        // Check debounce between triggers
+        val now = System.currentTimeMillis()
+        val timeSinceLastTrigger = now - lastBluetoothTriggerTimestamp
+        if (timeSinceLastTrigger < bluetoothDebounceMs) {
+            Log.d(TAG, "Media button ignored - debounce (${timeSinceLastTrigger}ms since last)")
+            return true
+        }
+
+        lastBluetoothTriggerTimestamp = now
         Log.d(TAG, "Media button triggered: ${event.keyCode}")
         onTrigger("bluetooth")
         return true
+    }
+
+    /**
+     * Temporarily suppress all triggers for the given duration.
+     *
+     * Used during camera switch and other operations that cause
+     * audio route changes, which can trigger spurious Bluetooth
+     * play/pause events from connected devices.
+     */
+    fun suppressTemporarily(durationMs: Long = 3000) {
+        isSuppressed = true
+        Log.d(TAG, "Suppressed for ${durationMs}ms")
+
+        // Cancel any pending unsuppress
+        suppressRunnable?.let { suppressHandler.removeCallbacks(it) }
+        suppressRunnable = Runnable {
+            isSuppressed = false
+            Log.d(TAG, "Suppression ended")
+        }
+        suppressHandler.postDelayed(suppressRunnable!!, durationMs)
     }
 
     /**
@@ -286,14 +339,26 @@ class VolumeKeyHandler(
     }
     
     /**
-     * Trigger callback with cooldown check for direct MediaSession callbacks.
+     * Trigger callback with cooldown, debounce and suppression check
+     * for direct MediaSession callbacks.
      */
     private fun triggerWithCooldownCheck() {
+        if (isSuppressed) {
+            Log.d(TAG, "MediaSession callback ignored - suppressed")
+            return
+        }
         val timeSinceEnabled = System.currentTimeMillis() - enabledTimestamp
         if (timeSinceEnabled < activationCooldownMs) {
             Log.d(TAG, "MediaSession callback ignored - within cooldown")
             return
         }
+        val now = System.currentTimeMillis()
+        val timeSinceLastTrigger = now - lastBluetoothTriggerTimestamp
+        if (timeSinceLastTrigger < bluetoothDebounceMs) {
+            Log.d(TAG, "MediaSession callback ignored - debounce")
+            return
+        }
+        lastBluetoothTriggerTimestamp = now
         onTrigger("bluetooth")
     }
 
@@ -301,6 +366,8 @@ class VolumeKeyHandler(
      * Cleanup resources.
      */
     fun release() {
+        suppressRunnable?.let { suppressHandler.removeCallbacks(it) }
+        suppressRunnable = null
         disable()
     }
 }

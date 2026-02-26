@@ -15,10 +15,10 @@ import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
@@ -63,7 +63,7 @@ class OtherProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
 
-    if (profileRepository == null) return BrandedLoadingScaffold();
+    if (profileRepository == null) return const BrandedLoadingScaffold();
 
     final pubkey = npubToHexOrNull(npub);
 
@@ -77,7 +77,7 @@ class OtherProfileScreen extends ConsumerWidget {
     return BlocProvider(
       create: (context) =>
           OtherProfileBloc(pubkey: pubkey, profileRepository: profileRepository)
-            ..add(OtherProfileLoadRequested()),
+            ..add(const OtherProfileLoadRequested()),
       child: OtherProfileView(
         pubkey: pubkey,
         displayNameHint: displayNameHint,
@@ -166,7 +166,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     ref.invalidate(fetchProfileStatsProvider(widget.pubkey));
 
     // Refresh user profile info
-    context.read<OtherProfileBloc>().add(OtherProfileRefreshRequested());
+    context.read<OtherProfileBloc>().add(const OtherProfileRefreshRequested());
 
     // Trigger BLoC refresh for likes/reposts via notifier
     _refreshNotifier.value++;

@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/curated_list_service.dart';
+import 'package:models/models.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 
 void main() {
@@ -19,7 +19,7 @@ void main() {
       'ListAttributionChip is not rendered when showListAttribution is false',
       (tester) async {
         // Use a variable (not const) to avoid dead code analysis warning
-        var showListAttribution = false;
+        const showListAttribution = false;
         final listSources = {'list_id_1'};
 
         await tester.pumpWidget(
@@ -149,7 +149,7 @@ void main() {
         final testList = CuratedList(
           id: 'list_id_1',
           name: 'Cool Videos List',
-          videoEventIds: ['video1', 'video2'],
+          videoEventIds: const ['video1', 'video2'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );

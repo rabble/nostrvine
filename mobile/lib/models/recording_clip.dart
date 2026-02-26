@@ -121,7 +121,7 @@ class RecordingClip {
           json['filePath'] as String,
           documentsPath,
           useOriginalPath: useOriginalPath,
-        )!,
+        ),
       ),
       duration: Duration(milliseconds: json['durationMs'] as int),
       recordedAt: DateTime.parse(json['recordedAt'] as String),

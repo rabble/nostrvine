@@ -45,7 +45,6 @@ void main() {
       );
 
       final shouldAvoidRebuild = _shouldAvoidControllerRebuild(
-        currentController: null,
         newController: newController,
       );
 
@@ -142,19 +141,8 @@ class _MockVideoController extends VideoPlayerController {
     value = VideoPlayerValue(
       duration: const Duration(seconds: 10),
       size: const Size(1920, 1080),
-      position: Duration.zero,
-      caption: const Caption(
-        number: 0,
-        start: Duration.zero,
-        end: Duration.zero,
-        text: '',
-      ),
       isInitialized: isInitialized,
       isPlaying: isPlaying,
-      isLooping: false,
-      isBuffering: false,
-      volume: 1.0,
-      playbackSpeed: 1.0,
     );
   }
 }

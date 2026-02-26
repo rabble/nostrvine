@@ -2,10 +2,10 @@
 // ABOUTME: Validates serialization, migration, and status lifecycle
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/vine_draft.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:models/models.dart' show AspectRatio;
+import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/vine_draft.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('VineDraft PublishStatus', () {
@@ -17,7 +17,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: now,
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -30,7 +30,6 @@ void main() {
         createdAt: now,
         lastModified: now,
         publishStatus: PublishStatus.draft,
-        publishError: null,
         publishAttempts: 0,
       );
 
@@ -52,7 +51,7 @@ void main() {
             RecordingClip(
               id: 'test_clip',
               video: EditorVideo.file('/path/to/video.mp4'),
-              duration: Duration(seconds: 6),
+              duration: const Duration(seconds: 6),
               recordedAt: now,
               targetAspectRatio: AspectRatio.square,
               originalAspectRatio: 9 / 16,
@@ -65,7 +64,6 @@ void main() {
           createdAt: now,
           lastModified: now,
           publishStatus: status,
-          publishError: null,
           publishAttempts: 0,
         );
 
@@ -105,7 +103,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: now,
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -141,7 +139,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: now,
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -154,7 +152,6 @@ void main() {
         createdAt: now,
         lastModified: now,
         publishStatus: PublishStatus.draft,
-        publishError: null,
         publishAttempts: 0,
       );
 
@@ -173,7 +170,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: now,
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,
@@ -186,7 +183,6 @@ void main() {
         createdAt: now,
         lastModified: now,
         publishStatus: PublishStatus.draft,
-        publishError: null,
         publishAttempts: 0,
       );
 
@@ -209,7 +205,7 @@ void main() {
           RecordingClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
-            duration: Duration(seconds: 6),
+            duration: const Duration(seconds: 6),
             recordedAt: now,
             targetAspectRatio: AspectRatio.square,
             originalAspectRatio: 9 / 16,

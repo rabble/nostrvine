@@ -7,8 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
@@ -16,24 +15,26 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
-@GenerateMocks([KeycastOAuth, AuthService])
-import 'secure_account_screen_test.mocks.dart';
+
+class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
+
+class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
   group(SecureAccountScreen, () {
-    late MockKeycastOAuth mockOAuth;
-    late MockAuthService mockAuthService;
+    late _MockKeycastOAuth mockOAuth;
+    late _MockAuthService mockAuthService;
 
     setUp(() {
-      mockOAuth = MockKeycastOAuth();
-      mockAuthService = MockAuthService();
+      mockOAuth = _MockKeycastOAuth();
+      mockAuthService = _MockAuthService();
 
       // Default stubs
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.isAnonymous).thenReturn(true);
-      when(mockAuthService.currentNpub).thenReturn('npub1test...');
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.isAnonymous).thenReturn(true);
+      when(() => mockAuthService.currentNpub).thenReturn('npub1test...');
       when(
-        mockAuthService.exportNsec(),
+        () => mockAuthService.exportNsec(),
       ).thenAnswer((_) async => 'nsec1testabc123xyz');
     });
 
@@ -172,11 +173,11 @@ void main() {
       ) async {
         // Use verificationRequired: false to avoid triggering polling
         when(
-          mockOAuth.headlessRegister(
-            email: anyNamed('email'),
-            password: anyNamed('password'),
-            nsec: anyNamed('nsec'),
-            scope: anyNamed('scope'),
+          () => mockOAuth.headlessRegister(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            nsec: any(named: 'nsec'),
+            scope: any(named: 'scope'),
           ),
         ).thenAnswer(
           (_) async => (
@@ -214,10 +215,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         verify(
-          mockOAuth.headlessRegister(
+          () => mockOAuth.headlessRegister(
             email: 'test@example.com',
             password: 'SecurePass123!',
-            nsec: anyNamed('nsec'),
+            nsec: any(named: 'nsec'),
             scope: 'policy:full',
           ),
         ).called(1);
@@ -227,11 +228,11 @@ void main() {
         tester,
       ) async {
         when(
-          mockOAuth.headlessRegister(
-            email: anyNamed('email'),
-            password: anyNamed('password'),
-            nsec: anyNamed('nsec'),
-            scope: anyNamed('scope'),
+          () => mockOAuth.headlessRegister(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            nsec: any(named: 'nsec'),
+            scope: any(named: 'scope'),
           ),
         ).thenAnswer(
           (_) async => (
@@ -265,7 +266,7 @@ void main() {
       });
 
       testWidgets('shows error when nsec export fails', (tester) async {
-        when(mockAuthService.exportNsec()).thenAnswer((_) async => null);
+        when(() => mockAuthService.exportNsec()).thenAnswer((_) async => null);
 
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();

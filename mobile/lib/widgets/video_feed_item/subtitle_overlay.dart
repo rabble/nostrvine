@@ -60,7 +60,7 @@ class SubtitleOverlay extends ConsumerWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
-                  shadows: [Shadow(blurRadius: 4, color: Colors.black)],
+                  shadows: [Shadow(blurRadius: 4)],
                 ),
                 textAlign: TextAlign.center,
               ),

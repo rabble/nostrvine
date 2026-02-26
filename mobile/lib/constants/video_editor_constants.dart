@@ -119,7 +119,7 @@ class VideoEditorConstants {
   static const heroMetaPreviewId = 'Video-metadata-clip-preview-video';
 
   /// List of filter presets sorted by popularity
-  static final filters = [
+  static final List<FilterModel> filters = [
     PresetFilters.none,
 
     // Tier 1: Most popular filters

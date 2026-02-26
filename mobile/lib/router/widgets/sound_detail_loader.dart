@@ -10,7 +10,7 @@ import 'package:openvine/widgets/branded_loading_scaffold.dart';
 /// Loader widget that fetches a sound by ID before displaying SoundDetailScreen.
 /// Used when navigating via deep link without the sound object.
 class SoundDetailLoader extends ConsumerWidget {
-  const SoundDetailLoader({super.key, required this.soundId});
+  const SoundDetailLoader({required this.soundId, super.key});
 
   final String soundId;
 

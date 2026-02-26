@@ -2,15 +2,16 @@
 // ABOUTME: Runs unit and integration tests with proper setup and reporting
 
 import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
+// Import screen tests
+import 'screens/video_recorder_screen_test.dart' as screen_test;
 // Import widget tests
 import 'widgets/video_recorder/video_recorder_bottom_bar_test.dart'
     as bottom_bar_test;
-import 'widgets/video_recorder/video_recorder_top_bar_test.dart'
-    as top_bar_test;
 import 'widgets/video_recorder/video_recorder_camera_preview_test.dart'
     as camera_preview_test;
 import 'widgets/video_recorder/video_recorder_countdown_overlay_test.dart'
@@ -19,9 +20,8 @@ import 'widgets/video_recorder/video_recorder_focus_point_test.dart'
     as focus_point_test;
 import 'widgets/video_recorder/video_recorder_segment_bar_test.dart'
     as segment_bar_test;
-
-// Import screen tests
-import 'screens/video_recorder_screen_test.dart' as screen_test;
+import 'widgets/video_recorder/video_recorder_top_bar_test.dart'
+    as top_bar_test;
 
 void main() async {
   // Initialize Flutter test environment
@@ -94,33 +94,19 @@ void main() async {
   // Run test suites
   group('Camera Test Suite', () {
     group('Video Recorder Widget Tests', () {
-      group('Bottom Bar Widget', () {
-        bottom_bar_test.main();
-      });
+      group('Bottom Bar Widget', bottom_bar_test.main);
 
-      group('Top Bar Widget', () {
-        top_bar_test.main();
-      });
+      group('Top Bar Widget', top_bar_test.main);
 
-      group('Camera Preview Widget', () {
-        camera_preview_test.main();
-      });
+      group('Camera Preview Widget', camera_preview_test.main);
 
-      group('Countdown Overlay Widget', () {
-        countdown_test.main();
-      });
+      group('Countdown Overlay Widget', countdown_test.main);
 
-      group('Focus Point Widget', () {
-        focus_point_test.main();
-      });
+      group('Focus Point Widget', focus_point_test.main);
 
-      group('Segment Bar Widget', () {
-        segment_bar_test.main();
-      });
+      group('Segment Bar Widget', segment_bar_test.main);
     });
 
-    group('Video Recorder Screen Tests', () {
-      screen_test.main();
-    });
+    group('Video Recorder Screen Tests', screen_test.main);
   });
 }

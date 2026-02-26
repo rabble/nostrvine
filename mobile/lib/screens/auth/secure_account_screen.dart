@@ -143,7 +143,6 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   void _showVerificationDialog(String email) {
     showDialog<void>(
       context: context,
-      barrierDismissible: true,
       builder: (dialogContext) => _VerificationDialog(
         email: email,
         onContinue: () {
@@ -253,16 +252,16 @@ class _VerificationDialog extends ConsumerWidget {
 
         // Show success state briefly before auto-closing
         if (!authService.isAnonymous) {
-          return AlertDialog(
+          return const AlertDialog(
             backgroundColor: VineTheme.cardBackground,
-            title: const Row(
+            title: Row(
               children: [
                 Icon(Icons.check_circle, color: VineTheme.vineGreen),
                 SizedBox(width: 12),
                 Text('Account Secured!', style: TextStyle(color: Colors.white)),
               ],
             ),
-            content: const Text(
+            content: Text(
               'Your account is now linked to your email.',
               style: TextStyle(color: Colors.white70),
             ),

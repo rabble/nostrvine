@@ -179,7 +179,6 @@ void main() {
           ),
           createMockRelayNotification(
             id: 'notif_2',
-            createdAtSeconds: 1700000000,
           ),
         ];
 
@@ -215,7 +214,6 @@ void main() {
             pubkey: testPubkey,
             types: any(named: 'types'),
             unreadOnly: any(named: 'unreadOnly'),
-            limit: 50,
             before: any(named: 'before'),
           ),
         ).called(1);
@@ -229,8 +227,6 @@ void main() {
           final mockNotifications = [
             createMockRelayNotification(
               id: 'notif_1',
-              notificationType: 'reaction',
-              read: false,
             ),
           ];
 
@@ -299,7 +295,6 @@ void main() {
         final moreNotifications = [
           createMockRelayNotification(
             id: 'notif_2',
-            createdAtSeconds: 1700000000,
           ),
         ];
 
@@ -326,7 +321,6 @@ void main() {
               notifications: moreNotifications,
               unreadCount: 3,
               nextCursor: 'cursor_2',
-              hasMore: false,
             );
           }
         });
@@ -381,7 +375,6 @@ void main() {
                 createMockRelayNotification(id: 'notif_3'),
               ],
               unreadCount: 3,
-              hasMore: false,
             );
           }
         });
@@ -418,7 +411,6 @@ void main() {
           (_) async => NotificationsResponse(
             notifications: [createMockRelayNotification(id: 'notif_1')],
             unreadCount: 1,
-            hasMore: false, // No more content!
           ),
         );
 
@@ -457,8 +449,8 @@ void main() {
           ).thenAnswer(
             (_) async => NotificationsResponse(
               notifications: [
-                createMockRelayNotification(id: 'notif_1', read: false),
-                createMockRelayNotification(id: 'notif_2', read: false),
+                createMockRelayNotification(id: 'notif_1'),
+                createMockRelayNotification(id: 'notif_2'),
               ],
               unreadCount: 2,
             ),
@@ -523,9 +515,9 @@ void main() {
         ).thenAnswer(
           (_) async => NotificationsResponse(
             notifications: [
-              createMockRelayNotification(id: 'notif_1', read: false),
-              createMockRelayNotification(id: 'notif_2', read: false),
-              createMockRelayNotification(id: 'notif_3', read: false),
+              createMockRelayNotification(id: 'notif_1'),
+              createMockRelayNotification(id: 'notif_2'),
+              createMockRelayNotification(id: 'notif_3'),
             ],
             unreadCount: 3,
           ),
@@ -563,7 +555,6 @@ void main() {
         verify(
           () => mockApiService.markAsRead(
             pubkey: testPubkey,
-            notificationIds: null,
           ),
         ).called(1);
 
@@ -584,7 +575,7 @@ void main() {
           ).thenAnswer(
             (_) async => NotificationsResponse(
               notifications: [
-                createMockRelayNotification(id: 'notif_1', read: false),
+                createMockRelayNotification(id: 'notif_1'),
               ],
               unreadCount: 1,
             ),
@@ -833,7 +824,6 @@ void main() {
             notifications: [
               createMockRelayNotification(
                 id: 'like_1',
-                notificationType: 'reaction',
               ),
               createMockRelayNotification(
                 id: 'follow_1',
@@ -841,7 +831,6 @@ void main() {
               ),
               createMockRelayNotification(
                 id: 'like_2',
-                notificationType: 'reaction',
               ),
             ],
             unreadCount: 3,
@@ -880,7 +869,6 @@ void main() {
           notifications: [],
           unreadCount: 5,
           hasMoreContent: true,
-          isLoadingMore: false,
           isInitialLoad: false,
         );
 

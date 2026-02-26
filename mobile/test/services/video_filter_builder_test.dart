@@ -2,25 +2,24 @@
 // ABOUTME: Covers server-side sorting when supported and graceful fallback to standard filters
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:nostr_sdk/filter.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show IntRangeFilter, SortDirection;
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 
-@GenerateMocks([RelayCapabilityService])
-import 'video_filter_builder_test.mocks.dart';
+class _MockRelayCapabilityService extends Mock
+    implements RelayCapabilityService {}
 
 void main() {
   group('VideoFilterBuilder', () {
     late VideoFilterBuilder builder;
-    late MockRelayCapabilityService mockCapabilityService;
+    late _MockRelayCapabilityService mockCapabilityService;
 
     const testRelayUrl = 'wss://staging-relay.divine.video';
 
     setUp(() {
-      mockCapabilityService = MockRelayCapabilityService();
+      mockCapabilityService = _MockRelayCapabilityService();
       builder = VideoFilterBuilder(mockCapabilityService);
     });
 
@@ -38,7 +37,7 @@ void main() {
         );
 
         when(
-          mockCapabilityService.getRelayCapabilities(testRelayUrl),
+          () => mockCapabilityService.getRelayCapabilities(testRelayUrl),
         ).thenAnswer((_) async => divineCapabilities);
       });
 
@@ -153,8 +152,8 @@ void main() {
           relayUrl: testRelayUrl,
           sortBy: VideoSortField.likes,
           intFilters: {
-            'likes': IntRangeFilter(gte: 50, lte: 500),
-            'loop_count': IntRangeFilter(gte: 1000),
+            'likes': const IntRangeFilter(gte: 50, lte: 500),
+            'loop_count': const IntRangeFilter(gte: 1000),
           },
         );
 
@@ -171,11 +170,10 @@ void main() {
           relayUrl: testRelayUrl,
           name: 'Standard Relay',
           rawData: {},
-          hasDivineExtensions: false,
         );
 
         when(
-          mockCapabilityService.getRelayCapabilities(testRelayUrl),
+          () => mockCapabilityService.getRelayCapabilities(testRelayUrl),
         ).thenAnswer((_) async => standardCapabilities);
       });
 
@@ -240,7 +238,7 @@ void main() {
         );
 
         when(
-          mockCapabilityService.getRelayCapabilities(testRelayUrl),
+          () => mockCapabilityService.getRelayCapabilities(testRelayUrl),
         ).thenAnswer((_) async => partialCapabilities);
 
         final baseFilter = Filter(kinds: [34236]);
@@ -270,7 +268,7 @@ void main() {
         );
 
         when(
-          mockCapabilityService.getRelayCapabilities(testRelayUrl),
+          () => mockCapabilityService.getRelayCapabilities(testRelayUrl),
         ).thenAnswer((_) async => partialCapabilities);
 
         final baseFilter = Filter(kinds: [34236]);
@@ -280,7 +278,7 @@ void main() {
           relayUrl: testRelayUrl,
           sortBy: VideoSortField.loopCount,
           intFilters: {
-            'views': IntRangeFilter(gte: 500), // Not supported!
+            'views': const IntRangeFilter(gte: 500), // Not supported!
           },
         );
 
@@ -298,7 +296,7 @@ void main() {
         'falls back to standard filter when capability check fails',
         () async {
           when(
-            mockCapabilityService.getRelayCapabilities(testRelayUrl),
+            () => mockCapabilityService.getRelayCapabilities(testRelayUrl),
           ).thenThrow(RelayCapabilityException('Network error', testRelayUrl));
 
           final baseFilter = Filter(kinds: [34236], limit: 50);
@@ -321,7 +319,7 @@ void main() {
 
       test('falls back gracefully when capability service throws', () async {
         when(
-          mockCapabilityService.getRelayCapabilities(testRelayUrl),
+          () => mockCapabilityService.getRelayCapabilities(testRelayUrl),
         ).thenThrow(Exception('Unexpected error'));
 
         final baseFilter = Filter(kinds: [34236]);
@@ -350,7 +348,7 @@ void main() {
         );
 
         when(
-          mockCapabilityService.getRelayCapabilities(testRelayUrl),
+          () => mockCapabilityService.getRelayCapabilities(testRelayUrl),
         ).thenAnswer((_) async => divineCapabilities);
 
         final baseFilter = Filter(kinds: [34236], limit: 50);

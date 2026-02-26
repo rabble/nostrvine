@@ -1,15 +1,15 @@
 // ABOUTME: Tests for videoEventsProvider buffering behavior
 // ABOUTME: Validates new video buffering system and banner functionality
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
+import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -45,7 +45,7 @@ void main() {
           ), // Start with gates closed
           isDiscoveryTabActiveProvider.overrideWith((ref) => false),
           isExploreTabActiveProvider.overrideWith((ref) => false),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
     });
@@ -66,17 +66,17 @@ void main() {
 
       // Verify buffering control methods exist
       expect(
-        () => notifier.enableBuffering(),
+        notifier.enableBuffering,
         returnsNormally,
         reason: 'enableBuffering() should exist',
       );
       expect(
-        () => notifier.disableBuffering(),
+        notifier.disableBuffering,
         returnsNormally,
         reason: 'disableBuffering() should exist',
       );
       expect(
-        () => notifier.loadBufferedVideos(),
+        notifier.loadBufferedVideos,
         returnsNormally,
         reason: 'loadBufferedVideos() should exist',
       );
@@ -124,7 +124,7 @@ void main() {
 
         // Load buffered videos when buffer is empty (should do nothing gracefully)
         expect(
-          () => notifier.loadBufferedVideos(),
+          notifier.loadBufferedVideos,
           returnsNormally,
           reason: 'loadBufferedVideos should handle empty buffer gracefully',
         );
@@ -148,7 +148,7 @@ void main() {
 
       // Then disable buffering
       expect(
-        () => notifier.disableBuffering(),
+        notifier.disableBuffering,
         returnsNormally,
         reason: 'disableBuffering should work after enableBuffering',
       );
@@ -162,7 +162,7 @@ void main() {
 
       // Enable buffering BEFORE provider is fully loaded
       expect(
-        () => notifier.enableBuffering(),
+        notifier.enableBuffering,
         returnsNormally,
         reason: 'Should be able to enable buffering before provider loads',
       );

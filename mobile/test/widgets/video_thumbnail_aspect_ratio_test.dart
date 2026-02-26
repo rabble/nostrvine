@@ -33,7 +33,7 @@ void main() {
             body: SizedBox(
               width: 400,
               height: 600,
-              child: VideoThumbnailWidget(video: testVideo, fit: BoxFit.cover),
+              child: VideoThumbnailWidget(video: testVideo),
             ),
           ),
         ),
@@ -70,7 +70,6 @@ void main() {
             body: VideoThumbnailWidget(
               video: testVideo,
               width: thumbnailWidth,
-              fit: BoxFit.cover,
             ),
           ),
         ),
@@ -98,7 +97,6 @@ void main() {
             body: VideoThumbnailWidget(
               video: testVideo,
               height: thumbnailHeight,
-              fit: BoxFit.cover,
             ),
           ),
         ),
@@ -124,7 +122,6 @@ void main() {
             body: VideoThumbnailWidget(
               video: testVideo,
               showPlayIcon: true,
-              fit: BoxFit.cover,
             ),
           ),
         ),
@@ -154,7 +151,6 @@ void main() {
         timestamp: now,
         content: 'Test video with blurhash',
         videoUrl: 'https://example.com/video.mp4',
-        thumbnailUrl: null, // No thumbnail URL, should use blurhash
         blurhash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
       );
 
@@ -163,7 +159,6 @@ void main() {
           home: Scaffold(
             body: VideoThumbnailWidget(
               video: videoWithBlurhash,
-              fit: BoxFit.cover,
             ),
           ),
         ),
@@ -203,7 +198,6 @@ void main() {
               home: Scaffold(
                 body: VideoThumbnailWidget(
                   video: portraitVideo,
-                  fit: BoxFit.cover,
                 ),
               ),
             ),
@@ -250,7 +244,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: VideoThumbnailWidget(video: squareVideo, fit: BoxFit.cover),
+              body: VideoThumbnailWidget(video: squareVideo),
             ),
           ),
         );
@@ -291,7 +285,6 @@ void main() {
               home: Scaffold(
                 body: VideoThumbnailWidget(
                   video: landscapeVideo,
-                  fit: BoxFit.cover,
                 ),
               ),
             ),
@@ -328,7 +321,6 @@ void main() {
             content: 'Video without dimensions',
             videoUrl: 'https://example.com/video.mp4',
             thumbnailUrl: 'https://example.com/thumb.jpg',
-            dimensions: null, // No dimensions metadata
             blurhash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
           );
 
@@ -337,7 +329,6 @@ void main() {
               home: Scaffold(
                 body: VideoThumbnailWidget(
                   video: noDimensionsVideo,
-                  fit: BoxFit.cover,
                 ),
               ),
             ),

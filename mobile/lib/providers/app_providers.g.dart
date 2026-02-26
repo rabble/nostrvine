@@ -168,7 +168,7 @@ final class RelayCapabilityServiceProvider
 }
 
 String _$relayCapabilityServiceHash() =>
-    r'4d91346a2bc7573b977898ea944d9b85fc3f1ecf';
+    r'99f5caa2c958c29928c911ef3c747961279ce8cc';
 
 /// Video filter builder for constructing relay-aware filters with server-side sorting
 
@@ -380,7 +380,7 @@ final class RelayStatisticsServiceProvider
 }
 
 String _$relayStatisticsServiceHash() =>
-    r'08039c024eda98d415d0a0088119d0f12e7fc54d';
+    r'3343641d19897bc7431645b760b90f115afc827d';
 
 /// Stream provider for reactive relay statistics updates
 /// Use this provider when you need UI to rebuild when statistics change
@@ -611,7 +611,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'63092a98aa600d9e6e5dd4402ee303ca9eb06c33';
+String _$analyticsServiceHash() => r'e6375a363ad078b11017d729f4a53e062b855f4e';
 
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state
@@ -1361,7 +1361,7 @@ final class FlutterSecureStorageProvider
 }
 
 String _$flutterSecureStorageHash() =>
-    r'903085f91b6d90816a6d87fa98f580de863a012f';
+    r'3e701848e4daaf6a76caf444539af06b4c9d4d9b';
 
 @ProviderFor(secureKeycastStorage)
 const secureKeycastStorageProvider = SecureKeycastStorageProvider._();
@@ -1499,7 +1499,7 @@ final class OauthClientProvider
   }
 }
 
-String _$oauthClientHash() => r'd7a61dbb44cb15f2ad9520e1251048469da85b20';
+String _$oauthClientHash() => r'0cc53348fbc3c769c81e52dd200c0efc6c20de3c';
 
 @ProviderFor(passwordResetListener)
 const passwordResetListenerProvider = PasswordResetListenerProvider._();
@@ -1547,7 +1547,7 @@ final class PasswordResetListenerProvider
 }
 
 String _$passwordResetListenerHash() =>
-    r'e9469a2977559d922c965f6441a71b6cc3626ec2';
+    r'3fe0dd6870cd754567aaaf53b5b74f439f232ad4';
 
 @ProviderFor(emailVerificationListener)
 const emailVerificationListenerProvider = EmailVerificationListenerProvider._();
@@ -1595,7 +1595,7 @@ final class EmailVerificationListenerProvider
 }
 
 String _$emailVerificationListenerHash() =>
-    r'50a030c1a6ad7737b95af287baccb5eccddf05d0';
+    r'3ddc56da4619f64800573667612a6fa9af75395e';
 
 /// Web authentication service (for web platform only)
 
@@ -1744,7 +1744,7 @@ final class ProfileCacheServiceProvider
 }
 
 String _$profileCacheServiceHash() =>
-    r'4de2ae89686e284dcadf4ad8d5611f7e4af8604b';
+    r'66b2a6162123caf14e5938459bbc11c9fcaa35cf';
 
 /// Hashtag cache service for persistent hashtag storage
 
@@ -2341,7 +2341,7 @@ final class ZendeskIdentitySyncProvider
 }
 
 String _$zendeskIdentitySyncHash() =>
-    r'2acf6b0f6b58b4d4db47811891fb3397ad867ccf';
+    r'53afea2107170640c9fd5d666ce700fd5d64daa6';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -2601,7 +2601,7 @@ final class UserProfileServiceProvider
 }
 
 String _$userProfileServiceHash() =>
-    r'c794efc557e51b13c9cf3ff59fd3f56f1582cbd0';
+    r'60bd624ece0ff6bae18d1ed282de26c6bbb90f98';
 
 /// Social service depends on Nostr service, Auth service, and Analytics API
 
@@ -2779,7 +2779,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'59ccfaf4522b9c8534a1ee5b9f51b851614f9425';
+String _$followRepositoryHash() => r'5a9ff80dec0621bc321f78694cd2ae0c448bb2a2';
 
 /// Provider for HashtagRepository instance.
 ///
@@ -2910,7 +2910,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'ce501a057cafb7d267a2f28f45a2e4940017fe57';
+String _$profileRepositoryHash() => r'e5b7a06106aa8a6c00fae914129748ea80a02018';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -4186,7 +4186,8 @@ String _$videoLocalStorageHash() => r'0be44203ec8edf59105a013aae374c07637a3ba0';
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
-/// - AgeVerificationService for filtering NSFW content based on user preference
+/// - ContentFilterService for filtering NSFW content based on user preferences
+/// - FunnelcakeApiClient for trending/popular video sorting
 
 @ProviderFor(videosRepository)
 const videosRepositoryProvider = VideosRepositoryProvider._();
@@ -4200,7 +4201,8 @@ const videosRepositoryProvider = VideosRepositoryProvider._();
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
-/// - AgeVerificationService for filtering NSFW content based on user preference
+/// - ContentFilterService for filtering NSFW content based on user preferences
+/// - FunnelcakeApiClient for trending/popular video sorting
 
 final class VideosRepositoryProvider
     extends
@@ -4219,7 +4221,8 @@ final class VideosRepositoryProvider
   /// - NostrClient from nostrServiceProvider (for relay communication)
   /// - VideoLocalStorage for cache-first lookups and caching results
   /// - ContentBlocklistService for filtering blocked/muted users
-  /// - AgeVerificationService for filtering NSFW content based on user preference
+  /// - ContentFilterService for filtering NSFW content based on user preferences
+  /// - FunnelcakeApiClient for trending/popular video sorting
   const VideosRepositoryProvider._()
     : super(
         from: null,
@@ -4253,7 +4256,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'b21ecf459b7186280630e67d72b5c27a3e73edd0';
+String _$videosRepositoryHash() => r'35b31c2f62a0eb9a1714422439060ef6229d725d';
 
 /// Provider for LikesRepository instance
 ///
@@ -4321,7 +4324,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'9376994f8bb85d89e5356830c093f4b3673a3368';
+String _$likesRepositoryHash() => r'66aaef86246fb3bb43815502ca215b16454387b7';
 
 /// Provider for RepostsRepository instance
 ///
@@ -4394,4 +4397,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'66177802944101f3bdf06e338e3730047ddda2cd';
+String _$repostsRepositoryHash() => r'03658f5c9263b40e6279c5dd325fdbcfd54b4068';

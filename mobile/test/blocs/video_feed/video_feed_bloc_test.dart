@@ -157,18 +157,16 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: authors,
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
@@ -193,13 +191,56 @@ void main() {
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
         expect: () => [
           const VideoFeedState(
-            status: VideoFeedStatus.loading,
             mode: FeedMode.latest,
           ),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.mode, 'mode', FeedMode.latest),
         ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'emits [loading, success] with forYou mode when specified',
+        setUp: () {
+          final videos = createTestVideos(5);
+          final authors = ['author1', 'author2'];
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(authors);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: authors,
+              videoRefs: any(named: 'videoRefs'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        expect: () => [
+          const VideoFeedState(
+            mode: FeedMode.forYou,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.mode, 'mode', FeedMode.forYou),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: ['author1', 'author2'],
+              videoRefs: any(named: 'videoRefs'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockVideosRepository.getPopularVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          );
+        },
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
@@ -218,7 +259,6 @@ void main() {
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.popular)),
         expect: () => [
           const VideoFeedState(
-            status: VideoFeedStatus.loading,
             mode: FeedMode.popular,
           ),
           isA<VideoFeedState>()
@@ -234,22 +274,18 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-          ),
+          const VideoFeedState(),
           const VideoFeedState(
             status: VideoFeedStatus.success,
-            mode: FeedMode.home,
-            videos: [],
             hasMore: false,
             error: VideoFeedError.noFollowedUsers,
           ),
@@ -263,6 +299,7 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -271,13 +308,9 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-          ),
+          const VideoFeedState(),
           const VideoFeedState(
             status: VideoFeedStatus.failure,
-            mode: FeedMode.home,
             error: VideoFeedError.loadFailed,
           ),
         ],
@@ -292,18 +325,16 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', 3)
@@ -318,18 +349,16 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos, 'videos', isEmpty)
@@ -354,16 +383,12 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(3),
         ),
         act: (bloc) => bloc.add(const VideoFeedModeChanged(FeedMode.latest)),
         expect: () => [
           const VideoFeedState(
-            status: VideoFeedStatus.loading,
             mode: FeedMode.latest,
-            videos: [],
-            hasMore: true,
           ),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
@@ -408,17 +433,16 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => moreVideos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
-          hasMore: true,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
@@ -436,6 +460,7 @@ void main() {
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -446,7 +471,7 @@ void main() {
       blocTest<VideoFeedBloc, VideoFeedState>(
         'does nothing when not in success state',
         build: createBloc,
-        seed: () => const VideoFeedState(status: VideoFeedStatus.loading),
+        seed: () => const VideoFeedState(),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => <VideoFeedState>[],
       );
@@ -480,8 +505,6 @@ void main() {
         build: createBloc,
         seed: () => const VideoFeedState(
           status: VideoFeedStatus.success,
-          videos: [],
-          hasMore: true,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => <VideoFeedState>[],
@@ -503,17 +526,16 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => moreVideos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: moreVideos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
-          hasMore: true,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
@@ -536,17 +558,16 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => []);
+          ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
-          hasMore: true,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
@@ -575,21 +596,20 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
           ).thenAnswer((_) async {
             // Simulate network delay
             await Future<void>.delayed(const Duration(milliseconds: 50));
-            return moreVideos;
+            return HomeFeedResult(videos: moreVideos);
           });
         },
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(pageSize, startTimestamp: 2000),
-          hasMore: true,
         ),
         act: (bloc) {
           // Fire multiple events simultaneously — droppable should
@@ -604,6 +624,7 @@ void main() {
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -629,21 +650,20 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => overlappingVideos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: overlappingVideos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(
             3,
             startTimestamp: 2000,
             idPrefix: 'existing',
           ),
-          hasMore: true,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
@@ -667,6 +687,7 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -675,9 +696,7 @@ void main() {
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(5),
-          hasMore: true,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => [
@@ -703,26 +722,21 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => freshVideos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: freshVideos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(10), // Previous videos
           hasMore: false,
         ),
         act: (bloc) => bloc.add(const VideoFeedRefreshRequested()),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-            videos: [],
-            hasMore: true,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
@@ -733,8 +747,8 @@ void main() {
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
-              until: null,
             ),
           ).called(1);
         },
@@ -749,25 +763,20 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         seed: () => const VideoFeedState(
           status: VideoFeedStatus.failure,
-          mode: FeedMode.home,
           error: VideoFeedError.loadFailed,
         ),
         act: (bloc) => bloc.add(const VideoFeedRefreshRequested()),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-            videos: [],
-            hasMore: true,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.error, 'error', isNull),
@@ -785,10 +794,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
@@ -797,17 +807,11 @@ void main() {
         ),
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(3),
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-            videos: [],
-            hasMore: true,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
@@ -839,6 +843,18 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when mode is forYou',
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.forYou,
+          videos: createTestVideos(5),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
         'does nothing when data is fresh '
         '(last refresh within auto-refresh interval)',
         setUp: () {
@@ -848,10 +864,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
@@ -861,7 +878,6 @@ void main() {
         ),
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(pageSize),
         ),
         act: (bloc) async {
@@ -885,10 +901,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
@@ -897,7 +914,6 @@ void main() {
         ),
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(pageSize),
         ),
         act: (bloc) async {
@@ -910,12 +926,7 @@ void main() {
         },
         skip: 2, // Skip the loading + success from VideoFeedStarted
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-            videos: [],
-            hasMore: true,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
@@ -932,25 +943,20 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         seed: () => const VideoFeedState(
           status: VideoFeedStatus.failure,
-          mode: FeedMode.home,
           error: VideoFeedError.loadFailed,
         ),
         act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-            videos: [],
-            hasMore: true,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
@@ -970,26 +976,21 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
           videos: createTestVideos(3),
         ),
         act: (bloc) =>
             bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-            videos: [],
-            hasMore: true,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
@@ -1013,10 +1014,7 @@ void main() {
       blocTest<VideoFeedBloc, VideoFeedState>(
         'does nothing when feed is still loading',
         build: createBloc,
-        seed: () => const VideoFeedState(
-          status: VideoFeedStatus.loading,
-          mode: FeedMode.home,
-        ),
+        seed: () => const VideoFeedState(),
         act: (bloc) =>
             bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
         expect: () => <VideoFeedState>[],
@@ -1033,28 +1031,22 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         seed: () => const VideoFeedState(
           status: VideoFeedStatus.success,
-          mode: FeedMode.home,
-          videos: [],
           hasMore: false,
           error: VideoFeedError.noFollowedUsers,
         ),
         act: (bloc) =>
             bloc.add(const VideoFeedFollowingListChanged(['first-follow'])),
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-            videos: [],
-            hasMore: true,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
@@ -1073,10 +1065,11 @@ void main() {
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer((_) async => videos);
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: createBloc,
         act: (bloc) async {
@@ -1091,12 +1084,7 @@ void main() {
         },
         skip: 2, // Skip loading + success from VideoFeedStarted
         expect: () => [
-          const VideoFeedState(
-            status: VideoFeedStatus.loading,
-            mode: FeedMode.home,
-            videos: [],
-            hasMore: true,
-          ),
+          const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),

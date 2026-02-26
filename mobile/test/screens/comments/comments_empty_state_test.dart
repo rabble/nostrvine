@@ -105,11 +105,11 @@ void main() {
         final decoratedContainer = containers.firstWhere(
           (c) =>
               c.decoration is BoxDecoration &&
-              (c.decoration as BoxDecoration).borderRadius != null,
+              (c.decoration! as BoxDecoration).borderRadius != null,
           orElse: () => throw StateError('No decorated container found'),
         );
 
-        final decoration = decoratedContainer.decoration as BoxDecoration;
+        final decoration = decoratedContainer.decoration! as BoxDecoration;
         expect(decoration.borderRadius, equals(BorderRadius.circular(12)));
         expect(decoration.border, isNotNull);
       });

@@ -3,12 +3,12 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -204,7 +204,7 @@ void main() {
         ),
       ).thenAnswer((_) async => reportEvent);
 
-      final reasons = ContentFilterReason.values;
+      const reasons = ContentFilterReason.values;
 
       for (final reason in reasons) {
         final result = await service.reportContent(

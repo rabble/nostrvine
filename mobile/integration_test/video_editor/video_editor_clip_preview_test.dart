@@ -36,7 +36,7 @@ void main() {
           ],
           child: MaterialApp(
             home: Scaffold(
-              body: VideoEditorClipPreview(clip: clip, isCurrentClip: false),
+              body: VideoEditorClipPreview(clip: clip),
             ),
           ),
         ),
@@ -72,7 +72,6 @@ void main() {
             home: Scaffold(
               body: VideoEditorClipPreview(
                 clip: clip,
-                isCurrentClip: false,
                 onTap: () => tapped = true,
               ),
             ),

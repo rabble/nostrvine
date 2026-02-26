@@ -78,15 +78,14 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           group: video.group ?? parsed.group,
           altText: video.altText ?? parsed.altText,
           blurhash: video.blurhash ?? parsed.blurhash,
-          // Original Vine metrics: use Nostr values, clear if no tag exists
-          originalLoops: parsed.originalLoops,
-          originalLikes: parsed.originalLikes,
-          originalComments: parsed.originalComments,
-          originalReposts: parsed.originalReposts,
-          clearOriginalLoops: parsed.originalLoops == null,
-          clearOriginalLikes: parsed.originalLikes == null,
-          clearOriginalComments: parsed.originalComments == null,
-          clearOriginalReposts: parsed.originalReposts == null,
+          // Original Vine metrics: keep Funnelcake values when present
+          // (they include Nostr-era counts), fill from Nostr tags only
+          // when missing. Don't clear existing values — Funnelcake's
+          // aggregates are more accurate than the static Nostr tags.
+          originalLoops: video.originalLoops ?? parsed.originalLoops,
+          originalLikes: video.originalLikes ?? parsed.originalLikes,
+          originalComments: video.originalComments ?? parsed.originalComments,
+          originalReposts: video.originalReposts ?? parsed.originalReposts,
           /* FIXME: The audio show always a skeleton below of the video
           description, so we don't add them for the ZapStore.
 

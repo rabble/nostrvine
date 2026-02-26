@@ -12,9 +12,9 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 /// type-specific preview. Users can drag layers via a handle to reorder them.
 class VideoEditorLayerReorderSheet extends StatefulWidget {
   const VideoEditorLayerReorderSheet({
-    super.key,
     required this.layers,
     required this.onReorder,
+    super.key,
   });
 
   /// The current list of editor layers to display.
@@ -81,7 +81,7 @@ class _VideoEditorLayerReorderSheetState
 
 /// A single row in the reorder list with a drag handle and layer preview.
 class _LayerTile extends StatelessWidget {
-  const _LayerTile({super.key, required this.layer, required this.index});
+  const _LayerTile({required this.layer, required this.index, super.key});
 
   final Layer layer;
   final int index;
@@ -93,7 +93,7 @@ class _LayerTile extends StatelessWidget {
       tileColor: VineTheme.surfaceContainer,
       leading: ReorderableDragStartListener(
         index: index,
-        child: DivineIcon(icon: .menu, size: 24, color: VineTheme.primary),
+        child: const DivineIcon(icon: .menu, color: VineTheme.primary),
       ),
       title: switch (layer) {
         final TextLayer layer => _TextLayerPreview(layer: layer),

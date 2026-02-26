@@ -4,9 +4,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
@@ -80,7 +80,7 @@ void main() {
           Log.debug('✅ Recording started');
 
           // Record for 2 seconds
-          await Future.delayed(Duration(seconds: 2));
+          await Future.delayed(const Duration(seconds: 2));
 
           Log.debug('⏹️ Stopping recording...');
           await notifier.stopRecording();
@@ -96,7 +96,7 @@ void main() {
 
           final clip = clips.first;
           final filePath = await clip.video.safeFilePath();
-          Log.debug('📹 Clip created: ${filePath}');
+          Log.debug('📹 Clip created: $filePath');
           Log.debug('📦 File size: ${File(filePath).lengthSync()} bytes');
 
           // Test thumbnail generation
@@ -182,7 +182,7 @@ void main() {
       );
 
       // Test the upload result processing
-      final mockUploadResult = BlossomUploadResult(
+      const mockUploadResult = BlossomUploadResult(
         success: true,
         videoId: 'integration_test_video',
         fallbackUrl: 'https://cdn.example.com/integration_test.mp4',

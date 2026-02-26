@@ -1,6 +1,7 @@
 // ABOUTME: Dialogs for adding videos to curated lists
 // ABOUTME: Extracted from share_video_menu.dart - SelectListDialog and CreateListDialog
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +9,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 class _LoadingIndicator extends StatelessWidget {
   const _LoadingIndicator();
@@ -91,7 +91,7 @@ class SelectListDialog extends StatelessWidget {
           );
         },
         loading: () => const _LoadingIndicator(),
-        error: (_, __) => const Center(child: Text('Error loading lists')),
+        error: (_, _) => const Center(child: Text('Error loading lists')),
       );
     },
   );
@@ -201,9 +201,7 @@ class _CreateListDialogState extends ConsumerState<CreateListDialog> {
     if (name.isEmpty) return;
 
     try {
-      final listService = await ref
-          .read(curatedListsStateProvider.notifier)
-          .service;
+      final listService = ref.read(curatedListsStateProvider.notifier).service;
       final newList = await listService?.createList(
         name: name,
         description: _descriptionController.text.trim().isEmpty

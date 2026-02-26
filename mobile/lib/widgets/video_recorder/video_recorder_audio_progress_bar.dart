@@ -18,7 +18,7 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 abstract final class _WaveformConstants {
   static const barWidth = 2.0;
   static const barSpacing = 1.0;
-  static const barStep = barWidth + barSpacing;
+  static const double barStep = barWidth + barSpacing;
   static const minBarHeight = 1.0;
   static const emptyBarHeight = 4.0;
   static const barRadius = Radius.circular(1);
@@ -31,7 +31,7 @@ abstract final class _WaveformConstants {
   static const animationDuration = Duration(milliseconds: 400);
 
   /// Curve for waveform entrance animation.
-  static const animationCurve = Curves.easeOutCubic;
+  static const Cubic animationCurve = Curves.easeOutCubic;
 }
 
 /// Audio progress bar that displays waveform with recording progress.
@@ -152,8 +152,8 @@ class _EmptyWaveformPainter extends CustomPainter {
 class _AudioWaveformProgress extends ConsumerWidget {
   const _AudioWaveformProgress({
     required this.leftChannel,
-    this.rightChannel,
     required this.audioDuration,
+    this.rightChannel,
   });
 
   final Float32List leftChannel;
@@ -224,13 +224,13 @@ class _AudioWaveformProgress extends ConsumerWidget {
 class _WaveformProgressPainter extends CustomPainter {
   _WaveformProgressPainter({
     required this.leftChannel,
-    this.rightChannel,
     required this.progress,
     required this.activeColor,
     required this.inactiveColor,
-    this.activeBackgroundColor,
     required this.audioDuration,
     required this.maxDuration,
+    this.rightChannel,
+    this.activeBackgroundColor,
     this.heightFactor = 1.0,
   });
 

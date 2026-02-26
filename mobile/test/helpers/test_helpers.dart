@@ -3,13 +3,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
 import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import 'service_init_helper.dart';
 
 /// Test helper utilities for video system testing
@@ -33,7 +34,7 @@ class TestHelpers {
   }) => ProviderScope(overrides: (overrides ?? []).cast(), child: child);
 
   /// Mock network images for widget tests
-  /// TODO: Implement proper HTTP mocking using package:mockito or http_mock_adapter
+  /// TODO: Implement proper HTTP mocking using package:mocktail or http_mock_adapter
   static void mockNetworkImages(Function() testBody) {
     testBody();
   }
@@ -440,7 +441,7 @@ class TimeoutException implements Exception {
 }
 
 /// HTTP mocking is complex due to interface restrictions
-/// Use package:mockito or package:http_mock_adapter for HTTP testing
+/// Use package:mocktail or package:http_mock_adapter for HTTP testing
 
 /// Setup test environment for ProofMode tests
 Future<void> setupTestEnvironment() async {
@@ -460,7 +461,7 @@ Future<void> setupTestEnvironment() async {
 /// Get test SharedPreferences instance
 Future<SharedPreferences> getTestSharedPreferences() async {
   SharedPreferences.setMockInitialValues({});
-  return await SharedPreferences.getInstance();
+  return SharedPreferences.getInstance();
 }
 
 /// Mock FlutterSecureStorage for testing

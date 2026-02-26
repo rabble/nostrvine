@@ -1,8 +1,8 @@
 // ABOUTME: Shared unfollow confirmation bottom sheet used across the app
 // ABOUTME: Shows Cancel/Unfollow buttons and returns true if user confirms
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
 
 /// Shows a confirmation bottom sheet for unfollowing a user.
 ///

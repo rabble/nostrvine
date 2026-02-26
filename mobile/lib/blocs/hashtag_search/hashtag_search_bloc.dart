@@ -13,9 +13,6 @@ part 'hashtag_search_state.dart';
 /// Debounce duration for search queries
 const _debounceDuration = Duration(milliseconds: 300);
 
-/// Maximum number of hashtag results to return
-const _maxResults = 20;
-
 /// Event transformer that debounces and restarts on new events
 EventTransformer<E> _debounceRestartable<E>() {
   return (events, mapper) {
@@ -58,7 +55,6 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     try {
       final results = await _hashtagRepository.searchHashtags(
         query: query,
-        limit: _maxResults,
       );
 
       emit(

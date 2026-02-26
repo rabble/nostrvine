@@ -6,9 +6,9 @@ import 'package:openvine/models/export_progress.dart';
 
 class ExportProgressWidget extends StatelessWidget {
   const ExportProgressWidget({
-    super.key,
     required this.stage,
     required this.progress,
+    super.key,
     this.onCancel,
   });
 
@@ -48,7 +48,7 @@ class ExportProgressWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final percentageText = '${(progress * 100).toInt()}%';
 
-    return Container(
+    return ColoredBox(
       color: Colors.black.withValues(alpha: 0.9),
       child: Center(
         child: Card(

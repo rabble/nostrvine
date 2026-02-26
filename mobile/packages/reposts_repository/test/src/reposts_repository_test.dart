@@ -26,6 +26,7 @@ void main() {
       ),
     );
     registerFallbackValue(<Filter>[]);
+    registerFallbackValue('');
   });
 
   group('RepostsRepository', () {
@@ -124,34 +125,12 @@ void main() {
       });
 
       test('can be instantiated with all parameters', () {
-        final authController = StreamController<bool>();
-        addTearDown(authController.close);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
-          authStateStream: authController.stream,
-          isAuthenticated: true,
+          isOnline: () => true,
         );
         expect(repository, isNotNull);
-        expect(repository.isAuthenticated, isTrue);
-      });
-
-      test('subscribes to auth state stream when provided', () async {
-        final authController = StreamController<bool>.broadcast();
-        addTearDown(authController.close);
-
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-          localStorage: mockLocalStorage,
-          authStateStream: authController.stream,
-        );
-
-        expect(repository.isAuthenticated, isFalse);
-
-        authController.add(true);
-        await Future<void>.delayed(Duration.zero);
-        expect(repository.isAuthenticated, isTrue);
       });
     });
 
@@ -1115,50 +1094,231 @@ void main() {
       });
     });
 
-    group('auth state changes', () {
-      test('clears cache when user logs out', () async {
-        final authController = StreamController<bool>.broadcast();
-        addTearDown(authController.close);
+    group('initialize', () {
+      test('loads records from local storage', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenAnswer(
+          (_) async => [
+            RepostRecord(
+              addressableId: testAddressableId,
+              repostEventId: testRepostEventId,
+              originalAuthorPubkey: testAuthorPubkey,
+              createdAt: DateTime.now(),
+            ),
+          ],
+        );
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
-          authStateStream: authController.stream,
-          isAuthenticated: true,
         );
 
-        await repository.repostVideo(
-          addressableId: testAddressableId,
-          originalAuthorPubkey: testAuthorPubkey,
+        await repository.initialize();
+
+        expect(
+          await repository.isReposted(testAddressableId),
+          isTrue,
         );
-
-        expect(repository.isRepostedSync(testAddressableId), isTrue);
-
-        authController.add(false);
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-
-        expect(repository.isRepostedSync(testAddressableId), isFalse);
       });
 
-      test('ignores duplicate auth state', () async {
-        final authController = StreamController<bool>.broadcast();
-        addTearDown(authController.close);
+      test('sets up subscription when client has keys', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
 
-        authController.add(true);
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.initialize();
+
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(1);
+      });
+
+      test('skips subscription when client has no keys', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.initialize();
+
+        verifyNever(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        );
+      });
+
+      test('is idempotent', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.initialize();
+        await repository.initialize();
+
+        verify(() => mockLocalStorage.getAllRepostRecords()).called(1);
+      });
+    });
+
+    group('real-time sync', () {
+      test('processes incoming repost event', () async {
+        final streamController = StreamController<Event>.broadcast();
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.initialize();
+
+        // Emit a Kind 16 repost event
+        final repostEvent = createMockEvent(
+          id: testRepostEventId,
+          kind: EventKind.genericRepost,
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          tags: [
+            ['a', testAddressableId],
+            ['p', testAuthorPubkey],
+          ],
+        );
+
+        streamController.add(repostEvent);
         await Future<void>.delayed(Duration.zero);
 
-        verifyNever(() => mockLocalStorage.clearAll());
+        expect(repository.isRepostedSync(testAddressableId), isTrue);
+        verify(() => mockLocalStorage.saveRepostRecord(any())).called(1);
+
+        await streamController.close();
+      });
+
+      test('deduplicates older events', () async {
+        final streamController = StreamController<Event>.broadcast();
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        final now = DateTime.now();
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenAnswer(
+          (_) async => [
+            RepostRecord(
+              addressableId: testAddressableId,
+              repostEventId: 'existing_repost_event_id',
+              originalAuthorPubkey: testAuthorPubkey,
+              createdAt: now,
+            ),
+          ],
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.initialize();
+
+        // Emit an older event for the same addressable ID
+        final olderEvent = createMockEvent(
+          id: 'older_repost_id',
+          kind: EventKind.genericRepost,
+          createdAt:
+              now.subtract(const Duration(days: 1)).millisecondsSinceEpoch ~/
+              1000,
+          tags: [
+            ['a', testAddressableId],
+            ['p', testAuthorPubkey],
+          ],
+        );
+
+        streamController.add(olderEvent);
+        await Future<void>.delayed(Duration.zero);
+
+        // The older event should not replace the existing record
+        final record = await repository.getRepostRecord(testAddressableId);
+        expect(
+          record!.repostEventId,
+          equals('existing_repost_event_id'),
+        );
+
+        await streamController.close();
+      });
+
+      test('handles subscription errors without crashing', () async {
+        final streamController = StreamController<Event>.broadcast();
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockLocalStorage.getAllRepostRecords(),
+        ).thenAnswer((_) async => []);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+        await repository.initialize();
+
+        // Emit an error on the stream
+        streamController.addError(Exception('connection lost'));
+        await Future<void>.delayed(Duration.zero);
+
+        // Repository should still be functional
+        expect(repository.isRepostedSync('any_id'), isFalse);
+
+        await streamController.close();
       });
     });
 
     group('dispose', () {
-      test('cancels auth subscription and closes stream controller', () async {
-        final authController = StreamController<bool>.broadcast();
+      test('cancels subscription and closes stream controller', () async {
+        final streamController = StreamController<Event>.broadcast();
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockNostrClient.unsubscribe(any()),
+        ).thenAnswer((_) async {});
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          authStateStream: authController.stream,
+          localStorage: mockLocalStorage,
         );
+        await repository.initialize();
 
         // Ensure stream is active
         final stream = repository.watchRepostedAddressableIds();
@@ -1167,21 +1327,20 @@ void main() {
         // Dispose should complete without error
         repository.dispose();
 
-        // After dispose, sending to auth controller should not affect
-        // repository
-        authController.add(true);
-        await Future<void>.delayed(Duration.zero);
+        verify(
+          () => mockNostrClient.unsubscribe(any()),
+        ).called(1);
 
         await subscription.cancel();
-        await authController.close();
+        await streamController.close();
       });
 
-      test('can be called safely without auth stream', () {
+      test('can be called safely without subscription', () {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
         );
 
-        // Should not throw when no auth subscription exists
+        // Should not throw when no subscription exists
         expect(repository.dispose, returnsNormally);
       });
     });
@@ -1196,10 +1355,10 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isRepost,
-                required String addressableId,
-                required String originalAuthorPubkey,
-                String? eventId,
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
               }) async {
                 queuedAction = {
                   'isRepost': isRepost,
@@ -1258,10 +1417,10 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isRepost,
-                required String addressableId,
-                required String originalAuthorPubkey,
-                String? eventId,
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
               }) async {
                 queuedAction = {
                   'isRepost': isRepost,
@@ -1322,10 +1481,10 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isRepost,
-                required String addressableId,
-                required String originalAuthorPubkey,
-                String? eventId,
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
               }) async {},
         );
 
@@ -1412,10 +1571,10 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isRepost,
-                required String addressableId,
-                required String originalAuthorPubkey,
-                String? eventId,
+                required isRepost,
+                required addressableId,
+                required originalAuthorPubkey,
+                eventId,
               }) async {},
         );
 

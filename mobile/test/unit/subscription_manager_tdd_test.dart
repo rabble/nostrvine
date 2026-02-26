@@ -2,31 +2,34 @@
 // ABOUTME: This will fail first, then we fix the bug to make it pass
 
 import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-@GenerateNiceMocks([MockSpec<NostrClient>()])
-import 'subscription_manager_tdd_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
 void main() {
   group('SubscriptionManager TDD - Event Forwarding Bug', () {
-    late MockNostrClient mockNostrService;
+    late _MockNostrClient mockNostrService;
     late SubscriptionManager subscriptionManager;
     late StreamController<Event> testEventController;
 
+    setUpAll(() {
+      registerFallbackValue(<Filter>[]);
+    });
+
     setUp(() {
-      mockNostrService = MockNostrClient();
+      mockNostrService = _MockNostrClient();
       testEventController = StreamController<Event>.broadcast();
 
       // Mock the NostrService to return our test stream
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => testEventController.stream);
 
       subscriptionManager = SubscriptionManager(mockNostrService);
@@ -126,12 +129,12 @@ void main() {
           category: LogCategory.system,
         );
         testEventController.add(testEvent1);
-        await Future.delayed(Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 100));
         testEventController.add(testEvent2);
 
         // Wait for events to be forwarded to callback
         try {
-          await completer.future.timeout(Duration(seconds: 5));
+          await completer.future.timeout(const Duration(seconds: 5));
         } catch (e) {
           Log.warning(
             '⏰ TDD: Timeout - events were not forwarded to callback',
@@ -212,10 +215,10 @@ void main() {
         );
 
         testEventController.add(testEvent1);
-        await Future.delayed(Duration(milliseconds: 100));
+        await Future.delayed(const Duration(milliseconds: 100));
         testEventController.add(testEvent2);
 
-        await completer.future.timeout(Duration(seconds: 2));
+        await completer.future.timeout(const Duration(seconds: 2));
         subscription.cancel();
 
         Log.debug(

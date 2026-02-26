@@ -1712,5 +1712,223 @@ void main() {
         expect(error.toString(), equals('UsernameCheckError(test error)'));
       });
     });
+
+    group('getUserProfileFromApi', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+      });
+
+      test('returns profile data on success', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getUserProfile(testPubkey),
+        ).thenAnswer(
+          (_) async => {
+            'pubkey': testPubkey,
+            'display_name': 'Test User',
+            'picture': 'https://example.com/avatar.png',
+          },
+        );
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.getUserProfileFromApi(
+          pubkey: testPubkey,
+        );
+
+        expect(result, isNotNull);
+        expect(result!['display_name'], equals('Test User'));
+        verify(() => mockFunnelcakeClient.getUserProfile(testPubkey)).called(1);
+      });
+
+      test('returns null when client is not available', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.getUserProfileFromApi(
+          pubkey: testPubkey,
+        );
+
+        expect(result, isNull);
+        verifyNever(() => mockFunnelcakeClient.getUserProfile(any()));
+      });
+
+      test('returns null when client is null', () async {
+        final result = await profileRepository.getUserProfileFromApi(
+          pubkey: testPubkey,
+        );
+
+        expect(result, isNull);
+      });
+
+      test('propagates FunnelcakeApiException', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getUserProfile(any()),
+        ).thenThrow(
+          const FunnelcakeApiException(
+            message: 'Server error',
+            statusCode: 500,
+            url: 'https://example.com/api/users',
+          ),
+        );
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        expect(
+          () => repoWithFunnelcake.getUserProfileFromApi(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
+
+      test('propagates FunnelcakeTimeoutException', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getUserProfile(any()),
+        ).thenThrow(const FunnelcakeTimeoutException());
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        expect(
+          () => repoWithFunnelcake.getUserProfileFromApi(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+    });
+
+    group('getBulkProfilesFromApi', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+      });
+
+      test('returns BulkProfilesResponse on success', () async {
+        const testResponse = BulkProfilesResponse(
+          profiles: {
+            testPubkey: {
+              'display_name': 'Test User',
+              'picture': 'https://example.com/avatar.png',
+            },
+          },
+        );
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getBulkProfiles([testPubkey]),
+        ).thenAnswer((_) async => testResponse);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.getBulkProfilesFromApi(
+          [testPubkey],
+        );
+
+        expect(result, isNotNull);
+        expect(result!.profiles, hasLength(1));
+        expect(result.profiles[testPubkey], isNotNull);
+        verify(
+          () => mockFunnelcakeClient.getBulkProfiles([testPubkey]),
+        ).called(1);
+      });
+
+      test('returns null when client is not available', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.getBulkProfilesFromApi(
+          [testPubkey],
+        );
+
+        expect(result, isNull);
+        verifyNever(() => mockFunnelcakeClient.getBulkProfiles(any()));
+      });
+
+      test('returns null when client is null', () async {
+        final result = await profileRepository.getBulkProfilesFromApi(
+          [testPubkey],
+        );
+
+        expect(result, isNull);
+      });
+
+      test('propagates FunnelcakeApiException', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getBulkProfiles(any()),
+        ).thenThrow(
+          const FunnelcakeApiException(
+            message: 'Server error',
+            statusCode: 500,
+            url: 'https://example.com/api/users/bulk',
+          ),
+        );
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        expect(
+          () => repoWithFunnelcake.getBulkProfilesFromApi([testPubkey]),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
+
+      test('propagates FunnelcakeTimeoutException', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getBulkProfiles(any()),
+        ).thenThrow(const FunnelcakeTimeoutException());
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        expect(
+          () => repoWithFunnelcake.getBulkProfilesFromApi([testPubkey]),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+    });
   });
 }

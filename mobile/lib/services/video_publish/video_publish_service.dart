@@ -164,7 +164,7 @@ class VideoPublishService {
       Log.info('📝 Published successfully', category: .video);
       return const PublishSuccess();
     } catch (e, stackTrace) {
-      return await _handleUploadError(e, stackTrace, draft);
+      return _handleUploadError(e, stackTrace, draft);
     }
   }
 

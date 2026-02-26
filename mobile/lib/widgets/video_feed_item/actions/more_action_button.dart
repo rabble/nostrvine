@@ -62,7 +62,6 @@ class MoreActionButton extends StatelessWidget {
               ),
               child: const DivineIcon(
                 icon: DivineIconName.dotsThree,
-                size: 24,
                 color: VineTheme.whiteText,
               ),
             ),
@@ -269,7 +268,7 @@ class _MoreMenuHeader extends ConsumerWidget {
               size: _avatarSize,
             ),
             loading: () => const UserAvatar(size: _avatarSize),
-            error: (_, __) => const UserAvatar(size: _avatarSize),
+            error: (_, _) => const UserAvatar(size: _avatarSize),
           ),
           Expanded(
             child: Column(
@@ -432,7 +431,7 @@ class _ViewSourceDialog extends StatelessWidget {
   final VideoEvent video;
 
   // Warning color for the explainer note
-  static const _warningColor = VineTheme.accentOrange;
+  static const Color _warningColor = VineTheme.accentOrange;
 
   @override
   Widget build(BuildContext context) {
@@ -502,7 +501,7 @@ class _ViewSourceDialog extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
                 border: Border.all(color: _warningColor.withValues(alpha: 0.3)),
               ),
-              child: Text(
+              child: const Text(
                 'Parsed event data, not raw Nostr source',
                 style: TextStyle(
                   color: _warningColor,

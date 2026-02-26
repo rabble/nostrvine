@@ -1,7 +1,7 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
-import 'package:openvine/services/zendesk_support_service.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/config/zendesk_config.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -212,8 +212,6 @@ void main() {
       const testNpub =
           'npub1abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345';
       await ZendeskSupportService.setUserIdentity(
-        displayName: null,
-        nip05: null,
         npub: testNpub,
       );
 
@@ -244,8 +242,6 @@ void main() {
       const testNpub =
           'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuv';
       await ZendeskSupportService.setUserIdentity(
-        displayName: null,
-        nip05: null,
         npub: testNpub,
       );
 
@@ -287,7 +283,6 @@ void main() {
       // Should not throw, should return true (REST API fallback)
       final result = await ZendeskSupportService.setUserIdentity(
         displayName: 'Test',
-        nip05: null,
         npub: 'npub1test',
       );
 
@@ -392,13 +387,11 @@ void main() {
       // Call setUserIdentity twice with same npub
       await ZendeskSupportService.setUserIdentity(
         displayName: 'User 1',
-        nip05: null,
         npub: testNpub,
       );
 
       await ZendeskSupportService.setUserIdentity(
         displayName: 'User 2',
-        nip05: null,
         npub: testNpub,
       );
 
@@ -427,14 +420,10 @@ void main() {
       );
 
       await ZendeskSupportService.setUserIdentity(
-        displayName: null,
-        nip05: null,
         npub: 'npub1user1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       );
 
       await ZendeskSupportService.setUserIdentity(
-        displayName: null,
-        nip05: null,
         npub: 'npub1user2bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
       );
 

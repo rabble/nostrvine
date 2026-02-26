@@ -4,9 +4,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:models/models.dart';
 import 'package:openvine/services/repost_resolver.dart';
 
 void main() {
@@ -160,8 +160,6 @@ void main() {
         );
         final repostEvent = _createRepostEvent(
           id: 'repost-id',
-          pubkey: 'reposter-pubkey',
-          createdAt: 1700000000,
         );
 
         final repost = resolver.createRepostVideoEvent(original, repostEvent);
@@ -237,7 +235,7 @@ void main() {
 
           final resolver = RepostResolver(
             subscribe: (_) => const Stream.empty(),
-            findByAddressable: (_, __) => null,
+            findByAddressable: (_, _) => null,
             findById: (eventId) {
               if (eventId == 'event-123') {
                 return cachedVideo;
@@ -292,7 +290,7 @@ RepostResolver _createResolver({
 }) {
   return RepostResolver(
     subscribe: subscribe ?? (_) => const Stream.empty(),
-    findByAddressable: findByAddressable ?? (_, __) => null,
+    findByAddressable: findByAddressable ?? (_, _) => null,
     findById: findById ?? (_) => null,
   );
 }

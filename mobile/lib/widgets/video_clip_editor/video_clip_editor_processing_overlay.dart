@@ -31,7 +31,7 @@ class VideoClipEditorProcessingOverlay extends StatelessWidget {
               key: ValueKey(
                 'Processing-Clip-Overlay-${clip.id}-$isCurrentClip',
               ),
-              color: Color.fromARGB(180, 0, 0, 0),
+              color: const Color.fromARGB(180, 0, 0, 0),
               child: Center(
                 // Without RepaintBoundary, the progress indicator repaints
                 // the entire screen while it's running.

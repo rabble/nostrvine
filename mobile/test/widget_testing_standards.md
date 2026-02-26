@@ -223,14 +223,14 @@ testWidgets('handles edge cases', (tester) async {
 
 ### Network Requests
 
-Use `mockito` or manual mocks for HTTP clients:
+Use `mocktail` or manual mocks for HTTP clients:
 
 ```dart
 class MockHttpClient extends Mock implements http.Client {}
 
 testWidgets('handles network requests', (tester) async {
   final mockClient = MockHttpClient();
-  when(mockClient.get(any)).thenAnswer(
+  when(() => mockClient.get(any())).thenAnswer(
     (_) async => http.Response('{"data": "test"}', 200),
   );
 
@@ -391,20 +391,17 @@ VideoEvent createTestVideoEvent({
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/widgets/{widget_name}.dart';
 
-import '{widget_name}_comprehensive_test.mocks.dart';
 import '../test_utils/widget_test_helpers.dart';
 import '../test_data/{relevant_test_data}.dart';
 
-@GenerateNiceMocks([
-  // Add required mocks here
-])
+class _MockService extends Mock implements Service {}
+
 void main() {
   group('{WidgetName} - Comprehensive Tests', () {
-    late MockService mockService;
+    late _MockService mockService;
 
     setUp(() {
       mockService = MockService();

@@ -1,22 +1,24 @@
 // ABOUTME: Grid widget displaying user's videos on profile page
 // ABOUTME: Shows 3-column grid with thumbnails, handles empty state and navigation
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:go_router/go_router.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Internal class that represents a video entry in the grid
 /// It can be a video event or an uploading video
@@ -60,6 +62,8 @@ class ProfileVideosGrid extends ConsumerStatefulWidget {
 class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     with GridPrefetchMixin {
   List<VideoEvent>? _lastPrefetchedVideos;
+  final _videosStreamController =
+      StreamController<List<VideoEvent>>.broadcast();
 
   @override
   void initState() {
@@ -70,6 +74,12 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
         _prefetchIfNeeded();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _videosStreamController.close();
+    super.dispose();
   }
 
   @override
@@ -100,10 +110,12 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     prefetchAroundIndex(index, videos);
 
     context.push(
-      FullscreenVideoFeedScreen.path,
-      extra: FullscreenVideoFeedArgs(
-        source: ProfileFeedSource(widget.userIdHex),
+      PooledFullscreenVideoFeedScreen.path,
+      extra: PooledFullscreenVideoFeedArgs(
+        videosStream: _videosStreamController.stream.startWith(videos),
         initialIndex: index,
+        onLoadMore: () =>
+            ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore(),
         trafficSource: ViewTrafficSource.profile,
       ),
     );
@@ -111,6 +123,15 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
 
   @override
   Widget build(BuildContext context) {
+    // Push provider updates to stream for fullscreen feed
+    ref.listen(profileFeedProvider(widget.userIdHex), (_, next) {
+      next.whenData((feedState) {
+        if (!_videosStreamController.isClosed) {
+          _videosStreamController.add(feedState.videos);
+        }
+      });
+    });
+
     final backgroundPublish = context.watch<BackgroundPublishBloc>();
     final isOwnProfile =
         ref.read(authServiceProvider).currentPublicKeyHex == widget.userIdHex;
@@ -157,15 +178,15 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
               crossAxisCount: 3,
               crossAxisSpacing: 4,
               mainAxisSpacing: 4,
-              childAspectRatio: 1,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
               final videoEntry = allVideos[index];
               return switch (videoEntry) {
-                _GridUploadingVideoEntry uploadEntry => _VideoGridUploadingTile(
-                  backgroundUpload: uploadEntry.backgroundUpload,
-                ),
-                _GridVideoEventEntry eventEntry => _VideoGridTile(
+                final _GridUploadingVideoEntry uploadEntry =>
+                  _VideoGridUploadingTile(
+                    backgroundUpload: uploadEntry.backgroundUpload,
+                  ),
+                final _GridVideoEventEntry eventEntry => _VideoGridTile(
                   videoEvent: eventEntry.videoEvent,
                   userIdHex: widget.userIdHex,
                   index: index,
@@ -262,7 +283,7 @@ class _VideoGridUploadingTile extends StatelessWidget {
             Image.file(
               File(thumbnailPath),
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const _ThumbnailPlaceholder(),
+              errorBuilder: (_, _, _) => const _ThumbnailPlaceholder(),
             )
           else
             const _ThumbnailPlaceholder(),
@@ -296,7 +317,7 @@ class _VideoGridTile extends StatelessWidget {
     child: ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(
-        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        decoration: const BoxDecoration(color: VineTheme.cardBackground),
         child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),

@@ -5,8 +5,8 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -48,7 +48,7 @@ void main() {
     });
 
     test('should query with correct filter (kind 6, e tag)', () async {
-      final videoId = 'abc123def456';
+      const videoId = 'abc123def456';
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('should extract pubkeys correctly from Kind 16 events', () async {
-      final videoId =
+      const videoId =
           'abc123def456789012345678901234567890123456789012345678901234';
       final eventStreamController = StreamController<Event>.broadcast();
 
@@ -90,13 +90,13 @@ void main() {
       ).thenAnswer((_) => eventStreamController.stream);
 
       // Create repost events with valid hex pubkeys (64 chars)
-      final reposter1Pubkey =
+      const reposter1Pubkey =
           '1111111111111111111111111111111111111111111111111111111111111111';
-      final reposter2Pubkey =
+      const reposter2Pubkey =
           '2222222222222222222222222222222222222222222222222222222222222222';
-      final reposter3Pubkey =
+      const reposter3Pubkey =
           '3333333333333333333333333333333333333333333333333333333333333333';
-      final originalAuthorPubkey =
+      const originalAuthorPubkey =
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
       final repost1 = Event(
@@ -161,7 +161,7 @@ void main() {
     }, skip: true);
 
     test('should handle empty results when no reposts exist', () async {
-      final videoId = 'abc123def456';
+      const videoId = 'abc123def456';
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
@@ -183,7 +183,7 @@ void main() {
     test(
       'should deduplicate pubkeys when same user reposts multiple times',
       () async {
-        final videoId =
+        const videoId =
             'abc123def456789012345678901234567890123456789012345678901234';
         final eventStreamController = StreamController<Event>.broadcast();
 
@@ -191,9 +191,9 @@ void main() {
           () => mockNostrService.subscribe(any()),
         ).thenAnswer((_) => eventStreamController.stream);
 
-        final reposter1Pubkey =
+        const reposter1Pubkey =
             '1111111111111111111111111111111111111111111111111111111111111111';
-        final reposter2Pubkey =
+        const reposter2Pubkey =
             '2222222222222222222222222222222222222222222222222222222222222222';
 
         // Create multiple reposts from same user
@@ -256,7 +256,7 @@ void main() {
     );
 
     test('should handle timeout when relay does not respond', () async {
-      final videoId = 'abc123def456';
+      const videoId = 'abc123def456';
       final eventStreamController = StreamController<Event>.broadcast();
 
       when(
@@ -280,7 +280,7 @@ void main() {
     });
 
     test('should ignore non-Kind-6 events in stream', () async {
-      final videoId =
+      const videoId =
           'abc123def456789012345678901234567890123456789012345678901234';
       final eventStreamController = StreamController<Event>.broadcast();
 
@@ -288,11 +288,11 @@ void main() {
         () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => eventStreamController.stream);
 
-      final reposterPubkey =
+      const reposterPubkey =
           '1111111111111111111111111111111111111111111111111111111111111111';
-      final someonePubkey =
+      const someonePubkey =
           '2222222222222222222222222222222222222222222222222222222222222222';
-      final creatorPubkey =
+      const creatorPubkey =
           '3333333333333333333333333333333333333333333333333333333333333333';
 
       // Create a Kind 16 repost

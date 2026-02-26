@@ -2,12 +2,13 @@
 // ABOUTME: Verifies NostrEvents and UserProfiles tables are properly defined
 
 import 'dart:io';
+
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -302,7 +303,7 @@ void main() {
             .customSelect(
               'SELECT * FROM user_profiles WHERE pubkey = ?',
               variables: [
-                Variable(
+                const Variable(
                   'test_pubkey_1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
                 ),
               ],
@@ -337,7 +338,7 @@ void main() {
           )
         ''');
 
-        final testPubkey =
+        const testPubkey =
             'test_pubkey_1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab';
         final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -385,7 +386,7 @@ void main() {
         final result = await db
             .customSelect(
               'SELECT * FROM user_profiles WHERE pubkey = ?',
-              variables: [Variable(testPubkey)],
+              variables: [const Variable(testPubkey)],
             )
             .get();
 
@@ -433,7 +434,7 @@ void main() {
         ''');
 
         // Insert test data
-        final testPubkey =
+        const testPubkey =
             'test_pubkey_1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab';
         final now = DateTime.now().millisecondsSinceEpoch;
 

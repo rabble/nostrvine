@@ -2,6 +2,7 @@
 // ABOUTME: Delegates to FunnelcakeApiClient for server-side hashtag search.
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
+import 'package:models/models.dart';
 
 /// Repository for searching hashtags.
 ///
@@ -33,4 +34,18 @@ class HashtagRepository {
     query: query,
     limit: limit,
   );
+
+  /// Fetches trending hashtags.
+  ///
+  /// Returns a list of [TrendingHashtag] sorted by popularity.
+  /// [limit] defaults to 20.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] on server error.
+  /// - [FunnelcakeTimeoutException] on timeout.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<TrendingHashtag>> fetchTrendingHashtags({
+    int limit = 20,
+  }) => _funnelcakeApiClient.fetchTrendingHashtags(limit: limit);
 }

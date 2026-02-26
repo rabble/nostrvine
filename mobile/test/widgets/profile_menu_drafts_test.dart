@@ -1,11 +1,11 @@
 // ABOUTME: TDD widget test for Drafts menu item in profile screen options
 // ABOUTME: Tests that Drafts menu item exists and navigates correctly
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 void main() {
   group('Profile menu drafts widget', () {

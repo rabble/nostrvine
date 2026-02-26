@@ -259,7 +259,7 @@ void main() {
 
         when(
           () => mockBloc.state,
-        ).thenReturn(const VideoEditorTextState(fontSize: 0.5));
+        ).thenReturn(const VideoEditorTextState());
         when(() => mockBloc.stream).thenAnswer((_) => controller.stream);
 
         await tester.pumpWidget(buildWidget());

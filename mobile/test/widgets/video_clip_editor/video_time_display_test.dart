@@ -46,7 +46,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        buildTestWidget(totalDuration: const Duration(seconds: 30)),
+        buildTestWidget(),
       );
       await tester.pump();
 
