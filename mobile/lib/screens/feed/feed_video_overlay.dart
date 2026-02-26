@@ -120,7 +120,7 @@ class _AuthorInfoSection extends ConsumerWidget {
     final displayName =
         profile?.bestDisplayName ??
         video.authorName ??
-        NostrKeyUtils.truncateNpub(video.pubkey);
+        UserProfile.generatedNameFor(video.pubkey);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

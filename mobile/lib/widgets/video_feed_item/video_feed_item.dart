@@ -1467,7 +1467,7 @@ class VideoOverlayActions extends ConsumerWidget {
                     final displayName =
                         profile?.bestDisplayName ??
                         video.authorName ??
-                        NostrKeyUtils.truncateNpub(video.pubkey);
+                        UserProfile.generatedNameFor(video.pubkey);
                     final archivedLoops = video.originalLoops ?? 0;
                     final liveViews =
                         int.tryParse(video.rawTags['views'] ?? '') ?? 0;
