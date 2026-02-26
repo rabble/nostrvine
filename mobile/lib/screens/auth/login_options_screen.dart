@@ -6,6 +6,7 @@ import 'dart:io' show Platform;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,6 +62,10 @@ class _LoginOptionsView extends StatelessWidget {
       listenWhen: (prev, next) =>
           next is DivineAuthEmailVerification || next is DivineAuthSuccess,
       listener: (context, state) {
+        if (state is DivineAuthSuccess) {
+          // Signal password managers to save credentials.
+          TextInput.finishAutofillContext();
+        }
         if (state is DivineAuthEmailVerification) {
           final encodedEmail = Uri.encodeComponent(state.email);
           context.go(
@@ -73,7 +78,7 @@ class _LoginOptionsView extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         body: SafeArea(
           child: BlocBuilder<DivineAuthCubit, DivineAuthState>(
             builder: (context, state) {
@@ -104,6 +109,8 @@ class _SignInContent extends ConsumerStatefulWidget {
 class _SignInContentState extends ConsumerState<_SignInContent> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
+  late FocusNode _emailFocusNode;
+  late FocusNode _passwordFocusNode;
   bool _isConnectingAmber = false;
 
   @override
@@ -111,6 +118,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
     super.initState();
     _emailController = TextEditingController(text: widget.state.email);
     _passwordController = TextEditingController(text: widget.state.password);
+    _emailFocusNode = FocusNode();
+    _passwordFocusNode = FocusNode();
   }
 
   @override
@@ -128,6 +137,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -244,29 +255,47 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
 
                 const SizedBox(height: 40),
 
-                // Email field
-                DivineAuthTextField(
-                  controller: _emailController,
-                  label: 'Email',
-                  keyboardType: TextInputType.emailAddress,
-                  errorText: widget.state.emailError,
-                  enabled: !isDisabled,
-                  autocorrect: false,
-                  onChanged: (value) =>
-                      context.read<DivineAuthCubit>().updateEmail(value),
-                ),
+                // Email + Password wrapped for password manager autofill.
+                AutofillGroup(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 16,
+                    children: [
+                      // Email field
+                      DivineAuthTextField(
+                        controller: _emailController,
+                        focusNode: _emailFocusNode,
+                        label: 'Email',
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        textInputAction: .next,
+                        errorText: widget.state.emailError,
+                        enabled: !isDisabled,
+                        autocorrect: false,
+                        onChanged: (value) =>
+                            context.read<DivineAuthCubit>().updateEmail(value),
+                        onSubmitted: (_) => _passwordFocusNode.requestFocus(),
+                      ),
 
-                const SizedBox(height: 16),
-
-                // Password field
-                DivineAuthTextField(
-                  controller: _passwordController,
-                  label: 'Password',
-                  obscureText: true,
-                  errorText: widget.state.passwordError,
-                  enabled: !isDisabled,
-                  onChanged: (value) =>
-                      context.read<DivineAuthCubit>().updatePassword(value),
+                      // Password field
+                      DivineAuthTextField(
+                        controller: _passwordController,
+                        focusNode: _passwordFocusNode,
+                        label: 'Password',
+                        obscureText: true,
+                        autofillHints: const [AutofillHints.password],
+                        textInputAction: .done,
+                        errorText: widget.state.passwordError,
+                        enabled: !isDisabled,
+                        onChanged: (value) => context
+                            .read<DivineAuthCubit>()
+                            .updatePassword(value),
+                        onSubmitted: isDisabled
+                            ? null
+                            : (_) => context.read<DivineAuthCubit>().submit(),
+                      ),
+                    ],
+                  ),
                 ),
 
                 // General error
@@ -303,6 +332,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 32),
 
                 // Push alternative methods to bottom
                 const Spacer(),
