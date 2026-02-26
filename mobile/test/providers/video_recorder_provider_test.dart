@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for VideoRecorderProviderState and VideoRecorderNotifier
 // ABOUTME: Tests state getters, properties, and recording lifecycle
 
+import 'package:flutter/services.dart';
+import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
@@ -8,16 +10,48 @@ import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks/mock_camera_service.dart';
+
+/// Helper to set up haptic feedback mock and track calls.
+class HapticFeedbackTracker {
+  final List<String> hapticCalls = [];
+
+  void setUp(TestWidgetsFlutterBinding binding) {
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'HapticFeedback.vibrate') {
+          hapticCalls.add(call.arguments as String);
+        }
+        return null;
+      },
+    );
+  }
+
+  void tearDown(TestWidgetsFlutterBinding binding) {
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    );
+  }
+
+  void clear() => hapticCalls.clear();
+}
 
 /// Shared test setup for VideoRecorderNotifier tests.
 class NotifierTestSetup {
   late MockCameraService mockCamera;
   late ProviderContainer container;
+  late SharedPreferences sharedPreferences;
 
   Future<void> setUp() async {
+    SharedPreferences.setMockInitialValues({});
+    sharedPreferences = await SharedPreferences.getInstance();
+
     mockCamera = MockCameraService.create(
       onUpdateState: ({forceCameraRebuild}) {},
       onAutoStopped: (_) {},
@@ -26,6 +60,7 @@ class NotifierTestSetup {
 
     container = ProviderContainer(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         videoRecorderProvider.overrideWith(
           () => VideoRecorderNotifier(mockCamera),
         ),
@@ -454,6 +489,195 @@ void main() {
         setup.container.read(videoRecorderProvider).recordingState,
         VideoRecorderState.idle,
       );
+    });
+  });
+
+  group('VideoRecorderNotifier - Haptic Feedback', () {
+    late NotifierTestSetup setup;
+    late HapticFeedbackTracker hapticTracker;
+    late TestWidgetsFlutterBinding binding;
+
+    setUp(() async {
+      binding = TestWidgetsFlutterBinding.ensureInitialized();
+      hapticTracker = HapticFeedbackTracker()..setUp(binding);
+      setup = NotifierTestSetup();
+      await setup.setUp();
+    });
+
+    tearDown(() {
+      hapticTracker.tearDown(binding);
+      setup.tearDown();
+    });
+
+    test('startRecording triggers lightImpact haptic feedback', () async {
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
+      hapticTracker.clear();
+
+      await notifier.startRecording();
+
+      expect(
+        hapticTracker.hapticCalls,
+        contains('HapticFeedbackType.lightImpact'),
+      );
+    });
+
+    test('stopRecording triggers lightImpact haptic feedback', () async {
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
+
+      // First start recording
+      await notifier.startRecording();
+      expect(
+        setup.container.read(videoRecorderProvider).recordingState,
+        VideoRecorderState.recording,
+      );
+
+      hapticTracker.clear();
+
+      // Stop recording and check haptic
+      await notifier.stopRecording();
+
+      expect(
+        hapticTracker.hapticCalls,
+        contains('HapticFeedbackType.lightImpact'),
+      );
+    });
+
+    test('haptic feedback not triggered when recording is blocked', () async {
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
+
+      // Start recording first
+      await notifier.startRecording();
+      hapticTracker.clear();
+
+      // Try to start again while already recording - should be blocked
+      await notifier.startRecording();
+
+      // No additional haptic because the call was blocked
+      expect(
+        hapticTracker.hapticCalls
+            .where((c) => c == 'HapticFeedbackType.lightImpact')
+            .length,
+        equals(0),
+      );
+
+      // Cleanup
+      await notifier.stopRecording();
+    });
+  });
+
+  group('Camera Lens Persistence', () {
+    test('setLens saves lens preference to SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+      await mockCamera.initialize();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+
+      // Set lens to back camera
+      await container
+          .read(videoRecorderProvider.notifier)
+          .setLens(DivineCameraLens.back);
+
+      // Verify preference was saved
+      expect(prefs.getString('camera_last_used_lens'), equals('back'));
+    });
+
+    test(
+      'switchCamera saves new lens preference to SharedPreferences',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockCamera = MockCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+        await mockCamera.initialize();
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(mockCamera),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(videoRecorderProvider.notifier).initialize();
+
+        // Switch camera (front -> back)
+        await container.read(videoRecorderProvider.notifier).switchCamera();
+
+        // Verify preference was saved for the new lens
+        expect(prefs.getString('camera_last_used_lens'), isNotNull);
+      },
+    );
+
+    test('initialize restores saved lens preference', () async {
+      // Pre-populate with back camera preference
+      SharedPreferences.setMockInitialValues({'camera_last_used_lens': 'back'});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+
+      // Verify mock camera was initialized with saved lens
+      expect(mockCamera.currentLens, equals(DivineCameraLens.back));
+    });
+
+    test('initialize uses front camera when no saved preference', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+
+      // Verify mock camera was initialized with default front lens
+      expect(mockCamera.currentLens, equals(DivineCameraLens.front));
     });
   });
 }

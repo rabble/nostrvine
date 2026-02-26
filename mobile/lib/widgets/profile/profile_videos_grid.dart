@@ -14,6 +14,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -103,6 +104,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       extra: FullscreenVideoFeedArgs(
         source: ProfileFeedSource(widget.userIdHex),
         initialIndex: index,
+        trafficSource: ViewTrafficSource.profile,
       ),
     );
   }

@@ -27,7 +27,11 @@ final class MyProfileInitial extends MyProfileState {
 
 /// Loading state - may contain cached profile while fetching fresh.
 final class MyProfileLoading extends MyProfileState {
-  const MyProfileLoading({this.profile, this.extractedUsername});
+  const MyProfileLoading({
+    this.profile,
+    this.extractedUsername,
+    this.externalNip05,
+  });
 
   /// Cached profile to display while loading fresh data.
   /// Null if no cached profile exists.
@@ -36,8 +40,12 @@ final class MyProfileLoading extends MyProfileState {
   /// Username extracted from cached profile's NIP-05, if available.
   final String? extractedUsername;
 
+  /// External NIP-05 identifier from cached profile (e.g., `alice@example.com`).
+  /// Null if the NIP-05 is a divine.video/openvine.co domain or not set.
+  final String? externalNip05;
+
   @override
-  List<Object?> get props => [profile, extractedUsername];
+  List<Object?> get props => [profile, extractedUsername, externalNip05];
 }
 
 /// Successfully loaded profile state.
@@ -46,6 +54,7 @@ final class MyProfileLoaded extends MyProfileState {
     required this.profile,
     required this.isFresh,
     this.extractedUsername,
+    this.externalNip05,
   });
 
   /// The loaded user profile.
@@ -62,8 +71,17 @@ final class MyProfileLoaded extends MyProfileState {
   /// Null if the NIP-05 is not from a recognized domain.
   final String? extractedUsername;
 
+  /// External NIP-05 identifier (e.g., `alice@example.com`).
+  /// Null if the NIP-05 is a divine.video/openvine.co domain or not set.
+  final String? externalNip05;
+
   @override
-  List<Object?> get props => [profile, isFresh, extractedUsername];
+  List<Object?> get props => [
+    profile,
+    isFresh,
+    extractedUsername,
+    externalNip05,
+  ];
 }
 
 /// Error state when profile loading fails.

@@ -25,7 +25,9 @@ void main() {
 
     group('MaterialIconSource', () {
       test('stores icon data correctly', () {
-        const source = MaterialIconSource(Icons.arrow_back);
+        // Use non-const to ensure constructor coverage instrumentation.
+        // ignore: prefer_const_constructors
+        final source = MaterialIconSource(Icons.arrow_back);
         expect(source.iconData, Icons.arrow_back);
       });
 

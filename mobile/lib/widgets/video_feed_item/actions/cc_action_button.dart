@@ -20,8 +20,7 @@ class CcActionButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (!video.hasSubtitles) return const SizedBox.shrink();
 
-    final visibilityMap = ref.watch(subtitleVisibilityProvider);
-    final isActive = visibilityMap[video.id] ?? false;
+    final isActive = ref.watch(subtitleVisibilityProvider);
 
     return Semantics(
       identifier: 'cc_button',
@@ -37,7 +36,7 @@ class CcActionButton extends ConsumerWidget {
           splashFactory: NoSplash.splashFactory,
         ),
         onPressed: () {
-          ref.read(subtitleVisibilityProvider.notifier).toggle(video.id);
+          ref.read(subtitleVisibilityProvider.notifier).toggle();
         },
         icon: Icon(
           Icons.closed_caption,

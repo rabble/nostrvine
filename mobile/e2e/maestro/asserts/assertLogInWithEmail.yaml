@@ -1,12 +1,9 @@
 appId: co.openvine.app
 ---
-- assertVisible: |-
-    Log In
-    Tab 1 of 2
-- assertVisible: |-
-    Create Account
-    Tab 2 of 2
+- assertVisible: Sign in
 - assertVisible: Email
 - assertVisible: Password
-- assertVisible: Log In
-- assertVisible: Forgot Password?
+- assertVisible: Sign In
+- assertVisible: Forgot password?
+- assertVisible: "New to diVine? "
+- assertVisible: Create account

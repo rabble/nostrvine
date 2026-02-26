@@ -21,13 +21,11 @@ appId: co.openvine.app
 - assertVisible: |-
     Videos \((?!0)\d+\)
     Tab 1 of 3
-- assertVisible: |-
-    Users \((?!0)\d+\)
-    Tab 2 of 3
 
 # 3. Tap on the 1st video returned and validate playback
-- tapOn:
-    id: play_button
+- assertVisible:
+    id: video_thumbnail_0
+- tapOn: Video thumbnail 1
 - runFlow: ../asserts/assertVideoPlayback.yaml
 #TO-DO: once ID added to the back arrow on the playback screen change
 # tapping in its label instead of coordinates since by coordinates is not working

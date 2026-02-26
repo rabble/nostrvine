@@ -33,17 +33,19 @@ class VideoInteractionsBloc
     required CommentsRepository commentsRepository,
     required RepostsRepository repostsRepository,
     String? addressableId,
+    int? initialLikeCount,
   }) : _eventId = eventId,
        _authorPubkey = authorPubkey,
        _likesRepository = likesRepository,
        _commentsRepository = commentsRepository,
        _repostsRepository = repostsRepository,
        _addressableId = addressableId,
-       super(const VideoInteractionsState()) {
+       super(VideoInteractionsState(likeCount: initialLikeCount)) {
     on<VideoInteractionsFetchRequested>(_onFetchRequested);
     on<VideoInteractionsLikeToggled>(_onLikeToggled);
     on<VideoInteractionsRepostToggled>(_onRepostToggled);
     on<VideoInteractionsSubscriptionRequested>(_onSubscriptionRequested);
+    on<VideoInteractionsCommentCountUpdated>(_onCommentCountUpdated);
   }
 
   final String _eventId;
@@ -117,10 +119,15 @@ class VideoInteractionsBloc
           ? _repostsRepository.getRepostCount(_addressableId)
           : _repostsRepository.getRepostCountByEventId(_eventId);
 
-      // Query like count with addressable ID for better discoverability
-      // on relays that index by a-tag
+      final likeCountFuture = state.likeCount != null
+          ? Future.value(state.likeCount)
+          : _likesRepository.getLikeCount(
+              _eventId,
+              addressableId: _addressableId,
+            );
+
       final results = await Future.wait([
-        _likesRepository.getLikeCount(_eventId, addressableId: _addressableId),
+        likeCountFuture,
         _commentsRepository.getCommentsCount(
           _eventId,
           rootAddressableId: _addressableId,
@@ -276,5 +283,12 @@ class VideoInteractionsBloc
         ),
       );
     }
+  }
+
+  void _onCommentCountUpdated(
+    VideoInteractionsCommentCountUpdated event,
+    Emitter<VideoInteractionsState> emit,
+  ) {
+    emit(state.copyWith(commentCount: event.commentCount));
   }
 }

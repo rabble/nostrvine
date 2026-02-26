@@ -4,32 +4,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 
-import 'feature_flag_screen_test.mocks.dart';
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
 
-@GenerateMocks([SharedPreferences])
 void main() {
   group('FeatureFlagScreen', () {
-    late MockSharedPreferences mockPrefs;
+    late _MockSharedPreferences mockPrefs;
 
     setUp(() {
-      mockPrefs = MockSharedPreferences();
+      mockPrefs = _MockSharedPreferences();
 
       // Set up default stubs for all flags
       for (final flag in FeatureFlag.values) {
-        when(mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
+        when(() => mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
         when(
-          mockPrefs.setBool('ff_${flag.name}', any),
+          () => mockPrefs.setBool('ff_${flag.name}', any()),
         ).thenAnswer((_) async => true);
-        when(mockPrefs.remove('ff_${flag.name}')).thenAnswer((_) async => true);
-        when(mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
+        when(
+          () => mockPrefs.remove('ff_${flag.name}'),
+        ).thenAnswer((_) async => true);
+        when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
       }
     });
 
@@ -94,13 +94,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify that setBool was called for some flag
-      verify(mockPrefs.setBool(any, any)).called(1);
+      verify(() => mockPrefs.setBool(any(), any())).called(1);
     });
 
     testWidgets('should show override indicators', (tester) async {
       // Set up one flag as having user override
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -151,16 +151,18 @@ void main() {
 
       // Verify that remove was called for all flags
       for (final flag in FeatureFlag.values) {
-        verify(mockPrefs.remove('ff_${flag.name}')).called(1);
+        verify(() => mockPrefs.remove('ff_${flag.name}')).called(1);
       }
     });
 
     testWidgets('should show flag states correctly', (tester) async {
       // Set up mixed flag states
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
-      when(mockPrefs.containsKey('ff_enhancedVideoPlayer')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_enhancedVideoPlayer')).thenReturn(false);
+      when(
+        () => mockPrefs.containsKey('ff_enhancedVideoPlayer'),
+      ).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -189,8 +191,8 @@ void main() {
 
     testWidgets('should handle individual flag reset', (tester) async {
       // Set up a flag with user override
-      when(mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
-      when(mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.getBool('ff_newCameraUI')).thenReturn(true);
+      when(() => mockPrefs.containsKey('ff_newCameraUI')).thenReturn(true);
 
       await tester.pumpWidget(
         ProviderScope(

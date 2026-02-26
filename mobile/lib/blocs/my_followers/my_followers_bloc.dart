@@ -1,6 +1,8 @@
 // ABOUTME: BLoC for displaying current user's followers list
 // ABOUTME: Fetches Kind 3 events that mention current user in 'p' tags
 
+import 'dart:math';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -32,11 +34,22 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
     );
 
     try {
-      final followers = await _followRepository.getMyFollowers();
+      // Fetch the follower list and accurate count in parallel.
+      // The list is limited by relay result caps, so the count
+      // (from COUNT queries) is more accurate for display.
+      final results = await Future.wait([
+        _followRepository.getMyFollowers(),
+        _followRepository.getMyFollowerCount(),
+      ]);
+      final followers = results[0] as List<String>;
+      final countFromService = results[1] as int;
+      final followerCount = max(followers.length, countFromService);
+
       emit(
         state.copyWith(
           status: MyFollowersStatus.success,
           followersPubkeys: followers,
+          followerCount: followerCount,
         ),
       );
     } catch (e) {

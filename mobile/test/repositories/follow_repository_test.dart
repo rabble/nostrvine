@@ -4,7 +4,9 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -15,6 +17,8 @@ class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockPersonalEventCacheService extends Mock
     implements PersonalEventCacheService {}
+
+class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class _MockEvent extends Mock implements Event {}
 
@@ -72,11 +76,13 @@ void main() {
       repository = FollowRepository(
         nostrClient: mockNostrClient,
         personalEventCache: mockPersonalEventCache,
+        // Prevent real WebSocket connections to indexer relays in tests
+        indexerRelayUrls: const [],
       );
     });
 
-    tearDown(() {
-      repository.dispose();
+    tearDown(() async {
+      await repository.dispose();
     });
 
     group('initialization', () {
@@ -99,6 +105,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -117,6 +124,7 @@ void main() {
           fetchFollowingFromApi: (pubkey) async {
             return [testTargetPubkey, testTargetPubkey2];
           },
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -145,6 +153,7 @@ void main() {
             apiCalled = true;
             return [testTargetPubkey, testTargetPubkey2];
           },
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -161,6 +170,7 @@ void main() {
           fetchFollowingFromApi: (pubkey) async {
             throw Exception('Network error');
           },
+          indexerRelayUrls: const [],
         );
 
         // Should not throw, just log warning and continue
@@ -178,8 +188,9 @@ void main() {
         await repository.initialize();
         expect(repository.isInitialized, isTrue);
 
-        // Verify subscribe was called once during first init
-        // for real-time cross-device sync subscription
+        // Verify subscribe was called twice during first init:
+        // 1. _loadFromRelay() (relay kind 3 query when list is empty)
+        // 2. _subscribeToContactList() (real-time cross-device sync)
         verify(
           () => mockNostrClient.subscribe(
             any(),
@@ -190,7 +201,7 @@ void main() {
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
           ),
-        ).called(1);
+        ).called(2);
       });
     });
 
@@ -442,6 +453,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -493,6 +505,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -768,9 +781,11 @@ void main() {
       test(
         'returns empty list on timeout',
         () async {
-          // Simulate a slow query that takes longer than the 5 second timeout
+          // Simulate a slow query that exceeds the repository's internal
+          // timeout. The delay must be longer than the repo timeout (5s) but
+          // shorter than the test timeout so cleanup completes cleanly.
           when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
-            await Future<void>.delayed(const Duration(seconds: 10));
+            await Future<void>.delayed(const Duration(seconds: 7));
             return [];
           });
 
@@ -778,7 +793,7 @@ void main() {
 
           expect(followers, isEmpty);
         },
-        timeout: const Timeout(Duration(seconds: 8)),
+        timeout: const Timeout(Duration(seconds: 15)),
       );
     });
 
@@ -868,6 +883,9 @@ void main() {
       });
 
       tearDown(() async {
+        // Dispose repository first to cancel stream listeners,
+        // then close the controller.
+        await repository.dispose();
         await realTimeStreamController.close();
       });
 
@@ -1072,6 +1090,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -1105,6 +1124,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -1152,6 +1172,7 @@ void main() {
         repository = FollowRepository(
           nostrClient: mockNostrClient,
           personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
         );
 
         await repository.initialize();
@@ -1164,6 +1185,394 @@ void main() {
         final result = await repository.isMutualFollow(testTargetPubkey);
 
         expect(result, isFalse);
+      });
+    });
+
+    group('getSocialCounts', () {
+      late _MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = _MockFunnelcakeApiClient();
+      });
+
+      test('returns SocialCounts on success', () async {
+        const testSocialCounts = SocialCounts(
+          pubkey: testCurrentUserPubkey,
+          followerCount: 100,
+          followingCount: 50,
+        );
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getSocialCounts(testCurrentUserPubkey),
+        ).thenAnswer((_) async => testSocialCounts);
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getSocialCounts(testCurrentUserPubkey);
+
+        expect(result, equals(testSocialCounts));
+        verify(
+          () => mockFunnelcakeClient.getSocialCounts(testCurrentUserPubkey),
+        ).called(1);
+      });
+
+      test('returns null when client is null', () async {
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getSocialCounts(testCurrentUserPubkey);
+
+        expect(result, isNull);
+      });
+
+      test('returns null when client is not available', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getSocialCounts(testCurrentUserPubkey);
+
+        expect(result, isNull);
+        verifyNever(() => mockFunnelcakeClient.getSocialCounts(any()));
+      });
+
+      test('propagates FunnelcakeApiException', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(() => mockFunnelcakeClient.getSocialCounts(any())).thenThrow(
+          const FunnelcakeApiException(
+            message: 'Server error',
+            statusCode: 500,
+            url: 'https://example.com/api/social-counts',
+          ),
+        );
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        expect(
+          () => repo.getSocialCounts(testCurrentUserPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
+    });
+
+    group('getFollowersFromApi', () {
+      late _MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = _MockFunnelcakeApiClient();
+      });
+
+      test('returns PaginatedPubkeys on success', () async {
+        final testPaginatedPubkeys = PaginatedPubkeys(
+          pubkeys: [testTargetPubkey],
+          total: 1,
+          hasMore: false,
+        );
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: testCurrentUserPubkey,
+            limit: 100,
+            offset: 0,
+          ),
+        ).thenAnswer((_) async => testPaginatedPubkeys);
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getFollowersFromApi(
+          pubkey: testCurrentUserPubkey,
+        );
+
+        expect(result, equals(testPaginatedPubkeys));
+        verify(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: testCurrentUserPubkey,
+            limit: 100,
+            offset: 0,
+          ),
+        ).called(1);
+      });
+
+      test('returns null when client is null', () async {
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getFollowersFromApi(
+          pubkey: testCurrentUserPubkey,
+        );
+
+        expect(result, isNull);
+      });
+
+      test('returns null when client is not available', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getFollowersFromApi(
+          pubkey: testCurrentUserPubkey,
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        );
+      });
+
+      test('passes limit and offset correctly', () async {
+        final testPaginatedPubkeys = PaginatedPubkeys(
+          pubkeys: [testTargetPubkey, testTargetPubkey2],
+          total: 200,
+          hasMore: true,
+        );
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: testCurrentUserPubkey,
+            limit: 50,
+            offset: 100,
+          ),
+        ).thenAnswer((_) async => testPaginatedPubkeys);
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getFollowersFromApi(
+          pubkey: testCurrentUserPubkey,
+          limit: 50,
+          offset: 100,
+        );
+
+        expect(result, equals(testPaginatedPubkeys));
+        verify(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: testCurrentUserPubkey,
+            limit: 50,
+            offset: 100,
+          ),
+        ).called(1);
+      });
+
+      test('propagates FunnelcakeApiException', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowers(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenThrow(
+          const FunnelcakeApiException(
+            message: 'Server error',
+            statusCode: 500,
+            url: 'https://example.com/api/followers',
+          ),
+        );
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        expect(
+          () => repo.getFollowersFromApi(pubkey: testCurrentUserPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
+    });
+
+    group('getFollowingFromApi', () {
+      late _MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = _MockFunnelcakeApiClient();
+      });
+
+      test('returns PaginatedPubkeys on success', () async {
+        final testPaginatedPubkeys = PaginatedPubkeys(
+          pubkeys: [testTargetPubkey],
+          total: 1,
+          hasMore: false,
+        );
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: testCurrentUserPubkey,
+            limit: 100,
+            offset: 0,
+          ),
+        ).thenAnswer((_) async => testPaginatedPubkeys);
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getFollowingFromApi(
+          pubkey: testCurrentUserPubkey,
+        );
+
+        expect(result, equals(testPaginatedPubkeys));
+        verify(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: testCurrentUserPubkey,
+            limit: 100,
+            offset: 0,
+          ),
+        ).called(1);
+      });
+
+      test('returns null when client is null', () async {
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getFollowingFromApi(
+          pubkey: testCurrentUserPubkey,
+        );
+
+        expect(result, isNull);
+      });
+
+      test('returns null when client is not available', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getFollowingFromApi(
+          pubkey: testCurrentUserPubkey,
+        );
+
+        expect(result, isNull);
+        verifyNever(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        );
+      });
+
+      test('passes limit and offset correctly', () async {
+        final testPaginatedPubkeys = PaginatedPubkeys(
+          pubkeys: [testTargetPubkey, testTargetPubkey2],
+          total: 200,
+          hasMore: true,
+        );
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: testCurrentUserPubkey,
+            limit: 50,
+            offset: 100,
+          ),
+        ).thenAnswer((_) async => testPaginatedPubkeys);
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        final result = await repo.getFollowingFromApi(
+          pubkey: testCurrentUserPubkey,
+          limit: 50,
+          offset: 100,
+        );
+
+        expect(result, equals(testPaginatedPubkeys));
+        verify(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: testCurrentUserPubkey,
+            limit: 50,
+            offset: 100,
+          ),
+        ).called(1);
+      });
+
+      test('propagates FunnelcakeApiException', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getFollowing(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenThrow(
+          const FunnelcakeApiException(
+            message: 'Server error',
+            statusCode: 500,
+            url: 'https://example.com/api/following',
+          ),
+        );
+
+        final repo = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          indexerRelayUrls: const [],
+        );
+
+        expect(
+          () => repo.getFollowingFromApi(pubkey: testCurrentUserPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
       });
     });
   });

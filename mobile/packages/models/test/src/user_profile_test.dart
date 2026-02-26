@@ -320,7 +320,7 @@ void main() {
         expect(profile.bestDisplayName, equals('username'));
       });
 
-      test('falls back to truncated pubkey when no names available', () {
+      test('falls back to generated name when no names available', () {
         final profile = UserProfile(
           pubkey: testPubkey,
           rawData: const {},
@@ -328,13 +328,10 @@ void main() {
           eventId: testEventId,
         );
 
-        final expectedName =
-            '${testPubkey.substring(0, 8)}...'
-            '${testPubkey.substring(testPubkey.length - 6)}';
-        expect(profile.bestDisplayName, equals(expectedName));
+        expect(profile.bestDisplayName, equals('Integral Cicada 66'));
       });
 
-      test('returns full pubkey when pubkey is short', () {
+      test('returns generated name for short pubkey', () {
         const shortPubkey = 'short123';
         final profile = UserProfile(
           pubkey: shortPubkey,
@@ -343,7 +340,26 @@ void main() {
           eventId: testEventId,
         );
 
-        expect(profile.bestDisplayName, equals(shortPubkey));
+        expect(profile.bestDisplayName, equals('Olympic Rodent 91'));
+      });
+
+      test('generated name is deterministic for same pubkey', () {
+        final profile1 = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        );
+        final profile2 = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: DateTime(2025),
+          eventId:
+              'different_event_id_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        );
+
+        expect(profile1.bestDisplayName, equals(profile2.bestDisplayName));
       });
     });
 
@@ -763,6 +779,128 @@ void main() {
         );
 
         expect(profile.divineUsername, isNull);
+      });
+    });
+
+    group('hasExternalNip05', () {
+      test('returns false for subdomain format _@user.divine.video', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '_@alice.divine.video',
+        );
+
+        expect(profile.hasExternalNip05, isFalse);
+      });
+
+      test('returns false for legacy format user@divine.video', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'bob@divine.video',
+        );
+
+        expect(profile.hasExternalNip05, isFalse);
+      });
+
+      test('returns false for legacy format user@openvine.co', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'charlie@openvine.co',
+        );
+
+        expect(profile.hasExternalNip05, isFalse);
+      });
+
+      test('returns true for external NIP-05 user@example.com', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'alice@example.com',
+        );
+
+        expect(profile.hasExternalNip05, isTrue);
+      });
+
+      test('returns true for root user _@example.com', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '_@example.com',
+        );
+
+        expect(profile.hasExternalNip05, isTrue);
+      });
+
+      test('returns false when nip05 is null', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        );
+
+        expect(profile.hasExternalNip05, isFalse);
+      });
+
+      test('returns false when nip05 is empty', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '',
+        );
+
+        expect(profile.hasExternalNip05, isFalse);
+      });
+    });
+
+    group('externalNip05', () {
+      test('returns raw nip05 for external identifier', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'alice@example.com',
+        );
+
+        expect(profile.externalNip05, equals('alice@example.com'));
+      });
+
+      test('returns null for divine.video nip05', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '_@alice.divine.video',
+        );
+
+        expect(profile.externalNip05, isNull);
+      });
+
+      test('returns null when nip05 is null', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        );
+
+        expect(profile.externalNip05, isNull);
       });
     });
 

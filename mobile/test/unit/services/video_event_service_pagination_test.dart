@@ -1,41 +1,46 @@
-// ABOUTME: Tests for VideoEventService pagination behavior and hasMore flag logic
+// ABOUTME: Tests for VideoEventService pagination behavior and hasMore flag
 // ABOUTME: Validates proper TDD implementation of pagination state management
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'video_event_service_pagination_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, SubscriptionManager])
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
+
 void main() {
   late VideoEventService videoEventService;
-  late MockNostrClient mockNostrService;
-  late MockSubscriptionManager mockSubscriptionManager;
+  late _MockNostrClient mockNostrService;
+  late _MockSubscriptionManager mockSubscriptionManager;
+
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
 
   setUp(() {
-    mockNostrService = MockNostrClient();
-    mockSubscriptionManager = MockSubscriptionManager();
+    mockNostrService = _MockNostrClient();
+    mockSubscriptionManager = _MockSubscriptionManager();
 
     // Setup basic mock behavior
-    when(mockNostrService.isInitialized).thenReturn(true);
-    when(mockNostrService.publicKey).thenReturn('');
+    when(() => mockNostrService.isInitialized).thenReturn(true);
+    when(() => mockNostrService.publicKey).thenReturn('');
     when(
-      mockNostrService.connectedRelayCount,
+      () => mockNostrService.connectedRelayCount,
     ).thenReturn(3); // Mock having connected relays
     when(
-      mockSubscriptionManager.createSubscription(
-        name: anyNamed('name'),
-        filters: anyNamed('filters'),
-        onEvent: anyNamed('onEvent'),
-        onError: anyNamed('onError'),
-        onComplete: anyNamed('onComplete'),
-        timeout: anyNamed('timeout'),
-        priority: anyNamed('priority'),
+      () => mockSubscriptionManager.createSubscription(
+        name: any(named: 'name'),
+        filters: any(named: 'filters'),
+        onEvent: any(named: 'onEvent'),
+        onError: any(named: 'onError'),
+        onComplete: any(named: 'onComplete'),
+        timeout: any(named: 'timeout'),
+        priority: any(named: 'priority'),
       ),
     ).thenAnswer((_) async => 'mock-subscription-id');
 
@@ -113,7 +118,7 @@ void main() {
         paginationState.startQuery();
 
         // Simulate receiving exactly the requested number of events
-        for (int i = 0; i < 5; i++) {
+        for (var i = 0; i < 5; i++) {
           paginationState.incrementEventCount();
         }
 
@@ -134,7 +139,7 @@ void main() {
         paginationState.startQuery();
 
         // Simulate receiving more than requested (edge case)
-        for (int i = 0; i < 7; i++) {
+        for (var i = 0; i < 7; i++) {
           paginationState.incrementEventCount();
         }
 
@@ -194,7 +199,8 @@ void main() {
         // Reset the mock to isolate loadMoreEvents behavior
         reset(mockSubscriptionManager);
 
-        // Access the pagination state and mark it as having no more content
+        // Access the pagination state and mark it as having no more
+        // content
         final paginationStates = videoEventService
             .getPaginationStatesForTesting();
         final discoveryState = paginationStates[SubscriptionType.discovery]!;
@@ -206,16 +212,17 @@ void main() {
           limit: 50,
         );
 
-        // Assert - Should not create any subscriptions since hasMore=false
+        // Assert - Should not create any subscriptions since
+        // hasMore=false
         verifyNever(
-          mockSubscriptionManager.createSubscription(
-            name: anyNamed('name'),
-            filters: anyNamed('filters'),
-            onEvent: anyNamed('onEvent'),
-            onError: anyNamed('onError'),
-            onComplete: anyNamed('onComplete'),
-            timeout: anyNamed('timeout'),
-            priority: anyNamed('priority'),
+          () => mockSubscriptionManager.createSubscription(
+            name: any(named: 'name'),
+            filters: any(named: 'filters'),
+            onEvent: any(named: 'onEvent'),
+            onError: any(named: 'onError'),
+            onComplete: any(named: 'onComplete'),
+            timeout: any(named: 'timeout'),
+            priority: any(named: 'priority'),
           ),
         );
       },
@@ -245,16 +252,17 @@ void main() {
           limit: 50,
         );
 
-        // Assert - Should not create new subscriptions since already loading
+        // Assert - Should not create new subscriptions since already
+        // loading
         verifyNever(
-          mockSubscriptionManager.createSubscription(
-            name: anyNamed('name'),
-            filters: anyNamed('filters'),
-            onEvent: anyNamed('onEvent'),
-            onError: anyNamed('onError'),
-            onComplete: anyNamed('onComplete'),
-            timeout: anyNamed('timeout'),
-            priority: anyNamed('priority'),
+          () => mockSubscriptionManager.createSubscription(
+            name: any(named: 'name'),
+            filters: any(named: 'filters'),
+            onEvent: any(named: 'onEvent'),
+            onError: any(named: 'onError'),
+            onComplete: any(named: 'onComplete'),
+            timeout: any(named: 'timeout'),
+            priority: any(named: 'priority'),
           ),
         );
       },
@@ -283,7 +291,8 @@ void main() {
         final mockEvent1 = _createMockVideoEvent('historical1', 1000);
         final mockEvent2 = _createMockVideoEvent('historical2', 900);
 
-        // Add events as historical (this would normally be done by _handleHistoricalVideoEvent)
+        // Add events as historical (this would normally be done by
+        // _handleHistoricalVideoEvent)
         videoEventService.addVideoEventForTesting(
           mockEvent1,
           SubscriptionType.discovery,
@@ -300,35 +309,31 @@ void main() {
       },
     );
 
-    test(
-      'should not increment counter for real-time events during historical query',
-      () async {
-        // Arrange
-        await videoEventService.subscribeToVideoFeed(
-          subscriptionType: SubscriptionType.discovery,
-          limit: 10,
-        );
+    test('should not increment counter for real-time events during '
+        'historical query', () async {
+      // Arrange
+      await videoEventService.subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.discovery,
+        limit: 10,
+      );
 
-        final paginationStates = videoEventService
-            .getPaginationStatesForTesting();
-        final discoveryState = paginationStates[SubscriptionType.discovery]!;
-        discoveryState.startQuery();
+      final paginationStates = videoEventService
+          .getPaginationStatesForTesting();
+      final discoveryState = paginationStates[SubscriptionType.discovery]!;
+      discoveryState.startQuery();
 
-        // Act - Add a real-time event (not historical)
-        final mockEvent = _createMockVideoEvent('realtime1', 1000);
-        videoEventService.addVideoEventForTesting(
-          mockEvent,
-          SubscriptionType.discovery,
-          isHistorical: false,
-        );
+      // Act - Add a real-time event (not historical)
+      final mockEvent = _createMockVideoEvent('realtime1', 1000);
+      videoEventService.addVideoEventForTesting(
+        mockEvent,
+        SubscriptionType.discovery,
+        isHistorical: false,
+      );
 
-        // Assert - Counter should not increment for real-time events
-        expect(discoveryState.eventsReceivedInCurrentQuery, equals(0));
-      },
-    );
+      // Assert - Counter should not increment for real-time events
+      expect(discoveryState.eventsReceivedInCurrentQuery, equals(0));
+    });
   });
-
-  // Integration tests will be added after implementing test accessor methods
 }
 
 // Helper functions for creating mock data
@@ -344,7 +349,3 @@ VideoEvent _createMockVideoEvent(String id, int createdAt) {
     hashtags: const ['test'],
   );
 }
-
-// Removed unused _createMockNostrEvent helper function
-
-// Test extensions will be implemented after adding test accessor methods to VideoEventService

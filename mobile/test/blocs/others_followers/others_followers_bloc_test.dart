@@ -47,6 +47,9 @@ void main() {
           when(() => mockFollowRepository.getFollowers(any())).thenAnswer(
             (_) async => [validPubkey('follower1'), validPubkey('follower2')],
           );
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 2);
         },
         build: createBloc,
         act: (bloc) =>
@@ -57,8 +60,28 @@ void main() {
             validPubkey('follower1'),
             validPubkey('follower2'),
           ]);
+          expect(bloc.state.followerCount, 2);
           expect(bloc.state.targetPubkey, validPubkey('target'));
           expect(bloc.state.lastFetchedAt, isNotNull);
+        },
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'uses higher count from service when list is incomplete',
+        setUp: () {
+          when(
+            () => mockFollowRepository.getFollowers(any()),
+          ).thenAnswer((_) async => [validPubkey('follower1')]);
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 500);
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.followersPubkeys, hasLength(1));
+          expect(bloc.state.followerCount, 500);
         },
       );
 
@@ -68,6 +91,9 @@ void main() {
           when(
             () => mockFollowRepository.getFollowers(any()),
           ).thenAnswer((_) async => []);
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 0);
         },
         build: createBloc,
         act: (bloc) =>
@@ -75,6 +101,7 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.status, OthersFollowersStatus.success);
           expect(bloc.state.followersPubkeys, isEmpty);
+          expect(bloc.state.followerCount, 0);
           expect(bloc.state.targetPubkey, validPubkey('target'));
           expect(bloc.state.lastFetchedAt, isNotNull);
         },
@@ -86,6 +113,9 @@ void main() {
           when(
             () => mockFollowRepository.getFollowers(any()),
           ).thenThrow(Exception('Network error'));
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 0);
         },
         build: createBloc,
         act: (bloc) =>
@@ -108,6 +138,9 @@ void main() {
           when(
             () => mockFollowRepository.getFollowers(any()),
           ).thenAnswer((_) async => []);
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 0);
         },
         build: createBloc,
         act: (bloc) =>
@@ -123,6 +156,9 @@ void main() {
           when(
             () => mockFollowRepository.getFollowers(any()),
           ).thenAnswer((_) async => []);
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 0);
         },
         build: createBloc,
         act: (bloc) =>
@@ -140,11 +176,15 @@ void main() {
           when(
             () => mockFollowRepository.getFollowers(any()),
           ).thenAnswer((_) async => [validPubkey('follower1')]);
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 1);
         },
         build: createBloc,
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('follower1')],
+          followerCount: 1,
           targetPubkey: validPubkey('target'),
           lastFetchedAt: DateTime.now(), // Fresh data
         ),
@@ -162,11 +202,15 @@ void main() {
           when(
             () => mockFollowRepository.getFollowers(any()),
           ).thenAnswer((_) async => [validPubkey('follower1')]);
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 1);
         },
         build: createBloc,
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('follower1')],
+          followerCount: 1,
           targetPubkey: validPubkey('target'),
           lastFetchedAt: DateTime.now(), // Fresh data
         ),
@@ -185,11 +229,12 @@ void main() {
 
     group('OthersFollowersIncrementRequested', () {
       blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'adds follower pubkey to list when not already present',
+        'adds follower pubkey to list and increments count',
         build: createBloc,
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('existing')],
+          followerCount: 500,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) =>
@@ -198,6 +243,7 @@ void main() {
           OthersFollowersState(
             status: OthersFollowersStatus.success,
             followersPubkeys: [validPubkey('existing'), validPubkey('new')],
+            followerCount: 501,
             targetPubkey: validPubkey('target'),
           ),
         ],
@@ -209,6 +255,7 @@ void main() {
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('existing')],
+          followerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) => bloc.add(
@@ -230,6 +277,7 @@ void main() {
           OthersFollowersState(
             status: OthersFollowersStatus.success,
             followersPubkeys: [validPubkey('first')],
+            followerCount: 1,
             targetPubkey: validPubkey('target'),
           ),
         ],
@@ -238,7 +286,7 @@ void main() {
 
     group('OthersFollowersDecrementRequested', () {
       blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'removes follower pubkey from list when present',
+        'removes follower pubkey from list and decrements count',
         build: createBloc,
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
@@ -246,6 +294,7 @@ void main() {
             validPubkey('follower1'),
             validPubkey('follower2'),
           ],
+          followerCount: 500,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) => bloc.add(
@@ -255,6 +304,7 @@ void main() {
           OthersFollowersState(
             status: OthersFollowersStatus.success,
             followersPubkeys: [validPubkey('follower2')],
+            followerCount: 499,
             targetPubkey: validPubkey('target'),
           ),
         ],
@@ -266,6 +316,7 @@ void main() {
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('existing')],
+          followerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) => bloc.add(
@@ -275,11 +326,12 @@ void main() {
       );
 
       blocTest<OthersFollowersBloc, OthersFollowersState>(
-        'removes last follower leaving empty list',
+        'removes last follower leaving empty list with zero count',
         build: createBloc,
         seed: () => OthersFollowersState(
           status: OthersFollowersStatus.success,
           followersPubkeys: [validPubkey('only')],
+          followerCount: 1,
           targetPubkey: validPubkey('target'),
         ),
         act: (bloc) =>
@@ -347,6 +399,7 @@ void main() {
       final state = OthersFollowersState(
         status: OthersFollowersStatus.success,
         followersPubkeys: const ['pubkey1'],
+        followerCount: 10,
         targetPubkey: 'target',
         lastFetchedAt: testTime,
       );
@@ -354,6 +407,7 @@ void main() {
       expect(state.props, [
         OthersFollowersStatus.success,
         ['pubkey1'],
+        10,
         'target',
         testTime,
       ]);

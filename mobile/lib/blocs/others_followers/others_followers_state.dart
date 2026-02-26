@@ -23,6 +23,7 @@ final class OthersFollowersState extends Equatable {
   const OthersFollowersState({
     this.status = OthersFollowersStatus.initial,
     this.followersPubkeys = const [],
+    this.followerCount = 0,
     this.targetPubkey,
     this.lastFetchedAt,
   });
@@ -32,6 +33,13 @@ final class OthersFollowersState extends Equatable {
 
   /// List of pubkeys who follow the target user
   final List<String> followersPubkeys;
+
+  /// Authoritative follower count (max of list length and COUNT query).
+  ///
+  /// Downloading all kind 3 events is limited by relay result caps,
+  /// so [followersPubkeys.length] may undercount. This field uses
+  /// the higher of the list length and a COUNT query result.
+  final int followerCount;
 
   /// The pubkey whose followers list is being viewed (for retry)
   final String? targetPubkey;
@@ -52,12 +60,14 @@ final class OthersFollowersState extends Equatable {
   OthersFollowersState copyWith({
     OthersFollowersStatus? status,
     List<String>? followersPubkeys,
+    int? followerCount,
     String? targetPubkey,
     DateTime? lastFetchedAt,
   }) {
     return OthersFollowersState(
       status: status ?? this.status,
       followersPubkeys: followersPubkeys ?? this.followersPubkeys,
+      followerCount: followerCount ?? this.followerCount,
       targetPubkey: targetPubkey ?? this.targetPubkey,
       lastFetchedAt: lastFetchedAt ?? this.lastFetchedAt,
     );
@@ -67,6 +77,7 @@ final class OthersFollowersState extends Equatable {
   List<Object?> get props => [
     status,
     followersPubkeys,
+    followerCount,
     targetPubkey,
     lastFetchedAt,
   ];

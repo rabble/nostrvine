@@ -28,7 +28,8 @@ enum FeatureFlag {
   classicsHashtags(
     'Classics Trending Hashtags',
     'Show trending hashtags section on the Classics tab',
-  );
+  ),
+  curatedLists('Curated Lists', 'Enable curated lists feature in share menu');
 
   const FeatureFlag(this.displayName, this.description);
 

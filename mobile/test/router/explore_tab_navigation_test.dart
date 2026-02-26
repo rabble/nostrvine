@@ -4,14 +4,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
-import 'package:mockito/annotations.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 
-@GenerateNiceMocks([MockSpec<GoRouter>()])
 void main() {
   group('Explore Tab Navigation', () {
     testWidgets(
@@ -27,7 +24,7 @@ void main() {
                 ExploreScreen.pathForIndex(
                   0,
                 ), // 2. User taps video, enters feed mode
-                HomeScreenRouter.pathForIndex(0), // 3. User taps Home tab
+                VideoFeedPage.pathForIndex(0), // 3. User taps Home tab
                 ExploreScreen.path,
                 // 4. User taps Explore tab - should reset to grid!
               ]);

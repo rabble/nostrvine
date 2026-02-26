@@ -2,23 +2,22 @@
 // ABOUTME: Tests that reposted videos show "X reposted" header with reposter's name
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/widget_test_helper.dart';
-import 'video_feed_item_repost_header_test.mocks.dart';
 
-@GenerateMocks([SharedPreferences])
+class _MockSharedPreferences extends Mock implements SharedPreferences {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoFeedItem Repost Header - TDD', () {
     late VideoEvent originalVideo;
     late VideoEvent repostedVideo;
-    late MockSharedPreferences mockPrefs;
+    late _MockSharedPreferences mockPrefs;
 
     setUp(() {
       final now = DateTime.now();
@@ -62,7 +61,7 @@ void main() {
         repostedAt: now,
       );
 
-      mockPrefs = MockSharedPreferences();
+      mockPrefs = _MockSharedPreferences();
       createMockSharedPreferences(mockPrefs);
     });
 
@@ -140,14 +139,14 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Expect to find truncated npub (e.g., "npub1abc...xyz")
-        final truncatedNpub = NostrKeyUtils.truncateNpub(
+        // Expect to find generated name for reposter
+        final generatedName = UserProfile.generatedNameFor(
           repostedVideo.reposterPubkey!,
         );
         expect(
-          find.textContaining(truncatedNpub),
+          find.textContaining(generatedName),
           findsOneWidget,
-          reason: 'Repost header should show truncated npub for reposter',
+          reason: 'Repost header should show generated name for reposter',
         );
       });
     });

@@ -10,7 +10,6 @@ import 'package:nostr_sdk/event.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/blossom_server_discovery_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 
@@ -43,12 +42,6 @@ void main() {
       SharedPreferences.setMockInitialValues({});
 
       mockAuthService = MockAuthService();
-      when(
-        () => mockAuthService.hasUserBlossomServers,
-      ).thenAnswer((_) => false);
-      when(
-        () => mockAuthService.userBlossomServers,
-      ).thenAnswer((_) => <DiscoveredBlossomServer>[]);
 
       service = BlossomUploadService(authService: mockAuthService);
     });
@@ -74,8 +67,8 @@ void main() {
         await service.setBlossomServer(null);
         final retrievedUrl = await service.getBlossomServer();
 
-        // Assert - Service returns empty string when explicitly cleared
-        expect(retrievedUrl, equals(''));
+        // Assert - Clearing falls back to default server
+        expect(retrievedUrl, equals(BlossomUploadService.defaultBlossomServer));
       });
 
       test('should save and retrieve Blossom enabled state', () async {
@@ -250,14 +243,15 @@ void main() {
           print('Upload failed with error: ${result.errorMessage}');
         }
         expect(result.success, isTrue);
-        expect(result.cdnUrl, equals('https://cdn.satellite.earth/abc123.mp4'));
-        // videoId is now the calculated SHA-256 hash of the file bytes [1,2,3,4,5]
+        // URL is now constructed client-side: {defaultBlossomServer}/{sha256}
+        // per Blossom spec (BUD-01), regardless of server response URL
+        final expectedHash =
+            '74f81fe167d99b4cb41d6d0ccda82278caee9f3e2f25d5e5a3936ff3dcec60d0';
         expect(
-          result.videoId,
-          equals(
-            '74f81fe167d99b4cb41d6d0ccda82278caee9f3e2f25d5e5a3936ff3dcec60d0',
-          ),
+          result.cdnUrl,
+          equals('https://media.divine.video/$expectedHash'),
         );
+        expect(result.videoId, equals(expectedHash));
       });
 
       test(
@@ -487,12 +481,6 @@ void main() {
 
         final mockDio = MockDio();
         final mockAuthService = MockAuthService();
-        when(
-          () => mockAuthService.hasUserBlossomServers,
-        ).thenAnswer((_) => false);
-        when(
-          () => mockAuthService.userBlossomServers,
-        ).thenAnswer((_) => <DiscoveredBlossomServer>[]);
 
         final testService = BlossomUploadService(
           authService: mockAuthService,

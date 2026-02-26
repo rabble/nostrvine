@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/settings_screen.dart';
@@ -14,28 +13,32 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-@GenerateMocks([AuthService, AudioSharingPreferenceService])
-import 'settings_screen_audio_sharing_test.mocks.dart';
+class _MockAuthService extends Mock implements AuthService {}
+
+class _MockAudioSharingPreferenceService extends Mock
+    implements AudioSharingPreferenceService {}
 
 void main() {
   group('SettingsScreen Audio Sharing Toggle', () {
-    late MockAuthService mockAuthService;
-    late MockAudioSharingPreferenceService mockAudioSharingService;
+    late _MockAuthService mockAuthService;
+    late _MockAudioSharingPreferenceService mockAudioSharingService;
     late SharedPreferences sharedPreferences;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
-      mockAuthService = MockAuthService();
-      mockAudioSharingService = MockAudioSharingPreferenceService();
+      mockAuthService = _MockAuthService();
+      mockAudioSharingService = _MockAudioSharingPreferenceService();
 
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.isAnonymous).thenReturn(true);
-      when(mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.isAnonymous).thenReturn(true);
+      when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(
-        mockAuthService.authStateStream,
+        () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
-      when(mockAudioSharingService.isAudioSharingEnabled).thenReturn(false);
+      when(
+        () => mockAudioSharingService.isAudioSharingEnabled,
+      ).thenReturn(false);
     });
 
     Widget createTestWidget() {
@@ -70,7 +73,9 @@ void main() {
     });
 
     testWidgets('toggle shows correct initial state (OFF)', (tester) async {
-      when(mockAudioSharingService.isAudioSharingEnabled).thenReturn(false);
+      when(
+        () => mockAudioSharingService.isAudioSharingEnabled,
+      ).thenReturn(false);
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -88,7 +93,9 @@ void main() {
     });
 
     testWidgets('toggle shows correct initial state (ON)', (tester) async {
-      when(mockAudioSharingService.isAudioSharingEnabled).thenReturn(true);
+      when(
+        () => mockAudioSharingService.isAudioSharingEnabled,
+      ).thenReturn(true);
 
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
@@ -106,9 +113,11 @@ void main() {
     });
 
     testWidgets('tapping toggle calls setAudioSharingEnabled', (tester) async {
-      when(mockAudioSharingService.isAudioSharingEnabled).thenReturn(false);
       when(
-        mockAudioSharingService.setAudioSharingEnabled(any),
+        () => mockAudioSharingService.isAudioSharingEnabled,
+      ).thenReturn(false);
+      when(
+        () => mockAudioSharingService.setAudioSharingEnabled(any()),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(createTestWidget());
@@ -134,7 +143,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the service was called
-      verify(mockAudioSharingService.setAudioSharingEnabled(true)).called(1);
+      verify(
+        () => mockAudioSharingService.setAudioSharingEnabled(true),
+      ).called(1);
     });
 
     testWidgets('uses correct VineTheme colors', (tester) async {

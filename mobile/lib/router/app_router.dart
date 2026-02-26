@@ -1,6 +1,8 @@
 // ABOUTME: GoRouter configuration with ShellRoute for per-tab state preservation
 // ABOUTME: URL is source of truth, bottom nav bound to routes
 
+import 'dart:async';
+
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,16 +11,15 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/page_load_observer.dart';
-import 'package:openvine/screens/auth/divine_auth_screen.dart';
+import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
-import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -26,7 +27,6 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
@@ -38,6 +38,7 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -46,11 +47,16 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/screens/welcome_screen.dart';
+import 'package:openvine/screens/auth/login_options_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
+
+/// Global route observer for [RouteAware] subscribers (e.g. pausing video
+/// when a new route is pushed on top of the feed).
+final routeObserver = RouteObserver<ModalRoute<dynamic>>();
 
 // Track if we've done initial navigation to avoid redirect loops
 bool _hasNavigated = false;
@@ -63,15 +69,17 @@ void resetNavigationState() {
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
-  // The refreshListenable handles reacting to auth state changes
   final authService = ref.read(authServiceProvider);
-  final authListenable = AuthStateListenable(authService);
+
+  // Convert auth state stream to a Listenable for GoRouter
+  final authListenable = _StreamListenable(authService.authStateStream);
 
   return GoRouter(
     navigatorKey: NavigatorKeys.root,
     // Start at /welcome - redirect logic will navigate to appropriate route
     initialLocation: WelcomeScreen.path,
     observers: [
+      routeObserver,
       PageLoadObserver(),
       VideoStopNavigatorObserver(),
       FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
@@ -80,83 +88,65 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: authListenable,
     redirect: (context, state) {
       final location = state.matchedLocation;
+      final authState = ref.read(authServiceProvider).authState;
+
       Log.debug(
-        'Redirect START for: $location',
+        'Router redirect: location=$location, '
+        'authState=${authState.name}',
         name: 'AppRouter',
-        category: LogCategory.ui,
+        category: LogCategory.auth,
       );
 
-      final authState = ref.read(authServiceProvider).authState;
+      // Handle authenticated users on auth routes
       if (authState == AuthState.authenticated &&
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
               location == NostrConnectScreen.path ||
+              location == WelcomeScreen.createAccountPath ||
               location == WelcomeScreen.loginOptionsPath ||
               location == WelcomeScreen.resetPasswordPath ||
               location == EmailVerificationScreen.path)) {
-        debugPrint('[Router] Authenticated. moving to /home/0');
         // On first navigation, redirect to explore if user has no following
         if (!_hasNavigated) {
           _hasNavigated = true;
           final emptyFollowingRedirect = ref.read(
             checkEmptyFollowingRedirectProvider(location),
           );
-          if (emptyFollowingRedirect != null) return emptyFollowingRedirect;
+          if (emptyFollowingRedirect != null) {
+            Log.info(
+              'Router redirect: authenticated on auth route — '
+              'redirecting to $emptyFollowingRedirect (no following)',
+              name: 'AppRouter',
+              category: LogCategory.auth,
+            );
+            return emptyFollowingRedirect;
+          }
         }
-        return HomeScreenRouter.pathForIndex(0);
+        return VideoFeedPage.pathForIndex(0);
       }
 
-      // Auth routes are allowed without TOS - user is in the process of logging in
+      // Auth routes don't require authentication — user is in the
+      // process of logging in.
       final isAuthRoute =
           location.startsWith(WelcomeScreen.path) ||
           location.startsWith(KeyImportScreen.path) ||
           location.startsWith(NostrConnectScreen.path) ||
           location.startsWith(WelcomeScreen.resetPasswordPath) ||
+          location.startsWith(ResetPasswordScreen.path) ||
           location.startsWith(EmailVerificationScreen.path);
 
-      // Check TOS acceptance for non-auth routes
-      if (!isAuthRoute) {
-        Log.debug(
-          'Checking TOS for: $location',
+      // Unauthenticated users on non-auth routes → redirect to welcome
+      if (!isAuthRoute && authState == AuthState.unauthenticated) {
+        _hasNavigated = false;
+        Log.info(
+          'Router redirect: unauthenticated on $location — '
+          'redirecting to ${WelcomeScreen.path}',
           name: 'AppRouter',
-          category: LogCategory.ui,
+          category: LogCategory.auth,
         );
-
-        final hasAcceptedTerms = ref.read(hasTosAcceptedProvider);
-
-        Log.debug(
-          'TOS accepted: $hasAcceptedTerms',
-          name: 'AppRouter',
-          category: LogCategory.ui,
-        );
-
-        // Only redirect to welcome if TOS not accepted
-        if (!hasAcceptedTerms) {
-          Log.debug(
-            'TOS not accepted, redirecting to ${WelcomeScreen.path}',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          return WelcomeScreen.path;
-        }
-
-        // If TOS is accepted but user is not authenticated, redirect to welcome
-        if (authState == AuthState.unauthenticated) {
-          _hasNavigated = false;
-          Log.debug(
-            'Not authenticated, redirecting to ${WelcomeScreen.path}',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          return WelcomeScreen.path;
-        }
+        return WelcomeScreen.path;
       }
 
-      Log.debug(
-        'Redirect END for: $location, returning null',
-        name: 'AppRouter',
-        category: LogCategory.ui,
-      );
       return null;
     },
     routes: [
@@ -170,17 +160,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           // HOME tab subtree
           GoRoute(
-            path: HomeScreenRouter.pathWithIndex,
-            name: HomeScreenRouter.routeName,
+            path: VideoFeedPage.pathWithIndex,
+            name: VideoFeedPage.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
                 key: NavigatorKeys.home,
                 onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const HomeScreenRouter(),
-                  settings: const RouteSettings(
-                    name: HomeScreenRouter.routeName,
-                  ),
+                  builder: (_) => const VideoFeedPage(),
+                  settings: RouteSettings(name: VideoFeedPage.routeName),
                 ),
               ),
             ),
@@ -455,33 +443,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const WelcomeScreen(),
         routes: [
           GoRoute(
-            path: LoginOptionsScreen.path,
+            path: 'create-account',
+            name: CreateAccountScreen.routeName,
+            builder: (_, __) => const CreateAccountScreen(),
+          ),
+          GoRoute(
+            path: 'login-options',
             name: LoginOptionsScreen.routeName,
             builder: (_, __) => const LoginOptionsScreen(),
             routes: [
+              // Route for deep link when resetting password
               GoRoute(
-                path: DivineAuthScreen.path,
-                name: DivineAuthScreen.routeName,
+                path: 'reset-password',
+                name: ResetPasswordScreen.routeName,
                 builder: (ctx, st) {
-                  // Check for initialMode passed via extra or query param
-                  AuthMode? mode = st.extra as AuthMode?;
-                  if (mode == null) {
-                    final modeParam = st.uri.queryParameters['mode'];
-                    if (modeParam == 'register') mode = AuthMode.register;
-                  }
-                  return DivineAuthScreen(initialMode: mode ?? AuthMode.login);
+                  final token = st.uri.queryParameters['token'];
+                  return ResetPasswordScreen(token: token ?? '');
                 },
-                routes: [
-                  // route for deep link when resetting password from emailed link
-                  GoRoute(
-                    path: ResetPasswordScreen.path,
-                    name: ResetPasswordScreen.routeName,
-                    builder: (ctx, st) {
-                      final token = st.uri.queryParameters['token'];
-                      return ResetPasswordScreen(token: token ?? '');
-                    },
-                  ),
-                ],
               ),
             ],
           ),
@@ -562,6 +540,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const SafetySettingsScreen(),
       ),
       GoRoute(
+        path: ContentFiltersScreen.path,
+        name: ContentFiltersScreen.routeName,
+        builder: (_, __) => const ContentFiltersScreen(),
+      ),
+      GoRoute(
         path: DeveloperOptionsScreen.path,
         name: DeveloperOptionsScreen.routeName,
         pageBuilder: (context, state) => CustomTransitionPage(
@@ -578,13 +561,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           },
         ),
       ),
-      // Debug route for testing VideoFeedBloc as a pushed screen
-      GoRoute(
-        path: VideoFeedPage.path,
-        name: VideoFeedPage.routeName,
-        builder: (_, __) => const VideoFeedPage(),
-      ),
-
       GoRoute(
         path: ProfileSetupScreen.editPath,
         name: ProfileSetupScreen.editRouteName,
@@ -783,6 +759,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             source: args.source,
             initialIndex: args.initialIndex,
             contextTitle: args.contextTitle,
+            trafficSource: args.trafficSource,
           );
         },
       ),
@@ -803,6 +780,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             initialIndex: args.initialIndex,
             onLoadMore: args.onLoadMore,
             contextTitle: args.contextTitle,
+            trafficSource: args.trafficSource,
+            sourceDetail: args.sourceDetail,
           );
         },
       ),
@@ -867,6 +846,7 @@ int tabIndexFromLocation(String loc) {
     case 'notification-settings':
     case 'key-management':
     case 'safety-settings':
+    case 'content-filters':
     case 'developer-options':
     case 'edit-profile':
     case 'setup-profile':
@@ -883,12 +863,27 @@ int tabIndexFromLocation(String loc) {
     case 'video-feed':
     case 'profile-view':
     case 'sound':
-    case 'new-video-feed':
     case 'list':
     case 'discover-lists':
     case 'creator-analytics':
       return -1; // Non-tab routes - no bottom nav (outside shell)
     default:
       return 0; // fallback to home
+  }
+}
+
+/// Adapts a [Stream] to a [ChangeNotifier] for use with GoRouter's
+/// `refreshListenable`.
+class _StreamListenable extends ChangeNotifier {
+  _StreamListenable(Stream<dynamic> stream) {
+    _subscription = stream.listen((_) => notifyListeners());
+  }
+
+  late final StreamSubscription<dynamic> _subscription;
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }

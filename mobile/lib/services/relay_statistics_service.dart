@@ -198,4 +198,37 @@ class RelayStatisticsService extends ChangeNotifier {
     _statistics.clear();
     notifyListeners();
   }
+
+  /// Record batched event counts for a relay.
+  ///
+  /// Used by the statistics bridge observer to batch event notifications
+  /// and avoid excessive notifyListeners() calls.
+  void recordBatchedEvents(String relayUrl, {int received = 0, int sent = 0}) {
+    final stats = _getOrCreate(relayUrl);
+    stats.eventsReceived += received;
+    stats.eventsSent += sent;
+    notifyListeners();
+  }
+
+  /// Sync per-relay counters from the SDK's RelayStatus.
+  ///
+  /// Directly sets the counters to the SDK's values (which are the actual
+  /// per-relay counts). Only notifies listeners if values changed.
+  void syncSdkCounters(
+    String relayUrl, {
+    required int eventsReceived,
+    required int queriesSent,
+    required int errors,
+  }) {
+    final stats = _getOrCreate(relayUrl);
+    final changed =
+        stats.eventsReceived != eventsReceived ||
+        stats.requestsThisSession != queriesSent ||
+        stats.failedRequests != errors;
+    if (!changed) return;
+    stats.eventsReceived = eventsReceived;
+    stats.requestsThisSession = queriesSent;
+    stats.failedRequests = errors;
+    notifyListeners();
+  }
 }

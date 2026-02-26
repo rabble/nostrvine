@@ -2,52 +2,80 @@
 // ABOUTME: Tests adding, removing, and querying videos in lists
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'curated_list_service_video_management_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateMocks([NostrClient, AuthService])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CuratedListService - Video Management', () {
     late CuratedListService service;
-    late MockNostrClient mockNostr;
-    late MockAuthService mockAuth;
+    late _MockNostrClient mockNostr;
+    late _MockAuthService mockAuth;
     late SharedPreferences prefs;
 
+    setUpAll(() {
+      registerFallbackValue(
+        Event.fromJson({
+          'id': 'fallback_event_id',
+          'pubkey':
+              'aabbccdd00112233445566778899aabbccdd00112233445566778899aabbccdd',
+          'created_at': 0,
+          'kind': 1,
+          'tags': <List<String>>[],
+          'content': '',
+          'sig': '',
+        }),
+      );
+      registerFallbackValue(<Filter>[]);
+    });
+
+    // Helper to stub common mocks - call after reset(mockNostr)
+    void stubMocks() {
+      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
+        return invocation.positionalArguments[0] as Event;
+      });
+
+      when(
+        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
+      ).thenAnswer((_) => Stream.empty());
+    }
+
     setUp(() async {
-      mockNostr = MockNostrClient();
-      mockAuth = MockAuthService();
+      mockNostr = _MockNostrClient();
+      mockAuth = _MockAuthService();
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
 
       // Setup common mocks
-      when(mockAuth.isAuthenticated).thenReturn(true);
+      when(() => mockAuth.isAuthenticated).thenReturn(true);
       when(
-        mockAuth.currentPublicKeyHex,
+        () => mockAuth.currentPublicKeyHex,
       ).thenReturn('test_pubkey_123456789abcdef');
 
       // Mock successful event publishing
-      when(mockNostr.publishEvent(any)).thenAnswer((invocation) async {
+      when(() => mockNostr.publishEvent(any())).thenAnswer((invocation) async {
         return invocation.positionalArguments[0] as Event;
       });
 
       // Mock subscribeToEvents for relay sync
       when(
-        mockNostr.subscribe(argThat(anything), onEose: anyNamed('onEose')),
+        () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
       ).thenAnswer((_) => Stream.empty());
 
       // Mock event creation
       when(
-        mockAuth.createAndSignEvent(
-          kind: anyNamed('kind'),
-          content: anyNamed('content'),
-          tags: anyNamed('tags'),
+        () => mockAuth.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
         ),
       ).thenAnswer(
         (_) async => Event.fromJson({
@@ -141,11 +169,12 @@ void main() {
           name: 'Test List',
           isPublic: true,
         );
-        clearInteractions(mockNostr);
+        reset(mockNostr);
+        stubMocks();
 
         await service.addVideoToList(list!.id, 'video_event_123');
 
-        verify(mockNostr.publishEvent(any)).called(1);
+        verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
       test('does not publish update for private list', () async {
@@ -153,11 +182,12 @@ void main() {
           name: 'Test List',
           isPublic: false,
         );
-        clearInteractions(mockNostr);
+        reset(mockNostr);
+        stubMocks();
 
         await service.addVideoToList(list!.id, 'video_event_123');
 
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('saves to SharedPreferences after adding', () async {
@@ -246,14 +276,16 @@ void main() {
           name: 'Test List',
           isPublic: true,
         );
-        // Add 2 videos so list isn't empty after removal (empty lists skip publish)
+        // Add 2 videos so list isn't empty after removal
+        // (empty lists skip publish)
         await service.addVideoToList(list!.id, 'video_event_123');
         await service.addVideoToList(list.id, 'video_event_456');
-        clearInteractions(mockNostr);
+        reset(mockNostr);
+        stubMocks();
 
         await service.removeVideoFromList(list.id, 'video_event_123');
 
-        verify(mockNostr.publishEvent(any)).called(1);
+        verify(() => mockNostr.publishEvent(any())).called(1);
       });
 
       test('does not publish update for private list', () async {
@@ -262,11 +294,12 @@ void main() {
           isPublic: false,
         );
         await service.addVideoToList(list!.id, 'video_event_123');
-        clearInteractions(mockNostr);
+        reset(mockNostr);
+        stubMocks();
 
         await service.removeVideoFromList(list.id, 'video_event_123');
 
-        verifyNever(mockNostr.publishEvent(any));
+        verifyNever(() => mockNostr.publishEvent(any()));
       });
 
       test('saves to SharedPreferences after removing', () async {

@@ -40,7 +40,7 @@ class NostrInfoSheetContent extends StatelessWidget {
                 ),
                 TextSpan(
                   text:
-                      'When you sign up for diVine, you get a new Nostr identity.',
+                      'When you sign up for Divine, you get a new Nostr identity.',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],

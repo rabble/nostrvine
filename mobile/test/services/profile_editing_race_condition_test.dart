@@ -2,18 +2,16 @@
 // ABOUTME: Tests the retry logic that waits for relay to process profile updates before refreshing cache
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 
-import 'profile_editing_race_condition_test.mocks.dart';
+class _MockUserProfileService extends Mock implements UserProfileService {}
 
-@GenerateMocks([UserProfileService])
 void main() {
   group('Profile Editing Race Condition Fix', () {
-    late MockUserProfileService mockUserProfileService;
+    late _MockUserProfileService mockUserProfileService;
     late String testPubkey;
     late String testEventId;
     late int testTimestamp;
@@ -21,7 +19,7 @@ void main() {
     late UserProfile staleProfile;
 
     setUp(() {
-      mockUserProfileService = MockUserProfileService();
+      mockUserProfileService = _MockUserProfileService();
       testPubkey =
           '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
       testEventId = 'test-event-id-123';
@@ -49,9 +47,12 @@ void main() {
     test('should retry until updated profile is fetched', () async {
       // Setup: Use a call counter to return different results
       var callCount = 0;
-      when(mockUserProfileService.removeProfile(testPubkey)).thenReturn(null);
       when(
-        mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+        () => mockUserProfileService.removeProfile(testPubkey),
+      ).thenReturn(null);
+      when(
+        () =>
+            mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
       ).thenAnswer((_) async {
         callCount++;
         if (callCount <= 2) {
@@ -93,9 +94,10 @@ void main() {
       expect(result?.name, equals('updated-name'));
 
       // Verify retry calls
-      verify(mockUserProfileService.removeProfile(testPubkey)).called(3);
+      verify(() => mockUserProfileService.removeProfile(testPubkey)).called(3);
       verify(
-        mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+        () =>
+            mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
       ).called(3);
     });
 
@@ -103,9 +105,14 @@ void main() {
       'should succeed immediately if first fetch returns updated profile',
       () async {
         // Setup: First attempt returns updated profile
-        when(mockUserProfileService.removeProfile(testPubkey)).thenReturn(null);
         when(
-          mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+          () => mockUserProfileService.removeProfile(testPubkey),
+        ).thenReturn(null);
+        when(
+          () => mockUserProfileService.fetchProfile(
+            testPubkey,
+            forceRefresh: true,
+          ),
         ).thenAnswer((_) async => updatedProfile);
 
         // Execute
@@ -137,18 +144,26 @@ void main() {
         expect(result, equals(updatedProfile));
 
         // Should only call once
-        verify(mockUserProfileService.removeProfile(testPubkey)).called(1);
         verify(
-          mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+          () => mockUserProfileService.removeProfile(testPubkey),
+        ).called(1);
+        verify(
+          () => mockUserProfileService.fetchProfile(
+            testPubkey,
+            forceRefresh: true,
+          ),
         ).called(1);
       },
     );
 
     test('should fail after max retries if profile never updates', () async {
       // Setup: Always return stale profile
-      when(mockUserProfileService.removeProfile(testPubkey)).thenReturn(null);
       when(
-        mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+        () => mockUserProfileService.removeProfile(testPubkey),
+      ).thenReturn(null);
+      when(
+        () =>
+            mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
       ).thenAnswer((_) async => staleProfile);
 
       // Execute and expect failure
@@ -182,9 +197,12 @@ void main() {
 
     test('should handle null profile response', () async {
       // Setup: Return null profile
-      when(mockUserProfileService.removeProfile(testPubkey)).thenReturn(null);
       when(
-        mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+        () => mockUserProfileService.removeProfile(testPubkey),
+      ).thenReturn(null);
+      when(
+        () =>
+            mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
       ).thenAnswer((_) async => null);
 
       // Execute and expect failure
@@ -226,9 +244,12 @@ void main() {
         'created_at': (testTimestamp - 30) * 1000, // Older timestamp
       });
 
-      when(mockUserProfileService.removeProfile(testPubkey)).thenReturn(null);
       when(
-        mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+        () => mockUserProfileService.removeProfile(testPubkey),
+      ).thenReturn(null);
+      when(
+        () =>
+            mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
       ).thenAnswer((_) async => profileWithMatchingId);
 
       final result = await AsyncUtils.retryWithBackoff(
@@ -270,9 +291,12 @@ void main() {
         'created_at': (testTimestamp + 10) * 1000, // Newer timestamp
       });
 
-      when(mockUserProfileService.removeProfile(testPubkey)).thenReturn(null);
       when(
-        mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+        () => mockUserProfileService.removeProfile(testPubkey),
+      ).thenReturn(null);
+      when(
+        () =>
+            mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
       ).thenAnswer((_) async => profileWithNewerTimestamp);
 
       final result = await AsyncUtils.retryWithBackoff(

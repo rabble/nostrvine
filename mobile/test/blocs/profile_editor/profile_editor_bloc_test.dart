@@ -1106,6 +1106,283 @@ void main() {
       );
     });
 
+    group('Nip05ModeChanged', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'switches to external mode and resets username status',
+        build: createBloc,
+        act: (bloc) => bloc.add(const Nip05ModeChanged(Nip05Mode.external_)),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.nip05Mode, 'nip05Mode', Nip05Mode.external_)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.idle,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'switches to divine mode and clears external NIP-05 state',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          nip05Mode: Nip05Mode.external_,
+          externalNip05: 'alice@example.com',
+        ),
+        act: (bloc) => bloc.add(const Nip05ModeChanged(Nip05Mode.divine)),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.nip05Mode, 'nip05Mode', Nip05Mode.divine)
+              .having((s) => s.externalNip05, 'externalNip05', ''),
+        ],
+      );
+    });
+
+    group('ExternalNip05Changed', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'accepts valid external NIP-05 format',
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const ExternalNip05Changed('alice@example.com')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.externalNip05,
+                'externalNip05',
+                'alice@example.com',
+              )
+              .having(
+                (s) => s.externalNip05Error,
+                'externalNip05Error',
+                isNull,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'rejects invalid format without @ symbol',
+        build: createBloc,
+        act: (bloc) => bloc.add(const ExternalNip05Changed('invalidemail')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.externalNip05, 'externalNip05', 'invalidemail')
+              .having(
+                (s) => s.externalNip05Error,
+                'externalNip05Error',
+                ExternalNip05ValidationError.invalidFormat,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'clears error when input is empty',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          externalNip05: 'invalid',
+          externalNip05Error: ExternalNip05ValidationError.invalidFormat,
+        ),
+        act: (bloc) => bloc.add(const ExternalNip05Changed('')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.externalNip05, 'externalNip05', '')
+              .having(
+                (s) => s.externalNip05Error,
+                'externalNip05Error',
+                isNull,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'normalizes to lowercase',
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const ExternalNip05Changed('Alice@Example.COM')),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.externalNip05,
+            'externalNip05',
+            'alice@example.com',
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'rejects divine.video domain',
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const ExternalNip05Changed('_@user.divine.video')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.externalNip05,
+                'externalNip05',
+                '_@user.divine.video',
+              )
+              .having(
+                (s) => s.externalNip05Error,
+                'externalNip05Error',
+                ExternalNip05ValidationError.divineDomain,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'rejects openvine.co domain',
+        build: createBloc,
+        act: (bloc) => bloc.add(const ExternalNip05Changed('user@openvine.co')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.externalNip05,
+                'externalNip05',
+                'user@openvine.co',
+              )
+              .having(
+                (s) => s.externalNip05Error,
+                'externalNip05Error',
+                ExternalNip05ValidationError.divineDomain,
+              ),
+        ],
+      );
+    });
+
+    group('InitialExternalNip05Set', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'stores initial external NIP-05 in state',
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const InitialExternalNip05Set('alice@example.com')),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.initialExternalNip05,
+            'initialExternalNip05',
+            'alice@example.com',
+          ),
+        ],
+      );
+    });
+
+    group('ProfileSaved with external NIP-05', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits [loading, success] when saving with external NIP-05',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              nip05: 'alice@example.com',
+              picture: testPicture,
+              currentProfile: null,
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        seed: () => const ProfileEditorState(nip05Mode: Nip05Mode.external_),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+            picture: testPicture,
+            externalNip05: 'alice@example.com',
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.loading,
+          ),
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.success,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              nip05: 'alice@example.com',
+              picture: testPicture,
+              currentProfile: null,
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockProfileRepository.claimUsername(
+              username: any(named: 'username'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'drops username and skips claim when both username and '
+        'externalNip05 are sent in external mode',
+        setUp: () {
+          when(
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              nip05: 'alice@example.com',
+              picture: testPicture,
+              currentProfile: null,
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        seed: () => const ProfileEditorState(nip05Mode: Nip05Mode.external_),
+        act: (bloc) => bloc.add(
+          const ProfileSaved(
+            pubkey: testPubkey,
+            displayName: testDisplayName,
+            about: testAbout,
+            picture: testPicture,
+            username: testUsername,
+            externalNip05: 'alice@example.com',
+          ),
+        ),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.loading,
+          ),
+          isA<ProfileEditorState>().having(
+            (s) => s.status,
+            'status',
+            ProfileEditorStatus.success,
+          ),
+        ],
+        verify: (_) {
+          // Username should be dropped — saveProfileEvent called without it
+          verify(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              nip05: 'alice@example.com',
+              picture: testPicture,
+              currentProfile: null,
+            ),
+          ).called(1);
+          // No username claim should be attempted
+          verifyNever(
+            () => mockProfileRepository.claimUsername(
+              username: any(named: 'username'),
+            ),
+          );
+        },
+      );
+    });
+
     group('isUsernameSaveReady', () {
       test('returns true when username is empty', () {
         const state = ProfileEditorState();
@@ -1169,6 +1446,58 @@ void main() {
           usernameStatus: UsernameStatus.idle,
         );
         expect(state.isUsernameSaveReady, isFalse);
+      });
+    });
+
+    group('isExternalNip05SaveReady', () {
+      test('returns true when external NIP-05 is empty', () {
+        const state = ProfileEditorState(nip05Mode: Nip05Mode.external_);
+        expect(state.isExternalNip05SaveReady, isTrue);
+      });
+
+      test('returns true when external NIP-05 is valid', () {
+        const state = ProfileEditorState(
+          nip05Mode: Nip05Mode.external_,
+          externalNip05: 'alice@example.com',
+        );
+        expect(state.isExternalNip05SaveReady, isTrue);
+      });
+
+      test('returns false when external NIP-05 has format error', () {
+        const state = ProfileEditorState(
+          nip05Mode: Nip05Mode.external_,
+          externalNip05: 'invalid',
+          externalNip05Error: ExternalNip05ValidationError.invalidFormat,
+        );
+        expect(state.isExternalNip05SaveReady, isFalse);
+      });
+    });
+
+    group('isSaveReady', () {
+      test('delegates to isUsernameSaveReady in divine mode', () {
+        const state = ProfileEditorState(
+          nip05Mode: Nip05Mode.divine,
+          username: 'alice',
+          usernameStatus: UsernameStatus.available,
+        );
+        expect(state.isSaveReady, isTrue);
+      });
+
+      test('delegates to isExternalNip05SaveReady in external mode', () {
+        const state = ProfileEditorState(
+          nip05Mode: Nip05Mode.external_,
+          externalNip05: 'alice@example.com',
+        );
+        expect(state.isSaveReady, isTrue);
+      });
+
+      test('returns false in external mode with invalid NIP-05', () {
+        const state = ProfileEditorState(
+          nip05Mode: Nip05Mode.external_,
+          externalNip05: 'invalid',
+          externalNip05Error: ExternalNip05ValidationError.invalidFormat,
+        );
+        expect(state.isSaveReady, isFalse);
       });
     });
   });

@@ -3,35 +3,34 @@
 
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/app/startup/startup_coordinator.dart';
 import 'package:openvine/features/app/startup/startup_phase.dart';
 import 'package:openvine/features/app/startup/startup_profiler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-@GenerateMocks([CrashReportingService])
-import 'startup_diagnostics_test.mocks.dart';
+class _MockCrashReportingService extends Mock
+    implements CrashReportingService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Startup Diagnostics', () {
     late StartupCoordinator coordinator;
-    late MockCrashReportingService mockCrashReporting;
+    late _MockCrashReportingService mockCrashReporting;
     late List<String> breadcrumbs;
 
     setUp(() {
       coordinator = StartupCoordinator();
-      mockCrashReporting = MockCrashReportingService();
+      mockCrashReporting = _MockCrashReportingService();
       breadcrumbs = [];
 
       // Set up log capture
       Log.setLogLevel(LogLevel.debug);
 
       // Mock the CrashReportingService singleton
-      when(mockCrashReporting.logInitializationStep(any)).thenAnswer((
+      when(() => mockCrashReporting.logInitializationStep(any())).thenAnswer((
         invocation,
       ) {
         breadcrumbs.add(invocation.positionalArguments[0] as String);

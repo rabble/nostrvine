@@ -82,6 +82,7 @@ void main() {
       registerFallbackValue(MockEvent());
       registerFallbackValue(<Filter>[]);
       registerFallbackValue(createLikeRecord());
+      registerFallbackValue('');
     });
 
     setUp(() {
@@ -90,6 +91,10 @@ void main() {
 
       // Default mock behaviors
       when(() => mockNostrClient.publicKey).thenReturn(testUserPubkey);
+      when(() => mockNostrClient.hasKeys).thenReturn(false);
+      when(
+        () => mockNostrClient.unsubscribe(any()),
+      ).thenAnswer((_) async {});
       when(
         () => mockLocalStorage.getAllLikeRecords(),
       ).thenAnswer((_) async => []);
@@ -1151,58 +1156,185 @@ void main() {
       });
     });
 
-    group('auth state changes', () {
-      test('clears cache when user logs out', () async {
-        final authController = StreamController<bool>.broadcast();
-        when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
-
-        repository = LikesRepository(
-          nostrClient: mockNostrClient,
-          localStorage: mockLocalStorage,
-          authStateStream: authController.stream,
-          isAuthenticated: true,
+    group('initialize', () {
+      test('loads records from local storage', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer(
+          (_) async => [
+            createLikeRecord(
+              targetEventId: 'event_a_1234567890abcdef',
+              reactionEventId: 'reaction_a_1234567890abcdef',
+            ),
+          ],
         );
 
-        authController.add(false);
-        await Future<void>.delayed(Duration.zero);
+        repository = createRepository();
+        await repository.initialize();
 
-        verify(() => mockLocalStorage.clearAll()).called(1);
-        await authController.close();
+        expect(
+          await repository.isLiked('event_a_1234567890abcdef'),
+          isTrue,
+        );
       });
 
-      test('does not clear cache when auth state unchanged', () async {
-        final authController = StreamController<bool>.broadcast();
-        when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
+      test('sets up subscription when client has keys', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
 
-        repository = LikesRepository(
-          nostrClient: mockNostrClient,
-          localStorage: mockLocalStorage,
-          authStateStream: authController.stream,
-        );
+        repository = createRepository();
+        await repository.initialize();
 
-        authController.add(false);
-        await Future<void>.delayed(Duration.zero);
-
-        verifyNever(() => mockLocalStorage.clearAll());
-        await authController.close();
+        verify(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).called(1);
       });
 
-      test('marks as not initialized when user logs in', () async {
-        final authController = StreamController<bool>.broadcast();
-        when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
+      test('skips subscription when client has no keys', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
 
-        repository = LikesRepository(
-          nostrClient: mockNostrClient,
-          localStorage: mockLocalStorage,
-          authStateStream: authController.stream,
+        repository = createRepository();
+        await repository.initialize();
+
+        verifyNever(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
         );
+      });
 
-        await repository.getLikedEventIds();
-        authController.add(true);
+      test('is idempotent', () async {
+        when(() => mockNostrClient.hasKeys).thenReturn(false);
+
+        repository = createRepository();
+        await repository.initialize();
+        await repository.initialize();
+
+        verify(() => mockLocalStorage.getAllLikeRecords()).called(1);
+      });
+    });
+
+    group('real-time sync', () {
+      test('processes incoming reaction event', () async {
+        final streamController = StreamController<Event>.broadcast();
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+
+        repository = createRepository();
+        await repository.initialize();
+
+        // Emit a Kind 7 reaction event
+        final reactionEvent = MockEvent();
+        when(() => reactionEvent.id).thenReturn(testReactionEventId);
+        when(() => reactionEvent.kind).thenReturn(EventKind.reaction);
+        when(() => reactionEvent.content).thenReturn('+');
+        when(() => reactionEvent.pubkey).thenReturn(testUserPubkey);
+        when(() => reactionEvent.createdAt).thenReturn(defaultTimestamp);
+        when(() => reactionEvent.tags).thenReturn([
+          ['e', testEventId],
+        ]);
+
+        streamController.add(reactionEvent);
         await Future<void>.delayed(Duration.zero);
 
-        verifyNever(() => mockLocalStorage.clearAll());
-        await authController.close();
+        expect(await repository.isLiked(testEventId), isTrue);
+        verify(() => mockLocalStorage.saveLikeRecord(any())).called(1);
+
+        await streamController.close();
+      });
+
+      test('ignores non-like reaction content', () async {
+        final streamController = StreamController<Event>.broadcast();
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        repository = createRepository();
+        await repository.initialize();
+
+        final dislikeEvent = MockEvent();
+        when(() => dislikeEvent.kind).thenReturn(EventKind.reaction);
+        when(() => dislikeEvent.content).thenReturn('-');
+        when(() => dislikeEvent.pubkey).thenReturn(testUserPubkey);
+
+        streamController.add(dislikeEvent);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(await repository.isLiked(testEventId), isFalse);
+
+        await streamController.close();
+      });
+
+      test('deduplicates older events', () async {
+        final streamController = StreamController<Event>.broadcast();
+        when(() => mockNostrClient.hasKeys).thenReturn(true);
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+
+        // Pre-populate with an existing record
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer(
+          (_) async => [
+            createLikeRecord(
+              createdAt: DateTime.fromMillisecondsSinceEpoch(
+                defaultTimestamp * 1000,
+              ),
+            ),
+          ],
+        );
+
+        repository = createRepository();
+        await repository.initialize();
+
+        // Emit an older event for the same target
+        final olderEvent = MockEvent();
+        when(() => olderEvent.id).thenReturn('older_reaction_id');
+        when(() => olderEvent.kind).thenReturn(EventKind.reaction);
+        when(() => olderEvent.content).thenReturn('+');
+        when(() => olderEvent.pubkey).thenReturn(testUserPubkey);
+        when(() => olderEvent.createdAt).thenReturn(defaultTimestamp - 100);
+        when(() => olderEvent.tags).thenReturn([
+          ['e', testEventId],
+        ]);
+
+        streamController.add(olderEvent);
+        await Future<void>.delayed(Duration.zero);
+
+        // The older event should not replace the existing record
+        final record = await repository.getLikeRecord(testEventId);
+        expect(record!.reactionEventId, equals(testReactionEventId));
+
+        await streamController.close();
       });
     });
 
@@ -1220,11 +1352,11 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isLike,
-                required String eventId,
-                required String authorPubkey,
-                String? addressableId,
-                int? targetKind,
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
               }) async {
                 queuedAction = {
                   'isLike': isLike,
@@ -1274,11 +1406,11 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isLike,
-                required String eventId,
-                required String authorPubkey,
-                String? addressableId,
-                int? targetKind,
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
               }) async {
                 queuedAction = {
                   'isLike': isLike,
@@ -1369,11 +1501,11 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isLike,
-                required String eventId,
-                required String authorPubkey,
-                String? addressableId,
-                int? targetKind,
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
               }) async {},
         );
 
@@ -1478,11 +1610,11 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isLike,
-                required String eventId,
-                required String authorPubkey,
-                String? addressableId,
-                int? targetKind,
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
               }) async {},
         );
 

@@ -20,7 +20,7 @@ env:
 # 2. Tap on the Heart: Validate video is unliked
 - tapOn:
     id: like_button
-- runFlow: "../asserts/assertVideounLiked.yaml"
+- runFlow: "../asserts/assertVideoUnliked.yaml"
 
 # 3. Tap on the profile: Validate profile is loaded
 - doubleTapOn:

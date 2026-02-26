@@ -25,10 +25,38 @@ class PooledPlayer {
   /// Whether this player has been disposed.
   bool get isDisposed => _isDisposed;
 
+  /// Callbacks invoked synchronously when this player is disposed.
+  ///
+  /// Used by `VideoFeedController` to detect pool eviction and update
+  /// the widget tree before Flutter rebuilds with a stale controller.
+  final List<VoidCallback> _onDisposedCallbacks = [];
+
+  /// Registers a callback to be invoked when this player is disposed.
+  void addOnDisposedCallback(VoidCallback callback) {
+    _onDisposedCallbacks.add(callback);
+  }
+
+  /// Removes a previously registered disposal callback.
+  void removeOnDisposedCallback(VoidCallback callback) {
+    _onDisposedCallbacks.remove(callback);
+  }
+
   /// Safely dispose the player.
+  ///
+  /// Invokes all registered [_onDisposedCallbacks] synchronously before
+  /// disposing native resources, allowing consumers to react (e.g., update
+  /// widget state) before the underlying [VideoController] becomes invalid.
   Future<void> dispose() async {
     if (_isDisposed) return;
     _isDisposed = true;
+
+    // Notify listeners synchronously so they can update UI state before
+    // native resources (including VideoController's ValueNotifier<int?>)
+    // are torn down.
+    for (final callback in List<VoidCallback>.of(_onDisposedCallbacks)) {
+      callback();
+    }
+    _onDisposedCallbacks.clear();
 
     try {
       await player.stop();
@@ -184,7 +212,13 @@ class PlayerPool {
     // Check if player already exists
     if (_players.containsKey(url)) {
       _touch(url);
-      return _players[url]!;
+      final existing = _players[url]!;
+      // Reset audio state to prevent leaking audio from a previous session.
+      // The caller (_loadPlayer) will set volume/play state as needed.
+      // Use unawaited to avoid introducing a yield point that could allow
+      // concurrent getPlayer calls to interleave and cause race conditions.
+      unawaited(existing.player.setVolume(0));
+      return existing;
     }
 
     // Evict if at capacity

@@ -4,22 +4,21 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:mockito/annotations.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/upload_manager.dart';
+import 'package:mocktail/mocktail.dart';
 
-import 'upload_manager_web_test.mocks.dart';
+class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
-@GenerateMocks([BlossomUploadService])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('UploadManager - Web Platform', () {
-    late MockBlossomUploadService mockBlossomService;
+    late _MockBlossomUploadService mockBlossomService;
 
     setUp(() async {
-      mockBlossomService = MockBlossomUploadService();
+      mockBlossomService = _MockBlossomUploadService();
 
       // Register Hive adapters
       if (!Hive.isAdapterRegistered(1)) {

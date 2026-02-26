@@ -16,6 +16,15 @@ class UsernameTaken extends UsernameAvailabilityResult {
   const UsernameTaken();
 }
 
+/// Username has an invalid format (e.g. contains dots, underscores, etc.).
+class UsernameInvalidFormat extends UsernameAvailabilityResult {
+  /// Creates an invalid format result with the given [reason].
+  const UsernameInvalidFormat(this.reason);
+
+  /// Description of why the format is invalid.
+  final String reason;
+}
+
 /// An error occurred during availability check.
 class UsernameCheckError extends UsernameAvailabilityResult {
   /// Creates an error result with the given [message].

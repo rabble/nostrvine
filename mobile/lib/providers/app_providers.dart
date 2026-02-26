@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart';
@@ -15,6 +16,8 @@ import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -26,6 +29,7 @@ import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
@@ -37,8 +41,12 @@ import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/account_label_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -199,14 +207,20 @@ Stream<Map<String, RelayStatistics>> relayStatisticsStream(Ref ref) async* {
   yield* controller.stream;
 }
 
-/// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
-/// Must be watched at app level to activate the bridge
+/// Bridge provider that connects NostrClient relay status updates to
+/// RelayStatisticsService.
+///
+/// Tracks connection/disconnection events via the relay status stream and
+/// periodically syncs per-relay SDK counters (events received, queries sent,
+/// errors) so each relay displays its own real statistics.
+///
+/// Must be watched at app level to activate the bridge.
 @Riverpod(keepAlive: true)
 void relayStatisticsBridge(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final statsService = ref.watch(relayStatisticsServiceProvider);
 
-  // Track previous states to detect changes
+  // Track previous states to detect connection changes
   final Map<String, bool> previousStates = {};
 
   // Helper to process status updates (used for both initial state and stream)
@@ -228,17 +242,33 @@ void relayStatisticsBridge(Ref ref) {
       previousStates[url] = isConnected;
     }
 
-    // Prune entries for relays no longer in the status map to prevent memory leak
+    // Prune entries for relays no longer in the status map
     previousStates.removeWhere((url, _) => !statuses.containsKey(url));
   }
 
-  // Process current state immediately (relays may have connected before bridge started)
+  // Process current state immediately (relays may have connected before
+  // the bridge started)
   processStatuses(nostrService.relayStatuses);
 
-  // Listen to relay status stream for future updates
+  // Listen to relay status stream for future connection changes
   final subscription = nostrService.relayStatusStream.listen(processStatuses);
 
+  // Periodically sync per-relay SDK counters so each relay shows its own
+  // real statistics (not identical values distributed from app-level totals).
+  final syncTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    final counters = nostrService.getRelayPoolCounters();
+    for (final entry in counters.entries) {
+      statsService.syncSdkCounters(
+        entry.key,
+        eventsReceived: entry.value.eventsReceived,
+        queriesSent: entry.value.queriesSent,
+        errors: entry.value.errors,
+      );
+    }
+  });
+
   ref.onDispose(() {
+    syncTimer.cancel();
     subscription.cancel();
   });
 }
@@ -322,10 +352,13 @@ bool _setsEqual<T>(Set<T> a, Set<T> b) {
   return a.containsAll(b);
 }
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 @Riverpod(keepAlive: true) // Keep alive to maintain singleton behavior
 AnalyticsService analyticsService(Ref ref) {
-  final service = AnalyticsService();
+  final viewPublisher = ref.watch(viewEventPublisherProvider);
+  final service = AnalyticsService(viewEventPublisher: viewPublisher);
 
   // Ensure cleanup on disposal
   ref.onDispose(() {
@@ -333,7 +366,6 @@ AnalyticsService analyticsService(Ref ref) {
   });
 
   // Initialize asynchronously but don't block the provider
-  // Use a microtask to avoid blocking the provider creation
   Future.microtask(() => service.initialize());
 
   return service;
@@ -346,6 +378,62 @@ AnalyticsService analyticsService(Ref ref) {
 AgeVerificationService ageVerificationService(Ref ref) {
   final service = AgeVerificationService();
   service.initialize(); // Initialize asynchronously
+  return service;
+}
+
+/// Content filter service for per-category Show/Warn/Hide preferences.
+/// keepAlive ensures preferences persist and are consistent across the app.
+@Riverpod(keepAlive: true)
+ContentFilterService contentFilterService(Ref ref) {
+  final ageVerificationService = ref.watch(ageVerificationServiceProvider);
+  final service = ContentFilterService(
+    ageVerificationService: ageVerificationService,
+  );
+  service.initialize(); // Initialize asynchronously
+  ref.onDispose(service.dispose);
+  return service;
+}
+
+/// Tracks content filter preference changes. Feed providers watch this
+/// to rebuild when the user changes a Show/Warn/Hide setting.
+@Riverpod(keepAlive: true)
+int contentFilterVersion(Ref ref) {
+  final service = ref.watch(contentFilterServiceProvider);
+  var version = 0;
+  void listener() {
+    version++;
+    ref.invalidateSelf();
+  }
+
+  service.addListener(listener);
+  ref.onDispose(() => service.removeListener(listener));
+  return version;
+}
+
+/// Account label service for self-labeling content (NIP-32 Kind 1985).
+@Riverpod(keepAlive: true)
+AccountLabelService accountLabelService(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final service = AccountLabelService(
+    authService: authService,
+    nostrClient: nostrClient,
+  );
+  service.initialize();
+  return service;
+}
+
+/// Moderation label service for subscribing to Kind 1985 labeler events.
+@Riverpod(keepAlive: true)
+ModerationLabelService moderationLabelService(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+  final service = ModerationLabelService(
+    nostrClient: nostrClient,
+    authService: authService,
+  );
+  service.initialize();
+  ref.onDispose(service.dispose);
   return service;
 }
 
@@ -363,6 +451,16 @@ AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
 @Riverpod(keepAlive: true)
 AudioDevicePreferenceService audioDevicePreferenceService(Ref ref) {
   final service = AudioDevicePreferenceService();
+  service.initialize(); // Initialize asynchronously
+  return service;
+}
+
+/// Language preference service for managing the user's preferred content
+/// language. Used for NIP-32 self-labeling on published video events.
+/// keepAlive ensures setting persists across widget rebuilds.
+@Riverpod(keepAlive: true)
+LanguagePreferenceService languagePreferenceService(Ref ref) {
+  final service = LanguagePreferenceService();
   service.initialize(); // Initialize asynchronously
   return service;
 }
@@ -414,6 +512,7 @@ FlutterSecureStorage flutterSecureStorage(Ref ref) => FlutterSecureStorage(
     resetOnError: true,
   ),
   mOptions: MacOsOptions(useDataProtectionKeyChain: false),
+  lOptions: const LinuxOptions(),
 );
 
 @Riverpod(keepAlive: true)
@@ -567,9 +666,10 @@ AuthService authService(Ref ref) {
   final pendingVerificationService = ref.watch(
     pendingVerificationServiceProvider,
   );
-  // NOTE: analyticsApiServiceProvider and sharedPreferencesProvider are
-  // resolved lazily inside the callback to avoid a circular dependency:
+  // NOTE: We construct AnalyticsApiService directly here instead of using
+  // analyticsApiServiceProvider to avoid a circular dependency:
   //   authService → analyticsApiService → nostrService → authService
+  // Using currentEnvironmentProvider is safe (no auth/nostr dependency).
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
@@ -578,11 +678,14 @@ AuthService authService(Ref ref) {
     oauthConfig: oauthConfig,
     pendingVerificationService: pendingVerificationService,
     preFetchFollowing: (pubkeyHex) async {
-      // Pre-fetch following list from funnelcake REST API during login setup.
-      // This populates SharedPreferences BEFORE auth state is set, so the
-      // router redirect has accurate cache data and sends user to /home not
-      // /explore.
-      final analyticsService = ref.read(analyticsApiServiceProvider);
+      // Pre-fetch following list from funnelcake REST API during login
+      // setup. This populates SharedPreferences BEFORE auth state is
+      // set, so the router redirect has accurate cache data and sends
+      // user to /home not /explore.
+      final environmentConfig = ref.read(currentEnvironmentProvider);
+      final analyticsService = AnalyticsApiService(
+        baseUrl: environmentConfig.apiBaseUrl,
+      );
       final prefs = ref.read(sharedPreferencesProvider);
       final result = await analyticsService.getFollowing(
         pubkeyHex,
@@ -592,8 +695,8 @@ AuthService authService(Ref ref) {
         final key = 'following_list_$pubkeyHex';
         await prefs.setString(key, jsonEncode(result.pubkeys));
         Log.info(
-          'Pre-fetched ${result.pubkeys.length} following for router '
-          'redirect cache',
+          'Pre-fetched ${result.pubkeys.length} following for '
+          'router redirect cache',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -772,6 +875,7 @@ VideoEventService videoEventService(Ref ref) {
   service.setBlocklistService(blocklistService);
   service.setAgeVerificationService(ageVerificationService);
   service.setLikesRepository(likesRepository);
+  service.setContentFilterService(ref.watch(contentFilterServiceProvider));
   return service;
 }
 
@@ -835,6 +939,30 @@ SocialService socialService(Ref ref) {
   );
 }
 
+/// Cached following list loaded directly from SharedPreferences.
+///
+/// Available immediately after authentication (no NostrClient needed).
+/// This provides the follow list from the previous session for instant
+/// feed display. The full FollowRepository will update this when ready.
+@Riverpod(keepAlive: true)
+List<String> cachedFollowingList(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final pubkey = authService.currentPublicKeyHex;
+  if (pubkey == null || pubkey.isEmpty) return const [];
+
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final key = 'following_list_$pubkey';
+  final cached = prefs.getString(key);
+  if (cached == null) return const [];
+
+  try {
+    final decoded = jsonDecode(cached) as List<dynamic>;
+    return decoded.cast<String>();
+  } catch (e) {
+    return const [];
+  }
+}
+
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.
@@ -863,9 +991,13 @@ FollowRepository? followRepository(Ref ref) {
   // Get analytics API service for fast REST-based following list bootstrap
   final analyticsService = ref.read(analyticsApiServiceProvider);
 
+  // Get FunnelcakeApiClient for direct API access
+  final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
+    funnelcakeApiClient: funnelcakeApiClient,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
         ? ({required bool isFollow, required String pubkey}) async {
@@ -880,6 +1012,15 @@ FollowRepository? followRepository(Ref ref) {
     fetchFollowingFromApi: (pubkey) async {
       final result = await analyticsService.getFollowing(pubkey, limit: 5000);
       return result.pubkeys;
+    },
+    fetchFollowersFromApi: (pubkey) async {
+      final result = await analyticsService.getFollowers(pubkey, limit: 5000);
+      return result.pubkeys;
+    },
+    fetchFollowerCount: (pubkey) async {
+      final socialService = ref.read(socialServiceProvider);
+      final stats = await socialService.getFollowerStats(pubkey);
+      return stats['followers'] ?? 0;
     },
   );
 
@@ -907,6 +1048,15 @@ FollowRepository? followRepository(Ref ref) {
   ref.onDispose(repository.dispose);
 
   return repository;
+}
+
+/// Provider for HashtagRepository instance.
+///
+/// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+@riverpod
+HashtagRepository hashtagRepository(Ref ref) {
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  return HashtagRepository(funnelcakeApiClient: funnelcakeClient);
 }
 
 /// Provider for ProfileRepository instance
@@ -1407,18 +1557,21 @@ VideoLocalStorage videoLocalStorage(Ref ref) {
 /// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
+/// - FunnelcakeApiClient for trending/popular video sorting
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final localStorage = ref.watch(videoLocalStorageProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(ageVerificationService),
+    funnelcakeApiClient: funnelcakeClient,
   );
 }
 
@@ -1442,7 +1595,6 @@ LikesRepository likesRepository(Ref ref) {
   // This ensures the provider rebuilds when authentication completes
   ref.watch(currentAuthStateProvider);
 
-  final isAuthenticated = authService.isAuthenticated;
   final userPubkey = authService.currentPublicKeyHex;
 
   final nostrClient = ref.watch(nostrServiceProvider);
@@ -1458,11 +1610,6 @@ LikesRepository likesRepository(Ref ref) {
     );
   }
 
-  // Map AuthState stream to bool stream for repository
-  final authBoolStream = authService.authStateStream.map(
-    (state) => state == AuthState.authenticated,
-  );
-
   // Get connection status and pending action service for offline support
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
@@ -1470,8 +1617,6 @@ LikesRepository likesRepository(Ref ref) {
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    authStateStream: authBoolStream,
-    isAuthenticated: isAuthenticated,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
         ? ({
@@ -1509,6 +1654,15 @@ LikesRepository likesRepository(Ref ref) {
     );
   }
 
+  // Initialize: load from local storage + set up persistent subscription
+  repository.initialize().catchError((Object e) {
+    Log.error(
+      'Failed to initialize LikesRepository',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
   ref.onDispose(repository.dispose);
 
   return repository;
@@ -1529,7 +1683,6 @@ RepostsRepository repostsRepository(Ref ref) {
   // Watch auth state to react to auth changes (login/logout)
   ref.watch(currentAuthStateProvider);
 
-  final isAuthenticated = authService.isAuthenticated;
   final userPubkey = authService.currentPublicKeyHex;
 
   final nostrClient = ref.watch(nostrServiceProvider);
@@ -1545,11 +1698,6 @@ RepostsRepository repostsRepository(Ref ref) {
     );
   }
 
-  // Map AuthState stream to bool stream for repository
-  final authBoolStream = authService.authStateStream.map(
-    (state) => state == AuthState.authenticated,
-  );
-
   // Get connection status and pending action service for offline support
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
@@ -1557,8 +1705,6 @@ RepostsRepository repostsRepository(Ref ref) {
   final repository = RepostsRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    authStateStream: authBoolStream,
-    isAuthenticated: isAuthenticated,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
         ? ({
@@ -1595,6 +1741,15 @@ RepostsRepository repostsRepository(Ref ref) {
       ),
     );
   }
+
+  // Initialize: load from local storage + set up persistent subscription
+  repository.initialize().catchError((Object e) {
+    Log.error(
+      'Failed to initialize RepostsRepository',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
 
   ref.onDispose(repository.dispose);
 

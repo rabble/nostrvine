@@ -6,23 +6,42 @@ import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
+extension on List<VideoEvent> {
+  List<VideoItem> get toVideoItems {
+    return map((e) => VideoItem(id: e.id, url: e.videoUrl!)).toList();
+  }
+}
+
 class VideoFeedPage extends ConsumerWidget {
-  static const String path = '/new-video-feed';
+  /// Route name for this screen.
+  static const routeName = 'home';
 
-  static const String routeName = 'new-video-feed';
+  /// Path for this route.
+  static const path = '/home';
 
-  const VideoFeedPage({super.key});
+  /// Path for this route with index.
+  static const pathWithIndex = '/home/:index';
+
+  /// Build path for a specific index.
+  static String pathForIndex(int index) => '/home/$index';
+
+  const VideoFeedPage({this.initialMode = FeedMode.home, super.key});
+
+  /// The feed mode to start with. Defaults to [FeedMode.home].
+  final FeedMode initialMode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final videosRepository = ref.read(videosRepositoryProvider);
-    final followRepository = ref.read(followRepositoryProvider);
+    final videosRepository = ref.watch(videosRepositoryProvider);
+    final followRepository = ref.watch(followRepositoryProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -33,89 +52,250 @@ class VideoFeedPage extends ConsumerWidget {
       create: (_) => VideoFeedBloc(
         videosRepository: videosRepository,
         followRepository: followRepository,
-      )..add(const VideoFeedStarted(mode: FeedMode.latest)),
+      )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),
     );
   }
 }
 
 @visibleForTesting
-class VideoFeedView extends StatefulWidget {
-  const VideoFeedView({super.key});
+class VideoFeedView extends ConsumerStatefulWidget {
+  const VideoFeedView({super.key, @visibleForTesting this.controller});
+
+  /// Optional external [VideoFeedController] for testing.
+  ///
+  /// When provided, this controller is used instead of creating one
+  /// internally. This allows tests to inject a mock/fake controller
+  /// and verify that overlay visibility changes call [setActive].
+  @visibleForTesting
+  final VideoFeedController? controller;
 
   @override
-  State<VideoFeedView> createState() => _VideoFeedViewState();
+  ConsumerState<VideoFeedView> createState() => _VideoFeedViewState();
 }
 
-class _VideoFeedViewState extends State<VideoFeedView> {
+class _VideoFeedViewState extends ConsumerState<VideoFeedView>
+    with WidgetsBindingObserver {
+  int? lastPrefetchIndex;
+
+  /// The controller for the pooled video feed.
+  ///
+  /// Created lazily when videos first become available from the BLoC,
+  /// or injected via [VideoFeedView.controller] for testing.
+  VideoFeedController? controller;
+
+  /// Tracks the last set of pooled videos to detect new additions.
+  List<VideoItem>? lastPooledVideos;
+
+  /// Whether this state owns (and should dispose) the controller.
+  bool get ownsController => widget.controller == null;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Use injected controller if provided (for testing)
+    if (!ownsController) controller = widget.controller;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize controller eagerly if BLoC already has videos on first build
+    handleVideoController();
+  }
+
+  @override
+  void dispose() {
+    if (ownsController) controller?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<VideoFeedBloc>().add(const VideoFeedAutoRefreshRequested());
+    }
+  }
+
+  /// Handles the controller changes.
+  ///
+  /// Called from [didChangeDependencies] for eager setup and from
+  /// [BlocListener] when videos arrive asynchronously.
+  void handleVideoController([VideoFeedState? state]) {
+    if (controller != null) return;
+
+    final effectiveState = state ?? context.read<VideoFeedBloc>().state;
+    if (!effectiveState.isLoaded || effectiveState.videos.isEmpty) return;
+
+    final pooledVideos = effectiveState.videos.toVideoItems;
+
+    controller = VideoFeedController(
+      videos: pooledVideos,
+      pool: PlayerPool.instance,
+    );
+
+    lastPooledVideos = pooledVideos;
+  }
+
+  /// Handles new videos from pagination by adding them to the controller.
+  void handleVideosChanged(VideoFeedState state) {
+    if (controller == null || lastPooledVideos == null) return;
+
+    final pooledVideos = state.videos.toVideoItems;
+
+    final newVideos = pooledVideos
+        .where((v) => !lastPooledVideos!.any((old) => old.id == v.id))
+        .toList();
+
+    if (newVideos.isNotEmpty) controller?.addVideos(newVideos);
+
+    lastPooledVideos = pooledVideos;
+  }
+
+  void prefetchProfiles(List<VideoEvent> videos, int index) {
+    if (index == lastPrefetchIndex) return;
+    lastPrefetchIndex = index;
+
+    final safeIndex = index.clamp(0, videos.length - 1);
+    final pubkeys = <String>[];
+
+    if (safeIndex > 0) {
+      pubkeys.add(videos[safeIndex - 1].pubkey);
+    }
+
+    if (safeIndex < videos.length - 1) {
+      pubkeys.add(videos[safeIndex + 1].pubkey);
+    }
+
+    if (pubkeys.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(userProfileProvider.notifier)
+            .prefetchProfilesImmediately(pubkeys);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
-      body: BlocBuilder<VideoFeedBloc, VideoFeedState>(
-        builder: (context, state) {
-          // Loading state (including initial state before first load)
-          if (state.isLoading) {
-            return const Center(child: BrandedLoadingIndicator(size: 80));
-          }
+    // Pause/resume the pooled video feed when overlays (drawer, modals)
+    // become visible or hidden. Without this, the home feed's
+    // PooledVideoFeed continues playing because activeVideoIdProvider
+    // returns null for RouteType.home (self-managed by the pool).
+    ref.listen(hasVisibleOverlayProvider, (_, hasOverlay) {
+      controller?.setActive(active: !hasOverlay);
+    });
 
-          // Error state
-          if (state.status == VideoFeedStatus.failure) {
-            return _FeedErrorWidget(error: state.error);
-          }
+    return ColoredBox(
+      color: VineTheme.backgroundColor,
+      child: MultiBlocListener(
+        listeners: [
+          // Reset controller when mode changes so a fresh one is
+          // created for the new feed.
+          BlocListener<VideoFeedBloc, VideoFeedState>(
+            listenWhen: (previous, current) =>
+                previous.mode != current.mode && current.isLoading,
+            listener: (_, state) {
+              if (ownsController) controller?.dispose();
+              controller = null;
+              lastPooledVideos = null;
+              lastPrefetchIndex = null;
+            },
+          ),
+          // Initialize controller when videos first become available
+          BlocListener<VideoFeedBloc, VideoFeedState>(
+            listenWhen: (previous, current) =>
+                !previous.isLoaded &&
+                current.isLoaded &&
+                current.videos.isNotEmpty,
+            listener: (_, state) => handleVideoController(state),
+          ),
+          // Handle new videos from pagination
+          BlocListener<VideoFeedBloc, VideoFeedState>(
+            listenWhen: (previous, current) =>
+                previous.videos.length != current.videos.length,
+            listener: (_, state) => handleVideosChanged(state),
+          ),
+        ],
+        child: BlocBuilder<VideoFeedBloc, VideoFeedState>(
+          builder: (context, state) {
+            // Loading state (including initial state before first load)
+            if (state.isLoading) {
+              return const Center(child: BrandedLoadingIndicator(size: 80));
+            }
 
-          // Empty state
-          if (state.isEmpty) {
-            return FeedEmptyWidget(state: state);
-          }
+            // Error state
+            if (state.status == VideoFeedStatus.failure) {
+              return _FeedErrorWidget(error: state.error);
+            }
 
-          // Wrap videos for pool compatibility
-          final pooledVideos = state.videos
-              .map((e) => VideoItem(id: e.id, url: e.videoUrl!))
-              .toList();
+            // Empty state
+            if (state.isEmpty) {
+              return Stack(
+                children: [
+                  FeedEmptyWidget(state: state),
+                  const FeedModeSwitch(),
+                ],
+              );
+            }
 
-          // Note: RefreshIndicator removed - it conflicts with PageView
-          // scrolling and adds memory overhead. Use the refresh button instead.
-          return Stack(
-            children: [
-              PooledVideoFeed(
-                videos: pooledVideos,
-                itemBuilder: (context, video, index, {required isActive}) {
-                  final originalEvent = state.videos[index];
-                  return _PooledVideoFeedItem(
-                    video: originalEvent,
-                    index: index,
-                    isActive: isActive,
-                    contextTitle: 'BLoC Test (${state.mode.name})',
-                  );
-                },
-                onActiveVideoChanged: (video, index) {
-                  // Trigger pagination when near end
-                  if (state.hasMore && index >= pooledVideos.length - 2) {
-                    context.read<VideoFeedBloc>().add(
-                      const VideoFeedLoadMoreRequested(),
+            // Wrap videos for pool compatibility
+            final pooledVideos = state.videos.toVideoItems;
+
+            // Note: RefreshIndicator removed - it conflicts with PageView
+            // scrolling and adds memory overhead. Use the refresh button
+            // instead.
+            return Stack(
+              children: [
+                PooledVideoFeed(
+                  key: ValueKey(state.mode),
+                  videos: pooledVideos,
+                  controller: controller,
+                  itemBuilder: (context, video, index, {required isActive}) {
+                    final originalEvent = state.videos[index];
+                    return _PooledVideoFeedItem(
+                      video: originalEvent,
+                      index: index,
+                      isActive: isActive,
+                      contextTitle: state.mode.name,
                     );
-                  }
-                },
-              ),
-              const FeedModeSwitch(),
-              // Loading more indicator
-              if (state.isLoadingMore)
-                const Positioned(
-                  bottom: 100,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      color: VineTheme.vineGreen,
-                      strokeWidth: 2,
+                  },
+                  onActiveVideoChanged: (video, index) {
+                    prefetchProfiles(state.videos, index);
+                  },
+                  onNearEnd: (index) {
+                    // PooledVideoFeed fires this when the user is within
+                    // nearEndThreshold (default 3) of the end, using the
+                    // controller's actual video count (not the BlocBuilder's
+                    // list length, which may differ due to deduplication).
+                    if (state.hasMore) {
+                      context.read<VideoFeedBloc>().add(
+                        const VideoFeedLoadMoreRequested(),
+                      );
+                    }
+                  },
+                ),
+                const FeedModeSwitch(),
+                // Loading more indicator
+                if (state.isLoadingMore)
+                  const Positioned(
+                    bottom: 100,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: VineTheme.vineGreen,
+                        strokeWidth: 2,
+                      ),
                     ),
                   ),
-                ),
-            ],
-          );
-        },
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -226,6 +406,9 @@ class _PooledVideoFeedItem extends ConsumerWidget {
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
               addressableId: addressableId,
+              initialLikeCount: video.nostrLikeCount != null
+                  ? video.totalLikes
+                  : null,
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),
@@ -273,13 +456,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           isPortrait: isPortrait,
         ),
         overlayBuilder: (context, videoController, player) =>
-            VideoOverlayActions(
-              video: video,
-              isVisible: isActive,
-              isActive: isActive,
-              hasBottomNavigation: false,
-              contextTitle: contextTitle,
-            ),
+            FeedVideoOverlay(video: video, isActive: isActive, player: player),
       ),
     );
   }

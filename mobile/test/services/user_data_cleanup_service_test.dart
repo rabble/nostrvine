@@ -163,10 +163,6 @@ void main() {
             'following_list_abc123',
             '["pubkey1","pubkey2"]',
           );
-          await prefs.setString(
-            'blossom_server_discovery_npub1abc',
-            'server_data',
-          );
           await prefs.setString('relay_discovery_npub1abc', 'relay_data');
           // Also set a static user-specific key
           await prefs.setStringList('curated_lists', ['list1']);
@@ -179,10 +175,6 @@ void main() {
 
           // Dynamic prefix keys should be PRESERVED
           expect(prefs.containsKey('following_list_abc123'), isTrue);
-          expect(
-            prefs.containsKey('blossom_server_discovery_npub1abc'),
-            isTrue,
-          );
           expect(prefs.containsKey('relay_discovery_npub1abc'), isTrue);
         },
       );
@@ -195,10 +187,6 @@ void main() {
             'following_list_abc123',
             '["pubkey1","pubkey2"]',
           );
-          await prefs.setString(
-            'blossom_server_discovery_npub1abc',
-            'server_data',
-          );
           await prefs.setString('relay_discovery_npub1abc', 'relay_data');
 
           await service.clearUserSpecificData(
@@ -208,10 +196,6 @@ void main() {
 
           // Dynamic prefix keys should be cleared on identity change
           expect(prefs.containsKey('following_list_abc123'), isFalse);
-          expect(
-            prefs.containsKey('blossom_server_discovery_npub1abc'),
-            isFalse,
-          );
           expect(prefs.containsKey('relay_discovery_npub1abc'), isFalse);
         },
       );
@@ -293,7 +277,6 @@ void main() {
         final prefixes = UserDataCleanupService.identityChangePrefixes;
 
         expect(prefixes, contains('following_list_'));
-        expect(prefixes, contains('blossom_server_discovery_'));
         expect(prefixes, contains('relay_discovery_'));
       });
 

@@ -8,6 +8,7 @@ import 'package:divine_camera/divine_camera.dart'
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
+import 'package:openvine/services/video_recorder/camera/camera_linux_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_macos_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_mobile_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -30,6 +31,12 @@ abstract class CameraService {
         onAutoStopped: onAutoStopped,
       );
     }
+    if (!kIsWeb && Platform.isLinux) {
+      return CameraLinuxService(
+        onUpdateState: onUpdateState,
+        onAutoStopped: onAutoStopped,
+      );
+    }
     return CameraMobileService(
       onUpdateState: onUpdateState,
       onAutoStopped: onAutoStopped,
@@ -44,8 +51,10 @@ abstract class CameraService {
   /// Initializes the camera and prepares it for use.
   ///
   /// [videoQuality] specifies the video recording quality (default: FHD/1080p).
+  /// [initialLens] specifies which camera lens to initialize with (default: front).
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    DivineCameraLens initialLens = DivineCameraLens.front,
   });
 
   /// Releases camera resources and cleans up.

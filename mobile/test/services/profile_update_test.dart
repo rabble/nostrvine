@@ -2,27 +2,47 @@
 // ABOUTME: Tests the fixed timestamp comparison logic and profile refresh flow
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
-@GenerateMocks([NostrClient, SubscriptionManager])
-import 'profile_update_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<Filter>[]);
+  });
+
   group('UserProfileService - Profile Update Tests', () {
     late UserProfileService service;
-    late MockNostrClient mockNostrService;
-    late MockSubscriptionManager mockSubscriptionManager;
+    late _MockNostrClient mockNostrService;
+    late _MockSubscriptionManager mockSubscriptionManager;
 
     setUp(() {
-      mockNostrService = MockNostrClient();
-      mockSubscriptionManager = MockSubscriptionManager();
+      mockNostrService = _MockNostrClient();
+      mockSubscriptionManager = _MockSubscriptionManager();
 
-      when(mockNostrService.isInitialized).thenReturn(true);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+
+      // Stub subscription manager methods used by batch fetch
+      when(
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          priority: any(named: 'priority'),
+        ),
+      ).thenAnswer((_) async => 'mock_sub_id');
+      when(
+        () => mockSubscriptionManager.cancelSubscription(any()),
+      ).thenAnswer((_) async {});
 
       service = UserProfileService(
         mockNostrService,
@@ -254,19 +274,21 @@ void main() {
 
       // Setup mock subscription manager
       when(
-        mockSubscriptionManager.createSubscription(
-          name: anyNamed('name'),
-          filters: anyNamed('filters'),
-          onEvent: anyNamed('onEvent'),
-          onError: anyNamed('onError'),
-          onComplete: anyNamed('onComplete'),
-          priority: anyNamed('priority'),
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          priority: any(named: 'priority'),
         ),
       ).thenAnswer((_) async => 'sub_123');
 
       // Mock addRelay to return false (indexer relays not available)
       // This prevents the indexer fallback from throwing MissingStubError
-      when(mockNostrService.addRelay(any)).thenAnswer((_) async => false);
+      when(
+        () => mockNostrService.addRelay(any()),
+      ).thenAnswer((_) async => false);
 
       // Initialize service
       await service.initialize();
@@ -287,13 +309,13 @@ void main() {
       // 1. First attempt via main relay batch fetch
       // 2. Retry attempt after indexer fallback fails
       verify(
-        mockSubscriptionManager.createSubscription(
-          name: anyNamed('name'),
-          filters: anyNamed('filters'),
-          onEvent: anyNamed('onEvent'),
-          onError: anyNamed('onError'),
-          onComplete: anyNamed('onComplete'),
-          priority: anyNamed('priority'),
+        () => mockSubscriptionManager.createSubscription(
+          name: any(named: 'name'),
+          filters: any(named: 'filters'),
+          onEvent: any(named: 'onEvent'),
+          onError: any(named: 'onError'),
+          onComplete: any(named: 'onComplete'),
+          priority: any(named: 'priority'),
         ),
       ).called(2);
     });

@@ -359,7 +359,9 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
   Widget _buildAction(BuildContext context, EmailVerificationState state) {
     switch (state.status) {
       case EmailVerificationStatus.polling:
-        // No action button while polling - user should check email
+        // No action needed — polling auto-expires after 15 minutes
+        // (matching the server's token lifetime), then transitions to
+        // failure state with a Retry button.
         return const SizedBox.shrink();
       case EmailVerificationStatus.failure:
         return ElevatedButton(
@@ -538,28 +540,8 @@ class _UniqueIdentifier extends ConsumerWidget {
             ),
           ],
         ),
-        // Show warning for own profile when NIP-05 verification fails
-        if (isOwnProfile && hasNip05 && verificationFailed)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.orange,
-                  size: 14,
-                ),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    'Username not verifying - contact support',
-                    style: VineTheme.bodySmallFont(color: Colors.orange),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // NIP-05 verification failure is silently ignored for now.
+        // TODO(#1658): surface NIP-05 verification errors once backend is fixed.
       ],
     );
   }

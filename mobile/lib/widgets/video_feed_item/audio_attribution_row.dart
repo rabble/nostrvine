@@ -11,7 +11,6 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// A tappable row showing audio attribution when a video uses external audio.
@@ -90,7 +89,7 @@ class _AudioAttributionContent extends ConsumerWidget {
 
     final creatorName =
         creatorProfile?.bestDisplayName ??
-        NostrKeyUtils.truncateNpub(audio.pubkey);
+        UserProfile.defaultDisplayNameFor(audio.pubkey);
     final soundName = audio.title ?? 'Original sound';
 
     return GestureDetector(

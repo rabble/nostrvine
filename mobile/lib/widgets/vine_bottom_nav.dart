@@ -9,7 +9,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -72,7 +72,7 @@ class VineBottomNav extends ConsumerWidget {
     return switch (tabIndex) {
       1 => context.go(ExploreScreen.path),
       2 => context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0)),
-      _ => context.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0)),
+      _ => context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0)),
     };
   }
 

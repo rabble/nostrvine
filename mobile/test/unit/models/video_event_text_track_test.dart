@@ -1,7 +1,7 @@
 // ABOUTME: Tests for VideoEvent text-track (subtitle) tag parsing and
 // nostrEventTags preservation for republishing with new tags.
 // ABOUTME: Verifies support for Kind 39307 subtitle event references in video
-// events.
+// events, and hasSubtitles with sha256 for Blossom VTT.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -102,7 +102,7 @@ void main() {
       expect(videoEvent.hasSubtitles, isTrue);
     });
 
-    test('hasSubtitles is false when no text-track tag present', () {
+    test('hasSubtitles is false when no text-track tag and no sha256', () {
       final nostrEvent = Event(
         testPubkey,
         34236,
@@ -118,6 +118,7 @@ void main() {
 
       expect(videoEvent.textTrackRef, isNull);
       expect(videoEvent.textTrackContent, isNull);
+      expect(videoEvent.sha256, isNull);
       expect(videoEvent.hasSubtitles, isFalse);
     });
 
@@ -137,6 +138,37 @@ void main() {
       expect(videoEvent.textTrackRef, isNull);
       expect(videoEvent.textTrackContent, isNotNull);
       expect(videoEvent.hasSubtitles, isTrue);
+    });
+
+    test('hasSubtitles is true when sha256 is present '
+        '(Blossom auto-generated VTT)', () {
+      final videoEvent = VideoEvent(
+        id: 'test-id',
+        pubkey: testPubkey,
+        createdAt: 1757385263,
+        content: '',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+        sha256:
+            'abc123def456abc123def456abc123def456abc123def456abc123def456abcd',
+      );
+
+      expect(videoEvent.textTrackRef, isNull);
+      expect(videoEvent.textTrackContent, isNull);
+      expect(videoEvent.sha256, isNotNull);
+      expect(videoEvent.hasSubtitles, isTrue);
+    });
+
+    test('hasSubtitles is false when sha256 is empty string', () {
+      final videoEvent = VideoEvent(
+        id: 'test-id',
+        pubkey: testPubkey,
+        createdAt: 1757385263,
+        content: '',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
+        sha256: '',
+      );
+
+      expect(videoEvent.hasSubtitles, isFalse);
     });
 
     test('preserves textTrackRef through copyWith', () {

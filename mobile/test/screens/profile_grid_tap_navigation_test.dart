@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
@@ -19,7 +19,6 @@ import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../helpers/test_provider_overrides.dart';
-import '../helpers/test_provider_overrides.mocks.dart';
 
 void main() {
   setUpAll(() async {
@@ -28,13 +27,15 @@ void main() {
 
   MockAuthService createTestAuthService(String? pubkey) {
     final mockAuth = createMockAuthService();
-    when(mockAuth.currentPublicKeyHex).thenReturn(pubkey);
-    when(mockAuth.isAuthenticated).thenReturn(pubkey != null);
+    when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkey);
+    when(() => mockAuth.isAuthenticated).thenReturn(pubkey != null);
     final authState = pubkey != null
         ? AuthState.authenticated
         : AuthState.unauthenticated;
-    when(mockAuth.authState).thenReturn(authState);
-    when(mockAuth.authStateStream).thenAnswer((_) => Stream.value(authState));
+    when(() => mockAuth.authState).thenReturn(authState);
+    when(
+      () => mockAuth.authStateStream,
+    ).thenAnswer((_) => Stream.value(authState));
     return mockAuth;
   }
 

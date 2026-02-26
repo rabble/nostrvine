@@ -12,10 +12,13 @@ part of 'subtitle_providers.dart';
 ///
 /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
 ///    directly — zero network cost.
-/// 2. If [textTrackRef] is present (addressable coordinates like
+/// 2. If [sha256] is present, fetch VTT from the Blossom server at
+///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
+///    (VTT not yet generated). Non-blocking.
+/// 3. If [textTrackRef] is present (addressable coordinates like
 ///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
 ///    event and parse its content.
-/// 3. Otherwise returns an empty list (no subtitles available).
+/// 4. Otherwise returns an empty list (no subtitles available).
 
 @ProviderFor(subtitleCues)
 const subtitleCuesProvider = SubtitleCuesFamily._();
@@ -24,10 +27,13 @@ const subtitleCuesProvider = SubtitleCuesFamily._();
 ///
 /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
 ///    directly — zero network cost.
-/// 2. If [textTrackRef] is present (addressable coordinates like
+/// 2. If [sha256] is present, fetch VTT from the Blossom server at
+///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
+///    (VTT not yet generated). Non-blocking.
+/// 3. If [textTrackRef] is present (addressable coordinates like
 ///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
 ///    event and parse its content.
-/// 3. Otherwise returns an empty list (no subtitles available).
+/// 4. Otherwise returns an empty list (no subtitles available).
 
 final class SubtitleCuesProvider
     extends
@@ -43,13 +49,21 @@ final class SubtitleCuesProvider
   ///
   /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
   ///    directly — zero network cost.
-  /// 2. If [textTrackRef] is present (addressable coordinates like
+  /// 2. If [sha256] is present, fetch VTT from the Blossom server at
+  ///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
+  ///    (VTT not yet generated). Non-blocking.
+  /// 3. If [textTrackRef] is present (addressable coordinates like
   ///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
   ///    event and parse its content.
-  /// 3. Otherwise returns an empty list (no subtitles available).
+  /// 4. Otherwise returns an empty list (no subtitles available).
   const SubtitleCuesProvider._({
     required SubtitleCuesFamily super.from,
-    required ({String videoId, String? textTrackRef, String? textTrackContent})
+    required ({
+      String videoId,
+      String? textTrackRef,
+      String? textTrackContent,
+      String? sha256,
+    })
     super.argument,
   }) : super(
          retry: null,
@@ -83,12 +97,14 @@ final class SubtitleCuesProvider
               String videoId,
               String? textTrackRef,
               String? textTrackContent,
+              String? sha256,
             });
     return subtitleCues(
       ref,
       videoId: argument.videoId,
       textTrackRef: argument.textTrackRef,
       textTrackContent: argument.textTrackContent,
+      sha256: argument.sha256,
     );
   }
 
@@ -103,22 +119,30 @@ final class SubtitleCuesProvider
   }
 }
 
-String _$subtitleCuesHash() => r'27292d674d89d6614ef4cb45c83be7e78fd44c32';
+String _$subtitleCuesHash() => r'21d2c1f6d3f9506e1a72d7d7ddbca0a0a27df797';
 
 /// Fetches subtitle cues for a video, using the fastest available path.
 ///
 /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
 ///    directly — zero network cost.
-/// 2. If [textTrackRef] is present (addressable coordinates like
+/// 2. If [sha256] is present, fetch VTT from the Blossom server at
+///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
+///    (VTT not yet generated). Non-blocking.
+/// 3. If [textTrackRef] is present (addressable coordinates like
 ///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
 ///    event and parse its content.
-/// 3. Otherwise returns an empty list (no subtitles available).
+/// 4. Otherwise returns an empty list (no subtitles available).
 
 final class SubtitleCuesFamily extends $Family
     with
         $FunctionalFamilyOverride<
           FutureOr<List<SubtitleCue>>,
-          ({String videoId, String? textTrackRef, String? textTrackContent})
+          ({
+            String videoId,
+            String? textTrackRef,
+            String? textTrackContent,
+            String? sha256,
+          })
         > {
   const SubtitleCuesFamily._()
     : super(
@@ -133,20 +157,25 @@ final class SubtitleCuesFamily extends $Family
   ///
   /// 1. If [textTrackContent] is present (REST API embedded the VTT), parse it
   ///    directly — zero network cost.
-  /// 2. If [textTrackRef] is present (addressable coordinates like
+  /// 2. If [sha256] is present, fetch VTT from the Blossom server at
+  ///    `https://media.divine.video/{sha256}/vtt`. Returns empty list on 404
+  ///    (VTT not yet generated). Non-blocking.
+  /// 3. If [textTrackRef] is present (addressable coordinates like
   ///    `39307:<pubkey>:subtitles:<d-tag>`), query the relay for the subtitle
   ///    event and parse its content.
-  /// 3. Otherwise returns an empty list (no subtitles available).
+  /// 4. Otherwise returns an empty list (no subtitles available).
 
   SubtitleCuesProvider call({
     required String videoId,
     String? textTrackRef,
     String? textTrackContent,
+    String? sha256,
   }) => SubtitleCuesProvider._(
     argument: (
       videoId: videoId,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
+      sha256: sha256,
     ),
     from: this,
   );
@@ -155,24 +184,27 @@ final class SubtitleCuesFamily extends $Family
   String toString() => r'subtitleCuesProvider';
 }
 
-/// Tracks per-video subtitle visibility (CC on/off).
+/// Tracks global subtitle visibility (CC on/off).
 ///
-/// State is a map of video IDs to visibility booleans.
-/// Videos not in the map default to subtitles hidden.
+/// When enabled, subtitles are shown on all videos that have them.
+/// This acts as an app-wide preference - toggling on one video
+/// applies to all videos.
 
 @ProviderFor(SubtitleVisibility)
 const subtitleVisibilityProvider = SubtitleVisibilityProvider._();
 
-/// Tracks per-video subtitle visibility (CC on/off).
+/// Tracks global subtitle visibility (CC on/off).
 ///
-/// State is a map of video IDs to visibility booleans.
-/// Videos not in the map default to subtitles hidden.
+/// When enabled, subtitles are shown on all videos that have them.
+/// This acts as an app-wide preference - toggling on one video
+/// applies to all videos.
 final class SubtitleVisibilityProvider
-    extends $NotifierProvider<SubtitleVisibility, Map<String, bool>> {
-  /// Tracks per-video subtitle visibility (CC on/off).
+    extends $NotifierProvider<SubtitleVisibility, bool> {
+  /// Tracks global subtitle visibility (CC on/off).
   ///
-  /// State is a map of video IDs to visibility booleans.
-  /// Videos not in the map default to subtitles hidden.
+  /// When enabled, subtitles are shown on all videos that have them.
+  /// This acts as an app-wide preference - toggling on one video
+  /// applies to all videos.
   const SubtitleVisibilityProvider._()
     : super(
         from: null,
@@ -192,34 +224,35 @@ final class SubtitleVisibilityProvider
   SubtitleVisibility create() => SubtitleVisibility();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Map<String, bool> value) {
+  Override overrideWithValue(bool value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<Map<String, bool>>(value),
+      providerOverride: $SyncValueProvider<bool>(value),
     );
   }
 }
 
 String _$subtitleVisibilityHash() =>
-    r'55bfd16d789f7c321fda6be432b6a5b33a05e3a3';
+    r'01e50dcdb7681118380f1e6ce2e216dafcb0e35b';
 
-/// Tracks per-video subtitle visibility (CC on/off).
+/// Tracks global subtitle visibility (CC on/off).
 ///
-/// State is a map of video IDs to visibility booleans.
-/// Videos not in the map default to subtitles hidden.
+/// When enabled, subtitles are shown on all videos that have them.
+/// This acts as an app-wide preference - toggling on one video
+/// applies to all videos.
 
-abstract class _$SubtitleVisibility extends $Notifier<Map<String, bool>> {
-  Map<String, bool> build();
+abstract class _$SubtitleVisibility extends $Notifier<bool> {
+  bool build();
   @$mustCallSuper
   @override
   void runBuild() {
     final created = build();
-    final ref = this.ref as $Ref<Map<String, bool>, Map<String, bool>>;
+    final ref = this.ref as $Ref<bool, bool>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<Map<String, bool>, Map<String, bool>>,
-              Map<String, bool>,
+              AnyNotifier<bool, bool>,
+              bool,
               Object?,
               Object?
             >;

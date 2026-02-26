@@ -26,6 +26,7 @@ class AudioEvent {
     this.fileSize,
     this.duration,
     this.title,
+    this.source,
     this.sourceVideoReference,
     this.sourceVideoRelay,
   });
@@ -48,6 +49,7 @@ class AudioEvent {
     int? fileSize;
     double? duration;
     String? title;
+    String? source;
     String? sourceVideoReference;
     String? sourceVideoRelay;
 
@@ -72,6 +74,8 @@ class AudioEvent {
           duration = double.tryParse(tagValue);
         case 'title':
           title = tagValue.isNotEmpty ? tagValue : null;
+        case 'source':
+          source = tagValue.isNotEmpty ? tagValue : null;
         case 'a':
           // Addressable reference to source video: "34236:<pubkey>:<d-tag>"
           sourceVideoReference = tagValue.isNotEmpty ? tagValue : null;
@@ -92,6 +96,7 @@ class AudioEvent {
       fileSize: fileSize,
       duration: duration,
       title: title,
+      source: source,
       sourceVideoReference: sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay,
     );
@@ -161,6 +166,9 @@ class AudioEvent {
 
   /// Audio title (e.g., "Original sound - @username").
   final String? title;
+
+  /// Source attribution (e.g., "Original Sound", "Spotify", "SoundCloud").
+  final String? source;
 
   /// Addressable reference to source video in format "kind:pubkey:d-tag".
   /// For OpenVine videos: "34236:<pubkey>:<vine-id>"
@@ -243,6 +251,10 @@ class AudioEvent {
       tags.add(['title', title!]);
     }
 
+    if (source != null) {
+      tags.add(['source', source!]);
+    }
+
     if (sourceVideoReference != null) {
       if (sourceVideoRelay != null) {
         tags.add(['a', sourceVideoReference!, sourceVideoRelay!]);
@@ -265,6 +277,7 @@ class AudioEvent {
     int? fileSize,
     double? duration,
     String? title,
+    String? source,
     String? sourceVideoReference,
     String? sourceVideoRelay,
   }) {
@@ -278,6 +291,7 @@ class AudioEvent {
       fileSize: fileSize ?? this.fileSize,
       duration: duration ?? this.duration,
       title: title ?? this.title,
+      source: source ?? this.source,
       sourceVideoReference: sourceVideoReference ?? this.sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay ?? this.sourceVideoRelay,
     );

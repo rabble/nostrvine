@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -12,10 +13,10 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:divine_camera/divine_camera.dart'
     show DivineCameraLens, DivineVideoQuality;
 import 'package:openvine/services/audio_playback_service.dart';
@@ -24,6 +25,9 @@ import 'package:openvine/services/video_recorder/camera/camera_base_service.dart
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+/// SharedPreferences key for storing the last used camera lens.
+const _kLastUsedCameraLensKey = 'camera_last_used_lens';
 
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates.
 ///
@@ -123,14 +127,25 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   }) async {
     _isDestroyed = false;
 
+    // Load the last used camera lens from preferences
+    final prefs = ref.read(sharedPreferencesProvider);
+    final savedLensString = prefs.getString(_kLastUsedCameraLensKey);
+    final initialLens = savedLensString != null
+        ? DivineCameraLens.fromNativeString(savedLensString)
+        : DivineCameraLens.front;
+
     Log.info(
-      '📹 Initializing video recorder with quality: ${videoQuality.value}',
+      '📹 Initializing video recorder with quality: ${videoQuality.value}, '
+      'lens: ${initialLens.displayName}',
       name: 'VideoRecorderNotifier',
       category: .video,
     );
 
     try {
-      await _cameraService.initialize(videoQuality: videoQuality);
+      await _cameraService.initialize(
+        videoQuality: videoQuality,
+        initialLens: initialLens,
+      );
     } catch (e) {
       Log.error(
         '📹 Camera service initialization threw exception: $e',
@@ -377,6 +392,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     }
     _baseZoomLevel = 1;
 
+    // Save the new lens preference
+    await _saveCurrentLensPreference();
+
     Log.info(
       '🔄 Camera switched successfully - zoom reset to 1.0x',
       name: 'VideoRecorderNotifier',
@@ -404,6 +422,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     }
     _baseZoomLevel = 1;
 
+    // Save the new lens preference
+    await _saveCurrentLensPreference();
+
     Log.info(
       '🔄 Lens switched to ${lens.displayName} - zoom reset to 1.0x',
       name: 'VideoRecorderNotifier',
@@ -419,6 +440,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   /// List of available camera lenses on this device.
   List<DivineCameraLens> get availableLenses => _cameraService.availableLenses;
+
+  /// Saves the current camera lens to SharedPreferences.
+  Future<void> _saveCurrentLensPreference() async {
+    final lens = _cameraService.currentLens;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_kLastUsedCameraLensKey, lens.toNativeString());
+    Log.debug(
+      '💾 Saved camera lens preference: ${lens.displayName}',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
+  }
 
   /// Set camera zoom level (within min/max bounds).
   Future<void> setZoomLevel(double value) async {
@@ -521,6 +554,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     _baseZoomLevel = state.zoomLevel;
     _isStartingRecording = true;
+    unawaited(HapticService.recordingFeedback());
 
     // Handle timer countdown
     if (state.timerDuration != .off) {
@@ -550,6 +584,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         return;
       }
       state = state.copyWith(countdownValue: 0);
+      unawaited(HapticService.recordingFeedback());
 
       // Re-enable volume key interception after countdown
       // (unless a sound is selected, then keep them disabled)
@@ -563,6 +598,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       return;
     }
 
+    // Pre-load sound before recording starts so playback begins instantly
+    await _prepareSoundForPlayback();
+
     // Set recording state before starting (UI feedback)
     state = state.copyWith(recordingState: .recording);
 
@@ -572,6 +610,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
+    // Sound is already loaded — just hit play
+    unawaited(_playSoundPlayback());
     final success = await _cameraService.startRecording(
       maxDuration: remainingDuration,
     );
@@ -585,9 +625,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
       clipProvider.startRecording();
-
-      // Start audio playback if a sound is selected
-      unawaited(_startSoundPlayback());
     } else {
       Log.warning(
         '⚠️ Recording failed to start or was stopped early',
@@ -631,6 +668,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
     _isStoppingRecording = true;
+
+    unawaited(HapticService.recordingFeedback());
 
     // Stop audio playback if active
     await _stopSoundPlayback();
@@ -683,17 +722,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
       name: 'VideoRecorderNotifier',
       category: .video,
-    );
-
-    // Save clip to device gallery (fire-and-forget)
-    unawaited(
-      ref
-          .read(gallerySaveServiceProvider)
-          .saveVideoToGallery(
-            videoResult,
-            aspectRatio: state.aspectRatio,
-            metadata: metadata,
-          ),
     );
 
     // Generate and attach thumbnail.
@@ -795,7 +823,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       context.pop();
     } else {
       // No screen to pop to (navigated via go), go home instead.
-      context.go(HomeScreenRouter.pathForIndex(0));
+      context.go(VideoFeedPage.pathForIndex(0));
     }
   }
 
@@ -886,12 +914,14 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   // === SOUND PLAYBACK DURING RECORDING ===
 
-  /// Starts audio playback for the selected sound during recording.
+  /// Pre-loads the selected sound so playback can start instantly.
   ///
   /// Configures the audio session for simultaneous recording and playback,
-  /// loads the audio from the sound's URL, and starts playback.
+  /// loads the audio from the sound's URL, and seeks to the correct
+  /// position based on existing clip durations.
+  /// Call [_playSoundPlayback] after recording starts to begin playback.
   /// Failures are logged but do not prevent recording from continuing.
-  Future<void> _startSoundPlayback() async {
+  Future<void> _prepareSoundForPlayback() async {
     final selectedSound = ref.read(selectedSoundProvider);
     if (selectedSound == null || selectedSound.url == null) return;
 
@@ -904,18 +934,52 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       // Load the audio from the sound's Blossom URL
       await _audioPlaybackService!.loadAudio(selectedSound.url!);
 
-      // Start playback
-      await _audioPlaybackService!.play();
+      // Seek to correct position based on existing clips
+      final clipManager = ref.read(clipManagerProvider.notifier);
+      final startPosition = clipManager.totalDuration;
+      if (startPosition > Duration.zero) {
+        await _audioPlaybackService!.seek(startPosition);
+        Log.debug(
+          'Seeking sound to position: '
+          '${startPosition.inMilliseconds}ms',
+          name: 'VideoRecorderNotifier',
+          category: LogCategory.video,
+        );
+      }
 
       Log.info(
-        'Started sound playback during recording: '
+        'Sound prepared for playback: '
         '${selectedSound.title ?? selectedSound.id}',
         name: 'VideoRecorderNotifier',
         category: LogCategory.video,
       );
     } catch (e) {
       Log.warning(
-        'Failed to start sound playback during recording: $e',
+        'Failed to prepare sound for playback: $e',
+        name: 'VideoRecorderNotifier',
+        category: LogCategory.video,
+      );
+      // Don't prevent recording - sound playback is best-effort
+    }
+  }
+
+  /// Starts playback of a previously prepared sound.
+  ///
+  /// Assumes [_prepareSoundForPlayback] was called beforehand.
+  Future<void> _playSoundPlayback() async {
+    if (_audioPlaybackService == null) return;
+
+    try {
+      await _audioPlaybackService!.play();
+
+      Log.info(
+        'Started sound playback during recording',
+        name: 'VideoRecorderNotifier',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to start sound playback: $e',
         name: 'VideoRecorderNotifier',
         category: LogCategory.video,
       );

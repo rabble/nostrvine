@@ -26,6 +26,7 @@ class VideoStats {
     required this.comments,
     required this.reposts,
     required this.engagementScore,
+    this.publishedAt,
     this.description,
     this.sha256,
     this.authorName,
@@ -33,6 +34,7 @@ class VideoStats {
     this.blurhash,
     this.trendingScore,
     this.loops,
+    this.views,
     this.rawTags = const {},
   });
 
@@ -89,6 +91,8 @@ class VideoStats {
         statsData['loops'] ?? json['loops'] ?? json['original_loops'];
     if (directLoops is int) {
       loops = directLoops;
+    } else if (directLoops is double) {
+      loops = directLoops.toInt();
     } else if (directLoops is String) {
       loops = int.tryParse(directLoops);
     }
@@ -115,10 +119,23 @@ class VideoStats {
     var description = eventData['content']?.toString();
     if (description != null && description.isEmpty) description = null;
 
+    // Parse view counts from multiple possible sources
+    int? views;
+    final directViews =
+        statsData['views'] ?? json['views'] ?? json['view_count'];
+    if (directViews is int) {
+      views = directViews;
+    } else if (directViews is double) {
+      views = directViews.toInt();
+    } else if (directViews is String) {
+      views = int.tryParse(directViews);
+    }
+
     // Also check for blurhash and summary in tags (NIP-71 standard)
     // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
     String? blurhashFromTag;
     String? summaryFromTag;
+    int? publishedAt;
     final rawTags = <String, String>{};
 
     if (eventData['tags'] is List) {
@@ -147,6 +164,12 @@ class VideoStats {
           if (tagName == 'summary' && summaryFromTag == null) {
             summaryFromTag = tagValue;
           }
+          if (tagName == 'published_at' && publishedAt == null) {
+            publishedAt = int.tryParse(tagValue);
+          }
+          if (tagName == 'views' && views == null) {
+            views = int.tryParse(tagValue);
+          }
         }
       }
     }
@@ -156,6 +179,13 @@ class VideoStats {
 
     // Normalize empty sha256 to null
     if (sha256 != null && sha256.isEmpty) sha256 = null;
+
+    // Fall back to d_tag as sha256 for Blossom-uploaded videos.
+    // The REST API doesn't return sha256 or raw tags, but d_tag IS the
+    // content hash for Blossom uploads (64 hex chars).
+    if (sha256 == null && dTag.length == 64 && _isHex(dTag)) {
+      sha256 = dTag;
+    }
 
     // Parse author_name for classic Vines
     var authorName =
@@ -201,6 +231,7 @@ class VideoStats {
       id: id,
       pubkey: pubkey,
       createdAt: createdAt,
+      publishedAt: publishedAt,
       kind: (eventData['kind'] as int?) ?? 34236,
       dTag: dTag,
       title: title,
@@ -211,16 +242,17 @@ class VideoStats {
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
-      reactions: reactions is int ? reactions : 0,
-      comments: comments is int ? comments : 0,
-      reposts: reposts is int ? reposts : 0,
-      engagementScore:
-          (statsData['engagement_score'] ?? json['engagement_score'] ?? 0)
-              as int,
+      reactions: _parseInt(reactions),
+      comments: _parseInt(comments),
+      reposts: _parseInt(reposts),
+      engagementScore: _parseInt(
+        statsData['engagement_score'] ?? json['engagement_score'],
+      ),
       trendingScore: _parseDouble(
         statsData['trending_score'] ?? json['trending_score'],
       ),
       loops: loops,
+      views: views,
       rawTags: rawTags,
     );
   }
@@ -233,6 +265,12 @@ class VideoStats {
 
   /// When the video was created.
   final DateTime createdAt;
+
+  /// Unix timestamp of when the video was published (`published_at` tag).
+  ///
+  /// May differ from [createdAt] when the event was updated after initial
+  /// publication.
+  final int? publishedAt;
 
   /// Nostr event kind (typically 34236 for vertical videos).
   final int kind;
@@ -282,6 +320,9 @@ class VideoStats {
   /// Original loop count for classic Vines.
   final int? loops;
 
+  /// Live/new view count from Funnelcake analytics.
+  final int? views;
+
   /// All Nostr event tags as a flat map, preserving tags (like ProofMode,
   /// C2PA, verification) that don't have dedicated fields on this model.
   final Map<String, String> rawTags;
@@ -290,26 +331,40 @@ class VideoStats {
   ///
   /// Maps the Funnelcake API response fields to the corresponding
   /// [VideoEvent] fields used throughout the application.
+  ///
+  /// Uses [publishedAt] as the effective timestamp when available,
+  /// falling back to [createdAt].
   VideoEvent toVideoEvent() {
+    final effectiveTimestamp =
+        publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
+    final normalizedDTag = dTag.isNotEmpty ? dTag : id;
     return VideoEvent(
       id: id,
       pubkey: pubkey,
-      createdAt: createdAt.millisecondsSinceEpoch ~/ 1000,
+      createdAt: effectiveTimestamp,
       content: description ?? '',
-      timestamp: createdAt,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(effectiveTimestamp * 1000),
       title: title.isNotEmpty ? title : null,
       videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
       thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,
-      vineId: dTag.isNotEmpty ? dTag : null,
+      vineId: normalizedDTag.isNotEmpty ? normalizedDTag : null,
+      publishedAt: publishedAt?.toString(),
       sha256: sha256,
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
       originalLikes: reactions,
+      // When from Funnelcake, Nostr likes are added to originalLikes by default
+      // Setting to 0 here ensures VideoInteractionsBloc seeds the correct count
+      nostrLikeCount: 0,
       originalComments: comments,
       originalReposts: reposts,
       originalLoops: loops,
-      rawTags: rawTags,
+      rawTags: {
+        ...rawTags,
+        if (loops != null) 'loops': loops.toString(),
+        if (views != null) 'views': views.toString(),
+      },
     );
   }
 
@@ -334,3 +389,15 @@ double? _parseDouble(dynamic value) {
   if (value is String) return double.tryParse(value);
   return null;
 }
+
+int _parseInt(dynamic value) {
+  if (value is int) return value;
+  if (value is double) return value.toInt();
+  if (value is String) return int.tryParse(value) ?? 0;
+  return 0;
+}
+
+final _hexPattern = RegExp(r'^[0-9a-fA-F]+$');
+
+/// Returns `true` if [value] contains only hexadecimal characters.
+bool _isHex(String value) => _hexPattern.hasMatch(value);

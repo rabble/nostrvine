@@ -57,15 +57,18 @@ void main() {
       repostedIdsController.close();
     });
 
-    VideoInteractionsBloc createBloc({String? addressableId}) =>
-        VideoInteractionsBloc(
-          eventId: testEventId,
-          authorPubkey: testAuthorPubkey,
-          likesRepository: mockLikesRepository,
-          commentsRepository: mockCommentsRepository,
-          repostsRepository: mockRepostsRepository,
-          addressableId: addressableId,
-        );
+    VideoInteractionsBloc createBloc({
+      String? addressableId,
+      int? initialLikeCount,
+    }) => VideoInteractionsBloc(
+      eventId: testEventId,
+      authorPubkey: testAuthorPubkey,
+      likesRepository: mockLikesRepository,
+      commentsRepository: mockCommentsRepository,
+      repostsRepository: mockRepostsRepository,
+      addressableId: addressableId,
+      initialLikeCount: initialLikeCount,
+    );
 
     test('initial state is initial with default values', () {
       final bloc = createBloc();
@@ -78,6 +81,12 @@ void main() {
       expect(bloc.state.isLikeInProgress, isFalse);
       expect(bloc.state.isRepostInProgress, isFalse);
       expect(bloc.state.error, isNull);
+      bloc.close();
+    });
+
+    test('initial state seeds likeCount from initialLikeCount', () {
+      final bloc = createBloc(initialLikeCount: 42);
+      expect(bloc.state.likeCount, equals(42));
       bloc.close();
     });
 
@@ -110,6 +119,45 @@ void main() {
             commentCount: 10,
           ),
         ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'skips relay like count query when seeded with initialLikeCount',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockCommentsRepository.getCommentsCount(testEventId),
+          ).thenAnswer((_) async => 10);
+          when(
+            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+          ).thenAnswer((_) async => 5);
+        },
+        build: () => createBloc(initialLikeCount: 100),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 100,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 100,
+            repostCount: 5,
+            commentCount: 10,
+          ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockLikesRepository.getLikeCount(any()));
+          verifyNever(
+            () => mockLikesRepository.getLikeCount(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
+        },
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -855,6 +903,61 @@ void main() {
         },
         wait: const Duration(milliseconds: 100),
         expect: () => <VideoInteractionsState>[],
+      );
+    });
+
+    group('VideoInteractionsCommentCountUpdated', () {
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'updates comment count',
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          commentCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsCommentCountUpdated(10)),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            commentCount: 10,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'updates comment count from null',
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsCommentCountUpdated(3)),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            commentCount: 3,
+          ),
+        ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'preserves other state fields when updating comment count',
+        build: createBloc,
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          isLiked: true,
+          likeCount: 42,
+          repostCount: 7,
+          commentCount: 5,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsCommentCountUpdated(8)),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 42,
+            repostCount: 7,
+            commentCount: 8,
+          ),
+        ],
       );
     });
 

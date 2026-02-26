@@ -65,15 +65,16 @@ void main() {
       return base64Encode(utf8.encode(jsonEncode(event.toJson())));
     }
 
-    test('WITH payload tag, no query params in u tag -> accepted', () async {
+    test('WITH payload tag, query params in u tag -> accepted', () async {
       final url =
-          'https://relay.divine.video/api/users/$publicKey/notifications';
+          'https://relay.divine.video/api/users/$publicKey/notifications'
+          '?limit=1';
       final token = createSignedToken(url: url, method: 'GET');
 
-      final (status, body) = await curlGet('$url?limit=1', 'Nostr $token');
+      final (status, body) = await curlGet(url, 'Nostr $token');
 
       // ignore: avoid_print
-      print('WITH payload, no query params: $status $body');
+      print('WITH payload, query params in u tag: $status $body');
 
       // 200 = empty notifications, 404 = user not found -> format accepted
       // 401 = auth format rejected

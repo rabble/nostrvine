@@ -7,11 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
-import 'package:openvine/providers/app_lifecycle_provider.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
@@ -19,27 +18,6 @@ void main() {
     // Create mock video data
     final now = DateTime.now();
     final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
-
-    final mockHomeVideos = [
-      VideoEvent(
-        id: 'home-video-0',
-        pubkey: 'pubkey-1',
-        createdAt: nowUnix,
-        content: 'Home Video 0',
-        timestamp: now,
-        title: 'Home Video 0',
-        videoUrl: 'https://example.com/home0.mp4',
-      ),
-      VideoEvent(
-        id: 'home-video-1',
-        pubkey: 'pubkey-2',
-        createdAt: nowUnix,
-        content: 'Home Video 1',
-        timestamp: now,
-        title: 'Home Video 1',
-        videoUrl: 'https://example.com/home1.mp4',
-      ),
-    ];
 
     final mockExploreVideos = [
       VideoEvent(
@@ -73,12 +51,15 @@ void main() {
             routerLocationStreamProvider.overrideWith(
               (ref) => locationController.stream,
             ),
-            videosForHomeRouteProvider.overrideWith((ref) {
+            videosForExploreRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
-                VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+                VideoFeedState(
+                  videos: mockExploreVideos,
+                  hasMoreContent: false,
+                ),
               );
             }),
-            appForegroundProvider.overrideWith((ref) => Stream.value(true)),
+            // appForegroundProvider defaults to true (Notifier-based)
           ],
         );
 
@@ -95,12 +76,15 @@ void main() {
           fireImmediately: true,
         );
 
-        // Start at home video 0
-        locationController.add(HomeScreenRouter.pathForIndex(0));
+        // Start at explore video 0
+        locationController.add(ExploreScreen.pathForIndex(0));
         await pumpEventQueue();
 
-        expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-        expect(activeVideoIds.last, equals('home-video-0'));
+        expect(
+          container.read(activeVideoIdProvider),
+          equals('explore-video-0'),
+        );
+        expect(activeVideoIds.last, equals('explore-video-0'));
 
         // Navigate to explore grid (no index)
         locationController.add(ExploreScreen.path);
@@ -116,9 +100,10 @@ void main() {
     );
 
     test(
-      'activeVideoId changes when navigating between different feeds',
+      'activeVideoId changes when navigating between grid and video modes',
       () async {
-        // Verify that navigating from home to explore changes active video
+        // Verify that navigating from grid to video and back changes active
+        // video
         final locationController = StreamController<String>();
 
         final container = ProviderContainer(
@@ -126,11 +111,6 @@ void main() {
             routerLocationStreamProvider.overrideWith(
               (ref) => locationController.stream,
             ),
-            videosForHomeRouteProvider.overrideWith((ref) {
-              return AsyncValue.data(
-                VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
-              );
-            }),
             videosForExploreRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
                 VideoFeedState(
@@ -139,7 +119,7 @@ void main() {
                 ),
               );
             }),
-            appForegroundProvider.overrideWith((ref) => Stream.value(true)),
+            // appForegroundProvider defaults to true (Notifier-based)
           ],
         );
 
@@ -156,33 +136,41 @@ void main() {
           fireImmediately: true,
         );
 
-        // Start at home video 0
-        locationController.add(HomeScreenRouter.pathForIndex(0));
-        await pumpEventQueue();
-
-        expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-
-        // Navigate to explore video 0
+        // Start at explore video 0
         locationController.add(ExploreScreen.pathForIndex(0));
         await pumpEventQueue();
 
-        // Active video should change to explore-video-0
         expect(
           container.read(activeVideoIdProvider),
           equals('explore-video-0'),
         );
-        expect(activeVideoIds, contains('explore-video-0'));
 
-        // Verify home video is no longer active
-        final isHomeVideoActive = container.read(
-          isVideoActiveProvider('home-video-0'),
+        // Navigate to explore grid (no video playing)
+        locationController.add(ExploreScreen.path);
+        await pumpEventQueue();
+
+        expect(container.read(activeVideoIdProvider), isNull);
+
+        // Navigate back to explore video 1
+        locationController.add(ExploreScreen.pathForIndex(1));
+        await pumpEventQueue();
+
+        // Active video should change to explore-video-1
+        expect(
+          container.read(activeVideoIdProvider),
+          equals('explore-video-1'),
         );
-        final isExploreVideoActive = container.read(
+
+        // Verify video 0 is no longer active
+        final isVideo0Active = container.read(
           isVideoActiveProvider('explore-video-0'),
         );
+        final isVideo1Active = container.read(
+          isVideoActiveProvider('explore-video-1'),
+        );
 
-        expect(isHomeVideoActive, isFalse);
-        expect(isExploreVideoActive, isTrue);
+        expect(isVideo0Active, isFalse);
+        expect(isVideo1Active, isTrue);
 
         locationController.close();
         container.dispose();
@@ -192,21 +180,18 @@ void main() {
     test('activeVideoId becomes null when app backgrounds', () async {
       // Verify that backgrounding the app stops video playback
       final locationController = StreamController<String>();
-      final lifecycleController = StreamController<bool>();
 
       final container = ProviderContainer(
         overrides: [
           routerLocationStreamProvider.overrideWith(
             (ref) => locationController.stream,
           ),
-          videosForHomeRouteProvider.overrideWith((ref) {
+          videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+              VideoFeedState(videos: mockExploreVideos, hasMoreContent: false),
             );
           }),
-          appForegroundProvider.overrideWith(
-            (ref) => lifecycleController.stream,
-          ),
+          // appForegroundProvider defaults to true (Notifier-based)
         ],
       );
 
@@ -219,16 +204,15 @@ void main() {
 
       container.listen(pageContextProvider, (_, __) {}, fireImmediately: true);
 
-      // Start with app in foreground and video playing
-      lifecycleController.add(true);
-      locationController.add(HomeScreenRouter.pathForIndex(0));
+      // Start with app in foreground (default) and navigate to video
+      locationController.add(ExploreScreen.pathForIndex(0));
       await pumpEventQueue();
 
-      expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-      expect(activeVideoIds.last, equals('home-video-0'));
+      expect(container.read(activeVideoIdProvider), equals('explore-video-0'));
+      expect(activeVideoIds.last, equals('explore-video-0'));
 
-      // Background the app
-      lifecycleController.add(false);
+      // Background the app via the notifier
+      container.read(appForegroundProvider.notifier).setForeground(false);
       await pumpEventQueue();
 
       // Active video should become null
@@ -236,20 +220,19 @@ void main() {
       expect(activeVideoIds.last, isNull);
 
       // Foreground the app again
-      lifecycleController.add(true);
+      container.read(appForegroundProvider.notifier).setForeground(true);
       await pumpEventQueue();
 
       // Video should become active again
-      expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-      expect(activeVideoIds.last, equals('home-video-0'));
+      expect(container.read(activeVideoIdProvider), equals('explore-video-0'));
+      expect(activeVideoIds.last, equals('explore-video-0'));
 
-      lifecycleController.close();
       locationController.close();
       container.dispose();
     });
 
     test('swiping between videos in same feed changes active video', () async {
-      // Verify that swiping within home feed changes which video is active
+      // Verify that swiping within explore feed changes which video is active
       final locationController = StreamController<String>();
 
       final container = ProviderContainer(
@@ -257,12 +240,12 @@ void main() {
           routerLocationStreamProvider.overrideWith(
             (ref) => locationController.stream,
           ),
-          videosForHomeRouteProvider.overrideWith((ref) {
+          videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+              VideoFeedState(videos: mockExploreVideos, hasMoreContent: false),
             );
           }),
-          appForegroundProvider.overrideWith((ref) => Stream.value(true)),
+          // appForegroundProvider defaults to true (Notifier-based)
         ],
       );
 
@@ -275,27 +258,27 @@ void main() {
 
       container.listen(pageContextProvider, (_, __) {}, fireImmediately: true);
 
-      // Start at home video 0
-      locationController.add(HomeScreenRouter.pathForIndex(0));
+      // Start at explore video 0
+      locationController.add(ExploreScreen.pathForIndex(0));
       await pumpEventQueue();
 
-      expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-      expect(container.read(isVideoActiveProvider('home-video-0')), isTrue);
-      expect(container.read(isVideoActiveProvider('home-video-1')), isFalse);
+      expect(container.read(activeVideoIdProvider), equals('explore-video-0'));
+      expect(container.read(isVideoActiveProvider('explore-video-0')), isTrue);
+      expect(container.read(isVideoActiveProvider('explore-video-1')), isFalse);
 
-      // Swipe to home video 1
-      locationController.add(HomeScreenRouter.pathForIndex(1));
+      // Swipe to explore video 1
+      locationController.add(ExploreScreen.pathForIndex(1));
       await pumpEventQueue();
 
       // Active video should change
-      expect(container.read(activeVideoIdProvider), equals('home-video-1'));
-      expect(container.read(isVideoActiveProvider('home-video-0')), isFalse);
-      expect(container.read(isVideoActiveProvider('home-video-1')), isTrue);
+      expect(container.read(activeVideoIdProvider), equals('explore-video-1'));
+      expect(container.read(isVideoActiveProvider('explore-video-0')), isFalse);
+      expect(container.read(isVideoActiveProvider('explore-video-1')), isTrue);
 
       // Verify we saw both videos in the active video stream
       expect(
         activeVideoIds,
-        containsAllInOrder(['home-video-0', 'home-video-1']),
+        containsAllInOrder(['explore-video-0', 'explore-video-1']),
       );
 
       locationController.close();
@@ -303,25 +286,27 @@ void main() {
     });
 
     test(
-      'defensive behavior: defaults to background if lifecycle provider not ready',
+      'activeVideoId becomes null when app is set to background state',
       () async {
-        // Verify that if lifecycle provider hasn't emitted yet, we assume background
+        // Verify that setting foreground=false stops video playback
         final locationController = StreamController<String>();
-        final lifecycleController = StreamController<bool>();
 
         final container = ProviderContainer(
           overrides: [
             routerLocationStreamProvider.overrideWith(
               (ref) => locationController.stream,
             ),
-            videosForHomeRouteProvider.overrideWith((ref) {
+            videosForExploreRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
-                VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+                VideoFeedState(
+                  videos: mockExploreVideos,
+                  hasMoreContent: false,
+                ),
               );
             }),
-            // Lifecycle provider stream but don't emit value yet
+            // Start with foreground=false to test background state
             appForegroundProvider.overrideWith(
-              (ref) => lifecycleController.stream,
+              () => _TestAppForegroundNotifier(false),
             ),
           ],
         );
@@ -339,24 +324,36 @@ void main() {
           fireImmediately: true,
         );
 
-        // Navigate to video without lifecycle being ready
-        locationController.add(HomeScreenRouter.pathForIndex(0));
+        // Navigate to video while in background state
+        locationController.add(ExploreScreen.pathForIndex(0));
         await pumpEventQueue();
 
-        // Should be null because lifecycle provider hasn't emitted (defensive default)
+        // Should be null because app is in background
         expect(container.read(activeVideoIdProvider), isNull);
 
-        // Now emit foreground state
-        lifecycleController.add(true);
+        // Now set foreground state
+        container.read(appForegroundProvider.notifier).setForeground(true);
         await pumpEventQueue();
 
         // Now video should be active
-        expect(container.read(activeVideoIdProvider), equals('home-video-0'));
+        expect(
+          container.read(activeVideoIdProvider),
+          equals('explore-video-0'),
+        );
 
-        lifecycleController.close();
         locationController.close();
         container.dispose();
       },
     );
   });
+}
+
+/// Test notifier for appForegroundProvider that starts with a custom value.
+class _TestAppForegroundNotifier extends AppForeground {
+  _TestAppForegroundNotifier(this._initialValue);
+
+  final bool _initialValue;
+
+  @override
+  bool build() => _initialValue;
 }

@@ -90,9 +90,18 @@ class NostrRemoteSigner extends NostrSigner {
     localNostrSigner = LocalNostrSigner(Nip19.decode(info.nsec!));
     log('[NIP46] connect: created localNostrSigner');
 
-    for (var remoteRelayAddr in info.relays) {
-      var relay = await _connectToRelay(remoteRelayAddr);
-      relays.add(relay);
+    // Connect to all relays in parallel for speed
+    final futures = info.relays.map((addr) async {
+      try {
+        return await _connectToRelay(addr);
+      } catch (e) {
+        log('[NIP46] connect: failed to connect to $addr: $e');
+        return null;
+      }
+    });
+    final results = await Future.wait(futures.toList());
+    for (final relay in results) {
+      if (relay != null) relays.add(relay);
     }
 
     if (sendConnectRequest) {

@@ -2,7 +2,7 @@
 // ABOUTME: Shows list metadata with proper dark theme styling
 
 import 'package:flutter/material.dart';
-import 'package:openvine/services/curated_list_service.dart';
+import 'package:models/models.dart';
 import 'package:openvine/services/user_list_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 

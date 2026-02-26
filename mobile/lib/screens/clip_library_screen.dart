@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,11 +16,11 @@ import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/masonary_grid.dart';
@@ -335,6 +336,73 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     }
   }
 
+  Future<void> _saveSelectedClipsToGallery() async {
+    final selectedClips = _clips
+        .where((clip) => _selectedClipIds.contains(clip.id))
+        .toList();
+    if (selectedClips.isEmpty) return;
+
+    final clipCount = selectedClips.length;
+
+    Log.info(
+      '📚 Saving $clipCount clips to gallery',
+      name: 'ClipLibraryScreen',
+      category: LogCategory.video,
+    );
+
+    final gallerySaveService = ref.read(gallerySaveServiceProvider);
+    var successCount = 0;
+    var failureCount = 0;
+
+    for (final clip in selectedClips) {
+      final result = await gallerySaveService.saveVideoToGallery(
+        EditorVideo.file(clip.filePath),
+      );
+      switch (result) {
+        case GallerySaveSuccess():
+          successCount++;
+        case GallerySavePermissionDenied():
+          // Stop immediately on permission denied
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                behavior: SnackBarBehavior.floating,
+                content: DivineSnackbarContainer(
+                  label:
+                      '${GallerySaveService.destinationName}'
+                      ' permission denied',
+                  error: true,
+                ),
+              ),
+            );
+          }
+          return;
+        case GallerySaveFailure():
+          failureCount++;
+      }
+    }
+
+    if (!mounted) return;
+
+    final label = failureCount == 0
+        ? '$successCount clip${successCount == 1 ? '' : 's'} '
+              'saved to ${GallerySaveService.destinationName}'
+        : '$successCount saved, $failureCount failed';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        content: DivineSnackbarContainer(label: label, error: failureCount > 0),
+      ),
+    );
+
+    _clearSelection();
+  }
+
   Future<void> _showClipPreview(SavedClip clip) async {
     Navigator.push(
       context,
@@ -460,23 +528,36 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
                         if (context.canPop()) {
                           context.pop();
                         } else {
-                          context.go(HomeScreenRouter.pathForIndex(0));
+                          context.go(VideoFeedPage.pathForIndex(0));
                         }
                       },
                     ),
                     title: Text(_buildAppBarTitle()),
-                    actions: [
-                      // Delete button when clips are selected
-                      if (_selectedClipIds.isNotEmpty && !widget.selectionMode)
-                        IconButton(
-                          icon: const Icon(
-                            Icons.delete_outline,
-                            color: Colors.red,
-                          ),
-                          onPressed: _showDeleteConfirmationDialog,
-                          tooltip: 'Delete selected clips',
-                        ),
-                    ],
+                    actions:
+                        _selectedClipIds.isNotEmpty && !widget.selectionMode
+                        ? [
+                            // Save to gallery button
+                            IconButton(
+                              icon: DivineIcon(
+                                icon: .downloadSimple,
+                                size: 24,
+                                color: VineTheme.whiteText,
+                              ),
+                              onPressed: _saveSelectedClipsToGallery,
+                              tooltip: 'Save to camera roll',
+                            ),
+                            // Delete button
+                            IconButton(
+                              icon: DivineIcon(
+                                icon: .trash,
+                                size: 24,
+                                color: VineTheme.error,
+                              ),
+                              onPressed: _showDeleteConfirmationDialog,
+                              tooltip: 'Delete selected clips',
+                            ),
+                          ]
+                        : null,
                   ),
             body: Column(
               children: [
@@ -850,7 +931,7 @@ class _AddClipButton extends StatelessWidget {
               style: TextStyle(
                 color: Color(0xFF002C1C),
                 fontSize: 18,
-                fontFamily: 'BricolageGrotesque',
+                fontFamily: VineTheme.fontFamilyBricolage,
                 fontWeight: FontWeight.w800,
                 height: 1.33,
                 letterSpacing: 0.15,
