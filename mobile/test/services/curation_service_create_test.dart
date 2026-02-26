@@ -68,8 +68,7 @@ void main() {
     test(
       'returns true when event is signed and published successfully',
       () async {
-        final signedEvent =
-            Event(_testPubkey, 30005, <List<String>>[], 'test');
+        final signedEvent = Event(_testPubkey, 30005, <List<String>>[], 'test');
         signedEvent.id = 'signed_event_id';
 
         when(
