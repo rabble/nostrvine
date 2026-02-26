@@ -78,7 +78,6 @@ class _LoginOptionsView extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        resizeToAvoidBottomInset: true,
         body: SafeArea(
           child: BlocBuilder<DivineAuthCubit, DivineAuthState>(
             builder: (context, state) {
