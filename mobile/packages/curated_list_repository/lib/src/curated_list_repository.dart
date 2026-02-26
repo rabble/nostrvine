@@ -1,7 +1,7 @@
-// ABOUTME: Repository for managing curated video list subscriptions.
-// ABOUTME: Provides BehaviorSubject stream for reactive BLoC subscriptions,
-// ABOUTME: read-only query methods, and in-memory state populated by the
-// ABOUTME: Page layer. Persistence and relay sync come in later phases.
+// ABOUTME(WIP): Repository for managing curated video list subscriptions.
+// ABOUTME(WIP): Provides BehaviorSubject stream for reactive BLoC subscriptions,
+// ABOUTME(WIP): read-only query methods, and in-memory state populated by the
+// ABOUTME(WIP): Page layer. Persistence and relay sync come in later phases.
 
 import 'package:models/models.dart';
 import 'package:rxdart/rxdart.dart';

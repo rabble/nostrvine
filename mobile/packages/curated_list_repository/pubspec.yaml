@@ -10,7 +10,6 @@ environment:
 dependencies:
   models:
   nostr_sdk:
-    path: ../nostr_sdk
   rxdart: ^0.28.0
 
 dev_dependencies:
