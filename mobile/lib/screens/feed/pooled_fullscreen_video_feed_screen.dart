@@ -19,6 +19,7 @@ import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -506,7 +507,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
   }
 }
 
-class _PooledFullscreenItemContent extends StatelessWidget {
+class _PooledFullscreenItemContent extends StatefulWidget {
   const _PooledFullscreenItemContent({
     required this.video,
     required this.index,
@@ -524,23 +525,33 @@ class _PooledFullscreenItemContent extends StatelessWidget {
   final String? sourceDetail;
 
   @override
+  State<_PooledFullscreenItemContent> createState() =>
+      _PooledFullscreenItemContentState();
+}
+
+class _PooledFullscreenItemContentState
+    extends State<_PooledFullscreenItemContent> {
+  bool _contentWarningRevealed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final video = widget.video;
     final isPortrait = video.dimensions != null ? video.isPortrait : false;
 
     return ColoredBox(
       color: Colors.black,
       child: PooledVideoPlayer(
-        index: index,
+        index: widget.index,
         thumbnailUrl: video.thumbnailUrl,
-        enableTapToPause: isActive,
+        enableTapToPause: widget.isActive,
         videoBuilder: (context, videoController, player) =>
             PooledVideoMetricsTracker(
               key: ValueKey('metrics-${video.id}'),
               video: video,
               player: player,
-              isActive: isActive,
-              trafficSource: trafficSource,
-              sourceDetail: sourceDetail,
+              isActive: widget.isActive,
+              trafficSource: widget.trafficSource,
+              sourceDetail: widget.sourceDetail,
               child: _FittedVideoPlayer(
                 videoController: videoController,
                 isPortrait: isPortrait,
@@ -550,15 +561,24 @@ class _PooledFullscreenItemContent extends StatelessWidget {
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
         ),
-        overlayBuilder: (context, videoController, player) =>
-            VideoOverlayActions(
-              video: video,
-              isVisible: isActive,
-              isActive: isActive,
-              hasBottomNavigation: false,
-              contextTitle: contextTitle,
-              isFullscreen: true,
-            ),
+        overlayBuilder: (context, videoController, player) {
+          if (video.shouldShowWarning && !_contentWarningRevealed) {
+            return ContentWarningBlurOverlay(
+              labels: video.warnLabels,
+              onReveal: () => setState(() {
+                _contentWarningRevealed = true;
+              }),
+            );
+          }
+          return VideoOverlayActions(
+            video: video,
+            isVisible: widget.isActive,
+            isActive: widget.isActive,
+            hasBottomNavigation: false,
+            contextTitle: widget.contextTitle,
+            isFullscreen: true,
+          );
+        },
       ),
     );
   }

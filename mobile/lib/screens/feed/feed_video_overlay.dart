@@ -30,6 +30,7 @@ import 'package:openvine/widgets/video_feed_item/actions/repost_action_button.da
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
+import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -41,7 +42,8 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 /// Layout:
 /// - Bottom-left: author avatar, name, timestamp, description, audio
 /// - Bottom-right: Like, Comment, Repost, Share, More ("...") buttons
-class FeedVideoOverlay extends ConsumerWidget {
+/// - Full-screen blur overlay when video has content warnings (warn labels)
+class FeedVideoOverlay extends ConsumerStatefulWidget {
   const FeedVideoOverlay({
     required this.video,
     required this.isActive,
@@ -54,8 +56,27 @@ class FeedVideoOverlay extends ConsumerWidget {
   final Player player;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (!isActive) return const SizedBox();
+  ConsumerState<FeedVideoOverlay> createState() => _FeedVideoOverlayState();
+}
+
+class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
+  bool _contentWarningRevealed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isActive) return const SizedBox();
+
+    final video = widget.video;
+
+    // Content warning blur overlay takes priority over normal overlay
+    if (video.shouldShowWarning && !_contentWarningRevealed) {
+      return ContentWarningBlurOverlay(
+        labels: video.warnLabels,
+        onReveal: () => setState(() {
+          _contentWarningRevealed = true;
+        }),
+      );
+    }
 
     final hasTextContent =
         video.content.isNotEmpty ||
@@ -90,7 +111,7 @@ class FeedVideoOverlay extends ConsumerWidget {
         // so SubtitleOverlay's Positioned can resolve correctly.
         if (video.hasSubtitles)
           Positioned.fill(
-            child: _SubtitleLayer(video: video, player: player),
+            child: _SubtitleLayer(video: video, player: widget.player),
           ),
         // ProofMode and Vine badges (top-right)
         Positioned(
