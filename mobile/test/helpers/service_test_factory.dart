@@ -1,7 +1,7 @@
 // ABOUTME: Factory helper for creating service instances in tests with proper dependencies
 // ABOUTME: Provides consistent setup for VideoEventService, SocialService, and UserProfileService
 
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/social_service.dart';
@@ -15,8 +15,8 @@ VideoEventService createTestVideoEventService({
   required SubscriptionManager mockSubscriptionManager,
 }) {
   // Set up default mock behaviors
-  when(mockNostrService.isInitialized).thenReturn(true);
-  when(mockNostrService.connectedRelayCount).thenReturn(1);
+  when(() => mockNostrService.isInitialized).thenReturn(true);
+  when(() => mockNostrService.connectedRelayCount).thenReturn(1);
   // Skip mocking subscribeToEvents for simplicity
 
   return VideoEventService(
@@ -32,7 +32,7 @@ SocialService createTestSocialService({
 }) {
   // Set up default mock behaviors
   // Skip mocking subscribeToEvents for simplicity
-  when(mockAuthService.isAuthenticated).thenReturn(false);
+  when(() => mockAuthService.isAuthenticated).thenReturn(false);
 
   return SocialService(mockNostrService, mockAuthService);
 }
@@ -43,7 +43,7 @@ UserProfileService createTestUserProfileService({
   required SubscriptionManager mockSubscriptionManager,
 }) {
   // Set up default mock behaviors
-  when(mockNostrService.isInitialized).thenReturn(true);
+  when(() => mockNostrService.isInitialized).thenReturn(true);
   // Skip mocking subscribeToEvents for simplicity
 
   return UserProfileService(

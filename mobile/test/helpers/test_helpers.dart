@@ -33,7 +33,7 @@ class TestHelpers {
   }) => ProviderScope(overrides: (overrides ?? []).cast(), child: child);
 
   /// Mock network images for widget tests
-  /// TODO: Implement proper HTTP mocking using package:mockito or http_mock_adapter
+  /// TODO: Implement proper HTTP mocking using package:mocktail or http_mock_adapter
   static void mockNetworkImages(Function() testBody) {
     testBody();
   }
@@ -440,7 +440,7 @@ class TimeoutException implements Exception {
 }
 
 /// HTTP mocking is complex due to interface restrictions
-/// Use package:mockito or package:http_mock_adapter for HTTP testing
+/// Use package:mocktail or package:http_mock_adapter for HTTP testing
 
 /// Setup test environment for ProofMode tests
 Future<void> setupTestEnvironment() async {

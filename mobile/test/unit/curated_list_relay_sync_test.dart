@@ -6,27 +6,32 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 
-import 'curated_list_relay_sync_test.mocks.dart';
+class _MockNostrClient extends Mock implements NostrClient {}
 
-@GenerateNiceMocks([MockSpec<NostrClient>(), MockSpec<AuthService>()])
+class _MockAuthService extends Mock implements AuthService {}
+
 void main() {
   group('CuratedListService Relay Sync Tests', () {
-    late MockNostrClient mockNostrService;
-    late MockAuthService mockAuthService;
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
     late SharedPreferences prefs;
     late CuratedListService curatedListService;
 
+    setUpAll(() {
+      registerFallbackValue(<Filter>[]);
+    });
+
     setUp(() async {
-      mockNostrService = MockNostrClient();
-      mockAuthService = MockAuthService();
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
 
       // Set up SharedPreferences with empty state for each test
       SharedPreferences.setMockInitialValues({});
@@ -50,13 +55,13 @@ void main() {
       'should handle unauthenticated state gracefully in relay sync',
       () async {
         // Setup: User is not authenticated
-        when(mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
 
         // Test: fetchUserListsFromRelays should return early
         await curatedListService.fetchUserListsFromRelays();
 
         // Verify: No relay calls should be made
-        verifyNever(mockNostrService.subscribe(argThat(anything)));
+        verifyNever(() => mockNostrService.subscribe(any()));
 
         // Verify: Service should handle this gracefully
         expect(curatedListService.lists.length, 0);
@@ -68,15 +73,15 @@ void main() {
     //  'should create subscription for Kind 30005 events when authenticated',
     //  () async {
     //    // Setup: User is authenticated
-    //    when(mockAuthService.isAuthenticated).thenReturn(true);
-    //    when(mockAuthService.currentPublicKeyHex).thenReturn(
+    //    when(() => mockAuthService.isAuthenticated).thenReturn(true);
+    //    when(() => mockAuthService.currentPublicKeyHex).thenReturn(
     //      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     //    );
 
     //    // Mock subscription stream
     //    final streamController = StreamController<Event>();
     //    when(
-    //      mockNostrService.subscribe(argThat(anything)),
+    //      () => mockNostrService.subscribe(any()),
     //    ).thenAnswer((_) => streamController.stream);
 
     //    // Test: fetchUserListsFromRelays should create subscription
@@ -88,7 +93,7 @@ void main() {
 
     //    // Verify: Subscription was created with correct filter
     //    final captured = verify(
-    //      mockNostrService.subscribe(captureAny()),
+    //      () => mockNostrService.subscribe(captureAny()),
     //    ).captured;
     //    expect(captured.length, 1);
 
@@ -106,8 +111,8 @@ void main() {
 
     test('should process received Kind 30005 events correctly', () async {
       // Setup: User is authenticated
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       );
 
@@ -136,7 +141,7 @@ void main() {
       // Mock subscription stream that emits our test event
       final streamController = StreamController<Event>();
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => streamController.stream);
 
       // Start the sync
@@ -166,8 +171,8 @@ void main() {
 
     test('should handle replaceable events correctly (keep latest)', () async {
       // Setup: User is authenticated
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       );
 
@@ -205,7 +210,7 @@ void main() {
       // Mock subscription stream
       final streamController = StreamController<Event>();
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => streamController.stream);
 
       // Start the sync
@@ -231,15 +236,15 @@ void main() {
 
     test('should not sync more than once per session', () async {
       // Setup: User is authenticated
-      when(mockAuthService.isAuthenticated).thenReturn(true);
-      when(mockAuthService.currentPublicKeyHex).thenReturn(
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(
         '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       );
 
       // Mock subscription stream
       final streamController = StreamController<Event>();
       when(
-        mockNostrService.subscribe(argThat(anything)),
+        () => mockNostrService.subscribe(any()),
       ).thenAnswer((_) => streamController.stream);
 
       // First sync
@@ -251,17 +256,21 @@ void main() {
       await curatedListService.fetchUserListsFromRelays();
 
       // Verify: Subscription was only created once
-      verify(mockNostrService.subscribe(argThat(anything))).called(1);
+      verify(() => mockNostrService.subscribe(any())).called(1);
     });
   });
 
   group('CuratedListService Relay Sync Isolation Tests', () {
+    setUpAll(() {
+      registerFallbackValue(<Filter>[]);
+    });
+
     test(
       'should update existing local list if relay version is newer',
       () async {
         // Create fresh service instance to avoid sync state conflicts
-        final freshMockNostrService = MockNostrClient();
-        final freshMockAuthService = MockAuthService();
+        final freshMockNostrService = _MockNostrClient();
+        final freshMockAuthService = _MockAuthService();
         // Use completely clean prefs to ensure no shared state
         SharedPreferences.setMockInitialValues({
           '_test_isolation_key_': 'fresh',
@@ -274,8 +283,8 @@ void main() {
         );
 
         // Setup: User is authenticated and has an existing local list
-        when(freshMockAuthService.isAuthenticated).thenReturn(true);
-        when(freshMockAuthService.currentPublicKeyHex).thenReturn(
+        when(() => freshMockAuthService.isAuthenticated).thenReturn(true);
+        when(() => freshMockAuthService.currentPublicKeyHex).thenReturn(
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
         );
 
@@ -318,7 +327,7 @@ void main() {
         // Mock subscription
         final streamController = StreamController<Event>();
         when(
-          freshMockNostrService.subscribe(argThat(anything)),
+          () => freshMockNostrService.subscribe(any()),
         ).thenAnswer((_) => streamController.stream);
 
         // Sync from relay

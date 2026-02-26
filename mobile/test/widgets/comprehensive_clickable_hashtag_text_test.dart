@@ -4,20 +4,24 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
-import 'package:mockito/annotations.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/utils/hashtag_extractor.dart';
 
-import 'comprehensive_clickable_hashtag_text_test.mocks.dart';
+class _MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
-@GenerateNiceMocks([MockSpec<NavigatorObserver>()])
+class _FakeRoute extends Fake implements Route<dynamic> {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeRoute());
+  });
+
   group('ClickableHashtagText - Comprehensive Tests', () {
-    late MockNavigatorObserver mockObserver;
+    late _MockNavigatorObserver mockObserver;
 
     setUp(() {
-      mockObserver = MockNavigatorObserver();
+      mockObserver = _MockNavigatorObserver();
     });
 
     group('Text Display and Structure', () {
@@ -256,7 +260,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify navigation occurred
-        verify(mockObserver.didPush(any, any));
+        verify(() => mockObserver.didPush(any(), any()));
         // TODO(Any): Fix and re-enable these tests
       }, skip: true);
 
@@ -299,7 +303,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify both navigation calls
-        verify(mockObserver.didPush(any, any)).called(2);
+        verify(() => mockObserver.didPush(any(), any())).called(2);
         // TODO(Any): Fix and re-enable these tests
       }, skip: true);
     });

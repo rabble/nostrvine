@@ -4,22 +4,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 
-import 'profile_screen_block_button_test.mocks.dart';
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
-@GenerateMocks([ContentBlocklistService])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ProfileScreen Block Button - TDD', () {
-    late MockContentBlocklistService mockBlocklistService;
+    late _MockContentBlocklistService mockBlocklistService;
 
     setUp(() {
-      mockBlocklistService = MockContentBlocklistService();
+      mockBlocklistService = _MockContentBlocklistService();
     });
 
     // Helper to create a simple test widget with Block User button
@@ -29,7 +28,9 @@ void main() {
       Function(String, bool)? onBlock,
     }) {
       // Setup mock behavior
-      when(mockBlocklistService.isBlocked(userPubkey)).thenReturn(isBlocked);
+      when(
+        () => mockBlocklistService.isBlocked(userPubkey),
+      ).thenReturn(isBlocked);
 
       return ProviderScope(
         overrides: [

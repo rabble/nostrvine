@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:mockito/mockito.dart' as mockito;
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -90,11 +89,9 @@ void main() {
           ? _FakeVideoEventService(videos: videos)
           : fakeVideoEventService;
 
-      // Create mock with getDisplayName stubbed (mockito mock)
+      // Create mock with getDisplayName stubbed
       final mockUserProfileService = createMockUserProfileService();
-      mockito
-          .when(mockUserProfileService.getDisplayName(mockito.any))
-          .thenReturn('');
+      when(() => mockUserProfileService.getDisplayName(any())).thenReturn('');
 
       return ProviderScope(
         overrides: [
@@ -125,9 +122,7 @@ void main() {
         List<VideoEvent>? searchVideos,
       }) {
         final mockUserProfileService = createMockUserProfileService();
-        mockito
-            .when(mockUserProfileService.getDisplayName(mockito.any))
-            .thenReturn('');
+        when(() => mockUserProfileService.getDisplayName(any())).thenReturn('');
 
         return ProviderScope(
           overrides: [
