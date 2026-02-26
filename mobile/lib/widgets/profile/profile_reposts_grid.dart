@@ -8,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -28,17 +28,31 @@ class ProfileRepostsGrid extends StatelessWidget {
         if (state.status == ProfileRepostedVideosStatus.initial ||
             state.status == ProfileRepostedVideosStatus.syncing ||
             state.status == ProfileRepostedVideosStatus.loading) {
-          return const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          return const CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
+                ),
+              ),
+            ],
           );
         }
 
         if (state.status == ProfileRepostedVideosStatus.failure) {
-          return const Center(
-            child: Text(
-              'Error loading reposted videos',
-              style: TextStyle(color: Colors.white),
-            ),
+          return const CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    'Error loading reposted videos',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
           );
         }
 
@@ -174,9 +188,9 @@ class _RepostGridTile extends StatelessWidget {
       );
 
       context.push(
-        FullscreenVideoFeedScreen.path,
-        extra: FullscreenVideoFeedArgs(
-          source: StaticFeedSource(allVideos),
+        PooledFullscreenVideoFeedScreen.path,
+        extra: PooledFullscreenVideoFeedArgs(
+          videosStream: Stream.value(allVideos),
           initialIndex: index,
           trafficSource: ViewTrafficSource.profile,
         ),

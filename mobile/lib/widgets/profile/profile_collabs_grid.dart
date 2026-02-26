@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -48,9 +48,9 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
     prefetchAroundIndex(index, allVideos);
 
     context.push(
-      FullscreenVideoFeedScreen.path,
-      extra: FullscreenVideoFeedArgs(
-        source: StaticFeedSource(allVideos),
+      PooledFullscreenVideoFeedScreen.path,
+      extra: PooledFullscreenVideoFeedArgs(
+        videosStream: Stream.value(allVideos),
         initialIndex: index,
         trafficSource: ViewTrafficSource.profile,
       ),
@@ -63,17 +63,31 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
       builder: (context, state) {
         if (state.status == ProfileCollabVideosStatus.initial ||
             state.status == ProfileCollabVideosStatus.loading) {
-          return const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          return const CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
+                ),
+              ),
+            ],
           );
         }
 
         if (state.status == ProfileCollabVideosStatus.failure) {
-          return const Center(
-            child: Text(
-              'Error loading collab videos',
-              style: TextStyle(color: VineTheme.whiteText),
-            ),
+          return const CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    'Error loading collab videos',
+                    style: TextStyle(color: VineTheme.whiteText),
+                  ),
+                ),
+              ),
+            ],
           );
         }
 
