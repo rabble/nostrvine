@@ -114,6 +114,9 @@ class MockCameraService extends CameraService {
   bool get canSwitchCamera => true;
 
   @override
+  bool get isSwitchingCamera => false;
+
+  @override
   bool get hasFlash => true;
 
   @override

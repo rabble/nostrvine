@@ -284,8 +284,11 @@ class VolumeKeyHandler: NSObject {
             return
         }
         
-        // Only trigger if volume keys are enabled and this is an external change
-        if !isInternalVolumeChange && isEnabled && volumeKeysEnabled {
+        // Only trigger if volume keys are enabled, not suppressed,
+        // and this is an external change.
+        // The isSuppressed check prevents audio route changes during camera
+        // switch from being misinterpreted as volume button presses.
+        if !isInternalVolumeChange && isEnabled && volumeKeysEnabled && !isSuppressed {
             if newValue > oldValue {
                 NSLog("DivineCameraVolumeKeyHandler: Volume up button pressed")
                 onTrigger?("volumeUp")
@@ -299,6 +302,10 @@ class VolumeKeyHandler: NSObject {
                 // Restore volume to prevent actual volume change
                 restoreVolume(to: oldValue)
             }
+        } else if isSuppressed && !isInternalVolumeChange && newValue != oldValue {
+            NSLog("DivineCameraVolumeKeyHandler: Volume change ignored - suppressed (camera switch in progress)")
+            // Still restore volume during suppression to prevent drift
+            restoreVolume(to: oldValue)
         }
         // If volume keys are disabled, let the volume change through (don't restore)
     }

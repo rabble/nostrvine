@@ -109,6 +109,10 @@ abstract class CameraService {
   /// Whether the device has multiple cameras to switch between.
   bool get canSwitchCamera;
 
+  /// Whether a camera switch is currently in progress.
+  /// Used to block recording triggers during the switch.
+  bool get isSwitchingCamera;
+
   /// Whether the device can active the camera-flash.
   bool get hasFlash;
 

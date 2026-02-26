@@ -525,7 +525,21 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   ///
   /// Convenience method for record button - starts recording when idle,
   /// stops when recording.
+  /// Ignores triggers while the camera is switching to prevent
+  /// spurious Bluetooth/volume events from auto-starting recording.
   Future<void> toggleRecording() async {
+    // Block recording triggers during camera switch - audio route changes
+    // can cause spurious Bluetooth events that reach here despite native
+    // suppression (e.g. events queued before suppression took effect).
+    if (_cameraService.isSwitchingCamera) {
+      Log.debug(
+        '🎮 toggleRecording ignored - camera switch in progress',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      return;
+    }
+
     switch (state.recordingState) {
       case .idle:
         await startRecording();

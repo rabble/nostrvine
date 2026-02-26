@@ -706,6 +706,9 @@ class CameraMacOSService extends CameraService {
       _videoDevices != null && _videoDevices!.length > 1;
 
   @override
+  bool get isSwitchingCamera => false;
+
+  @override
   Future<bool> setLens(DivineCameraLens lens) async {
     // macOS doesn't support different lens types like mobile
     // Only basic camera switching is supported
