@@ -158,6 +158,11 @@ class VideosRepository {
   /// Builds [HomeFeedResult.videoListSources] mapping each list video
   /// to its source lists, and [HomeFeedResult.listOnlyVideoIds] for
   /// videos present only because of list subscriptions.
+  ///
+  // TODO(curated-list-migration): Optimize by fetching following and list
+  // videos in parallel — currently list video fetches wait for following
+  // to complete even though they don't depend on each other. Refactor
+  // getHomeFeedVideos to launch both concurrently (Phase 3).
   Future<HomeFeedResult> _mergeListVideos({
     required List<VideoEvent> followingVideos,
     required Map<String, List<String>> videoRefs,
