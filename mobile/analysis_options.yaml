@@ -17,6 +17,7 @@ analyzer:
     avoid_returning_this: ignore
     avoid_setters_without_getters: ignore
     avoid_types_on_closure_parameters: ignore
+    avoid_unused_constructor_parameters: ignore
     avoid_web_libraries_in_flutter: ignore
     cascade_invocations: ignore
     comment_references: ignore
@@ -44,6 +45,7 @@ analyzer:
     non_constant_identifier_names: ignore
     only_throw_errors: ignore
     prefer_asserts_with_message: ignore
+    prefer_int_literals: ignore
     return_of_invalid_type: ignore
     return_of_invalid_type_from_closure: ignore
     sort_constructors_first: ignore
