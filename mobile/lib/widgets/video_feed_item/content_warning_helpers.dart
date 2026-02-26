@@ -55,7 +55,7 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                     Text(
                       labels.map(humanizeContentLabel).join(', '),
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: VineTheme.secondaryText,
                         fontSize: 14,
                       ),
