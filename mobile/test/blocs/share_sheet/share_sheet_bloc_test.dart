@@ -152,7 +152,7 @@ void main() {
           ).thenReturn([testRecipient]);
           when(() => mockProfileService.hasProfile(any())).thenReturn(true);
         },
-        build: () => createBloc(followRepository: null),
+        build: () => createBloc(),
         act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
         expect: () => [
           const ShareSheetState(status: ShareSheetStatus.loading),
@@ -429,7 +429,7 @@ void main() {
 
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits $ShareSheetSaveFailure when no bookmark service',
-        build: () => createBloc(bookmarkService: null),
+        build: () => createBloc(),
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
           isA<ShareSheetState>().having(
