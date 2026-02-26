@@ -9,9 +9,9 @@ import 'package:openvine/widgets/video_editor/video_editor_blurred_panel.dart';
 /// Bottom sheet for color selection with iOS-style blurred background.
 class VideoEditorColorPickerSheet extends StatelessWidget {
   const VideoEditorColorPickerSheet({
-    super.key,
     required this.selectedColor,
     required this.onColorSelected,
+    super.key,
     this.height,
   });
 
@@ -49,7 +49,7 @@ class VideoEditorColorPickerSheet extends StatelessWidget {
   }) {
     // Calculate max items that fit per row at minimum size
     final availableWidth = width - (_horizontalPadding * 2);
-    final itemWithSpacing = _minItemSize + _crossAxisSpacing;
+    const itemWithSpacing = _minItemSize + _crossAxisSpacing;
     final maxCount = ((availableWidth + _crossAxisSpacing) / itemWithSpacing)
         .floor()
         .clamp(1, 10);
@@ -88,7 +88,6 @@ class VideoEditorColorPickerSheet extends StatelessWidget {
                 crossAxisCount: crossAxisCount,
                 mainAxisSpacing: _mainAxisSpacing,
                 crossAxisSpacing: _crossAxisSpacing,
-                childAspectRatio: 1,
               ),
               itemBuilder: (context, index) {
                 final isColorPicker = index == 0;
@@ -179,7 +178,7 @@ class _ColorButton extends StatelessWidget {
                     : Border.all(color: VineTheme.onSurface, width: 2),
               ),
               child: isColorPicker
-                  ? Center(
+                  ? const Center(
                       child: DivineIcon(
                         icon: .paintBrush,
                         color: VineTheme.inverseOnSurface,

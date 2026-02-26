@@ -1,6 +1,7 @@
 // ABOUTME: Key management screen for importing, exporting, and backing up Nostr keys
 // ABOUTME: Simple, clear interface focused on user needs with helpful explanations
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +9,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 class KeyManagementScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -107,14 +107,14 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         border: Border.all(color: VineTheme.vineGreen.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(Icons.info_outline, color: VineTheme.vineGreen, size: 24),
-              const SizedBox(width: 12),
-              const Text(
+              SizedBox(width: 12),
+              Text(
                 'What are Nostr keys?',
                 style: TextStyle(
                   color: VineTheme.vineGreen,
@@ -124,8 +124,8 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          const Text(
+          SizedBox(height: 12),
+          Text(
             'Your Nostr identity is a cryptographic key pair:\n\n'
             '• Your public key (npub) is like your username - share it freely\n'
             '• Your private key (nsec) is like your password - keep it secret!\n\n'
@@ -482,7 +482,6 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               '✅ Private key copied to clipboard!\n\nStore it somewhere safe.',
             ),
             backgroundColor: VineTheme.vineGreen,
-            duration: Duration(seconds: 4),
           ),
         );
       }

@@ -4,22 +4,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/mixins/pagination_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Pure explore video screen using VideoFeedItem directly in PageView
 class ExploreVideoScreenPure extends ConsumerStatefulWidget {
   const ExploreVideoScreenPure({
-    super.key,
     required this.startingVideo,
     required this.videoList,
     required this.contextTitle,
+    super.key,
     this.startingIndex,
     this.onLoadMore,
     this.onNavigate,
@@ -110,7 +110,7 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
     }
 
     // Use tab-specific video list from parent (preserves grid sort order)
-    return Container(
+    return ColoredBox(
       color: Colors.black,
       child: PageView.builder(
         itemCount: videos.length,

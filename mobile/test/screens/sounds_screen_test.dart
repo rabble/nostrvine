@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,7 +14,6 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/sounds_screen.dart';
 import 'package:openvine/services/audio_playback_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
 
@@ -722,7 +722,7 @@ void main() {
 
       testWidgets('shows snackbar when sound has no URL', (tester) async {
         final testSounds = [
-          AudioEvent(
+          const AudioEvent(
             id: 'sound1',
             pubkey:
                 'test_pubkey_0123456789abcdef0123456789abcdef'
@@ -730,7 +730,6 @@ void main() {
             createdAt: 1700000000,
             title: 'Sound Without URL',
             duration: 6.0,
-            url: null, // No URL
             mimeType: 'audio/mp4',
           ),
         ];

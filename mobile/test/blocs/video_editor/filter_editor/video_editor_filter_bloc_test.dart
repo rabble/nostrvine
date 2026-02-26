@@ -47,7 +47,6 @@ void main() {
         seed: () => VideoEditorFilterState(
           filters: VideoEditorConstants.filters,
           selectedFilter: VideoEditorConstants.filters[1],
-          opacity: 1.0,
         ),
         act: (bloc) => bloc.add(
           VideoEditorFilterSelected(VideoEditorConstants.filters[2]),
@@ -82,7 +81,6 @@ void main() {
         seed: () => VideoEditorFilterState(
           filters: VideoEditorConstants.filters,
           selectedFilter: VideoEditorConstants.filters[1],
-          opacity: 1.0,
         ),
         act: (bloc) => bloc.add(const VideoEditorFilterOpacityChanged(0.5)),
         expect: () => [
@@ -153,7 +151,6 @@ void main() {
     test('hasFilter returns false when selectedFilter is null', () {
       final state = VideoEditorFilterState(
         filters: VideoEditorConstants.filters,
-        selectedFilter: null,
       );
       expect(state.hasFilter, isFalse);
     });
@@ -199,7 +196,6 @@ void main() {
       () {
         final state = VideoEditorFilterState(
           filters: VideoEditorConstants.filters,
-          selectedFilter: null,
         );
         expect(state.isSelected(PresetFilters.none), isTrue);
       },
@@ -208,8 +204,6 @@ void main() {
     test('copyWith creates new state with updated values', () {
       final original = VideoEditorFilterState(
         filters: VideoEditorConstants.filters,
-        selectedFilter: null,
-        opacity: 1.0,
       );
 
       final updated = original.copyWith(

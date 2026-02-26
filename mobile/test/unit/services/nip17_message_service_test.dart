@@ -3,10 +3,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/nip17_message_service.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:nostr_client/nostr_client.dart';
 
 class _MockNostrKeyManager extends Mock implements NostrKeyManager {}
 

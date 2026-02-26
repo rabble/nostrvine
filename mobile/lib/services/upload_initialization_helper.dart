@@ -4,13 +4,14 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/async_utils.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 /// Robust initialization helper for UploadManager
 class UploadInitializationHelper {
@@ -283,7 +284,6 @@ class UploadInitializationHelper {
       condition: () =>
           !_isInitializing && _cachedBox != null && _cachedBox!.isOpen,
       timeout: const Duration(seconds: 30),
-      checkInterval: const Duration(milliseconds: 100),
       debugName: 'upload_box_initialization',
     );
 

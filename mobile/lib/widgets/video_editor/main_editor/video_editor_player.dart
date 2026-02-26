@@ -8,13 +8,13 @@ import 'package:video_player/video_player.dart';
 
 class VideoEditorPlayer extends StatelessWidget {
   const VideoEditorPlayer({
-    super.key,
     required this.controller,
     required this.targetAspectRatio,
     required this.originalAspectRatio,
     required this.isPlayerReady,
     required this.bodySize,
     required this.renderSize,
+    super.key,
   });
 
   final bool isPlayerReady;
@@ -45,7 +45,6 @@ class VideoEditorPlayer extends StatelessWidget {
               // Video layer
               if (isPlayerReady)
                 FittedBox(
-                  fit: .contain,
                   child: SizedBox(
                     width: controller!.value.size.width,
                     height: controller!.value.size.height,

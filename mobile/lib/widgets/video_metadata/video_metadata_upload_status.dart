@@ -1,11 +1,11 @@
 // ABOUTME: Widget that displays the current upload/publish status as overlay
 // ABOUTME: Shows progress indicators and status messages centered on screen
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// Displays the current upload/publish status as a full-screen overlay.
 ///

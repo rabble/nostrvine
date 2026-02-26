@@ -1,8 +1,8 @@
 // ABOUTME: Tests for SoundPickerProvider Riverpod state management
 // ABOUTME: Verifies sound selection, playback state, and search functionality
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/vine_sound.dart';
 import 'package:openvine/providers/sound_picker_provider.dart';
 

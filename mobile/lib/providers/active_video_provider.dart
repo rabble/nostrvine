@@ -13,6 +13,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:riverpod/src/providers/provider.dart';
 
 /// Active video ID derived from router state and app lifecycle
 /// Returns null when app is backgrounded, overlay is visible, or no valid video at current index
@@ -74,19 +75,14 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       return null;
     case RouteType.profile:
       videosAsync = ref.watch(videosForProfileRouteProvider);
-      break;
     case RouteType.hashtag:
       videosAsync = ref.watch(hashtagFeedProvider);
-      break;
     case RouteType.explore:
       videosAsync = ref.watch(videosForExploreRouteProvider);
-      break;
     case RouteType.search:
       videosAsync = ref.watch(videosForSearchRouteProvider);
-      break;
     case RouteType.likedVideos:
       videosAsync = ref.watch(likedVideosFeedProvider);
-      break;
     case RouteType.videoFeed:
     case RouteType.pooledVideoFeed:
     case RouteType.videoDetail:
@@ -179,10 +175,11 @@ final activeVideoIdProvider = Provider<String?>((ref) {
 
 /// Per-video active state (for efficient VideoFeedItem updates)
 /// Returns true if the given videoId matches the current active video
-final isVideoActiveProvider = Provider.family<bool, String>((ref, videoId) {
-  final activeVideoId = ref.watch(activeVideoIdProvider);
-  return activeVideoId == videoId;
-});
+final ProviderFamily<bool, String> isVideoActiveProvider =
+    Provider.family<bool, String>((ref, videoId) {
+      final activeVideoId = ref.watch(activeVideoIdProvider);
+      return activeVideoId == videoId;
+    });
 
 /// Auto-cleanup provider that disposes all video controllers when navigating
 /// between different screens (e.g., home → explore, home → camera).
@@ -220,5 +217,5 @@ final videoControllerAutoCleanupProvider = Provider<void>((ref) {
       // Dispose all controllers when leaving a video feed screen
       disposeAllVideoControllers(ref.container);
     }
-  }, fireImmediately: false);
+  });
 });

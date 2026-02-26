@@ -1,6 +1,7 @@
 // ABOUTME: Dialog for sending/sharing a video privately with another user
 // ABOUTME: Extracted from share_video_menu.dart with UserSearchBloc-based search
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +12,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -130,7 +130,7 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
               _searchBloc != null) ...[
             // Show search results from BLoC
             BlocBuilder<UserSearchBloc, UserSearchState>(
-              bloc: _searchBloc!,
+              bloc: _searchBloc,
               builder: (context, state) {
                 return switch (state.status) {
                   UserSearchStatus.loading => const Center(
@@ -232,7 +232,7 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
           );
           // Still add the contact without profile data
           contacts.add(
-            ShareableUser(pubkey: pubkey, displayName: null, picture: null),
+            ShareableUser(pubkey: pubkey),
           );
         }
       }

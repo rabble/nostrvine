@@ -45,8 +45,6 @@ void main() {
       final cues = await container.read(
         subtitleCuesProvider(
           videoId: 'test-id',
-          textTrackRef: null,
-          textTrackContent: null,
         ).future,
       );
 
@@ -64,7 +62,6 @@ void main() {
       final cues = await container.read(
         subtitleCuesProvider(
           videoId: 'test-id',
-          textTrackRef: null,
           textTrackContent: vttContent,
         ).future,
       );
@@ -116,7 +113,6 @@ void main() {
         subtitleCuesProvider(
           videoId: 'test-id',
           textTrackRef: '39307:$testPubkey:subtitles:test-vine-id',
-          textTrackContent: null,
         ).future,
       );
 
@@ -181,7 +177,6 @@ void main() {
           subtitleCuesProvider(
             videoId: 'test-id',
             textTrackRef: '39307:$testPubkey:subtitles:test-vine-id',
-            textTrackContent: null,
           ).future,
         );
 
@@ -221,7 +216,6 @@ void main() {
         subtitleCuesProvider(
           videoId: 'test-id',
           textTrackRef: '39307:$testPubkey:subtitles:test-vine-id',
-          textTrackContent: null,
         ).future,
       );
 
@@ -242,7 +236,6 @@ void main() {
         subtitleCuesProvider(
           videoId: 'test-id',
           textTrackRef: 'invalid-ref',
-          textTrackContent: null,
         ).future,
       );
 
@@ -264,7 +257,6 @@ void main() {
       final cues = await container.read(
         subtitleCuesProvider(
           videoId: 'test-id',
-          textTrackRef: null,
           textTrackContent: '',
         ).future,
       );

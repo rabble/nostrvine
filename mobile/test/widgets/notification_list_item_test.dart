@@ -66,7 +66,6 @@ void main() {
         WidgetTester tester,
       ) async {
         final notification = makeNotification(
-          type: NotificationType.like,
           message: 'Alice liked your video',
         );
 
@@ -82,7 +81,6 @@ void main() {
         WidgetTester tester,
       ) async {
         final notification = makeNotification(
-          type: NotificationType.like,
           targetVideoThumbnail: 'https://example.com/thumb.jpg',
         );
 
@@ -204,7 +202,7 @@ void main() {
         WidgetTester tester,
       ) async {
         // Build unread notification
-        final unreadNotification = makeNotification(isRead: false);
+        final unreadNotification = makeNotification();
         await tester.pumpWidget(
           buildTestWidget(notification: unreadNotification),
         );
@@ -244,7 +242,6 @@ void main() {
         WidgetTester tester,
       ) async {
         final notification = makeNotification(
-          actorName: 'Alice',
           message: 'Alice liked your video',
         );
 

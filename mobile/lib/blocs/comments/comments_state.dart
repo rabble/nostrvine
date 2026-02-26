@@ -377,7 +377,6 @@ final class CommentsState extends Equatable {
       rootAddressableId: rootAddressableId,
       commentsById: commentsById ?? this.commentsById,
       mainInputText: mainInputText,
-      replyInputText: '',
       isPosting: isPosting ?? this.isPosting,
       isLoadingMore: isLoadingMore,
       hasMoreContent: hasMoreContent,
@@ -385,9 +384,6 @@ final class CommentsState extends Equatable {
       likedCommentIds: likedCommentIds,
       sortMode: sortMode,
       replyCountsByCommentId: replyCountsByCommentId,
-      mentionQuery: '',
-      mentionSuggestions: const [],
-      activeMentions: const {},
       newCommentCount: newCommentCount,
     );
   }

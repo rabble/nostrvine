@@ -23,7 +23,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   /// Saves the final rendered video to the device gallery.
   Future<void> _saveToGallery(WidgetRef ref) async {
     final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
-    if (finalRenderedClip == null) return null;
+    if (finalRenderedClip == null) return;
 
     final gallerySaveService = ref.read(gallerySaveServiceProvider);
     await gallerySaveService.saveVideoToGallery(finalRenderedClip.video);

@@ -1,11 +1,11 @@
 // ABOUTME: Thumbnail card widget for displaying video clips in grid layout
 // ABOUTME: Shows thumbnail with duration badge, selection state, and tap handlers
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/platform_io.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 
 /// Thumbnail card for a single clip in the grid.
@@ -94,7 +94,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
 
                     /// Selection check circle - top right
                     AnimatedSwitcher(
-                      duration: Duration(milliseconds: 120),
+                      duration: const Duration(milliseconds: 120),
                       child: widget.isSelected
                           ? const _SelectionOverlay()
                           : const SizedBox.shrink(),

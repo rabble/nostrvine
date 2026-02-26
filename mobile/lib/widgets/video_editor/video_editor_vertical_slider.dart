@@ -12,9 +12,9 @@ import 'package:flutter/material.dart';
 /// - Smooth drag interaction
 class VideoEditorVerticalSlider extends StatefulWidget {
   const VideoEditorVerticalSlider({
-    super.key,
     required this.value,
     required this.onChanged,
+    super.key,
     this.onChangeEnd,
     this.height = 300,
   });

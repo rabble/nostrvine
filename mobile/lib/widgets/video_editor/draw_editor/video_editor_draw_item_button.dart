@@ -10,11 +10,11 @@ import 'package:openvine/constants/video_editor_constants.dart';
 class VideoEditorDrawItemButton extends StatelessWidget {
   /// Creates a draw tool button.
   const VideoEditorDrawItemButton({
-    super.key,
     required this.onTap,
     required this.isSelected,
     required this.painter,
     required this.semanticLabel,
+    super.key,
   });
 
   /// Callback invoked when the button is tapped.

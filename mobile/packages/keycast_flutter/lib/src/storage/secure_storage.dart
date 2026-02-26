@@ -2,7 +2,7 @@
 // ABOUTME: Provides secure credential storage on iOS/Android
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'keycast_storage.dart';
+import 'package:keycast_flutter/src/storage/keycast_storage.dart';
 
 /// KeycastStorage implementation using FlutterSecureStorage
 /// Provides secure credential storage on iOS/Android

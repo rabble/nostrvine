@@ -6,30 +6,31 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
-import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:http/http.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/providers/database_provider.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
+import 'package:openvine/services/account_label_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
-import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
@@ -41,12 +42,9 @@ import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:openvine/services/account_label_service.dart';
-import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
-import 'package:openvine/services/moderation_label_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -56,7 +54,9 @@ import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
@@ -149,7 +149,7 @@ PendingActionService? pendingActionService(Ref ref) {
 @Riverpod(keepAlive: true)
 RelayCapabilityService relayCapabilityService(Ref ref) {
   final service = RelayCapabilityService();
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
   return service;
 }
 
@@ -176,7 +176,7 @@ BackgroundActivityManager backgroundActivityManager(Ref ref) {
 @Riverpod(keepAlive: true)
 RelayStatisticsService relayStatisticsService(Ref ref) {
   final service = RelayStatisticsService();
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
   return service;
 }
 
@@ -361,12 +361,10 @@ AnalyticsService analyticsService(Ref ref) {
   final service = AnalyticsService(viewEventPublisher: viewPublisher);
 
   // Ensure cleanup on disposal
-  ref.onDispose(() {
-    service.dispose();
-  });
+  ref.onDispose(service.dispose);
 
   // Initialize asynchronously but don't block the provider
-  Future.microtask(() => service.initialize());
+  Future.microtask(service.initialize);
 
   return service;
 }
@@ -506,14 +504,14 @@ OAuthConfig oauthConfig(Ref ref) {
 }
 
 @Riverpod(keepAlive: true)
-FlutterSecureStorage flutterSecureStorage(Ref ref) => FlutterSecureStorage(
-  aOptions: const AndroidOptions(
-    encryptedSharedPreferences: true,
-    resetOnError: true,
-  ),
-  mOptions: MacOsOptions(useDataProtectionKeyChain: false),
-  lOptions: const LinuxOptions(),
-);
+FlutterSecureStorage flutterSecureStorage(Ref ref) =>
+    const FlutterSecureStorage(
+      aOptions: AndroidOptions(
+        encryptedSharedPreferences: true,
+        resetOnError: true,
+      ),
+      mOptions: MacOsOptions(useDataProtectionKeyChain: false),
+    );
 
 @Riverpod(keepAlive: true)
 SecureKeycastStorage secureKeycastStorage(Ref ref) =>
@@ -530,7 +528,7 @@ KeycastOAuth oauthClient(Ref ref) {
 
   final oauth = KeycastOAuth(config: config, storage: storage);
 
-  ref.onDispose(() => oauth.close());
+  ref.onDispose(oauth.close);
 
   return oauth;
 }
@@ -538,14 +536,14 @@ KeycastOAuth oauthClient(Ref ref) {
 @Riverpod(keepAlive: true)
 PasswordResetListener passwordResetListener(Ref ref) {
   final listener = PasswordResetListener(ref);
-  ref.onDispose(() => listener.dispose());
+  ref.onDispose(listener.dispose);
   return listener;
 }
 
 @Riverpod(keepAlive: true)
 EmailVerificationListener emailVerificationListener(Ref ref) {
   final listener = EmailVerificationListener(ref);
-  ref.onDispose(() => listener.dispose());
+  ref.onDispose(listener.dispose);
   return listener;
 }
 
@@ -575,7 +573,7 @@ ProfileCacheService profileCacheService(Ref ref) {
     );
   });
 
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
 
   return service;
 }
@@ -802,9 +800,7 @@ void zendeskIdentitySync(Ref ref) {
     }
   });
 
-  ref.onDispose(() {
-    subscription.cancel();
-  });
+  ref.onDispose(subscription.cancel);
 }
 
 /// Helper to set Zendesk identity from pubkey
@@ -916,9 +912,7 @@ UserProfileService userProfileService(Ref ref) {
   });
 
   // Ensure cleanup on disposal
-  ref.onDispose(() {
-    service.dispose();
-  });
+  ref.onDispose(service.dispose);
 
   return service;
 }
@@ -1089,7 +1083,7 @@ ProfileRepository? profileRepository(Ref ref) {
     funnelcakeApiClient: funnelcakeClient,
     userBlockFilter: blocklistService.shouldFilterFromFeeds,
     profileSearchFilter: (query, profiles) =>
-        SearchUtils.searchProfiles(query, profiles, minScore: 0.3, limit: 50),
+        SearchUtils.searchProfiles(query, profiles, limit: 50),
   );
 }
 

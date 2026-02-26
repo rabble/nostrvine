@@ -85,7 +85,7 @@ void main() {
       );
       expect(
         find.text(
-          'You won\'t see their content in feeds. They won\'t be notified. You can still visit their profile.',
+          "You won't see their content in feeds. They won't be notified. You can still visit their profile.",
         ),
         findsOneWidget,
         reason: 'Dialog explanation should be present',

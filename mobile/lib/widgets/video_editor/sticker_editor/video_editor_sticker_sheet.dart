@@ -73,7 +73,6 @@ class _StickerGrid extends StatelessWidget {
         maxCrossAxisExtent: 120,
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 1,
       ),
       delegate: SliverChildBuilderDelegate((context, index) {
         final sticker = stickers[index];
@@ -174,8 +173,8 @@ class _SearchBarState extends State<_SearchBar> {
               borderSide: .none,
             ),
             contentPadding: const .symmetric(horizontal: 16, vertical: 12),
-            prefixIcon: Padding(
-              padding: const .only(left: 16, right: 12),
+            prefixIcon: const Padding(
+              padding: .only(left: 16, right: 12),
               child: DivineIcon(icon: .search, color: _iconColor),
             ),
             prefixIconConstraints: const BoxConstraints(

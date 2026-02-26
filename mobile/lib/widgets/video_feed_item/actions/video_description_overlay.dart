@@ -1,9 +1,9 @@
 // ABOUTME: Video description overlay for video feed.
 // ABOUTME: Shows video title/content with clickable hashtags and loop count.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 
@@ -45,32 +45,26 @@ class VideoDescriptionOverlay extends StatelessWidget {
                 height: 1.3,
                 shadows: [
                   Shadow(
-                    offset: Offset(0, 0),
                     blurRadius: 8,
-                    color: Colors.black,
                   ),
                   Shadow(
                     offset: Offset(2, 2),
                     blurRadius: 4,
-                    color: Colors.black,
                   ),
                 ],
               ),
-              hashtagStyle: TextStyle(
+              hashtagStyle: const TextStyle(
                 color: VineTheme.vineGreen,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
-                shadows: const [
+                shadows: [
                   Shadow(
-                    offset: Offset(0, 0),
                     blurRadius: 8,
-                    color: Colors.black,
                   ),
                   Shadow(
                     offset: Offset(2, 2),
                     blurRadius: 4,
-                    color: Colors.black,
                   ),
                 ],
               ),
@@ -94,14 +88,11 @@ class VideoDescriptionOverlay extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                   shadows: [
                     Shadow(
-                      offset: Offset(0, 0),
                       blurRadius: 6,
-                      color: Colors.black,
                     ),
                     Shadow(
                       offset: Offset(1, 1),
                       blurRadius: 3,
-                      color: Colors.black,
                     ),
                   ],
                 ),

@@ -13,7 +13,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas.da
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_top_bar.dart';
 
-import 'main_editor/video_editor_remove_area.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_remove_area.dart';
 
 /// A scaffold widget that provides the standard layout for the video editor.
 ///
@@ -27,7 +27,7 @@ class VideoEditorScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    return const AnnotatedRegion<SystemUiOverlayStyle>(
       value: VideoEditorConstants.uiOverlayStyle,
       child: Scaffold(
         backgroundColor: VineTheme.surfaceContainerHigh,
@@ -36,11 +36,11 @@ class VideoEditorScaffold extends ConsumerWidget {
           fit: .expand,
           clipBehavior: .none,
           children: [
-            const VideoEditorCanvas(),
+            VideoEditorCanvas(),
 
-            const _OverlayControls(),
+            _OverlayControls(),
 
-            const _BottomActions(),
+            _BottomActions(),
           ],
         ),
       ),

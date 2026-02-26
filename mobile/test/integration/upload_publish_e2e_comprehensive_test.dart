@@ -2,18 +2,20 @@
 // ABOUTME: Tests the complete flow from local video file through Blossom upload to Nostr event creation
 
 import 'dart:io';
-import 'package:flutter_test/flutter_test.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart' as keys;
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_publisher.dart';
+
 import '../helpers/real_integration_test_helper.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
@@ -55,7 +57,7 @@ void main() {
       testPrivateKey = keys.generatePrivateKey();
       testPublicKey = keys.getPublicKey(testPrivateKey);
 
-      print('🔑 Test keypair: ${testPublicKey}...');
+      print('🔑 Test keypair: $testPublicKey...');
 
       // Create test video file
       testVideoFile = File(
@@ -361,7 +363,7 @@ void main() {
           onProgress: any(named: 'onProgress'),
         ),
       ).thenAnswer(
-        (_) async => BlossomUploadResult(
+        (_) async => const BlossomUploadResult(
           success: false,
           errorMessage: 'Thumbnail upload failed',
         ),
@@ -519,7 +521,7 @@ void _configureMockBlossomService(_MockBlossomUploadService mock) {
     onProgress?.call(0.6);
     onProgress?.call(0.8);
 
-    return BlossomUploadResult(
+    return const BlossomUploadResult(
       success: true,
       videoId: 'test_video_hash_abc123',
       fallbackUrl: 'https://cdn.divine.video/test_video_hash_abc123.mp4',
@@ -541,7 +543,7 @@ void _configureMockBlossomService(_MockBlossomUploadService mock) {
     onProgress?.call(0.5);
     onProgress?.call(1.0);
 
-    return BlossomUploadResult(
+    return const BlossomUploadResult(
       success: true,
       videoId: 'test_thumbnail_hash_xyz789',
       fallbackUrl: 'https://cdn.divine.video/test_thumbnail_hash_xyz789.jpg',

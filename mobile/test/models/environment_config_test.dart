@@ -18,22 +18,22 @@ void main() {
   group('EnvironmentConfig', () {
     group('relayUrl', () {
       test('poc returns poc relay', () {
-        final config = EnvironmentConfig(environment: AppEnvironment.poc);
+        const config = EnvironmentConfig(environment: AppEnvironment.poc);
         expect(config.relayUrl, 'wss://relay.poc.dvines.org');
       });
 
       test('staging returns staging relay', () {
-        final config = EnvironmentConfig(environment: AppEnvironment.staging);
+        const config = EnvironmentConfig(environment: AppEnvironment.staging);
         expect(config.relayUrl, 'wss://relay.staging.dvines.org');
       });
 
       test('test returns test relay', () {
-        final config = EnvironmentConfig(environment: AppEnvironment.test);
+        const config = EnvironmentConfig(environment: AppEnvironment.test);
         expect(config.relayUrl, 'wss://relay.test.dvines.org');
       });
 
       test('production returns divine.video relay', () {
-        final config = EnvironmentConfig(
+        const config = EnvironmentConfig(
           environment: AppEnvironment.production,
         );
         expect(config.relayUrl, 'wss://relay.divine.video');
@@ -44,22 +44,22 @@ void main() {
       // apiBaseUrl is derived from relayUrl by converting wss:// to https://
       // This ensures the API URL always matches the relay being used
       test('poc derives from relay URL', () {
-        final config = EnvironmentConfig(environment: AppEnvironment.poc);
+        const config = EnvironmentConfig(environment: AppEnvironment.poc);
         expect(config.apiBaseUrl, 'https://relay.poc.dvines.org');
       });
 
       test('staging derives from relay URL', () {
-        final config = EnvironmentConfig(environment: AppEnvironment.staging);
+        const config = EnvironmentConfig(environment: AppEnvironment.staging);
         expect(config.apiBaseUrl, 'https://relay.staging.dvines.org');
       });
 
       test('test derives from relay URL', () {
-        final config = EnvironmentConfig(environment: AppEnvironment.test);
+        const config = EnvironmentConfig(environment: AppEnvironment.test);
         expect(config.apiBaseUrl, 'https://relay.test.dvines.org');
       });
 
       test('production derives from relay URL', () {
-        final config = EnvironmentConfig(
+        const config = EnvironmentConfig(
           environment: AppEnvironment.production,
         );
         expect(config.apiBaseUrl, 'https://relay.divine.video');
@@ -67,10 +67,10 @@ void main() {
     });
 
     test('blossomUrl is same for all environments', () {
-      final poc = EnvironmentConfig(environment: AppEnvironment.poc);
-      final staging = EnvironmentConfig(environment: AppEnvironment.staging);
-      final testEnv = EnvironmentConfig(environment: AppEnvironment.test);
-      final prod = EnvironmentConfig(environment: AppEnvironment.production);
+      const poc = EnvironmentConfig(environment: AppEnvironment.poc);
+      const staging = EnvironmentConfig(environment: AppEnvironment.staging);
+      const testEnv = EnvironmentConfig(environment: AppEnvironment.test);
+      const prod = EnvironmentConfig(environment: AppEnvironment.production);
 
       expect(poc.blossomUrl, 'https://media.divine.video');
       expect(staging.blossomUrl, 'https://media.divine.video');
@@ -80,59 +80,71 @@ void main() {
 
     test('isProduction returns true only for production environment', () {
       expect(
-        EnvironmentConfig(environment: AppEnvironment.poc).isProduction,
+        const EnvironmentConfig(environment: AppEnvironment.poc).isProduction,
         false,
       );
       expect(
-        EnvironmentConfig(environment: AppEnvironment.staging).isProduction,
+        const EnvironmentConfig(
+          environment: AppEnvironment.staging,
+        ).isProduction,
         false,
       );
       expect(
-        EnvironmentConfig(environment: AppEnvironment.test).isProduction,
+        const EnvironmentConfig(environment: AppEnvironment.test).isProduction,
         false,
       );
       expect(
-        EnvironmentConfig(environment: AppEnvironment.production).isProduction,
+        const EnvironmentConfig(
+          environment: AppEnvironment.production,
+        ).isProduction,
         true,
       );
     });
 
     test('displayName returns human readable name', () {
       expect(
-        EnvironmentConfig(environment: AppEnvironment.poc).displayName,
+        const EnvironmentConfig(environment: AppEnvironment.poc).displayName,
         'POC',
       );
       expect(
-        EnvironmentConfig(environment: AppEnvironment.staging).displayName,
+        const EnvironmentConfig(
+          environment: AppEnvironment.staging,
+        ).displayName,
         'Staging',
       );
       expect(
-        EnvironmentConfig(environment: AppEnvironment.test).displayName,
+        const EnvironmentConfig(environment: AppEnvironment.test).displayName,
         'Test',
       );
       expect(
-        EnvironmentConfig(environment: AppEnvironment.production).displayName,
+        const EnvironmentConfig(
+          environment: AppEnvironment.production,
+        ).displayName,
         'Production',
       );
     });
 
     test('indicatorColorValue returns correct colors', () {
       expect(
-        EnvironmentConfig(environment: AppEnvironment.poc).indicatorColorValue,
+        const EnvironmentConfig(
+          environment: AppEnvironment.poc,
+        ).indicatorColorValue,
         0xFFFF7640, // accentOrange
       );
       expect(
-        EnvironmentConfig(
+        const EnvironmentConfig(
           environment: AppEnvironment.staging,
         ).indicatorColorValue,
         0xFFFFF140, // accentYellow
       );
       expect(
-        EnvironmentConfig(environment: AppEnvironment.test).indicatorColorValue,
+        const EnvironmentConfig(
+          environment: AppEnvironment.test,
+        ).indicatorColorValue,
         0xFF34BBF1, // accentBlue
       );
       expect(
-        EnvironmentConfig(
+        const EnvironmentConfig(
           environment: AppEnvironment.production,
         ).indicatorColorValue,
         0xFF27C58B, // primaryGreen
@@ -141,15 +153,15 @@ void main() {
 
     group('equality', () {
       test('same environment are equal', () {
-        final config1 = EnvironmentConfig(environment: AppEnvironment.staging);
-        final config2 = EnvironmentConfig(environment: AppEnvironment.staging);
+        const config1 = EnvironmentConfig(environment: AppEnvironment.staging);
+        const config2 = EnvironmentConfig(environment: AppEnvironment.staging);
         expect(config1, equals(config2));
         expect(config1.hashCode, equals(config2.hashCode));
       });
 
       test('different environments are not equal', () {
-        final config1 = EnvironmentConfig(environment: AppEnvironment.staging);
-        final config2 = EnvironmentConfig(
+        const config1 = EnvironmentConfig(environment: AppEnvironment.staging);
+        const config2 = EnvironmentConfig(
           environment: AppEnvironment.production,
         );
         expect(config1, isNot(equals(config2)));

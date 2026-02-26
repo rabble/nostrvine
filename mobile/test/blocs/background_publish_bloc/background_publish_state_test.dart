@@ -15,8 +15,8 @@ void main() {
 
   group('BackgroundPublishState', () {
     test('supports value equality', () {
-      final state1 = BackgroundPublishState(uploads: []);
-      final state2 = BackgroundPublishState(uploads: []);
+      const state1 = BackgroundPublishState();
+      const state2 = BackgroundPublishState();
       expect(state1, equals(state2));
     });
   });

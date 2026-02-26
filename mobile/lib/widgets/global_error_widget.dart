@@ -56,9 +56,9 @@ void _reportToCrashlytics(FlutterErrorDetails details) {
 class _MinimalFallbackError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF000000),
-      child: const Center(
+    return const ColoredBox(
+      color: Color(0xFF000000),
+      child: Center(
         child: SizedBox(
           width: 80,
           height: 80,

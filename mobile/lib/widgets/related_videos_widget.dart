@@ -1,11 +1,11 @@
 // ABOUTME: Widget for displaying related videos based on analytics API recommendations
 // ABOUTME: Shows related content using hashtag or co-watch algorithms
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/curation_providers.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_explore_tile.dart';
 
@@ -16,9 +16,9 @@ class RelatedVideosWidget extends ConsumerStatefulWidget {
   final String algorithm;
 
   const RelatedVideosWidget({
-    super.key,
     required this.currentVideo,
     required this.onVideoTap,
+    super.key,
     this.algorithm = 'hashtag',
   });
 
@@ -116,15 +116,15 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
     }
 
     if (_error != null) {
-      return Center(
+      return const Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 8),
-              const Text(
+              Icon(Icons.error_outline, color: Colors.red, size: 48),
+              SizedBox(height: 8),
+              Text(
                 'Failed to load related videos',
                 style: TextStyle(
                   color: VineTheme.primaryText,
@@ -132,8 +132,8 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
+              SizedBox(height: 4),
+              Text(
                 'Try again later',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
               ),
@@ -144,19 +144,19 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
     }
 
     if (_relatedVideos.isEmpty) {
-      return Center(
+      return const Center(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.video_library_outlined,
                 color: VineTheme.secondaryText,
                 size: 48,
               ),
-              const SizedBox(height: 8),
-              const Text(
+              SizedBox(height: 8),
+              Text(
                 'No related videos found',
                 style: TextStyle(
                   color: VineTheme.primaryText,
@@ -164,8 +164,8 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 4),
-              const Text(
+              SizedBox(height: 4),
+              Text(
                 'Explore more content in the app',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
               ),
@@ -183,7 +183,7 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Related Videos',
                 style: TextStyle(
                   color: VineTheme.primaryText,
@@ -205,7 +205,7 @@ class _RelatedVideosWidgetState extends ConsumerState<RelatedVideosWidget> {
                     widget.algorithm == 'hashtag'
                         ? 'By Hashtags'
                         : 'Co-watched',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: VineTheme.vineGreen,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

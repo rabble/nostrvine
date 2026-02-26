@@ -58,10 +58,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
           return existing;
         }
       }
-      return VideoFeedState(
-        videos: const [],
+      return const VideoFeedState(
+        videos: [],
         hasMoreContent: false,
-        isLoadingMore: false,
       );
     }
 
@@ -80,7 +79,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         final videos = await analyticsService.getClassicVines(
           limit: _pageSize,
           offset: _randomOffset,
-          sort: 'loops',
         );
 
         // Filter for platform compatibility, content preferences, and shuffle
@@ -99,7 +97,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         return VideoFeedState(
           videos: filteredVideos,
           hasMoreContent: nextOffset < _totalClassicVines,
-          isLoadingMore: false,
           lastUpdated: DateTime.now(),
         );
       } catch (e) {
@@ -134,7 +131,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     return VideoFeedState(
       videos: topClassics,
       hasMoreContent: classicVideos.length > _pageSize,
-      isLoadingMore: false,
       lastUpdated: DateTime.now(),
     );
   }
@@ -167,7 +163,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       final videos = await analyticsService.getClassicVines(
         limit: _pageSize,
         offset: _randomOffset,
-        sort: 'loops',
       );
 
       final videoEventService = ref.read(videoEventServiceProvider);
@@ -180,7 +175,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         VideoFeedState(
           videos: filteredVideos,
           hasMoreContent: nextOffset < _totalClassicVines,
-          isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
       );
@@ -215,7 +209,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       final videos = await analyticsService.getClassicVines(
         limit: _pageSize,
         offset: nextOffset,
-        sort: 'loops',
       );
 
       final videoEventService = ref.read(videoEventServiceProvider);
@@ -237,7 +230,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         VideoFeedState(
           videos: allVideos,
           hasMoreContent: followingOffset < _totalClassicVines,
-          isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
       );
@@ -325,7 +317,7 @@ Future<List<ClassicViner>> topClassicViners(Ref ref) async {
   for (final video in feedState.videos) {
     final aggregator = vinerMap.putIfAbsent(
       video.pubkey,
-      () => _VinerAggregator(),
+      _VinerAggregator.new,
     );
     final loops = video.originalLoops ?? 0;
     aggregator.totalLoops = aggregator.totalLoops + loops;

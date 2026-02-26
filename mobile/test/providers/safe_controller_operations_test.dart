@@ -3,8 +3,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:video_player/video_player.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
+import 'package:video_player/video_player.dart';
 
 class _MockVideoPlayerController extends Mock
     implements VideoPlayerController {}
@@ -42,8 +42,8 @@ void main() {
     test('returns true when operation succeeds', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -63,8 +63,8 @@ void main() {
     test('catches "no active player" error and returns false', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -86,8 +86,8 @@ void main() {
     test('catches "bad state" error and returns false', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -109,8 +109,8 @@ void main() {
     test('rethrows unexpected errors', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -136,8 +136,8 @@ void main() {
     test('calls play on initialized controller', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -168,8 +168,8 @@ void main() {
     test('handles disposed controller gracefully', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -195,8 +195,8 @@ void main() {
     test('calls pause on initialized controller', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -227,8 +227,8 @@ void main() {
     test('handles disposed controller gracefully', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -254,8 +254,8 @@ void main() {
     test('calls seekTo on initialized controller', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -276,8 +276,8 @@ void main() {
     test('handles disposed controller gracefully', () async {
       // Arrange
       when(() => mockController.value).thenReturn(
-        VideoPlayerValue(
-          duration: const Duration(seconds: 10),
+        const VideoPlayerValue(
+          duration: Duration(seconds: 10),
           isInitialized: true,
         ),
       );
@@ -306,8 +306,8 @@ void main() {
       () async {
         final mockController = _MockVideoPlayerController();
         when(() => mockController.value).thenReturn(
-          VideoPlayerValue(
-            duration: const Duration(seconds: 10),
+          const VideoPlayerValue(
+            duration: Duration(seconds: 10),
             isInitialized: true,
           ),
         );
@@ -321,7 +321,7 @@ void main() {
         ];
 
         for (final errorMsg in disposalErrors) {
-          when(() => mockController.play()).thenThrow(Exception(errorMsg));
+          when(mockController.play).thenThrow(Exception(errorMsg));
           final result = await safePlay(mockController, 'test-video-id');
           expect(result, false, reason: 'Should catch: $errorMsg');
         }

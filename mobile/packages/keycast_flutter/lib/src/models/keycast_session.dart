@@ -3,7 +3,7 @@
 
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import '../oauth/token_response.dart';
+import 'package:keycast_flutter/src/oauth/token_response.dart';
 
 const _storageKey = 'keycast_session';
 

@@ -83,7 +83,7 @@ void main() {
     }
 
     testWidgets('shows skeleton loader when loading', (tester) async {
-      final state = CommentsState(
+      const state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.loading,
@@ -97,7 +97,7 @@ void main() {
     });
 
     testWidgets('shows error message when state has error', (tester) async {
-      final state = CommentsState(
+      const state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.failure,
@@ -111,11 +111,10 @@ void main() {
     });
 
     testWidgets('shows CommentsEmptyState when no comments', (tester) async {
-      final state = CommentsState(
+      const state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        commentsById: {},
       );
 
       await tester.pumpWidget(buildTestWidget(commentsState: state));
@@ -127,11 +126,10 @@ void main() {
     testWidgets('shows Classic Vine notice when isOriginalVine', (
       tester,
     ) async {
-      final state = CommentsState(
+      const state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        commentsById: {},
       );
 
       await tester.pumpWidget(

@@ -97,14 +97,9 @@ void main() {
     name: 'testuser',
     about: 'Test profile',
     picture: 'https://example.com/avatar.jpg',
-    banner: null,
-    website: null,
-    nip05: null,
-    lud16: null,
-    lud06: null,
     createdAt: now,
     eventId: 'profile_event_id',
-    rawData: {
+    rawData: const {
       'name': 'testuser',
       'display_name': 'Test User',
       'about': 'Test profile',
@@ -124,7 +119,6 @@ void main() {
               VideoFeedState(
                 videos: mockVideos,
                 hasMoreContent: false,
-                isLoadingMore: false,
               ),
             );
           }),
@@ -201,7 +195,6 @@ void main() {
               VideoFeedState(
                 videos: mockVideos,
                 hasMoreContent: false,
-                isLoadingMore: false,
               ),
             );
           }),
@@ -241,7 +234,6 @@ void main() {
                 VideoFeedState(
                   videos: mockVideos,
                   hasMoreContent: false,
-                  isLoadingMore: false,
                 ),
               );
             }),
@@ -286,7 +278,6 @@ void main() {
               VideoFeedState(
                 videos: mockVideos,
                 hasMoreContent: false,
-                isLoadingMore: false,
               ),
             );
           }),

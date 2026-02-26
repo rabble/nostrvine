@@ -36,8 +36,6 @@ void main() {
               now.subtract(Duration(hours: i)).millisecondsSinceEpoch ~/ 1000,
           timestamp: now.subtract(Duration(hours: i)),
           videoUrl: 'https://example.com/video_$i.mp4',
-          hashtags: [],
-          rawTags: {},
         ),
       );
 
@@ -58,8 +56,6 @@ void main() {
           createdAt: now.millisecondsSinceEpoch ~/ 1000,
           timestamp: now,
           videoUrl: 'https://example.com/video_$i.mp4',
-          hashtags: [],
-          rawTags: {},
         ),
       );
 

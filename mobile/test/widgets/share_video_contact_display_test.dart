@@ -50,7 +50,7 @@ void main() {
       videoUrl: 'https://example.com/video.mp4',
     );
 
-    final testPubkey =
+    const testPubkey =
         '2646f4c01362b3b48d4b4e31d9c96a4eabe06c4eb971e1a482ef651f1bf023b7';
 
     setUp(() {
@@ -75,16 +75,9 @@ void main() {
         pubkey: testPubkey,
         displayName: 'Test User',
         name: 'testuser',
-        about: null,
-        picture: null,
-        banner: null,
-        website: null,
-        nip05: null,
-        lud16: null,
-        lud06: null,
         createdAt: DateTime.now(),
         eventId: 'profile-event-id',
-        rawData: {},
+        rawData: const {},
       );
 
       when(
@@ -112,16 +105,10 @@ void main() {
         pubkey: testPubkey,
         displayName: 'Test User',
         name: 'testuser',
-        about: null,
-        picture: null,
-        banner: null,
-        website: null,
         nip05: 'testuser@example.com',
-        lud16: null,
-        lud06: null,
         createdAt: DateTime.now(),
         eventId: 'profile-event-id',
-        rawData: {},
+        rawData: const {},
       );
 
       when(

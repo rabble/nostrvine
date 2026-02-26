@@ -177,7 +177,7 @@ void main() {
       () async {
         // This test requires a real video file with audio
         // Skip in CI, only run locally when test video is available
-        final testVideoPath = 'test/fixtures/test_video_with_audio.mp4';
+        const testVideoPath = 'test/fixtures/test_video_with_audio.mp4';
         final testVideo = File(testVideoPath);
 
         if (!testVideo.existsSync()) {
@@ -206,7 +206,7 @@ void main() {
       'throws exception for video without audio',
       () async {
         // This test requires a video file without audio
-        final testVideoPath = 'test/fixtures/test_video_no_audio.mp4';
+        const testVideoPath = 'test/fixtures/test_video_no_audio.mp4';
         final testVideo = File(testVideoPath);
 
         if (!testVideo.existsSync()) {

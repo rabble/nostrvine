@@ -36,7 +36,7 @@ final class VideoFeedProvider
   VideoFeed create() => VideoFeed();
 }
 
-String _$videoFeedHash() => r'f7a25661530d5a78223ac9f6bb897ab9d2b81f90';
+String _$videoFeedHash() => r'4d281a35661f854d1bae2f304080c0d3019c2f06';
 
 /// Simple discovery video feed provider
 

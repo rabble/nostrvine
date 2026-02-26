@@ -19,7 +19,7 @@ void main() {
       'ListAttributionChip is not rendered when showListAttribution is false',
       (tester) async {
         // Use a variable (not const) to avoid dead code analysis warning
-        var showListAttribution = false;
+        const showListAttribution = false;
         final listSources = {'list_id_1'};
 
         await tester.pumpWidget(
@@ -149,7 +149,7 @@ void main() {
         final testList = CuratedList(
           id: 'list_id_1',
           name: 'Cool Videos List',
-          videoEventIds: ['video1', 'video2'],
+          videoEventIds: const ['video1', 'video2'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );

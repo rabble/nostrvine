@@ -3,11 +3,12 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
@@ -19,12 +20,11 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
-import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/screens/auth/welcome_screen.dart';
 
 void main() {
   group('Route Coverage Validation', () {
@@ -214,7 +214,7 @@ void main() {
         '${SearchScreenPure.pathForTerm(term: 'flutter', index: 5)} parses to RouteType.search (feed mode)',
         () {
           final context = parseRoute(
-            '${SearchScreenPure.pathForTerm(term: 'flutter', index: 5)}',
+            SearchScreenPure.pathForTerm(term: 'flutter', index: 5),
           );
           expect(context.type, RouteType.search);
           expect(context.searchTerm, 'flutter');

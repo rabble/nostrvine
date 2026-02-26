@@ -90,7 +90,7 @@ void main() {
         final c = ProviderContainer(
           overrides: [
             relayNotificationsProvider.overrideWith(() => mockNotifier),
-            videoEventsProvider.overrideWith(() => _MockVideoEventsNoTimers()),
+            videoEventsProvider.overrideWith(_MockVideoEventsNoTimers.new),
           ],
         );
         addTearDown(c.dispose);
@@ -127,7 +127,7 @@ void main() {
       final c = ProviderContainer(
         overrides: [
           relayNotificationsProvider.overrideWith(() => mockNotifier),
-          videoEventsProvider.overrideWith(() => _MockVideoEventsNoTimers()),
+          videoEventsProvider.overrideWith(_MockVideoEventsNoTimers.new),
         ],
       );
       addTearDown(c.dispose);

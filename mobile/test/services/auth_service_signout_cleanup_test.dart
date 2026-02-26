@@ -3,10 +3,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../test_setup.dart';
 
 class _MockSecureKeyStorage extends Mock implements SecureKeyStorage {}
@@ -62,7 +63,7 @@ void main() {
       when(() => mockKeyStorage.clearCache()).thenReturn(null);
 
       // Act: Sign out without deleting keys
-      await authService.signOut(deleteKeys: false);
+      await authService.signOut();
 
       // Assert: Pubkey should be cleared
       expect(prefs.getString('current_user_pubkey_hex'), isNull);
@@ -77,7 +78,7 @@ void main() {
       when(() => mockKeyStorage.clearCache()).thenReturn(null);
 
       // Act: Sign out
-      await authService.signOut(deleteKeys: false);
+      await authService.signOut();
 
       // Assert: TOS flags should be cleared
       expect(prefs.getBool('age_verified_16_plus'), isNull);
@@ -91,7 +92,7 @@ void main() {
         when(() => mockKeyStorage.clearCache()).thenReturn(null);
 
         // Act: Sign out
-        await authService.signOut(deleteKeys: false);
+        await authService.signOut();
 
         // Assert: Cleanup service should be called with explicit_logout reason
         verify(
@@ -142,7 +143,7 @@ void main() {
       when(() => mockKeyStorage.clearCache()).thenReturn(null);
 
       // Act: Sign out
-      await authService.signOut(deleteKeys: false);
+      await authService.signOut();
 
       // Assert: Auth state should be unauthenticated
       expect(authService.authState, equals(AuthState.unauthenticated));

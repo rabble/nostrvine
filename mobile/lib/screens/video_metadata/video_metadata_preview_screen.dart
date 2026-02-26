@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/extensions/aspect_ratio_extensions.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -16,7 +17,6 @@ import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_preview_thumbnail.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_upload_status.dart';
 import 'package:video_player/video_player.dart';
-import 'package:models/models.dart' show VideoEvent;
 
 /// Full-screen preview of the recorded video with metadata overlay.
 ///

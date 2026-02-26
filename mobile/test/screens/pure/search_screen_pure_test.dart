@@ -193,20 +193,19 @@ void main() {
         final testVideos = [
           VideoEvent(
             id: 'video1',
-            pubkey: '${'a' * 64}',
+            pubkey: 'a' * 64,
             content: 'Test video about flutter',
             title: 'Flutter Tutorial',
             videoUrl: 'https://example.com/video1.mp4',
             createdAt: timestamp,
             timestamp: now,
-            hashtags: ['flutter'],
+            hashtags: const ['flutter'],
           ),
         ];
 
         // Stub HashtagRepository to return 'flutter' for this query
         when(
-          () =>
-              mockHashtagRepository.searchHashtags(query: 'flutter', limit: 20),
+          () => mockHashtagRepository.searchHashtags(query: 'flutter'),
         ).thenAnswer((_) async => ['flutter']);
 
         await tester.pumpWidget(createTestWidget(videos: testVideos));

@@ -19,15 +19,14 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_feed_item/actions/cc_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/video_edit_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/comment_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/more_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/repost_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
+import 'package:openvine/widgets/video_feed_item/actions/video_edit_button.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
@@ -98,10 +97,9 @@ class FeedVideoOverlay extends ConsumerWidget {
           right: 16,
           child: GestureDetector(
             onTap: () => context.showVideoPausingDialog<void>(
-              barrierDismissible: true,
               builder: (context) => BadgeExplanationModal(video: video),
             ),
-            child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
+            child: ProofModeBadgeRow(video: video),
           ),
         ),
         // Author info and description (bottom-left)
@@ -152,7 +150,6 @@ class _AuthorInfoSection extends ConsumerWidget {
         ],
         // Avatar and name row
         Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _AuthorAvatar(pubkey: video.pubkey, avatarUrl: avatarUrl),
             const SizedBox(width: 6),
@@ -178,9 +175,7 @@ class _AuthorInfoSection extends ConsumerWidget {
                             label: 'Video author: $displayName',
                             child: Text(
                               displayName,
-                              style: VineTheme.titleSmallFont(
-                                color: VineTheme.whiteText,
-                              ),
+                              style: VineTheme.titleSmallFont(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -265,26 +260,26 @@ class _AuthorAvatar extends StatelessWidget {
                       width: 44,
                       height: 44,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => ColoredBox(
+                      placeholder: (context, url) => const ColoredBox(
                         color: VineTheme.cardBackground,
-                        child: const Icon(
+                        child: Icon(
                           Icons.person,
                           color: VineTheme.onSurfaceMuted,
                           size: 24,
                         ),
                       ),
-                      errorWidget: (context, url, error) => ColoredBox(
+                      errorWidget: (context, url, error) => const ColoredBox(
                         color: VineTheme.cardBackground,
-                        child: const Icon(
+                        child: Icon(
                           Icons.person,
                           color: VineTheme.onSurfaceMuted,
                           size: 24,
                         ),
                       ),
                     )
-                  : Container(
+                  : const ColoredBox(
                       color: VineTheme.cardBackground,
-                      child: const Icon(
+                      child: Icon(
                         Icons.person,
                         color: VineTheme.onSurfaceMuted,
                         size: 24,
@@ -364,7 +359,7 @@ class _Nip05Badge extends ConsumerWidget {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }

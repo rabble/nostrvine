@@ -6,14 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
+import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 import '../test_data/video_test_data.dart';
@@ -87,10 +87,10 @@ void main() {
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(
-              const RouteContext(type: RouteType.explore, videoIndex: null),
+              const RouteContext(type: RouteType.explore),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
           videoEventsProvider.overrideWith(
             () => _MockVideoEventsWithData(testVideos),
           ),
@@ -101,7 +101,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(home: ExploreScreen()),
+          child: const MaterialApp(home: ExploreScreen()),
         ),
       );
 
@@ -129,10 +129,10 @@ void main() {
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(
-              const RouteContext(type: RouteType.explore, videoIndex: null),
+              const RouteContext(type: RouteType.explore),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
           videoEventsProvider.overrideWith(() => _MockVideoEventsWithData([])),
         ],
       );
@@ -141,7 +141,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(home: ExploreScreen()),
+          child: const MaterialApp(home: ExploreScreen()),
         ),
       );
 
@@ -166,10 +166,10 @@ void main() {
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(
-              const RouteContext(type: RouteType.explore, videoIndex: null),
+              const RouteContext(type: RouteType.explore),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
           // Return a never-completing stream to simulate loading
           videoEventsProvider.overrideWith(() {
             return _MockVideoEventsLoading();
@@ -181,7 +181,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(home: ExploreScreen()),
+          child: const MaterialApp(home: ExploreScreen()),
         ),
       );
 
@@ -204,10 +204,10 @@ void main() {
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(
-              const RouteContext(type: RouteType.explore, videoIndex: null),
+              const RouteContext(type: RouteType.explore),
             );
           }),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
           videoEventsProvider.overrideWith(
             () => _MockVideoEventsWithData(testVideos),
           ),
@@ -218,7 +218,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: MaterialApp(home: ExploreScreen()),
+          child: const MaterialApp(home: ExploreScreen()),
         ),
       );
 

@@ -4,10 +4,10 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/upload_manager.dart';
-import 'package:mocktail/mocktail.dart';
 
 class _MockBlossomUploadService extends Mock implements BlossomUploadService {}
 
@@ -160,7 +160,7 @@ void main() {
       await uploadManager.initialize();
 
       // Should not throw
-      expect(() => uploadManager.dispose(), returnsNormally);
+      expect(uploadManager.dispose, returnsNormally);
     }, skip: !kIsWeb ? 'Web-only test' : null);
 
     test(

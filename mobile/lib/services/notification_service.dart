@@ -483,7 +483,6 @@ class NotificationService {
         channelDescription: 'Notifications for video uploads and publishing',
         importance: Importance.high, // Shows at top of notification shade
         priority: Priority.high, // Affects heads-up notification display
-        showWhen: true, // Shows timestamp on notification
       );
 
       // Define iOS notification details
@@ -604,7 +603,6 @@ class NotificationService {
         channelDescription: 'Notifications for video uploads and publishing',
         importance: Importance.high, // Shows at top of notification shade
         priority: Priority.high, // Affects heads-up notification display
-        showWhen: true, // Shows timestamp on notification
       );
 
       // Define iOS notification details
