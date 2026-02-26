@@ -596,10 +596,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         state = state.copyWith(countdownValue: i);
 
         unawaited(_countdownSoundService!.playShortBeep());
-        // 940ms to compensate for ~60ms short beep playback duration,
+        // 940ms to compensate for following ~60ms long beep playback duration,
         // keeping each tick at ~1 second total
         await Future<void>.delayed(Duration(milliseconds: i > 0 ? 1000 : 940));
       }
+
       if (_isDestroyed) {
         _isStartingRecording = false;
         state = state.copyWith(recordingState: .idle);
@@ -607,6 +608,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         await _cameraService.setVolumeKeysEnabled(enabled: true);
         return;
       }
+
       state = state.copyWith(countdownValue: 0);
       unawaited(HapticService.recordingFeedback());
 
