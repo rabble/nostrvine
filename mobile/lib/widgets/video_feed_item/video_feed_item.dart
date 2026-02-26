@@ -37,7 +37,6 @@ import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
