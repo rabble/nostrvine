@@ -14,7 +14,6 @@ import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
@@ -137,7 +136,7 @@ class _AuthorInfoSection extends ConsumerWidget {
     final displayName =
         profile?.bestDisplayName ??
         video.authorName ??
-        NostrKeyUtils.truncateNpub(video.pubkey);
+        UserProfile.generatedNameFor(video.pubkey);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
