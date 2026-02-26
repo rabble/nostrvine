@@ -2032,7 +2032,13 @@ class VideoEventService extends ChangeNotifier {
           category: LogCategory.video,
         );
         try {
-          final videoEvent = VideoEvent.fromNostrEvent(event);
+          var videoEvent = VideoEvent.fromNostrEvent(event);
+
+          // Apply warn labels from content filter so UI can show blur overlay
+          if (filterAction == ContentFilterPreference.warn &&
+              matchedLabels.isNotEmpty) {
+            videoEvent = videoEvent.copyWith(warnLabels: matchedLabels);
+          }
 
           Log.verbose(
             'Parsed direct video: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}',
@@ -2298,7 +2304,13 @@ class VideoEventService extends ChangeNotifier {
           category: LogCategory.video,
         );
         try {
-          final videoEvent = VideoEvent.fromNostrEvent(event);
+          var videoEvent = VideoEvent.fromNostrEvent(event);
+
+          // Apply warn labels from content filter so UI can show blur overlay
+          if (histFilterAction == ContentFilterPreference.warn &&
+              histMatchedLabels.isNotEmpty) {
+            videoEvent = videoEvent.copyWith(warnLabels: histMatchedLabels);
+          }
 
           // Handle replaceable events (NIP-33)
           // Returns true if we should add this event (newer or first version)
