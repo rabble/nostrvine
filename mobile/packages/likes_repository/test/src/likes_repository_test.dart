@@ -1352,11 +1352,11 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isLike,
-                required String eventId,
-                required String authorPubkey,
-                String? addressableId,
-                int? targetKind,
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
               }) async {
                 queuedAction = {
                   'isLike': isLike,
@@ -1406,11 +1406,11 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isLike,
-                required String eventId,
-                required String authorPubkey,
-                String? addressableId,
-                int? targetKind,
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
               }) async {
                 queuedAction = {
                   'isLike': isLike,
@@ -1501,11 +1501,11 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isLike,
-                required String eventId,
-                required String authorPubkey,
-                String? addressableId,
-                int? targetKind,
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
               }) async {},
         );
 
@@ -1610,11 +1610,11 @@ void main() {
           isOnline: () => false,
           queueOfflineAction:
               ({
-                required bool isLike,
-                required String eventId,
-                required String authorPubkey,
-                String? addressableId,
-                int? targetKind,
+                required isLike,
+                required eventId,
+                required authorPubkey,
+                addressableId,
+                targetKind,
               }) async {},
         );
 
