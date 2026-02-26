@@ -83,9 +83,9 @@ MockAuthService createMockAuthService() {
   // Stub authState and authStateStream so currentAuthStateProvider does not
   // crash with type 'Null' is not a subtype of type 'Stream<AuthState>'
   when(() => mockAuth.authState).thenReturn(AuthState.unauthenticated);
-  when(() => mockAuth.authStateStream).thenAnswer(
-    (_) => const Stream<AuthState>.empty(),
-  );
+  when(
+    () => mockAuth.authStateStream,
+  ).thenAnswer((_) => const Stream<AuthState>.empty());
 
   return mockAuth;
 }
@@ -235,10 +235,9 @@ List<dynamic> getStandardTestOverrides({
     // Override sharedPreferencesProvider which throws in production
     sharedPreferencesProvider.overrideWithValue(mockPrefs),
 
-    // Always override NostrClient and SubscriptionManager with stubbed
-    // mocks so UserProfileService/FollowRepository never get null
-    // Stream<Event> or Future<List<String>> (fixes type errors during
-    // ProfileCacheService use).
+    // Always override NostrClient and SubscriptionManager with stubbed mocks
+    // so UserProfileService/FollowRepository never get null Stream<Event> or
+    // Future<List<String>>.
     nostrServiceProvider.overrideWithValue(mockNostr),
     subscriptionManagerProvider.overrideWithValue(mockSub),
 

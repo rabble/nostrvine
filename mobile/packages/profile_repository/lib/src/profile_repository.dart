@@ -94,6 +94,28 @@ class ProfileRepository {
     return _userProfilesDao.getProfile(pubkey);
   }
 
+  /// Persists a profile to local storage (SQLite).
+  ///
+  /// Use this to cache profiles obtained from relay events or REST APIs.
+  /// If a profile with the same pubkey already exists, it is updated.
+  Future<void> cacheProfile(UserProfile profile) {
+    return _userProfilesDao.upsertProfile(profile);
+  }
+
+  /// Deletes a cached profile from local storage.
+  ///
+  /// Returns the number of rows deleted (0 or 1).
+  Future<int> deleteCachedProfile({required String pubkey}) {
+    return _userProfilesDao.deleteProfile(pubkey);
+  }
+
+  /// Returns all cached profiles from local storage.
+  ///
+  /// Used for bulk-loading profiles into memory on startup.
+  Future<List<UserProfile>> getAllCachedProfiles() {
+    return _userProfilesDao.getAllProfiles();
+  }
+
   /// Fetches a fresh profile from Nostr relays and updates the local cache.
   ///
   /// Always fetches from relay, ignoring any cached data. Use this to ensure

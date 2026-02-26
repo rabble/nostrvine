@@ -129,6 +129,71 @@ void main() {
       });
     });
 
+    group('cacheProfile', () {
+      test('delegates to userProfilesDao.upsertProfile', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+
+        await profileRepository.cacheProfile(profile);
+
+        verify(() => mockUserProfilesDao.upsertProfile(profile)).called(1);
+      });
+    });
+
+    group('deleteCachedProfile', () {
+      test('delegates to userProfilesDao.deleteProfile', () async {
+        when(
+          () => mockUserProfilesDao.deleteProfile(any()),
+        ).thenAnswer((_) async => 1);
+
+        final result = await profileRepository.deleteCachedProfile(
+          pubkey: testPubkey,
+        );
+
+        expect(result, equals(1));
+        verify(
+          () => mockUserProfilesDao.deleteProfile(testPubkey),
+        ).called(1);
+      });
+
+      test('returns 0 when profile does not exist', () async {
+        when(
+          () => mockUserProfilesDao.deleteProfile(any()),
+        ).thenAnswer((_) async => 0);
+
+        final result = await profileRepository.deleteCachedProfile(
+          pubkey: testPubkey,
+        );
+
+        expect(result, equals(0));
+      });
+    });
+
+    group('getAllCachedProfiles', () {
+      test('returns all profiles from dao', () async {
+        final profiles = [
+          UserProfile.fromNostrEvent(mockProfileEvent),
+        ];
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => profiles);
+
+        final result = await profileRepository.getAllCachedProfiles();
+
+        expect(result, equals(profiles));
+        verify(() => mockUserProfilesDao.getAllProfiles()).called(1);
+      });
+
+      test('returns empty list when no profiles cached', () async {
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => []);
+
+        final result = await profileRepository.getAllCachedProfiles();
+
+        expect(result, isEmpty);
+      });
+    });
+
     group('fetchFreshProfile', () {
       test('fetches from relay and caches profile', () async {
         final result = await profileRepository.fetchFreshProfile(

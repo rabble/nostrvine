@@ -68,8 +68,7 @@ void main() {
     when(
       () => mockNostrClient.connectedRelays,
     ).thenReturn(['wss://relay.divine.video']);
-    // Return empty publicKey to skip ProfileStatsCacheService.clearStats
-    // which requires Hive initialization
+    // Return empty publicKey to skip profile stats cache invalidation
     when(() => mockNostrClient.publicKey).thenReturn('');
 
     // Stub auth service
