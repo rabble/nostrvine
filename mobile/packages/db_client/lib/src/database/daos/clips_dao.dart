@@ -13,16 +13,16 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// Upsert a clip (insert or update on conflict)
   Future<void> upsertClip({
     required String id,
-    required String draftId,
     required int orderIndex,
     required int durationMs,
     required DateTime recordedAt,
     required String data,
+    String? draftId,
   }) {
     return into(clips).insertOnConflictUpdate(
       ClipsCompanion.insert(
         id: id,
-        draftId: draftId,
+        draftId: Value(draftId),
         orderIndex: Value(orderIndex),
         durationMs: durationMs,
         recordedAt: recordedAt,
@@ -107,6 +107,42 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
       ..addColumns([clips.id.count()]);
     final result = await query.getSingle();
     return result.read(clips.id.count()) ?? 0;
+  }
+
+  // -- Library clip methods (draftId IS NULL) --
+
+  /// Get all library clips (no draft association), newest first
+  Future<List<ClipRow>> getLibraryClips({int? limit}) {
+    final query = select(clips)
+      ..where((t) => t.draftId.isNull())
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.recordedAt,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    if (limit != null) {
+      query.limit(limit);
+    }
+    return query.get();
+  }
+
+  /// Watch all library clips (reactive stream)
+  Stream<List<ClipRow>> watchLibraryClips() {
+    final query = select(clips)
+      ..where((t) => t.draftId.isNull())
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.recordedAt,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    return query.watch();
+  }
+
+  /// Delete all library clips (draftId IS NULL)
+  Future<int> clearLibraryClips() {
+    return (delete(clips)..where((t) => t.draftId.isNull())).go();
   }
 
   /// Clear all clips

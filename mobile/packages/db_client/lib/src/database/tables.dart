@@ -546,8 +546,8 @@ class Clips extends Table {
   /// Unique clip identifier
   TextColumn get id => text()();
 
-  /// Foreign key to the parent draft
-  TextColumn get draftId => text().named('draft_id')();
+  /// Foreign key to the parent draft (null for library clips)
+  TextColumn get draftId => text().nullable().named('draft_id')();
 
   /// Position of this clip within the draft (0-based)
   IntColumn get orderIndex =>
@@ -569,6 +569,14 @@ class Clips extends Table {
   @override
   List<String> get customConstraints => [
     'FOREIGN KEY (draft_id) REFERENCES drafts(id) ON DELETE CASCADE',
+  ];
+
+  List<Index> get libraryIndexes => [
+    Index(
+      'idx_clip_library',
+      'CREATE INDEX IF NOT EXISTS idx_clip_library '
+          'ON clips (draft_id) WHERE draft_id IS NULL',
+    ),
   ];
 
   List<Index> get indexes => [

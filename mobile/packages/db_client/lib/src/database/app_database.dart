@@ -204,7 +204,7 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('''
         CREATE TABLE clips (
           id TEXT NOT NULL PRIMARY KEY,
-          draft_id TEXT NOT NULL,
+          draft_id TEXT,
           order_index INTEGER NOT NULL DEFAULT 0,
           duration_ms INTEGER NOT NULL,
           recorded_at INTEGER NOT NULL,
@@ -223,6 +223,10 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('''
         CREATE INDEX IF NOT EXISTS idx_clip_recorded_at
         ON clips (recorded_at DESC)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_clip_library
+        ON clips (draft_id) WHERE draft_id IS NULL
       ''');
     }
   }

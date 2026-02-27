@@ -7334,9 +7334,9 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
   late final GeneratedColumn<String> draftId = GeneratedColumn<String>(
     'draft_id',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _orderIndexMeta = const VerificationMeta(
     'orderIndex',
@@ -7412,8 +7412,6 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         _draftIdMeta,
         draftId.isAcceptableOrUnknown(data['draft_id']!, _draftIdMeta),
       );
-    } else if (isInserting) {
-      context.missing(_draftIdMeta);
     }
     if (data.containsKey('order_index')) {
       context.handle(
@@ -7461,7 +7459,7 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
       draftId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}draft_id'],
-      )!,
+      ),
       orderIndex: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}order_index'],
@@ -7491,8 +7489,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
   /// Unique clip identifier
   final String id;
 
-  /// Foreign key to the parent draft
-  final String draftId;
+  /// Foreign key to the parent draft (null for library clips)
+  final String? draftId;
 
   /// Position of this clip within the draft (0-based)
   final int orderIndex;
@@ -7508,7 +7506,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
   final String data;
   const ClipRow({
     required this.id,
-    required this.draftId,
+    this.draftId,
     required this.orderIndex,
     required this.durationMs,
     required this.recordedAt,
@@ -7518,7 +7516,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['draft_id'] = Variable<String>(draftId);
+    if (!nullToAbsent || draftId != null) {
+      map['draft_id'] = Variable<String>(draftId);
+    }
     map['order_index'] = Variable<int>(orderIndex);
     map['duration_ms'] = Variable<int>(durationMs);
     map['recorded_at'] = Variable<DateTime>(recordedAt);
@@ -7529,7 +7529,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
   ClipsCompanion toCompanion(bool nullToAbsent) {
     return ClipsCompanion(
       id: Value(id),
-      draftId: Value(draftId),
+      draftId: draftId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(draftId),
       orderIndex: Value(orderIndex),
       durationMs: Value(durationMs),
       recordedAt: Value(recordedAt),
@@ -7544,7 +7546,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ClipRow(
       id: serializer.fromJson<String>(json['id']),
-      draftId: serializer.fromJson<String>(json['draftId']),
+      draftId: serializer.fromJson<String?>(json['draftId']),
       orderIndex: serializer.fromJson<int>(json['orderIndex']),
       durationMs: serializer.fromJson<int>(json['durationMs']),
       recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
@@ -7556,7 +7558,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'draftId': serializer.toJson<String>(draftId),
+      'draftId': serializer.toJson<String?>(draftId),
       'orderIndex': serializer.toJson<int>(orderIndex),
       'durationMs': serializer.toJson<int>(durationMs),
       'recordedAt': serializer.toJson<DateTime>(recordedAt),
@@ -7566,14 +7568,14 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
 
   ClipRow copyWith({
     String? id,
-    String? draftId,
+    Value<String?> draftId = const Value.absent(),
     int? orderIndex,
     int? durationMs,
     DateTime? recordedAt,
     String? data,
   }) => ClipRow(
     id: id ?? this.id,
-    draftId: draftId ?? this.draftId,
+    draftId: draftId.present ? draftId.value : this.draftId,
     orderIndex: orderIndex ?? this.orderIndex,
     durationMs: durationMs ?? this.durationMs,
     recordedAt: recordedAt ?? this.recordedAt,
@@ -7626,7 +7628,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
 
 class ClipsCompanion extends UpdateCompanion<ClipRow> {
   final Value<String> id;
-  final Value<String> draftId;
+  final Value<String?> draftId;
   final Value<int> orderIndex;
   final Value<int> durationMs;
   final Value<DateTime> recordedAt;
@@ -7643,14 +7645,13 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
   });
   ClipsCompanion.insert({
     required String id,
-    required String draftId,
+    this.draftId = const Value.absent(),
     this.orderIndex = const Value.absent(),
     required int durationMs,
     required DateTime recordedAt,
     required String data,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       draftId = Value(draftId),
        durationMs = Value(durationMs),
        recordedAt = Value(recordedAt),
        data = Value(data);
@@ -7676,7 +7677,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
 
   ClipsCompanion copyWith({
     Value<String>? id,
-    Value<String>? draftId,
+    Value<String?>? draftId,
     Value<int>? orderIndex,
     Value<int>? durationMs,
     Value<DateTime>? recordedAt,
@@ -11365,7 +11366,7 @@ typedef $$DraftsTableProcessedTableManager =
 typedef $$ClipsTableCreateCompanionBuilder =
     ClipsCompanion Function({
       required String id,
-      required String draftId,
+      Value<String?> draftId,
       Value<int> orderIndex,
       required int durationMs,
       required DateTime recordedAt,
@@ -11375,7 +11376,7 @@ typedef $$ClipsTableCreateCompanionBuilder =
 typedef $$ClipsTableUpdateCompanionBuilder =
     ClipsCompanion Function({
       Value<String> id,
-      Value<String> draftId,
+      Value<String?> draftId,
       Value<int> orderIndex,
       Value<int> durationMs,
       Value<DateTime> recordedAt,
@@ -11525,7 +11526,7 @@ class $$ClipsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> draftId = const Value.absent(),
+                Value<String?> draftId = const Value.absent(),
                 Value<int> orderIndex = const Value.absent(),
                 Value<int> durationMs = const Value.absent(),
                 Value<DateTime> recordedAt = const Value.absent(),
@@ -11543,7 +11544,7 @@ class $$ClipsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String draftId,
+                Value<String?> draftId = const Value.absent(),
                 Value<int> orderIndex = const Value.absent(),
                 required int durationMs,
                 required DateTime recordedAt,

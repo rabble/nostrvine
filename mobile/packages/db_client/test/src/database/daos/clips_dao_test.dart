@@ -549,5 +549,166 @@ void main() {
         expect(deleted, equals(0));
       });
     });
+
+    group('library clips (no draft)', () {
+      test('inserts clip without draftId', () async {
+        await dao.upsertClip(
+          id: 'lib_clip_1',
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{"filePath":"library_video.mp4"}',
+        );
+
+        final result = await dao.getClipById('lib_clip_1');
+        expect(result, isNotNull);
+        expect(result!.draftId, isNull);
+        expect(result.data, equals('{"filePath":"library_video.mp4"}'));
+      });
+
+      test('getLibraryClips returns only clips without draftId', () async {
+        await dao.upsertClip(
+          id: 'lib_clip_1',
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'lib_clip_2',
+          orderIndex: 0,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 12),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'draft_clip',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 5000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+
+        final libraryClips = await dao.getLibraryClips();
+        expect(libraryClips, hasLength(2));
+        // Newest first
+        expect(libraryClips[0].id, equals('lib_clip_2'));
+        expect(libraryClips[1].id, equals('lib_clip_1'));
+      });
+
+      test('getLibraryClips respects limit', () async {
+        await dao.upsertClip(
+          id: 'lib_1',
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'lib_2',
+          orderIndex: 0,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'lib_3',
+          orderIndex: 0,
+          durationMs: 5000,
+          recordedAt: DateTime(2023, 11, 14, 12),
+          data: '{}',
+        );
+
+        final results = await dao.getLibraryClips(limit: 2);
+        expect(results, hasLength(2));
+      });
+
+      test('getLibraryClips returns empty when none exist', () async {
+        await dao.upsertClip(
+          id: 'draft_clip',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+
+        final results = await dao.getLibraryClips();
+        expect(results, isEmpty);
+      });
+
+      test('watchLibraryClips emits only library clips', () async {
+        await dao.upsertClip(
+          id: 'lib_clip_1',
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'draft_clip',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 5000,
+          recordedAt: DateTime(2023, 11, 14, 12),
+          data: '{}',
+        );
+
+        final stream = dao.watchLibraryClips();
+        final results = await stream.first;
+
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('lib_clip_1'));
+      });
+
+      test('clearLibraryClips removes only library clips', () async {
+        await dao.upsertClip(
+          id: 'lib_clip_1',
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'lib_clip_2',
+          orderIndex: 0,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'draft_clip',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 5000,
+          recordedAt: DateTime(2023, 11, 14, 12),
+          data: '{}',
+        );
+
+        final deleted = await dao.clearLibraryClips();
+
+        expect(deleted, equals(2));
+        final libraryClips = await dao.getLibraryClips();
+        expect(libraryClips, isEmpty);
+        // Draft clips should remain
+        final draftClips = await dao.getClipsByDraftId(testDraftId);
+        expect(draftClips, hasLength(1));
+      });
+
+      test('clearLibraryClips returns 0 when no library clips', () async {
+        await dao.upsertClip(
+          id: 'draft_clip',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+
+        final deleted = await dao.clearLibraryClips();
+        expect(deleted, equals(0));
+      });
+    });
   });
 }

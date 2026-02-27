@@ -27,10 +27,6 @@ class DraftStorageService {
 
   /// Migrate drafts from SharedPreferences to Drift database.
   ///
-  /// Reads existing drafts from the old storage, inserts them into the
-  /// database, and removes the SharedPreferences key on success.
-  /// Safe to call multiple times – no-ops if nothing to migrate.
-  ///
   /// TODO(hm21): Remove migration in the future.
   /// That migration was created at 27.02.2026.
   Future<void> migrateOldDrafts() async {
