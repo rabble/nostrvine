@@ -68,11 +68,13 @@ class DraftStorageService {
               : null,
         );
 
-        // Insert clips
+        // Insert clips with composite IDs so draft clips
+        // don't collide with library clips sharing the same
+        // clip.id primary key.
         for (var i = 0; i < draft.clips.length; i++) {
           final clip = draft.clips[i];
           await _clipsDao.upsertClip(
-            id: clip.id,
+            id: '${draft.id}:${clip.id}',
             draftId: draft.id,
             orderIndex: i,
             durationMs: clip.duration.inMilliseconds,
@@ -173,12 +175,15 @@ class DraftStorageService {
           : null,
     );
 
-    // Replace all clips: delete old, insert new
+    // Replace all clips: delete old, insert new.
+    // Use composite IDs (draftId:clipId) so draft clip rows
+    // coexist with library clip rows that share the same
+    // underlying clip.id.
     await _clipsDao.deleteClipsByDraftId(draft.id);
     for (var i = 0; i < draft.clips.length; i++) {
       final clip = draft.clips[i];
       await _clipsDao.upsertClip(
-        id: clip.id,
+        id: '${draft.id}:${clip.id}',
         draftId: draft.id,
         orderIndex: i,
         durationMs: clip.duration.inMilliseconds,

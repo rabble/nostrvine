@@ -300,6 +300,9 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // Force immediate autosave so draft references are updated before cleanup
     await _forceAutosave();
 
+    // Guard against provider disposal during the async gap above.
+    if (!ref.mounted) return true;
+
     // Delete files only if not referenced by drafts or clip library
     final db = ref.read(databaseProvider);
     await FileCleanupService.deleteRecordingClipFiles(
