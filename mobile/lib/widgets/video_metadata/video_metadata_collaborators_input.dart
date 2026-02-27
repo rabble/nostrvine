@@ -125,9 +125,13 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
   }
 
   Future<void> _addCollaborator(BuildContext context, WidgetRef ref) async {
+    final currentCollaborators = ref.read(
+      videoEditorProvider.select((s) => s.collaboratorPubkeys),
+    );
     final profile = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.mutualFollowsOnly,
+      excludePubkeys: currentCollaborators.toSet(),
       // TODO(l10n): Replace with context.l10n
       //   when localization is added.
       title: 'Add collaborator',

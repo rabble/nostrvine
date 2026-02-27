@@ -28,7 +28,7 @@ String _errorToString(CommentsError error) {
     CommentsError.postCommentFailed => 'Failed to post comment',
     CommentsError.postReplyFailed => 'Failed to post reply',
     CommentsError.deleteCommentFailed => 'Failed to delete comment',
-    CommentsError.likeFailed => 'Failed to like comment',
+    CommentsError.voteFailed => 'Failed to vote on comment',
     CommentsError.reportFailed => 'Failed to report comment',
     CommentsError.blockFailed => 'Failed to block user',
   };

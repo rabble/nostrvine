@@ -12,7 +12,9 @@ import 'package:openvine/services/nostr_list_service_mixin.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Reasons for content filtering/reporting
+/// Reasons for content filtering/reporting.
+///
+/// Aligned with the 6 design categories for flag/report flows.
 enum ContentFilterReason {
   spam('Spam or unwanted content'),
   harassment('Harassment, bullying, or threats'),
