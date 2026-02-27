@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/android_path_migration.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -34,7 +34,7 @@ class DraftStorageService {
     // Parse with useOriginalPath to get the raw paths from JSON
     final draftsWithOriginalPaths = jsonList
         .map(
-          (json) => VineDraft.fromJson(
+          (json) => DivineVideoDraft.fromJson(
             json as Map<String, dynamic>,
             documentsPath,
             useOriginalPath: true,
@@ -71,7 +71,7 @@ class DraftStorageService {
 
   /// Save a draft to storage. If a draft with the same ID exists, it will be updated.
   /// When updating, orphaned clip files (video/thumbnail) from the old draft are deleted.
-  Future<void> saveDraft(VineDraft draft) async {
+  Future<void> saveDraft(DivineVideoDraft draft) async {
     Log.debug(
       '💾 Saving draft: ${draft.id}',
       name: 'DraftStorageService',
@@ -128,7 +128,7 @@ class DraftStorageService {
     await _saveDrafts(drafts);
   }
 
-  Future<VineDraft?> getDraftById(String id) async {
+  Future<DivineVideoDraft?> getDraftById(String id) async {
     final drafts = await getAllDrafts();
 
     final index = drafts.indexWhere((d) => d.id == id);
@@ -142,7 +142,7 @@ class DraftStorageService {
   /// Get draft by ID with validation - filters out clips with missing video files.
   ///
   /// Returns null if draft not found or all clips are invalid.
-  Future<VineDraft?> getValidatedDraftById(String id) async {
+  Future<DivineVideoDraft?> getValidatedDraftById(String id) async {
     final draft = await getDraftById(id);
     if (draft == null) return null;
 
@@ -169,7 +169,7 @@ class DraftStorageService {
   /// Get the autosaved draft with validation.
   ///
   /// Returns null if no autosave exists or all clips are invalid.
-  Future<VineDraft?> getAutosaveDraft() async {
+  Future<DivineVideoDraft?> getAutosaveDraft() async {
     return getValidatedDraftById(VideoEditorConstants.autoSaveId);
   }
 
@@ -180,7 +180,7 @@ class DraftStorageService {
   }
 
   /// Filter clips to only include those with existing video files.
-  List<RecordingClip> _filterValidClips(List<RecordingClip> clips) {
+  List<DivineVideoClip> _filterValidClips(List<DivineVideoClip> clips) {
     return clips.where((clip) {
       final videoPath = clip.video.file?.path;
       if (videoPath == null) return false;
@@ -189,7 +189,7 @@ class DraftStorageService {
   }
 
   /// Get all drafts from storage
-  Future<List<VineDraft>> getAllDrafts() async {
+  Future<List<DivineVideoDraft>> getAllDrafts() async {
     try {
       final prefs = await _prefsAsync;
       final String? jsonString = prefs.getString(_storageKey);
@@ -203,8 +203,10 @@ class DraftStorageService {
 
       final drafts = jsonList
           .map(
-            (json) =>
-                VineDraft.fromJson(json as Map<String, dynamic>, documentsPath),
+            (json) => DivineVideoDraft.fromJson(
+              json as Map<String, dynamic>,
+              documentsPath,
+            ),
           )
           .toList();
 
@@ -263,7 +265,7 @@ class DraftStorageService {
     final allClips = drafts.expand((draft) => draft.clips).toList();
     final allFinalRenderedClips = drafts
         .map((draft) => draft.finalRenderedClip)
-        .whereType<RecordingClip>()
+        .whereType<DivineVideoClip>()
         .toList();
 
     // Clear storage first, then delete files (so reference check sees updated state)
@@ -276,7 +278,7 @@ class DraftStorageService {
   }
 
   /// Internal helper to save drafts list to storage
-  Future<void> _saveDrafts(List<VineDraft> drafts) async {
+  Future<void> _saveDrafts(List<DivineVideoDraft> drafts) async {
     final prefs = await _prefsAsync;
     final jsonList = drafts.map((draft) => draft.toJson()).toList();
     final jsonString = json.encode(jsonList);

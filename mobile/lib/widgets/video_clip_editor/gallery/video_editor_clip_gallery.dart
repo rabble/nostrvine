@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/haptic_service.dart';
@@ -323,7 +323,7 @@ class _GalleryViewer extends ConsumerWidget {
   });
 
   final PageController pageController;
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
   final ClipReorderController reorderController;
 
   @override
@@ -415,7 +415,7 @@ class _GalleryStack extends ConsumerStatefulWidget {
   final ClipReorderController reorderController;
   final BoxConstraints constraints;
 
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
 
   final int activeClipIndex;
   final int selectedClipIndex;

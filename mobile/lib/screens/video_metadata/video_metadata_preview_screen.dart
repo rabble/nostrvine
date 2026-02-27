@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -27,7 +27,7 @@ class VideoMetadataPreviewScreen extends ConsumerStatefulWidget {
   const VideoMetadataPreviewScreen({required this.clip, super.key});
 
   /// The recording clip to preview.
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   @override
   ConsumerState<VideoMetadataPreviewScreen> createState() =>
@@ -140,7 +140,7 @@ class _VideoPreviewContent extends ConsumerWidget {
     required this.isPreviewReady,
   });
 
-  final RecordingClip clip;
+  final DivineVideoClip clip;
   final VideoPlayerController? controller;
   final bool isInitialized;
   final ValueNotifier<bool> isPreviewReady;
@@ -178,7 +178,7 @@ class _VideoPlayerWidget extends StatelessWidget {
     required this.isInitialized,
   });
 
-  final RecordingClip clip;
+  final DivineVideoClip clip;
   final VideoPlayerController? controller;
   final bool isInitialized;
 

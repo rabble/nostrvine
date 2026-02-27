@@ -1,7 +1,7 @@
 // ABOUTME: Metadata model for video editor containing publication info
 // ABOUTME: Stores title, description, hashtags, and privacy settings for videos
 
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 
 /// Metadata for video editor including title, description, and settings.
 class VideoEditorMeta {
@@ -20,7 +20,7 @@ class VideoEditorMeta {
   }
 
   /// Creates metadata from existing vine draft.
-  factory VideoEditorMeta.fromVineDraft(VineDraft draft) {
+  factory VideoEditorMeta.fromVineDraft(DivineVideoDraft draft) {
     return VideoEditorMeta(
       title: draft.title,
       description: draft.description,

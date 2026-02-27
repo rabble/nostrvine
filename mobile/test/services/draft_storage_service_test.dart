@@ -3,8 +3,8 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,9 +21,9 @@ void main() {
 
     group('saveDraft', () {
       test('should save a draft to storage', () async {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'test_clip',
               video: EditorVideo.file('/path/to/video.mp4'),
               duration: const Duration(seconds: 6),
@@ -51,10 +51,10 @@ void main() {
 
       test('should save multiple drafts', () async {
         final now = DateTime.now();
-        final draft1 = VineDraft(
+        final draft1 = DivineVideoDraft(
           id: 'draft_1',
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'clip_1',
               video: EditorVideo.file('/path/to/video1.mp4'),
               duration: const Duration(seconds: 6),
@@ -73,10 +73,10 @@ void main() {
           publishAttempts: 0,
         );
 
-        final draft2 = VineDraft(
+        final draft2 = DivineVideoDraft(
           id: 'draft_2',
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'clip_2',
               video: EditorVideo.file('/path/to/video2.mp4'),
               duration: const Duration(seconds: 6),
@@ -105,9 +105,9 @@ void main() {
       });
 
       test('should update existing draft if ID matches', () async {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'test_clip',
               video: EditorVideo.file('/path/to/video.mp4'),
               duration: const Duration(seconds: 6),
@@ -146,10 +146,10 @@ void main() {
 
       test('should return all saved drafts', () async {
         final now = DateTime.now();
-        final draft1 = VineDraft(
+        final draft1 = DivineVideoDraft(
           id: 'draft_1',
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'clip_1',
               video: EditorVideo.file('/path/to/video1.mp4'),
               duration: const Duration(seconds: 6),
@@ -168,10 +168,10 @@ void main() {
           publishAttempts: 0,
         );
 
-        final draft2 = VineDraft(
+        final draft2 = DivineVideoDraft(
           id: 'draft_2',
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'clip_2',
               video: EditorVideo.file('/path/to/video2.mp4'),
               duration: const Duration(seconds: 6),
@@ -209,10 +209,10 @@ void main() {
     group('deleteDraft', () {
       test('should delete draft by ID', () async {
         final now = DateTime.now();
-        final draft1 = VineDraft(
+        final draft1 = DivineVideoDraft(
           id: 'draft_1',
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'clip_1',
               video: EditorVideo.file('/path/to/video1.mp4'),
               duration: const Duration(seconds: 6),
@@ -231,10 +231,10 @@ void main() {
           publishAttempts: 0,
         );
 
-        final draft2 = VineDraft(
+        final draft2 = DivineVideoDraft(
           id: 'draft_2',
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'clip_2',
               video: EditorVideo.file('/path/to/video2.mp4'),
               duration: const Duration(seconds: 6),
@@ -265,9 +265,9 @@ void main() {
       });
 
       test('should do nothing if draft ID does not exist', () async {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'test_clip',
               video: EditorVideo.file('/path/to/video.mp4'),
               duration: const Duration(seconds: 6),
@@ -293,10 +293,10 @@ void main() {
     group('clearAllDrafts', () {
       test('should remove all drafts from storage', () async {
         final now = DateTime.now();
-        final draft1 = VineDraft(
+        final draft1 = DivineVideoDraft(
           id: 'draft_1',
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'clip_1',
               video: EditorVideo.file('/path/to/video1.mp4'),
               duration: const Duration(seconds: 6),
@@ -315,10 +315,10 @@ void main() {
           publishAttempts: 0,
         );
 
-        final draft2 = VineDraft(
+        final draft2 = DivineVideoDraft(
           id: 'draft_2',
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'clip_2',
               video: EditorVideo.file('/path/to/video2.mp4'),
               duration: const Duration(seconds: 6),

@@ -3,18 +3,18 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('VineDraft PublishStatus', () {
     test('should serialize and deserialize publishStatus correctly', () {
       final now = DateTime.now();
-      final draft = VineDraft(
+      final draft = DivineVideoDraft(
         id: 'test_draft',
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 6),
@@ -34,7 +34,7 @@ void main() {
       );
 
       final json = draft.toJson();
-      final deserialized = VineDraft.fromJson(json, '/path/to');
+      final deserialized = DivineVideoDraft.fromJson(json, '/path/to');
 
       expect(deserialized.publishStatus, PublishStatus.draft);
       expect(deserialized.publishError, null);
@@ -45,10 +45,10 @@ void main() {
       final now = DateTime.now();
 
       for (final status in PublishStatus.values) {
-        final draft = VineDraft(
+        final draft = DivineVideoDraft(
           id: 'test_${status.name}',
           clips: [
-            RecordingClip(
+            DivineVideoClip(
               id: 'test_clip',
               video: EditorVideo.file('/path/to/video.mp4'),
               duration: const Duration(seconds: 6),
@@ -68,7 +68,7 @@ void main() {
         );
 
         final json = draft.toJson();
-        final deserialized = VineDraft.fromJson(json, '/path/to');
+        final deserialized = DivineVideoDraft.fromJson(json, '/path/to');
 
         expect(deserialized.publishStatus, status);
       }
@@ -88,7 +88,7 @@ void main() {
         // publishStatus, publishError, publishAttempts missing
       };
 
-      final draft = VineDraft.fromJson(json, '/path/to');
+      final draft = DivineVideoDraft.fromJson(json, '/path/to');
 
       expect(draft.publishStatus, PublishStatus.draft);
       expect(draft.publishError, null);
@@ -97,10 +97,10 @@ void main() {
 
     test('should serialize publishError when present', () {
       final now = DateTime.now();
-      final draft = VineDraft(
+      final draft = DivineVideoDraft(
         id: 'failed_draft',
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 6),
@@ -124,7 +124,7 @@ void main() {
       expect(json['publishError'], 'Network error');
       expect(json['publishAttempts'], 2);
 
-      final deserialized = VineDraft.fromJson(json, '/path/to');
+      final deserialized = DivineVideoDraft.fromJson(json, '/path/to');
       expect(deserialized.publishError, 'Network error');
       expect(deserialized.publishAttempts, 2);
     });
@@ -133,10 +133,10 @@ void main() {
   group('VineDraft.copyWith with publish fields', () {
     test('should update publishStatus via copyWith', () {
       final now = DateTime.now();
-      final draft = VineDraft(
+      final draft = DivineVideoDraft(
         id: 'test',
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 6),
@@ -164,10 +164,10 @@ void main() {
 
     test('should update publishError and attempts via copyWith', () {
       final now = DateTime.now();
-      final draft = VineDraft(
+      final draft = DivineVideoDraft(
         id: 'test',
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 6),
@@ -199,10 +199,10 @@ void main() {
 
     test('should explicitly clear publishError to null via copyWith', () {
       final now = DateTime.now();
-      final draft = VineDraft(
+      final draft = DivineVideoDraft(
         id: 'test',
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 6),

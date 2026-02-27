@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as models;
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -14,10 +14,10 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('VideoMetadataClipPreview', () {
-    late RecordingClip testClip;
+    late DivineVideoClip testClip;
 
     setUp(() {
-      testClip = RecordingClip(
+      testClip = DivineVideoClip(
         id: 'test-clip',
         video: EditorVideo.file('test.mp4'),
         duration: const Duration(seconds: 10),
@@ -47,7 +47,7 @@ void main() {
     });
 
     testWidgets('displays placeholder when no thumbnail', (tester) async {
-      final clipNoThumbnail = RecordingClip(
+      final clipNoThumbnail = DivineVideoClip(
         id: 'test-clip',
         video: EditorVideo.file('test.mp4'),
         duration: const Duration(seconds: 10),
@@ -126,7 +126,7 @@ void main() {
     testWidgets('play button is enabled when final rendered clip exists', (
       tester,
     ) async {
-      final finalClip = RecordingClip(
+      final finalClip = DivineVideoClip(
         id: 'final-clip',
         video: EditorVideo.file('final.mp4'),
         duration: const Duration(seconds: 15),
@@ -159,7 +159,7 @@ void main() {
     });
 
     testWidgets('opens preview screen when play button tapped', (tester) async {
-      final finalClip = RecordingClip(
+      final finalClip = DivineVideoClip(
         id: 'final-clip',
         video: EditorVideo.file('final.mp4'),
         duration: const Duration(seconds: 15),
@@ -273,7 +273,7 @@ void main() {
 class _MockClipManagerNotifier extends ClipManagerNotifier {
   _MockClipManagerNotifier(this._clips);
 
-  final List<RecordingClip> _clips;
+  final List<DivineVideoClip> _clips;
 
   @override
   ClipManagerState build() => ClipManagerState(clips: _clips);

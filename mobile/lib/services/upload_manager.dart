@@ -11,8 +11,8 @@ import 'package:flutter/foundation.dart' show ValueChanged, kIsWeb;
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -270,7 +270,7 @@ class UploadManager {
 
   /// Start upload from VineDraft (preferred method - single source of truth)
   Future<PendingUpload> startUploadFromDraft({
-    required VineDraft draft,
+    required DivineVideoDraft draft,
     required String nostrPubkey,
     Duration? videoDuration,
     ValueChanged<double>? onProgress,

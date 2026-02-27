@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as models;
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -14,8 +14,8 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-RecordingClip _createTestClip({String id = 'test-clip'}) {
-  return RecordingClip(
+DivineVideoClip _createTestClip({String id = 'test-clip'}) {
+  return DivineVideoClip(
     id: id,
     video: EditorVideo.file('test.mp4'),
     duration: const Duration(seconds: 10),
@@ -27,7 +27,7 @@ RecordingClip _createTestClip({String id = 'test-clip'}) {
 
 void main() {
   group(VideoMetadataScreen, () {
-    late RecordingClip testClip;
+    late DivineVideoClip testClip;
 
     setUp(() {
       testClip = _createTestClip();
@@ -95,7 +95,7 @@ void main() {
 class _MockClipManagerNotifier extends ClipManagerNotifier {
   _MockClipManagerNotifier(this._clips);
 
-  final List<RecordingClip> _clips;
+  final List<DivineVideoClip> _clips;
 
   @override
   ClipManagerState build() => ClipManagerState(clips: _clips);

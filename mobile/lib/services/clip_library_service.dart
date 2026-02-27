@@ -3,7 +3,7 @@
 
 import 'dart:convert';
 
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/android_path_migration.dart';
 import 'package:openvine/utils/path_resolver.dart';
@@ -31,7 +31,7 @@ class ClipLibraryService {
     // Parse with useOriginalPath to get the raw paths from JSON
     final clipsWithOriginalPaths = jsonList
         .map(
-          (json) => SavedClip.fromJson(
+          (json) => DivineVideoClip.fromJson(
             json as Map<String, dynamic>,
             documentsPath,
             useOriginalPath: true,
@@ -42,7 +42,7 @@ class ClipLibraryService {
     // Collect all file paths that need migration
     final pathsToMigrate = <String?>[
       for (final clip in clipsWithOriginalPaths) ...[
-        clip.filePath,
+        await clip.video.safeFilePath(),
         clip.thumbnailPath,
       ],
     ];
@@ -62,7 +62,7 @@ class ClipLibraryService {
   }
 
   /// Save a clip to the library. Updates existing clip if ID matches.
-  Future<void> saveClip(SavedClip clip) async {
+  Future<void> saveClip(DivineVideoClip clip) async {
     Log.debug(
       '💾 Saving clip to library: ${clip.id}',
       name: 'ClipLibraryService',
@@ -82,7 +82,7 @@ class ClipLibraryService {
   }
 
   /// Get all clips from the library, sorted by creation date (newest first)
-  Future<List<SavedClip>> getAllClips() async {
+  Future<List<DivineVideoClip>> getAllClips() async {
     try {
       final prefs = await _prefsAsync;
       final String? jsonString = prefs.getString(_storageKey);
@@ -96,13 +96,15 @@ class ClipLibraryService {
 
       final clips = jsonList
           .map(
-            (json) =>
-                SavedClip.fromJson(json as Map<String, dynamic>, documentsPath),
+            (json) => DivineVideoClip.fromJson(
+              json as Map<String, dynamic>,
+              documentsPath,
+            ),
           )
           .toList();
 
       // Sort by creation date, newest first
-      clips.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      clips.sort((a, b) => b.recordedAt.compareTo(a.recordedAt));
 
       return clips;
     } catch (e) {
@@ -117,7 +119,7 @@ class ClipLibraryService {
   }
 
   /// Get a single clip by ID
-  Future<SavedClip?> getClipById(String id) async {
+  Future<DivineVideoClip?> getClipById(String id) async {
     final clips = await getAllClips();
     try {
       return clips.firstWhere((c) => c.id == id);
@@ -169,41 +171,10 @@ class ClipLibraryService {
   }
 
   /// Internal helper to save clips list to storage
-  Future<void> _saveClips(List<SavedClip> clips) async {
+  Future<void> _saveClips(List<DivineVideoClip> clips) async {
     final prefs = await _prefsAsync;
     final jsonList = clips.map((clip) => clip.toJson()).toList();
     final jsonString = json.encode(jsonList);
     await prefs.setString(_storageKey, jsonString);
-  }
-
-  /// Get all clips grouped by session ID
-  /// Returns Map<sessionId, List<SavedClip>>
-  /// Clips without sessionId are grouped under 'ungrouped'
-  Future<Map<String, List<SavedClip>>> getClipsGroupedBySession() async {
-    final clips = await getAllClips();
-    final grouped = <String, List<SavedClip>>{};
-
-    for (final clip in clips) {
-      final key = clip.sessionId ?? 'ungrouped';
-      grouped.putIfAbsent(key, () => []);
-      grouped[key]!.add(clip);
-    }
-
-    return grouped;
-  }
-
-  /// Get clips for a specific session
-  /// Use 'ungrouped' to retrieve clips with null sessionId
-  Future<List<SavedClip>> getClipsBySession(String sessionId) async {
-    final clips = await getAllClips();
-    if (sessionId == 'ungrouped') {
-      return clips.where((c) => c.sessionId == null).toList();
-    }
-    return clips.where((c) => c.sessionId == sessionId).toList();
-  }
-
-  /// Generate a unique session ID for grouping clips
-  static String generateSessionId() {
-    return 'session_${DateTime.now().millisecondsSinceEpoch}';
   }
 }

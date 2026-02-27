@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 
 /// Calculates scale and offset values for gallery items.
 ///
@@ -23,7 +23,7 @@ class GalleryTransformCalculator {
   final BoxConstraints constraints;
 
   /// List of clips to calculate transforms for.
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
 
   /// Index of the currently active clip.
   final int activeClipIndex;

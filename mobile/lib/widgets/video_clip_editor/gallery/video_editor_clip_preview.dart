@@ -5,7 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_processing_overlay.dart';
@@ -34,7 +34,7 @@ class VideoEditorClipPreview extends ConsumerStatefulWidget {
   });
 
   /// The clip to display.
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   /// Whether this is the currently selected/playing clip.
   final bool isCurrentClip;
@@ -297,7 +297,7 @@ class _ThumbnailVisibility extends ConsumerWidget {
   const _ThumbnailVisibility({required this.isCurrentClip, required this.clip});
 
   final bool isCurrentClip;
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -328,7 +328,7 @@ class _ThumbnailVisibility extends ConsumerWidget {
 class _ClipThumbnail extends StatelessWidget {
   const _ClipThumbnail({required this.clip});
 
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   @override
   Widget build(BuildContext context) {

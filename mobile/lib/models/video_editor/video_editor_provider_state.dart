@@ -3,7 +3,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' show InspiredByInfo;
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -108,7 +108,7 @@ class VideoEditorProviderState {
   /// The final rendered clip after all editing and processing operations are
   /// complete.
   /// This represents the video output ready for publishing.
-  final RecordingClip? finalRenderedClip;
+  final DivineVideoClip? finalRenderedClip;
 
   /// Serialized state history from ProImageEditor for undo/redo restoration.
   final Map<String, dynamic> editorStateHistory;
@@ -170,7 +170,7 @@ class VideoEditorProviderState {
     Set<String>? tags,
     VideoMetadataExpiration? expiration,
     bool? metadataLimitReached,
-    RecordingClip? finalRenderedClip,
+    DivineVideoClip? finalRenderedClip,
     bool clearFinalRenderedClip = false,
     Map<String, dynamic>? editorStateHistory,
     CompleteParameters? editorEditingParameters,
