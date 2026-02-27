@@ -18,7 +18,6 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
@@ -111,7 +110,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
   Future<void> _loadDrafts() async {
     try {
-      final draftService = DraftStorageService();
+      final draftService = ref.read(draftStorageServiceProvider);
       final drafts = await draftService.getAllDrafts();
 
       // Filter out autosave and already published drafts, sort by newest first
@@ -471,7 +470,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         name: 'ClipLibraryScreen',
         category: LogCategory.video,
       );
-      final draftService = DraftStorageService();
+      final draftService = ref.read(draftStorageServiceProvider);
       await draftService.deleteDraft(draft.id);
       await _loadDrafts();
 

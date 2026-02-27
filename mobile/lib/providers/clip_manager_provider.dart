@@ -11,7 +11,6 @@ import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -535,7 +534,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     state = ClipManagerState();
 
     // Delete autosave draft and its associated files
-    final draftService = DraftStorageService();
+    final draftService = ref.read(draftStorageServiceProvider);
     await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
   }
 

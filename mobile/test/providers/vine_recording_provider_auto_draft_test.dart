@@ -3,6 +3,8 @@
 
 import 'dart:io';
 
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
@@ -10,24 +12,28 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('VineRecordingProvider auto-draft', () {
     late ProviderContainer container;
+    late AppDatabase database;
     late DraftStorageService draftStorage;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      draftStorage = DraftStorageService();
+      database = AppDatabase.test(NativeDatabase.memory());
+      draftStorage = DraftStorageService(
+        draftsDao: database.draftsDao,
+        clipsDao: database.clipsDao,
+      );
 
       // Create a mock controller - this test requires significant setup
       // For now, we'll test the integration indirectly
       container = ProviderContainer();
     });
 
-    tearDown(() {
+    tearDown(() async {
       container.dispose();
+      await database.close();
     });
 
     test('stopRecording should create draft automatically', () async {

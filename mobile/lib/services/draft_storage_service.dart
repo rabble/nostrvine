@@ -161,6 +161,9 @@ class DraftStorageService {
     }
   }
 
+  /// Get total count of drafts without loading their data.
+  Future<int> getDraftCount() => _draftsDao.getCount();
+
   Future<DivineVideoDraft?> getDraftById(String id) async {
     final row = await _draftsDao.getDraftById(id);
     if (row == null) {

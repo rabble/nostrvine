@@ -13,6 +13,7 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/platform_io.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -58,7 +59,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Get clips from clip manager.
   List<DivineVideoClip> get _clips => ref.read(clipManagerProvider).clips;
 
-  final _draftService = DraftStorageService();
+  late final DraftStorageService _draftService = ref.read(
+    draftStorageServiceProvider,
+  );
 
   // === LIFECYCLE ===
 

@@ -31,7 +31,9 @@ final videoPublishProvider =
 
 /// Manages video publish screen state including playback and position.
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
-  final _draftService = DraftStorageService();
+  late final DraftStorageService _draftService = ref.read(
+    draftStorageServiceProvider,
+  );
 
   @override
   VideoPublishProviderState build() {

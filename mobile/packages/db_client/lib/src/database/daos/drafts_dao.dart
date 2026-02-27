@@ -155,6 +155,13 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     return result.read(drafts.id.count()) ?? 0;
   }
 
+  /// Get total count of all drafts
+  Future<int> getCount() async {
+    final query = selectOnly(drafts)..addColumns([drafts.id.count()]);
+    final result = await query.getSingle();
+    return result.read(drafts.id.count()) ?? 0;
+  }
+
   /// Clear all drafts
   Future<int> clearAll() {
     return delete(drafts).go();

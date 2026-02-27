@@ -1,6 +1,8 @@
 // ABOUTME: Tests for ClipLibraryScreen - browsing and managing saved clips
 // ABOUTME: Covers thumbnail display, clip deletion, and import functionality
 
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,15 +12,19 @@ import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('ClipLibraryScreen', () {
+    late AppDatabase database;
     late ClipLibraryService clipService;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      clipService = ClipLibraryService();
+      database = AppDatabase.test(NativeDatabase.memory());
+      clipService = ClipLibraryService(clipsDao: database.clipsDao);
+    });
+
+    tearDown(() async {
+      await database.close();
     });
 
     Widget buildTestWidget() {

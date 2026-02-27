@@ -1,22 +1,31 @@
 // ABOUTME: TDD tests for DraftStorageService - persistent storage for vine drafts
-// ABOUTME: Tests save, load, delete, and clear operations using shared_preferences
+// ABOUTME: Tests save, load, delete, and clear operations using Drift database
 
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('DraftStorageService', () {
+    late AppDatabase database;
     late DraftStorageService service;
 
     setUp(() async {
-      // Start with clean slate for each test
-      SharedPreferences.setMockInitialValues({});
-      service = DraftStorageService();
+      // Start with clean in-memory database for each test
+      database = AppDatabase.test(NativeDatabase.memory());
+      service = DraftStorageService(
+        draftsDao: database.draftsDao,
+        clipsDao: database.clipsDao,
+      );
+    });
+
+    tearDown(() async {
+      await database.close();
     });
 
     group('saveDraft', () {
@@ -197,10 +206,7 @@ void main() {
         expect(drafts.length, 2);
       });
 
-      test('should handle corrupted storage gracefully', () async {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('vine_drafts', 'invalid json');
-
+      test('should return empty when database is empty', () async {
         final drafts = await service.getAllDrafts();
         expect(drafts, isEmpty);
       });
