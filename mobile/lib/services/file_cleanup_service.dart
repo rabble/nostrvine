@@ -1,99 +1,35 @@
 // ABOUTME: Central service for safe file deletion with reference checking
 // ABOUTME: Only deletes files when not referenced by drafts OR clip library
-// ABOUTME: Uses static methods with DAO parameters for database access
-
-import 'dart:convert';
+// ABOUTME: Uses indexed file_path columns for efficient lookups
 
 import 'package:db_client/db_client.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/platform_io.dart';
-import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as p;
 
 /// Service for safely deleting clip files while respecting references.
 ///
 /// Files may be shared between drafts and the clip library. This service
 /// checks both storage locations before deleting to prevent data loss.
 ///
-/// All public methods require [DraftsDao] and [ClipsDao] parameters
-/// to query referenced file paths from the Drift database.
+/// Uses indexed `file_path` / `thumbnail_path` columns on the clips table
+/// and `rendered_file_path` / `rendered_thumbnail_path` on the drafts table
+/// for efficient lookups without loading all rows.
 class FileCleanupService {
-  /// Gets all file paths currently referenced by drafts and clip library.
+  /// Checks if a file is referenced by any clip or draft.
   ///
-  /// Deserializes all clips and drafts from the database into their
-  /// model objects and reads video/thumbnail paths directly.
-  static Future<Set<String>> _getAllReferencedPaths({
+  /// Extracts the basename from [filePath] and queries the indexed
+  /// columns in both the clips and drafts tables.
+  static Future<bool> _isFileReferenced(
+    String filePath, {
     required DraftsDao draftsDao,
     required ClipsDao clipsDao,
   }) async {
-    final documentsPath = await getDocumentsPath();
-    final paths = <String>{};
-
-    // Collect paths from all clips (both draft clips and library clips)
-    try {
-      final clipRows = await clipsDao.getAllClips();
-      for (final clipRow in clipRows) {
-        try {
-          final clipJson = json.decode(clipRow.data) as Map<String, dynamic>;
-          final clip = DivineVideoClip.fromJson(clipJson, documentsPath);
-          final filePath = clip.video.file?.path;
-          if (filePath != null) paths.add(filePath);
-          if (clip.thumbnailPath != null) {
-            paths.add(clip.thumbnailPath!);
-          }
-        } catch (e) {
-          Log.warning(
-            '⚠️ Failed to parse clip data for reference check: $e',
-            name: 'FileCleanupService',
-            category: LogCategory.video,
-          );
-        }
-      }
-    } catch (e) {
-      Log.warning(
-        '⚠️ Failed to read clips for reference check: $e',
-        name: 'FileCleanupService',
-        category: LogCategory.video,
-      );
-    }
-
-    // Collect paths from drafts (for finalRenderedClip)
-    try {
-      final draftRows = await draftsDao.getAllDrafts();
-      for (final draftRow in draftRows) {
-        try {
-          final clipRows = await clipsDao.getClipsByDraftId(draftRow.id);
-          final draft = DivineVideoDraft.fromDriftRow(
-            row: draftRow,
-            clipRows: clipRows,
-            documentsPath: documentsPath,
-          );
-          final rendered = draft.finalRenderedClip;
-          if (rendered != null) {
-            final filePath = rendered.video.file?.path;
-            if (filePath != null) paths.add(filePath);
-            if (rendered.thumbnailPath != null) {
-              paths.add(rendered.thumbnailPath!);
-            }
-          }
-        } catch (e) {
-          Log.warning(
-            '⚠️ Failed to parse draft data for reference check: $e',
-            name: 'FileCleanupService',
-            category: LogCategory.video,
-          );
-        }
-      }
-    } catch (e) {
-      Log.warning(
-        '⚠️ Failed to read drafts for reference check: $e',
-        name: 'FileCleanupService',
-        category: LogCategory.video,
-      );
-    }
-
-    return paths;
+    final filename = p.basename(filePath);
+    if (await clipsDao.isFileReferenced(filename)) return true;
+    if (await draftsDao.isRenderedFileReferenced(filename)) return true;
+    return false;
   }
 
   /// Deletes a file only if it's not referenced elsewhere.
@@ -108,12 +44,11 @@ class FileCleanupService {
   }) async {
     if (filePath == null || filePath.isEmpty) return;
 
-    final referencedPaths = await _getAllReferencedPaths(
+    if (await _isFileReferenced(
+      filePath,
       draftsDao: draftsDao,
       clipsDao: clipsDao,
-    );
-
-    if (referencedPaths.contains(filePath)) {
+    )) {
       Log.info(
         '🔗 File still referenced, skipping delete: $filePath',
         name: 'FileCleanupService',
@@ -131,18 +66,18 @@ class FileCleanupService {
     required DraftsDao draftsDao,
     required ClipsDao clipsDao,
   }) async {
-    final referencedPaths = await _getAllReferencedPaths(
-      draftsDao: draftsDao,
-      clipsDao: clipsDao,
-    );
-
-    final filesToDelete = filePaths
+    final validPaths = filePaths
         .where((path) => path != null && path.isNotEmpty)
-        .where((path) => !referencedPaths.contains(path))
         .cast<String>()
         .toList();
 
-    await Future.wait(filesToDelete.map(_deleteFile));
+    for (final path in validPaths) {
+      await deleteFileIfUnreferenced(
+        path,
+        draftsDao: draftsDao,
+        clipsDao: clipsDao,
+      );
+    }
   }
 
   /// Deletes files for a RecordingClip if not referenced

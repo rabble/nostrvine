@@ -20,6 +20,8 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     required DateTime createdAt,
     required DateTime lastModified,
     required String data,
+    required String? renderedFilePath,
+    required String? renderedThumbnailPath,
     int publishAttempts = 0,
     String? publishError,
   }) {
@@ -34,6 +36,8 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
         createdAt: createdAt,
         lastModified: lastModified,
         data: data,
+        renderedFilePath: Value(renderedFilePath),
+        renderedThumbnailPath: Value(renderedThumbnailPath),
       ),
     );
   }
@@ -165,5 +169,18 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
   /// Clear all drafts
   Future<int> clearAll() {
     return delete(drafts).go();
+  }
+
+  /// Check if a filename is referenced by any draft's
+  /// rendered_file_path or rendered_thumbnail_path.
+  Future<bool> isRenderedFileReferenced(String filename) async {
+    final query = selectOnly(drafts)
+      ..addColumns([drafts.id.count()])
+      ..where(
+        drafts.renderedFilePath.equals(filename) |
+            drafts.renderedThumbnailPath.equals(filename),
+      );
+    final result = await query.getSingle();
+    return (result.read(drafts.id.count()) ?? 0) > 0;
   }
 }

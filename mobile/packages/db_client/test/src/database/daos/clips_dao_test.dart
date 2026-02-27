@@ -33,6 +33,8 @@ void main() {
       publishStatus: 'draft',
       createdAt: DateTime(2023, 11, 14),
       lastModified: DateTime(2023, 11, 14),
+      renderedFilePath: 'test.mp4',
+      renderedThumbnailPath: 'thumbnail.jpeg',
       data: '{}',
     );
     await draftsDao.upsertDraft(
@@ -42,6 +44,8 @@ void main() {
       publishStatus: 'draft',
       createdAt: DateTime(2023, 11, 15),
       lastModified: DateTime(2023, 11, 15),
+      renderedFilePath: 'test.mp4',
+      renderedThumbnailPath: 'thumbnail.jpeg',
       data: '{}',
     );
   });
@@ -67,6 +71,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{"filePath":"video_1.mp4"}',
         );
 
@@ -86,6 +92,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{"filePath":"video_1.mp4"}',
         );
 
@@ -95,6 +103,8 @@ void main() {
           orderIndex: 1,
           durationMs: 5000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{"filePath":"video_1_updated.mp4"}',
         );
 
@@ -115,6 +125,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -123,6 +135,8 @@ void main() {
           orderIndex: 0,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -141,6 +155,8 @@ void main() {
           orderIndex: 2,
           durationMs: 1000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -149,6 +165,8 @@ void main() {
           orderIndex: 0,
           durationMs: 2000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -157,6 +175,8 @@ void main() {
           orderIndex: 1,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 12),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -178,6 +198,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -186,6 +208,8 @@ void main() {
           orderIndex: 0,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -203,6 +227,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{"filePath":"video.mp4"}',
         );
 
@@ -226,6 +252,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -234,6 +262,8 @@ void main() {
           orderIndex: 1,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 12),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -242,6 +272,8 @@ void main() {
           orderIndex: 0,
           durationMs: 5000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -259,6 +291,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -267,6 +301,8 @@ void main() {
           orderIndex: 1,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -275,6 +311,8 @@ void main() {
           orderIndex: 2,
           durationMs: 5000,
           recordedAt: DateTime(2023, 11, 14, 12),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -296,6 +334,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -324,6 +364,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -332,6 +374,8 @@ void main() {
           orderIndex: 1,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -350,6 +394,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -358,6 +404,8 @@ void main() {
           orderIndex: 1,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -383,6 +431,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -391,6 +441,8 @@ void main() {
           orderIndex: 1,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -399,6 +451,8 @@ void main() {
           orderIndex: 0,
           durationMs: 5000,
           recordedAt: DateTime(2023, 11, 14, 12),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -425,6 +479,8 @@ void main() {
           orderIndex: 1,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -433,6 +489,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -459,6 +517,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{"test": true}',
         );
 
@@ -484,6 +544,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -492,6 +554,8 @@ void main() {
           orderIndex: 1,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -500,6 +564,8 @@ void main() {
           orderIndex: 0,
           durationMs: 5000,
           recordedAt: DateTime(2023, 11, 14, 12),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -526,6 +592,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -534,6 +602,8 @@ void main() {
           orderIndex: 0,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -557,6 +627,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{"filePath":"library_video.mp4"}',
         );
 
@@ -572,6 +644,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -579,6 +653,8 @@ void main() {
           orderIndex: 0,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 12),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -587,6 +663,8 @@ void main() {
           orderIndex: 0,
           durationMs: 5000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -603,6 +681,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -610,6 +690,8 @@ void main() {
           orderIndex: 0,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -617,6 +699,8 @@ void main() {
           orderIndex: 0,
           durationMs: 5000,
           recordedAt: DateTime(2023, 11, 14, 12),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -631,6 +715,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -644,6 +730,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -652,6 +740,8 @@ void main() {
           orderIndex: 0,
           durationMs: 5000,
           recordedAt: DateTime(2023, 11, 14, 12),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -668,6 +758,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -675,6 +767,8 @@ void main() {
           orderIndex: 0,
           durationMs: 4000,
           recordedAt: DateTime(2023, 11, 14, 11),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
         await dao.upsertClip(
@@ -683,6 +777,8 @@ void main() {
           orderIndex: 0,
           durationMs: 5000,
           recordedAt: DateTime(2023, 11, 14, 12),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 
@@ -703,6 +799,8 @@ void main() {
           orderIndex: 0,
           durationMs: 3000,
           recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'test.mp4',
+          thumbnailPath: 'thumbnail.jpeg',
           data: '{}',
         );
 

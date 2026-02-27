@@ -17,6 +17,8 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     required int durationMs,
     required DateTime recordedAt,
     required String data,
+    required String? filePath,
+    required String? thumbnailPath,
     String? draftId,
   }) {
     return into(clips).insertOnConflictUpdate(
@@ -27,6 +29,8 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
         durationMs: durationMs,
         recordedAt: recordedAt,
         data: data,
+        filePath: Value(filePath),
+        thumbnailPath: Value(thumbnailPath),
       ),
     );
   }
@@ -148,5 +152,17 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
   /// Clear all clips
   Future<int> clearAll() {
     return delete(clips).go();
+  }
+
+  /// Check if a filename is referenced by any clip's file_path
+  /// or thumbnail_path.
+  Future<bool> isFileReferenced(String filename) async {
+    final query = selectOnly(clips)
+      ..addColumns([clips.id.count()])
+      ..where(
+        clips.filePath.equals(filename) | clips.thumbnailPath.equals(filename),
+      );
+    final result = await query.getSingle();
+    return (result.read(clips.id.count()) ?? 0) > 0;
   }
 }

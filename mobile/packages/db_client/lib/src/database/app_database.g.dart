@@ -6825,6 +6825,28 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _renderedFilePathMeta = const VerificationMeta(
+    'renderedFilePath',
+  );
+  @override
+  late final GeneratedColumn<String> renderedFilePath = GeneratedColumn<String>(
+    'rendered_file_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _renderedThumbnailPathMeta =
+      const VerificationMeta('renderedThumbnailPath');
+  @override
+  late final GeneratedColumn<String> renderedThumbnailPath =
+      GeneratedColumn<String>(
+        'rendered_thumbnail_path',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6836,6 +6858,8 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     createdAt,
     lastModified,
     data,
+    renderedFilePath,
+    renderedThumbnailPath,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6923,6 +6947,24 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     } else if (isInserting) {
       context.missing(_dataMeta);
     }
+    if (data.containsKey('rendered_file_path')) {
+      context.handle(
+        _renderedFilePathMeta,
+        renderedFilePath.isAcceptableOrUnknown(
+          data['rendered_file_path']!,
+          _renderedFilePathMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rendered_thumbnail_path')) {
+      context.handle(
+        _renderedThumbnailPathMeta,
+        renderedThumbnailPath.isAcceptableOrUnknown(
+          data['rendered_thumbnail_path']!,
+          _renderedThumbnailPathMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -6968,6 +7010,14 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         DriftSqlType.string,
         data['${effectivePrefix}data'],
       )!,
+      renderedFilePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rendered_file_path'],
+      ),
+      renderedThumbnailPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rendered_thumbnail_path'],
+      ),
     );
   }
 
@@ -7004,6 +7054,12 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
 
   /// Full JSON-serialized draft payload (clips, hashtags, editor state, etc.)
   final String data;
+
+  /// Basename of the final rendered video file (for indexed lookups)
+  final String? renderedFilePath;
+
+  /// Basename of the final rendered thumbnail (for indexed lookups)
+  final String? renderedThumbnailPath;
   const DraftRow({
     required this.id,
     required this.title,
@@ -7014,6 +7070,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     required this.createdAt,
     required this.lastModified,
     required this.data,
+    this.renderedFilePath,
+    this.renderedThumbnailPath,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7029,6 +7087,12 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     map['created_at'] = Variable<DateTime>(createdAt);
     map['last_modified'] = Variable<DateTime>(lastModified);
     map['data'] = Variable<String>(data);
+    if (!nullToAbsent || renderedFilePath != null) {
+      map['rendered_file_path'] = Variable<String>(renderedFilePath);
+    }
+    if (!nullToAbsent || renderedThumbnailPath != null) {
+      map['rendered_thumbnail_path'] = Variable<String>(renderedThumbnailPath);
+    }
     return map;
   }
 
@@ -7045,6 +7109,12 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       createdAt: Value(createdAt),
       lastModified: Value(lastModified),
       data: Value(data),
+      renderedFilePath: renderedFilePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(renderedFilePath),
+      renderedThumbnailPath: renderedThumbnailPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(renderedThumbnailPath),
     );
   }
 
@@ -7063,6 +7133,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       lastModified: serializer.fromJson<DateTime>(json['lastModified']),
       data: serializer.fromJson<String>(json['data']),
+      renderedFilePath: serializer.fromJson<String?>(json['renderedFilePath']),
+      renderedThumbnailPath: serializer.fromJson<String?>(
+        json['renderedThumbnailPath'],
+      ),
     );
   }
   @override
@@ -7078,6 +7152,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'lastModified': serializer.toJson<DateTime>(lastModified),
       'data': serializer.toJson<String>(data),
+      'renderedFilePath': serializer.toJson<String?>(renderedFilePath),
+      'renderedThumbnailPath': serializer.toJson<String?>(
+        renderedThumbnailPath,
+      ),
     };
   }
 
@@ -7091,6 +7169,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     DateTime? createdAt,
     DateTime? lastModified,
     String? data,
+    Value<String?> renderedFilePath = const Value.absent(),
+    Value<String?> renderedThumbnailPath = const Value.absent(),
   }) => DraftRow(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -7101,6 +7181,12 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     createdAt: createdAt ?? this.createdAt,
     lastModified: lastModified ?? this.lastModified,
     data: data ?? this.data,
+    renderedFilePath: renderedFilePath.present
+        ? renderedFilePath.value
+        : this.renderedFilePath,
+    renderedThumbnailPath: renderedThumbnailPath.present
+        ? renderedThumbnailPath.value
+        : this.renderedThumbnailPath,
   );
   DraftRow copyWithCompanion(DraftsCompanion data) {
     return DraftRow(
@@ -7123,6 +7209,12 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           ? data.lastModified.value
           : this.lastModified,
       data: data.data.present ? data.data.value : this.data,
+      renderedFilePath: data.renderedFilePath.present
+          ? data.renderedFilePath.value
+          : this.renderedFilePath,
+      renderedThumbnailPath: data.renderedThumbnailPath.present
+          ? data.renderedThumbnailPath.value
+          : this.renderedThumbnailPath,
     );
   }
 
@@ -7137,7 +7229,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           ..write('publishError: $publishError, ')
           ..write('createdAt: $createdAt, ')
           ..write('lastModified: $lastModified, ')
-          ..write('data: $data')
+          ..write('data: $data, ')
+          ..write('renderedFilePath: $renderedFilePath, ')
+          ..write('renderedThumbnailPath: $renderedThumbnailPath')
           ..write(')'))
         .toString();
   }
@@ -7153,6 +7247,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     createdAt,
     lastModified,
     data,
+    renderedFilePath,
+    renderedThumbnailPath,
   );
   @override
   bool operator ==(Object other) =>
@@ -7166,7 +7262,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           other.publishError == this.publishError &&
           other.createdAt == this.createdAt &&
           other.lastModified == this.lastModified &&
-          other.data == this.data);
+          other.data == this.data &&
+          other.renderedFilePath == this.renderedFilePath &&
+          other.renderedThumbnailPath == this.renderedThumbnailPath);
 }
 
 class DraftsCompanion extends UpdateCompanion<DraftRow> {
@@ -7179,6 +7277,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   final Value<DateTime> createdAt;
   final Value<DateTime> lastModified;
   final Value<String> data;
+  final Value<String?> renderedFilePath;
+  final Value<String?> renderedThumbnailPath;
   final Value<int> rowid;
   const DraftsCompanion({
     this.id = const Value.absent(),
@@ -7190,6 +7290,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     this.createdAt = const Value.absent(),
     this.lastModified = const Value.absent(),
     this.data = const Value.absent(),
+    this.renderedFilePath = const Value.absent(),
+    this.renderedThumbnailPath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DraftsCompanion.insert({
@@ -7202,6 +7304,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     required DateTime createdAt,
     required DateTime lastModified,
     required String data,
+    this.renderedFilePath = const Value.absent(),
+    this.renderedThumbnailPath = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -7217,6 +7321,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Expression<DateTime>? createdAt,
     Expression<DateTime>? lastModified,
     Expression<String>? data,
+    Expression<String>? renderedFilePath,
+    Expression<String>? renderedThumbnailPath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7229,6 +7335,9 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       if (createdAt != null) 'created_at': createdAt,
       if (lastModified != null) 'last_modified': lastModified,
       if (data != null) 'data': data,
+      if (renderedFilePath != null) 'rendered_file_path': renderedFilePath,
+      if (renderedThumbnailPath != null)
+        'rendered_thumbnail_path': renderedThumbnailPath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7243,6 +7352,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Value<DateTime>? createdAt,
     Value<DateTime>? lastModified,
     Value<String>? data,
+    Value<String?>? renderedFilePath,
+    Value<String?>? renderedThumbnailPath,
     Value<int>? rowid,
   }) {
     return DraftsCompanion(
@@ -7255,6 +7366,9 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       createdAt: createdAt ?? this.createdAt,
       lastModified: lastModified ?? this.lastModified,
       data: data ?? this.data,
+      renderedFilePath: renderedFilePath ?? this.renderedFilePath,
+      renderedThumbnailPath:
+          renderedThumbnailPath ?? this.renderedThumbnailPath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7289,6 +7403,14 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     if (data.present) {
       map['data'] = Variable<String>(data.value);
     }
+    if (renderedFilePath.present) {
+      map['rendered_file_path'] = Variable<String>(renderedFilePath.value);
+    }
+    if (renderedThumbnailPath.present) {
+      map['rendered_thumbnail_path'] = Variable<String>(
+        renderedThumbnailPath.value,
+      );
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7307,6 +7429,8 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
           ..write('createdAt: $createdAt, ')
           ..write('lastModified: $lastModified, ')
           ..write('data: $data, ')
+          ..write('renderedFilePath: $renderedFilePath, ')
+          ..write('renderedThumbnailPath: $renderedThumbnailPath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7381,6 +7505,28 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _thumbnailPathMeta = const VerificationMeta(
+    'thumbnailPath',
+  );
+  @override
+  late final GeneratedColumn<String> thumbnailPath = GeneratedColumn<String>(
+    'thumbnail_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7389,6 +7535,8 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     durationMs,
     recordedAt,
     data,
+    filePath,
+    thumbnailPath,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7443,6 +7591,21 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     } else if (isInserting) {
       context.missing(_dataMeta);
     }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    }
+    if (data.containsKey('thumbnail_path')) {
+      context.handle(
+        _thumbnailPathMeta,
+        thumbnailPath.isAcceptableOrUnknown(
+          data['thumbnail_path']!,
+          _thumbnailPathMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7476,6 +7639,14 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         DriftSqlType.string,
         data['${effectivePrefix}data'],
       )!,
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      ),
+      thumbnailPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thumbnail_path'],
+      ),
     );
   }
 
@@ -7504,6 +7675,12 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
   /// Full JSON-serialized clip payload (file path, thumbnail, lens metadata,
   /// aspect ratio, etc.)
   final String data;
+
+  /// Basename of the video file (for indexed lookups)
+  final String? filePath;
+
+  /// Basename of the thumbnail file (for indexed lookups)
+  final String? thumbnailPath;
   const ClipRow({
     required this.id,
     this.draftId,
@@ -7511,6 +7688,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     required this.durationMs,
     required this.recordedAt,
     required this.data,
+    this.filePath,
+    this.thumbnailPath,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7523,6 +7702,12 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     map['duration_ms'] = Variable<int>(durationMs);
     map['recorded_at'] = Variable<DateTime>(recordedAt);
     map['data'] = Variable<String>(data);
+    if (!nullToAbsent || filePath != null) {
+      map['file_path'] = Variable<String>(filePath);
+    }
+    if (!nullToAbsent || thumbnailPath != null) {
+      map['thumbnail_path'] = Variable<String>(thumbnailPath);
+    }
     return map;
   }
 
@@ -7536,6 +7721,12 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       durationMs: Value(durationMs),
       recordedAt: Value(recordedAt),
       data: Value(data),
+      filePath: filePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filePath),
+      thumbnailPath: thumbnailPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailPath),
     );
   }
 
@@ -7551,6 +7742,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       durationMs: serializer.fromJson<int>(json['durationMs']),
       recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
       data: serializer.fromJson<String>(json['data']),
+      filePath: serializer.fromJson<String?>(json['filePath']),
+      thumbnailPath: serializer.fromJson<String?>(json['thumbnailPath']),
     );
   }
   @override
@@ -7563,6 +7756,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       'durationMs': serializer.toJson<int>(durationMs),
       'recordedAt': serializer.toJson<DateTime>(recordedAt),
       'data': serializer.toJson<String>(data),
+      'filePath': serializer.toJson<String?>(filePath),
+      'thumbnailPath': serializer.toJson<String?>(thumbnailPath),
     };
   }
 
@@ -7573,6 +7768,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     int? durationMs,
     DateTime? recordedAt,
     String? data,
+    Value<String?> filePath = const Value.absent(),
+    Value<String?> thumbnailPath = const Value.absent(),
   }) => ClipRow(
     id: id ?? this.id,
     draftId: draftId.present ? draftId.value : this.draftId,
@@ -7580,6 +7777,10 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     durationMs: durationMs ?? this.durationMs,
     recordedAt: recordedAt ?? this.recordedAt,
     data: data ?? this.data,
+    filePath: filePath.present ? filePath.value : this.filePath,
+    thumbnailPath: thumbnailPath.present
+        ? thumbnailPath.value
+        : this.thumbnailPath,
   );
   ClipRow copyWithCompanion(ClipsCompanion data) {
     return ClipRow(
@@ -7595,6 +7796,10 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           ? data.recordedAt.value
           : this.recordedAt,
       data: data.data.present ? data.data.value : this.data,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      thumbnailPath: data.thumbnailPath.present
+          ? data.thumbnailPath.value
+          : this.thumbnailPath,
     );
   }
 
@@ -7606,14 +7811,24 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           ..write('orderIndex: $orderIndex, ')
           ..write('durationMs: $durationMs, ')
           ..write('recordedAt: $recordedAt, ')
-          ..write('data: $data')
+          ..write('data: $data, ')
+          ..write('filePath: $filePath, ')
+          ..write('thumbnailPath: $thumbnailPath')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, draftId, orderIndex, durationMs, recordedAt, data);
+  int get hashCode => Object.hash(
+    id,
+    draftId,
+    orderIndex,
+    durationMs,
+    recordedAt,
+    data,
+    filePath,
+    thumbnailPath,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -7623,7 +7838,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           other.orderIndex == this.orderIndex &&
           other.durationMs == this.durationMs &&
           other.recordedAt == this.recordedAt &&
-          other.data == this.data);
+          other.data == this.data &&
+          other.filePath == this.filePath &&
+          other.thumbnailPath == this.thumbnailPath);
 }
 
 class ClipsCompanion extends UpdateCompanion<ClipRow> {
@@ -7633,6 +7850,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
   final Value<int> durationMs;
   final Value<DateTime> recordedAt;
   final Value<String> data;
+  final Value<String?> filePath;
+  final Value<String?> thumbnailPath;
   final Value<int> rowid;
   const ClipsCompanion({
     this.id = const Value.absent(),
@@ -7641,6 +7860,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     this.durationMs = const Value.absent(),
     this.recordedAt = const Value.absent(),
     this.data = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.thumbnailPath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ClipsCompanion.insert({
@@ -7650,6 +7871,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     required int durationMs,
     required DateTime recordedAt,
     required String data,
+    this.filePath = const Value.absent(),
+    this.thumbnailPath = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        durationMs = Value(durationMs),
@@ -7662,6 +7885,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Expression<int>? durationMs,
     Expression<DateTime>? recordedAt,
     Expression<String>? data,
+    Expression<String>? filePath,
+    Expression<String>? thumbnailPath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7671,6 +7896,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       if (durationMs != null) 'duration_ms': durationMs,
       if (recordedAt != null) 'recorded_at': recordedAt,
       if (data != null) 'data': data,
+      if (filePath != null) 'file_path': filePath,
+      if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7682,6 +7909,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Value<int>? durationMs,
     Value<DateTime>? recordedAt,
     Value<String>? data,
+    Value<String?>? filePath,
+    Value<String?>? thumbnailPath,
     Value<int>? rowid,
   }) {
     return ClipsCompanion(
@@ -7691,6 +7920,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       durationMs: durationMs ?? this.durationMs,
       recordedAt: recordedAt ?? this.recordedAt,
       data: data ?? this.data,
+      filePath: filePath ?? this.filePath,
+      thumbnailPath: thumbnailPath ?? this.thumbnailPath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7716,6 +7947,12 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     if (data.present) {
       map['data'] = Variable<String>(data.value);
     }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (thumbnailPath.present) {
+      map['thumbnail_path'] = Variable<String>(thumbnailPath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7731,6 +7968,8 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
           ..write('durationMs: $durationMs, ')
           ..write('recordedAt: $recordedAt, ')
           ..write('data: $data, ')
+          ..write('filePath: $filePath, ')
+          ..write('thumbnailPath: $thumbnailPath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -11094,6 +11333,8 @@ typedef $$DraftsTableCreateCompanionBuilder =
       required DateTime createdAt,
       required DateTime lastModified,
       required String data,
+      Value<String?> renderedFilePath,
+      Value<String?> renderedThumbnailPath,
       Value<int> rowid,
     });
 typedef $$DraftsTableUpdateCompanionBuilder =
@@ -11107,6 +11348,8 @@ typedef $$DraftsTableUpdateCompanionBuilder =
       Value<DateTime> createdAt,
       Value<DateTime> lastModified,
       Value<String> data,
+      Value<String?> renderedFilePath,
+      Value<String?> renderedThumbnailPath,
       Value<int> rowid,
     });
 
@@ -11161,6 +11404,16 @@ class $$DraftsTableFilterComposer
 
   ColumnFilters<String> get data => $composableBuilder(
     column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get renderedFilePath => $composableBuilder(
+    column: $table.renderedFilePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get renderedThumbnailPath => $composableBuilder(
+    column: $table.renderedThumbnailPath,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11218,6 +11471,16 @@ class $$DraftsTableOrderingComposer
     column: $table.data,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get renderedFilePath => $composableBuilder(
+    column: $table.renderedFilePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get renderedThumbnailPath => $composableBuilder(
+    column: $table.renderedThumbnailPath,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DraftsTableAnnotationComposer
@@ -11265,6 +11528,16 @@ class $$DraftsTableAnnotationComposer
 
   GeneratedColumn<String> get data =>
       $composableBuilder(column: $table.data, builder: (column) => column);
+
+  GeneratedColumn<String> get renderedFilePath => $composableBuilder(
+    column: $table.renderedFilePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get renderedThumbnailPath => $composableBuilder(
+    column: $table.renderedThumbnailPath,
+    builder: (column) => column,
+  );
 }
 
 class $$DraftsTableTableManager
@@ -11304,6 +11577,8 @@ class $$DraftsTableTableManager
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> lastModified = const Value.absent(),
                 Value<String> data = const Value.absent(),
+                Value<String?> renderedFilePath = const Value.absent(),
+                Value<String?> renderedThumbnailPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion(
                 id: id,
@@ -11315,6 +11590,8 @@ class $$DraftsTableTableManager
                 createdAt: createdAt,
                 lastModified: lastModified,
                 data: data,
+                renderedFilePath: renderedFilePath,
+                renderedThumbnailPath: renderedThumbnailPath,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11328,6 +11605,8 @@ class $$DraftsTableTableManager
                 required DateTime createdAt,
                 required DateTime lastModified,
                 required String data,
+                Value<String?> renderedFilePath = const Value.absent(),
+                Value<String?> renderedThumbnailPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion.insert(
                 id: id,
@@ -11339,6 +11618,8 @@ class $$DraftsTableTableManager
                 createdAt: createdAt,
                 lastModified: lastModified,
                 data: data,
+                renderedFilePath: renderedFilePath,
+                renderedThumbnailPath: renderedThumbnailPath,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -11371,6 +11652,8 @@ typedef $$ClipsTableCreateCompanionBuilder =
       required int durationMs,
       required DateTime recordedAt,
       required String data,
+      Value<String?> filePath,
+      Value<String?> thumbnailPath,
       Value<int> rowid,
     });
 typedef $$ClipsTableUpdateCompanionBuilder =
@@ -11381,6 +11664,8 @@ typedef $$ClipsTableUpdateCompanionBuilder =
       Value<int> durationMs,
       Value<DateTime> recordedAt,
       Value<String> data,
+      Value<String?> filePath,
+      Value<String?> thumbnailPath,
       Value<int> rowid,
     });
 
@@ -11419,6 +11704,16 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
 
   ColumnFilters<String> get data => $composableBuilder(
     column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get thumbnailPath => $composableBuilder(
+    column: $table.thumbnailPath,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11461,6 +11756,16 @@ class $$ClipsTableOrderingComposer
     column: $table.data,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get thumbnailPath => $composableBuilder(
+    column: $table.thumbnailPath,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ClipsTableAnnotationComposer
@@ -11495,6 +11800,14 @@ class $$ClipsTableAnnotationComposer
 
   GeneratedColumn<String> get data =>
       $composableBuilder(column: $table.data, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbnailPath => $composableBuilder(
+    column: $table.thumbnailPath,
+    builder: (column) => column,
+  );
 }
 
 class $$ClipsTableTableManager
@@ -11531,6 +11844,8 @@ class $$ClipsTableTableManager
                 Value<int> durationMs = const Value.absent(),
                 Value<DateTime> recordedAt = const Value.absent(),
                 Value<String> data = const Value.absent(),
+                Value<String?> filePath = const Value.absent(),
+                Value<String?> thumbnailPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion(
                 id: id,
@@ -11539,6 +11854,8 @@ class $$ClipsTableTableManager
                 durationMs: durationMs,
                 recordedAt: recordedAt,
                 data: data,
+                filePath: filePath,
+                thumbnailPath: thumbnailPath,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11549,6 +11866,8 @@ class $$ClipsTableTableManager
                 required int durationMs,
                 required DateTime recordedAt,
                 required String data,
+                Value<String?> filePath = const Value.absent(),
+                Value<String?> thumbnailPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion.insert(
                 id: id,
@@ -11557,6 +11876,8 @@ class $$ClipsTableTableManager
                 durationMs: durationMs,
                 recordedAt: recordedAt,
                 data: data,
+                filePath: filePath,
+                thumbnailPath: thumbnailPath,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

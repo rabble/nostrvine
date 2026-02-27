@@ -510,6 +510,14 @@ class Drafts extends Table {
   /// Full JSON-serialized draft payload (clips, hashtags, editor state, etc.)
   TextColumn get data => text()();
 
+  /// Basename of the final rendered video file (for indexed lookups)
+  TextColumn get renderedFilePath =>
+      text().nullable().named('rendered_file_path')();
+
+  /// Basename of the final rendered thumbnail (for indexed lookups)
+  TextColumn get renderedThumbnailPath =>
+      text().nullable().named('rendered_thumbnail_path')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -528,6 +536,16 @@ class Drafts extends Table {
       'idx_draft_created_at',
       'CREATE INDEX IF NOT EXISTS idx_draft_created_at '
           'ON drafts (created_at DESC)',
+    ),
+    Index(
+      'idx_draft_rendered_file_path',
+      'CREATE INDEX IF NOT EXISTS idx_draft_rendered_file_path '
+          'ON drafts (rendered_file_path)',
+    ),
+    Index(
+      'idx_draft_rendered_thumbnail_path',
+      'CREATE INDEX IF NOT EXISTS idx_draft_rendered_thumbnail_path '
+          'ON drafts (rendered_thumbnail_path)',
     ),
   ];
 }
@@ -563,6 +581,13 @@ class Clips extends Table {
   /// aspect ratio, etc.)
   TextColumn get data => text()();
 
+  /// Basename of the video file (for indexed lookups)
+  TextColumn get filePath => text().nullable().named('file_path')();
+
+  /// Basename of the thumbnail file (for indexed lookups)
+  TextColumn get thumbnailPath =>
+      text().nullable().named('thumbnail_path')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -594,6 +619,16 @@ class Clips extends Table {
       'idx_clip_recorded_at',
       'CREATE INDEX IF NOT EXISTS idx_clip_recorded_at '
           'ON clips (recorded_at DESC)',
+    ),
+    Index(
+      'idx_clip_file_path',
+      'CREATE INDEX IF NOT EXISTS idx_clip_file_path '
+          'ON clips (file_path)',
+    ),
+    Index(
+      'idx_clip_thumbnail_path',
+      'CREATE INDEX IF NOT EXISTS idx_clip_thumbnail_path '
+          'ON clips (thumbnail_path)',
     ),
   ];
 }

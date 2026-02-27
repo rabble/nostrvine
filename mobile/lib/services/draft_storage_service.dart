@@ -11,6 +11,7 @@ import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DraftStorageService {
@@ -55,6 +56,16 @@ class DraftStorageService {
           publishAttempts: draft.publishAttempts,
           publishError: draft.publishError,
           data: json.encode(draftJson),
+          renderedFilePath: draft.finalRenderedClip?.video.file?.path != null
+              ? p.basename(
+                  draft.finalRenderedClip!.video.file!.path,
+                )
+              : null,
+          renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
+              ? p.basename(
+                  draft.finalRenderedClip!.thumbnailPath!,
+                )
+              : null,
         );
 
         // Insert clips
@@ -67,6 +78,12 @@ class DraftStorageService {
             durationMs: clip.duration.inMilliseconds,
             recordedAt: clip.recordedAt,
             data: json.encode(clip.toJson()),
+            filePath: clip.video.file?.path != null
+                ? p.basename(clip.video.file!.path)
+                : null,
+            thumbnailPath: clip.thumbnailPath != null
+                ? p.basename(clip.thumbnailPath!)
+                : null,
           );
         }
       } catch (e) {
@@ -148,6 +165,12 @@ class DraftStorageService {
       publishAttempts: draft.publishAttempts,
       publishError: draft.publishError,
       data: json.encode(draftJson),
+      renderedFilePath: draft.finalRenderedClip?.video.file?.path != null
+          ? p.basename(draft.finalRenderedClip!.video.file!.path)
+          : null,
+      renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
+          ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
+          : null,
     );
 
     // Replace all clips: delete old, insert new
@@ -161,6 +184,12 @@ class DraftStorageService {
         durationMs: clip.duration.inMilliseconds,
         recordedAt: clip.recordedAt,
         data: json.encode(clip.toJson()),
+        filePath: clip.video.file?.path != null
+            ? p.basename(clip.video.file!.path)
+            : null,
+        thumbnailPath: clip.thumbnailPath != null
+            ? p.basename(clip.thumbnailPath!)
+            : null,
       );
     }
   }

@@ -229,6 +229,74 @@ class AppDatabase extends _$AppDatabase {
         ON clips (draft_id) WHERE draft_id IS NULL
       ''');
     }
+
+    // Add file_path / thumbnail_path columns to clips (if missing)
+    await _addColumnIfMissing('clips', 'file_path', 'TEXT');
+    await _addColumnIfMissing('clips', 'thumbnail_path', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_file_path
+      ON clips (file_path)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_thumbnail_path
+      ON clips (thumbnail_path)
+    ''');
+
+    // Add rendered_file_path / rendered_thumbnail_path to drafts (if missing)
+    await _addColumnIfMissing('drafts', 'rendered_file_path', 'TEXT');
+    await _addColumnIfMissing('drafts', 'rendered_thumbnail_path', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_draft_rendered_file_path
+      ON drafts (rendered_file_path)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_draft_rendered_thumbnail_path
+      ON drafts (rendered_thumbnail_path)
+    ''');
+
+    // Populate new columns from existing JSON data blobs
+    await _backfillFilePathColumns();
+  }
+
+  /// Adds a column to a table if it does not already exist.
+  Future<void> _addColumnIfMissing(
+    String table,
+    String column,
+    String type,
+  ) async {
+    final columns = await customSelect(
+      'PRAGMA table_info($table)',
+    ).get();
+    final exists = columns.any(
+      (row) => row.read<String>('name') == column,
+    );
+    if (!exists) {
+      await customStatement('ALTER TABLE $table ADD COLUMN $column $type');
+    }
+  }
+
+  /// Populates file_path / thumbnail_path columns from JSON data blobs
+  /// for rows where they are still NULL.
+  Future<void> _backfillFilePathColumns() async {
+    // Clips: extract filePath and thumbnailPath from JSON data
+    await customStatement(r'''
+      UPDATE clips
+      SET file_path = json_extract(data, '$.filePath'),
+          thumbnail_path = json_extract(data, '$.thumbnailPath')
+      WHERE file_path IS NULL
+    ''');
+
+    // Drafts: extract finalRenderedClip paths from JSON data
+    await customStatement(r'''
+      UPDATE drafts
+      SET rendered_file_path = json_extract(
+            data, '$.finalRenderedClip.filePath'
+          ),
+          rendered_thumbnail_path = json_extract(
+            data, '$.finalRenderedClip.thumbnailPath'
+          )
+      WHERE rendered_file_path IS NULL
+    ''');
   }
 
   /// Runs cleanup of expired data from all tables.
