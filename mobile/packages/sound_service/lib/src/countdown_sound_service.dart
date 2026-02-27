@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:developer' as developer;
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -66,12 +66,12 @@ class CountdownSoundService {
         _longBeepPlayer!.setAsset(longBeepAsset),
       ]);
 
-      developer.log(
+      log(
         'Countdown sounds preloaded',
         name: 'CountdownSoundService',
       );
     } on Exception catch (e) {
-      developer.log(
+      log(
         'Failed to preload countdown sounds: $e',
         name: 'CountdownSoundService',
         level: 900,
@@ -93,7 +93,7 @@ class CountdownSoundService {
       await _shortBeepPlayer!.seek(Duration.zero);
       await _shortBeepPlayer!.play();
     } on Exception catch (e) {
-      developer.log(
+      log(
         'Failed to play short countdown beep: $e',
         name: 'CountdownSoundService',
         level: 900,
@@ -112,7 +112,7 @@ class CountdownSoundService {
       await _longBeepPlayer!.seek(Duration.zero);
       await _longBeepPlayer!.play();
     } on Exception catch (e) {
-      developer.log(
+      log(
         'Failed to play long countdown beep: $e',
         name: 'CountdownSoundService',
         level: 900,
