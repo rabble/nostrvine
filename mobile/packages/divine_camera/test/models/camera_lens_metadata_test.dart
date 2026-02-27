@@ -7,21 +7,21 @@ void main() {
       lensType: 'back',
       cameraId: '0',
       focalLength: 4.25,
-      focalLengthEquivalent35mm: 26.0,
+      focalLengthEquivalent35mm: 26,
       aperture: 1.8,
       sensorWidth: 5.6,
       sensorHeight: 4.2,
       pixelArrayWidth: 4032,
       pixelArrayHeight: 3024,
-      minFocusDistance: 10.0,
-      fieldOfView: 78.0,
+      minFocusDistance: 10,
+      fieldOfView: 78,
       hasOpticalStabilization: true,
       isLogicalCamera: true,
       physicalCameraIds: ['0', '2'],
       exposureDuration: 0.033,
       exposureTimeMin: 0.00001,
       exposureTimeMax: 0.25,
-      iso: 100.0,
+      iso: 100,
       isoMin: 50,
       isoMax: 3200,
     );
@@ -35,21 +35,21 @@ void main() {
             lensType: 'back',
             cameraId: '0',
             focalLength: 4.25,
-            focalLengthEquivalent35mm: 26.0,
+            focalLengthEquivalent35mm: 26,
             aperture: 1.8,
             sensorWidth: 5.6,
             sensorHeight: 4.2,
             pixelArrayWidth: 4032,
             pixelArrayHeight: 3024,
-            minFocusDistance: 10.0,
-            fieldOfView: 78.0,
+            minFocusDistance: 10,
+            fieldOfView: 78,
             hasOpticalStabilization: true,
             isLogicalCamera: true,
             physicalCameraIds: ['0', '2'],
             exposureDuration: 0.033,
             exposureTimeMin: 0.00001,
             exposureTimeMax: 0.25,
-            iso: 100.0,
+            iso: 100,
             isoMin: 50,
             isoMax: 3200,
           );
@@ -71,13 +71,13 @@ void main() {
       });
 
       test('different exposureTimeMax produces inequality', () {
-        final other = metadata.copyWith(exposureTimeMax: 1.0);
+        final other = metadata.copyWith(exposureTimeMax: 1);
 
         expect(metadata, isNot(equals(other)));
       });
 
       test('different iso produces inequality', () {
-        final other = metadata.copyWith(iso: 200.0);
+        final other = metadata.copyWith(iso: 200);
 
         expect(metadata, isNot(equals(other)));
       });
@@ -115,13 +115,13 @@ void main() {
       });
 
       test('replaces focalLength', () {
-        final copy = metadata.copyWith(focalLength: 6.0);
+        final copy = metadata.copyWith(focalLength: 6);
 
         expect(copy.focalLength, equals(6.0));
       });
 
       test('replaces focalLengthEquivalent35mm', () {
-        final copy = metadata.copyWith(focalLengthEquivalent35mm: 52.0);
+        final copy = metadata.copyWith(focalLengthEquivalent35mm: 52);
 
         expect(copy.focalLengthEquivalent35mm, equals(52.0));
       });
@@ -133,13 +133,13 @@ void main() {
       });
 
       test('replaces sensorWidth', () {
-        final copy = metadata.copyWith(sensorWidth: 7.0);
+        final copy = metadata.copyWith(sensorWidth: 7);
 
         expect(copy.sensorWidth, equals(7.0));
       });
 
       test('replaces sensorHeight', () {
-        final copy = metadata.copyWith(sensorHeight: 5.0);
+        final copy = metadata.copyWith(sensorHeight: 5);
 
         expect(copy.sensorHeight, equals(5.0));
       });
@@ -157,13 +157,13 @@ void main() {
       });
 
       test('replaces minFocusDistance', () {
-        final copy = metadata.copyWith(minFocusDistance: 25.0);
+        final copy = metadata.copyWith(minFocusDistance: 25);
 
         expect(copy.minFocusDistance, equals(25.0));
       });
 
       test('replaces fieldOfView', () {
-        final copy = metadata.copyWith(fieldOfView: 120.0);
+        final copy = metadata.copyWith(fieldOfView: 120);
 
         expect(copy.fieldOfView, equals(120.0));
       });
@@ -199,13 +199,13 @@ void main() {
       });
 
       test('replaces exposureTimeMax', () {
-        final copy = metadata.copyWith(exposureTimeMax: 1.0);
+        final copy = metadata.copyWith(exposureTimeMax: 1);
 
         expect(copy.exposureTimeMax, equals(1.0));
       });
 
       test('replaces iso', () {
-        final copy = metadata.copyWith(iso: 200.0);
+        final copy = metadata.copyWith(iso: 200);
 
         expect(copy.iso, equals(200.0));
       });
