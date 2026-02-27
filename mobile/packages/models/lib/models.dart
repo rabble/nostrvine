@@ -24,6 +24,7 @@ export 'src/notification_model.dart';
 export 'src/paginated_pubkeys.dart';
 export 'src/pending_upload.dart';
 export 'src/profile_search_result.dart';
+export 'src/profile_stats.dart';
 export 'src/ready_event_data.dart';
 export 'src/recommendations_response.dart';
 export 'src/social_counts.dart';

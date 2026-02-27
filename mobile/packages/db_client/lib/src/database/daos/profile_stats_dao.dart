@@ -73,6 +73,18 @@ class ProfileStatsDao extends DatabaseAccessor<AppDatabase>
         .go();
   }
 
+  /// Watch stats for a pubkey.
+  ///
+  /// Returns a stream that emits the current [ProfileStatRow] whenever
+  /// the row changes in the database. Emits `null` if no row exists.
+  ///
+  /// Unlike [getStats], this does not check expiry — consumers are
+  /// responsible for interpreting [ProfileStatRow.cachedAt].
+  Stream<ProfileStatRow?> watchStats(String pubkey) {
+    final query = select(profileStats)..where((t) => t.pubkey.equals(pubkey));
+    return query.watchSingleOrNull();
+  }
+
   /// Clear all profile stats
   Future<int> clearAll() {
     return delete(profileStats).go();

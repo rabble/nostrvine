@@ -1,6 +1,7 @@
 import 'dart:convert';
 
-import 'package:db_client/db_client.dart';
+// Hide Drift table class to avoid collision with ProfileStats domain model.
+import 'package:db_client/db_client.dart' hide ProfileStats;
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,6 +18,8 @@ class MockEvent extends Mock implements Event {}
 class MockUserProfilesDao extends Mock implements UserProfilesDao {}
 
 class MockHttpClient extends Mock implements Client {}
+
+class MockProfileStatsDao extends Mock implements ProfileStatsDao {}
 
 class MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
@@ -192,6 +195,169 @@ void main() {
 
         expect(result, isEmpty);
       });
+    });
+
+    group('watchProfile', () {
+      test('emits profile from DAO stream', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        when(
+          () => mockUserProfilesDao.watchProfile(any()),
+        ).thenAnswer((_) => Stream.value(profile));
+
+        final stream = profileRepository.watchProfile(pubkey: testPubkey);
+
+        await expectLater(stream, emits(equals(profile)));
+        verify(() => mockUserProfilesDao.watchProfile(testPubkey)).called(1);
+      });
+
+      test('emits null when no cached profile exists', () async {
+        when(
+          () => mockUserProfilesDao.watchProfile(any()),
+        ).thenAnswer((_) => Stream.value(null));
+
+        final stream = profileRepository.watchProfile(pubkey: testPubkey);
+
+        await expectLater(stream, emits(isNull));
+      });
+
+      test('emits updates when profile changes', () async {
+        final profile1 = UserProfile.fromNostrEvent(mockProfileEvent);
+        when(() => mockProfileEvent.content).thenReturn(
+          jsonEncode({
+            'display_name': 'Updated User',
+            'about': 'Updated bio',
+          }),
+        );
+        final profile2 = UserProfile.fromNostrEvent(mockProfileEvent);
+
+        when(
+          () => mockUserProfilesDao.watchProfile(any()),
+        ).thenAnswer((_) => Stream.fromIterable([profile1, profile2]));
+
+        final stream = profileRepository.watchProfile(pubkey: testPubkey);
+
+        await expectLater(
+          stream,
+          emitsInOrder([
+            isA<UserProfile>().having(
+              (p) => p.displayName,
+              'displayName',
+              equals('Test User'),
+            ),
+            isA<UserProfile>().having(
+              (p) => p.displayName,
+              'displayName',
+              equals('Updated User'),
+            ),
+          ]),
+        );
+      });
+    });
+
+    group('watchProfileStats', () {
+      late MockProfileStatsDao mockProfileStatsDao;
+      late ProfileRepository profileRepository;
+
+      setUp(() {
+        mockProfileStatsDao = MockProfileStatsDao();
+        profileRepository = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          profileStatsDao: mockProfileStatsDao,
+        );
+      });
+
+      test('maps ProfileStatRow to ProfileStats domain model', () async {
+        final row = ProfileStatRow(
+          pubkey: testPubkey,
+          videoCount: 5,
+          followerCount: 100,
+          followingCount: 50,
+          totalViews: 1000,
+          totalLikes: 200,
+          cachedAt: DateTime(2026),
+        );
+        when(
+          () => mockProfileStatsDao.watchStats(any()),
+        ).thenAnswer((_) => Stream.value(row));
+
+        final stream = profileRepository.watchProfileStats(
+          pubkey: testPubkey,
+        );
+
+        await expectLater(
+          stream,
+          emits(
+            equals(
+              ProfileStats(
+                pubkey: testPubkey,
+                videoCount: 5,
+                totalLikes: 200,
+                followers: 100,
+                following: 50,
+                totalViews: 1000,
+                lastUpdated: DateTime(2026),
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('emits null when no stats exist', () async {
+        when(
+          () => mockProfileStatsDao.watchStats(any()),
+        ).thenAnswer((_) => Stream.value(null));
+
+        final stream = profileRepository.watchProfileStats(
+          pubkey: testPubkey,
+        );
+
+        await expectLater(stream, emits(isNull));
+      });
+
+      test('defaults nullable int fields to zero', () async {
+        final row = ProfileStatRow(
+          pubkey: testPubkey,
+          cachedAt: DateTime(2026),
+        );
+        when(
+          () => mockProfileStatsDao.watchStats(any()),
+        ).thenAnswer((_) => Stream.value(row));
+
+        final stream = profileRepository.watchProfileStats(
+          pubkey: testPubkey,
+        );
+
+        await expectLater(
+          stream,
+          emits(
+            isA<ProfileStats>()
+                .having((s) => s.videoCount, 'videoCount', equals(0))
+                .having((s) => s.totalLikes, 'totalLikes', equals(0))
+                .having((s) => s.followers, 'followers', equals(0))
+                .having((s) => s.following, 'following', equals(0))
+                .having((s) => s.totalViews, 'totalViews', equals(0)),
+          ),
+        );
+      });
+
+      test(
+        'returns empty stream when ProfileStatsDao not injected',
+        () async {
+          final repoWithoutStats = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+          );
+
+          final stream = repoWithoutStats.watchProfileStats(
+            pubkey: testPubkey,
+          );
+
+          await expectLater(stream, emitsDone);
+        },
+      );
     });
 
     group('fetchFreshProfile', () {
