@@ -176,7 +176,7 @@ void main() {
 
       // Corrupt the box file by writing garbage
       final boxFile = File('$testBoxPath/pending_uploads.hive');
-      if (await boxFile.exists()) {
+      if (boxFile.existsSync()) {
         await boxFile.writeAsString('CORRUPTED DATA');
       }
 

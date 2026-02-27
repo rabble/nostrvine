@@ -88,7 +88,7 @@ void main() {
       testVideoFile = File('test_video_upload_success.mp4');
 
       // Check if test video exists
-      if (!await testVideoFile.exists()) {
+      if (!testVideoFile.existsSync()) {
         print('⚠️  Test video not found: ${testVideoFile.path}');
         print(
           '   Please ensure test_video_upload_success.mp4 exists in the project root',
@@ -117,7 +117,7 @@ void main() {
     tearDownAll(() async {
       // Only delete if we created a minimal test file (not the real test video)
       if (testVideoFile.path.startsWith('test_e2e_video_') &&
-          await testVideoFile.exists()) {
+          testVideoFile.existsSync()) {
         await testVideoFile.delete();
         print('🗑️  Cleaned up test video');
       }

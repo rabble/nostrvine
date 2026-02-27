@@ -321,6 +321,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         originalAspectRatio: 9 / 16,
       );
     }
+    if (!mounted) return;
 
     if (widget.selectionMode) {
       context.pop();

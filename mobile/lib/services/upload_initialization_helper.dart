@@ -37,7 +37,7 @@ class UploadInitializationHelper {
 
     final base = await getApplicationSupportDirectory();
     final appDir = Directory(p.join(base.path, 'openvine'));
-    if (!await appDir.exists()) {
+    if (!appDir.existsSync()) {
       await appDir.create(recursive: true);
     }
     return appDir;

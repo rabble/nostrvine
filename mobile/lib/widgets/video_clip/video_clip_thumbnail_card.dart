@@ -125,52 +125,32 @@ class _Thumbnail extends StatefulWidget {
 }
 
 class _ThumbnailState extends State<_Thumbnail> {
-  /// Cached future that resolves to whether the thumbnail file exists.
-  /// Initialized once in [initState] to avoid repeated file system checks.
-  late Future<bool> _thumbnailExistsFuture;
+  late bool _thumbnailExists;
 
   @override
   void initState() {
     super.initState();
-    _thumbnailExistsFuture = _checkThumbnailExists();
+    _thumbnailExists = _checkThumbnailExists();
   }
 
   /// Asynchronously checks if the thumbnail file exists
-  Future<bool> _checkThumbnailExists() async {
+  bool _checkThumbnailExists() {
     if (widget.clip.thumbnailPath == null) {
       return false;
     }
-    return File(widget.clip.thumbnailPath!).exists();
+    return File(widget.clip.thumbnailPath!).existsSync();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _thumbnailExistsFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == .waiting) {
-          return const Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-              ),
-            ),
-          );
-        }
+    if (_thumbnailExists && widget.clip.thumbnailPath != null) {
+      return Hero(
+        tag: 'Video-Clip-Preview-${widget.clip.id}',
+        child: Image.file(File(widget.clip.thumbnailPath!), fit: .cover),
+      );
+    }
 
-        if ((snapshot.data ?? false) && widget.clip.thumbnailPath != null) {
-          return Hero(
-            tag: 'Video-Clip-Preview-${widget.clip.id}',
-            child: Image.file(File(widget.clip.thumbnailPath!), fit: .cover),
-          );
-        }
-
-        return const Icon(Icons.videocam, color: Colors.grey, size: 32);
-      },
-    );
+    return const Icon(Icons.videocam, color: Colors.grey, size: 32);
   }
 }
 

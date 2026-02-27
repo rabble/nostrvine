@@ -151,19 +151,19 @@ void main() {
       });
 
       test('cleanupTemporaryFiles deletes existing files', () async {
-        expect(await tempFile.exists(), isTrue);
+        expect(tempFile.existsSync(), isTrue);
 
         await service.cleanupTemporaryFiles([tempFile.path]);
 
-        expect(await tempFile.exists(), isFalse);
+        expect(tempFile.existsSync(), isFalse);
       });
 
       test('cleanupAudioFile deletes single file', () async {
-        expect(await tempFile.exists(), isTrue);
+        expect(tempFile.existsSync(), isTrue);
 
         await service.cleanupAudioFile(tempFile.path);
 
-        expect(await tempFile.exists(), isFalse);
+        expect(tempFile.existsSync(), isFalse);
       });
     });
   });

@@ -99,7 +99,7 @@ Future<void> main() async {
     print('❌ Error: $e');
   } finally {
     // Cleanup
-    if (await testFile.exists()) {
+    if (testFile.existsSync()) {
       await testFile.delete();
     }
   }

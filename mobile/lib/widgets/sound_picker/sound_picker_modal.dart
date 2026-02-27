@@ -114,7 +114,7 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
 
           // Only copy if not already cached
           final tempFile = File(filePath);
-          if (!await tempFile.exists()) {
+          if (!tempFile.existsSync()) {
             Log.info(
               '🔊 Loading asset: ${sound.assetPath}',
               name: 'SoundPickerModal',
@@ -147,7 +147,7 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
 
         // Verify file exists
         final file = File(filePath);
-        if (!await file.exists()) {
+        if (!file.existsSync()) {
           throw Exception('File does not exist: $filePath');
         }
         Log.info(
@@ -226,7 +226,7 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
       // Copy file to app storage
       final appDir = await getApplicationDocumentsDirectory();
       final customSoundsDir = Directory('${appDir.path}/custom_sounds');
-      if (!await customSoundsDir.exists()) {
+      if (!customSoundsDir.existsSync()) {
         await customSoundsDir.create(recursive: true);
       }
 

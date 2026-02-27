@@ -34,7 +34,7 @@ void main() {
 
     tearDown(() async {
       // Clean up temp directory
-      if (await tempDir.exists()) {
+      if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
 
@@ -61,7 +61,7 @@ void main() {
 
         // Assert: Should skip loading (verified by no errors and fast execution)
         expect(
-          await markerFile.exists(),
+          markerFile.existsSync(),
           isTrue,
           reason: 'Marker file should still exist',
         );
@@ -127,7 +127,7 @@ void main() {
         );
         final markerFile = File(path.join(cacheDir.path, '.seed_media_loaded'));
         expect(
-          await markerFile.exists(),
+          markerFile.existsSync(),
           isTrue,
           reason: 'Marker file should be created after load',
         );
@@ -230,7 +230,7 @@ void main() {
         final videoFile = File(path.join(cacheDir.path, testEventId));
 
         expect(
-          await videoFile.exists(),
+          videoFile.existsSync(),
           isTrue,
           reason: 'Video file should exist with eventId as filename',
         );

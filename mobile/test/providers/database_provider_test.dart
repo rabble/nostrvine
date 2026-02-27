@@ -83,7 +83,7 @@ void main() {
 
       // Delete test database file
       final file = File(testDbPath);
-      if (await file.exists()) {
+      if (file.existsSync()) {
         await file.delete();
       }
     });

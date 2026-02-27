@@ -165,6 +165,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     // Invalidate stats to recompute
     ref.invalidate(fetchProfileStatsProvider(widget.pubkey));
 
+    if (!mounted) return;
+
     // Refresh user profile info
     context.read<OtherProfileBloc>().add(const OtherProfileRefreshRequested());
 

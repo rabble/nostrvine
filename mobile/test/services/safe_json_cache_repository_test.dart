@@ -57,10 +57,10 @@ void main() {
 
       tearDown(() async {
         // Clean up test directories
-        if (await tempDir.exists()) {
+        if (tempDir.existsSync()) {
           await tempDir.delete(recursive: true);
         }
-        if (await appSupportDir.exists()) {
+        if (appSupportDir.existsSync()) {
           await appSupportDir.delete(recursive: true);
         }
       });
@@ -91,12 +91,12 @@ void main() {
 
         // Verify both files exist before test
         expect(
-          await tempCacheFile.exists(),
+          tempCacheFile.existsSync(),
           isTrue,
           reason: 'Temp cache file should exist before test',
         );
         expect(
-          await appSupportCacheFile.exists(),
+          appSupportCacheFile.existsSync(),
           isTrue,
           reason: 'App support cache file should exist before test',
         );

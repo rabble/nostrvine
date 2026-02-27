@@ -495,7 +495,7 @@ void main() {
         for (var i = 0; i < 50; i++) {
           await service.createList(
             name: 'List $i',
-            description: i % 2 == 0 ? 'even number' : 'odd number',
+            description: i.isEven ? 'even number' : 'odd number',
             tags: ['tag$i'],
           );
         }
