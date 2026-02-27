@@ -187,7 +187,7 @@ class DivineVideoDraft {
     }).toList();
 
     final draft = DivineVideoDraft.fromJson(draftJson, documentsPath);
-    return draft.copyWith(clips: clips);
+    return draft.copyWith(clips: clips, skipUpdateLastModified: true);
   }
 
   final List<DivineVideoClip> clips;
@@ -271,6 +271,7 @@ class DivineVideoDraft {
     String? inspiredByNpub,
     Object? selectedAudioEventId = _sentinel,
     Object? selectedAudioRelay = _sentinel,
+    bool skipUpdateLastModified = false,
   }) => DivineVideoDraft(
     id: id ?? this.id,
     clips: clips ?? this.clips,
@@ -279,7 +280,7 @@ class DivineVideoDraft {
     hashtags: hashtags ?? this.hashtags,
     selectedApproach: selectedApproach,
     createdAt: createdAt,
-    lastModified: DateTime.now(),
+    lastModified: skipUpdateLastModified ? lastModified : DateTime.now(),
     expireTime: expireTime ?? this.expireTime,
     allowAudioReuse: allowAudioReuse ?? this.allowAudioReuse,
     publishStatus: publishStatus ?? this.publishStatus,
