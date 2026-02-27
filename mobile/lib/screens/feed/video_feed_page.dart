@@ -258,11 +258,16 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   controller: controller,
                   itemBuilder: (context, video, index, {required isActive}) {
                     final originalEvent = state.videos[index];
+                    final listSources =
+                        state.listOnlyVideoIds.contains(originalEvent.id)
+                        ? state.videoListSources[originalEvent.id]
+                        : null;
                     return _PooledVideoFeedItem(
                       video: originalEvent,
                       index: index,
                       isActive: isActive,
                       contextTitle: state.mode.name,
+                      listSources: listSources,
                     );
                   },
                   onActiveVideoChanged: (video, index) {
@@ -383,12 +388,14 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     this.contextTitle,
+    this.listSources,
   });
 
   final VideoEvent video;
   final int index;
   final bool isActive;
   final String? contextTitle;
+  final Set<String>? listSources;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -419,6 +426,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
         index: index,
         isActive: isActive,
         contextTitle: contextTitle,
+        listSources: listSources,
       ),
     );
   }
@@ -430,12 +438,14 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
     required this.index,
     required this.isActive,
     this.contextTitle,
+    this.listSources,
   });
 
   final VideoEvent video;
   final int index;
   final bool isActive;
   final String? contextTitle;
+  final Set<String>? listSources;
 
   @override
   Widget build(BuildContext context) {
@@ -457,8 +467,12 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
         ),
-        overlayBuilder: (context, videoController, player) =>
-            FeedVideoOverlay(video: video, isActive: isActive, player: player),
+        overlayBuilder: (context, videoController, player) => FeedVideoOverlay(
+          video: video,
+          isActive: isActive,
+          player: player,
+          listSources: listSources,
+        ),
       ),
     );
   }
