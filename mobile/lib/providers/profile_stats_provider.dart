@@ -3,7 +3,8 @@
 
 import 'dart:async';
 
-import 'package:db_client/db_client.dart';
+import 'package:db_client/db_client.dart' hide ProfileStats;
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
@@ -14,44 +15,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'profile_stats_provider.g.dart';
 
-/// Statistics for a user's profile
-class ProfileStats {
-  const ProfileStats({
-    required this.videoCount,
-    required this.totalLikes,
-    required this.followers,
-    required this.following,
-    required this.totalViews,
-    required this.lastUpdated,
-  });
-  final int videoCount;
-  final int totalLikes;
-  final int followers;
-  final int following;
-  final int totalViews; // Placeholder for future implementation
-  final DateTime lastUpdated;
-
-  ProfileStats copyWith({
-    int? videoCount,
-    int? totalLikes,
-    int? followers,
-    int? following,
-    int? totalViews,
-    DateTime? lastUpdated,
-  }) => ProfileStats(
-    videoCount: videoCount ?? this.videoCount,
-    totalLikes: totalLikes ?? this.totalLikes,
-    followers: followers ?? this.followers,
-    following: following ?? this.following,
-    totalViews: totalViews ?? this.totalViews,
-    lastUpdated: lastUpdated ?? this.lastUpdated,
-  );
-
-  @override
-  String toString() =>
-      'ProfileStats(videos: $videoCount, likes: $totalLikes, followers: $followers, following: $following, views: $totalViews)';
-}
-
 /// Get cached stats from Drift if available and not expired.
 Future<ProfileStats?> _getCachedProfileStats(
   ProfileStatsDao dao,
@@ -61,6 +24,7 @@ Future<ProfileStats?> _getCachedProfileStats(
   if (row == null) return null;
 
   final stats = ProfileStats(
+    pubkey: pubkey,
     videoCount: row.videoCount ?? 0,
     totalLikes: row.totalLikes ?? 0,
     followers: row.followerCount ?? 0,
@@ -69,7 +33,7 @@ Future<ProfileStats?> _getCachedProfileStats(
     lastUpdated: row.cachedAt,
   );
 
-  final age = DateTime.now().difference(stats.lastUpdated);
+  final age = DateTime.now().difference(stats.lastUpdated!);
   Log.debug(
     'Using cached stats for $pubkey (age: ${age.inMinutes}min)',
     name: 'ProfileStatsProvider',
@@ -169,6 +133,7 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
     }
 
     final stats = ProfileStats(
+      pubkey: pubkey,
       videoCount: videoCount,
       totalLikes: totalLikes,
       followers: followerStats['followers'] ?? 0,

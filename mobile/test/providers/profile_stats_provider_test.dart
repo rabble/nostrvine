@@ -1,5 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
+
+const _testPubkey =
+    'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 
 void main() {
   group('ProfileStatsProvider', () {
@@ -19,6 +23,7 @@ void main() {
     group('ProfileStats Model', () {
       test('should create ProfileStats correctly', () {
         final stats = ProfileStats(
+          pubkey: _testPubkey,
           videoCount: 25,
           totalLikes: 500,
           followers: 100,
@@ -36,6 +41,7 @@ void main() {
 
       test('should copy ProfileStats with changes', () {
         final original = ProfileStats(
+          pubkey: _testPubkey,
           videoCount: 25,
           totalLikes: 500,
           followers: 100,
@@ -55,6 +61,7 @@ void main() {
 
       test('should have meaningful toString', () {
         final stats = ProfileStats(
+          pubkey: _testPubkey,
           videoCount: 25,
           totalLikes: 500,
           followers: 100,

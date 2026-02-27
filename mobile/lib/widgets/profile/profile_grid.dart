@@ -14,7 +14,6 @@ import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.da
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
