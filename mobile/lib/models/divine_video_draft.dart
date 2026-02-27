@@ -2,6 +2,7 @@
 // ABOUTME: Includes video file path, metadata, publish status, and timestamps
 
 import 'dart:convert';
+import 'package:db_client/db_client.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:models/models.dart' show NativeProofData;
@@ -170,6 +171,23 @@ class DivineVideoDraft {
       selectedAudioEventId: json['selectedAudioEventId'] as String?,
       selectedAudioRelay: json['selectedAudioRelay'] as String?,
     );
+  }
+
+  factory DivineVideoDraft.fromDriftRow({
+    required DraftRow row,
+    required List<ClipRow> clipRows,
+    required String documentsPath,
+  }) {
+    final draftJson = json.decode(row.data) as Map<String, dynamic>;
+
+    // Reconstruct clips from clip rows
+    final clips = clipRows.map((clipRow) {
+      final clipJson = json.decode(clipRow.data) as Map<String, dynamic>;
+      return DivineVideoClip.fromJson(clipJson, documentsPath);
+    }).toList();
+
+    final draft = DivineVideoDraft.fromJson(draftJson, documentsPath);
+    return draft.copyWith(clips: clips);
   }
 
   final List<DivineVideoClip> clips;
