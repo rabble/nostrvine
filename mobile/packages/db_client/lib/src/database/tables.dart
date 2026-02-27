@@ -532,6 +532,64 @@ class Drafts extends Table {
   ];
 }
 
+/// Persistent storage for video clips belonging to drafts
+///
+/// Each clip is a recorded video segment that belongs to a single draft.
+/// Key fields are indexed columns for efficient queries; the full clip
+/// payload (lens metadata, thumbnail info, etc.) lives in the [data]
+/// JSON blob.
+@DataClassName('ClipRow')
+class Clips extends Table {
+  @override
+  String get tableName => 'clips';
+
+  /// Unique clip identifier
+  TextColumn get id => text()();
+
+  /// Foreign key to the parent draft
+  TextColumn get draftId => text().named('draft_id')();
+
+  /// Position of this clip within the draft (0-based)
+  IntColumn get orderIndex =>
+      integer().withDefault(const Constant(0)).named('order_index')();
+
+  /// Duration in milliseconds
+  IntColumn get durationMs => integer().named('duration_ms')();
+
+  /// When the clip was recorded
+  DateTimeColumn get recordedAt => dateTime().named('recorded_at')();
+
+  /// Full JSON-serialized clip payload (file path, thumbnail, lens metadata,
+  /// aspect ratio, etc.)
+  TextColumn get data => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<String> get customConstraints => [
+    'FOREIGN KEY (draft_id) REFERENCES drafts(id) ON DELETE CASCADE',
+  ];
+
+  List<Index> get indexes => [
+    Index(
+      'idx_clip_draft_id',
+      'CREATE INDEX IF NOT EXISTS idx_clip_draft_id '
+          'ON clips (draft_id)',
+    ),
+    Index(
+      'idx_clip_draft_order',
+      'CREATE INDEX IF NOT EXISTS idx_clip_draft_order '
+          'ON clips (draft_id, order_index)',
+    ),
+    Index(
+      'idx_clip_recorded_at',
+      'CREATE INDEX IF NOT EXISTS idx_clip_recorded_at '
+          'ON clips (recorded_at DESC)',
+    ),
+  ];
+}
+
 /// Stores the current user's own repost events (Kind 16 generic reposts).
 ///
 /// This table tracks the mapping between addressable video IDs and the

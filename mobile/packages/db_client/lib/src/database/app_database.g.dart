@@ -7313,6 +7313,429 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   }
 }
 
+class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ClipsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _draftIdMeta = const VerificationMeta(
+    'draftId',
+  );
+  @override
+  late final GeneratedColumn<String> draftId = GeneratedColumn<String>(
+    'draft_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _orderIndexMeta = const VerificationMeta(
+    'orderIndex',
+  );
+  @override
+  late final GeneratedColumn<int> orderIndex = GeneratedColumn<int>(
+    'order_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _durationMsMeta = const VerificationMeta(
+    'durationMs',
+  );
+  @override
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+    'duration_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recordedAtMeta = const VerificationMeta(
+    'recordedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+    'recorded_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<String> data = GeneratedColumn<String>(
+    'data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    draftId,
+    orderIndex,
+    durationMs,
+    recordedAt,
+    data,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'clips';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ClipRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('draft_id')) {
+      context.handle(
+        _draftIdMeta,
+        draftId.isAcceptableOrUnknown(data['draft_id']!, _draftIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_draftIdMeta);
+    }
+    if (data.containsKey('order_index')) {
+      context.handle(
+        _orderIndexMeta,
+        orderIndex.isAcceptableOrUnknown(data['order_index']!, _orderIndexMeta),
+      );
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+        _durationMsMeta,
+        durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_durationMsMeta);
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+        _recordedAtMeta,
+        recordedAt.isAcceptableOrUnknown(data['recorded_at']!, _recordedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ClipRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ClipRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      draftId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}draft_id'],
+      )!,
+      orderIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}order_index'],
+      )!,
+      durationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_ms'],
+      )!,
+      recordedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}recorded_at'],
+      )!,
+      data: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data'],
+      )!,
+    );
+  }
+
+  @override
+  $ClipsTable createAlias(String alias) {
+    return $ClipsTable(attachedDatabase, alias);
+  }
+}
+
+class ClipRow extends DataClass implements Insertable<ClipRow> {
+  /// Unique clip identifier
+  final String id;
+
+  /// Foreign key to the parent draft
+  final String draftId;
+
+  /// Position of this clip within the draft (0-based)
+  final int orderIndex;
+
+  /// Duration in milliseconds
+  final int durationMs;
+
+  /// When the clip was recorded
+  final DateTime recordedAt;
+
+  /// Full JSON-serialized clip payload (file path, thumbnail, lens metadata,
+  /// aspect ratio, etc.)
+  final String data;
+  const ClipRow({
+    required this.id,
+    required this.draftId,
+    required this.orderIndex,
+    required this.durationMs,
+    required this.recordedAt,
+    required this.data,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['draft_id'] = Variable<String>(draftId);
+    map['order_index'] = Variable<int>(orderIndex);
+    map['duration_ms'] = Variable<int>(durationMs);
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
+    map['data'] = Variable<String>(data);
+    return map;
+  }
+
+  ClipsCompanion toCompanion(bool nullToAbsent) {
+    return ClipsCompanion(
+      id: Value(id),
+      draftId: Value(draftId),
+      orderIndex: Value(orderIndex),
+      durationMs: Value(durationMs),
+      recordedAt: Value(recordedAt),
+      data: Value(data),
+    );
+  }
+
+  factory ClipRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ClipRow(
+      id: serializer.fromJson<String>(json['id']),
+      draftId: serializer.fromJson<String>(json['draftId']),
+      orderIndex: serializer.fromJson<int>(json['orderIndex']),
+      durationMs: serializer.fromJson<int>(json['durationMs']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
+      data: serializer.fromJson<String>(json['data']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'draftId': serializer.toJson<String>(draftId),
+      'orderIndex': serializer.toJson<int>(orderIndex),
+      'durationMs': serializer.toJson<int>(durationMs),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
+      'data': serializer.toJson<String>(data),
+    };
+  }
+
+  ClipRow copyWith({
+    String? id,
+    String? draftId,
+    int? orderIndex,
+    int? durationMs,
+    DateTime? recordedAt,
+    String? data,
+  }) => ClipRow(
+    id: id ?? this.id,
+    draftId: draftId ?? this.draftId,
+    orderIndex: orderIndex ?? this.orderIndex,
+    durationMs: durationMs ?? this.durationMs,
+    recordedAt: recordedAt ?? this.recordedAt,
+    data: data ?? this.data,
+  );
+  ClipRow copyWithCompanion(ClipsCompanion data) {
+    return ClipRow(
+      id: data.id.present ? data.id.value : this.id,
+      draftId: data.draftId.present ? data.draftId.value : this.draftId,
+      orderIndex: data.orderIndex.present
+          ? data.orderIndex.value
+          : this.orderIndex,
+      durationMs: data.durationMs.present
+          ? data.durationMs.value
+          : this.durationMs,
+      recordedAt: data.recordedAt.present
+          ? data.recordedAt.value
+          : this.recordedAt,
+      data: data.data.present ? data.data.value : this.data,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClipRow(')
+          ..write('id: $id, ')
+          ..write('draftId: $draftId, ')
+          ..write('orderIndex: $orderIndex, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('data: $data')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, draftId, orderIndex, durationMs, recordedAt, data);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ClipRow &&
+          other.id == this.id &&
+          other.draftId == this.draftId &&
+          other.orderIndex == this.orderIndex &&
+          other.durationMs == this.durationMs &&
+          other.recordedAt == this.recordedAt &&
+          other.data == this.data);
+}
+
+class ClipsCompanion extends UpdateCompanion<ClipRow> {
+  final Value<String> id;
+  final Value<String> draftId;
+  final Value<int> orderIndex;
+  final Value<int> durationMs;
+  final Value<DateTime> recordedAt;
+  final Value<String> data;
+  final Value<int> rowid;
+  const ClipsCompanion({
+    this.id = const Value.absent(),
+    this.draftId = const Value.absent(),
+    this.orderIndex = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+    this.data = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ClipsCompanion.insert({
+    required String id,
+    required String draftId,
+    this.orderIndex = const Value.absent(),
+    required int durationMs,
+    required DateTime recordedAt,
+    required String data,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       draftId = Value(draftId),
+       durationMs = Value(durationMs),
+       recordedAt = Value(recordedAt),
+       data = Value(data);
+  static Insertable<ClipRow> custom({
+    Expression<String>? id,
+    Expression<String>? draftId,
+    Expression<int>? orderIndex,
+    Expression<int>? durationMs,
+    Expression<DateTime>? recordedAt,
+    Expression<String>? data,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (draftId != null) 'draft_id': draftId,
+      if (orderIndex != null) 'order_index': orderIndex,
+      if (durationMs != null) 'duration_ms': durationMs,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+      if (data != null) 'data': data,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ClipsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? draftId,
+    Value<int>? orderIndex,
+    Value<int>? durationMs,
+    Value<DateTime>? recordedAt,
+    Value<String>? data,
+    Value<int>? rowid,
+  }) {
+    return ClipsCompanion(
+      id: id ?? this.id,
+      draftId: draftId ?? this.draftId,
+      orderIndex: orderIndex ?? this.orderIndex,
+      durationMs: durationMs ?? this.durationMs,
+      recordedAt: recordedAt ?? this.recordedAt,
+      data: data ?? this.data,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (draftId.present) {
+      map['draft_id'] = Variable<String>(draftId.value);
+    }
+    if (orderIndex.present) {
+      map['order_index'] = Variable<int>(orderIndex.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<String>(data.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClipsCompanion(')
+          ..write('id: $id, ')
+          ..write('draftId: $draftId, ')
+          ..write('orderIndex: $orderIndex, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('data: $data, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -7332,6 +7755,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $Nip05VerificationsTable nip05Verifications =
       $Nip05VerificationsTable(this);
   late final $DraftsTable drafts = $DraftsTable(this);
+  late final $ClipsTable clips = $ClipsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -7365,6 +7789,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final Nip05VerificationsDao nip05VerificationsDao =
       Nip05VerificationsDao(this as AppDatabase);
   late final DraftsDao draftsDao = DraftsDao(this as AppDatabase);
+  late final ClipsDao clipsDao = ClipsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -7382,6 +7807,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingActions,
     nip05Verifications,
     drafts,
+    clips,
   ];
 }
 
@@ -10936,6 +11362,224 @@ typedef $$DraftsTableProcessedTableManager =
       DraftRow,
       PrefetchHooks Function()
     >;
+typedef $$ClipsTableCreateCompanionBuilder =
+    ClipsCompanion Function({
+      required String id,
+      required String draftId,
+      Value<int> orderIndex,
+      required int durationMs,
+      required DateTime recordedAt,
+      required String data,
+      Value<int> rowid,
+    });
+typedef $$ClipsTableUpdateCompanionBuilder =
+    ClipsCompanion Function({
+      Value<String> id,
+      Value<String> draftId,
+      Value<int> orderIndex,
+      Value<int> durationMs,
+      Value<DateTime> recordedAt,
+      Value<String> data,
+      Value<int> rowid,
+    });
+
+class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
+  $$ClipsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get draftId => $composableBuilder(
+    column: $table.draftId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orderIndex => $composableBuilder(
+    column: $table.orderIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ClipsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ClipsTable> {
+  $$ClipsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get draftId => $composableBuilder(
+    column: $table.draftId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orderIndex => $composableBuilder(
+    column: $table.orderIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ClipsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ClipsTable> {
+  $$ClipsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get draftId =>
+      $composableBuilder(column: $table.draftId, builder: (column) => column);
+
+  GeneratedColumn<int> get orderIndex => $composableBuilder(
+    column: $table.orderIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+}
+
+class $$ClipsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ClipsTable,
+          ClipRow,
+          $$ClipsTableFilterComposer,
+          $$ClipsTableOrderingComposer,
+          $$ClipsTableAnnotationComposer,
+          $$ClipsTableCreateCompanionBuilder,
+          $$ClipsTableUpdateCompanionBuilder,
+          (ClipRow, BaseReferences<_$AppDatabase, $ClipsTable, ClipRow>),
+          ClipRow,
+          PrefetchHooks Function()
+        > {
+  $$ClipsTableTableManager(_$AppDatabase db, $ClipsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ClipsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ClipsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ClipsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> draftId = const Value.absent(),
+                Value<int> orderIndex = const Value.absent(),
+                Value<int> durationMs = const Value.absent(),
+                Value<DateTime> recordedAt = const Value.absent(),
+                Value<String> data = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ClipsCompanion(
+                id: id,
+                draftId: draftId,
+                orderIndex: orderIndex,
+                durationMs: durationMs,
+                recordedAt: recordedAt,
+                data: data,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String draftId,
+                Value<int> orderIndex = const Value.absent(),
+                required int durationMs,
+                required DateTime recordedAt,
+                required String data,
+                Value<int> rowid = const Value.absent(),
+              }) => ClipsCompanion.insert(
+                id: id,
+                draftId: draftId,
+                orderIndex: orderIndex,
+                durationMs: durationMs,
+                recordedAt: recordedAt,
+                data: data,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ClipsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ClipsTable,
+      ClipRow,
+      $$ClipsTableFilterComposer,
+      $$ClipsTableOrderingComposer,
+      $$ClipsTableAnnotationComposer,
+      $$ClipsTableCreateCompanionBuilder,
+      $$ClipsTableUpdateCompanionBuilder,
+      (ClipRow, BaseReferences<_$AppDatabase, $ClipsTable, ClipRow>),
+      ClipRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10964,4 +11608,6 @@ class $AppDatabaseManager {
       $$Nip05VerificationsTableTableManager(_db, _db.nip05Verifications);
   $$DraftsTableTableManager get drafts =>
       $$DraftsTableTableManager(_db, _db.drafts);
+  $$ClipsTableTableManager get clips =>
+      $$ClipsTableTableManager(_db, _db.clips);
 }

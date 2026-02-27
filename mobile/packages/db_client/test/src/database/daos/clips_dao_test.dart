@@ -1,0 +1,553 @@
+// ABOUTME: Unit tests for ClipsDao with draft-scoped queries and ordering
+// ABOUTME: operations. Tests upsertClip, getClipsByDraftId, deleteClip,
+// ABOUTME: deleteClipsByDraftId, watchClipsByDraftId.
+
+import 'dart:io';
+
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  late AppDatabase database;
+  late ClipsDao dao;
+  late DraftsDao draftsDao;
+  late String tempDbPath;
+
+  const testDraftId = 'draft_1700000000000';
+  const testDraftId2 = 'draft_1700000001000';
+
+  setUp(() async {
+    final tempDir = Directory.systemTemp.createTempSync('clips_dao_test_');
+    tempDbPath = '${tempDir.path}/test.db';
+
+    database = AppDatabase.test(NativeDatabase(File(tempDbPath)));
+    dao = database.clipsDao;
+    draftsDao = database.draftsDao;
+
+    // Insert parent drafts so foreign key constraints are satisfied
+    await draftsDao.upsertDraft(
+      id: testDraftId,
+      title: 'Test Draft',
+      description: 'A test draft',
+      publishStatus: 'draft',
+      createdAt: DateTime(2023, 11, 14),
+      lastModified: DateTime(2023, 11, 14),
+      data: '{}',
+    );
+    await draftsDao.upsertDraft(
+      id: testDraftId2,
+      title: 'Test Draft 2',
+      description: 'Another test draft',
+      publishStatus: 'draft',
+      createdAt: DateTime(2023, 11, 15),
+      lastModified: DateTime(2023, 11, 15),
+      data: '{}',
+    );
+  });
+
+  tearDown(() async {
+    await database.close();
+    final file = File(tempDbPath);
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
+    final dir = Directory(tempDbPath).parent;
+    if (dir.existsSync()) {
+      dir.deleteSync(recursive: true);
+    }
+  });
+
+  group(ClipsDao, () {
+    group('upsertClip', () {
+      test('inserts new clip', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{"filePath":"video_1.mp4"}',
+        );
+
+        final results = await dao.getClipsByDraftId(testDraftId);
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('clip_1'));
+        expect(results.first.draftId, equals(testDraftId));
+        expect(results.first.orderIndex, equals(0));
+        expect(results.first.durationMs, equals(3000));
+        expect(results.first.data, equals('{"filePath":"video_1.mp4"}'));
+      });
+
+      test('updates existing clip with same ID', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{"filePath":"video_1.mp4"}',
+        );
+
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 5000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{"filePath":"video_1_updated.mp4"}',
+        );
+
+        final results = await dao.getClipsByDraftId(testDraftId);
+        expect(results, hasLength(1));
+        expect(results.first.durationMs, equals(5000));
+        expect(results.first.orderIndex, equals(1));
+        expect(
+          results.first.data,
+          equals('{"filePath":"video_1_updated.mp4"}'),
+        );
+      });
+
+      test('inserts multiple clips for different drafts', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_2',
+          draftId: testDraftId2,
+          orderIndex: 0,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+
+        final draft1Clips = await dao.getClipsByDraftId(testDraftId);
+        final draft2Clips = await dao.getClipsByDraftId(testDraftId2);
+        expect(draft1Clips, hasLength(1));
+        expect(draft2Clips, hasLength(1));
+      });
+    });
+
+    group('getClipsByDraftId', () {
+      test('returns clips sorted by orderIndex ascending', () async {
+        await dao.upsertClip(
+          id: 'clip_c',
+          draftId: testDraftId,
+          orderIndex: 2,
+          durationMs: 1000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_a',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 2000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_b',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 12),
+          data: '{}',
+        );
+
+        final results = await dao.getClipsByDraftId(testDraftId);
+        expect(results[0].id, equals('clip_a'));
+        expect(results[1].id, equals('clip_b'));
+        expect(results[2].id, equals('clip_c'));
+      });
+
+      test('returns empty list for non-existent draft', () async {
+        final results = await dao.getClipsByDraftId('nonexistent');
+        expect(results, isEmpty);
+      });
+
+      test('does not return clips from other drafts', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_2',
+          draftId: testDraftId2,
+          orderIndex: 0,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+
+        final results = await dao.getClipsByDraftId(testDraftId);
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('clip_1'));
+      });
+    });
+
+    group('getClipById', () {
+      test('returns clip when found', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{"filePath":"video.mp4"}',
+        );
+
+        final result = await dao.getClipById('clip_1');
+        expect(result, isNotNull);
+        expect(result!.id, equals('clip_1'));
+        expect(result.data, equals('{"filePath":"video.mp4"}'));
+      });
+
+      test('returns null for non-existent clip', () async {
+        final result = await dao.getClipById('nonexistent');
+        expect(result, isNull);
+      });
+    });
+
+    group('getAllClips', () {
+      test('returns all clips sorted by recordedAt descending', () async {
+        await dao.upsertClip(
+          id: 'clip_old',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_new',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 12),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_mid',
+          draftId: testDraftId2,
+          orderIndex: 0,
+          durationMs: 5000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+
+        final results = await dao.getAllClips();
+        expect(results, hasLength(3));
+        expect(results[0].id, equals('clip_new'));
+        expect(results[1].id, equals('clip_mid'));
+        expect(results[2].id, equals('clip_old'));
+      });
+
+      test('respects limit parameter', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_2',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_3',
+          draftId: testDraftId,
+          orderIndex: 2,
+          durationMs: 5000,
+          recordedAt: DateTime(2023, 11, 14, 12),
+          data: '{}',
+        );
+
+        final results = await dao.getAllClips(limit: 2);
+        expect(results, hasLength(2));
+      });
+
+      test('returns empty list when no clips exist', () async {
+        final results = await dao.getAllClips();
+        expect(results, isEmpty);
+      });
+    });
+
+    group('updateOrderIndex', () {
+      test('updates order index of clip', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+
+        final result = await dao.updateOrderIndex(
+          id: 'clip_1',
+          orderIndex: 5,
+        );
+
+        expect(result, isTrue);
+        final clip = await dao.getClipById('clip_1');
+        expect(clip!.orderIndex, equals(5));
+      });
+
+      test('returns false for non-existent clip', () async {
+        final result = await dao.updateOrderIndex(
+          id: 'nonexistent',
+          orderIndex: 0,
+        );
+        expect(result, isFalse);
+      });
+
+      test('does not affect other clips', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_2',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+
+        await dao.updateOrderIndex(id: 'clip_1', orderIndex: 5);
+
+        final clip2 = await dao.getClipById('clip_2');
+        expect(clip2!.orderIndex, equals(1));
+      });
+    });
+
+    group('deleteClip', () {
+      test('deletes clip by ID', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_2',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+
+        final deleted = await dao.deleteClip('clip_1');
+
+        expect(deleted, equals(1));
+        final results = await dao.getClipsByDraftId(testDraftId);
+        expect(results, hasLength(1));
+        expect(results.first.id, equals('clip_2'));
+      });
+
+      test('returns 0 for non-existent clip', () async {
+        final deleted = await dao.deleteClip('nonexistent');
+        expect(deleted, equals(0));
+      });
+    });
+
+    group('deleteClipsByDraftId', () {
+      test('deletes all clips for a draft', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_2',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_3',
+          draftId: testDraftId2,
+          orderIndex: 0,
+          durationMs: 5000,
+          recordedAt: DateTime(2023, 11, 14, 12),
+          data: '{}',
+        );
+
+        final deleted = await dao.deleteClipsByDraftId(testDraftId);
+
+        expect(deleted, equals(2));
+        final draft1Clips = await dao.getClipsByDraftId(testDraftId);
+        expect(draft1Clips, isEmpty);
+        final draft2Clips = await dao.getClipsByDraftId(testDraftId2);
+        expect(draft2Clips, hasLength(1));
+      });
+
+      test('returns 0 when draft has no clips', () async {
+        final deleted = await dao.deleteClipsByDraftId(testDraftId);
+        expect(deleted, equals(0));
+      });
+    });
+
+    group('watchClipsByDraftId', () {
+      test('emits initial list ordered by orderIndex', () async {
+        await dao.upsertClip(
+          id: 'clip_b',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_a',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+
+        final stream = dao.watchClipsByDraftId(testDraftId);
+        final results = await stream.first;
+
+        expect(results, hasLength(2));
+        expect(results[0].id, equals('clip_a'));
+        expect(results[1].id, equals('clip_b'));
+      });
+
+      test('emits empty list for non-existent draft', () async {
+        final stream = dao.watchClipsByDraftId('nonexistent');
+        final results = await stream.first;
+        expect(results, isEmpty);
+      });
+    });
+
+    group('watchClipById', () {
+      test('emits clip when found', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{"test": true}',
+        );
+
+        final stream = dao.watchClipById('clip_1');
+        final result = await stream.first;
+
+        expect(result, isNotNull);
+        expect(result!.id, equals('clip_1'));
+      });
+
+      test('emits null for non-existent clip', () async {
+        final stream = dao.watchClipById('nonexistent');
+        final result = await stream.first;
+        expect(result, isNull);
+      });
+    });
+
+    group('getCountByDraftId', () {
+      test('returns count of clips for a draft', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_2',
+          draftId: testDraftId,
+          orderIndex: 1,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_3',
+          draftId: testDraftId2,
+          orderIndex: 0,
+          durationMs: 5000,
+          recordedAt: DateTime(2023, 11, 14, 12),
+          data: '{}',
+        );
+
+        final count = await dao.getCountByDraftId(testDraftId);
+        expect(count, equals(2));
+      });
+
+      test('returns 0 for draft with no clips', () async {
+        final count = await dao.getCountByDraftId(testDraftId);
+        expect(count, equals(0));
+      });
+
+      test('returns 0 for non-existent draft', () async {
+        final count = await dao.getCountByDraftId('nonexistent');
+        expect(count, equals(0));
+      });
+    });
+
+    group('clearAll', () {
+      test('deletes all clips', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          data: '{}',
+        );
+        await dao.upsertClip(
+          id: 'clip_2',
+          draftId: testDraftId2,
+          orderIndex: 0,
+          durationMs: 4000,
+          recordedAt: DateTime(2023, 11, 14, 11),
+          data: '{}',
+        );
+
+        final deleted = await dao.clearAll();
+
+        expect(deleted, equals(2));
+        final results = await dao.getAllClips();
+        expect(results, isEmpty);
+      });
+
+      test('returns 0 when table is empty', () async {
+        final deleted = await dao.clearAll();
+        expect(deleted, equals(0));
+      });
+    });
+  });
+}

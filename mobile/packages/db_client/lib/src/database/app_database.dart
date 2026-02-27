@@ -29,6 +29,7 @@ const _notificationRetentionDays = 7;
     PendingActions,
     Nip05Verifications,
     Drafts,
+    Clips,
   ],
   daos: [
     UserProfilesDao,
@@ -43,6 +44,7 @@ const _notificationRetentionDays = 7;
     PendingActionsDao,
     Nip05VerificationsDao,
     DraftsDao,
+    ClipsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -189,6 +191,38 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('''
         CREATE INDEX IF NOT EXISTS idx_draft_created_at
         ON drafts (created_at DESC)
+      ''');
+    }
+
+    // Check if clips table exists, create if missing
+    final clipsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='clips'",
+    ).get();
+
+    if (clipsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE clips (
+          id TEXT NOT NULL PRIMARY KEY,
+          draft_id TEXT NOT NULL,
+          order_index INTEGER NOT NULL DEFAULT 0,
+          duration_ms INTEGER NOT NULL,
+          recorded_at INTEGER NOT NULL,
+          data TEXT NOT NULL,
+          FOREIGN KEY (draft_id) REFERENCES drafts(id) ON DELETE CASCADE
+        )
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_clip_draft_id
+        ON clips (draft_id)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_clip_draft_order
+        ON clips (draft_id, order_index)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_clip_recorded_at
+        ON clips (recorded_at DESC)
       ''');
     }
   }
