@@ -1,13 +1,8 @@
-// ABOUTME: Service for playing countdown beep sounds during timer countdown.
-// ABOUTME: Plays short beeps for each tick and a longer beep at the end.
-
 import 'dart:async';
+import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:openvine/utils/unified_logger.dart';
-
-/// Asset paths for countdown sound effects.
 
 /// Factory function that creates an [AudioPlayer] instance.
 ///
@@ -21,17 +16,34 @@ typedef AudioPlayerFactory = AudioPlayer Function();
 ///
 /// The service pre-loads both sound assets for instant playback and
 /// ensures the final long beep fully plays before returning.
+///
+/// Example usage:
+/// ```dart
+/// final service = CountdownSoundService();
+/// await service.preload();
+///
+/// for (var i = 3; i > 0; i--) {
+///   await service.playShortBeep();
+///   await Future.delayed(Duration(seconds: 1));
+/// }
+///
+/// await service.playLongBeepAndWait();
+/// await service.dispose();
+/// ```
 class CountdownSoundService {
-  @visibleForTesting
-  static const shortBeepAsset = 'assets/sounds/countdown_beep_short.wav';
-  @visibleForTesting
-  static const longBeepAsset = 'assets/sounds/countdown_beep_long.wav';
-
   /// Creates a [CountdownSoundService].
   ///
   /// An optional [audioPlayerFactory] can be provided for testing.
   CountdownSoundService({AudioPlayerFactory? audioPlayerFactory})
     : _audioPlayerFactory = audioPlayerFactory ?? AudioPlayer.new;
+
+  /// Default asset path for the short countdown beep.
+  @visibleForTesting
+  static const shortBeepAsset = 'assets/sounds/countdown_beep_short.wav';
+
+  /// Default asset path for the long countdown beep.
+  @visibleForTesting
+  static const longBeepAsset = 'assets/sounds/countdown_beep_long.wav';
 
   final AudioPlayerFactory _audioPlayerFactory;
   AudioPlayer? _shortBeepPlayer;
@@ -54,16 +66,15 @@ class CountdownSoundService {
         _longBeepPlayer!.setAsset(longBeepAsset),
       ]);
 
-      Log.debug(
-        '🔊 Countdown sounds preloaded',
+      developer.log(
+        'Countdown sounds preloaded',
         name: 'CountdownSoundService',
-        category: LogCategory.video,
       );
-    } catch (e) {
-      Log.warning(
-        '⚠️ Failed to preload countdown sounds: $e',
+    } on Exception catch (e) {
+      developer.log(
+        'Failed to preload countdown sounds: $e',
         name: 'CountdownSoundService',
-        category: LogCategory.video,
+        level: 900,
       );
       // Clean up on failure
       await dispose();
@@ -81,11 +92,11 @@ class CountdownSoundService {
     try {
       await _shortBeepPlayer!.seek(Duration.zero);
       await _shortBeepPlayer!.play();
-    } catch (e) {
-      Log.warning(
-        '⚠️ Failed to play short countdown beep: $e',
+    } on Exception catch (e) {
+      developer.log(
+        'Failed to play short countdown beep: $e',
         name: 'CountdownSoundService',
-        category: LogCategory.video,
+        level: 900,
       );
     }
   }
@@ -100,11 +111,11 @@ class CountdownSoundService {
     try {
       await _longBeepPlayer!.seek(Duration.zero);
       await _longBeepPlayer!.play();
-    } catch (e) {
-      Log.warning(
-        '⚠️ Failed to play long countdown beep: $e',
+    } on Exception catch (e) {
+      developer.log(
+        'Failed to play long countdown beep: $e',
         name: 'CountdownSoundService',
-        category: LogCategory.video,
+        level: 900,
       );
     }
   }

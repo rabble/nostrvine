@@ -123,7 +123,9 @@ void main() {
         });
 
         test('handles play errors gracefully', () async {
-          when(() => player.seek(any())).thenThrow(Exception('playback error'));
+          when(
+            () => player.seek(any()),
+          ).thenThrow(Exception('playback error'));
 
           await service.preload();
 
@@ -182,7 +184,9 @@ void main() {
           when(
             () => mockLongPlayer.setAsset(any()),
           ).thenAnswer((_) async => Duration.zero);
-          when(() => mockShortPlayer.seek(any())).thenAnswer((_) async {});
+          when(
+            () => mockShortPlayer.seek(any()),
+          ).thenAnswer((_) async {});
           when(() => mockShortPlayer.play()).thenAnswer((_) async {});
 
           await service.preload();

@@ -20,12 +20,12 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/audio_playback_service.dart';
-import 'package:openvine/services/countdown_sound_service.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:sound_service/sound_service.dart';
 
 /// SharedPreferences key for storing the last used camera lens.
 const _kLastUsedCameraLensKey = 'camera_last_used_lens';
