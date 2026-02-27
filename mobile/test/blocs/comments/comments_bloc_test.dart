@@ -1207,7 +1207,6 @@ void main() {
             status: CommentsStatus.success,
             commentsById: {comment.id: comment},
             commentUpvoteCounts: {comment.id: 5},
-            upvotedCommentIds: const {},
           );
         },
         act: (bloc) => bloc.add(
@@ -1346,7 +1345,6 @@ void main() {
             status: CommentsStatus.success,
             commentsById: {comment.id: comment},
             commentUpvoteCounts: {comment.id: 5},
-            upvotedCommentIds: const {},
           );
         },
         act: (bloc) => bloc.add(
@@ -1440,7 +1438,6 @@ void main() {
             commentsById: {comment.id: comment},
             commentUpvoteCounts: {comment.id: 0},
             commentDownvoteCounts: {comment.id: 3},
-            upvotedCommentIds: const {},
             downvotedCommentIds: {comment.id},
           );
         },
@@ -1568,7 +1565,6 @@ void main() {
             status: CommentsStatus.success,
             commentsById: {comment.id: comment},
             commentDownvoteCounts: {comment.id: 2},
-            downvotedCommentIds: const {},
           );
         },
         act: (bloc) => bloc.add(
@@ -1640,7 +1636,6 @@ void main() {
             commentUpvoteCounts: {comment.id: 5},
             commentDownvoteCounts: {comment.id: 0},
             upvotedCommentIds: {comment.id},
-            downvotedCommentIds: const {},
           );
         },
         act: (bloc) => bloc.add(
@@ -3563,8 +3558,8 @@ void main() {
         activeReplyCommentId: 'comment1',
         replyInputText: 'draft',
         sortMode: CommentsSortMode.topEngagement,
-        commentUpvoteCounts: const {'c1': 5},
-        upvotedCommentIds: const {'c1'},
+        commentUpvoteCounts: {'c1': 5},
+        upvotedCommentIds: {'c1'},
       );
 
       final updated = state.clearActiveReply();

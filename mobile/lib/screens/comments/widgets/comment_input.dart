@@ -339,7 +339,7 @@ class _EditIndicator extends StatelessWidget {
     return GestureDetector(
       onTap: onCancel,
       child: Padding(
-        padding: EdgeInsets.only(left: 16, right: 16, bottom: 8),
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
         child: Row(
           children: [
             Flexible(
@@ -349,7 +349,6 @@ class _EditIndicator extends StatelessWidget {
                   fontSize: 12,
                   color: VineTheme.tabIndicatorGreen,
                   height: 16 / 12,
-                  fontWeight: FontWeight.w400,
                 ).copyWith(letterSpacing: 0.4),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
