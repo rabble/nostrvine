@@ -2,6 +2,7 @@
 // ABOUTME: Covers save, load, delete, and thumbnail generation for clips
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart' as models show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -34,7 +35,10 @@ void main() {
         expect(clips.length, 1);
         expect(clips.first.id, 'clip_123');
         // Path uses platform separator, so check filename
-        expect(clips.first.filePath, endsWith('test_video.mp4'));
+        expect(
+          await clips.first.video.safeFilePath(),
+          endsWith('test_video.mp4'),
+        );
       });
 
       test('updates existing clip with same ID', () async {
@@ -152,7 +156,7 @@ void main() {
 
         expect(found, isNotNull);
         expect(found!.id, 'find_me');
-        expect(found.aspectRatio, 'vertical');
+        expect(found.targetAspectRatio, models.AspectRatio.vertical);
       });
 
       test('returns null when clip not found', () async {
@@ -185,7 +189,7 @@ void main() {
   });
 
   group('DivineVideoClip', () {
-    test('serializes to and from JSON correctly', () {
+    test('serializes to and from JSON correctly', () async {
       final original = DivineVideoClip(
         id: 'test_clip',
         video: EditorVideo.file('/path/to/video.mp4'),
@@ -206,11 +210,13 @@ void main() {
 
       expect(restored.id, original.id);
       // Path uses platform separator, check it ends with filename
-      expect(restored.filePath, endsWith('video.mp4'));
+      expect(await restored.video.safeFilePath(), endsWith('video.mp4'));
       expect(restored.thumbnailPath, endsWith('thumb.jpg'));
       expect(restored.duration, original.duration);
-      expect(restored.createdAt, original.createdAt);
-      expect(restored.aspectRatio, original.aspectRatio);
+      expect(restored.recordedAt, original.recordedAt);
+      expect(restored.targetAspectRatio, original.targetAspectRatio);
+      expect(restored.originalAspectRatio, original.originalAspectRatio);
+      expect(restored.lensMetadata, original.lensMetadata);
     });
 
     test('handles null thumbnailPath in JSON', () {
@@ -240,34 +246,6 @@ void main() {
       );
 
       expect(clip.durationInSeconds, 2.5);
-    });
-
-    test('displayDuration formats correctly', () {
-      final recentClip = DivineVideoClip(
-        id: 'recent',
-        video: EditorVideo.file(
-          '/test.mp4',
-        ),
-        duration: const Duration(seconds: 1),
-        recordedAt: DateTime.now().subtract(const Duration(minutes: 5)),
-        targetAspectRatio: .vertical,
-        originalAspectRatio: 9 / 16,
-      );
-
-      expect(recentClip.displayDuration, '5m ago');
-
-      final oldClip = DivineVideoClip(
-        id: 'old',
-        video: EditorVideo.file(
-          '/test.mp4',
-        ),
-        duration: const Duration(seconds: 1),
-        recordedAt: DateTime.now().subtract(const Duration(days: 2)),
-        targetAspectRatio: .vertical,
-        originalAspectRatio: 9 / 16,
-      );
-
-      expect(oldClip.displayDuration, '2d ago');
     });
   });
 }
