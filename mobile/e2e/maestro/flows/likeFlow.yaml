@@ -8,6 +8,7 @@ appId: co.openvine.app
 - launchApp
 
 - runFlow: ../tests/videoUnlike.yaml
+- runFlow: ../tests/removeKeys.yaml
 
 #Tear down
-- killApp
+- stopApp

@@ -22,6 +22,8 @@ class CommentInput extends StatefulWidget {
     this.onChanged,
     this.replyToDisplayName,
     this.onCancelReply,
+    this.isEditing = false,
+    this.onCancelEdit,
     this.focusNode,
     this.mentionSuggestions = const [],
     this.onMentionQuery,
@@ -46,6 +48,12 @@ class CommentInput extends StatefulWidget {
 
   /// Callback when the cancel reply button is pressed.
   final VoidCallback? onCancelReply;
+
+  /// Whether the input is in edit mode.
+  final bool isEditing;
+
+  /// Callback when the cancel edit button is pressed.
+  final VoidCallback? onCancelEdit;
 
   /// Focus node for the text field to allow programmatic focus.
   final FocusNode? focusNode;
@@ -138,6 +146,7 @@ class _CommentInputState extends State<CommentInput> {
         8;
 
     final isReplying = widget.replyToDisplayName != null;
+    final isEditing = widget.isEditing;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -174,10 +183,13 @@ class _CommentInputState extends State<CommentInput> {
                           controller: widget.controller,
                           focusNode: widget.focusNode,
                           isReplying: isReplying,
+                          isEditing: isEditing,
                           onChanged: _handleTextChanged,
                         ),
                       ),
-                      if (isReplying)
+                      if (isEditing)
+                        _EditIndicator(onCancel: widget.onCancelEdit!)
+                      else if (isReplying)
                         _ReplyIndicator(
                           displayName: widget.replyToDisplayName!,
                           onCancel: widget.onCancelReply!,
@@ -207,23 +219,38 @@ class _CommentTextField extends StatelessWidget {
     required this.controller,
     required this.isReplying,
     required this.onChanged,
+    this.isEditing = false,
     this.focusNode,
   });
 
   final TextEditingController controller;
   final FocusNode? focusNode;
   final bool isReplying;
+  final bool isEditing;
   final ValueChanged<String> onChanged;
 
   @override
   Widget build(BuildContext context) {
+    final semanticLabel = isEditing
+        ? 'Edit input'
+        : isReplying
+        ? 'Reply input'
+        : 'Comment input';
+    final semanticHint = isEditing
+        ? 'Edit comment'
+        : isReplying
+        ? 'Add a reply'
+        : 'Add a comment';
+    final hintText = isEditing ? 'Edit comment...' : 'Add comment...';
+    final isMultiline = isReplying || isEditing;
+
     return Padding(
       padding: const EdgeInsets.only(left: 16, bottom: 14, top: 14),
       child: Semantics(
         identifier: 'comment_text_field',
         textField: true,
-        label: isReplying ? 'Reply input' : 'Comment input',
-        hint: isReplying ? 'Add a reply' : 'Add a comment',
+        label: semanticLabel,
+        hint: semanticHint,
         child: TextField(
           controller: controller,
           focusNode: focusNode,
@@ -236,7 +263,7 @@ class _CommentTextField extends StatelessWidget {
           ),
           cursorColor: VineTheme.tabIndicatorGreen,
           decoration: InputDecoration(
-            hintText: 'Add comment...',
+            hintText: hintText,
             hintStyle: VineTheme.bodyFont(
               color: const Color.fromARGB(128, 228, 219, 219),
             ),
@@ -244,9 +271,9 @@ class _CommentTextField extends StatelessWidget {
             contentPadding: EdgeInsets.zero,
             isDense: true,
           ),
-          maxLines: isReplying ? 5 : null,
-          minLines: isReplying ? 1 : null,
-          textAlignVertical: isReplying ? null : TextAlignVertical.center,
+          maxLines: isMultiline ? 5 : null,
+          minLines: isMultiline ? 1 : null,
+          textAlignVertical: isMultiline ? null : TextAlignVertical.center,
         ),
       ),
     );
@@ -295,6 +322,50 @@ class _SendButton extends StatelessWidget {
                   ),
                 )
               : const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+        ),
+      ),
+    );
+  }
+}
+
+/// Edit indicator showing the comment is being edited.
+class _EditIndicator extends StatelessWidget {
+  const _EditIndicator({required this.onCancel});
+
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onCancel,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+        child: Row(
+          children: [
+            Flexible(
+              child: Text(
+                'Editing',
+                style: VineTheme.bodyFont(
+                  fontSize: 12,
+                  color: VineTheme.tabIndicatorGreen,
+                  height: 16 / 12,
+                ).copyWith(letterSpacing: 0.4),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.close,
+                size: 16,
+                color: VineTheme.tabIndicatorGreen,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -8,36 +8,42 @@ part of 'popular_videos_feed_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Popular Videos feed provider - shows trending videos by recent engagement
+/// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Strategy: Try Funnelcake REST API first (sort=trending) for current popularity,
-/// fall back to Nostr subscription with local engagement sorting if REST API is unavailable.
+/// Delegates video fetching to [VideosRepository.getPopularVideos], which
+/// implements a 3-tier fallback: Funnelcake REST API → NIP-50 sort:hot →
+/// client-side engagement sorting.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
 /// - appReady gate becomes true
+/// - Content filter preferences change
 
 @ProviderFor(PopularVideosFeed)
 const popularVideosFeedProvider = PopularVideosFeedProvider._();
 
-/// Popular Videos feed provider - shows trending videos by recent engagement
+/// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Strategy: Try Funnelcake REST API first (sort=trending) for current popularity,
-/// fall back to Nostr subscription with local engagement sorting if REST API is unavailable.
+/// Delegates video fetching to [VideosRepository.getPopularVideos], which
+/// implements a 3-tier fallback: Funnelcake REST API → NIP-50 sort:hot →
+/// client-side engagement sorting.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
 /// - appReady gate becomes true
+/// - Content filter preferences change
 final class PopularVideosFeedProvider
     extends $AsyncNotifierProvider<PopularVideosFeed, VideoFeedState> {
-  /// Popular Videos feed provider - shows trending videos by recent engagement
+  /// Popular Videos feed provider - shows trending videos by recent engagement.
   ///
-  /// Strategy: Try Funnelcake REST API first (sort=trending) for current popularity,
-  /// fall back to Nostr subscription with local engagement sorting if REST API is unavailable.
+  /// Delegates video fetching to [VideosRepository.getPopularVideos], which
+  /// implements a 3-tier fallback: Funnelcake REST API → NIP-50 sort:hot →
+  /// client-side engagement sorting.
   ///
   /// Rebuilds when:
   /// - Pull to refresh
   /// - appReady gate becomes true
+  /// - Content filter preferences change
   const PopularVideosFeedProvider._()
     : super(
         from: null,
@@ -57,16 +63,18 @@ final class PopularVideosFeedProvider
   PopularVideosFeed create() => PopularVideosFeed();
 }
 
-String _$popularVideosFeedHash() => r'5ccc28d2edc712ea418a1563f6215277c4e46a93';
+String _$popularVideosFeedHash() => r'68c4ab6812a39f2d4cd1b71de8ba8163c086ed9e';
 
-/// Popular Videos feed provider - shows trending videos by recent engagement
+/// Popular Videos feed provider - shows trending videos by recent engagement.
 ///
-/// Strategy: Try Funnelcake REST API first (sort=trending) for current popularity,
-/// fall back to Nostr subscription with local engagement sorting if REST API is unavailable.
+/// Delegates video fetching to [VideosRepository.getPopularVideos], which
+/// implements a 3-tier fallback: Funnelcake REST API → NIP-50 sort:hot →
+/// client-side engagement sorting.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
 /// - appReady gate becomes true
+/// - Content filter preferences change
 
 abstract class _$PopularVideosFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();

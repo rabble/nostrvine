@@ -23,7 +23,7 @@ String _errorToString(CommentsError error) {
     CommentsError.postCommentFailed => 'Failed to post comment',
     CommentsError.postReplyFailed => 'Failed to post reply',
     CommentsError.deleteCommentFailed => 'Failed to delete comment',
-    CommentsError.likeFailed => 'Failed to like comment',
+    CommentsError.voteFailed => 'Failed to vote on comment',
     CommentsError.reportFailed => 'Failed to report comment',
     CommentsError.blockFailed => 'Failed to block user',
   };
@@ -290,10 +290,12 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
   Widget build(BuildContext context) {
     return BlocConsumer<CommentsBloc, CommentsState>(
       listenWhen: (prev, next) =>
-          prev.activeReplyCommentId != next.activeReplyCommentId,
+          prev.activeReplyCommentId != next.activeReplyCommentId ||
+          prev.activeEditCommentId != next.activeEditCommentId,
       listener: (context, state) {
-        // Focus input when reply is activated
-        if (state.activeReplyCommentId != null) {
+        // Focus input when reply or edit is activated
+        if (state.activeReplyCommentId != null ||
+            state.activeEditCommentId != null) {
           _focusNode.requestFocus();
         }
       },
@@ -301,11 +303,16 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           prev.mainInputText != next.mainInputText ||
           prev.replyInputText != next.replyInputText ||
           prev.activeReplyCommentId != next.activeReplyCommentId ||
+          prev.activeEditCommentId != next.activeEditCommentId ||
+          prev.editInputText != next.editInputText ||
           prev.isPosting != next.isPosting ||
           prev.mentionSuggestions != next.mentionSuggestions,
       builder: (context, state) {
         final isReplyMode = state.activeReplyCommentId != null;
-        final inputText = isReplyMode
+        final isEditMode = state.activeEditCommentId != null;
+        final inputText = isEditMode
+            ? state.editInputText
+            : isReplyMode
             ? state.replyInputText
             : state.mainInputText;
 
@@ -346,6 +353,7 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           focusNode: _focusNode,
           isPosting: state.isPosting,
           replyToDisplayName: replyToDisplayName,
+          isEditing: isEditMode,
           mentionSuggestions: state.mentionSuggestions,
           onMentionQuery: (query) {
             if (query.isEmpty) {
@@ -367,7 +375,9 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
             );
           },
           onSubmit: () {
-            if (isReplyMode) {
+            if (isEditMode) {
+              context.read<CommentsBloc>().add(const CommentEditSubmitted());
+            } else if (isReplyMode) {
               context.read<CommentsBloc>().add(
                 CommentSubmitted(
                   parentCommentId: state.activeReplyCommentId,
@@ -382,6 +392,9 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
             context.read<CommentsBloc>().add(
               CommentReplyToggled(state.activeReplyCommentId!),
             );
+          },
+          onCancelEdit: () {
+            context.read<CommentsBloc>().add(const CommentEditModeCancelled());
           },
         );
       },

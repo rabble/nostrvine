@@ -135,9 +135,15 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     );
 
     if (mounted) {
+      // Remove already-selected users from results
+      final filtered = widget.excludePubkeys.isEmpty
+          ? profiles
+          : profiles
+                .where((p) => !widget.excludePubkeys.contains(p.pubkey))
+                .toList();
       setState(() {
-        _followProfiles = profiles;
-        _filteredFollowProfiles = profiles;
+        _followProfiles = filtered;
+        _filteredFollowProfiles = filtered;
         _followListLoaded = true;
       });
     }

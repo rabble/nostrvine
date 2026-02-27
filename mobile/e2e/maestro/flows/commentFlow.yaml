@@ -2,10 +2,33 @@ appId: co.openvine.app
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/commentVideo.yaml
+# Back button on iOS devices
+- runFlow:
+    when:
+      visible: |-
+        Go back
+        Back
+    commands:
+      - assertVisible: |-
+          Go back
+          Back
+      - tapOn: |-
+          Go back
+          Back
+
+# Back button on Android devices
+- runFlow:
+    when:
+      visible: Go back
+    commands:
+      - assertVisible: Go back
+      - tapOn: Go back
+
 #- runFlow: ../tests/deleteComment.yaml
 #- runFlow:
 #    file: ../tests/deleteComment.yaml
 #    env:
 #      FULL_COMMENT: ${FULL_COMMENT}
+- runFlow: ../tests/removeKeys.yaml
 #Tear down
 - killApp

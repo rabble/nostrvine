@@ -32,6 +32,14 @@ class CommentBlockUserResult extends CommentOptionResult {
   final String authorPubkey;
 }
 
+/// User chose to edit their own comment.
+class CommentEditResult extends CommentOptionResult {
+  const CommentEditResult({required this.commentId, required this.content});
+
+  final String commentId;
+  final String content;
+}
+
 /// Modal bottom sheet displaying options for a comment.
 ///
 /// Shows different menus depending on whether the comment is from the
@@ -42,9 +50,14 @@ class CommentBlockUserResult extends CommentOptionResult {
 /// Returns a [CommentOptionResult] or `null` if cancelled.
 class CommentOptionsModal {
   /// Shows the options modal for the current user's own comment.
+  ///
+  /// Displays Edit and Delete options. Requires [commentId] and
+  /// [commentContent] for the edit flow.
   static Future<CommentOptionResult?> showForOwnComment(
-    BuildContext modalContext,
-  ) {
+    BuildContext modalContext, {
+    required String commentId,
+    required String commentContent,
+  }) {
     return VineBottomSheet.show<CommentOptionResult>(
       context: modalContext,
       scrollable: false,
@@ -53,13 +66,27 @@ class CommentOptionsModal {
         'Options',
         style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
       ),
-      body: _OptionTile(
-        identifier: 'delete_comment_option',
-        label: 'Delete',
-        semanticLabel: 'Delete comment',
-        iconPath: 'assets/icon/delete.svg',
-        isDestructive: true,
-        onTap: () => modalContext.pop(const CommentDeleteResult()),
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _OptionTile(
+            identifier: 'edit_comment_option',
+            label: 'Edit',
+            semanticLabel: 'Edit comment',
+            iconPath: 'assets/icon/pencil_simple.svg',
+            onTap: () => modalContext.pop(
+              CommentEditResult(commentId: commentId, content: commentContent),
+            ),
+          ),
+          _OptionTile(
+            identifier: 'delete_comment_option',
+            label: 'Delete',
+            semanticLabel: 'Delete comment',
+            iconPath: 'assets/icon/delete.svg',
+            isDestructive: true,
+            onTap: () => modalContext.pop(const CommentDeleteResult()),
+          ),
+        ],
       ),
     );
   }
@@ -172,15 +199,23 @@ class _OptionTile extends StatelessWidget {
 
 /// Bottom sheet for selecting a report reason when flagging content.
 class _FlagContentSheet extends StatefulWidget {
-  const _FlagContentSheet();
+  const _FlagContentSheet({required this.onSubmit});
+
+  final void Function(CommentReportResult result) onSubmit;
 
   static Future<CommentReportResult?> show(BuildContext context) {
-    return showModalBottomSheet<CommentReportResult>(
+    return VineBottomSheet.show<CommentReportResult>(
       context: context,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
+      scrollable: false,
+      expanded: false,
       isScrollControlled: true,
-      builder: (_) => const _FlagContentSheet(),
+      title: Text(
+        'Flag Content',
+        style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
+      ),
+      body: _FlagContentSheet(
+        onSubmit: (result) => Navigator.pop(context, result),
+      ),
     );
   }
 
@@ -193,116 +228,71 @@ class _FlagContentSheetState extends State<_FlagContentSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 40),
-      decoration: const BoxDecoration(
-        color: VineTheme.backgroundColor,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Flag Content',
-                    style: VineTheme.titleFont(
-                      fontSize: 18,
-                      color: VineTheme.onSurface,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.close,
-                      color: VineTheme.onSurfaceMuted,
-                      size: 24,
-                    ),
-                  ),
-                ],
-              ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          child: Text(
+            'Select a reason for flagging this comment',
+            style: VineTheme.bodyFont(
+              fontSize: 14,
+              color: VineTheme.onSurfaceMuted,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+          ),
+        ),
+        for (final reason in ContentFilterReason.values)
+          _ReasonRadioTile(
+            reason: reason,
+            isSelected: _selectedReason == reason,
+            onTap: () {
+              setState(() {
+                _selectedReason = reason;
+              });
+            },
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: _selectedReason != null
+                  ? () {
+                      widget.onSubmit(
+                        CommentReportResult(
+                          reason: _selectedReason!,
+                          details: _getReasonDisplayName(_selectedReason!),
+                        ),
+                      );
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _selectedReason != null
+                    ? VineTheme.vineGreen
+                    : VineTheme.containerLow,
+                foregroundColor: _selectedReason != null
+                    ? VineTheme.backgroundColor
+                    : VineTheme.onSurfaceMuted,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                elevation: 0,
+              ),
               child: Text(
-                'Select a reason for flagging this comment',
+                'Submit',
                 style: VineTheme.bodyFont(
-                  fontSize: 14,
-                  color: VineTheme.onSurfaceMuted,
+                  fontWeight: FontWeight.w700,
+                  color: _selectedReason != null
+                      ? VineTheme.backgroundColor
+                      : VineTheme.onSurfaceMuted,
                 ),
               ),
             ),
-            Flexible(
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final reason in ContentFilterReason.values)
-                      _ReasonRadioTile(
-                        reason: reason,
-                        isSelected: _selectedReason == reason,
-                        onTap: () {
-                          setState(() {
-                            _selectedReason = reason;
-                          });
-                        },
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-              child: SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _selectedReason != null
-                      ? () {
-                          Navigator.pop(
-                            context,
-                            CommentReportResult(
-                              reason: _selectedReason!,
-                              details: _getReasonDisplayName(_selectedReason!),
-                            ),
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _selectedReason != null
-                        ? VineTheme.vineGreen
-                        : VineTheme.containerLow,
-                    foregroundColor: _selectedReason != null
-                        ? VineTheme.backgroundColor
-                        : VineTheme.onSurfaceMuted,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Submit',
-                    style: VineTheme.bodyFont(
-                      fontWeight: FontWeight.w700,
-                      color: _selectedReason != null
-                          ? VineTheme.backgroundColor
-                          : VineTheme.onSurfaceMuted,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -354,13 +344,26 @@ class _ReasonRadioTile extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                _getReasonDisplayName(reason),
-                style: VineTheme.bodyFont(
-                  color: isSelected
-                      ? VineTheme.onSurface
-                      : VineTheme.onSurfaceVariant,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _getReasonDisplayName(reason),
+                    style: VineTheme.bodyFont(
+                      color: isSelected
+                          ? VineTheme.onSurface
+                          : VineTheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _getReasonDescription(reason),
+                    style: VineTheme.bodyFont(
+                      fontSize: 12,
+                      color: VineTheme.onSurfaceMuted,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -372,14 +375,31 @@ class _ReasonRadioTile extends StatelessWidget {
 
 String _getReasonDisplayName(ContentFilterReason reason) {
   return switch (reason) {
-    ContentFilterReason.spam => 'Spam or Unwanted Content',
-    ContentFilterReason.harassment => 'Harassment, Bullying, or Threats',
-    ContentFilterReason.violence => 'Violent or Extremist Content',
-    ContentFilterReason.sexualContent => 'Sexual or Adult Content',
-    ContentFilterReason.copyright => 'Copyright Violation',
-    ContentFilterReason.falseInformation => 'False Information',
-    ContentFilterReason.csam => 'Child Safety Violation',
-    ContentFilterReason.aiGenerated => 'AI-Generated Content',
-    ContentFilterReason.other => 'Other Policy Violation',
+    ContentFilterReason.spam => 'Spam',
+    ContentFilterReason.harassment => 'Harassment',
+    ContentFilterReason.violence => 'Violence',
+    ContentFilterReason.sexualContent => 'Sexual Content',
+    ContentFilterReason.copyright => 'Copyright',
+    ContentFilterReason.falseInformation => 'Misinformation',
+    ContentFilterReason.csam => 'Child Safety',
+    ContentFilterReason.aiGenerated => 'AI Generated',
+    ContentFilterReason.other => 'Other',
+  };
+}
+
+String _getReasonDescription(ContentFilterReason reason) {
+  return switch (reason) {
+    ContentFilterReason.spam => 'Unsolicited or repetitive content',
+    ContentFilterReason.harassment =>
+      'Harmful and unwanted replies or mentions',
+    ContentFilterReason.violence => 'Graphic violence or extremist material',
+    ContentFilterReason.sexualContent => 'Nudity, porn, or sexual content',
+    ContentFilterReason.copyright => 'Unauthorized use of copyrighted material',
+    ContentFilterReason.falseInformation =>
+      'Misleading or deliberately false claims',
+    ContentFilterReason.csam => 'Content that endangers minors',
+    ContentFilterReason.aiGenerated =>
+      'Deceptive AI-generated or manipulated media',
+    ContentFilterReason.other => 'Items not included above',
   };
 }

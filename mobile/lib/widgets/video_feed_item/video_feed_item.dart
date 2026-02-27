@@ -1364,6 +1364,19 @@ class VideoOverlayActions extends ConsumerWidget {
         !isFullscreen && contextTitle != null && contextTitle!.isNotEmpty;
     final topOffset = hasListHeader ? 80.0 : 16.0;
 
+    // In fullscreen mode, ensure badges clear the status bar icons
+    // (battery, wifi, clock). viewPaddingOf may return 0 if a parent
+    // widget (Scaffold, SafeArea) has already consumed the safe area.
+    // Use the window's actual padding as a fallback minimum.
+    final viewPaddingTop = MediaQuery.viewPaddingOf(context).top;
+    final safeAreaTop = isFullscreen
+        ? (viewPaddingTop > 0
+              ? viewPaddingTop
+              : MediaQuery.of(context).padding.top > 0
+              ? MediaQuery.of(context).padding.top
+              : 54.0) // Fallback for Dynamic Island iPhones
+        : viewPaddingTop;
+
     // Calculate bottom offset based on navigation state
     final bottomOffset = hasBottomNavigation
         ? 14.0
@@ -1400,7 +1413,7 @@ class VideoOverlayActions extends ConsumerWidget {
         // Content warning badge below back button area
         if (video.hasContentWarning)
           Positioned(
-            top: MediaQuery.viewPaddingOf(context).top + topOffset + 56,
+            top: safeAreaTop + topOffset + 56,
             left: 16,
             child: GestureDetector(
               onTap: () => _showContentWarningDetails(
@@ -1415,7 +1428,7 @@ class VideoOverlayActions extends ConsumerWidget {
         // ProofMode and Vine badges in upper right corner (tappable)
         if (!isPreviewMode)
           Positioned(
-            top: MediaQuery.viewPaddingOf(context).top + topOffset,
+            top: safeAreaTop + topOffset,
             right: 16,
             child: GestureDetector(
               onTap: () {
