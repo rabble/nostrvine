@@ -854,8 +854,7 @@ void main() {
           data: '{}',
         );
 
-        final result =
-            await dao.isFileReferenced('nonexistent.mp4');
+        final result = await dao.isFileReferenced('nonexistent.mp4');
         expect(result, isFalse);
       });
 
@@ -879,8 +878,7 @@ void main() {
         expect(result, isTrue);
       });
 
-      test('returns false when filePath and thumbnailPath are null',
-          () async {
+      test('returns false when filePath and thumbnailPath are null', () async {
         await dao.upsertClip(
           id: 'clip_null',
           draftId: testDraftId,

@@ -36,8 +36,7 @@ void main() {
 
   group(DraftsDao, () {
     group('isRenderedFileReferenced', () {
-      test('returns true when filename matches renderedFilePath',
-          () async {
+      test('returns true when filename matches renderedFilePath', () async {
         await dao.upsertDraft(
           id: 'draft_1',
           title: 'Test',
@@ -56,25 +55,27 @@ void main() {
         expect(result, isTrue);
       });
 
-      test('returns true when filename matches renderedThumbnailPath',
-          () async {
-        await dao.upsertDraft(
-          id: 'draft_1',
-          title: 'Test',
-          description: '',
-          publishStatus: 'draft',
-          createdAt: DateTime(2023, 11, 14),
-          lastModified: DateTime(2023, 11, 14),
-          renderedFilePath: 'rendered_video.mp4',
-          renderedThumbnailPath: 'rendered_thumb.jpeg',
-          data: '{}',
-        );
+      test(
+        'returns true when filename matches renderedThumbnailPath',
+        () async {
+          await dao.upsertDraft(
+            id: 'draft_1',
+            title: 'Test',
+            description: '',
+            publishStatus: 'draft',
+            createdAt: DateTime(2023, 11, 14),
+            lastModified: DateTime(2023, 11, 14),
+            renderedFilePath: 'rendered_video.mp4',
+            renderedThumbnailPath: 'rendered_thumb.jpeg',
+            data: '{}',
+          );
 
-        final result = await dao.isRenderedFileReferenced(
-          'rendered_thumb.jpeg',
-        );
-        expect(result, isTrue);
-      });
+          final result = await dao.isRenderedFileReferenced(
+            'rendered_thumb.jpeg',
+          );
+          expect(result, isTrue);
+        },
+      );
 
       test('returns false when filename is not referenced', () async {
         await dao.upsertDraft(
@@ -102,8 +103,7 @@ void main() {
         expect(result, isFalse);
       });
 
-      test(
-          'returns false when renderedFilePath and '
+      test('returns false when renderedFilePath and '
           'renderedThumbnailPath are null', () async {
         await dao.upsertDraft(
           id: 'draft_null',
@@ -123,8 +123,7 @@ void main() {
         expect(result, isFalse);
       });
 
-      test(
-          'returns true when multiple drafts exist and '
+      test('returns true when multiple drafts exist and '
           'one matches', () async {
         await dao.upsertDraft(
           id: 'draft_1',
