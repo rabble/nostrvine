@@ -6723,6 +6723,596 @@ class Nip05VerificationsCompanion
   }
 }
 
+class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DraftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _publishStatusMeta = const VerificationMeta(
+    'publishStatus',
+  );
+  @override
+  late final GeneratedColumn<String> publishStatus = GeneratedColumn<String>(
+    'publish_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('draft'),
+  );
+  static const VerificationMeta _publishAttemptsMeta = const VerificationMeta(
+    'publishAttempts',
+  );
+  @override
+  late final GeneratedColumn<int> publishAttempts = GeneratedColumn<int>(
+    'publish_attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _publishErrorMeta = const VerificationMeta(
+    'publishError',
+  );
+  @override
+  late final GeneratedColumn<String> publishError = GeneratedColumn<String>(
+    'publish_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastModified = GeneratedColumn<DateTime>(
+    'last_modified',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<String> data = GeneratedColumn<String>(
+    'data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    description,
+    publishStatus,
+    publishAttempts,
+    publishError,
+    createdAt,
+    lastModified,
+    data,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'drafts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DraftRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('publish_status')) {
+      context.handle(
+        _publishStatusMeta,
+        publishStatus.isAcceptableOrUnknown(
+          data['publish_status']!,
+          _publishStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('publish_attempts')) {
+      context.handle(
+        _publishAttemptsMeta,
+        publishAttempts.isAcceptableOrUnknown(
+          data['publish_attempts']!,
+          _publishAttemptsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('publish_error')) {
+      context.handle(
+        _publishErrorMeta,
+        publishError.isAcceptableOrUnknown(
+          data['publish_error']!,
+          _publishErrorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('last_modified')) {
+      context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
+          _lastModifiedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastModifiedMeta);
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DraftRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DraftRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      publishStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}publish_status'],
+      )!,
+      publishAttempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}publish_attempts'],
+      )!,
+      publishError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}publish_error'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      lastModified: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_modified'],
+      )!,
+      data: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data'],
+      )!,
+    );
+  }
+
+  @override
+  $DraftsTable createAlias(String alias) {
+    return $DraftsTable(attachedDatabase, alias);
+  }
+}
+
+class DraftRow extends DataClass implements Insertable<DraftRow> {
+  /// Unique draft identifier (e.g. "draft_1700000000000")
+  final String id;
+
+  /// User-provided title (may be empty)
+  final String title;
+
+  /// User-provided description (may be empty)
+  final String description;
+
+  /// Current publish status: draft, publishing, failed, published
+  final String publishStatus;
+
+  /// Number of publish attempts
+  final int publishAttempts;
+
+  /// Last publish error message
+  final String? publishError;
+
+  /// When the draft was originally created
+  final DateTime createdAt;
+
+  /// When the draft was last modified
+  final DateTime lastModified;
+
+  /// Full JSON-serialized draft payload (clips, hashtags, editor state, etc.)
+  final String data;
+  const DraftRow({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.publishStatus,
+    required this.publishAttempts,
+    this.publishError,
+    required this.createdAt,
+    required this.lastModified,
+    required this.data,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    map['description'] = Variable<String>(description);
+    map['publish_status'] = Variable<String>(publishStatus);
+    map['publish_attempts'] = Variable<int>(publishAttempts);
+    if (!nullToAbsent || publishError != null) {
+      map['publish_error'] = Variable<String>(publishError);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['last_modified'] = Variable<DateTime>(lastModified);
+    map['data'] = Variable<String>(data);
+    return map;
+  }
+
+  DraftsCompanion toCompanion(bool nullToAbsent) {
+    return DraftsCompanion(
+      id: Value(id),
+      title: Value(title),
+      description: Value(description),
+      publishStatus: Value(publishStatus),
+      publishAttempts: Value(publishAttempts),
+      publishError: publishError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishError),
+      createdAt: Value(createdAt),
+      lastModified: Value(lastModified),
+      data: Value(data),
+    );
+  }
+
+  factory DraftRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DraftRow(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String>(json['description']),
+      publishStatus: serializer.fromJson<String>(json['publishStatus']),
+      publishAttempts: serializer.fromJson<int>(json['publishAttempts']),
+      publishError: serializer.fromJson<String?>(json['publishError']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastModified: serializer.fromJson<DateTime>(json['lastModified']),
+      data: serializer.fromJson<String>(json['data']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String>(description),
+      'publishStatus': serializer.toJson<String>(publishStatus),
+      'publishAttempts': serializer.toJson<int>(publishAttempts),
+      'publishError': serializer.toJson<String?>(publishError),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastModified': serializer.toJson<DateTime>(lastModified),
+      'data': serializer.toJson<String>(data),
+    };
+  }
+
+  DraftRow copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? publishStatus,
+    int? publishAttempts,
+    Value<String?> publishError = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? lastModified,
+    String? data,
+  }) => DraftRow(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    description: description ?? this.description,
+    publishStatus: publishStatus ?? this.publishStatus,
+    publishAttempts: publishAttempts ?? this.publishAttempts,
+    publishError: publishError.present ? publishError.value : this.publishError,
+    createdAt: createdAt ?? this.createdAt,
+    lastModified: lastModified ?? this.lastModified,
+    data: data ?? this.data,
+  );
+  DraftRow copyWithCompanion(DraftsCompanion data) {
+    return DraftRow(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      publishStatus: data.publishStatus.present
+          ? data.publishStatus.value
+          : this.publishStatus,
+      publishAttempts: data.publishAttempts.present
+          ? data.publishAttempts.value
+          : this.publishAttempts,
+      publishError: data.publishError.present
+          ? data.publishError.value
+          : this.publishError,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastModified: data.lastModified.present
+          ? data.lastModified.value
+          : this.lastModified,
+      data: data.data.present ? data.data.value : this.data,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DraftRow(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('publishStatus: $publishStatus, ')
+          ..write('publishAttempts: $publishAttempts, ')
+          ..write('publishError: $publishError, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastModified: $lastModified, ')
+          ..write('data: $data')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    description,
+    publishStatus,
+    publishAttempts,
+    publishError,
+    createdAt,
+    lastModified,
+    data,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DraftRow &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.publishStatus == this.publishStatus &&
+          other.publishAttempts == this.publishAttempts &&
+          other.publishError == this.publishError &&
+          other.createdAt == this.createdAt &&
+          other.lastModified == this.lastModified &&
+          other.data == this.data);
+}
+
+class DraftsCompanion extends UpdateCompanion<DraftRow> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String> description;
+  final Value<String> publishStatus;
+  final Value<int> publishAttempts;
+  final Value<String?> publishError;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> lastModified;
+  final Value<String> data;
+  final Value<int> rowid;
+  const DraftsCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.publishStatus = const Value.absent(),
+    this.publishAttempts = const Value.absent(),
+    this.publishError = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastModified = const Value.absent(),
+    this.data = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DraftsCompanion.insert({
+    required String id,
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.publishStatus = const Value.absent(),
+    this.publishAttempts = const Value.absent(),
+    this.publishError = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime lastModified,
+    required String data,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       createdAt = Value(createdAt),
+       lastModified = Value(lastModified),
+       data = Value(data);
+  static Insertable<DraftRow> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<String>? publishStatus,
+    Expression<int>? publishAttempts,
+    Expression<String>? publishError,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? lastModified,
+    Expression<String>? data,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (publishStatus != null) 'publish_status': publishStatus,
+      if (publishAttempts != null) 'publish_attempts': publishAttempts,
+      if (publishError != null) 'publish_error': publishError,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastModified != null) 'last_modified': lastModified,
+      if (data != null) 'data': data,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DraftsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String>? description,
+    Value<String>? publishStatus,
+    Value<int>? publishAttempts,
+    Value<String?>? publishError,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? lastModified,
+    Value<String>? data,
+    Value<int>? rowid,
+  }) {
+    return DraftsCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      publishStatus: publishStatus ?? this.publishStatus,
+      publishAttempts: publishAttempts ?? this.publishAttempts,
+      publishError: publishError ?? this.publishError,
+      createdAt: createdAt ?? this.createdAt,
+      lastModified: lastModified ?? this.lastModified,
+      data: data ?? this.data,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (publishStatus.present) {
+      map['publish_status'] = Variable<String>(publishStatus.value);
+    }
+    if (publishAttempts.present) {
+      map['publish_attempts'] = Variable<int>(publishAttempts.value);
+    }
+    if (publishError.present) {
+      map['publish_error'] = Variable<String>(publishError.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (lastModified.present) {
+      map['last_modified'] = Variable<DateTime>(lastModified.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<String>(data.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DraftsCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('publishStatus: $publishStatus, ')
+          ..write('publishAttempts: $publishAttempts, ')
+          ..write('publishError: $publishError, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastModified: $lastModified, ')
+          ..write('data: $data, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6741,6 +7331,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PendingActionsTable pendingActions = $PendingActionsTable(this);
   late final $Nip05VerificationsTable nip05Verifications =
       $Nip05VerificationsTable(this);
+  late final $DraftsTable drafts = $DraftsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -6773,6 +7364,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final Nip05VerificationsDao nip05VerificationsDao =
       Nip05VerificationsDao(this as AppDatabase);
+  late final DraftsDao draftsDao = DraftsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6789,6 +7381,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     personalReposts,
     pendingActions,
     nip05Verifications,
+    drafts,
   ];
 }
 
@@ -10063,6 +10656,286 @@ typedef $$Nip05VerificationsTableProcessedTableManager =
       Nip05VerificationRow,
       PrefetchHooks Function()
     >;
+typedef $$DraftsTableCreateCompanionBuilder =
+    DraftsCompanion Function({
+      required String id,
+      Value<String> title,
+      Value<String> description,
+      Value<String> publishStatus,
+      Value<int> publishAttempts,
+      Value<String?> publishError,
+      required DateTime createdAt,
+      required DateTime lastModified,
+      required String data,
+      Value<int> rowid,
+    });
+typedef $$DraftsTableUpdateCompanionBuilder =
+    DraftsCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String> description,
+      Value<String> publishStatus,
+      Value<int> publishAttempts,
+      Value<String?> publishError,
+      Value<DateTime> createdAt,
+      Value<DateTime> lastModified,
+      Value<String> data,
+      Value<int> rowid,
+    });
+
+class $$DraftsTableFilterComposer
+    extends Composer<_$AppDatabase, $DraftsTable> {
+  $$DraftsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get publishStatus => $composableBuilder(
+    column: $table.publishStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get publishAttempts => $composableBuilder(
+    column: $table.publishAttempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get publishError => $composableBuilder(
+    column: $table.publishError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DraftsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DraftsTable> {
+  $$DraftsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get publishStatus => $composableBuilder(
+    column: $table.publishStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get publishAttempts => $composableBuilder(
+    column: $table.publishAttempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get publishError => $composableBuilder(
+    column: $table.publishError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DraftsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DraftsTable> {
+  $$DraftsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get publishStatus => $composableBuilder(
+    column: $table.publishStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get publishAttempts => $composableBuilder(
+    column: $table.publishAttempts,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get publishError => $composableBuilder(
+    column: $table.publishError,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+}
+
+class $$DraftsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DraftsTable,
+          DraftRow,
+          $$DraftsTableFilterComposer,
+          $$DraftsTableOrderingComposer,
+          $$DraftsTableAnnotationComposer,
+          $$DraftsTableCreateCompanionBuilder,
+          $$DraftsTableUpdateCompanionBuilder,
+          (DraftRow, BaseReferences<_$AppDatabase, $DraftsTable, DraftRow>),
+          DraftRow,
+          PrefetchHooks Function()
+        > {
+  $$DraftsTableTableManager(_$AppDatabase db, $DraftsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DraftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DraftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DraftsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<String> publishStatus = const Value.absent(),
+                Value<int> publishAttempts = const Value.absent(),
+                Value<String?> publishError = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
+                Value<String> data = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DraftsCompanion(
+                id: id,
+                title: title,
+                description: description,
+                publishStatus: publishStatus,
+                publishAttempts: publishAttempts,
+                publishError: publishError,
+                createdAt: createdAt,
+                lastModified: lastModified,
+                data: data,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> title = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<String> publishStatus = const Value.absent(),
+                Value<int> publishAttempts = const Value.absent(),
+                Value<String?> publishError = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime lastModified,
+                required String data,
+                Value<int> rowid = const Value.absent(),
+              }) => DraftsCompanion.insert(
+                id: id,
+                title: title,
+                description: description,
+                publishStatus: publishStatus,
+                publishAttempts: publishAttempts,
+                publishError: publishError,
+                createdAt: createdAt,
+                lastModified: lastModified,
+                data: data,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DraftsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DraftsTable,
+      DraftRow,
+      $$DraftsTableFilterComposer,
+      $$DraftsTableOrderingComposer,
+      $$DraftsTableAnnotationComposer,
+      $$DraftsTableCreateCompanionBuilder,
+      $$DraftsTableUpdateCompanionBuilder,
+      (DraftRow, BaseReferences<_$AppDatabase, $DraftsTable, DraftRow>),
+      DraftRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10089,4 +10962,6 @@ class $AppDatabaseManager {
       $$PendingActionsTableTableManager(_db, _db.pendingActions);
   $$Nip05VerificationsTableTableManager get nip05Verifications =>
       $$Nip05VerificationsTableTableManager(_db, _db.nip05Verifications);
+  $$DraftsTableTableManager get drafts =>
+      $$DraftsTableTableManager(_db, _db.drafts);
 }

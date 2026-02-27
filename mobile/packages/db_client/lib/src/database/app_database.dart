@@ -28,6 +28,7 @@ const _notificationRetentionDays = 7;
     PersonalReposts,
     PendingActions,
     Nip05Verifications,
+    Drafts,
   ],
   daos: [
     UserProfilesDao,
@@ -41,6 +42,7 @@ const _notificationRetentionDays = 7;
     PersonalRepostsDao,
     PendingActionsDao,
     Nip05VerificationsDao,
+    DraftsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -153,6 +155,40 @@ class AppDatabase extends _$AppDatabase {
       await customStatement('''
         CREATE INDEX IF NOT EXISTS idx_pending_action_created
         ON pending_actions (created_at)
+      ''');
+    }
+
+    // Check if drafts table exists, create if missing
+    final draftsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='drafts'",
+    ).get();
+
+    if (draftsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE drafts (
+          id TEXT NOT NULL PRIMARY KEY,
+          title TEXT NOT NULL DEFAULT '',
+          description TEXT NOT NULL DEFAULT '',
+          publish_status TEXT NOT NULL DEFAULT 'draft',
+          publish_attempts INTEGER NOT NULL DEFAULT 0,
+          publish_error TEXT,
+          created_at INTEGER NOT NULL,
+          last_modified INTEGER NOT NULL,
+          data TEXT NOT NULL
+        )
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_draft_publish_status
+        ON drafts (publish_status)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_draft_last_modified
+        ON drafts (last_modified DESC)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_draft_created_at
+        ON drafts (created_at DESC)
       ''');
     }
   }

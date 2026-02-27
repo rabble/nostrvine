@@ -471,6 +471,67 @@ class Nip05Verifications extends Table {
   ];
 }
 
+/// Persistent storage for video drafts
+///
+/// Stores draft metadata and full serialized JSON for offline access.
+/// Key fields are indexed columns for efficient queries; the full draft
+/// payload (clips, editor state, etc.) lives in the [data] JSON blob.
+@DataClassName('DraftRow')
+class Drafts extends Table {
+  @override
+  String get tableName => 'drafts';
+
+  /// Unique draft identifier (e.g. "draft_1700000000000")
+  TextColumn get id => text()();
+
+  /// User-provided title (may be empty)
+  TextColumn get title => text().withDefault(const Constant(''))();
+
+  /// User-provided description (may be empty)
+  TextColumn get description => text().withDefault(const Constant(''))();
+
+  /// Current publish status: draft, publishing, failed, published
+  TextColumn get publishStatus =>
+      text().withDefault(const Constant('draft')).named('publish_status')();
+
+  /// Number of publish attempts
+  IntColumn get publishAttempts =>
+      integer().withDefault(const Constant(0)).named('publish_attempts')();
+
+  /// Last publish error message
+  TextColumn get publishError => text().nullable().named('publish_error')();
+
+  /// When the draft was originally created
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
+
+  /// When the draft was last modified
+  DateTimeColumn get lastModified => dateTime().named('last_modified')();
+
+  /// Full JSON-serialized draft payload (clips, hashtags, editor state, etc.)
+  TextColumn get data => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_draft_publish_status',
+      'CREATE INDEX IF NOT EXISTS idx_draft_publish_status '
+          'ON drafts (publish_status)',
+    ),
+    Index(
+      'idx_draft_last_modified',
+      'CREATE INDEX IF NOT EXISTS idx_draft_last_modified '
+          'ON drafts (last_modified DESC)',
+    ),
+    Index(
+      'idx_draft_created_at',
+      'CREATE INDEX IF NOT EXISTS idx_draft_created_at '
+          'ON drafts (created_at DESC)',
+    ),
+  ];
+}
+
 /// Stores the current user's own repost events (Kind 16 generic reposts).
 ///
 /// This table tracks the mapping between addressable video IDs and the
