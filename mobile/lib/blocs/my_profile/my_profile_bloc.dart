@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
@@ -19,7 +20,10 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
   }) : _profileRepository = profileRepository,
        super(const MyProfileInitial()) {
     on<MyProfileLoadRequested>(_onLoadRequested);
-    on<MyProfileSubscriptionRequested>(_onSubscriptionRequested);
+    on<MyProfileSubscriptionRequested>(
+      _onSubscriptionRequested,
+      transformer: restartable(),
+    );
     on<MyProfileFetchRequested>(_onFetchRequested);
   }
 
@@ -71,7 +75,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       } else {
         emit(const MyProfileError(errorType: MyProfileErrorType.notFound));
       }
-    } catch (e) {
+    } on Exception catch (e) {
       if (cachedProfile != null) {
         emit(
           MyProfileLoaded(
