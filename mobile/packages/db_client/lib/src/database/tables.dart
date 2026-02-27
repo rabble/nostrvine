@@ -585,8 +585,7 @@ class Clips extends Table {
   TextColumn get filePath => text().nullable().named('file_path')();
 
   /// Basename of the thumbnail file (for indexed lookups)
-  TextColumn get thumbnailPath =>
-      text().nullable().named('thumbnail_path')();
+  TextColumn get thumbnailPath => text().nullable().named('thumbnail_path')();
 
   @override
   Set<Column> get primaryKey => {id};

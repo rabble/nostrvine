@@ -808,5 +808,93 @@ void main() {
         expect(deleted, equals(0));
       });
     });
+
+    group('isFileReferenced', () {
+      test('returns true when filename matches filePath', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'video_abc.mp4',
+          thumbnailPath: 'thumb_abc.jpeg',
+          data: '{}',
+        );
+
+        final result = await dao.isFileReferenced('video_abc.mp4');
+        expect(result, isTrue);
+      });
+
+      test('returns true when filename matches thumbnailPath', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'video_abc.mp4',
+          thumbnailPath: 'thumb_abc.jpeg',
+          data: '{}',
+        );
+
+        final result = await dao.isFileReferenced('thumb_abc.jpeg');
+        expect(result, isTrue);
+      });
+
+      test('returns false when filename is not referenced', () async {
+        await dao.upsertClip(
+          id: 'clip_1',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'video_abc.mp4',
+          thumbnailPath: 'thumb_abc.jpeg',
+          data: '{}',
+        );
+
+        final result =
+            await dao.isFileReferenced('nonexistent.mp4');
+        expect(result, isFalse);
+      });
+
+      test('returns false when no clips exist', () async {
+        final result = await dao.isFileReferenced('anything.mp4');
+        expect(result, isFalse);
+      });
+
+      test('returns true when filename matches library clip', () async {
+        await dao.upsertClip(
+          id: 'lib_clip_1',
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: 'lib_video.mp4',
+          thumbnailPath: 'lib_thumb.jpeg',
+          data: '{}',
+        );
+
+        final result = await dao.isFileReferenced('lib_video.mp4');
+        expect(result, isTrue);
+      });
+
+      test('returns false when filePath and thumbnailPath are null',
+          () async {
+        await dao.upsertClip(
+          id: 'clip_null',
+          draftId: testDraftId,
+          orderIndex: 0,
+          durationMs: 3000,
+          recordedAt: DateTime(2023, 11, 14, 10),
+          filePath: null,
+          thumbnailPath: null,
+          data: '{}',
+        );
+
+        final result = await dao.isFileReferenced('something.mp4');
+        expect(result, isFalse);
+      });
+    });
   });
 }
