@@ -135,15 +135,11 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     );
 
     if (mounted) {
-      // Remove already-selected users from results
-      final filtered = widget.excludePubkeys.isEmpty
-          ? profiles
-          : profiles
-                .where((p) => !widget.excludePubkeys.contains(p.pubkey))
-                .toList();
+      // Keep all profiles including excluded ones — excluded users are shown
+      // as disabled in the UI rather than being filtered out entirely.
       setState(() {
-        _followProfiles = filtered;
-        _filteredFollowProfiles = filtered;
+        _followProfiles = profiles;
+        _filteredFollowProfiles = profiles;
         _followListLoaded = true;
       });
     }
