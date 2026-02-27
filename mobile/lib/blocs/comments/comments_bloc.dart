@@ -95,9 +95,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<CommentEditSubmitted>(_onEditSubmitted);
     on<NewCommentReceived>(_onNewCommentReceived);
     on<NewCommentsAcknowledged>(_onNewCommentsAcknowledged);
-    on<CommentEditModeEntered>(_onEditModeEntered);
-    on<CommentEditModeCancelled>(_onEditModeCancelled);
-    on<CommentEditSubmitted>(_onEditSubmitted);
   }
 
   /// Page size for comment loading.

@@ -378,25 +378,14 @@ class _ReasonRadioTile extends StatelessWidget {
 String _getReasonDisplayName(ContentFilterReason reason) {
   return switch (reason) {
     ContentFilterReason.spam => 'Spam',
-    ContentFilterReason.harassment => 'Harassment & Profanity',
-    ContentFilterReason.nsfw => 'NSFW',
-    ContentFilterReason.illegal => 'Illegal',
-    ContentFilterReason.impersonation => 'Impersonation',
+    ContentFilterReason.harassment => 'Harassment',
+    ContentFilterReason.violence => 'Violence',
+    ContentFilterReason.sexualContent => 'Sexual Content',
+    ContentFilterReason.copyright => 'Copyright',
+    ContentFilterReason.falseInformation => 'Misinformation',
+    ContentFilterReason.csam => 'Child Safety',
+    ContentFilterReason.aiGenerated => 'AI Generated',
     ContentFilterReason.other => 'Other',
-  };
-}
-
-String _getReasonDescription(ContentFilterReason reason) {
-  return switch (reason) {
-    ContentFilterReason.spam => 'Unsolicited or repetitive content',
-    ContentFilterReason.harassment =>
-      'Harmful and unwanted replies or mentions',
-    ContentFilterReason.nsfw => 'Nudity, porn, or violent content',
-    ContentFilterReason.illegal =>
-      'Content that violates the law in your country',
-    ContentFilterReason.impersonation =>
-      "User is stealing someone else's identity",
-    ContentFilterReason.other => 'Items not included above',
   };
 }
 
