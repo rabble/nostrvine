@@ -210,6 +210,37 @@ void main() {
         final drafts = await service.getAllDrafts();
         expect(drafts, isEmpty);
       });
+
+      test('should remove corrupted drafts with 0 clips', () async {
+        // Insert a draft row directly via DAO (no clips)
+        await database.draftsDao.upsertDraft(
+          id: 'corrupted_draft',
+          title: 'Corrupted',
+          description: '',
+          publishStatus: 'draft',
+          createdAt: DateTime(2025),
+          lastModified: DateTime(2025),
+          renderedFilePath: null,
+          renderedThumbnailPath: null,
+          data: '{"title":"Corrupted","description":""}',
+        );
+
+        // Verify draft row exists
+        final row = await database.draftsDao.getDraftById(
+          'corrupted_draft',
+        );
+        expect(row, isNotNull);
+
+        // getAllDrafts should skip it and delete it
+        final drafts = await service.getAllDrafts();
+        expect(drafts, isEmpty);
+
+        // Draft row should be deleted from DB
+        final rowAfter = await database.draftsDao.getDraftById(
+          'corrupted_draft',
+        );
+        expect(rowAfter, isNull);
+      });
     });
 
     group('deleteDraft', () {

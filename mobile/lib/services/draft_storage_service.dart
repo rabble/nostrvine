@@ -273,15 +273,35 @@ class DraftStorageService {
       final rows = await _draftsDao.getAllDrafts();
       final documentsPath = await getDocumentsPath();
       final drafts = <DivineVideoDraft>[];
+      final corruptedDraftIds = <String>[];
 
       for (final row in rows) {
         final clipRows = await _clipsDao.getClipsByDraftId(row.id);
+
+        if (clipRows.isEmpty) {
+          corruptedDraftIds.add(row.id);
+          continue;
+        }
+
         final draft = DivineVideoDraft.fromDriftRow(
           row: row,
           clipRows: clipRows,
           documentsPath: documentsPath,
         );
         drafts.add(draft);
+      }
+
+      // Clean up corrupted drafts (0 clips) in the background
+      if (corruptedDraftIds.isNotEmpty) {
+        Log.warning(
+          '🧹 Removing ${corruptedDraftIds.length} corrupted '
+          'draft(s) with 0 clips: $corruptedDraftIds',
+          name: 'DraftStorageService',
+          category: LogCategory.video,
+        );
+        for (final id in corruptedDraftIds) {
+          await _draftsDao.deleteDraft(id);
+        }
       }
 
       return drafts;
