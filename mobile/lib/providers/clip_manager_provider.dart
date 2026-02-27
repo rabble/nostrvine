@@ -10,6 +10,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
@@ -300,7 +301,12 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     await _forceAutosave();
 
     // Delete files only if not referenced by drafts or clip library
-    await FileCleanupService.deleteRecordingClipFiles(clip);
+    final db = ref.read(databaseProvider);
+    await FileCleanupService.deleteRecordingClipFiles(
+      clip,
+      draftsDao: db.draftsDao,
+      clipsDao: db.clipsDao,
+    );
 
     return true;
   }

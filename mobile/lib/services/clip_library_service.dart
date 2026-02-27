@@ -11,9 +11,14 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ClipLibraryService {
-  ClipLibraryService({required ClipsDao clipsDao}) : _clipsDao = clipsDao;
+  ClipLibraryService({
+    required ClipsDao clipsDao,
+    required DraftsDao draftsDao,
+  }) : _clipsDao = clipsDao,
+       _draftsDao = draftsDao;
 
   final ClipsDao _clipsDao;
+  final DraftsDao _draftsDao;
 
   static const String _storageKey = 'clip_library';
 
@@ -121,7 +126,11 @@ class ClipLibraryService {
     await _clipsDao.deleteClip(id);
 
     // Delete files only if not referenced by drafts
-    await FileCleanupService.deleteSavedClipFiles(clip);
+    await FileCleanupService.deleteSavedClipFiles(
+      clip,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
   }
 
   /// Clear all clips from the library and delete associated files
@@ -137,6 +146,10 @@ class ClipLibraryService {
     await _clipsDao.clearLibraryClips();
 
     // Delete files only if not referenced by drafts
-    await FileCleanupService.deleteSavedClipsFiles(clips);
+    await FileCleanupService.deleteSavedClipsFiles(
+      clips,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
   }
 }

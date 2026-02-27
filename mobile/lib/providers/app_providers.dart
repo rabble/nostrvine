@@ -649,7 +649,7 @@ DraftStorageService draftStorageService(Ref ref) {
 @riverpod
 ClipLibraryService clipLibraryService(Ref ref) {
   final db = ref.watch(databaseProvider);
-  return ClipLibraryService(clipsDao: db.clipsDao);
+  return ClipLibraryService(clipsDao: db.clipsDao, draftsDao: db.draftsDao);
 }
 
 // (Removed duplicate legacy provider for StreamUploadService)

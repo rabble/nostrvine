@@ -15,6 +15,7 @@ import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
@@ -99,7 +100,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(clearFinalRenderedClip: true);
 
     // Delete the old rendered file from disk to free up space
-    unawaited(FileCleanupService.deleteRecordingClipFiles(clip));
+    final db = ref.read(databaseProvider);
+    unawaited(
+      FileCleanupService.deleteRecordingClipFiles(
+        clip,
+        draftsDao: db.draftsDao,
+        clipsDao: db.clipsDao,
+      ),
+    );
   }
 
   /// Initialize the video editor with an optional draft.

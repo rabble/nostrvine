@@ -20,7 +20,10 @@ void main() {
 
     setUp(() async {
       database = AppDatabase.test(NativeDatabase.memory());
-      clipService = ClipLibraryService(clipsDao: database.clipsDao);
+      clipService = ClipLibraryService(
+        clipsDao: database.clipsDao,
+        draftsDao: database.draftsDao,
+      );
     });
 
     tearDown(() async {

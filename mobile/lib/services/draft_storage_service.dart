@@ -127,7 +127,11 @@ class DraftStorageService {
       ];
 
       // Delete orphaned files (only if not referenced by clip library)
-      await FileCleanupService.deleteFilesIfUnreferenced(orphanedFiles);
+      await FileCleanupService.deleteFilesIfUnreferenced(
+        orphanedFiles,
+        draftsDao: _draftsDao,
+        clipsDao: _clipsDao,
+      );
     }
 
     // Upsert draft row
@@ -273,12 +277,18 @@ class DraftStorageService {
     await _draftsDao.deleteDraft(id);
 
     // Delete clip files only if not referenced by clip library
-    await FileCleanupService.deleteRecordingClipsFiles(draft.clips);
+    await FileCleanupService.deleteRecordingClipsFiles(
+      draft.clips,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
 
     // Delete final rendered clip if present
     if (draft.finalRenderedClip != null) {
       await FileCleanupService.deleteRecordingClipFiles(
         draft.finalRenderedClip!,
+        draftsDao: _draftsDao,
+        clipsDao: _clipsDao,
       );
     }
   }
@@ -301,7 +311,15 @@ class DraftStorageService {
     await _draftsDao.clearAll();
 
     // Delete clip files only if not referenced by clip library
-    await FileCleanupService.deleteRecordingClipsFiles(allClips);
-    await FileCleanupService.deleteRecordingClipsFiles(allFinalRenderedClips);
+    await FileCleanupService.deleteRecordingClipsFiles(
+      allClips,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
+    await FileCleanupService.deleteRecordingClipsFiles(
+      allFinalRenderedClips,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
   }
 }
