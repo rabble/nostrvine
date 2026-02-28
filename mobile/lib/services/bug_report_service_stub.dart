@@ -1,6 +1,8 @@
 // ABOUTME: Stub for dart:html types on native platforms
 // ABOUTME: Provides no-op implementations when compiling for iOS/Android
 
+// ignore_for_file: avoid_unused_constructor_parameters
+
 /// Stub class for html.Blob on native platforms
 class Blob {
   Blob(List<dynamic> parts, String type);

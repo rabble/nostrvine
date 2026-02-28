@@ -141,7 +141,7 @@ class _VideoEditorMoreButtonState
 
     if (remainingClips.isEmpty) {
       // No clips left, navigate back
-      context.pop();
+      if (mounted) context.pop();
     } else {
       // Update currentClipIndex if it's now out of bounds
       final videoEditor = ref.read(videoEditorProvider.notifier);

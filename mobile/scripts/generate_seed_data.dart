@@ -524,7 +524,7 @@ Future<Map<String, dynamic>> _downloadMediaFiles(
       videosAttempted++;
       final videoFile = File('${videosDir.path}/$eventId.mp4');
 
-      if (await videoFile.exists()) {
+      if (videoFile.existsSync()) {
         print(
           '[SEED GEN]      ✓ Video already exists (${await videoFile.length()} bytes)',
         );
@@ -582,7 +582,7 @@ Future<Map<String, dynamic>> _downloadMediaFiles(
           : 'jpg';
       final thumbnailFile = File('${thumbnailsDir.path}/$eventId.$ext');
 
-      if (await thumbnailFile.exists()) {
+      if (thumbnailFile.existsSync()) {
         print(
           '[SEED GEN]      ✓ Thumbnail already exists (${await thumbnailFile.length()} bytes)',
         );

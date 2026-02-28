@@ -11,5 +11,3 @@ appId: co.openvine.app
 - assertVisible: Privacy Policy
 - assertVisible: ", and "
 - assertVisible: Safety Standards
-
-

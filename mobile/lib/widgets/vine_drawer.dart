@@ -423,10 +423,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   ) async {
     // Set Zendesk identity for all paths (native SDK and REST API)
     await _setZendeskIdentityWithService(userPubkey, userProfileService);
+    if (!context.mounted) return;
 
     if (isZendeskAvailable) {
       // Get device and app info
       final packageInfo = await PackageInfo.fromPlatform();
+      if (!context.mounted) return;
       final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
 
       final description =

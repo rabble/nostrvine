@@ -116,7 +116,7 @@ class TestVideoFiles {
 
   static TestColor _generateCheckerboardColor(int x, int y) {
     const squareSize = 8;
-    final isWhite = ((x ~/ squareSize) + (y ~/ squareSize)) % 2 == 0;
+    final isWhite = ((x ~/ squareSize) + (y ~/ squareSize)).isEven;
 
     return isWhite
         ? const TestColor(255, 255, 255, 255)

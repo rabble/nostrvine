@@ -17,7 +17,6 @@ analyzer:
     avoid_returning_this: ignore
     avoid_setters_without_getters: ignore
     avoid_types_on_closure_parameters: ignore
-    avoid_unused_constructor_parameters: ignore
     avoid_web_libraries_in_flutter: ignore
     cascade_invocations: ignore
     comment_references: ignore
@@ -54,14 +53,11 @@ analyzer:
     type_annotate_public_apis: ignore
     unawaited_futures: ignore
     unchecked_use_of_nullable_value: ignore
-    undefined_getter: ignore
-    use_is_even_rather_than_modulo: ignore
 
 linter:
   rules:
     avoid_dynamic_calls: false
     avoid_print: false
-    avoid_slow_async_io: false
     cancel_subscriptions: false
     depend_on_referenced_packages: false
     flutter_style_todos: false
@@ -77,7 +73,6 @@ linter:
     sort_pub_dependencies: false
     unintended_html_in_doc_comment: false
     unreachable_from_main: false
-    use_build_context_synchronously: false
     use_named_constants: false
     omit_local_variable_types: false
     use_setters_to_change_properties: false

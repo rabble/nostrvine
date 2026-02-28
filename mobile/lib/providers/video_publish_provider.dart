@@ -91,6 +91,8 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// prefix and restart their upload process.
   Future<void> resumePendingPublishes(BuildContext context) async {
     final drafts = await _draftService.getAllDrafts();
+    if (!context.mounted) return;
+
     final pendingDrafts = drafts.where(
       (d) => d.id.startsWith(VideoEditorConstants.publishPrefixId),
     );
@@ -247,6 +249,8 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
 
+      if (!context.mounted) return;
+
       final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
       final publishService = await _createPublishService(
         onProgressChanged: ({required draftId, required progress}) {
@@ -272,7 +276,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       // Navigate to current user's profile
       final authService = ref.read(authServiceProvider);
       final currentNpub = authService.currentNpub;
-      if (currentNpub != null) {
+      if (currentNpub != null && context.mounted) {
         context.go(ProfileScreenRouter.pathForNpub(currentNpub));
         // Clear editor state after navigation animation completes (~350ms)
         // Draft is already saved for background upload

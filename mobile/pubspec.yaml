@@ -41,6 +41,7 @@ workspace:
   - packages/pooled_video_player
   - packages/profile_repository
   - packages/reposts_repository
+  - packages/sound_service
   - packages/videos_repository
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -119,6 +120,9 @@ dependencies:
   flutter_svg: ^2.0.10+1 # For custom SVG icons
   blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
   skeletonizer: ^2.1.2 # Skeleton loading animations with shimmer effect
+
+  # Sound Service - Sound effects (countdown beeps, etc.)
+  sound_service:
 
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_sdk:

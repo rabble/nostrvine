@@ -205,10 +205,12 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           }
 
           // Show success confirmation dialog using root navigator
-          showDialog(
-            context: context,
-            builder: (context) => const ReportConfirmationDialog(),
-          );
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => const ReportConfirmationDialog(),
+            );
+          }
         } else {
           // Show error snackbar
           ScaffoldMessenger.of(context).showSnackBar(

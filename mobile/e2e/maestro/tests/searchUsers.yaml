@@ -39,3 +39,5 @@ appId: co.openvine.app
     text: ${SEARCH_USER}
 - assertVisible:
     text: "Search.*"
+- tapOn:
+    point: 6%,10%

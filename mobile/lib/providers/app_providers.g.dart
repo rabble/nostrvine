@@ -2781,6 +2781,74 @@ final class FollowRepositoryProvider
 
 String _$followRepositoryHash() => r'5a9ff80dec0621bc321f78694cd2ae0c448bb2a2';
 
+/// Provider for [CuratedListRepository] instance.
+///
+/// Creates a repository that exposes subscribed curated lists via a
+/// [BehaviorSubject] stream for reactive BLoC subscription. Data is
+/// bridged from the legacy [CuratedListService] via [setSubscribedLists]
+/// until the repository owns its own persistence (Phase 1b).
+
+@ProviderFor(curatedListRepository)
+const curatedListRepositoryProvider = CuratedListRepositoryProvider._();
+
+/// Provider for [CuratedListRepository] instance.
+///
+/// Creates a repository that exposes subscribed curated lists via a
+/// [BehaviorSubject] stream for reactive BLoC subscription. Data is
+/// bridged from the legacy [CuratedListService] via [setSubscribedLists]
+/// until the repository owns its own persistence (Phase 1b).
+
+final class CuratedListRepositoryProvider
+    extends
+        $FunctionalProvider<
+          CuratedListRepository,
+          CuratedListRepository,
+          CuratedListRepository
+        >
+    with $Provider<CuratedListRepository> {
+  /// Provider for [CuratedListRepository] instance.
+  ///
+  /// Creates a repository that exposes subscribed curated lists via a
+  /// [BehaviorSubject] stream for reactive BLoC subscription. Data is
+  /// bridged from the legacy [CuratedListService] via [setSubscribedLists]
+  /// until the repository owns its own persistence (Phase 1b).
+  const CuratedListRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'curatedListRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$curatedListRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<CuratedListRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  CuratedListRepository create(Ref ref) {
+    return curatedListRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CuratedListRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CuratedListRepository>(value),
+    );
+  }
+}
+
+String _$curatedListRepositoryHash() =>
+    r'ac877d48b81aebf77fb573cbeaf70a123ea843d4';
+
 /// Provider for HashtagRepository instance.
 ///
 /// Creates a HashtagRepository for searching hashtags via the Funnelcake API.

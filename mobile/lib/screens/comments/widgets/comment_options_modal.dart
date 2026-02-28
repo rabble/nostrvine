@@ -133,7 +133,7 @@ class CommentOptionsModal {
       return CommentBlockUserResult(authorPubkey: authorPubkey);
     }
 
-    if (action == 'flag') {
+    if (action == 'flag' && context.mounted) {
       // Show flag content sheet as a follow-up
       final reportResult = await _FlagContentSheet.show(context);
       return reportResult;

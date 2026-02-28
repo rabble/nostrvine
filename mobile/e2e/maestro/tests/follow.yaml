@@ -26,23 +26,40 @@ tags:
 # 2. Tap on the first video of the grid and follow the user VIDEO_USER and set VIDEO_DESCRIPTION. Expected: Following is displayed
 - tapOn:
     id: video_thumbnail_0
-- tapOn: #Pause the video
-    point: 50%,50%
-- runFlow: "../asserts/assertVideoPaused.yaml"
+
+
 - assertVisible: Follow
 #Follow VIDEO_USER
 - tapOn:
     id: follow_button
-# Extract the text from the video description
-- copyTextFrom:
-    id: video_description
-- evalScript: |
-    env.VIDEO_DESCRIPTION = maestro.copiedText;  # Assign copied text to the variable
+
 # TO-DO: Extract the text from the username
 
 
 # 3. Browse to the home screen: VIDEO_USER videos are displayed validated thru username
-- tapOn: Close video player
+# Back button on iOS devices
+- runFlow:
+    when:
+      visible: |-
+        Go back
+        Back
+    commands:
+      - assertVisible: |-
+          Go back
+          Back
+      - tapOn: |-
+          Go back
+          Back
+
+# Back button on Android devices
+- runFlow:
+    when:
+      visible: Go back
+    commands:
+      - assertVisible: Go back
+      - tapOn: Go back
+
+
 - doubleTapOn:
     id: home_tab
     delay: 100

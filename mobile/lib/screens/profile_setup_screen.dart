@@ -1382,7 +1382,7 @@ class _ProfileSetupScreenViewState
       children: const [NostrInfoSheetContent()],
     ).then((_) {
       // Unfocus after sheet is dismissed to prevent auto-focus on form fields
-      if (mounted) {
+      if (context.mounted) {
         FocusScope.of(context).unfocus();
       }
     });
@@ -1434,7 +1434,7 @@ class _ProfileSetupScreenViewState
       ],
     ).then((_) {
       // Unfocus after sheet is dismissed to prevent auto-focus on form fields
-      if (mounted) {
+      if (context.mounted) {
         FocusScope.of(context).unfocus();
       }
     });

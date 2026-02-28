@@ -1840,6 +1840,8 @@ class VideoOverlayActions extends ConsumerWidget {
       }
     }
 
+    if (!context.mounted) return;
+
     await context.showVideoPausingDialog<void>(
       builder: (context) => BadgeExplanationModal(video: video),
     );
