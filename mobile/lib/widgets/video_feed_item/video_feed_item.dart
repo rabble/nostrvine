@@ -866,7 +866,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                   ),
                   RouteType.hashtag => HashtagScreenRouter.pathForTag(
                     ctx.hashtag ?? '',
-                    index: widget.index,
                   ),
                   RouteType.likedVideos => LikedVideosScreenRouter.pathForIndex(
                     widget.index,

@@ -126,7 +126,7 @@ void main() {
       expect(bottomNav.currentIndex, 1);
     });
 
-    testWidgets('navigating to /hashtag/rust/3 selects Tags tab', (
+    testWidgets('navigating to /hashtag/rust selects Tags tab', (
       tester,
     ) async {
       final c = ProviderContainer();
@@ -136,16 +136,14 @@ void main() {
 
       c.read(routeNormalizationProvider);
 
-      c
-          .read(goRouterProvider)
-          .go(HashtagScreenRouter.pathForTag('rust', index: 3));
+      c.read(goRouterProvider).go(HashtagScreenRouter.pathForTag('rust'));
       await tester.pump(); // Process the navigation
       await tester.pump(); // Process the post-frame callback
 
       // Should be at hashtag route
       expect(
         currentLocation(c),
-        HashtagScreenRouter.pathForTag('rust', index: 3),
+        HashtagScreenRouter.pathForTag('rust'),
       );
 
       // Bottom nav should show Tags tab (index 2) as selected

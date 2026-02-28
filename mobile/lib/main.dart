@@ -822,10 +822,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               }
             case DeepLinkType.hashtag:
               if (deepLink.hashtag != null) {
-                // Include index if present, otherwise use grid view
                 final targetPath = HashtagScreenRouter.pathForTag(
                   deepLink.hashtag!,
-                  index: deepLink.index,
                 );
                 Log.info(
                   '📱 Navigating to hashtag: $targetPath',

@@ -368,9 +368,7 @@ String buildRoute(RouteContext context) {
 
     case RouteType.hashtag:
       final hashtag = context.hashtag ?? '';
-      final rawIndex = context.videoIndex;
-      final index = rawIndex != null && rawIndex < 0 ? 0 : rawIndex;
-      return HashtagScreenRouter.pathForTag(hashtag, index: index);
+      return HashtagScreenRouter.pathForTag(hashtag);
 
     case RouteType.search:
       // Grid mode (null videoIndex):
