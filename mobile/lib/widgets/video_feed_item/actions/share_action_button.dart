@@ -208,10 +208,14 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     );
   }
 
+  /// Bottom margin to clear the bottom nav bar and action icons.
+  static const _snackBarMargin = EdgeInsets.fromLTRB(16, 0, 16, 112);
+
   SnackBar _styledSnackBar(String message) => SnackBar(
     content: Text(message, style: const TextStyle(color: VineTheme.whiteText)),
     backgroundColor: VineTheme.containerLow,
     behavior: SnackBarBehavior.floating,
+    margin: _snackBarMargin,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     duration: const Duration(seconds: 2),
   );
@@ -244,6 +248,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     ),
     backgroundColor: VineTheme.containerLow,
     behavior: SnackBarBehavior.floating,
+    margin: _snackBarMargin,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
   );
 }
@@ -685,8 +690,16 @@ class _MessageInput extends StatelessWidget {
                       horizontal: 16,
                     ),
                   ),
-                  maxLines: 3,
+                  maxLines: 4,
                   minLines: 1,
+                  maxLength: 500,
+                  buildCounter:
+                      (
+                        context, {
+                        required currentLength,
+                        required isFocused,
+                        required maxLength,
+                      }) => null,
                 ),
               ),
               const SizedBox(width: 8),
