@@ -402,7 +402,7 @@ class VideoEventService extends ChangeNotifier {
     // Check content-warning tags (NIP-36)
     for (final tag in event.tags) {
       if (tag.isNotEmpty && tag[0] == 'content-warning' && tag.length >= 2) {
-        final value = tag[1].toString();
+        final value = tag[1];
         if (value.isNotEmpty && !labels.contains(value)) {
           labels.add(value);
         }
@@ -411,10 +411,8 @@ class VideoEventService extends ChangeNotifier {
 
     // Check NIP-32 label tags with content-warning namespace
     for (final tag in event.tags) {
-      if (tag.length >= 3 &&
-          tag[0] == 'l' &&
-          tag[2].toString() == 'content-warning') {
-        final value = tag[1].toString();
+      if (tag.length >= 3 && tag[0] == 'l' && tag[2] == 'content-warning') {
+        final value = tag[1];
         if (value.isNotEmpty && !labels.contains(value)) {
           labels.add(value);
         }
@@ -424,7 +422,7 @@ class VideoEventService extends ChangeNotifier {
     // Check NSFW/adult hashtags — map to nudity category
     for (final tag in event.tags) {
       if (tag.length >= 2 && tag[0] == 't') {
-        final hashtag = tag[1].toString().toLowerCase();
+        final hashtag = tag[1].toLowerCase();
         if (hashtag == 'nsfw' || hashtag == 'adult') {
           if (!labels.contains('nudity')) {
             labels.add('nudity');
@@ -2605,7 +2603,7 @@ class VideoEventService extends ChangeNotifier {
               name: 'VideoEventService',
               category: LogCategory.video,
             );
-            completer.completeError(error);
+            completer.completeError(error as Object);
           }
         },
         cancelOnError: false,
@@ -3283,7 +3281,7 @@ class VideoEventService extends ChangeNotifier {
           timeoutTimer?.cancel();
           if (!completer.isCompleted) {
             streamSubscription.cancel();
-            completer.completeError(error);
+            completer.completeError(error as Object);
           }
         },
         onDone: () {
@@ -3522,7 +3520,7 @@ class VideoEventService extends ChangeNotifier {
           category: LogCategory.video,
         );
         if (!completer.isCompleted) {
-          completer.completeError(error);
+          completer.completeError(error as Object);
         }
         subscription.cancel();
       },
@@ -5046,7 +5044,7 @@ class VideoEventService extends ChangeNotifier {
           );
           // Search subscriptions can fail without affecting main feeds
           if (!searchCompleter.isCompleted) {
-            searchCompleter.completeError(error);
+            searchCompleter.completeError(error as Object);
           }
         },
         onDone: () {

@@ -836,8 +836,8 @@ class RepostsRepository {
   /// the addressable event being reposted.
   String? _extractAddressableId(Event event) {
     for (final tag in event.tags) {
-      if (tag is List && tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
-        return tag[1] as String;
+      if (tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
+        return tag[1];
       }
     }
     return null;
@@ -846,8 +846,8 @@ class RepostsRepository {
   /// Extracts the original author pubkey from a repost event's 'p' tag.
   String? _extractOriginalAuthorPubkey(Event event) {
     for (final tag in event.tags) {
-      if (tag is List && tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
-        return tag[1] as String;
+      if (tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
+        return tag[1];
       }
     }
     return null;

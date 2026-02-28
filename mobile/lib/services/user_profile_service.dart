@@ -1122,7 +1122,7 @@ class UserProfileService extends ChangeNotifier {
           _profileCache[event.pubkey] = userEvent;
           foundUsers.add(userEvent);
         },
-        onError: (error) {
+        onError: (Object error) {
           Log.error(
             'Search error: $error',
             name: 'UserProfileService',

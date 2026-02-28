@@ -78,8 +78,8 @@ class ContactList {
     this.createdAt,
   );
 
-  List<dynamic> toJson() {
-    List<dynamic> result = [];
+  List<List<String>> toJson() {
+    List<List<String>> result = [];
     for (Contact contact in _contacts.values) {
       result.add(["p", contact.publicKey, contact.url, contact.petname]);
     }

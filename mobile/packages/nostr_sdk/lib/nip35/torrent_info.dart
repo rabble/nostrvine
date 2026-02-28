@@ -58,7 +58,7 @@ class TorrentInfo {
             }
 
             size ??= 0;
-            if (v is String && v.contains("padding_file")) {
+            if (v.contains("padding_file")) {
               continue;
             }
 

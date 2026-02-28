@@ -28,12 +28,12 @@ class UserName extends ConsumerWidget {
   factory UserName.fromPubKey(
     String pubkey, {
     String? embeddedName,
-    key,
-    style,
-    maxLines,
-    overflow,
-    selectable,
-    anonymousName,
+    Key? key,
+    TextStyle? style,
+    int? maxLines,
+    bool? selectable,
+    String? anonymousName,
+    TextOverflow? overflow,
   }) => UserName._(
     pubkey: pubkey,
     embeddedName: embeddedName,
@@ -47,12 +47,12 @@ class UserName extends ConsumerWidget {
 
   factory UserName.fromUserProfile(
     UserProfile userProfile, {
-    key,
-    style,
-    maxLines,
-    overflow,
-    selectable,
-    anonymousName,
+    Key? key,
+    TextStyle? style,
+    int? maxLines,
+    bool? selectable,
+    String? anonymousName,
+    TextOverflow? overflow,
   }) => UserName._(
     userProfile: userProfile,
     key: key,

@@ -288,7 +288,7 @@ class AsyncUtils {
           }
         }
       },
-      onError: (error) {
+      onError: (Object error) {
         if (!completer.isCompleted) {
           cleanup();
           if (debugName != null) {

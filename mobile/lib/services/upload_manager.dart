@@ -113,7 +113,7 @@ class UploadManager {
   @Deprecated('Only Blossom uploads are supported')
   Future<void> setUploadTarget(dynamic target) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_uploadTargetKey, target.index);
+    await prefs.setInt(_uploadTargetKey, target.index as int);
     Log.info(
       'Upload target set to: ${target.name}',
       name: 'UploadManager',

@@ -20,9 +20,9 @@ class ZapGoalsInfo {
     for (var i = 0; i < length; i++) {
       var tag = event.tags[i];
       var tagLength = tag.length;
-      if (tagLength > 1 && tag[1] is String) {
+      if (tagLength > 1) {
         var key = tag[0];
-        var value = tag[1] as String;
+        var value = tag[1];
         if (key == "amount") {
           amount = int.tryParse(value);
           if (amount != null) {
@@ -32,7 +32,7 @@ class ZapGoalsInfo {
           amount = int.tryParse(value);
         } else if (key == "closed_at") {
           closedAt = int.tryParse(value);
-        } else if (key == "relays" && tag is List<String>) {
+        } else if (key == "relays") {
           relays = tag.sublist(1);
         } else if (key == "r") {
           r = value;
@@ -40,7 +40,7 @@ class ZapGoalsInfo {
           a = value;
         } else if (key == "goal") {
           goal = value;
-          if (tag.length > 1 && tag[2] is String) {
+          if (tag.length > 1) {
             goalRelay = tag[2];
           }
         }

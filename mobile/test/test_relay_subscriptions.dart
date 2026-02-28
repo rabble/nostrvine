@@ -22,7 +22,7 @@ void main() async {
     // Listen for messages
     channel.stream.listen(
       (message) {
-        final data = jsonDecode(message);
+        final data = jsonDecode(message as String);
 
         if (data is List && data.isNotEmpty) {
           final messageType = data[0];

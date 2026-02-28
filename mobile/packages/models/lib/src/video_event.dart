@@ -135,7 +135,7 @@ class VideoEvent {
       if ((tagRaw as List).isEmpty) continue;
 
       // Convert List<dynamic> to List<String> safely
-      final tag = tagRaw.map((e) => e.toString()).toList();
+      final tag = tagRaw.map((e) => e).toList();
 
       final tagName = tag[0];
       final tagValue = (tag.length > 1) ? tag[1] : '';

@@ -28,7 +28,7 @@ class NIP29 {
       return;
     }
 
-    var tags = [];
+    var tags = <List<String>>[];
     tags.add(["h", groupIdentifier.groupId]);
     if (public != null) {
       if (public) {

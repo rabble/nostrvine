@@ -124,9 +124,9 @@ NostrEvent dartEventToJs(Map<String, dynamic> dartEvent) {
     id: dartEvent['id'] as String?,
     pubkey: (dartEvent['pubkey'] ?? '').toString(),
     created_at:
-        dartEvent['created_at'] ??
+        dartEvent['created_at'] as int? ??
         DateTime.now().millisecondsSinceEpoch ~/ 1000,
-    kind: dartEvent['kind'] ?? 1,
+    kind: dartEvent['kind'] as int? ?? 1,
     tags: tags,
     content: (dartEvent['content'] ?? '').toString(),
     sig: dartEvent['sig'] as String?,

@@ -70,14 +70,14 @@ class FollowSet {
   };
 
   static FollowSet fromJson(Map<String, dynamic> json) => FollowSet(
-    id: json['id'],
-    name: json['name'],
-    description: json['description'],
-    imageUrl: json['imageUrl'],
-    pubkeys: List<String>.from(json['pubkeys'] ?? []),
-    createdAt: DateTime.parse(json['createdAt']),
-    updatedAt: DateTime.parse(json['updatedAt']),
-    nostrEventId: json['nostrEventId'],
+    id: json['id'] as String,
+    name: json['name'] as String,
+    description: json['description'] as String?,
+    imageUrl: json['imageUrl'] as String?,
+    pubkeys: List<String>.from(json['pubkeys'] as Iterable? ?? []),
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+    nostrEventId: json['nostrEventId'] as String?,
   );
 }
 
