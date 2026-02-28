@@ -345,10 +345,19 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
             );
           }
 
+          final authService = ref.watch(authServiceProvider);
+          final currentUserPubkey = authService.currentPublicKeyHex;
+          final isOwnVideo =
+              currentUserPubkey != null &&
+              currentUserPubkey == state.currentVideo?.pubkey;
+
           return Scaffold(
             backgroundColor: Colors.black,
             extendBodyBehindAppBar: true,
-            appBar: _FullscreenAppBar(currentVideo: state.currentVideo),
+            appBar: _FullscreenAppBar(
+              currentVideo: state.currentVideo,
+              isOwnVideo: isOwnVideo,
+            ),
             body: PooledVideoFeed(
               videos: state.pooledVideos,
               controller: _controller,
@@ -392,6 +401,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   contextTitle: widget.contextTitle,
                   trafficSource: widget.trafficSource,
                   sourceDetail: widget.sourceDetail,
+                  isOwnVideo: isOwnVideo,
                 );
               },
             ),
@@ -403,57 +413,68 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
 }
 
 class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
-  const _FullscreenAppBar({this.currentVideo});
+  const _FullscreenAppBar({this.isOwnVideo = false, this.currentVideo});
 
   final VideoEvent? currentVideo;
-
-  static const _style = DiVineAppBarStyle(
-    iconButtonBackgroundColor: Color(0x4D000000), // black with 0.3 alpha
-  );
+  final bool isOwnVideo;
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return DiVineAppBar(
-      titleWidget: const SizedBox.shrink(),
-      showBackButton: true,
-      onBackPressed: context.pop,
-      backgroundMode: DiVineAppBarBackgroundMode.transparent,
-      style: _style,
-      actions: _buildEditAction(context, ref),
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.only(
+          top: 8,
+          left: 16,
+          right: 16,
+        ),
+        child: Row(
+          mainAxisAlignment: .spaceBetween,
+          crossAxisAlignment: .start,
+          children: [
+            DiVineAppBarIconButton(
+              icon: SvgIconSource(
+                'assets/icon/${DivineIconName.caretLeft.fileName}.svg',
+              ),
+              onPressed: context.pop,
+              iconSize: 24,
+              semanticLabel: 'Go back',
+              backgroundColor: VineTheme.scrim30,
+            ),
+
+            ?_buildEditAction(context, ref),
+          ],
+        ),
+      ),
     );
   }
 
   // TODO(any) : update to use bloc instead of riverpod
-  List<DiVineAppBarAction> _buildEditAction(
+  Widget? _buildEditAction(
     BuildContext context,
     WidgetRef ref,
   ) {
     final video = currentVideo;
-    if (video == null) return const [];
+    if (video == null) return null;
 
     final featureFlagService = ref.watch(featureFlagServiceProvider);
     final isEditorEnabled = featureFlagService.isEnabled(
       FeatureFlag.enableVideoEditorV1,
     );
-    if (!isEditorEnabled) return const [];
+    if (!isEditorEnabled || !isOwnVideo) return null;
 
-    final authService = ref.watch(authServiceProvider);
-    final currentUserPubkey = authService.currentPublicKeyHex;
-    final isOwnVideo =
-        currentUserPubkey != null && currentUserPubkey == video.pubkey;
-    if (!isOwnVideo) return const [];
-
-    return [
-      DiVineAppBarAction(
-        icon: const SvgIconSource('assets/icon/content-controls/pencil.svg'),
-        onPressed: () => showEditDialogForVideo(context, video),
-        tooltip: 'Edit video',
-        semanticLabel: 'Edit video',
+    return DiVineAppBarIconButton(
+      icon: SvgIconSource(
+        'assets/icon/${DivineIconName.pencilSimpleLine.fileName}.svg',
       ),
-    ];
+      onPressed: () => showEditDialogForVideo(context, video),
+      iconSize: 24,
+      semanticLabel: 'Edit video',
+      backgroundColor: VineTheme.scrim30,
+    );
   }
 }
 
@@ -462,6 +483,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
     required this.video,
     required this.index,
     required this.isActive,
+    required this.isOwnVideo,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -470,6 +492,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
   final VideoEvent video;
   final int index;
   final bool isActive;
+  final bool isOwnVideo;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -504,6 +527,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
         contextTitle: contextTitle,
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
+        isOwnVideo: isOwnVideo,
       ),
     );
   }
@@ -514,6 +538,7 @@ class _PooledFullscreenItemContent extends StatefulWidget {
     required this.video,
     required this.index,
     required this.isActive,
+    required this.isOwnVideo,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -522,6 +547,7 @@ class _PooledFullscreenItemContent extends StatefulWidget {
   final VideoEvent video;
   final int index;
   final bool isActive;
+  final bool isOwnVideo;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -572,25 +598,29 @@ class _PooledFullscreenItemContentState
               }),
             );
           }
-          return Stack(
-            children: [
-              // Subtitle overlay — needs player position stream
-              if (video.hasSubtitles)
-                Positioned.fill(
-                  child: _SubtitleLayer(
-                    video: video,
-                    player: player,
+          return MediaQuery(
+            data: MediaQueryData.fromView(View.of(context)),
+            child: Stack(
+              children: [
+                // Subtitle overlay — needs player position stream
+                if (video.hasSubtitles)
+                  Positioned.fill(
+                    child: _SubtitleLayer(
+                      video: video,
+                      player: player,
+                    ),
                   ),
+                VideoOverlayActions(
+                  video: video,
+                  isVisible: widget.isActive,
+                  isActive: widget.isActive,
+                  hasBottomNavigation: false,
+                  contextTitle: widget.contextTitle,
+                  isFullscreen: true,
+                  topOffset: widget.isOwnVideo ? 64 : 8,
                 ),
-              VideoOverlayActions(
-                video: video,
-                isVisible: widget.isActive,
-                isActive: widget.isActive,
-                hasBottomNavigation: false,
-                contextTitle: widget.contextTitle,
-                isFullscreen: true,
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),

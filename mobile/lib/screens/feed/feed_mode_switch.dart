@@ -47,7 +47,7 @@ class FeedModeSwitch extends StatelessWidget {
           bottom: false,
           child: Padding(
             padding: const EdgeInsets.only(
-              top: 18,
+              top: 8,
               bottom: 16,
               left: 20,
               right: 20,

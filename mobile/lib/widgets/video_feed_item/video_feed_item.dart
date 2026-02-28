@@ -1321,6 +1321,7 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showListAttribution = false,
     this.isPreviewMode = false,
     this.hideFollowButtonIfFollowing = false,
+    this.topOffset = 8.0,
   });
 
   final VideoEvent video;
@@ -1329,6 +1330,7 @@ class VideoOverlayActions extends ConsumerWidget {
   final bool hasBottomNavigation;
   final String? contextTitle;
   final bool isFullscreen;
+  final double topOffset;
 
   /// Displays the overlay in preview mode during video creation.
   /// When true, users can preview how their video will appear to other users
@@ -1353,16 +1355,6 @@ class VideoOverlayActions extends ConsumerWidget {
         video.content.isNotEmpty ||
         (video.title != null && video.title!.isNotEmpty);
 
-    // Stack does not block pointer events by default - taps pass through to GestureDetector below
-    // Only interactive elements (buttons, chips with GestureDetector) absorb taps
-    // When contextTitle is non-empty, a list header exists above - add extra offset to avoid overlap
-    // List header is roughly 64px tall (8px padding + 48px content + 8px padding), add clearance
-    // In fullscreen mode, the AppBar floats transparently over the content
-    // so the badge just needs the same base offset - no extra list header padding
-    final hasListHeader =
-        !isFullscreen && contextTitle != null && contextTitle!.isNotEmpty;
-    final topOffset = hasListHeader ? 80.0 : 16.0;
-
     // In fullscreen mode, ensure badges clear the status bar icons
     // (battery, wifi, clock). viewPaddingOf may return 0 if a parent
     // widget (Scaffold, SafeArea) has already consumed the safe area.
@@ -1371,15 +1363,12 @@ class VideoOverlayActions extends ConsumerWidget {
     final safeAreaTop = isFullscreen
         ? (viewPaddingTop > 0
               ? viewPaddingTop
-              : MediaQuery.of(context).padding.top > 0
-              ? MediaQuery.of(context).padding.top
+              : MediaQuery.paddingOf(context).top > 0
+              ? MediaQuery.paddingOf(context).top
               : 54.0) // Fallback for Dynamic Island iPhones
         : viewPaddingTop;
 
-    // Calculate bottom offset based on navigation state
-    final bottomOffset = hasBottomNavigation
-        ? 14.0
-        : (isFullscreen ? 48.0 : 14.0);
+    const bottomOffset = 14.0;
 
     return Stack(
       children: [
