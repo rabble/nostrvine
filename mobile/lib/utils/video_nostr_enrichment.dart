@@ -86,12 +86,8 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           originalLikes: video.originalLikes ?? parsed.originalLikes,
           originalComments: video.originalComments ?? parsed.originalComments,
           originalReposts: video.originalReposts ?? parsed.originalReposts,
-          /* FIXME: The audio show always a skeleton below of the video
-          description, so we don't add them for the ZapStore.
-
-          audioEventId: video.audioEventId? parsed.audioEventId: null
+          audioEventId: video.audioEventId ? parsed.audioEventId : null,
           audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay,
-          */
           collaboratorPubkeys: video.collaboratorPubkeys.isEmpty
               ? parsed.collaboratorPubkeys
               : video.collaboratorPubkeys,
