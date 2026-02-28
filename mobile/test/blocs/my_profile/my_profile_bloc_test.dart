@@ -846,6 +846,55 @@ void main() {
           ).called(1);
         },
       );
+
+      blocTest<MyProfileBloc, MyProfileState>(
+        'cancels previous subscription when dispatched again',
+        setUp: () {
+          final profile1 = createTestProfile(
+            displayName: 'First',
+            eventId:
+                'first12345678901234567890123456789012345678901234567890123456',
+          );
+          final profile2 = createTestProfile(
+            displayName: 'Second',
+            eventId:
+                'second1234567890123456789012345678901234567890123456789012345',
+          );
+          var callCount = 0;
+          when(
+            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
+          ).thenAnswer((_) {
+            callCount++;
+            if (callCount == 1) return Stream.value(profile1);
+            return Stream.value(profile2);
+          });
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const MyProfileSubscriptionRequested());
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(const MyProfileSubscriptionRequested());
+        },
+        expect: () => [
+          isA<MyProfileLoading>(),
+          isA<MyProfileUpdated>().having(
+            (s) => s.profile.displayName,
+            'displayName',
+            'First',
+          ),
+          isA<MyProfileLoading>(),
+          isA<MyProfileUpdated>().having(
+            (s) => s.profile.displayName,
+            'displayName',
+            'Second',
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.watchProfile(pubkey: testPubkey),
+          ).called(2);
+        },
+      );
     });
 
     group('$MyProfileFetchRequested', () {
