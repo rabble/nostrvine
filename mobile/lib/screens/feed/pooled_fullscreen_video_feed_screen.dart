@@ -19,7 +19,9 @@ import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -570,13 +572,25 @@ class _PooledFullscreenItemContentState
               }),
             );
           }
-          return VideoOverlayActions(
-            video: video,
-            isVisible: widget.isActive,
-            isActive: widget.isActive,
-            hasBottomNavigation: false,
-            contextTitle: widget.contextTitle,
-            isFullscreen: true,
+          return Stack(
+            children: [
+              // Subtitle overlay — needs player position stream
+              if (video.hasSubtitles)
+                Positioned.fill(
+                  child: _SubtitleLayer(
+                    video: video,
+                    player: player,
+                  ),
+                ),
+              VideoOverlayActions(
+                video: video,
+                isVisible: widget.isActive,
+                isActive: widget.isActive,
+                hasBottomNavigation: false,
+                contextTitle: widget.contextTitle,
+                isFullscreen: true,
+              ),
+            ],
           );
         },
       ),
@@ -642,5 +656,35 @@ class _LoadingIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Center(child: BrandedLoadingIndicator(size: 60));
+  }
+}
+
+/// Streams player position and renders subtitle text for fullscreen feed.
+class _SubtitleLayer extends ConsumerWidget {
+  const _SubtitleLayer({required this.video, required this.player});
+
+  final VideoEvent video;
+  final Player player;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final subtitlesVisible = ref.watch(subtitleVisibilityProvider);
+
+    return StreamBuilder<Duration>(
+      stream: player.stream.position,
+      builder: (context, snapshot) {
+        final positionMs = snapshot.data?.inMilliseconds ?? 0;
+        return Stack(
+          children: [
+            SubtitleOverlay(
+              video: video,
+              positionMs: positionMs,
+              visible: subtitlesVisible,
+              bottomOffset: 180,
+            ),
+          ],
+        );
+      },
+    );
   }
 }

@@ -747,14 +747,13 @@ class VideoEvent {
 
   /// Whether this video has subtitle/caption data available.
   ///
-  /// Returns true if a concrete subtitle source exists: embedded VTT content
-  /// from the REST API, or a text-track reference (Kind 39307 addressable
-  /// coordinates or URL). The sha256 hash alone is NOT sufficient — Blossom
-  /// auto-generated VTT is not reliably available, so showing the CC button
-  /// for every video with a hash would be misleading.
+  /// Returns true if any subtitle source exists: embedded VTT content,
+  /// a text-track reference (Kind 39307), or a sha256 hash (Blossom server
+  /// auto-generates VTT at `{server}/{sha256}/vtt`).
   bool get hasSubtitles =>
       (textTrackRef != null && textTrackRef!.isNotEmpty) ||
-      (textTrackContent != null && textTrackContent!.isNotEmpty);
+      (textTrackContent != null && textTrackContent!.isNotEmpty) ||
+      (sha256 != null && sha256!.isNotEmpty);
 
   /// Whether this video has collaborators.
   bool get hasCollaborators => collaboratorPubkeys.isNotEmpty;
