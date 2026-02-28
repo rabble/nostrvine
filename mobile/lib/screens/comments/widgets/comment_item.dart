@@ -4,6 +4,7 @@
 
 import 'dart:math';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:count_formatter/count_formatter.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -149,6 +150,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                           child: _CommentContent(
                             commentId: widget.comment.id,
                             content: widget.comment.content,
+                            emojiTags: widget.comment.emojiTags,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -360,9 +362,14 @@ bool _isEmojiOnly(String text) {
 /// Font size for emoji-only comments (1-3 emoji with no text).
 const _emojiOnlyFontSize = 40.0;
 
-/// Content section of a comment showing text with parsed @mentions.
+/// Content section of a comment showing text with parsed @mentions
+/// and NIP-30 custom emoji (sticker) rendering.
 class _CommentContent extends StatelessWidget {
-  const _CommentContent({required this.commentId, required this.content});
+  const _CommentContent({
+    required this.commentId,
+    required this.content,
+    this.emojiTags = const {},
+  });
 
   /// ID of the comment (for reply targeting)
   final String commentId;
@@ -370,8 +377,40 @@ class _CommentContent extends StatelessWidget {
   /// Text content of the comment
   final String content;
 
+  /// NIP-30 emoji tags mapping shortcode to image URL.
+  final Map<String, String> emojiTags;
+
+  /// Pattern matching a single `:shortcode:` with nothing else.
+  static final _stickerOnlyPattern = RegExp(r'^:(\w+):$');
+
   @override
   Widget build(BuildContext context) {
+    final trimmed = content.trim();
+
+    // Check for sticker-only comment: content is `:shortcode:` with a
+    // matching NIP-30 emoji tag.
+    if (emojiTags.isNotEmpty) {
+      final stickerMatch = _stickerOnlyPattern.firstMatch(trimmed);
+      if (stickerMatch != null) {
+        final shortcode = stickerMatch.group(1)!;
+        final imageUrl = emojiTags[shortcode];
+        if (imageUrl != null) {
+          return CachedNetworkImage(
+            imageUrl: imageUrl,
+            width: 120,
+            height: 120,
+            fit: BoxFit.contain,
+            placeholder: (_, _) => const SizedBox(width: 120, height: 120),
+            errorWidget: (_, _, _) => const Icon(
+              Icons.broken_image_outlined,
+              color: VineTheme.onSurfaceMuted,
+              size: 48,
+            ),
+          );
+        }
+      }
+    }
+
     final isEmoji = _isEmojiOnly(content);
     final baseStyle = TextStyle(
       color: VineTheme.onSurface,

@@ -8,11 +8,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/blocs/sticker_picker/sticker_picker_bloc.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:sticker_pack_repository/sticker_pack_repository.dart';
 
 /// Maps [CommentsError] to user-facing strings.
 /// TODO(l10n): Replace with context.l10n when localization is added.
@@ -245,6 +247,44 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
     super.dispose();
   }
 
+  Future<void> _openStickerPicker(
+    BuildContext context, {
+    String? parentCommentId,
+    String? parentAuthorPubkey,
+  }) async {
+    final stickerPackRepository = ref.read(stickerPackRepositoryProvider);
+    final bloc = context.read<CommentsBloc>();
+
+    final sticker = await VineBottomSheet.show<Sticker>(
+      context: context,
+      title: Text(
+        'Stickers',
+        style: VineTheme.bodyFont(
+          fontSize: 18,
+          fontWeight: FontWeight.w800,
+          color: VineTheme.onSurface,
+        ),
+      ),
+      body: BlocProvider(
+        create: (_) =>
+            StickerPickerBloc(stickerPackRepository: stickerPackRepository)
+              ..add(const StickerPacksLoadRequested()),
+        child: const StickerPickerSheet(),
+      ),
+    );
+
+    if (sticker == null || !mounted) return;
+
+    bloc.add(
+      StickerCommentSubmitted(
+        stickerShortcode: sticker.shortcode,
+        stickerImageUrl: sticker.imageUrl,
+        parentCommentId: parentCommentId,
+        parentAuthorPubkey: parentAuthorPubkey,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<CommentsBloc, CommentsState>(
@@ -311,6 +351,11 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           replyToDisplayName: replyToDisplayName,
           isEditing: isEditMode,
           mentionSuggestions: state.mentionSuggestions,
+          onStickerTap: () => _openStickerPicker(
+            context,
+            parentCommentId: isReplyMode ? state.activeReplyCommentId : null,
+            parentAuthorPubkey: replyToAuthorPubkey,
+          ),
           onMentionQuery: (query) {
             if (query.isEmpty) {
               context.read<CommentsBloc>().add(

@@ -11,3 +11,4 @@ export 'comments_header.dart';
 export 'comments_list.dart';
 export 'mention_overlay.dart';
 export 'new_comments_pill.dart';
+export 'sticker_picker_sheet.dart';

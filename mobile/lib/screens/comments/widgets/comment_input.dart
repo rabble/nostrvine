@@ -28,6 +28,7 @@ class CommentInput extends StatefulWidget {
     this.mentionSuggestions = const [],
     this.onMentionQuery,
     this.onMentionSelected,
+    this.onStickerTap,
     super.key,
   });
 
@@ -63,6 +64,9 @@ class CommentInput extends StatefulWidget {
 
   /// Callback fired with (npub, displayName) when a mention is selected.
   final void Function(String npub, String displayName)? onMentionSelected;
+
+  /// Callback when the sticker button is tapped.
+  final VoidCallback? onStickerTap;
 
   @override
   State<CommentInput> createState() => _CommentInputState();
@@ -205,6 +209,8 @@ class _CommentInputState extends State<CommentInput> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  if (widget.onStickerTap != null && !_hasText)
+                    _StickerButton(onTap: widget.onStickerTap!),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -446,6 +452,36 @@ class _EditIndicator extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Button to open the sticker picker.
+class _StickerButton extends StatelessWidget {
+  const _StickerButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'sticker_button',
+      button: true,
+      label: 'Open sticker picker',
+      child: Container(
+        width: 40,
+        height: 40,
+        margin: const EdgeInsets.only(left: 4, bottom: 4),
+        child: IconButton(
+          onPressed: onTap,
+          padding: EdgeInsets.zero,
+          icon: const Icon(
+            Icons.emoji_emotions_outlined,
+            color: VineTheme.onSurfaceMuted,
+            size: 22,
+          ),
         ),
       ),
     );

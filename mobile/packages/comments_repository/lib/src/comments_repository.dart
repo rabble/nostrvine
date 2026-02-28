@@ -172,11 +172,7 @@ class CommentsRepository {
       } else {
         // No addressable ID - just query by E tag
         final events = await _nostrClient.queryEvents([filterByE]);
-        thread = _buildThreadFromEvents(
-          events,
-          rootEventId,
-          rootEventKind,
-        );
+        thread = _buildThreadFromEvents(events, rootEventId, rootEventKind);
       }
 
       // Auto-update the count cache with the authoritative total so that
@@ -289,6 +285,87 @@ class CommentsRepository {
       rethrow;
     } on Exception catch (e) {
       throw PostCommentFailedException('Failed to post comment: $e');
+    }
+  }
+
+  /// Posts a sticker comment using NIP-30 custom emoji syntax.
+  ///
+  /// Creates a Kind 1111 event with `:shortcode:` as content and an
+  /// `["emoji", shortcode, imageUrl]` tag for NIP-30 rendering.
+  ///
+  /// Parameters:
+  /// - [stickerShortcode]: The emoji shortcode (e.g., "fire")
+  /// - [stickerImageUrl]: URL of the sticker image
+  /// - [rootEventId]: The ID of the root event (e.g., video)
+  /// - [rootEventKind]: The kind of the root event (e.g., 34236)
+  /// - [rootEventAuthorPubkey]: Public key of the root event author
+  /// - [rootAddressableId]: Optional addressable identifier
+  /// - [replyToEventId]: ID of parent comment (for nested replies)
+  /// - [replyToAuthorPubkey]: Public key of parent comment author
+  ///
+  /// Returns the created [Comment].
+  ///
+  /// Throws [PostCommentFailedException] if broadcasting fails.
+  Future<Comment> postStickerComment({
+    required String stickerShortcode,
+    required String stickerImageUrl,
+    required String rootEventId,
+    required int rootEventKind,
+    required String rootEventAuthorPubkey,
+    String? rootAddressableId,
+    String? replyToEventId,
+    String? replyToAuthorPubkey,
+  }) async {
+    final content = ':$stickerShortcode:';
+
+    // Build NIP-22 threading tags (same as postComment)
+    final tags = <List<String>>[
+      ['E', rootEventId, '', rootEventAuthorPubkey],
+      if (rootAddressableId != null && rootAddressableId.isNotEmpty)
+        ['A', rootAddressableId, ''],
+      ['K', rootEventKind.toString()],
+      ['P', rootEventAuthorPubkey],
+      if (replyToEventId != null && replyToAuthorPubkey != null) ...[
+        ['e', replyToEventId, '', replyToAuthorPubkey],
+        ['k', _commentKind.toString()],
+        ['p', replyToAuthorPubkey],
+      ] else ...[
+        ['e', rootEventId, '', rootEventAuthorPubkey],
+        if (rootAddressableId != null && rootAddressableId.isNotEmpty)
+          ['a', rootAddressableId, ''],
+        ['k', rootEventKind.toString()],
+        ['p', rootEventAuthorPubkey],
+      ],
+      // NIP-30 custom emoji tag
+      ['emoji', stickerShortcode, stickerImageUrl],
+    ];
+
+    final event = Event(_nostrClient.publicKey, _commentKind, tags, content);
+
+    try {
+      final sentEvent = await _nostrClient.publishEvent(event);
+
+      if (sentEvent == null) {
+        throw const PostCommentFailedException(
+          'Failed to publish sticker comment',
+        );
+      }
+
+      return Comment(
+        id: sentEvent.id,
+        content: content,
+        authorPubkey: sentEvent.pubkey,
+        createdAt: event.createdAtDateTime,
+        rootEventId: rootEventId,
+        rootAuthorPubkey: rootEventAuthorPubkey,
+        replyToEventId: replyToEventId,
+        replyToAuthorPubkey: replyToAuthorPubkey,
+        emojiTags: {stickerShortcode: stickerImageUrl},
+      );
+    } on CommentsRepositoryException {
+      rethrow;
+    } on Exception catch (e) {
+      throw PostCommentFailedException('Failed to post sticker comment: $e');
     }
   }
 
@@ -609,6 +686,7 @@ class CommentsRepository {
       String? rootAuthorPubkey;
       String? replyToAuthorPubkey;
       String? parentKind;
+      final emojiTags = <String, String>{};
 
       // Parse NIP-22 tags to determine comment relationships
       // Uppercase tags (E, A, K, P) = root scope
@@ -646,6 +724,11 @@ class CommentsRepository {
           case 'p':
             // Parent author pubkey (lowercase = parent item)
             replyToAuthorPubkey ??= tagValue;
+          case 'emoji':
+            // NIP-30 custom emoji tag: ["emoji", shortcode, url]
+            if (tag.length >= 3) {
+              emojiTags[tagValue] = tag[2] as String;
+            }
         }
       }
 
@@ -715,6 +798,7 @@ class CommentsRepository {
         videoDimensions: videoDimensions,
         videoDuration: videoDuration,
         videoBlurhash: videoBlurhash,
+        emojiTags: emojiTags,
       );
     } on Exception {
       return null;

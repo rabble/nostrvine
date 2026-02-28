@@ -86,6 +86,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     );
     on<MentionRegistered>(_onMentionRegistered);
     on<MentionSuggestionsCleared>(_onMentionSuggestionsCleared);
+    on<StickerCommentSubmitted>(_onStickerCommentSubmitted);
     on<CommentEditModeEntered>(_onEditModeEntered);
     on<CommentEditModeCancelled>(_onEditModeCancelled);
     on<CommentEditSubmitted>(_onEditSubmitted);
@@ -693,6 +694,57 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         category: LogCategory.ui,
       );
       emit(state.copyWith(error: CommentsError.blockFailed));
+    }
+  }
+
+  Future<void> _onStickerCommentSubmitted(
+    StickerCommentSubmitted event,
+    Emitter<CommentsState> emit,
+  ) async {
+    if (!_authService.isAuthenticated) {
+      emit(state.copyWith(error: CommentsError.notAuthenticated));
+      return;
+    }
+
+    emit(state.copyWith(isPosting: true));
+
+    try {
+      final postedComment = await _commentsRepository.postStickerComment(
+        stickerShortcode: event.stickerShortcode,
+        stickerImageUrl: event.stickerImageUrl,
+        rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
+        rootEventAuthorPubkey: state.rootAuthorPubkey,
+        rootAddressableId: state.rootAddressableId,
+        replyToEventId: event.parentCommentId,
+        replyToAuthorPubkey: event.parentAuthorPubkey,
+      );
+
+      final updatedCommentsById = {
+        ...state.commentsById,
+        postedComment.id: postedComment,
+      };
+
+      emit(
+        state.copyWith(
+          commentsById: updatedCommentsById,
+          isPosting: false,
+          replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
+        ),
+      );
+    } catch (e) {
+      Log.error(
+        'Error posting sticker comment: $e',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+
+      emit(
+        state.copyWith(
+          isPosting: false,
+          error: CommentsError.postCommentFailed,
+        ),
+      );
     }
   }
 

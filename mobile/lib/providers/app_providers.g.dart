@@ -4719,6 +4719,89 @@ final class CommentsRepositoryProvider
 String _$commentsRepositoryHash() =>
     r'c93d13851e0a4299c19edc87d439f767237ecc72';
 
+/// Provider for [StickerPackRepository].
+///
+/// Loads sticker packs from multiple sources:
+/// 1. Curated packs from Divine team pubkeys
+/// 2. User-subscribed packs from the user's Kind 10030 emoji list
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - [AppConstants.classicVinesPubkey] and [AppConstants.divineTeamPubkeys]
+///   as curator pubkeys
+/// - AuthService for the current user's pubkey
+
+@ProviderFor(stickerPackRepository)
+const stickerPackRepositoryProvider = StickerPackRepositoryProvider._();
+
+/// Provider for [StickerPackRepository].
+///
+/// Loads sticker packs from multiple sources:
+/// 1. Curated packs from Divine team pubkeys
+/// 2. User-subscribed packs from the user's Kind 10030 emoji list
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - [AppConstants.classicVinesPubkey] and [AppConstants.divineTeamPubkeys]
+///   as curator pubkeys
+/// - AuthService for the current user's pubkey
+
+final class StickerPackRepositoryProvider
+    extends
+        $FunctionalProvider<
+          StickerPackRepository,
+          StickerPackRepository,
+          StickerPackRepository
+        >
+    with $Provider<StickerPackRepository> {
+  /// Provider for [StickerPackRepository].
+  ///
+  /// Loads sticker packs from multiple sources:
+  /// 1. Curated packs from Divine team pubkeys
+  /// 2. User-subscribed packs from the user's Kind 10030 emoji list
+  ///
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - [AppConstants.classicVinesPubkey] and [AppConstants.divineTeamPubkeys]
+  ///   as curator pubkeys
+  /// - AuthService for the current user's pubkey
+  const StickerPackRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'stickerPackRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$stickerPackRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<StickerPackRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  StickerPackRepository create(Ref ref) {
+    return stickerPackRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(StickerPackRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<StickerPackRepository>(value),
+    );
+  }
+}
+
+String _$stickerPackRepositoryHash() =>
+    r'f939e8a0937a37c3cee2cfd9ca1f100b1c9a65f8';
+
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///
 /// Creates a DbVideoLocalStorage for caching video events locally.

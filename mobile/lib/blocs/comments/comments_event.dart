@@ -192,6 +192,30 @@ final class MentionSuggestionsCleared extends CommentsEvent {
   const MentionSuggestionsCleared();
 }
 
+/// Submit a sticker comment (NIP-30 custom emoji).
+///
+/// Posts a Kind 1111 event with `:shortcode:` content and an emoji tag.
+final class StickerCommentSubmitted extends CommentsEvent {
+  const StickerCommentSubmitted({
+    required this.stickerShortcode,
+    required this.stickerImageUrl,
+    this.parentCommentId,
+    this.parentAuthorPubkey,
+  });
+
+  /// The sticker shortcode (e.g., "fire").
+  final String stickerShortcode;
+
+  /// URL of the sticker image.
+  final String stickerImageUrl;
+
+  /// Parent comment ID if this is a reply, null for top-level.
+  final String? parentCommentId;
+
+  /// Parent comment author's pubkey (for Nostr threading).
+  final String? parentAuthorPubkey;
+}
+
 /// A new comment was received from the real-time subscription
 final class NewCommentReceived extends CommentsEvent {
   const NewCommentReceived(this.comment);

@@ -29,6 +29,7 @@ class Comment extends Equatable {
     this.videoDimensions,
     this.videoDuration,
     this.videoBlurhash,
+    this.emojiTags = const {},
   });
 
   /// Unique comment ID (Nostr event ID).
@@ -60,6 +61,12 @@ class Comment extends Equatable {
   /// URL of an attached video (NIP-92 imeta).
   final String? videoUrl;
 
+  /// NIP-30 custom emoji tags: shortcode → imageUrl.
+  ///
+  /// Populated from `["emoji", shortcode, url]` tags in the Nostr event.
+  /// Used to render sticker comments as images instead of text.
+  final Map<String, String> emojiTags;
+
   /// Thumbnail URL for the attached video (NIP-92 imeta `image` field).
   final String? thumbnailUrl;
 
@@ -90,6 +97,7 @@ class Comment extends Equatable {
     String? videoDimensions,
     int? videoDuration,
     String? videoBlurhash,
+    Map<String, String>? emojiTags,
   }) => Comment(
     id: id ?? this.id,
     content: content ?? this.content,
@@ -104,6 +112,7 @@ class Comment extends Equatable {
     videoDimensions: videoDimensions ?? this.videoDimensions,
     videoDuration: videoDuration ?? this.videoDuration,
     videoBlurhash: videoBlurhash ?? this.videoBlurhash,
+    emojiTags: emojiTags ?? this.emojiTags,
   );
 
   @override
@@ -121,5 +130,6 @@ class Comment extends Equatable {
     videoDimensions,
     videoDuration,
     videoBlurhash,
+    emojiTags,
   ];
 }
