@@ -86,7 +86,7 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           originalLikes: video.originalLikes ?? parsed.originalLikes,
           originalComments: video.originalComments ?? parsed.originalComments,
           originalReposts: video.originalReposts ?? parsed.originalReposts,
-          audioEventId: video.audioEventId ? parsed.audioEventId : null,
+          audioEventId: video.audioEventId ?? parsed.audioEventId,
           audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay,
           collaboratorPubkeys: video.collaboratorPubkeys.isEmpty
               ? parsed.collaboratorPubkeys
