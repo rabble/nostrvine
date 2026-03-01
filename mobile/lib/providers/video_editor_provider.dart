@@ -96,7 +96,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
     state = state.copyWith(
       clearFinalRenderedClip: true,
-      proofManifestJson: null,
     );
 
     // Delete the old rendered file from disk to free up space

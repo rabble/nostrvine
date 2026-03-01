@@ -3,7 +3,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -85,6 +84,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     return editorRemaining - clipsState.selectedDuration;
   }
 
+  void _showSnackBar(
+    BuildContext context, {
+    required String label,
+    bool error = false,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        content: DivineSnackbarContainer(label: label, error: error),
+      ),
+    );
+  }
+
   Future<void> _showDeleteConfirmationDialog(
     BuildContext context,
     ClipsLibraryBloc clipsBloc,
@@ -101,15 +115,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           style: TextStyle(color: VineTheme.whiteText),
         ),
         content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: .min,
+          crossAxisAlignment: .start,
+          spacing: 12,
           children: [
             Text(
               'Are you sure you want to delete $clipCount '
               'selected clip${clipCount == 1 ? '' : 's'}?',
               style: const TextStyle(color: VineTheme.whiteText),
             ),
-            const SizedBox(height: 12),
             const Text(
               'This action cannot be undone. The video files will be '
               'permanently removed from your device.',
@@ -120,13 +134,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.secondaryText),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: VineTheme.error,
+              foregroundColor: VineTheme.whiteText,
             ),
             child: const Text('Delete'),
           ),
@@ -222,43 +239,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                           ? '$successCount clip${successCount == 1 ? '' : 's'} '
                                 'saved to ${GallerySaveService.destinationName}'
                           : '$successCount saved, $failureCount failed';
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: Colors.transparent,
-                          elevation: 0,
-                          behavior: SnackBarBehavior.floating,
-                          content: DivineSnackbarContainer(
-                            label: label,
-                            error: failureCount > 0,
-                          ),
-                        ),
+                      _showSnackBar(
+                        context,
+                        label: label,
+                        error: failureCount > 0,
                       );
                     case GallerySaveResultPermissionDenied():
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: Colors.transparent,
-                          elevation: 0,
-                          behavior: SnackBarBehavior.floating,
-                          content: DivineSnackbarContainer(
-                            label:
-                                '${GallerySaveService.destinationName} '
-                                'permission denied',
-                            error: true,
-                          ),
-                        ),
+                      _showSnackBar(
+                        context,
+                        label:
+                            '${GallerySaveService.destinationName} '
+                            'permission denied',
+                        error: true,
                       );
                     case GallerySaveResultError(:final message):
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          backgroundColor: Colors.transparent,
-                          elevation: 0,
-                          behavior: SnackBarBehavior.floating,
-                          content: DivineSnackbarContainer(
-                            label: message,
-                            error: true,
-                          ),
-                        ),
-                      );
+                      _showSnackBar(context, label: message, error: true);
                   }
                 },
               ),
@@ -270,15 +265,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                   final count = state.lastDeletedCount;
                   if (count == null) return;
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: Colors.transparent,
-                      elevation: 0,
-                      behavior: SnackBarBehavior.floating,
-                      content: DivineSnackbarContainer(
-                        label: '$count clip${count == 1 ? '' : 's'} deleted',
-                      ),
-                    ),
+                  _showSnackBar(
+                    context,
+                    label: '$count clip${count == 1 ? '' : 's'} deleted',
                   );
                 },
               ),
@@ -301,59 +290,52 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
                 return Stack(
                   children: [
-                    AnnotatedRegion<SystemUiOverlayStyle>(
-                      value: const SystemUiOverlayStyle(
-                        statusBarColor: Colors.black,
-                        statusBarIconBrightness: Brightness.light,
-                        statusBarBrightness: Brightness.dark,
-                      ),
-                      child: Scaffold(
-                        backgroundColor: widget.selectionMode
-                            ? VineTheme.surfaceBackground
-                            : VineTheme.onPrimary,
-                        appBar: widget.selectionMode
-                            ? null
-                            : _LibraryAppBar(
-                                tabController: _tabController,
-                                onSaveToGallery: () => clipsBloc.add(
-                                  const ClipsLibrarySaveToGallery(),
-                                ),
-                                onDelete: () => _showDeleteConfirmationDialog(
-                                  context,
-                                  clipsBloc,
-                                ),
+                    Scaffold(
+                      backgroundColor: widget.selectionMode
+                          ? VineTheme.surfaceBackground
+                          : VineTheme.onPrimary,
+                      appBar: widget.selectionMode
+                          ? null
+                          : _LibraryAppBar(
+                              tabController: _tabController,
+                              onSaveToGallery: () => clipsBloc.add(
+                                const ClipsLibrarySaveToGallery(),
                               ),
-                        body: widget.selectionMode
-                            ? _SelectionBody(
-                                remainingDuration: remaining,
-                                targetAspectRatio: targetAspectRatio,
-                                onCreate: () => _createVideoFromSelected(
-                                  context,
-                                  clipsBloc,
-                                ),
-                              )
-                            : _TabBody(
-                                tabController: _tabController,
-                                remainingDuration: remaining,
-                                targetAspectRatio: targetAspectRatio,
+                              onDelete: () => _showDeleteConfirmationDialog(
+                                context,
+                                clipsBloc,
                               ),
-                        floatingActionButton:
-                            widget.selectionMode ||
-                                clipsState.selectedClipIds.isEmpty
-                            ? null
-                            : _CreateVideoFab(
-                                onPressed: () => _createVideoFromSelected(
-                                  context,
-                                  clipsBloc,
-                                ),
+                            ),
+                      body: widget.selectionMode
+                          ? _SelectionBody(
+                              remainingDuration: remaining,
+                              targetAspectRatio: targetAspectRatio,
+                              onCreate: () => _createVideoFromSelected(
+                                context,
+                                clipsBloc,
                               ),
-                      ),
+                            )
+                          : _TabBody(
+                              tabController: _tabController,
+                              remainingDuration: remaining,
+                              targetAspectRatio: targetAspectRatio,
+                            ),
+                      floatingActionButton:
+                          widget.selectionMode ||
+                              clipsState.selectedClipIds.isEmpty
+                          ? null
+                          : _CreateVideoFab(
+                              onPressed: () => _createVideoFromSelected(
+                                context,
+                                clipsBloc,
+                              ),
+                            ),
                     ),
                     if (clipsState.isDeleting ||
                         clipsState.isSavingToGallery ||
                         isPreparing)
                       Material(
-                        color: Colors.black54,
+                        color: VineTheme.scrim65,
                         child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -411,18 +393,15 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
           centerTitle: false,
           leadingWidth: 64,
           leading: const Padding(
-            padding: EdgeInsets.only(left: 16),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: _BackButton(),
-            ),
+            padding: .only(left: 16),
+            child: Align(alignment: .centerLeft, child: _BackButton()),
           ),
           title: Text('Library', style: VineTheme.titleLargeFont()),
           actions: hasSelection
               ? [
                   IconButton(
                     icon: const DivineIcon(
-                      icon: DivineIconName.downloadSimple,
+                      icon: .downloadSimple,
                       color: VineTheme.whiteText,
                     ),
                     onPressed: onSaveToGallery,
@@ -430,7 +409,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                   IconButton(
                     icon: const DivineIcon(
-                      icon: DivineIconName.trash,
+                      icon: .trash,
                       color: VineTheme.error,
                     ),
                     onPressed: onDelete,
@@ -447,10 +426,10 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
             labelColor: VineTheme.whiteText,
             unselectedLabelColor: VineTheme.secondaryText,
             labelStyle: VineTheme.tabTextStyle(),
-            padding: EdgeInsets.zero,
-            labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: .zero,
+            labelPadding: const .symmetric(horizontal: 16),
             isScrollable: true,
-            tabAlignment: TabAlignment.start,
+            tabAlignment: .start,
             tabs: const [
               Tab(text: 'Drafts'),
               Tab(text: 'Clips'),
@@ -468,9 +447,9 @@ class _BackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DivineIconButton(
-      icon: DivineIconName.caretLeft,
-      size: DivineIconButtonSize.small,
-      type: DivineIconButtonType.secondary,
+      icon: .caretLeft,
+      size: .small,
+      type: .secondary,
       onPressed: () {
         if (context.canPop()) {
           context.pop();
@@ -549,7 +528,7 @@ class _CreateVideoFab extends StatelessWidget {
   Widget build(BuildContext context) {
     return FloatingActionButton.extended(
       onPressed: onPressed,
-      icon: const Icon(Icons.movie_creation, color: VineTheme.whiteText),
+      icon: const DivineIcon(icon: .pencilSimple, color: VineTheme.whiteText),
       label: Text(
         'Create Video',
         style: VineTheme.titleSmallFont(),

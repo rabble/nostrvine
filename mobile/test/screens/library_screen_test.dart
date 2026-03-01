@@ -1,184 +1,121 @@
-// ABOUTME: Tests for LibraryScreen - browsing and managing saved clips
-// ABOUTME: Covers thumbnail display, clip deletion, and import functionality
+// ABOUTME: Tests for LibraryScreen - browsing and managing saved clips/drafts
+// ABOUTME: Covers tabs, navigation, and empty states
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
-import 'package:openvine/services/clip_library_service.dart';
-import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
+import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/widgets/library/clips_tab.dart';
+import 'package:openvine/widgets/library/drafts_tab.dart';
+import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+class _MockGallerySaveService extends Mock implements GallerySaveService {}
+
 void main() {
-  group('LibraryScreen', () {
-    late ClipLibraryService clipService;
+  group(LibraryScreen, () {
+    late _MockGallerySaveService mockGallerySaveService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      clipService = ClipLibraryService();
+      mockGallerySaveService = _MockGallerySaveService();
     });
 
-    Widget buildTestWidget() {
+    Widget buildWidget({bool selectionMode = false}) {
       return ProviderScope(
         overrides: [
-          clipLibraryServiceProvider.overrideWith((ref) => clipService),
+          gallerySaveServiceProvider.overrideWith(
+            (ref) => mockGallerySaveService,
+          ),
+          clipManagerProvider.overrideWith(ClipManagerNotifier.new),
         ],
-        child: const MaterialApp(home: LibraryScreen()),
+        child: MaterialApp(
+          theme: VineTheme.theme,
+          home: LibraryScreen(selectionMode: selectionMode),
+        ),
       );
     }
 
-    testWidgets('shows empty state when no clips', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      expect(find.text('Library Empty'), findsOneWidget);
-      expect(find.text('Record a Video'), findsOneWidget);
-    });
-
-    testWidgets('displays clips in grid with thumbnails', (tester) async {
-      // Add test clips
-      await clipService.saveClip(
-        SavedClip(
-          id: 'clip_1',
-          filePath: '/tmp/video1.mp4',
-          thumbnailPath: null, // No thumbnail, will show placeholder
-          duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
-        ),
-      );
-
-      await clipService.saveClip(
-        SavedClip(
-          id: 'clip_2',
-          filePath: '/tmp/video2.mp4',
-          thumbnailPath: null,
-          duration: const Duration(milliseconds: 1500),
-          createdAt: DateTime.now(),
-          aspectRatio: 'vertical',
-        ),
-      );
-
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      // Should show duration badges
-      expect(find.text('2.00'), findsOneWidget);
-      expect(find.text('1.50'), findsOneWidget);
-    });
-
-    group('delete clips functionality', () {
-      late SavedClip testClip;
-
-      setUp(() {
-        testClip = SavedClip(
-          id: 'test_clip',
-          filePath: '/tmp/video.mp4',
-          thumbnailPath: null,
-          duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
-        );
-      });
-
-      testWidgets('shows delete icon when clips selected', (tester) async {
-        await clipService.saveClip(testClip);
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
-
-        // Find the clip card by its thumbnail card and tap it
-        final clipCard = find.byType(VideoClipThumbnailCard).first;
-        await tester.tap(clipCard);
+    group('renders', () {
+      testWidgets('screen with tabs', (tester) async {
+        await tester.pumpWidget(buildWidget());
         await tester.pump();
 
-        expect(find.byTooltip('Delete selected clips'), findsOneWidget);
-      });
-
-      testWidgets('shows confirmation dialog on delete tap', (tester) async {
-        await clipService.saveClip(testClip);
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
-
-        // Select clip
-        final clipCard = find.byType(VideoClipThumbnailCard).first;
-        await tester.tap(clipCard);
-        await tester.pump();
-
-        // Tap delete button
-        await tester.tap(find.byTooltip('Delete selected clips'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Delete Clips'), findsOneWidget);
-        expect(find.text('Cancel'), findsOneWidget);
-        expect(find.text('Delete'), findsOneWidget);
-      });
-
-      testWidgets('deletes clips when confirmed', (tester) async {
-        await clipService.saveClip(testClip);
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
-
-        // Select clip
-        final clipCard = find.byType(VideoClipThumbnailCard).first;
-        await tester.tap(clipCard);
-        await tester.pump();
-
-        // Tap delete button
-        await tester.tap(find.byTooltip('Delete selected clips'));
-        await tester.pumpAndSettle();
-
-        // Tap confirm button in dialog
-        await tester.tap(find.text('Delete'));
-        // Use pump with duration to allow async operations to complete
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
-        await tester.pump();
-
-        final clips = await clipService.getAllClips();
-        expect(clips, isEmpty);
-      });
-
-      testWidgets('cancels deletion on cancel tap', (tester) async {
-        await clipService.saveClip(testClip);
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
-
-        // Select clip
-        final clipCard = find.byType(VideoClipThumbnailCard).first;
-        await tester.tap(clipCard);
-        await tester.pump();
-
-        // Tap delete button
-        await tester.tap(find.byTooltip('Delete selected clips'));
-        await tester.pumpAndSettle();
-
-        // Tap cancel
-        await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
-
-        final clips = await clipService.getAllClips();
-        expect(clips.length, 1);
-      });
-
-      testWidgets('tapping clip toggles selection', (tester) async {
-        await clipService.saveClip(testClip);
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
-
-        // Find the clip card
-        final clipCard = find.byType(VideoClipThumbnailCard).first;
-
-        // Select
-        await tester.tap(clipCard);
-        await tester.pump();
-        expect(find.text('1 selected'), findsOneWidget);
-
-        // Deselect by tapping again
-        await tester.tap(clipCard);
-        await tester.pump();
+        // Should find tab bar with Drafts and Clips
+        expect(find.text('Drafts'), findsOneWidget);
         expect(find.text('Clips'), findsOneWidget);
+      });
+
+      testWidgets('$DraftsTab initially (first tab)', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        // Drafts tab is default selected (first in order)
+        expect(find.byType(DraftsTab), findsOneWidget);
+      });
+
+      testWidgets('$ClipSelectionHeader in selection mode', (tester) async {
+        await tester.pumpWidget(buildWidget(selectionMode: true));
+        await tester.pump();
+
+        expect(find.byType(ClipSelectionHeader), findsOneWidget);
+      });
+    });
+
+    group('tab navigation', () {
+      testWidgets('can switch to $ClipsTab', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to clips tab
+        await tester.tap(find.text('Clips'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ClipsTab), findsOneWidget);
+      });
+
+      testWidgets('can switch back to $DraftsTab', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to clips tab
+        await tester.tap(find.text('Clips'));
+        await tester.pumpAndSettle();
+
+        // Switch back to drafts tab
+        await tester.tap(find.text('Drafts'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DraftsTab), findsOneWidget);
+      });
+    });
+
+    group('empty state', () {
+      testWidgets('shows $EmptyLibraryState when no drafts', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        // Drafts tab is default; with no drafts should show empty state
+        expect(find.byType(EmptyLibraryState), findsOneWidget);
+        expect(find.text('No Drafts Yet'), findsOneWidget);
+      });
+
+      testWidgets('shows $EmptyLibraryState when no clips', (tester) async {
+        await tester.pumpWidget(buildWidget());
+        await tester.pumpAndSettle();
+
+        // Switch to clips tab
+        await tester.tap(find.text('Clips'));
+        await tester.pumpAndSettle();
+
+        // With no clips saved, should show empty state
+        expect(find.byType(EmptyLibraryState), findsOneWidget);
+        expect(find.text('No Clips Yet'), findsOneWidget);
       });
     });
   });

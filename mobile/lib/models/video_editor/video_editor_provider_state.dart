@@ -176,6 +176,7 @@ class VideoEditorProviderState {
     bool? metadataLimitReached,
     RecordingClip? finalRenderedClip,
     bool clearFinalRenderedClip = false,
+    String? proofManifestJson,
     Map<String, dynamic>? editorStateHistory,
     CompleteParameters? editorEditingParameters,
     List<String>? collaboratorPubkeys,
@@ -185,7 +186,6 @@ class VideoEditorProviderState {
     bool clearInspiredByNpub = false,
     Object? selectedAudioEventId = _sentinel,
     Object? selectedAudioRelay = _sentinel,
-    Object? proofManifestJson = _sentinel,
   }) {
     return VideoEditorProviderState(
       currentClipIndex: currentClipIndex ?? this.currentClipIndex,
@@ -226,9 +226,9 @@ class VideoEditorProviderState {
       selectedAudioRelay: selectedAudioRelay == _sentinel
           ? this.selectedAudioRelay
           : selectedAudioRelay as String?,
-      proofManifestJson: proofManifestJson == _sentinel
-          ? this.proofManifestJson
-          : proofManifestJson as String?,
+      proofManifestJson: clearFinalRenderedClip
+          ? null
+          : proofManifestJson ?? this.proofManifestJson,
     );
   }
 
