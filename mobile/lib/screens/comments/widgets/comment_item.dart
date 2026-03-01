@@ -396,7 +396,7 @@ class _CommentContent extends StatelessWidget {
   /// Combined pattern for nostr:npub1... mentions and NIP-30 :shortcode:
   /// emoji. Compiled once and reused across builds.
   static final _combinedPattern = RegExp(
-    'nostr:(npub1[a-zA-Z0-9]{58,})|:([a-zA-Z0-9_]+):',
+    'nostr:(npub1[a-zA-Z0-9]{58,65})|:([a-zA-Z0-9_]+):',
   );
 
   @override

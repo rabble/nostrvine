@@ -58,6 +58,9 @@ class CommentsRepository {
   /// server or relay (so callers never need to push counts back in).
   final Map<String, int> _commentCountCache = {};
 
+  /// NIP-30 shortcode validation: alphanumeric + underscores only.
+  static final _shortcodePattern = RegExp(r'^[a-zA-Z0-9_]+$');
+
   /// Active comment-watch subscription ID, if any.
   ///
   /// Limitation: only one watch can be active at a time. If two comment
@@ -303,7 +306,7 @@ class CommentsRepository {
     String? replyToAuthorPubkey,
   }) async {
     if (stickerShortcode.isEmpty ||
-        !RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(stickerShortcode)) {
+        !_shortcodePattern.hasMatch(stickerShortcode)) {
       throw const PostCommentFailedException(
         'Sticker shortcode must be non-empty and contain only '
         'alphanumeric characters and underscores',

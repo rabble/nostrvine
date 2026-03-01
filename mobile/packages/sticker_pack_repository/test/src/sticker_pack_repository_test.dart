@@ -1045,6 +1045,68 @@ void main() {
         expect(packs.first.title, equals('Name Tag'));
       });
 
+      test('filters out emoji tags with non-http(s) URLs', () async {
+        final event = Event(
+          _testCuratorPubkey1,
+          _emojiSetKind,
+          <List<String>>[
+            ['d', 'xss-pack'],
+            ['emoji', 'xss', 'javascript:alert(1)'],
+            ['emoji', 'ftp', 'ftp://cdn.example.com/ftp.png'],
+            ['emoji', 'safe', 'https://cdn.example.com/safe.png'],
+            ['emoji', 'http', 'http://cdn.example.com/http.png'],
+          ],
+          '',
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repo = StickerPackRepository(
+          nostrClient: mockNostrClient,
+          curatorPubkeys: [_testCuratorPubkey1],
+        );
+
+        final packs = await repo.loadStickerPacks();
+
+        expect(packs, hasLength(1));
+        expect(packs.first.stickers, hasLength(2));
+        final shortcodes = packs.first.stickers
+            .map((s) => s.shortcode)
+            .toList();
+        expect(shortcodes, containsAll(['safe', 'http']));
+        expect(shortcodes, isNot(contains('xss')));
+        expect(shortcodes, isNot(contains('ftp')));
+      });
+
+      test('filters out pack thumbnail with non-https URL', () async {
+        final event = Event(
+          _testCuratorPubkey1,
+          _emojiSetKind,
+          <List<String>>[
+            ['d', 'bad-thumb'],
+            ['image', 'javascript:alert(1)'],
+            ['emoji', 'ok', 'https://cdn.example.com/ok.png'],
+          ],
+          '',
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repo = StickerPackRepository(
+          nostrClient: mockNostrClient,
+          curatorPubkeys: [_testCuratorPubkey1],
+        );
+
+        final packs = await repo.loadStickerPacks();
+
+        expect(packs, hasLength(1));
+        expect(packs.first.imageUrl, isNull);
+      });
+
       test('skips emoji tags with fewer than 3 elements', () async {
         final event = Event(
           _testCuratorPubkey1,

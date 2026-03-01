@@ -31,12 +31,16 @@ final class StickerPickerLoading extends StickerPickerState {
 final class StickerPickerLoaded extends StickerPickerState {
   const StickerPickerLoaded({
     required this.packs,
+    required this.allStickers,
     required this.filteredStickers,
     this.searchQuery = '',
   });
 
   /// All loaded sticker packs.
   final List<StickerPack> packs;
+
+  /// All stickers flattened from all packs (computed once on load).
+  final List<Sticker> allStickers;
 
   /// Flat list of stickers matching the current search query.
   /// When search is empty, contains all stickers from all packs.
@@ -46,7 +50,7 @@ final class StickerPickerLoaded extends StickerPickerState {
   final String searchQuery;
 
   @override
-  List<Object> get props => [packs, filteredStickers, searchQuery];
+  List<Object> get props => [packs, allStickers, filteredStickers, searchQuery];
 }
 
 /// Error loading sticker packs.

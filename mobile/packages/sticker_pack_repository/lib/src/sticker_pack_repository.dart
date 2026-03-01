@@ -196,7 +196,7 @@ class StickerPackRepository {
 
     final events = await _nostrClient.queryEvents(
       [filter],
-      tempRelays: List.of(_discoveryRelays),
+      tempRelays: _discoveryRelays,
     );
     return _eventsToStickerPacks(events);
   }
@@ -276,15 +276,24 @@ class StickerPackRepository {
             title ??= tag[1] as String;
           // NIP-51 spec uses `picture`; some clients use `image`.
           case 'picture' || 'image':
-            imageUrl ??= tag[1] as String;
+            if (imageUrl == null) {
+              final url = tag[1] as String;
+              final uri = Uri.tryParse(url);
+              if (uri != null &&
+                  (uri.scheme == 'https' || uri.scheme == 'http')) {
+                imageUrl = url;
+              }
+            }
           case 'emoji':
             if (tag.length >= 3) {
-              stickers.add(
-                Sticker(
-                  shortcode: tag[1] as String,
-                  imageUrl: tag[2] as String,
-                ),
-              );
+              final url = tag[2] as String;
+              final uri = Uri.tryParse(url);
+              if (uri != null &&
+                  (uri.scheme == 'https' || uri.scheme == 'http')) {
+                stickers.add(
+                  Sticker(shortcode: tag[1] as String, imageUrl: url),
+                );
+              }
             }
         }
       }

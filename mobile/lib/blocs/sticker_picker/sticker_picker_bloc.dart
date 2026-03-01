@@ -38,6 +38,7 @@ class StickerPickerBloc extends Bloc<StickerPickerEvent, StickerPickerState> {
       emit(
         StickerPickerLoaded(
           packs: packs,
+          allStickers: allStickers,
           filteredStickers: allStickers,
         ),
       );
@@ -60,16 +61,14 @@ class StickerPickerBloc extends Bloc<StickerPickerEvent, StickerPickerState> {
       emit(
         StickerPickerLoaded(
           packs: currentState.packs,
-          filteredStickers: currentState.packs
-              .expand((pack) => pack.stickers)
-              .toList(),
+          allStickers: currentState.allStickers,
+          filteredStickers: currentState.allStickers,
         ),
       );
       return;
     }
 
-    final filtered = currentState.packs
-        .expand((pack) => pack.stickers)
+    final filtered = currentState.allStickers
         .where(
           (sticker) => sticker.shortcode.toLowerCase().contains(query),
         )
@@ -78,6 +77,7 @@ class StickerPickerBloc extends Bloc<StickerPickerEvent, StickerPickerState> {
     emit(
       StickerPickerLoaded(
         packs: currentState.packs,
+        allStickers: currentState.allStickers,
         filteredStickers: filtered,
         searchQuery: query,
       ),

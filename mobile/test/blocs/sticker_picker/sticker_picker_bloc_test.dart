@@ -125,6 +125,10 @@ void main() {
         'filters stickers by shortcode (case-insensitive contains)',
         seed: () => StickerPickerLoaded(
           packs: const [testPack1, testPack2],
+          allStickers: [
+            ...testPack1.stickers,
+            ...testPack2.stickers,
+          ],
           filteredStickers: [
             ...testPack1.stickers,
             ...testPack2.stickers,
@@ -154,9 +158,13 @@ void main() {
 
       blocTest<StickerPickerBloc, StickerPickerState>(
         'empty query resets to all stickers',
-        seed: () => const StickerPickerLoaded(
-          packs: [testPack1, testPack2],
-          filteredStickers: [],
+        seed: () => StickerPickerLoaded(
+          packs: const [testPack1, testPack2],
+          allStickers: [
+            ...testPack1.stickers,
+            ...testPack2.stickers,
+          ],
+          filteredStickers: const [],
           searchQuery: 'old-query',
         ),
         build: buildBloc,
