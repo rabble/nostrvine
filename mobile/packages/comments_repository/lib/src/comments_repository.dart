@@ -430,11 +430,9 @@ class CommentsRepository {
 
       final events = await _nostrClient.queryEvents([filter]);
 
-      final comments = events
-          .map(_eventToCommentFromRawEvent)
-          .whereType<Comment>()
-          .toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final comments =
+          events.map(_eventToCommentFromRawEvent).whereType<Comment>().toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       return comments;
     } on Exception catch (e) {
@@ -574,8 +572,7 @@ class CommentsRepository {
           } else if (field.startsWith('dim ')) {
             videoDimensions = field.substring(4).trim();
           } else if (field.startsWith('duration ')) {
-            videoDuration =
-                int.tryParse(field.substring(9).trim());
+            videoDuration = int.tryParse(field.substring(9).trim());
           } else if (field.startsWith('blurhash ')) {
             videoBlurhash = field.substring(9).trim();
           }

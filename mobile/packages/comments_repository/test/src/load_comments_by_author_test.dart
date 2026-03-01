@@ -73,8 +73,7 @@ void main() {
         () => mockNostrClient.queryEvents(any()),
       ).thenAnswer((_) async => []);
 
-      final before =
-          DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000);
+      final before = DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000);
       await repository.loadCommentsByAuthor(
         authorPubkey: testAuthorPubkey,
         before: before,
