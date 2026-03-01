@@ -143,7 +143,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
       onTap: () => context.pop(),
       behavior: .translucent,
       child: ColoredBox(
-        color: Colors.black54,
+        color: VineTheme.scrim65,
         child: SafeArea(
           child: Center(
             child: Padding(
@@ -157,7 +157,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
                     child: AspectRatio(
                       aspectRatio: widget.clip.aspectRatioValue,
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: .circular(16),
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -250,10 +250,10 @@ class _ActionButtonsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      type: MaterialType.transparency,
+      type: .transparency,
       child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: .min,
+        mainAxisAlignment: .center,
         spacing: 32,
         children: [
           // Save to gallery button

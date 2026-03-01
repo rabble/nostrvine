@@ -33,7 +33,7 @@ class EmptyLibraryState extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: .center,
         children: [
           Container(
             width: 120,
@@ -41,27 +41,20 @@ class EmptyLibraryState extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: VineTheme.cardBackground,
-              border: Border.all(color: VineTheme.outlineDisabled, width: 2),
+              border: .all(color: VineTheme.outlineDisabled, width: 2),
             ),
             child: Icon(icon, size: 60, color: VineTheme.secondaryText),
           ),
           const SizedBox(height: 24),
           Text(
             title,
-            style: const TextStyle(
-              color: VineTheme.whiteText,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: VineTheme.headlineSmallFont(),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: VineTheme.secondaryText,
-              fontSize: 16,
-            ),
-            textAlign: TextAlign.center,
+            style: VineTheme.bodyLargeFont(color: VineTheme.secondaryText),
+            textAlign: .center,
           ),
           if (showRecordButton) ...[
             const SizedBox(height: 32),
@@ -74,13 +67,8 @@ class EmptyLibraryState extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
                 foregroundColor: VineTheme.whiteText,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                padding: const .symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: .circular(12)),
               ),
             ),
           ],
