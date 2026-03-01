@@ -345,7 +345,7 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           replyToDisplayName =
               profile?.displayName ??
               profile?.name ??
-              NostrKeyUtils.encodePubKey(replyToAuthorPubkey);
+              UserProfile.generatedNameFor(replyToAuthorPubkey);
         }
 
         return CommentInput(
