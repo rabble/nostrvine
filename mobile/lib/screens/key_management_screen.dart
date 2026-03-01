@@ -185,23 +185,30 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                 ),
                 decoration: InputDecoration(
                   hintText: 'nsec1...',
-                  hintStyle: TextStyle(color: VineTheme.lightText),
+                  hintStyle: const TextStyle(color: VineTheme.lightText),
                   filled: true,
                   fillColor: VineTheme.backgroundColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: VineTheme.cardBackground),
+                    borderSide: const BorderSide(
+                      color: VineTheme.cardBackground,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: VineTheme.cardBackground),
+                    borderSide: const BorderSide(
+                      color: VineTheme.cardBackground,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: const BorderSide(color: VineTheme.vineGreen),
                   ),
                   suffixIcon: IconButton(
-                    icon: Icon(Icons.paste, color: VineTheme.secondaryText),
+                    icon: const Icon(
+                      Icons.paste,
+                      color: VineTheme.secondaryText,
+                    ),
                     onPressed: () async {
                       final data = await Clipboard.getData('text/plain');
                       if (data?.text != null) {
@@ -256,15 +263,15 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                     color: VineTheme.warning.withValues(alpha: 0.5),
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(
                       Icons.warning_amber,
                       color: VineTheme.warning,
                       size: 20,
                     ),
-                    const SizedBox(width: 8),
-                    const Expanded(
+                    SizedBox(width: 8),
+                    Expanded(
                       child: Text(
                         'This will replace your current key!',
                         style: TextStyle(
@@ -343,11 +350,11 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                     color: VineTheme.error.withValues(alpha: 0.5),
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(Icons.security, color: VineTheme.error, size: 20),
-                    const SizedBox(width: 8),
-                    const Expanded(
+                    SizedBox(width: 8),
+                    Expanded(
                       child: Text(
                         'Never share your nsec with anyone!',
                         style: TextStyle(

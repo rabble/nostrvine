@@ -629,7 +629,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
                     'Last refresh: ${_formatTime(_lastRefresh!)}',
-                    style: TextStyle(color: VineTheme.lightText, fontSize: 12),
+                    style: const TextStyle(
+                      color: VineTheme.lightText,
+                      fontSize: 12,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -933,7 +936,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   color: VineTheme.cardBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
@@ -943,7 +946,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                           color: VineTheme.secondaryText,
                           size: 20,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text(
                           'Troubleshooting',
                           style: TextStyle(
@@ -954,7 +957,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       '• Green status = Connected and working\n'
                       '• Red status = Connection failed\n'
@@ -1129,7 +1132,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 if (result.isSuccess)
                   Text(
                     '${result.latencyMs}ms${result.details != null ? ' • ${result.details}' : ''}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: VineTheme.secondaryText,
                       fontSize: 11,
                     ),
@@ -1137,7 +1140,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 else
                   Text(
                     result.errorMessage ?? 'Failed',
-                    style: TextStyle(color: VineTheme.error, fontSize: 11),
+                    style: const TextStyle(
+                      color: VineTheme.error,
+                      fontSize: 11,
+                    ),
                   ),
               ],
             ),

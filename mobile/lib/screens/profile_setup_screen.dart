@@ -286,13 +286,13 @@ class _ProfileSetupScreenViewState
               switch (state.error) {
                 case ProfileEditorError.usernameTaken:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
+                    const SnackBar(
+                      content: Text(
                         'Username was just taken. '
                         'Please choose another.',
                       ),
                       backgroundColor: VineTheme.error,
-                      duration: const Duration(seconds: 3),
+                      duration: Duration(seconds: 3),
                     ),
                   );
                 case ProfileEditorError.usernameReserved:
@@ -303,8 +303,8 @@ class _ProfileSetupScreenViewState
                   );
                 case ProfileEditorError.claimFailed:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
+                    const SnackBar(
+                      content: Text(
                         'Failed to claim username. Please try again.',
                       ),
                       backgroundColor: VineTheme.error,
@@ -632,44 +632,43 @@ class _ProfileSetupScreenViewState
                                 style: VineTheme.bodyLargeFont(
                                   color: VineTheme.onSurface,
                                 ),
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   isCollapsed: true,
                                   hintText: 'How should people know you?',
                                   hintStyle: TextStyle(
                                     color: VineTheme.lightText,
                                   ),
-                                  border: const UnderlineInputBorder(
+                                  border: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  enabledBorder: const UnderlineInputBorder(
+                                  enabledBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedBorder: const UnderlineInputBorder(
+                                  focusedBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  errorBorder: const UnderlineInputBorder(
+                                  errorBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedErrorBorder:
-                                      const UnderlineInputBorder(
-                                        borderRadius: BorderRadius.zero,
-                                        borderSide: BorderSide(
-                                          color: VineTheme.neutral10,
-                                        ),
-                                      ),
-                                  contentPadding: const EdgeInsets.all(16),
+                                  focusedErrorBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  contentPadding: EdgeInsets.all(16),
                                 ),
                                 textInputAction: TextInputAction.next,
                                 onFieldSubmitted: (_) =>
@@ -715,44 +714,43 @@ class _ProfileSetupScreenViewState
                                 style: VineTheme.bodyLargeFont(
                                   color: VineTheme.onSurface,
                                 ),
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   isCollapsed: true,
                                   hintText: 'Tell people about yourself...',
                                   hintStyle: TextStyle(
                                     color: VineTheme.lightText,
                                   ),
-                                  border: const UnderlineInputBorder(
+                                  border: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  enabledBorder: const UnderlineInputBorder(
+                                  enabledBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedBorder: const UnderlineInputBorder(
+                                  focusedBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  errorBorder: const UnderlineInputBorder(
+                                  errorBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedErrorBorder:
-                                      const UnderlineInputBorder(
-                                        borderRadius: BorderRadius.zero,
-                                        borderSide: BorderSide(
-                                          color: VineTheme.neutral10,
-                                        ),
-                                      ),
-                                  contentPadding: const EdgeInsets.all(16),
+                                  focusedErrorBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  contentPadding: EdgeInsets.all(16),
                                   counterText: '',
                                 ),
                                 maxLines: null,

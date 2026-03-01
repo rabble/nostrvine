@@ -142,7 +142,6 @@ class NotificationListItem extends StatelessWidget {
               color: _getIconBackgroundColor(),
               shape: BoxShape.circle,
               border: Border.all(
-                color: VineTheme.backgroundColor,
                 width: 2,
               ),
             ),

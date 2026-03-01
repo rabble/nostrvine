@@ -198,7 +198,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.error_outline,
                           color: VineTheme.warning,
                           size: 64,
@@ -213,8 +213,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 32),
                           child: Text(
                             'Divine requires at least one relay to load videos, post content, and sync data.',
                             textAlign: TextAlign.center,
@@ -389,8 +389,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
   Widget _buildRelayDetails(RelayStatistics? stats, String relayUrl) {
     if (stats == null) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
+      return const Padding(
+        padding: EdgeInsets.all(16),
         child: Text(
           'No statistics available yet',
           style: TextStyle(color: VineTheme.lightText, fontSize: 13),
@@ -473,14 +473,14 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
             const SizedBox(height: 8),
             Text(
               'Last Error: ${stats.lastError}',
-              style: TextStyle(color: VineTheme.error, fontSize: 12),
+              style: const TextStyle(color: VineTheme.error, fontSize: 12),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             if (stats.lastErrorTime != null)
               Text(
                 _formatTime(stats.lastErrorTime!),
-                style: TextStyle(color: VineTheme.error, fontSize: 11),
+                style: const TextStyle(color: VineTheme.error, fontSize: 11),
               ),
           ],
           // NIP-11 Relay Info Section
@@ -496,13 +496,13 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     bool isLoading,
   ) {
     if (isLoading) {
-      return Column(
+      return const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Divider(color: VineTheme.lightText, height: 24),
+          Divider(color: VineTheme.lightText, height: 24),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
@@ -510,7 +510,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                   color: VineTheme.vineGreen,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 'Loading relay info...',
                 style: TextStyle(color: VineTheme.lightText, fontSize: 13),
@@ -529,7 +529,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Divider(color: VineTheme.lightText, height: 24),
-        Text(
+        const Text(
           'About Relay',
           style: TextStyle(
             color: VineTheme.secondaryText,
@@ -556,7 +556,10 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               capabilities.description!,
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 13,
+              ),
             ),
           ),
         if (capabilities.supportedNips.isNotEmpty)
@@ -610,7 +613,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         children: [
           Text(
             label,
-            style: TextStyle(color: VineTheme.lightText, fontSize: 13),
+            style: const TextStyle(color: VineTheme.lightText, fontSize: 13),
           ),
           Text(value, style: TextStyle(color: valueColor, fontSize: 13)),
         ],
@@ -666,7 +669,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         ),
         content: Text(
           'Are you sure you want to remove this relay?\n\n$relayUrl',
-          style: TextStyle(color: VineTheme.secondaryText),
+          style: const TextStyle(color: VineTheme.secondaryText),
         ),
         actions: [
           TextButton(
@@ -803,14 +806,14 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
               controller: controller,
               autofocus: true,
               style: const TextStyle(color: VineTheme.whiteText),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'wss://relay.example.com',
                 hintStyle: TextStyle(color: VineTheme.lightText),
-                border: const OutlineInputBorder(),
+                border: OutlineInputBorder(),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: VineTheme.cardBackground),
                 ),
-                focusedBorder: const OutlineInputBorder(
+                focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: VineTheme.vineGreen),
                 ),
               ),
@@ -895,8 +898,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
           setState(() {});
 
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Restored default relay: $defaultRelay'),
+            const SnackBar(
+              content: Text('Restored default relay: $defaultRelay'),
               backgroundColor: VineTheme.success,
             ),
           );
