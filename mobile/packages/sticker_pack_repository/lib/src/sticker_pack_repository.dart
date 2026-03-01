@@ -7,15 +7,6 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:sticker_pack_repository/src/exceptions.dart';
 import 'package:sticker_pack_repository/src/models/models.dart';
 
-/// Kind 30030 is a NIP-51 emoji set (addressable event).
-const int _emojiSetKind = 30030;
-
-/// Kind 10030 is a NIP-51 user emoji list (replaceable event).
-///
-/// Contains `"a"` tags pointing to Kind 30030 emoji sets the user subscribes
-/// to, formatted as `["a", "30030:<pubkey>:<d-tag>"]`.
-const int _userEmojiListKind = 10030;
-
 /// A parsed `"a"` tag reference from a Kind 10030 event.
 ///
 /// Format: `["a", "30030:<pubkey>:<d-tag>"]`
@@ -90,32 +81,49 @@ class StickerPackRepository {
   ///
   /// Returns a list of [StickerPack] models.
   ///
-  /// Throws [LoadStickerPacksFailedException] if the query fails.
+  /// Individual source failures are tolerated — partial results are returned
+  /// when at least one source succeeds.
+  ///
+  /// Throws [LoadStickerPacksFailedException] only when ALL sources fail.
   Future<List<StickerPack>> loadStickerPacks() async {
     if (_cachedPacks != null) return _cachedPacks!;
 
-    try {
-      final results = await Future.wait([
-        _loadCuratedPacks(),
-        _loadUserSubscribedPacks(),
-        _discoverPacks(),
-      ]);
+    final futures = [
+      _loadCuratedPacks(),
+      _loadUserSubscribedPacks(),
+      _discoverPacks(),
+    ];
 
-      final allPacks = <String, StickerPack>{};
-      for (final packList in results) {
-        for (final pack in packList) {
-          final key = '${pack.authorPubkey}:${pack.id}';
-          allPacks.putIfAbsent(key, () => pack);
-        }
+    final results = await Future.wait(
+      futures.map(
+        (f) => f
+            .then<(List<StickerPack>, Object?)>((packs) => (packs, null))
+            .onError<Object>((e, _) => (const <StickerPack>[], e)),
+      ),
+    );
+
+    final allPacks = <String, StickerPack>{};
+    var failureCount = 0;
+
+    for (final (packList, error) in results) {
+      if (error != null) {
+        failureCount++;
+        continue;
       }
+      for (final pack in packList) {
+        final key = '${pack.authorPubkey}:${pack.id}';
+        allPacks.putIfAbsent(key, () => pack);
+      }
+    }
 
-      _cachedPacks = allPacks.values.toList();
-      return _cachedPacks!;
-    } on Exception catch (e) {
-      throw LoadStickerPacksFailedException(
-        'Failed to load sticker packs: $e',
+    if (failureCount == futures.length) {
+      throw const LoadStickerPacksFailedException(
+        'All sticker pack sources failed',
       );
     }
+
+    _cachedPacks = allPacks.values.toList();
+    return _cachedPacks!;
   }
 
   /// Loads curated packs from all curator pubkeys.
@@ -123,7 +131,7 @@ class StickerPackRepository {
     if (_curatorPubkeys.isEmpty) return [];
 
     final filter = Filter(
-      kinds: const [_emojiSetKind],
+      kinds: const [EventKind.emojiSet],
       authors: _curatorPubkeys,
     );
 
@@ -141,7 +149,7 @@ class StickerPackRepository {
     if (userPubkey == null) return [];
 
     final emojiListFilter = Filter(
-      kinds: const [_userEmojiListKind],
+      kinds: const [EventKind.emojisList],
       authors: [userPubkey],
     );
 
@@ -159,18 +167,18 @@ class StickerPackRepository {
       byAuthor.putIfAbsent(ref.pubkey, () => []).add(ref.dTag);
     }
 
-    final packs = <StickerPack>[];
-    for (final entry in byAuthor.entries) {
-      final filter = Filter(
-        kinds: const [_emojiSetKind],
-        authors: [entry.key],
-        d: entry.value,
-      );
-      final events = await _nostrClient.queryEvents([filter]);
-      packs.addAll(_eventsToStickerPacks(events));
-    }
-
-    return packs;
+    final perAuthorPacks = await Future.wait(
+      byAuthor.entries.map((entry) async {
+        final filter = Filter(
+          kinds: const [EventKind.emojiSet],
+          authors: [entry.key],
+          d: entry.value,
+        );
+        final events = await _nostrClient.queryEvents([filter]);
+        return _eventsToStickerPacks(events);
+      }),
+    );
+    return [for (final list in perAuthorPacks) ...list];
   }
 
   /// Discovers packs from general-purpose relays without author restriction.
@@ -182,7 +190,7 @@ class StickerPackRepository {
     if (_discoveryRelays.isEmpty) return [];
 
     final filter = Filter(
-      kinds: const [_emojiSetKind],
+      kinds: const [EventKind.emojiSet],
       limit: _discoveryLimit,
     );
 
@@ -207,7 +215,7 @@ class StickerPackRepository {
       final value = tag[1] as String;
       final parts = value.split(':');
       if (parts.length < 3) continue;
-      if (parts[0] != '$_emojiSetKind') continue;
+      if (parts[0] != '${EventKind.emojiSet}') continue;
 
       final pubkey = parts[1];
       final dTag = parts.sublist(2).join(':');

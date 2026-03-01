@@ -9,6 +9,12 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/sticker_picker/sticker_picker_bloc.dart';
 import 'package:sticker_pack_repository/sticker_pack_repository.dart';
 
+String _stickerErrorToString(StickerPickerErrorType errorType) {
+  return switch (errorType) {
+    StickerPickerErrorType.loadFailed => 'Failed to load stickers',
+  };
+}
+
 /// Bottom sheet for browsing and selecting stickers.
 ///
 /// Renders a searchable grid of sticker images from curated packs.
@@ -26,7 +32,9 @@ class StickerPickerSheet extends StatelessWidget {
           StickerPickerLoaded(:final filteredStickers) => _StickerContent(
             stickers: filteredStickers,
           ),
-          StickerPickerError(:final message) => _ErrorState(message: message),
+          StickerPickerError(:final errorType) => _ErrorState(
+            message: _stickerErrorToString(errorType),
+          ),
         };
       },
     );
@@ -79,6 +87,9 @@ class _StickerContent extends StatelessWidget {
 
   final List<Sticker> stickers;
 
+  static const double _gridMaxCrossAxisExtent = 100;
+  static const double _gridSpacing = 8;
+
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
@@ -104,9 +115,9 @@ class _StickerContent extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 100,
-                mainAxisSpacing: 8,
-                crossAxisSpacing: 8,
+                maxCrossAxisExtent: _gridMaxCrossAxisExtent,
+                mainAxisSpacing: _gridSpacing,
+                crossAxisSpacing: _gridSpacing,
               ),
               delegate: SliverChildBuilderDelegate(
                 (context, index) {

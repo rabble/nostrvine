@@ -380,8 +380,24 @@ class _CommentContent extends StatelessWidget {
   /// NIP-30 emoji tags mapping shortcode to image URL.
   final Map<String, String> emojiTags;
 
-  /// Pattern matching a single `:shortcode:` with nothing else.
-  static final _stickerOnlyPattern = RegExp(r'^:([\w-]+):$');
+  /// Size of standalone sticker images (sticker-only comments).
+  static const double _stickerSize = 120;
+
+  /// Size of inline sticker images within mixed text.
+  static const double _inlineStickerSize = 24;
+
+  /// Size of error icon for failed inline sticker loads.
+  static const double _inlineStickerErrorSize = 16;
+
+  /// NIP-30 compliant pattern matching a single `:shortcode:` with nothing
+  /// else. Shortcodes contain only alphanumeric characters and underscores.
+  static final _stickerOnlyPattern = RegExp(r'^:([a-zA-Z0-9_]+):$');
+
+  /// Combined pattern for nostr:npub1... mentions and NIP-30 :shortcode:
+  /// emoji. Compiled once and reused across builds.
+  static final _combinedPattern = RegExp(
+    r'nostr:(npub1[a-zA-Z0-9]{58,})|:([a-zA-Z0-9_]+):',
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -395,16 +411,21 @@ class _CommentContent extends StatelessWidget {
         final shortcode = stickerMatch.group(1)!;
         final imageUrl = emojiTags[shortcode];
         if (imageUrl != null) {
-          return CachedNetworkImage(
-            imageUrl: imageUrl,
-            width: 120,
-            height: 120,
-            fit: BoxFit.contain,
-            placeholder: (_, _) => const SizedBox(width: 120, height: 120),
-            errorWidget: (_, _, _) => const Icon(
-              Icons.broken_image_outlined,
-              color: VineTheme.onSurfaceMuted,
-              size: 48,
+          return Semantics(
+            label: shortcode,
+            image: true,
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              width: _stickerSize,
+              height: _stickerSize,
+              fit: BoxFit.contain,
+              placeholder: (_, _) =>
+                  const SizedBox(width: _stickerSize, height: _stickerSize),
+              errorWidget: (_, _, _) => const Icon(
+                Icons.broken_image_outlined,
+                color: VineTheme.onSurfaceMuted,
+                size: 48,
+              ),
             ),
           );
         }
@@ -418,7 +439,7 @@ class _CommentContent extends StatelessWidget {
       height: isEmoji ? null : 20 / 14,
     );
 
-    if (emojiTags.isNotEmpty && RegExp(r':[\w-]+:').hasMatch(content)) {
+    if (emojiTags.isNotEmpty && _combinedPattern.hasMatch(content)) {
       return RichText(
         text: TextSpan(style: baseStyle, children: _buildContentSpans()),
       );
@@ -439,11 +460,10 @@ class _CommentContent extends StatelessWidget {
   }
 
   List<InlineSpan> _buildContentSpans() {
-    final combinedPattern = RegExp(r'nostr:(npub1[a-zA-Z0-9]{58,})|:([\w-]+):');
     final spans = <InlineSpan>[];
     var lastEnd = 0;
 
-    for (final match in combinedPattern.allMatches(content)) {
+    for (final match in _combinedPattern.allMatches(content)) {
       if (match.start > lastEnd) {
         spans.add(TextSpan(text: content.substring(lastEnd, match.start)));
       }
@@ -465,16 +485,23 @@ class _CommentContent extends StatelessWidget {
           spans.add(
             WidgetSpan(
               alignment: PlaceholderAlignment.middle,
-              child: CachedNetworkImage(
-                imageUrl: imageUrl,
-                width: 24,
-                height: 24,
-                fit: BoxFit.contain,
-                placeholder: (_, _) => const SizedBox(width: 24, height: 24),
-                errorWidget: (_, _, _) => const Icon(
-                  Icons.broken_image_outlined,
-                  size: 16,
-                  color: VineTheme.onSurfaceMuted,
+              child: Semantics(
+                label: shortcode,
+                image: true,
+                child: CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  width: _inlineStickerSize,
+                  height: _inlineStickerSize,
+                  fit: BoxFit.contain,
+                  placeholder: (_, _) => const SizedBox(
+                    width: _inlineStickerSize,
+                    height: _inlineStickerSize,
+                  ),
+                  errorWidget: (_, _, _) => const Icon(
+                    Icons.broken_image_outlined,
+                    size: _inlineStickerErrorSize,
+                    color: VineTheme.onSurfaceMuted,
+                  ),
                 ),
               ),
             ),

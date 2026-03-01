@@ -3,6 +3,9 @@
 
 part of 'sticker_picker_bloc.dart';
 
+/// Typed error categories for the sticker picker.
+enum StickerPickerErrorType { loadFailed }
+
 /// Base state for the sticker picker.
 sealed class StickerPickerState extends Equatable {
   const StickerPickerState();
@@ -48,11 +51,11 @@ final class StickerPickerLoaded extends StickerPickerState {
 
 /// Error loading sticker packs.
 final class StickerPickerError extends StickerPickerState {
-  const StickerPickerError(this.message);
+  const StickerPickerError(this.errorType);
 
-  /// Error message.
-  final String message;
+  /// The type of error that occurred.
+  final StickerPickerErrorType errorType;
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [errorType];
 }

@@ -81,7 +81,7 @@ void main() {
       );
 
       blocTest<StickerPickerBloc, StickerPickerState>(
-        'emits [loading, error] on exception',
+        'emits [loading, error] with loadFailed type on exception',
         setUp: () {
           when(
             () => mockStickerPackRepository.loadStickerPacks(),
@@ -91,7 +91,11 @@ void main() {
         act: (bloc) => bloc.add(const StickerPacksLoadRequested()),
         expect: () => [
           isA<StickerPickerLoading>(),
-          isA<StickerPickerError>(),
+          isA<StickerPickerError>().having(
+            (s) => s.errorType,
+            'errorType',
+            equals(StickerPickerErrorType.loadFailed),
+          ),
         ],
       );
 

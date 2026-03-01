@@ -620,21 +620,122 @@ void main() {
 
       group('error handling', () {
         test(
-          'throws $LoadStickerPacksFailedException on query failure',
+          'throws $LoadStickerPacksFailedException when all sources fail',
           () async {
             when(
               () => mockNostrClient.queryEvents(any()),
             ).thenThrow(Exception('Network error'));
 
+            when(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+              ),
+            ).thenThrow(Exception('Discovery also fails'));
+
             final repo = StickerPackRepository(
               nostrClient: mockNostrClient,
               curatorPubkeys: [_testCuratorPubkey1],
+              userPubkey: _testUserPubkey,
+              discoveryRelays: const ['wss://fail.relay'],
             );
 
             expect(
               repo.loadStickerPacks,
               throwsA(isA<LoadStickerPacksFailedException>()),
             );
+          },
+        );
+
+        test(
+          'returns curated packs when discovery fails',
+          () async {
+            final curatedEvent = _createEmojiSetEvent(
+              pubkey: _testCuratorPubkey1,
+              dTag: 'curated-only',
+              title: 'Curated Only',
+              emojiTags: [
+                ['emoji', 'ok', 'https://cdn.example.com/ok.png'],
+              ],
+            );
+
+            var callCount = 0;
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) {
+              callCount++;
+              // First call is curated, second is user-subscribed (empty),
+              // third is discovery — make it fail
+              if (callCount == 1) return Future.value([curatedEvent]);
+              if (callCount == 3) throw Exception('Discovery failed');
+              return Future.value([]);
+            });
+
+            // No discoveryRelays → discovery returns [], so we need them
+            when(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+              ),
+            ).thenThrow(Exception('Discovery relay failed'));
+
+            // Default mock for curated (no tempRelays)
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((inv) async {
+              final filters = inv.positionalArguments[0] as List<Filter>;
+              final filter = filters.first;
+              if (filter.authors?.contains(_testCuratorPubkey1) == true) {
+                return [curatedEvent];
+              }
+              return [];
+            });
+
+            final repo = StickerPackRepository(
+              nostrClient: mockNostrClient,
+              curatorPubkeys: [_testCuratorPubkey1],
+              discoveryRelays: const ['wss://failing.relay'],
+            );
+
+            final packs = await repo.loadStickerPacks();
+
+            expect(packs, hasLength(1));
+            expect(packs.first.id, equals('curated-only'));
+          },
+        );
+
+        test(
+          'returns discovered packs when curated fails',
+          () async {
+            final discoveredEvent = _createEmojiSetEvent(
+              pubkey: _externalAuthorPubkey,
+              dTag: 'discovered-only',
+              title: 'Discovered Only',
+              emojiTags: [
+                ['emoji', 'star', 'https://cdn.example.com/star.png'],
+              ],
+            );
+
+            // Curated query throws, discovery succeeds
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenThrow(Exception('Curated failed'));
+
+            when(
+              () => mockNostrClient.queryEvents(
+                any(),
+                tempRelays: any(named: 'tempRelays'),
+              ),
+            ).thenAnswer((_) async => [discoveredEvent]);
+
+            final repo = StickerPackRepository(
+              nostrClient: mockNostrClient,
+              curatorPubkeys: [_testCuratorPubkey1],
+              discoveryRelays: const ['wss://good.relay'],
+            );
+
+            final packs = await repo.loadStickerPacks();
+
+            expect(packs, hasLength(1));
+            expect(packs.first.id, equals('discovered-only'));
           },
         );
       });

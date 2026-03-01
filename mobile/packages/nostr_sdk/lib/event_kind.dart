@@ -93,6 +93,8 @@ class EventKind {
 
   static const int emojisList = 10030;
 
+  static const int emojiSet = 30030;
+
   static const int nwcInfoEvent = 13194;
 
   static const int authentication = 22242;

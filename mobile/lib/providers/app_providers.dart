@@ -2362,6 +2362,8 @@ CommentsRepository commentsRepository(Ref ref) {
 StickerPackRepository stickerPackRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
+  // Rebuild on auth changes to clear stale user-subscribed pack cache.
+  ref.watch(currentAuthStateProvider);
   return StickerPackRepository(
     nostrClient: nostrClient,
     curatorPubkeys: [

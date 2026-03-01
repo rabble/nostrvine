@@ -1286,6 +1286,178 @@ void main() {
           throwsA(isA<PostCommentFailedException>()),
         );
       });
+
+      group('input validation', () {
+        test('throws for empty shortcode', () {
+          expect(
+            () => repository.postStickerComment(
+              stickerShortcode: '',
+              stickerImageUrl: 'https://cdn.example.com/fire.png',
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+              rootEventAuthorPubkey: testRootAuthorPubkey,
+            ),
+            throwsA(isA<PostCommentFailedException>()),
+          );
+        });
+
+        test('throws for shortcode with hyphens', () {
+          expect(
+            () => repository.postStickerComment(
+              stickerShortcode: 'my-sticker',
+              stickerImageUrl: 'https://cdn.example.com/fire.png',
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+              rootEventAuthorPubkey: testRootAuthorPubkey,
+            ),
+            throwsA(isA<PostCommentFailedException>()),
+          );
+        });
+
+        test('throws for shortcode with spaces', () {
+          expect(
+            () => repository.postStickerComment(
+              stickerShortcode: 'my sticker',
+              stickerImageUrl: 'https://cdn.example.com/fire.png',
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+              rootEventAuthorPubkey: testRootAuthorPubkey,
+            ),
+            throwsA(isA<PostCommentFailedException>()),
+          );
+        });
+
+        test('accepts valid shortcode', () async {
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer(
+            (inv) async => inv.positionalArguments.first as Event,
+          );
+
+          final result = await repository.postStickerComment(
+            stickerShortcode: 'my_sticker_123',
+            stickerImageUrl: 'https://cdn.example.com/fire.png',
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootEventAuthorPubkey: testRootAuthorPubkey,
+          );
+
+          expect(result.content, equals(':my_sticker_123:'));
+        });
+
+        test('throws for http URL (non-https)', () {
+          expect(
+            () => repository.postStickerComment(
+              stickerShortcode: 'fire',
+              stickerImageUrl: 'http://cdn.example.com/fire.png',
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+              rootEventAuthorPubkey: testRootAuthorPubkey,
+            ),
+            throwsA(isA<PostCommentFailedException>()),
+          );
+        });
+
+        test('throws for unparseable URL', () {
+          expect(
+            () => repository.postStickerComment(
+              stickerShortcode: 'fire',
+              stickerImageUrl: ':::not-a-url',
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+              rootEventAuthorPubkey: testRootAuthorPubkey,
+            ),
+            throwsA(isA<PostCommentFailedException>()),
+          );
+        });
+      });
+    });
+
+    group('NIP-30 emoji tag parsing', () {
+      test('parses single emoji tag from comment event', () async {
+        final commentEvent = _createCommentEvent(
+          id: 'emoji_comment_1',
+          content: ':fire:',
+          pubkey: testUserPubkey,
+          rootEventId: testRootEventId,
+          rootAuthorPubkey: testRootAuthorPubkey,
+          rootEventKind: _testRootEventKind,
+          extraTags: [
+            ['emoji', 'fire', 'https://cdn.example.com/fire.png'],
+          ],
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [commentEvent]);
+
+        final thread = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        expect(thread.comments, hasLength(1));
+        expect(
+          thread.comments.first.emojiTags,
+          equals({'fire': 'https://cdn.example.com/fire.png'}),
+        );
+      });
+
+      test('parses multiple emoji tags from comment event', () async {
+        final commentEvent = _createCommentEvent(
+          id: 'emoji_comment_2',
+          content: ':fire: :wave:',
+          pubkey: testUserPubkey,
+          rootEventId: testRootEventId,
+          rootAuthorPubkey: testRootAuthorPubkey,
+          rootEventKind: _testRootEventKind,
+          extraTags: [
+            ['emoji', 'fire', 'https://cdn.example.com/fire.png'],
+            ['emoji', 'wave', 'https://cdn.example.com/wave.png'],
+          ],
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [commentEvent]);
+
+        final thread = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        expect(thread.comments, hasLength(1));
+        expect(
+          thread.comments.first.emojiTags,
+          equals({
+            'fire': 'https://cdn.example.com/fire.png',
+            'wave': 'https://cdn.example.com/wave.png',
+          }),
+        );
+      });
+
+      test('returns empty emojiTags when no emoji tags present', () async {
+        final commentEvent = _createCommentEvent(
+          id: 'no_emoji_comment',
+          content: 'Just a regular comment',
+          pubkey: testUserPubkey,
+          rootEventId: testRootEventId,
+          rootAuthorPubkey: testRootAuthorPubkey,
+          rootEventKind: _testRootEventKind,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [commentEvent]);
+
+        final thread = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        expect(thread.comments, hasLength(1));
+        expect(thread.comments.first.emojiTags, isEmpty);
+      });
     });
 
     group('getCommentsCount', () {
@@ -2054,6 +2226,7 @@ Event _createCommentEvent({
   String? replyToEventId,
   String? replyToAuthorPubkey,
   int createdAt = 1000,
+  List<List<String>> extraTags = const [],
 }) {
   // NIP-22 tags:
   // Uppercase tags (E, K, P) = root scope
@@ -2075,6 +2248,7 @@ Event _createCommentEvent({
       ['k', rootEventKind.toString()],
       ['p', rootAuthorPubkey],
     ],
+    ...extraTags,
   ];
 
   return Event(pubkey, _commentKind, tags, content, createdAt: createdAt)

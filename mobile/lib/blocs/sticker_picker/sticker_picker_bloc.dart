@@ -41,8 +41,9 @@ class StickerPickerBloc extends Bloc<StickerPickerEvent, StickerPickerState> {
           filteredStickers: allStickers,
         ),
       );
-    } on Exception catch (e) {
-      emit(StickerPickerError('Failed to load stickers: $e'));
+    } on Exception catch (e, stackTrace) {
+      addError(e, stackTrace);
+      emit(const StickerPickerError(StickerPickerErrorType.loadFailed));
     }
   }
 
