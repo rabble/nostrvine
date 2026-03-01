@@ -2,7 +2,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
