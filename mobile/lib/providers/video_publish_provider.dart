@@ -178,8 +178,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// profile on success.
   Future<void> publishVideo(BuildContext context, VineDraft draft) async {
     // Only block if actively preparing/uploading
-    if (state.publishState == .preparing ||
-        state.publishState == .uploading) {
+    if (state.publishState == .preparing || state.publishState == .uploading) {
       Log.warning(
         '⚠️ Publish already in progress, ignoring duplicate request',
         name: 'VideoPublishNotifier',
