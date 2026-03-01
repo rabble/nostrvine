@@ -1005,6 +1005,186 @@ void main() {
       );
     });
 
+    group('StickerCommentSubmitted', () {
+      const testShortcode = 'fire';
+      const testStickerUrl = 'https://blossom.example.com/fire.webp';
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits posting state and adds sticker comment on success',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(validId('currentuser'));
+
+          final postedComment = Comment(
+            id: validId('sticker_posted'),
+            content: ':$testShortcode:',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+            emojiTags: const {testShortcode: testStickerUrl},
+          );
+          when(
+            () => mockCommentsRepository.postStickerComment(
+              stickerShortcode: any(named: 'stickerShortcode'),
+              stickerImageUrl: any(named: 'stickerImageUrl'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+            ),
+          ).thenAnswer((_) async => postedComment);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const StickerCommentSubmitted(
+            stickerShortcode: testShortcode,
+            stickerImageUrl: testStickerUrl,
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.isPosting,
+            'isPosting',
+            isTrue,
+          ),
+          isA<CommentsState>()
+              .having((s) => s.isPosting, 'isPosting', isFalse)
+              .having((s) => s.comments, 'comments', hasLength(1))
+              .having(
+                (s) => s.comments.first.content,
+                'content',
+                equals(':$testShortcode:'),
+              ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits error when not authenticated',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const StickerCommentSubmitted(
+            stickerShortcode: testShortcode,
+            stickerImageUrl: testStickerUrl,
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.error,
+            'error',
+            CommentsError.notAuthenticated,
+          ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits error when postStickerComment throws',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(validId('currentuser'));
+
+          when(
+            () => mockCommentsRepository.postStickerComment(
+              stickerShortcode: any(named: 'stickerShortcode'),
+              stickerImageUrl: any(named: 'stickerImageUrl'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const StickerCommentSubmitted(
+            stickerShortcode: testShortcode,
+            stickerImageUrl: testStickerUrl,
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.isPosting,
+            'isPosting',
+            isTrue,
+          ),
+          isA<CommentsState>()
+              .having((s) => s.isPosting, 'isPosting', isFalse)
+              .having(
+                (s) => s.error,
+                'error',
+                CommentsError.postCommentFailed,
+              ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'calls postStickerComment with correct params including threading',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn(validId('currentuser'));
+
+          final postedComment = Comment(
+            id: validId('sticker_reply'),
+            content: ':$testShortcode:',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+            replyToEventId: validId('parent'),
+            emojiTags: const {testShortcode: testStickerUrl},
+          );
+          when(
+            () => mockCommentsRepository.postStickerComment(
+              stickerShortcode: any(named: 'stickerShortcode'),
+              stickerImageUrl: any(named: 'stickerImageUrl'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+            ),
+          ).thenAnswer((_) async => postedComment);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          StickerCommentSubmitted(
+            stickerShortcode: testShortcode,
+            stickerImageUrl: testStickerUrl,
+            parentCommentId: validId('parent'),
+            parentAuthorPubkey: validId('parentauthor'),
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockCommentsRepository.postStickerComment(
+              stickerShortcode: testShortcode,
+              stickerImageUrl: testStickerUrl,
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: testRootEventKind,
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              replyToEventId: validId('parent'),
+              replyToAuthorPubkey: validId('parentauthor'),
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('CommentEditModeEntered', () {
       blocTest<CommentsBloc, CommentsState>(
         'sets activeEditCommentId and pre-populates editInputText',

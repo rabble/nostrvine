@@ -222,35 +222,15 @@ class CommentsRepository {
       throw const InvalidCommentContentException('Comment cannot be empty');
     }
 
-    // Build tags for NIP-22 threading
-    // Uppercase tags point to root scope, lowercase to parent item
-    final tags = <List<String>>[
-      // Root scope tags (uppercase) - always point to the original event
-      ['E', rootEventId, '', rootEventAuthorPubkey],
-      // Include A tag for addressable events (Kind 30000-39999)
-      // This ensures comments can be found by clients querying by either E or A
-      // NIP-22: A tags use 3 elements [A, address, relay_hint]
-      if (rootAddressableId != null && rootAddressableId.isNotEmpty)
-        ['A', rootAddressableId, ''],
-      ['K', rootEventKind.toString()],
-      ['P', rootEventAuthorPubkey],
-      // Parent item tags (lowercase)
-      if (replyToEventId != null && replyToAuthorPubkey != null) ...[
-        // Replying to another comment
-        ['e', replyToEventId, '', replyToAuthorPubkey],
-        ['k', _commentKind.toString()],
-        ['p', replyToAuthorPubkey],
-      ] else ...[
-        // Top-level comment - parent is the same as root
-        ['e', rootEventId, '', rootEventAuthorPubkey],
-        // Include lowercase 'a' tag for addressable events too
-        // NIP-22: a tags use 3 elements [a, address, relay_hint]
-        if (rootAddressableId != null && rootAddressableId.isNotEmpty)
-          ['a', rootAddressableId, ''],
-        ['k', rootEventKind.toString()],
-        ['p', rootEventAuthorPubkey],
-      ],
-    ];
+    // Build NIP-22 threading tags via shared helper
+    final tags = _buildNip22ThreadingTags(
+      rootEventId: rootEventId,
+      rootEventKind: rootEventKind,
+      rootEventAuthorPubkey: rootEventAuthorPubkey,
+      rootAddressableId: rootAddressableId,
+      replyToEventId: replyToEventId,
+      replyToAuthorPubkey: replyToAuthorPubkey,
+    );
 
     // Create the event
     final event = Event(
@@ -318,27 +298,15 @@ class CommentsRepository {
   }) async {
     final content = ':$stickerShortcode:';
 
-    // Build NIP-22 threading tags (same as postComment)
-    final tags = <List<String>>[
-      ['E', rootEventId, '', rootEventAuthorPubkey],
-      if (rootAddressableId != null && rootAddressableId.isNotEmpty)
-        ['A', rootAddressableId, ''],
-      ['K', rootEventKind.toString()],
-      ['P', rootEventAuthorPubkey],
-      if (replyToEventId != null && replyToAuthorPubkey != null) ...[
-        ['e', replyToEventId, '', replyToAuthorPubkey],
-        ['k', _commentKind.toString()],
-        ['p', replyToAuthorPubkey],
-      ] else ...[
-        ['e', rootEventId, '', rootEventAuthorPubkey],
-        if (rootAddressableId != null && rootAddressableId.isNotEmpty)
-          ['a', rootAddressableId, ''],
-        ['k', rootEventKind.toString()],
-        ['p', rootEventAuthorPubkey],
-      ],
-      // NIP-30 custom emoji tag
-      ['emoji', stickerShortcode, stickerImageUrl],
-    ];
+    // Build NIP-22 threading tags via shared helper, then append NIP-30 emoji
+    final tags = _buildNip22ThreadingTags(
+      rootEventId: rootEventId,
+      rootEventKind: rootEventKind,
+      rootEventAuthorPubkey: rootEventAuthorPubkey,
+      rootAddressableId: rootAddressableId,
+      replyToEventId: replyToEventId,
+      replyToAuthorPubkey: replyToAuthorPubkey,
+    )..add(['emoji', stickerShortcode, stickerImageUrl]);
 
     final event = Event(_nostrClient.publicKey, _commentKind, tags, content);
 
@@ -676,6 +644,46 @@ class CommentsRepository {
       return null;
     }
   }
+
+  /// Builds NIP-22 threading tags shared by [postComment] and
+  /// [postStickerComment].
+  ///
+  /// Uppercase tags (`E`, `K`, `P`, `A`) point to the root scope.
+  /// Lowercase tags (`e`, `k`, `p`, `a`) point to the parent item.
+  List<List<String>> _buildNip22ThreadingTags({
+    required String rootEventId,
+    required int rootEventKind,
+    required String rootEventAuthorPubkey,
+    String? rootAddressableId,
+    String? replyToEventId,
+    String? replyToAuthorPubkey,
+  }) => <List<String>>[
+    // Root scope tags (uppercase) - always point to the original event
+    ['E', rootEventId, '', rootEventAuthorPubkey],
+    // Include A tag for addressable events (Kind 30000-39999)
+    // This ensures comments can be found by clients querying by either
+    // E or A. NIP-22: A tags use 3 elements [A, address, relay_hint]
+    if (rootAddressableId != null && rootAddressableId.isNotEmpty)
+      ['A', rootAddressableId, ''],
+    ['K', rootEventKind.toString()],
+    ['P', rootEventAuthorPubkey],
+    // Parent item tags (lowercase)
+    if (replyToEventId != null && replyToAuthorPubkey != null) ...[
+      // Replying to another comment
+      ['e', replyToEventId, '', replyToAuthorPubkey],
+      ['k', _commentKind.toString()],
+      ['p', replyToAuthorPubkey],
+    ] else ...[
+      // Top-level comment - parent is the same as root
+      ['e', rootEventId, '', rootEventAuthorPubkey],
+      // Include lowercase 'a' tag for addressable events too
+      // NIP-22: a tags use 3 elements [a, address, relay_hint]
+      if (rootAddressableId != null && rootAddressableId.isNotEmpty)
+        ['a', rootAddressableId, ''],
+      ['k', rootEventKind.toString()],
+      ['p', rootEventAuthorPubkey],
+    ],
+  ];
 
   /// Converts a Nostr event to a Comment model using NIP-22 format.
   Comment? _eventToComment(Event event, String rootEventId, int rootEventKind) {

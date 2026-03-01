@@ -1071,6 +1071,223 @@ void main() {
       });
     });
 
+    group('postStickerComment', () {
+      const testShortcode = 'fire';
+      const testStickerUrl = 'https://blossom.example.com/fire.webp';
+
+      test('posts sticker comment with correct :shortcode: content', () async {
+        Event? capturedEvent;
+
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          return capturedEvent = inv.positionalArguments.first as Event;
+        });
+
+        await repository.postStickerComment(
+          stickerShortcode: testShortcode,
+          stickerImageUrl: testStickerUrl,
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootEventAuthorPubkey: testRootAuthorPubkey,
+        );
+
+        expect(capturedEvent, isNotNull);
+        expect(capturedEvent!.kind, equals(_commentKind));
+        expect(capturedEvent!.content, equals(':$testShortcode:'));
+      });
+
+      test('includes NIP-30 emoji tag', () async {
+        Event? capturedEvent;
+
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          return capturedEvent = inv.positionalArguments.first as Event;
+        });
+
+        await repository.postStickerComment(
+          stickerShortcode: testShortcode,
+          stickerImageUrl: testStickerUrl,
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootEventAuthorPubkey: testRootAuthorPubkey,
+        );
+
+        final emojiTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'emoji')
+            .toList();
+
+        expect(emojiTags, hasLength(1));
+        expect(emojiTags.first[1], equals(testShortcode));
+        expect(emojiTags.first[2], equals(testStickerUrl));
+      });
+
+      test('includes correct NIP-22 threading tags (top-level)', () async {
+        Event? capturedEvent;
+
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          return capturedEvent = inv.positionalArguments.first as Event;
+        });
+
+        await repository.postStickerComment(
+          stickerShortcode: testShortcode,
+          stickerImageUrl: testStickerUrl,
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootEventAuthorPubkey: testRootAuthorPubkey,
+        );
+
+        // Root scope tags (uppercase)
+        final uppercaseETags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'E')
+            .toList();
+        final uppercaseKTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'K')
+            .toList();
+        final uppercasePTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'P')
+            .toList();
+
+        expect(uppercaseETags, hasLength(1));
+        expect(uppercaseETags.first[1], equals(testRootEventId));
+        expect(uppercaseKTags, hasLength(1));
+        expect(
+          uppercaseKTags.first[1],
+          equals(_testRootEventKind.toString()),
+        );
+        expect(uppercasePTags, hasLength(1));
+        expect(uppercasePTags.first[1], equals(testRootAuthorPubkey));
+
+        // Parent item tags (lowercase) - same as root for top-level
+        final lowercaseETags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'e')
+            .toList();
+        final lowercaseKTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'k')
+            .toList();
+        final lowercasePTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'p')
+            .toList();
+
+        expect(lowercaseETags, hasLength(1));
+        expect(lowercaseETags.first[1], equals(testRootEventId));
+        expect(lowercaseKTags, hasLength(1));
+        expect(
+          lowercaseKTags.first[1],
+          equals(_testRootEventKind.toString()),
+        );
+        expect(lowercasePTags, hasLength(1));
+        expect(lowercasePTags.first[1], equals(testRootAuthorPubkey));
+      });
+
+      test('includes correct NIP-22 threading tags (reply)', () async {
+        Event? capturedEvent;
+        const parentCommentId =
+            'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+            'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
+        const parentAuthorPubkey =
+            'ffffffffffffffffffffffffffffffff'
+            'ffffffffffffffffffffffffffffffff';
+
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          return capturedEvent = inv.positionalArguments.first as Event;
+        });
+
+        await repository.postStickerComment(
+          stickerShortcode: testShortcode,
+          stickerImageUrl: testStickerUrl,
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootEventAuthorPubkey: testRootAuthorPubkey,
+          replyToEventId: parentCommentId,
+          replyToAuthorPubkey: parentAuthorPubkey,
+        );
+
+        // Parent item tags (lowercase) - point to parent comment
+        final lowercaseETags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'e')
+            .toList();
+        final lowercaseKTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'k')
+            .toList();
+        final lowercasePTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'p')
+            .toList();
+
+        expect(lowercaseETags, hasLength(1));
+        expect(lowercaseETags.first[1], equals(parentCommentId));
+        expect(lowercaseKTags, hasLength(1));
+        expect(lowercaseKTags.first[1], equals(_commentKind.toString()));
+        expect(lowercasePTags, hasLength(1));
+        expect(lowercasePTags.first[1], equals(parentAuthorPubkey));
+      });
+
+      test('returns Comment with emojiTags populated', () async {
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          return inv.positionalArguments.first as Event
+            ..id = 'sticker_event_id';
+        });
+
+        final result = await repository.postStickerComment(
+          stickerShortcode: testShortcode,
+          stickerImageUrl: testStickerUrl,
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootEventAuthorPubkey: testRootAuthorPubkey,
+        );
+
+        expect(result.content, equals(':$testShortcode:'));
+        expect(result.rootEventId, equals(testRootEventId));
+        expect(result.rootAuthorPubkey, equals(testRootAuthorPubkey));
+        expect(result.authorPubkey, equals(testUserPubkey));
+        expect(result.emojiTags, equals({testShortcode: testStickerUrl}));
+      });
+
+      test(
+        'throws PostCommentFailedException when publish returns null',
+        () async {
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => null);
+
+          expect(
+            () => repository.postStickerComment(
+              stickerShortcode: testShortcode,
+              stickerImageUrl: testStickerUrl,
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+              rootEventAuthorPubkey: testRootAuthorPubkey,
+            ),
+            throwsA(isA<PostCommentFailedException>()),
+          );
+        },
+      );
+
+      test('throws PostCommentFailedException on exception', () async {
+        when(
+          () => mockNostrClient.publishEvent(any()),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => repository.postStickerComment(
+            stickerShortcode: testShortcode,
+            stickerImageUrl: testStickerUrl,
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootEventAuthorPubkey: testRootAuthorPubkey,
+          ),
+          throwsA(isA<PostCommentFailedException>()),
+        );
+      });
+    });
+
     group('getCommentsCount', () {
       test('returns count from NIP-45', () async {
         when(() => mockNostrClient.countEvents(any())).thenAnswer(

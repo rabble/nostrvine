@@ -26,6 +26,7 @@ class CommentBuilder {
       'd4e5f6789012345678901234567890abcdef123456789012345678901234abc';
   String? _replyToEventId;
   String? _replyToAuthorPubkey;
+  Map<String, String> _emojiTags = const {};
 
   /// Set the comment ID.
   CommentBuilder withId(String id) {
@@ -75,6 +76,12 @@ class CommentBuilder {
     return this;
   }
 
+  /// Set NIP-30 custom emoji tags (shortcode → imageUrl).
+  CommentBuilder withEmojiTags(Map<String, String> emojiTags) {
+    _emojiTags = emojiTags;
+    return this;
+  }
+
   /// Make this comment a reply to another comment.
   CommentBuilder asReplyTo({
     required String parentEventId,
@@ -107,6 +114,7 @@ class CommentBuilder {
     rootAuthorPubkey: _rootAuthorPubkey,
     replyToEventId: _replyToEventId,
     replyToAuthorPubkey: _replyToAuthorPubkey,
+    emojiTags: _emojiTags,
   );
 }
 

@@ -381,7 +381,7 @@ class _CommentContent extends StatelessWidget {
   final Map<String, String> emojiTags;
 
   /// Pattern matching a single `:shortcode:` with nothing else.
-  static final _stickerOnlyPattern = RegExp(r'^:(\w+):$');
+  static final _stickerOnlyPattern = RegExp(r'^:([\w-]+):$');
 
   @override
   Widget build(BuildContext context) {
@@ -417,6 +417,13 @@ class _CommentContent extends StatelessWidget {
       fontSize: isEmoji ? _emojiOnlyFontSize : 14,
       height: isEmoji ? null : 20 / 14,
     );
+
+    if (emojiTags.isNotEmpty && RegExp(r':[\w-]+:').hasMatch(content)) {
+      return RichText(
+        text: TextSpan(style: baseStyle, children: _buildContentSpans()),
+      );
+    }
+
     return ClickableHashtagText(
       text: content,
       style: baseStyle,
@@ -427,6 +434,97 @@ class _CommentContent extends StatelessWidget {
       mentionStyle: baseStyle.copyWith(
         color: VineTheme.tabIndicatorGreen,
         fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  List<InlineSpan> _buildContentSpans() {
+    final combinedPattern = RegExp(r'nostr:(npub1[a-zA-Z0-9]{58,})|:([\w-]+):');
+    final spans = <InlineSpan>[];
+    var lastEnd = 0;
+
+    for (final match in combinedPattern.allMatches(content)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(text: content.substring(lastEnd, match.start)));
+      }
+
+      final npub = match.group(1);
+      final shortcode = match.group(2);
+
+      if (npub != null) {
+        spans.add(
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: _MentionLink(npub: npub),
+          ),
+        );
+      } else if (shortcode != null) {
+        final imageUrl = emojiTags[shortcode];
+        if (imageUrl != null) {
+          spans.add(
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                width: 24,
+                height: 24,
+                fit: BoxFit.contain,
+                placeholder: (_, _) => const SizedBox(width: 24, height: 24),
+                errorWidget: (_, _, _) => const Icon(
+                  Icons.broken_image_outlined,
+                  size: 16,
+                  color: VineTheme.onSurfaceMuted,
+                ),
+              ),
+            ),
+          );
+        } else {
+          spans.add(TextSpan(text: match.group(0)));
+        }
+      }
+
+      lastEnd = match.end;
+    }
+
+    if (lastEnd < content.length) {
+      spans.add(TextSpan(text: content.substring(lastEnd)));
+    }
+
+    if (spans.isEmpty) {
+      spans.add(TextSpan(text: content));
+    }
+
+    return spans;
+  }
+}
+
+/// Inline mention link that resolves profile name and navigates to profile.
+class _MentionLink extends ConsumerWidget {
+  const _MentionLink({required this.npub});
+
+  final String npub;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    String displayText;
+    try {
+      final hexPubkey = NostrKeyUtils.decode(npub);
+      final profile = ref.watch(userProfileReactiveProvider(hexPubkey)).value;
+      displayText = profile?.displayName ?? profile?.name ?? npub;
+    } catch (_) {
+      displayText = npub;
+    }
+
+    return GestureDetector(
+      onTap: () => context.push(OtherProfileScreen.pathForNpub(npub)),
+      child: Text(
+        '@$displayText',
+        style: VineTheme.bodyFont(
+          fontSize: 14,
+          color: VineTheme.tabIndicatorGreen,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

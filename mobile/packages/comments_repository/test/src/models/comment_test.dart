@@ -199,6 +199,7 @@ void main() {
             '1080x1920',
             30,
             'LEHV6nWB2y',
+            <String, String>{},
           ]),
         );
       });
