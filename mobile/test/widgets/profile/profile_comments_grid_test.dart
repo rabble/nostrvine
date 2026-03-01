@@ -295,7 +295,6 @@ void main() {
             ProfileCommentsState(
               status: ProfileCommentsStatus.success,
               textComments: manyComments,
-              hasMoreContent: true,
             ),
           );
 

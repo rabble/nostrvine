@@ -223,7 +223,7 @@ class _VideoReplyTile extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: VineTheme.cardBackground,
           ),
           child: Stack(
