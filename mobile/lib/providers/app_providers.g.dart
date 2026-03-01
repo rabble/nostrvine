@@ -4800,7 +4800,7 @@ final class StickerPackRepositoryProvider
 }
 
 String _$stickerPackRepositoryHash() =>
-    r'f939e8a0937a37c3cee2cfd9ca1f100b1c9a65f8';
+    r'66405a65ed2bc3327476ac3e8caafc935ebfe2e1';
 
 /// Provider for VideoLocalStorage instance (SQLite-backed)
 ///
