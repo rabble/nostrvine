@@ -611,6 +611,90 @@ void main() {
         final filters = captured.first as List<Filter>;
         expect(filters.first.until, isNull);
       });
+
+      test(
+        'parses imeta tag from loaded comment event',
+        () async {
+          final videoCommentEvent = _createCommentEvent(
+            id: 'video_comment',
+            content: 'Video reply https://example.com/video.mp4',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            imetaEntries: [
+              'url https://example.com/video.mp4',
+              'm video/mp4',
+              'dim 720x1280',
+              'image https://example.com/thumb.jpg',
+              'blurhash LEHV6nWB2yk8',
+              'duration 15',
+            ],
+          );
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [videoCommentEvent]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
+
+          expect(result.comments, hasLength(1));
+          final comment = result.comments.first;
+          expect(comment.hasVideo, isTrue);
+          expect(
+            comment.videoUrl,
+            equals('https://example.com/video.mp4'),
+          );
+          expect(
+            comment.thumbnailUrl,
+            equals('https://example.com/thumb.jpg'),
+          );
+          expect(
+            comment.videoDimensions,
+            equals('720x1280'),
+          );
+          expect(comment.videoDuration, equals(15));
+          expect(
+            comment.videoBlurhash,
+            equals('LEHV6nWB2yk8'),
+          );
+        },
+      );
+
+      test(
+        'returns comment without video fields when no imeta',
+        () async {
+          final textCommentEvent = _createCommentEvent(
+            id: 'text_comment',
+            content: 'Just a text comment',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+          );
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [textCommentEvent]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
+
+          expect(result.comments, hasLength(1));
+          final comment = result.comments.first;
+          expect(comment.hasVideo, isFalse);
+          expect(comment.videoUrl, isNull);
+          expect(comment.thumbnailUrl, isNull);
+          expect(comment.videoDimensions, isNull);
+          expect(comment.videoDuration, isNull);
+          expect(comment.videoBlurhash, isNull);
+        },
+      );
     });
 
     group('postComment', () {
@@ -965,6 +1049,113 @@ void main() {
           throwsA(isA<PostCommentFailedException>()),
         );
       });
+
+      test('includes imeta tag when provided', () async {
+        Event? capturedEvent;
+
+        when(
+          () => mockNostrClient.publishEvent(any()),
+        ).thenAnswer((inv) async {
+          return capturedEvent = inv.positionalArguments.first as Event;
+        });
+
+        await repository.postComment(
+          content: 'Check this out https://example.com/video.mp4',
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          rootEventAuthorPubkey: testRootAuthorPubkey,
+          imetaTag: [
+            'url https://example.com/video.mp4',
+            'm video/mp4',
+            'dim 720x1280',
+            'image https://example.com/thumb.jpg',
+            'blurhash LEHV6nWB2yk8',
+          ],
+        );
+
+        expect(capturedEvent, isNotNull);
+
+        final imetaTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'imeta')
+            .toList();
+        expect(imetaTags, hasLength(1));
+        expect(
+          imetaTags.first[1],
+          equals('url https://example.com/video.mp4'),
+        );
+        expect(imetaTags.first[2], equals('m video/mp4'));
+        expect(imetaTags.first[3], equals('dim 720x1280'));
+      });
+
+      test(
+        'returns Comment with video fields when imeta provided',
+        () async {
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((inv) async {
+            return inv.positionalArguments.first as Event
+              ..id = 'video_comment_id';
+          });
+
+          final result = await repository.postComment(
+            content: 'Video reply https://example.com/video.mp4',
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootEventAuthorPubkey: testRootAuthorPubkey,
+            imetaTag: [
+              'url https://example.com/video.mp4',
+              'm video/mp4',
+              'dim 720x1280',
+              'image https://example.com/thumb.jpg',
+              'blurhash LEHV6nWB2yk8',
+              'duration 15',
+            ],
+          );
+
+          expect(result.hasVideo, isTrue);
+          expect(
+            result.videoUrl,
+            equals('https://example.com/video.mp4'),
+          );
+          expect(
+            result.thumbnailUrl,
+            equals('https://example.com/thumb.jpg'),
+          );
+          expect(result.videoDimensions, equals('720x1280'));
+          expect(result.videoDuration, equals(15));
+          expect(
+            result.videoBlurhash,
+            equals('LEHV6nWB2yk8'),
+          );
+        },
+      );
+
+      test(
+        'does not include imeta tag when imetaTag is null',
+        () async {
+          Event? capturedEvent;
+
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((inv) async {
+            return capturedEvent = inv.positionalArguments.first as Event;
+          });
+
+          await repository.postComment(
+            content: 'Plain text comment',
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootEventAuthorPubkey: testRootAuthorPubkey,
+          );
+
+          final imetaTags = capturedEvent!.tags
+              .cast<List<dynamic>>()
+              .where((t) => t[0] == 'imeta')
+              .toList();
+          expect(imetaTags, isEmpty);
+        },
+      );
     });
 
     group('getCommentsCount', () {
@@ -1435,6 +1626,7 @@ Event _createCommentEvent({
   required int rootEventKind,
   String? replyToEventId,
   String? replyToAuthorPubkey,
+  List<String>? imetaEntries,
   int createdAt = 1000,
 }) {
   // NIP-22 tags:
@@ -1457,6 +1649,8 @@ Event _createCommentEvent({
       ['k', rootEventKind.toString()],
       ['p', rootAuthorPubkey],
     ],
+    // NIP-92 imeta tag for video attachments
+    if (imetaEntries != null) ['imeta', ...imetaEntries],
   ];
 
   return Event(pubkey, _commentKind, tags, content, createdAt: createdAt)

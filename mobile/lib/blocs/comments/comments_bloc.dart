@@ -18,6 +18,7 @@ import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/services/video_comment_publish_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 part 'comments_event.dart';
@@ -48,6 +49,8 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     int? initialTotalCount,
     UserProfileService? userProfileService,
     FollowRepository? followRepository,
+    VideoCommentPublishService? videoCommentPublishService,
+    String? primaryRelayUrl,
   }) : _commentsRepository = commentsRepository,
        _authService = authService,
        _likesRepository = likesRepository,
@@ -57,6 +60,8 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
        _initialTotalCount = initialTotalCount,
        _userProfileService = userProfileService,
        _followRepository = followRepository,
+       _videoCommentPublishService = videoCommentPublishService,
+       _primaryRelayUrl = primaryRelayUrl,
        super(
          CommentsState(
            rootEventId: rootEventId,
@@ -95,6 +100,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<CommentEditSubmitted>(_onEditSubmitted);
     on<NewCommentReceived>(_onNewCommentReceived);
     on<NewCommentsAcknowledged>(_onNewCommentsAcknowledged);
+    on<VideoCommentSubmitted>(
+      _onVideoCommentSubmitted,
+      transformer: droppable(),
+    );
   }
 
   /// Page size for comment loading.
@@ -113,6 +122,12 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   final ContentBlocklistService _contentBlocklistService;
   final UserProfileService? _userProfileService;
   final FollowRepository? _followRepository;
+  final VideoCommentPublishService? _videoCommentPublishService;
+  final String? _primaryRelayUrl;
+
+  /// Timeout for the initial comment load query.
+  /// Prevents indefinite blocking when relays are slow to send EOSE.
+  static const _loadTimeout = Duration(seconds: 15);
 
   Future<void> _onLoadRequested(
     CommentsLoadRequested event,
@@ -120,14 +135,55 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   ) async {
     if (state.status == CommentsStatus.loading) return;
 
+    final stopwatch = Stopwatch()..start();
+    Log.info(
+      '[TIMING] CommentsLoadRequested received for '
+      '${state.rootEventId}',
+      name: 'CommentsBloc',
+      category: LogCategory.ui,
+    );
+
     emit(state.copyWith(status: CommentsStatus.loading));
 
+    // Start real-time subscription immediately so new comments arrive
+    // while the initial batch is loading.
+    _startWatchingComments();
+    Log.info(
+      '[TIMING] Subscription started at '
+      '${stopwatch.elapsedMilliseconds}ms',
+      name: 'CommentsBloc',
+      category: LogCategory.ui,
+    );
+
     try {
-      final thread = await _commentsRepository.loadComments(
-        rootEventId: state.rootEventId,
-        rootEventKind: state.rootEventKind,
-        rootAddressableId: state.rootAddressableId,
-        limit: _pageSize,
+      final thread = await _commentsRepository
+          .loadComments(
+            rootEventId: state.rootEventId,
+            rootEventKind: state.rootEventKind,
+            rootAddressableId: state.rootAddressableId,
+            limit: _pageSize,
+            relayUrl: _primaryRelayUrl,
+          )
+          .timeout(
+            _loadTimeout,
+            onTimeout: () {
+              Log.warning(
+                '[TIMING] Comment load TIMED OUT after '
+                '${stopwatch.elapsedMilliseconds}ms',
+                name: 'CommentsBloc',
+                category: LogCategory.ui,
+              );
+              return CommentThread.empty(state.rootEventId);
+            },
+          );
+
+      Log.info(
+        '[TIMING] loadComments returned '
+        '${thread.comments.length} comments in '
+        '${stopwatch.elapsedMilliseconds}ms '
+        '(relay: ${_primaryRelayUrl ?? "all"})',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
       );
 
       // Convert to Map for O(1) deduplication on pagination
@@ -149,11 +205,21 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         ),
       );
 
+      stopwatch.stop();
+      Log.info(
+        '[TIMING] Comments ready to display in '
+        '${stopwatch.elapsedMilliseconds}ms '
+        '(${commentsById.length} comments)',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+
       add(const CommentVoteCountsFetchRequested());
-      _startWatchingComments();
     } catch (e) {
+      stopwatch.stop();
       Log.error(
-        'Error loading comments: $e',
+        '[TIMING] Error loading comments after '
+        '${stopwatch.elapsedMilliseconds}ms: $e',
         name: 'CommentsBloc',
         category: LogCategory.ui,
       );
@@ -199,6 +265,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         rootAddressableId: state.rootAddressableId,
         limit: _pageSize,
         before: cursor,
+        relayUrl: _primaryRelayUrl,
       );
 
       // Merge new comments into the Map - duplicates are automatically replaced
@@ -856,6 +923,72 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     Emitter<CommentsState> emit,
   ) {
     emit(state.copyWith(newCommentCount: 0));
+  }
+
+  Future<void> _onVideoCommentSubmitted(
+    VideoCommentSubmitted event,
+    Emitter<CommentsState> emit,
+  ) async {
+    final service = _videoCommentPublishService;
+    if (service == null) {
+      Log.error(
+        'VideoCommentPublishService not available',
+        name: 'CommentsBloc',
+      );
+      emit(state.copyWith(error: CommentsError.videoReplyFailed));
+      return;
+    }
+
+    if (!_authService.isAuthenticated) {
+      emit(state.copyWith(error: CommentsError.notAuthenticated));
+      return;
+    }
+
+    emit(
+      state.copyWith(isUploadingVideoReply: true, videoReplyUploadProgress: 0),
+    );
+
+    final result = await service.publishVideoComment(
+      videoFilePath: event.videoFilePath,
+      content: event.content,
+      rootEventId: state.rootEventId,
+      rootEventKind: state.rootEventKind,
+      rootEventAuthorPubkey: state.rootAuthorPubkey,
+      nostrPubkey: _authService.currentPublicKeyHex ?? '',
+      rootAddressableId: state.rootAddressableId,
+      parentCommentId: event.parentCommentId,
+      parentAuthorPubkey: event.parentAuthorPubkey,
+      onProgress: (progress) {
+        // Progress tracking available for future UI integration.
+        // BLoC emit cannot be called from external callbacks.
+      },
+    );
+
+    if (result.isSuccess && result.comment != null) {
+      final comment = result.comment!;
+      final updated = Map<String, Comment>.from(state.commentsById)
+        ..[comment.id] = comment;
+
+      // Recompute reply counts
+      final replyCounts = _computeReplyCounts(updated);
+
+      emit(
+        state.copyWith(
+          commentsById: updated,
+          replyCountsByCommentId: replyCounts,
+          isUploadingVideoReply: false,
+          videoReplyUploadProgress: 0,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          isUploadingVideoReply: false,
+          videoReplyUploadProgress: 0,
+          error: CommentsError.videoReplyFailed,
+        ),
+      );
+    }
   }
 
   /// Maximum number of real-time comments to accept per second.

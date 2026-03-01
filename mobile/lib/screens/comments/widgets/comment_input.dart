@@ -28,6 +28,7 @@ class CommentInput extends StatefulWidget {
     this.mentionSuggestions = const [],
     this.onMentionQuery,
     this.onMentionSelected,
+    this.onVideoReply,
     super.key,
   });
 
@@ -66,6 +67,10 @@ class CommentInput extends StatefulWidget {
 
   /// Callback fired with (npub, displayName) when a mention is selected.
   final void Function(String npub, String displayName)? onMentionSelected;
+
+  /// Callback when the video reply button is tapped.
+  /// Only shown when the callback is provided (i.e. feature flag is on).
+  final VoidCallback? onVideoReply;
 
   @override
   State<CommentInput> createState() => _CommentInputState();
@@ -174,6 +179,8 @@ class _CommentInputState extends State<CommentInput> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                if (widget.onVideoReply != null)
+                  _VideoReplyButton(onTap: widget.onVideoReply!),
                 Expanded(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -366,6 +373,33 @@ class _EditIndicator extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Camera button for recording a video reply.
+class _VideoReplyButton extends StatelessWidget {
+  const _VideoReplyButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      identifier: 'video_reply_button',
+      button: true,
+      label: 'Record video reply',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.only(left: 12, bottom: 12),
+          child: Icon(
+            Icons.videocam_outlined,
+            color: VineTheme.onSurfaceVariant,
+            size: 24,
+          ),
         ),
       ),
     );

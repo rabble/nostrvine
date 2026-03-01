@@ -301,6 +301,7 @@ class NostrClient {
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
     bool useCache = true,
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     final cacheResults = <Event>[];
 
@@ -318,6 +319,7 @@ class NostrClient {
       tempRelays: tempRelays,
       relayTypes: relayTypes,
       sendAfterAuth: sendAfterAuth,
+      timeout: timeout,
     );
 
     // Cache websocket results (fire-and-forget)

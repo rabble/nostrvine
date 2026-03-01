@@ -36,6 +36,7 @@ class VideoStats {
     this.loops,
     this.views,
     this.rawTags = const {},
+    this.contentWarningLabels = const [],
   });
 
   /// Creates a [VideoStats] from JSON response.
@@ -326,6 +327,13 @@ class VideoStats {
   /// All Nostr event tags as a flat map, preserving tags (like ProofMode,
   /// C2PA, verification) that don't have dedicated fields on this model.
   final Map<String, String> rawTags;
+
+  /// NIP-32 and NIP-36 content warning labels from event tags.
+  ///
+  /// Populated from `['content-warning', '<reason>']` (NIP-36) and
+  /// `['l', '<label>', 'content-warning']` (NIP-32) tags when the
+  /// full event tags are available in the API response.
+  final List<String> contentWarningLabels;
 
   /// Converts this [VideoStats] to a [VideoEvent] for use in the app.
   ///

@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_bottom_bar.dart';
@@ -41,6 +44,8 @@ class VideoEditorScaffold extends ConsumerWidget {
             _OverlayControls(),
 
             _BottomActions(),
+
+            _VideoReplyProgressOverlay(),
           ],
         ),
       ),
@@ -161,6 +166,48 @@ class _BottomActions extends StatelessWidget {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Overlay shown during video reply render + upload.
+///
+/// Watches [videoEditorProvider.isProcessing] and
+/// [videoReplyContextProvider] to display a blocking overlay with a
+/// spinner when a video reply is being prepared.
+class _VideoReplyProgressOverlay extends ConsumerWidget {
+  const _VideoReplyProgressOverlay();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isProcessing = ref.watch(
+      videoEditorProvider.select((s) => s.isProcessing),
+    );
+    final isVideoReply = ref.watch(videoReplyContextProvider) != null;
+
+    if (!isProcessing || !isVideoReply) {
+      return const SizedBox.shrink();
+    }
+
+    return ColoredBox(
+      color: const Color(0xCC000000),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 16,
+          children: [
+            const CircularProgressIndicator(color: VineTheme.vineGreen),
+            Text(
+              'Posting reply...',
+              style: GoogleFonts.bricolageGrotesque(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: VineTheme.whiteText,
+              ),
+            ),
+          ],
         ),
       ),
     );

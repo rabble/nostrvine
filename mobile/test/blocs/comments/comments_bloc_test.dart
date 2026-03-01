@@ -17,6 +17,7 @@ import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/services/video_comment_publish_service.dart';
 
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
 
@@ -35,6 +36,9 @@ class _MockContentBlocklistService extends Mock
 class _MockUserProfileService extends Mock implements UserProfileService {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockVideoCommentPublishService extends Mock
+    implements VideoCommentPublishService {}
 
 void main() {
   setUpAll(() {
@@ -122,6 +126,7 @@ void main() {
       String? rootAuthorPubkey,
       UserProfileService? userProfileService,
       FollowRepository? followRepository,
+      VideoCommentPublishService? videoCommentPublishService,
     }) => CommentsBloc(
       commentsRepository: mockCommentsRepository,
       authService: mockAuthService,
@@ -134,6 +139,7 @@ void main() {
       rootAuthorPubkey: rootAuthorPubkey ?? validId('author'),
       userProfileService: userProfileService ?? mockUserProfileService,
       followRepository: followRepository ?? mockFollowRepository,
+      videoCommentPublishService: videoCommentPublishService,
     );
 
     test('initial state has correct rootEventId and rootAuthorPubkey', () {
@@ -2892,6 +2898,239 @@ void main() {
         await streamController.close();
         await bloc.close();
       });
+    });
+
+    group('VideoCommentSubmitted', () {
+      late _MockVideoCommentPublishService mockPublishService;
+
+      setUp(() {
+        mockPublishService = _MockVideoCommentPublishService();
+      });
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits videoReplyFailed when service is not provided',
+        build: createBloc,
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          rootEventId: validId('root'),
+          rootEventKind: testRootEventKind,
+          rootAuthorPubkey: validId('author'),
+        ),
+        act: (bloc) => bloc.add(
+          const VideoCommentSubmitted(videoFilePath: '/tmp/video.mp4'),
+        ),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.error,
+            'error',
+            equals(CommentsError.videoReplyFailed),
+          ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits notAuthenticated when user is not authenticated',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        },
+        build: () => createBloc(videoCommentPublishService: mockPublishService),
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          rootEventId: validId('root'),
+          rootEventKind: testRootEventKind,
+          rootAuthorPubkey: validId('author'),
+        ),
+        act: (bloc) => bloc.add(
+          const VideoCommentSubmitted(videoFilePath: '/tmp/video.mp4'),
+        ),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.error,
+            'error',
+            equals(CommentsError.notAuthenticated),
+          ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits uploading then success when publish succeeds',
+        setUp: () {
+          final comment = Comment(
+            id: validId('videocomment'),
+            content: 'https://cdn.example.com/video.mp4',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+            videoUrl: 'https://cdn.example.com/video.mp4',
+          );
+
+          when(
+            () => mockPublishService.publishVideoComment(
+              videoFilePath: any(named: 'videoFilePath'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              content: any(named: 'content'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              parentCommentId: any(named: 'parentCommentId'),
+              parentAuthorPubkey: any(named: 'parentAuthorPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) async => VideoCommentPublishResult.success(comment));
+        },
+        build: () => createBloc(videoCommentPublishService: mockPublishService),
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          rootEventId: validId('root'),
+          rootEventKind: testRootEventKind,
+          rootAuthorPubkey: validId('author'),
+        ),
+        act: (bloc) => bloc.add(
+          const VideoCommentSubmitted(videoFilePath: '/tmp/video.mp4'),
+        ),
+        expect: () => [
+          // First: uploading state
+          isA<CommentsState>()
+              .having(
+                (s) => s.isUploadingVideoReply,
+                'isUploadingVideoReply',
+                isTrue,
+              )
+              .having(
+                (s) => s.videoReplyUploadProgress,
+                'videoReplyUploadProgress',
+                equals(0.0),
+              ),
+          // Second: success — comment added, upload reset
+          isA<CommentsState>()
+              .having(
+                (s) => s.isUploadingVideoReply,
+                'isUploadingVideoReply',
+                isFalse,
+              )
+              .having(
+                (s) => s.commentsById.containsKey(validId('videocomment')),
+                'contains video comment',
+                isTrue,
+              ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits uploading then videoReplyFailed when publish fails',
+        setUp: () {
+          when(
+            () => mockPublishService.publishVideoComment(
+              videoFilePath: any(named: 'videoFilePath'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              content: any(named: 'content'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              parentCommentId: any(named: 'parentCommentId'),
+              parentAuthorPubkey: any(named: 'parentAuthorPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer(
+            (_) async =>
+                const VideoCommentPublishResult.failure('Upload failed'),
+          );
+        },
+        build: () => createBloc(videoCommentPublishService: mockPublishService),
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          rootEventId: validId('root'),
+          rootEventKind: testRootEventKind,
+          rootAuthorPubkey: validId('author'),
+        ),
+        act: (bloc) => bloc.add(
+          const VideoCommentSubmitted(videoFilePath: '/tmp/video.mp4'),
+        ),
+        expect: () => [
+          // First: uploading state
+          isA<CommentsState>().having(
+            (s) => s.isUploadingVideoReply,
+            'isUploadingVideoReply',
+            isTrue,
+          ),
+          // Second: failure — upload reset, error set
+          isA<CommentsState>()
+              .having(
+                (s) => s.isUploadingVideoReply,
+                'isUploadingVideoReply',
+                isFalse,
+              )
+              .having(
+                (s) => s.error,
+                'error',
+                equals(CommentsError.videoReplyFailed),
+              ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'passes correct parameters to publish service',
+        setUp: () {
+          final comment = Comment(
+            id: validId('videocomment'),
+            content: 'Nice! https://cdn.example.com/video.mp4',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+            videoUrl: 'https://cdn.example.com/video.mp4',
+          );
+
+          when(
+            () => mockPublishService.publishVideoComment(
+              videoFilePath: any(named: 'videoFilePath'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              content: any(named: 'content'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              parentCommentId: any(named: 'parentCommentId'),
+              parentAuthorPubkey: any(named: 'parentAuthorPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer((_) async => VideoCommentPublishResult.success(comment));
+        },
+        build: () => createBloc(videoCommentPublishService: mockPublishService),
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          rootEventId: validId('root'),
+          rootEventKind: testRootEventKind,
+          rootAuthorPubkey: validId('author'),
+        ),
+        act: (bloc) => bloc.add(
+          VideoCommentSubmitted(
+            videoFilePath: '/tmp/video.mp4',
+            content: 'Nice!',
+            parentCommentId: validId('parent'),
+            parentAuthorPubkey: validId('parentauthor'),
+          ),
+        ),
+        verify: (_) {
+          verify(
+            () => mockPublishService.publishVideoComment(
+              videoFilePath: '/tmp/video.mp4',
+              rootEventId: validId('root'),
+              rootEventKind: testRootEventKind,
+              rootEventAuthorPubkey: validId('author'),
+              nostrPubkey: validId('currentuser'),
+              content: 'Nice!',
+              rootAddressableId: null,
+              parentCommentId: validId('parent'),
+              parentAuthorPubkey: validId('parentauthor'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).called(1);
+        },
+      );
     });
   });
 

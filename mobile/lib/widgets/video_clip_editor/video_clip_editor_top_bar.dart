@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -87,21 +89,38 @@ class VideoClipEditorTopBar extends ConsumerWidget {
                   : Align(
                       alignment: .centerRight,
                       child: _NextButton(
-                        onTap: () {
+                        onTap: () async {
                           final notifier = ref.read(
                             videoEditorProvider.notifier,
                           );
 
                           notifier.pauseVideo();
-                          unawaited(notifier.startRenderVideo());
-                          // TODO(@hm21): Replace with VideoEditorScreen.path
-                          Log.info(
-                            '📤 Navigating to metadata screen',
-                            name: 'VideoClipEditorTopBar',
-                            category: .video,
-                          );
 
-                          context.push(VideoMetadataScreen.path);
+                          final isReply =
+                              ref.read(videoReplyContextProvider) != null;
+
+                          if (isReply) {
+                            // Video reply: skip metadata, go to
+                            // main editor which handles render +
+                            // publish via "Post Reply" button.
+                            Log.info(
+                              '📤 Navigating to main editor '
+                              '(video reply mode)',
+                              name: 'VideoClipEditorTopBar',
+                              category: LogCategory.video,
+                            );
+                            context.push(VideoEditorScreen.path);
+                          } else {
+                            // Normal flow: start render and go to
+                            // metadata screen.
+                            unawaited(notifier.startRenderVideo());
+                            Log.info(
+                              '📤 Navigating to metadata screen',
+                              name: 'VideoClipEditorTopBar',
+                              category: LogCategory.video,
+                            );
+                            context.push(VideoMetadataScreen.path);
+                          }
                         },
                       ),
                     ),
@@ -171,15 +190,14 @@ class _NextButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Continue to metadata',
+      label: 'Continue to next step',
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const .symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: .circular(16),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x1A000000),
@@ -194,11 +212,10 @@ class _NextButton extends StatelessWidget {
             ],
           ),
           child: Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
             'Next',
             style: GoogleFonts.bricolageGrotesque(
               fontSize: 18,
-              fontWeight: .w800,
+              fontWeight: FontWeight.w800,
               height: 1.33,
               letterSpacing: 0.15,
               color: const Color(0xFF00452D),

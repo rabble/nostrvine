@@ -85,6 +85,9 @@ enum CommentsError {
 
   /// Failed to block a user
   blockFailed,
+
+  /// Failed to upload/post a video reply
+  videoReplyFailed,
 }
 
 /// Sort mode for the comments list.
@@ -132,6 +135,8 @@ final class CommentsState extends Equatable {
     this.activeEditCommentId,
     this.editInputText = '',
     this.newCommentCount = 0,
+    this.isUploadingVideoReply = false,
+    this.videoReplyUploadProgress = 0,
   });
 
   /// The current status of the comments
@@ -197,6 +202,12 @@ final class CommentsState extends Equatable {
   /// Number of new comments received from the real-time subscription
   /// that the user has not yet acknowledged (scrolled to top / tapped pill).
   final int newCommentCount;
+
+  /// Whether a video reply is currently being uploaded.
+  final bool isUploadingVideoReply;
+
+  /// Upload progress for a video reply (0.0 to 1.0).
+  final double videoReplyUploadProgress;
 
   /// Returns a comparator for sorting comments based on [sortMode].
   Comparator<Comment> get _commentComparator {
@@ -331,6 +342,8 @@ final class CommentsState extends Equatable {
     String? activeEditCommentId,
     String? editInputText,
     int? newCommentCount,
+    bool? isUploadingVideoReply,
+    double? videoReplyUploadProgress,
   }) {
     return CommentsState(
       status: status ?? this.status,
@@ -361,6 +374,10 @@ final class CommentsState extends Equatable {
       activeEditCommentId: activeEditCommentId ?? this.activeEditCommentId,
       editInputText: editInputText ?? this.editInputText,
       newCommentCount: newCommentCount ?? this.newCommentCount,
+      isUploadingVideoReply:
+          isUploadingVideoReply ?? this.isUploadingVideoReply,
+      videoReplyUploadProgress:
+          videoReplyUploadProgress ?? this.videoReplyUploadProgress,
     );
   }
 
@@ -426,6 +443,8 @@ final class CommentsState extends Equatable {
       mentionSuggestions: mentionSuggestions,
       activeMentions: activeMentions,
       newCommentCount: newCommentCount,
+      isUploadingVideoReply: isUploadingVideoReply,
+      videoReplyUploadProgress: videoReplyUploadProgress,
     );
   }
 
@@ -457,5 +476,7 @@ final class CommentsState extends Equatable {
     activeEditCommentId,
     editInputText,
     newCommentCount,
+    isUploadingVideoReply,
+    videoReplyUploadProgress,
   ];
 }

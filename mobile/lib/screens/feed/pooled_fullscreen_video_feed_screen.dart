@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
@@ -293,6 +294,16 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
 
   @override
   Widget build(BuildContext context) {
+    // Pause/resume when overlays (modals, drawers) are shown.
+    // RouteAware only fires on route pushes, not modal bottom sheets.
+    ref.listen<bool>(hasVisibleOverlayProvider, (prev, next) {
+      if (next) {
+        _controller?.setActive(active: false);
+      } else {
+        _controller?.setActive(active: true);
+      }
+    });
+
     return MultiBlocListener(
       listeners: [
         // Initialize controller when videos first become available

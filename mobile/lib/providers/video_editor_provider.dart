@@ -8,15 +8,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/video_comment_publish_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
@@ -538,6 +542,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  /// Set NIP-32 content warning labels for the video.
+  void setContentWarnings(Set<ContentLabel> warnings) {
+    state = state.copyWith(contentWarnings: warnings);
+    triggerAutosave();
+  }
+
   // === COLLABORATORS & INSPIRED BY ===
 
   /// Maximum number of collaborators allowed per video.
@@ -626,6 +636,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       editorStateHistory: state.editorStateHistory,
       editorEditingParameters: state.editorEditingParameters?.toMap(),
       collaboratorPubkeys: state.collaboratorPubkeys,
+      contentWarningLabels: state.contentWarnings.map((l) => l.value).toList(),
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: state.inspiredByNpub,
       selectedAudioEventId: selectedSound?.id,
@@ -1045,6 +1056,90 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     await ref
         .read(videoPublishProvider.notifier)
         .publishVideo(context, getActiveDraft());
+  }
+
+  /// Renders the video and publishes it as a video reply comment.
+  ///
+  /// Returns `true` if the video was handled as a reply (reply context
+  /// was active), `false` if no reply context was set.
+  ///
+  /// When returning `true`, the caller should navigate to the feed
+  /// instead of pushing the metadata screen.
+  Future<bool> publishAsVideoReply() async {
+    final replyContext = ref.read(videoReplyContextProvider);
+    if (replyContext == null) return false;
+
+    Log.info(
+      '🎬 Video reply mode detected, rendering and publishing',
+      name: 'VideoEditorNotifier',
+      category: LogCategory.video,
+    );
+
+    await startRenderVideo();
+
+    final renderedClip = state.finalRenderedClip;
+    if (renderedClip == null) {
+      Log.error(
+        '❌ Video reply render failed',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+      ref.read(videoReplyContextProvider.notifier).clear();
+      return true;
+    }
+
+    final authService = ref.read(authServiceProvider);
+    final nostrPubkey = authService.currentPublicKeyHex;
+
+    if (nostrPubkey == null) {
+      Log.error(
+        '❌ Cannot post video reply: not authenticated',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+      ref.read(videoReplyContextProvider.notifier).clear();
+      return true;
+    }
+
+    final publishService = ref.read(videoCommentPublishServiceProvider);
+    try {
+      final result = await publishService.publishVideoComment(
+        videoFilePath: renderedClip.video.file!.path,
+        rootEventId: replyContext.rootEventId,
+        rootEventKind: replyContext.rootEventKind,
+        rootEventAuthorPubkey: replyContext.rootAuthorPubkey,
+        nostrPubkey: nostrPubkey,
+        rootAddressableId: replyContext.rootAddressableId,
+        parentCommentId: replyContext.parentCommentId,
+        parentAuthorPubkey: replyContext.parentAuthorPubkey,
+      );
+
+      if (result.isSuccess) {
+        Log.info(
+          '✅ Video reply published successfully',
+          name: 'VideoEditorNotifier',
+          category: LogCategory.video,
+        );
+      } else {
+        Log.error(
+          '❌ Video reply publish failed: ${result.error}',
+          name: 'VideoEditorNotifier',
+          category: LogCategory.video,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        '❌ Video reply publish error: $e',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      ref.read(videoReplyContextProvider.notifier).clear();
+    }
+
+    return true;
   }
 
   /// Render all clips into a single video file with aspect ratio cropping.

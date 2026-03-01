@@ -199,3 +199,28 @@ final class NewCommentReceived extends CommentsEvent {
 final class NewCommentsAcknowledged extends CommentsEvent {
   const NewCommentsAcknowledged();
 }
+
+/// Submit a video reply comment.
+///
+/// Uploads a video to Blossom and posts it as a Kind 1111 comment
+/// with NIP-92 imeta metadata.
+final class VideoCommentSubmitted extends CommentsEvent {
+  const VideoCommentSubmitted({
+    required this.videoFilePath,
+    this.content = '',
+    this.parentCommentId,
+    this.parentAuthorPubkey,
+  });
+
+  /// Path to the recorded video file
+  final String videoFilePath;
+
+  /// Optional text content to accompany the video
+  final String content;
+
+  /// Parent comment ID if this is a reply, null for top-level
+  final String? parentCommentId;
+
+  /// Parent comment author's pubkey (for threading)
+  final String? parentAuthorPubkey;
+}

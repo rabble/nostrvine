@@ -44,6 +44,9 @@ class CommentsRepository {
   /// Subscription ID for the active comment watch, if any.
   String? _watchSubscriptionId;
 
+  /// Default page size for author comment queries.
+  static const _authorCommentsLimit = 50;
+
   /// Loads comments for a root event and returns them in a flat list.
   ///
   /// This is a one-shot query that returns all comments organized
@@ -76,11 +79,16 @@ class CommentsRepository {
     String? rootAddressableId,
     int limit = _defaultLimit,
     DateTime? before,
+    String? relayUrl,
+    Duration timeout = const Duration(seconds: 3),
   }) async {
     try {
       final untilTimestamp = before != null
           ? before.millisecondsSinceEpoch ~/ 1000
           : null;
+
+      // Target a specific relay when provided (e.g., our own relay for speed)
+      final tempRelays = relayUrl != null ? [relayUrl] : null;
 
       // NIP-22: Filter by Kind 1111 and uppercase E tag for root scope
       final filterByE = Filter(
@@ -102,8 +110,16 @@ class CommentsRepository {
 
         // Run both queries in parallel and merge results
         final results = await Future.wait([
-          _nostrClient.queryEvents([filterByE]),
-          _nostrClient.queryEvents([filterByA]),
+          _nostrClient.queryEvents(
+            [filterByE],
+            tempRelays: tempRelays,
+            timeout: timeout,
+          ),
+          _nostrClient.queryEvents(
+            [filterByA],
+            tempRelays: tempRelays,
+            timeout: timeout,
+          ),
         ]);
 
         // Merge and deduplicate by event ID
@@ -124,7 +140,11 @@ class CommentsRepository {
       }
 
       // No addressable ID - just query by E tag
-      final events = await _nostrClient.queryEvents([filterByE]);
+      final events = await _nostrClient.queryEvents(
+        [filterByE],
+        tempRelays: tempRelays,
+        timeout: timeout,
+      );
       return _buildThreadFromEvents(
         events,
         rootEventId,
@@ -150,6 +170,11 @@ class CommentsRepository {
   ///   to ensure the comment can be found by clients querying either way.
   /// - [replyToEventId]: ID of parent comment (for nested replies)
   /// - [replyToAuthorPubkey]: Public key of parent comment author
+  /// - [imetaTag]: Optional NIP-92 imeta tag entries for video attachments.
+  ///   Each entry is a space-delimited "key value" string, e.g.
+  ///   `["url https://...", "m video/mp4", "dim 720x1280"]`.
+  ///   When provided, the imeta tag is appended to the event tags and
+  ///   the video URL is included in the content per NIP-92 spec.
   ///
   /// Returns the created [Comment] with its event ID.
   ///
@@ -163,6 +188,7 @@ class CommentsRepository {
     String? rootAddressableId,
     String? replyToEventId,
     String? replyToAuthorPubkey,
+    List<String>? imetaTag,
   }) async {
     final trimmedContent = content.trim();
     if (trimmedContent.isEmpty) {
@@ -197,6 +223,8 @@ class CommentsRepository {
         ['k', rootEventKind.toString()],
         ['p', rootEventAuthorPubkey],
       ],
+      // NIP-92: Attach inline media metadata if provided
+      if (imetaTag != null && imetaTag.isNotEmpty) ['imeta', ...imetaTag],
     ];
 
     // Create the event
@@ -215,6 +243,9 @@ class CommentsRepository {
         throw const PostCommentFailedException('Failed to publish comment');
       }
 
+      // Parse media fields from the imeta tag if provided
+      final imetaFields = _parseImetaEntries(imetaTag);
+
       return Comment(
         id: sentEvent.id,
         content: trimmedContent,
@@ -224,6 +255,13 @@ class CommentsRepository {
         rootAuthorPubkey: rootEventAuthorPubkey,
         replyToEventId: replyToEventId,
         replyToAuthorPubkey: replyToAuthorPubkey,
+        videoUrl: imetaFields['url'],
+        thumbnailUrl: imetaFields['image'],
+        videoDimensions: imetaFields['dim'],
+        videoDuration: imetaFields['duration'] != null
+            ? int.tryParse(imetaFields['duration']!)
+            : null,
+        videoBlurhash: imetaFields['blurhash'],
       );
     } on CommentsRepositoryException {
       rethrow;
@@ -400,9 +438,98 @@ class CommentsRepository {
     }
   }
 
+  /// Loads comments authored by a specific user across all videos.
+  ///
+  /// Returns a flat list of [Comment] objects sorted chronologically
+  /// (newest first). Each comment includes its root event ID and kind
+  /// extracted from the event's own NIP-22 tags.
+  ///
+  /// Parameters:
+  /// - [authorPubkey]: The hex public key of the comment author
+  /// - [limit]: Maximum number of comments to fetch
+  /// - [before]: Cursor for pagination — fetch comments created before
+  ///   this time. Subtract 1 second from the oldest loaded comment's
+  ///   timestamp when paginating.
+  ///
+  /// Throws [LoadCommentsByAuthorFailedException] if the query fails.
+  Future<List<Comment>> loadCommentsByAuthor({
+    required String authorPubkey,
+    int limit = _authorCommentsLimit,
+    DateTime? before,
+  }) async {
+    try {
+      final untilTimestamp = before != null
+          ? before.millisecondsSinceEpoch ~/ 1000
+          : null;
+
+      final filter = Filter(
+        kinds: const [_commentKind],
+        authors: [authorPubkey],
+        limit: limit,
+        until: untilTimestamp,
+      );
+
+      final events = await _nostrClient.queryEvents([filter]);
+
+      final comments = <Comment>[];
+      for (final event in events) {
+        final comment = _eventToCommentFromRawEvent(event);
+        if (comment != null) {
+          comments.add(comment);
+        }
+      }
+
+      // Sort newest first
+      comments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      return comments;
+    } on Exception catch (e) {
+      throw LoadCommentsByAuthorFailedException(
+        'Failed to load comments by author: $e',
+      );
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  /// Converts a raw Nostr event to a Comment by extracting root event
+  /// info from the event's own NIP-22 tags.
+  ///
+  /// Unlike [_eventToComment], this method does not require the caller
+  /// to know the root event ID or kind upfront — it reads them from
+  /// the uppercase E and K tags on the event itself.
+  ///
+  /// Returns `null` if the event is missing required tags or is
+  /// otherwise malformed.
+  Comment? _eventToCommentFromRawEvent(Event event) {
+    try {
+      String? rootEventId;
+      int? rootEventKind;
+
+      // Extract root event ID (E tag) and root kind (K tag)
+      for (final rawTag in event.tags) {
+        final tag = rawTag as List<dynamic>;
+        if (tag.length < 2) continue;
+        final tagType = tag[0] as String;
+        final tagValue = tag[1] as String;
+
+        if (tagType == 'E') {
+          rootEventId = tagValue;
+        } else if (tagType == 'K') {
+          rootEventKind = int.tryParse(tagValue);
+        }
+      }
+
+      // Both E and K tags are required for a valid comment
+      if (rootEventId == null || rootEventKind == null) return null;
+
+      return _eventToComment(event, rootEventId, rootEventKind);
+    } on Exception {
+      return null;
+    }
+  }
 
   /// Converts a Nostr event to a Comment model using NIP-22 format.
   Comment? _eventToComment(Event event, String rootEventId, int rootEventKind) {
@@ -413,6 +540,7 @@ class CommentsRepository {
       String? rootAuthorPubkey;
       String? replyToAuthorPubkey;
       String? parentKind;
+      List<String>? imetaEntries;
 
       // Parse NIP-22 tags to determine comment relationships
       // Uppercase tags (E, A, K, P) = root scope
@@ -450,6 +578,9 @@ class CommentsRepository {
           case 'p':
             // Parent author pubkey (lowercase = parent item)
             replyToAuthorPubkey ??= tagValue;
+          case 'imeta':
+            // NIP-92 inline media metadata
+            imetaEntries = tag.skip(1).map((e) => e.toString()).toList();
         }
       }
 
@@ -468,6 +599,15 @@ class CommentsRepository {
           parentKind == rootEventKind.toString() ||
           replyToEventId == parsedRootEventId;
 
+      // Parse NIP-92 imeta fields for video metadata
+      final imetaFields = _parseImetaEntries(imetaEntries);
+      final videoUrl = imetaFields['url'];
+
+      // Only populate video fields if the URL is a video mime type
+      // or if the imeta tag contains video-related fields
+      final hasVideoMedia =
+          videoUrl != null && (imetaFields['m']?.startsWith('video/') ?? true);
+
       return Comment(
         id: event.id,
         content: event.content,
@@ -478,6 +618,13 @@ class CommentsRepository {
         replyToEventId: isTopLevel ? null : replyToEventId,
         rootAuthorPubkey: rootAuthorPubkey ?? '',
         replyToAuthorPubkey: isTopLevel ? null : replyToAuthorPubkey,
+        videoUrl: hasVideoMedia ? videoUrl : null,
+        thumbnailUrl: hasVideoMedia ? imetaFields['image'] : null,
+        videoDimensions: hasVideoMedia ? imetaFields['dim'] : null,
+        videoDuration: hasVideoMedia && imetaFields['duration'] != null
+            ? int.tryParse(imetaFields['duration']!)
+            : null,
+        videoBlurhash: hasVideoMedia ? imetaFields['blurhash'] : null,
       );
     } on Exception {
       return null;
@@ -529,6 +676,28 @@ class CommentsRepository {
     }
 
     return _buildThreadFromComments(commentMap, rootEventId);
+  }
+
+  /// Parses NIP-92 imeta tag entries into a key-value map.
+  ///
+  /// Each entry is a space-delimited "key value" string, e.g.:
+  /// `["url https://example.com/video.mp4", "m video/mp4", "dim 720x1280"]`
+  ///
+  /// Returns a map like `{url: "https://...", m: "video/mp4", dim: "720x1280"}`.
+  Map<String, String> _parseImetaEntries(List<String>? entries) {
+    if (entries == null || entries.isEmpty) return {};
+
+    final fields = <String, String>{};
+    for (final entry in entries) {
+      final spaceIndex = entry.indexOf(' ');
+      if (spaceIndex <= 0) continue;
+      final key = entry.substring(0, spaceIndex);
+      final value = entry.substring(spaceIndex + 1);
+      if (value.isNotEmpty) {
+        fields[key] = value;
+      }
+    }
+    return fields;
   }
 
   /// Builds a CommentThread from a map of comments.

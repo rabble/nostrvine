@@ -15,9 +15,15 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/video_reply_context.dart';
 import 'package:openvine/platform_io.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_comment_publish_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
@@ -90,6 +96,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   bool _isImportingHistory = false;
   bool _hasImportedHistory = false;
 
+  /// Subscription that listens for render completion during video reply flow.
+  ProviderSubscription<RecordingClip?>? _replyRenderSubscription;
+
   bool get _isLayerBeingTransformed => _selectedLayer != null;
 
   Layer? _selectedLayer;
@@ -116,6 +125,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
+    _replyRenderSubscription?.close();
     _videoPlayer?.dispose();
     _isPlayerReadyNotifier.dispose();
     ProVideoEditor.instance.cancel(_renderTaskId);
@@ -248,22 +258,135 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   /// Handles the done action from the main editor.
   ///
-  /// Pauses video, marks processing state, navigates to metadata screen,
-  /// and resumes video when returning.
+  /// Pauses video, marks processing state, then either navigates to the
+  /// metadata screen (normal flow) or publishes as a video reply comment
+  /// (when [VideoReplyContext] is set).
   Future<void> _handleDone() async {
+    _videoPlayer?.pause();
+    ref.read(videoEditorProvider.notifier).setProcessing(true);
+
+    final replyContext = ref.read(videoReplyContextProvider);
+    if (replyContext != null) {
+      Log.info(
+        '🎬 Done pressed - video reply mode, skipping metadata screen',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+      );
+      // Video reply: wait for render to complete, then publish as comment.
+      // _handleEditorComplete will be called by ProImageEditor next,
+      // which triggers startRenderVideo().
+      _setupVideoReplyPublish(replyContext);
+      return;
+    }
+
     Log.info(
       '🎬 Done pressed - navigating to metadata screen',
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
-    _videoPlayer?.pause();
     // IMPORTANT: Don't start video rendering here. We must await
     // `_handleEditorComplete` which generate the layer image before we start
     // rendering! However, we can navigate to the metadata screen immediately
     // since it shows a progress spinner anyway (~200ms task).
-    ref.read(videoEditorProvider.notifier).setProcessing(true);
     await context.push(VideoMetadataScreen.path);
     if (mounted) _videoPlayer?.play();
+  }
+
+  /// Sets up a listener for render completion during video reply flow.
+  ///
+  /// When [finalRenderedClip] becomes available, triggers the publish flow.
+  void _setupVideoReplyPublish(VideoReplyContext replyContext) {
+    _replyRenderSubscription = ref.listenManual<RecordingClip?>(
+      videoEditorProvider.select((s) => s.finalRenderedClip),
+      (previous, next) {
+        if (next == null) return;
+        // Close immediately to prevent duplicate calls
+        _replyRenderSubscription?.close();
+        _replyRenderSubscription = null;
+        _publishAndReturnFromVideoReply(next, replyContext);
+      },
+    );
+  }
+
+  /// Publishes the rendered clip as a video comment and navigates back.
+  Future<void> _publishAndReturnFromVideoReply(
+    RecordingClip renderedClip,
+    VideoReplyContext replyContext,
+  ) async {
+    final videoFilePath = renderedClip.video.file!.path;
+    final publishService = ref.read(videoCommentPublishServiceProvider);
+    final authService = ref.read(authServiceProvider);
+    final nostrPubkey = authService.currentPublicKeyHex;
+
+    if (nostrPubkey == null) {
+      Log.error(
+        'Cannot post video reply: not authenticated',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+      );
+      ref.read(videoReplyContextProvider.notifier).clear();
+      ref.read(videoEditorProvider.notifier).setProcessing(false);
+      return;
+    }
+
+    Log.info(
+      'Publishing video reply',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
+
+    var success = false;
+    try {
+      final result = await publishService.publishVideoComment(
+        videoFilePath: videoFilePath,
+        rootEventId: replyContext.rootEventId,
+        rootEventKind: replyContext.rootEventKind,
+        rootEventAuthorPubkey: replyContext.rootAuthorPubkey,
+        nostrPubkey: nostrPubkey,
+        rootAddressableId: replyContext.rootAddressableId,
+        parentCommentId: replyContext.parentCommentId,
+        parentAuthorPubkey: replyContext.parentAuthorPubkey,
+      );
+
+      success = result.isSuccess;
+      if (success) {
+        Log.info(
+          'Video reply published successfully',
+          name: 'VideoEditorCanvas',
+          category: LogCategory.video,
+        );
+      } else {
+        Log.error(
+          'Video reply publish failed: ${result.error}',
+          name: 'VideoEditorCanvas',
+          category: LogCategory.video,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Video reply publish error: $e',
+        name: 'VideoEditorCanvas',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+    } finally {
+      ref.read(videoReplyContextProvider.notifier).clear();
+      ref.read(videoEditorProvider.notifier).setProcessing(false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              success ? 'Video reply posted!' : 'Failed to post video reply',
+            ),
+            backgroundColor: success ? VineTheme.vineGreen : VineTheme.error,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        // Navigate back to the home feed
+        context.go('${VideoFeedPage.path}/0');
+      }
+    }
   }
 
   @override

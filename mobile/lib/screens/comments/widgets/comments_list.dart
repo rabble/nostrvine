@@ -21,6 +21,8 @@ class CommentsList extends StatefulWidget {
 }
 
 class _CommentsListState extends State<CommentsList> {
+  final _autoPlayNotifier = ValueNotifier<bool>(false);
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +32,7 @@ class _CommentsListState extends State<CommentsList> {
   @override
   void dispose() {
     widget.scrollController.removeListener(_onScroll);
+    _autoPlayNotifier.dispose();
     super.dispose();
   }
 
@@ -65,7 +68,11 @@ class _CommentsListState extends State<CommentsList> {
           itemCount: threaded.length,
           itemBuilder: (context, index) {
             final node = threaded[index];
-            return CommentItem(comment: node.comment, depth: node.depth);
+            return CommentItem(
+              comment: node.comment,
+              depth: node.depth,
+              autoPlayNotifier: _autoPlayNotifier,
+            );
           },
         );
       },

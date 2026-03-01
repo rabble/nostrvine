@@ -31,6 +31,7 @@ String _errorToString(CommentsError error) {
     CommentsError.voteFailed => 'Failed to vote on comment',
     CommentsError.reportFailed => 'Failed to report comment',
     CommentsError.blockFailed => 'Failed to block user',
+    CommentsError.videoReplyFailed => 'Failed to post video reply',
   };
 }
 

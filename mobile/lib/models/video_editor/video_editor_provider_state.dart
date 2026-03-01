@@ -3,6 +3,7 @@
 
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' show InspiredByInfo;
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -41,6 +42,7 @@ class VideoEditorProviderState {
     this.collaboratorPubkeys = const [],
     this.inspiredByVideo,
     this.inspiredByNpub,
+    this.contentWarnings = const {},
     this.selectedAudioEventId,
     this.selectedAudioRelay,
     GlobalKey? deleteButtonKey,
@@ -128,6 +130,9 @@ class VideoEditorProviderState {
   /// Event ID of a selected existing audio event (Kind 1063) to reference.
   final String? selectedAudioEventId;
 
+  /// NIP-32 content warning labels selected by the creator.
+  final Set<ContentLabel> contentWarnings;
+
   /// Relay hint for the selected audio event.
   final String? selectedAudioRelay;
 
@@ -175,6 +180,7 @@ class VideoEditorProviderState {
     Map<String, dynamic>? editorStateHistory,
     CompleteParameters? editorEditingParameters,
     List<String>? collaboratorPubkeys,
+    Set<ContentLabel>? contentWarnings,
     InspiredByInfo? inspiredByVideo,
     bool clearInspiredByVideo = false,
     String? inspiredByNpub,
@@ -209,6 +215,7 @@ class VideoEditorProviderState {
       editorEditingParameters:
           editorEditingParameters ?? this.editorEditingParameters,
       collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
+      contentWarnings: contentWarnings ?? this.contentWarnings,
       inspiredByVideo: clearInspiredByVideo
           ? null
           : (inspiredByVideo ?? this.inspiredByVideo),

@@ -16,10 +16,24 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
+import 'package:openvine/screens/comments/widgets/video_comment_player.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
+
+/// Returns true if the comment has text content beyond just the video URL.
+bool _hasTextBeyondVideoUrl(Comment comment) {
+  if (!comment.hasVideo) return true;
+  final stripped = _stripVideoUrl(comment);
+  return stripped.trim().isNotEmpty;
+}
+
+/// Strips the video URL from the comment content text.
+String _stripVideoUrl(Comment comment) {
+  if (comment.videoUrl == null) return comment.content;
+  return comment.content.replaceAll(comment.videoUrl!, '').trim();
+}
 
 /// Widget that renders a single comment in a flat list.
 ///
@@ -33,13 +47,21 @@ import 'package:openvine/widgets/user_name.dart';
 /// Uses [Comment] from the comments_repository package,
 /// following clean architecture separation of UI and repository layers.
 class CommentItem extends ConsumerStatefulWidget {
-  const CommentItem({required this.comment, this.depth = 0, super.key});
+  const CommentItem({
+    required this.comment,
+    this.depth = 0,
+    this.autoPlayNotifier,
+    super.key,
+  });
 
   /// The comment to display.
   final Comment comment;
 
   /// Nesting depth (0 = top-level, 1+ = reply).
   final int depth;
+
+  /// Shared notifier to coordinate video auto-play on scroll.
+  final ValueNotifier<bool>? autoPlayNotifier;
 
   @override
   ConsumerState<CommentItem> createState() => _CommentItemState();
@@ -122,19 +144,34 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                           parentAuthorPubkey:
                               widget.comment.replyToAuthorPubkey!,
                         ),
-                      Padding(
-                        padding: EdgeInsets.only(
-                          top:
-                              widget.depth == 0 &&
-                                  widget.comment.replyToAuthorPubkey != null
-                              ? 4
-                              : 0,
+                      // Hide text content when it's just the video URL
+                      if (!widget.comment.hasVideo ||
+                          _hasTextBeyondVideoUrl(widget.comment))
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top:
+                                widget.depth == 0 &&
+                                    widget.comment.replyToAuthorPubkey != null
+                                ? 4
+                                : 0,
+                          ),
+                          child: _CommentContent(
+                            commentId: widget.comment.id,
+                            content: widget.comment.hasVideo
+                                ? _stripVideoUrl(widget.comment)
+                                : widget.comment.content,
+                          ),
                         ),
-                        child: _CommentContent(
-                          commentId: widget.comment.id,
-                          content: widget.comment.content,
+                      if (widget.comment.hasVideo)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: VideoCommentPlayer(
+                            videoUrl: widget.comment.videoUrl!,
+                            thumbnailUrl: widget.comment.thumbnailUrl,
+                            blurhash: widget.comment.videoBlurhash,
+                            autoPlayNotifier: widget.autoPlayNotifier,
+                          ),
                         ),
-                      ),
                       const SizedBox(height: 12),
                       _ActionsRow(
                         commentId: widget.comment.id,

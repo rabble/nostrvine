@@ -49,6 +49,11 @@ class BuildConfiguration {
         return const bool.fromEnvironment(
           'FF_CURATED_LISTS',
         );
+      case FeatureFlag.videoReplies:
+        return const bool.fromEnvironment(
+          'FF_VIDEO_REPLIES',
+          defaultValue: false,
+        );
     }
   }
 
@@ -81,6 +86,8 @@ class BuildConfiguration {
         return 'FF_CLASSICS_HASHTAGS';
       case FeatureFlag.curatedLists:
         return 'FF_CURATED_LISTS';
+      case FeatureFlag.videoReplies:
+        return 'FF_VIDEO_REPLIES';
     }
   }
 }

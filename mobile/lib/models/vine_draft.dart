@@ -34,6 +34,7 @@ class VineDraft {
     this.collaboratorPubkeys = const [],
     this.inspiredByVideo,
     this.inspiredByNpub,
+    this.contentWarningLabels = const [],
     this.selectedAudioEventId,
     this.selectedAudioRelay,
   });
@@ -54,6 +55,7 @@ class VineDraft {
     List<String> collaboratorPubkeys = const [],
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
+    List<String> contentWarningLabels = const [],
     String? selectedAudioEventId,
     String? selectedAudioRelay,
   }) {
@@ -76,6 +78,7 @@ class VineDraft {
       editorEditingParameters: editorEditingParameters ?? const {},
       finalRenderedClip: finalRenderedClip,
       collaboratorPubkeys: collaboratorPubkeys,
+      contentWarningLabels: contentWarningLabels,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
       selectedAudioEventId: selectedAudioEventId,
@@ -161,6 +164,9 @@ class VineDraft {
       collaboratorPubkeys: json['collaboratorPubkeys'] != null
           ? List<String>.from(json['collaboratorPubkeys'] as Iterable)
           : const [],
+      contentWarningLabels: json['contentWarningLabels'] != null
+          ? List<String>.from(json['contentWarningLabels'] as Iterable)
+          : const [],
       inspiredByVideo: json['inspiredByVideo'] != null
           ? InspiredByInfo.fromJson(
               json['inspiredByVideo'] as Map<String, dynamic>,
@@ -209,6 +215,9 @@ class VineDraft {
   /// Relay hint for the selected audio event.
   final String? selectedAudioRelay;
 
+  /// NIP-32 content warning labels selected by the creator.
+  final List<String> contentWarningLabels;
+
   /// Check if this draft has ProofMode data
   bool get hasProofMode => proofManifestJson != null;
 
@@ -249,6 +258,7 @@ class VineDraft {
     Map<String, dynamic>? editorEditingParameters,
     Object? finalRenderedClip = _sentinel,
     List<String>? collaboratorPubkeys,
+    List<String>? contentWarningLabels,
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
     Object? selectedAudioEventId = _sentinel,
@@ -279,6 +289,7 @@ class VineDraft {
         ? this.finalRenderedClip
         : finalRenderedClip as RecordingClip?,
     collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
+    contentWarningLabels: contentWarningLabels ?? this.contentWarningLabels,
     inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
     inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
     selectedAudioEventId: selectedAudioEventId == _sentinel
@@ -313,6 +324,8 @@ class VineDraft {
       'finalRenderedClip': finalRenderedClip!.toJson(),
     if (collaboratorPubkeys.isNotEmpty)
       'collaboratorPubkeys': collaboratorPubkeys,
+    if (contentWarningLabels.isNotEmpty)
+      'contentWarningLabels': contentWarningLabels,
     if (inspiredByVideo != null) 'inspiredByVideo': inspiredByVideo!.toJson(),
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
     if (selectedAudioEventId != null)

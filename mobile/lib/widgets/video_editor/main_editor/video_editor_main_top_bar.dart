@@ -4,8 +4,11 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/providers/video_reply_context_provider.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_layer_reorder_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -14,7 +17,7 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 ///
 /// Displays close, undo, redo, and done buttons. Uses [BlocSelector] to
 /// reactively enable/disable undo and redo based on editor state.
-class VideoEditorMainTopBar extends StatelessWidget {
+class VideoEditorMainTopBar extends ConsumerWidget {
   const VideoEditorMainTopBar({super.key});
 
   Future<void> _reorderLayers(BuildContext context, List<Layer> layers) async {
@@ -43,7 +46,9 @@ class VideoEditorMainTopBar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isVideoReply = ref.watch(videoReplyContextProvider) != null;
+
     return Align(
       alignment: Alignment.topCenter,
       child: SafeArea(
@@ -67,11 +72,10 @@ class VideoEditorMainTopBar extends StatelessWidget {
                     spacing: 8,
                     children: [
                       DivineIconButton(
-                        size: .small,
-                        type: .ghostSecondary,
-                        // TODO(l10n): Replace with context.l10n when localization is added.
+                        size: DivineIconButtonSize.small,
+                        type: DivineIconButtonType.ghostSecondary,
                         semanticLabel: 'Close',
-                        icon: .caretLeft,
+                        icon: DivineIconName.caretLeft,
                         onPressed: () {
                           final bloc = context.read<VideoEditorMainBloc>();
                           if (bloc.state.isSubEditorOpen) {
@@ -83,32 +87,29 @@ class VideoEditorMainTopBar extends StatelessWidget {
                       ),
                       const Spacer(),
                       DivineIconButton(
-                        size: .small,
-                        type: .ghostSecondary,
-                        // TODO(l10n): Replace with context.l10n when localization is added.
+                        size: DivineIconButtonSize.small,
+                        type: DivineIconButtonType.ghostSecondary,
                         semanticLabel: 'Undo',
-                        icon: .arrowArcLeft,
+                        icon: DivineIconName.arrowArcLeft,
                         onPressed: state.canUndo
                             ? () => scope.editor?.undoAction()
                             : null,
                       ),
                       DivineIconButton(
-                        size: .small,
-                        type: .ghostSecondary,
-                        // TODO(l10n): Replace with context.l10n when localization is added.
+                        size: DivineIconButtonSize.small,
+                        type: DivineIconButtonType.ghostSecondary,
                         semanticLabel: 'Redo',
-                        icon: .arrowArcRight,
+                        icon: DivineIconName.arrowArcRight,
                         onPressed: state.canRedo
                             ? () => scope.editor?.redoAction()
                             : null,
                       ),
                       const Spacer(),
                       DivineIconButton(
-                        size: .small,
-                        type: .ghostSecondary,
-                        // TODO(l10n): Replace with context.l10n when localization is added.
+                        size: DivineIconButtonSize.small,
+                        type: DivineIconButtonType.ghostSecondary,
                         semanticLabel: 'Reorder',
-                        icon: .stackSimple,
+                        icon: DivineIconName.stackSimple,
                         onPressed: state.layers.length > 1
                             ? () => _reorderLayers(
                                 context,
@@ -116,18 +117,50 @@ class VideoEditorMainTopBar extends StatelessWidget {
                               )
                             : null,
                       ),
-                      DivineIconButton(
-                        size: .small,
-                        type: .ghostSecondary,
-                        // TODO(l10n): Replace with context.l10n when localization is added.
-                        semanticLabel: 'Done',
-                        icon: .check,
-                        onPressed: () => scope.editor?.doneEditing(),
-                      ),
+                      if (isVideoReply)
+                        _PostReplyButton(
+                          onTap: () => scope.editor?.doneEditing(),
+                        )
+                      else
+                        DivineIconButton(
+                          size: DivineIconButtonSize.small,
+                          type: DivineIconButtonType.ghostSecondary,
+                          semanticLabel: 'Done',
+                          icon: DivineIconName.check,
+                          onPressed: () => scope.editor?.doneEditing(),
+                        ),
                     ],
                   );
                 },
               ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PostReplyButton extends StatelessWidget {
+  const _PostReplyButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: VineTheme.vineGreen,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'Post Reply',
+          style: GoogleFonts.bricolageGrotesque(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: VineTheme.whiteText,
+          ),
         ),
       ),
     );

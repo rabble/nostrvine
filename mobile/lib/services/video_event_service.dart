@@ -444,17 +444,28 @@ class VideoEventService extends ChangeNotifier {
 
   /// Filter a list of [VideoEvent]s based on the user's content filter
   /// preferences. Videos matching "hide" labels are removed from the list.
-  /// Videos matching "warn" labels are kept (the UI shows an overlay).
+  /// Videos matching "warn" labels have their [warnLabels] populated so
+  /// the UI can show a blur overlay.
   List<VideoEvent> filterVideoList(List<VideoEvent> videos) {
     final service = _contentFilterService;
     if (service == null) return videos;
 
-    return videos.where((video) {
+    final result = <VideoEvent>[];
+    for (final video in videos) {
       final labels = video.contentWarningLabels;
-      if (labels.isEmpty) return true;
+      if (labels.isEmpty) {
+        result.add(video);
+        continue;
+      }
       final pref = service.getPreferenceForLabels(labels);
-      return pref != ContentFilterPreference.hide;
-    }).toList();
+      if (pref == ContentFilterPreference.hide) continue;
+      if (pref == ContentFilterPreference.warn) {
+        result.add(video.copyWith(warnLabels: labels));
+      } else {
+        result.add(video);
+      }
+    }
+    return result;
   }
 
   /// Check if a VideoEvent contains adult content based on hashtags and tags

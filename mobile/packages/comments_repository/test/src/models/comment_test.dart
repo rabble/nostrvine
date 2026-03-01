@@ -226,6 +226,11 @@ void main() {
           rootAuthorPubkey: 'rootAuthor',
           replyToEventId: 'replyTo',
           replyToAuthorPubkey: 'replyAuthor',
+          videoUrl: 'https://example.com/video.mp4',
+          thumbnailUrl: 'https://example.com/thumb.jpg',
+          videoDimensions: '720x1280',
+          videoDuration: 15,
+          videoBlurhash: 'LEHV6nWB2yk8',
         );
 
         expect(
@@ -239,7 +244,198 @@ void main() {
             'rootAuthor',
             'replyTo',
             'replyAuthor',
+            'https://example.com/video.mp4',
+            'https://example.com/thumb.jpg',
+            '720x1280',
+            15,
+            'LEHV6nWB2yk8',
           ]),
+        );
+      });
+
+      test(
+        'two comments with same video fields are equal',
+        () {
+          final comment1 = Comment(
+            id: 'id',
+            content: 'content',
+            authorPubkey: 'author',
+            createdAt: DateTime(2024),
+            rootEventId: 'root',
+            rootAuthorPubkey: 'rootAuthor',
+            videoUrl: 'https://example.com/video.mp4',
+          );
+
+          final comment2 = Comment(
+            id: 'id',
+            content: 'content',
+            authorPubkey: 'author',
+            createdAt: DateTime(2024),
+            rootEventId: 'root',
+            rootAuthorPubkey: 'rootAuthor',
+            videoUrl: 'https://example.com/video.mp4',
+          );
+
+          expect(comment1, equals(comment2));
+        },
+      );
+
+      test(
+        'two comments with different video fields are not equal',
+        () {
+          final comment1 = Comment(
+            id: 'id',
+            content: 'content',
+            authorPubkey: 'author',
+            createdAt: DateTime(2024),
+            rootEventId: 'root',
+            rootAuthorPubkey: 'rootAuthor',
+            videoUrl: 'https://example.com/video1.mp4',
+          );
+
+          final comment2 = Comment(
+            id: 'id',
+            content: 'content',
+            authorPubkey: 'author',
+            createdAt: DateTime(2024),
+            rootEventId: 'root',
+            rootAuthorPubkey: 'rootAuthor',
+            videoUrl: 'https://example.com/video2.mp4',
+          );
+
+          expect(comment1, isNot(equals(comment2)));
+        },
+      );
+    });
+
+    group('hasVideo', () {
+      test('returns true when videoUrl is set', () {
+        final comment = Comment(
+          id: 'id',
+          content: 'content',
+          authorPubkey: 'author',
+          createdAt: DateTime(2024),
+          rootEventId: 'root',
+          rootAuthorPubkey: 'rootAuthor',
+          videoUrl: 'https://example.com/video.mp4',
+        );
+
+        expect(comment.hasVideo, isTrue);
+      });
+
+      test('returns false when videoUrl is null', () {
+        final comment = Comment(
+          id: 'id',
+          content: 'content',
+          authorPubkey: 'author',
+          createdAt: DateTime(2024),
+          rootEventId: 'root',
+          rootAuthorPubkey: 'rootAuthor',
+        );
+
+        expect(comment.hasVideo, isFalse);
+      });
+
+      test('returns false when videoUrl is empty', () {
+        final comment = Comment(
+          id: 'id',
+          content: 'content',
+          authorPubkey: 'author',
+          createdAt: DateTime(2024),
+          rootEventId: 'root',
+          rootAuthorPubkey: 'rootAuthor',
+          videoUrl: '',
+        );
+
+        expect(comment.hasVideo, isFalse);
+      });
+    });
+
+    group('video copyWith', () {
+      late Comment original;
+
+      setUp(() {
+        original = Comment(
+          id: 'id',
+          content: 'content',
+          authorPubkey: 'author',
+          createdAt: DateTime(2024),
+          rootEventId: 'root',
+          rootAuthorPubkey: 'rootAuthor',
+          videoUrl: 'https://example.com/video.mp4',
+          thumbnailUrl: 'https://example.com/thumb.jpg',
+          videoDimensions: '720x1280',
+          videoDuration: 15,
+          videoBlurhash: 'LEHV6nWB2yk8',
+        );
+      });
+
+      test('creates copy with updated videoUrl', () {
+        final copy = original.copyWith(
+          videoUrl: 'https://example.com/new.mp4',
+        );
+
+        expect(
+          copy.videoUrl,
+          equals('https://example.com/new.mp4'),
+        );
+        expect(copy.thumbnailUrl, equals(original.thumbnailUrl));
+      });
+
+      test('creates copy with updated thumbnailUrl', () {
+        final copy = original.copyWith(
+          thumbnailUrl: 'https://example.com/new-thumb.jpg',
+        );
+
+        expect(
+          copy.thumbnailUrl,
+          equals('https://example.com/new-thumb.jpg'),
+        );
+        expect(copy.videoUrl, equals(original.videoUrl));
+      });
+
+      test('creates copy with updated videoDimensions', () {
+        final copy = original.copyWith(
+          videoDimensions: '1080x1920',
+        );
+
+        expect(copy.videoDimensions, equals('1080x1920'));
+      });
+
+      test('creates copy with updated videoDuration', () {
+        final copy = original.copyWith(videoDuration: 30);
+
+        expect(copy.videoDuration, equals(30));
+      });
+
+      test('creates copy with updated videoBlurhash', () {
+        final copy = original.copyWith(
+          videoBlurhash: 'newHash',
+        );
+
+        expect(copy.videoBlurhash, equals('newHash'));
+      });
+
+      test('preserves video fields when no parameters provided', () {
+        final copy = original.copyWith();
+
+        expect(copy, equals(original));
+        expect(copy.videoUrl, equals(original.videoUrl));
+        expect(
+          copy.thumbnailUrl,
+          equals(original.thumbnailUrl),
+        );
+        expect(
+          copy.videoDimensions,
+          equals(original.videoDimensions),
+        );
+        expect(
+          copy.videoDuration,
+          equals(original.videoDuration),
+        );
+        expect(
+          copy.videoBlurhash,
+          equals(original.videoBlurhash),
         );
       });
     });

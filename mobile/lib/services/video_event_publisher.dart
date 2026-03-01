@@ -253,6 +253,7 @@ class VideoEventPublisher {
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
+    List<String> contentWarningLabels = const [],
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -272,6 +273,7 @@ class VideoEventPublisher {
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
       language: language,
+      contentWarningLabels: contentWarningLabels,
     );
   }
 
@@ -281,6 +283,7 @@ class VideoEventPublisher {
     int? expirationTimestamp,
     bool allowAudioReuse = false,
     List<String> collaboratorPubkeys = const [],
+    List<String> contentWarningLabels = const [],
     String? inspiredByAddressableId,
     String? inspiredByRelayUrl,
     String? inspiredByNpub,
@@ -570,6 +573,14 @@ class VideoEventPublisher {
       if (language != null && language.isNotEmpty) {
         tags.add(['L', 'ISO-639-1']);
         tags.add(['l', language, 'ISO-639-1']);
+      }
+
+      // Add NIP-32 content warning self-labeling tags
+      if (contentWarningLabels.isNotEmpty) {
+        tags.add(['L', 'content-warning']);
+        for (final label in contentWarningLabels) {
+          tags.add(['l', label, 'content-warning']);
+        }
       }
 
       // Add client tag

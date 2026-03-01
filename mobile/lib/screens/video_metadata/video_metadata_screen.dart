@@ -10,6 +10,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_app_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_content_warning_selector.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
@@ -220,6 +221,10 @@ class _FormData extends ConsumerWidget {
 
         // Inspired By
         const VideoMetadataInspiredByInput(),
+        const _Divider(),
+
+        // Content Warning labels
+        const VideoMetadataContentWarningSelector(),
         const SizedBox(height: 48),
       ],
     );
