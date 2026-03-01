@@ -96,6 +96,49 @@ void main() {
       });
     });
 
+    group('hasVideo', () {
+      test('returns true when videoUrl is set', () {
+        final comment = Comment(
+          id: 'id',
+          content: 'content',
+          authorPubkey: 'author',
+          createdAt: DateTime(2024),
+          rootEventId: 'root',
+          rootAuthorPubkey: 'rootAuthor',
+          videoUrl: 'https://example.com/video.mp4',
+        );
+
+        expect(comment.hasVideo, isTrue);
+      });
+
+      test('returns false when videoUrl is null', () {
+        final comment = Comment(
+          id: 'id',
+          content: 'content',
+          authorPubkey: 'author',
+          createdAt: DateTime(2024),
+          rootEventId: 'root',
+          rootAuthorPubkey: 'rootAuthor',
+        );
+
+        expect(comment.hasVideo, isFalse);
+      });
+
+      test('returns false when videoUrl is empty', () {
+        final comment = Comment(
+          id: 'id',
+          content: 'content',
+          authorPubkey: 'author',
+          createdAt: DateTime(2024),
+          rootEventId: 'root',
+          rootAuthorPubkey: 'rootAuthor',
+          videoUrl: '',
+        );
+
+        expect(comment.hasVideo, isFalse);
+      });
+    });
+
     group('copyWith', () {
       late Comment original;
 
@@ -226,6 +269,11 @@ void main() {
           rootAuthorPubkey: 'rootAuthor',
           replyToEventId: 'replyTo',
           replyToAuthorPubkey: 'replyAuthor',
+          videoUrl: 'https://example.com/video.mp4',
+          thumbnailUrl: 'https://example.com/thumb.jpg',
+          videoDimensions: '1080x1920',
+          videoDuration: 30,
+          videoBlurhash: 'LEHV6nWB2y',
         );
 
         expect(
@@ -239,6 +287,11 @@ void main() {
             'rootAuthor',
             'replyTo',
             'replyAuthor',
+            'https://example.com/video.mp4',
+            'https://example.com/thumb.jpg',
+            '1080x1920',
+            30,
+            'LEHV6nWB2y',
           ]),
         );
       });
