@@ -12,6 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -79,6 +81,12 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         currentUserPubkey.isNotEmpty &&
         currentUserPubkey == widget.comment.authorPubkey;
 
+    // Gate video comment display behind feature flag
+    final isVideoRepliesEnabled = ref.watch(
+      isFeatureEnabledProvider(FeatureFlag.videoReplies),
+    );
+    final showVideo = widget.comment.hasVideo && isVideoRepliesEnabled;
+
     return GestureDetector(
       onLongPressStart: (_) {
         setState(() {
@@ -145,8 +153,8 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                               widget.comment.replyToAuthorPubkey!,
                         ),
                       // Hide text content when it's just the video URL
-                      if (!widget.comment.hasVideo ||
-                          _hasTextBeyondVideoUrl(widget.comment))
+                      // (only when video replies feature is enabled)
+                      if (!showVideo || _hasTextBeyondVideoUrl(widget.comment))
                         Padding(
                           padding: EdgeInsets.only(
                             top:
@@ -157,12 +165,12 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                           ),
                           child: _CommentContent(
                             commentId: widget.comment.id,
-                            content: widget.comment.hasVideo
+                            content: showVideo
                                 ? _stripVideoUrl(widget.comment)
                                 : widget.comment.content,
                           ),
                         ),
-                      if (widget.comment.hasVideo)
+                      if (showVideo)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: VideoCommentPlayer(

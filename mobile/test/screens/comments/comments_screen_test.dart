@@ -10,6 +10,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
@@ -118,6 +120,9 @@ void main() {
           authServiceProvider.overrideWithValue(mockAuthService),
           userProfileServiceProvider.overrideWithValue(mockUserProfileService),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
+          isFeatureEnabledProvider(
+            FeatureFlag.videoReplies,
+          ).overrideWithValue(false),
         ],
         child: MaterialApp(
           home: Scaffold(
