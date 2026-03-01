@@ -54,12 +54,15 @@ extension VideoEventAppExtensions on VideoEvent {
   // ---------------------------------------------------------------------------
 
   /// Check if video is hosted on Divine servers.
+  ///
+  /// Matches any *.divine.video subdomain including:
+  /// - cdn.divine.video (R2 blob storage)
+  /// - stream.divine.video (BunnyStream HLS)
+  /// - media.divine.video (default Blossom server)
+  /// - blossom.divine.video (Blossom protocol server)
   bool get isFromDivineServer {
     final url = videoUrl?.toLowerCase() ?? '';
-    return url.contains('divine.video') ||
-        url.contains('cdn.divine.video') ||
-        url.contains('stream.divine.video') ||
-        url.contains('media.divine.video');
+    return url.contains('divine.video');
   }
 
   /// Check if we should show the "Not Divine" badge.
