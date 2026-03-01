@@ -40,7 +40,7 @@ class ZapGoalsInfo {
           a = value;
         } else if (key == "goal") {
           goal = value;
-          if (tag.length > 1) {
+          if (tag.length > 2) {
             goalRelay = tag[2];
           }
         }
