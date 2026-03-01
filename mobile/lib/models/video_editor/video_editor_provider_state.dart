@@ -43,6 +43,7 @@ class VideoEditorProviderState {
     this.inspiredByNpub,
     this.selectedAudioEventId,
     this.selectedAudioRelay,
+    this.proofManifestJson,
     GlobalKey? deleteButtonKey,
   }) : deleteButtonKey = deleteButtonKey ?? GlobalKey();
 
@@ -131,6 +132,9 @@ class VideoEditorProviderState {
   /// Relay hint for the selected audio event.
   final String? selectedAudioRelay;
 
+  /// ProofMode attestation manifest JSON for the final rendered clip.
+  final String? proofManifestJson;
+
   /// Whether the video is valid and ready to be posted.
   ///
   /// Returns true if:
@@ -181,6 +185,7 @@ class VideoEditorProviderState {
     bool clearInspiredByNpub = false,
     Object? selectedAudioEventId = _sentinel,
     Object? selectedAudioRelay = _sentinel,
+    Object? proofManifestJson = _sentinel,
   }) {
     return VideoEditorProviderState(
       currentClipIndex: currentClipIndex ?? this.currentClipIndex,
@@ -221,6 +226,9 @@ class VideoEditorProviderState {
       selectedAudioRelay: selectedAudioRelay == _sentinel
           ? this.selectedAudioRelay
           : selectedAudioRelay as String?,
+      proofManifestJson: proofManifestJson == _sentinel
+          ? this.proofManifestJson
+          : proofManifestJson as String?,
     );
   }
 

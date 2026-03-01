@@ -7,8 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -78,7 +78,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
           actionLabel: 'Go to Library',
           onActionPressed: () {
             scaffoldMessenger.hideCurrentSnackBar();
-            router.push(ClipLibraryScreen.clipsPath);
+            router.push(LibraryScreen.clipsPath);
           },
         ),
       ),

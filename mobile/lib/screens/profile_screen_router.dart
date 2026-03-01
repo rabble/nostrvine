@@ -17,9 +17,9 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -375,7 +375,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   void _openClips() {
     // Navigate to clips route (defined outside ShellRoute)
-    context.push(ClipLibraryScreen.clipsPath);
+    context.push(LibraryScreen.clipsPath);
   }
 
   void _openAnalytics() {

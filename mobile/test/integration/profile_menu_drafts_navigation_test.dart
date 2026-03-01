@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -88,7 +88,7 @@ void main() {
           await tester.pumpAndSettle();
 
           // Should navigate to VineDraftsScreen
-          expect(find.byType(ClipLibraryScreen), findsOneWidget);
+          expect(find.byType(LibraryScreen), findsOneWidget);
           expect(find.text('Drafts'), findsWidgets); // Title in app bar
         }
       },

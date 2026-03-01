@@ -1,4 +1,4 @@
-// ABOUTME: Tests for ClipLibraryScreen - browsing and managing saved clips
+// ABOUTME: Tests for LibraryScreen - browsing and managing saved clips
 // ABOUTME: Covers thumbnail display, clip deletion, and import functionality
 
 import 'package:flutter/material.dart';
@@ -6,13 +6,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  group('ClipLibraryScreen', () {
+  group('LibraryScreen', () {
     late ClipLibraryService clipService;
 
     setUp(() async {
@@ -25,7 +25,7 @@ void main() {
         overrides: [
           clipLibraryServiceProvider.overrideWith((ref) => clipService),
         ],
-        child: const MaterialApp(home: ClipLibraryScreen()),
+        child: const MaterialApp(home: LibraryScreen()),
       );
     }
 
