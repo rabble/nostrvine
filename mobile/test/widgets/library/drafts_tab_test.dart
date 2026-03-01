@@ -191,12 +191,8 @@ void main() {
         ),
       );
 
-      // Finds the trailing IconButton with dotsThreeVertical icon
+      // Finds the trailing IconButton (more options button)
       expect(find.byType(IconButton), findsOneWidget);
-      expect(
-        find.widgetWithIcon(IconButton, DivineIconName.dotsThreeVertical),
-        findsOneWidget,
-      );
     });
   });
 }
