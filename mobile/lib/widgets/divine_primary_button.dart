@@ -1,5 +1,5 @@
 // ABOUTME: Shared green primary action button for auth screens
-// ABOUTME: Matches Figma design with vineGreen background, 20px radius, loading state
+// ABOUTME: Matches Figma design with primary background, 20px radius, loading state
 // DESIGN: https://www.figma.com/design/rp1DsDEUuCaicW0lk6I2aZ/UI-Design?node-id=5014-37147
 
 import 'package:divine_ui/divine_ui.dart';
@@ -45,9 +45,9 @@ class DivinePrimaryButton extends StatelessWidget {
         child: ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: VineTheme.vineGreen,
-            foregroundColor: VineTheme.backgroundColor,
-            disabledBackgroundColor: VineTheme.vineGreen.withValues(alpha: 0.7),
+            backgroundColor: VineTheme.primary,
+            foregroundColor: VineTheme.onPrimaryButton,
+            disabledBackgroundColor: VineTheme.primary.withValues(alpha: 0.7),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -58,7 +58,7 @@ class DivinePrimaryButton extends StatelessWidget {
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(
-                    color: VineTheme.backgroundColor,
+                    color: VineTheme.onPrimaryButton,
                     strokeWidth: 2,
                   ),
                 )

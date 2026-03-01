@@ -45,7 +45,7 @@ class DivineSecondaryButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: VineTheme.vineGreen,
+            foregroundColor: VineTheme.primary,
             backgroundColor: VineTheme.surfaceContainer,
             side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
             shape: RoundedRectangleBorder(
@@ -57,7 +57,7 @@ class DivineSecondaryButton extends StatelessWidget {
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(
-                    color: VineTheme.vineGreen,
+                    color: VineTheme.primary,
                     strokeWidth: 2,
                   ),
                 )

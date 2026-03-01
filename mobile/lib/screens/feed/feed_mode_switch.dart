@@ -37,10 +37,7 @@ class FeedModeSwitch extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0x3D000000), // rgba(0,0,0,0.24)
-              Colors.transparent,
-            ],
+            colors: [VineTheme.innerShadowPressed, Colors.transparent],
           ),
         ),
         child: SafeArea(
@@ -71,12 +68,12 @@ class FeedModeSwitch extends StatelessWidget {
                                 style: VineTheme.headlineSmallFont().copyWith(
                                   shadows: [
                                     const Shadow(
-                                      color: Color(0x1A000000),
+                                      color: VineTheme.innerShadow,
                                       offset: Offset(1, 1),
                                       blurRadius: 1,
                                     ),
                                     const Shadow(
-                                      color: Color(0x1A000000),
+                                      color: VineTheme.innerShadow,
                                       offset: Offset(0.4, 0.4),
                                       blurRadius: 0.6,
                                     ),

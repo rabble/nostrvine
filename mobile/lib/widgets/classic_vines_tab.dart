@@ -351,7 +351,7 @@ class _ClassicVideoItem extends StatelessWidget {
                       Shadow(
                         offset: Offset(0, 1),
                         blurRadius: 3,
-                        color: Color(0x80000000),
+                        color: VineTheme.scrim50,
                       ),
                     ],
                   ),

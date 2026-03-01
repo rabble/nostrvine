@@ -1117,9 +1117,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                     height: 64,
                                     decoration: BoxDecoration(
                                       color: VineTheme.backgroundColor
-                                          .withValues(
-                                            alpha: 0.65,
-                                          ),
+                                          .withValues(alpha: 0.65),
                                       borderRadius: BorderRadius.circular(24),
                                     ),
                                     child: Center(
@@ -1152,9 +1150,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                         boxShadow: [
                                           BoxShadow(
                                             color: VineTheme.backgroundColor
-                                                .withValues(
-                                                  alpha: 0.3,
-                                                ),
+                                                .withValues(alpha: 0.3),
                                             blurRadius: 20,
                                             spreadRadius: 5,
                                           ),
@@ -2253,7 +2249,7 @@ class _ContentWarningBadge extends StatelessWidget {
         color: VineTheme.backgroundColor.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: const Color(0xFFFFB84D).withValues(alpha: 0.6),
+          color: VineTheme.contentWarningAmber.withValues(alpha: 0.6),
         ),
       ),
       child: Row(
@@ -2261,14 +2257,14 @@ class _ContentWarningBadge extends StatelessWidget {
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            color: Color(0xFFFFB84D),
+            color: VineTheme.contentWarningAmber,
             size: 14,
           ),
           const SizedBox(width: 4),
           Text(
             labels.length == 1 ? _humanize(labels.first) : 'Content Warning',
             style: const TextStyle(
-              color: Color(0xFFFFB84D),
+              color: VineTheme.contentWarningAmber,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -2377,7 +2373,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.warning_amber_rounded,
-                  color: Color(0xFFFFB84D),
+                  color: VineTheme.contentWarningAmber,
                   size: 22,
                 ),
                 const SizedBox(width: 8),
@@ -2405,7 +2401,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                       height: 6,
                       margin: const EdgeInsets.only(top: 6, right: 10),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFFB84D),
+                        color: VineTheme.contentWarningAmber,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -2497,7 +2493,7 @@ class _ContentWarningOverlay extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.warning_amber_rounded,
-                      color: Color(0xFFFFB84D),
+                      color: VineTheme.contentWarningAmber,
                       size: 48,
                     ),
                     const SizedBox(height: 16),

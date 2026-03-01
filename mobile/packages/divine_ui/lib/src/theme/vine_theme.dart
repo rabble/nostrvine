@@ -243,6 +243,9 @@ class VineTheme {
   /// On-primary color (text/icons on primary background).
   static const Color onPrimary = Color(0xFF00150D);
 
+  /// Figma `primary/on-primary` token for text/icons on primary buttons.
+  static const Color onPrimaryButton = Color(0xFF003824);
+
   /// Darker variant of the brand green.
   static const Color vineGreenDark = Color(0xFF009A72);
 
@@ -330,6 +333,12 @@ class VineTheme {
 
   /// Muted outline color (outline/outline-muted).
   static const Color outlineMuted = Color(0xFF0E2B21);
+
+  /// Surface container at 55% opacity.
+  static const Color surfaceContainer55 = Color(0x8C032017);
+
+  /// Surface container at 90% opacity.
+  static const Color surfaceContainer90 = Color(0xE5032017);
 
   /// Neutral 10 color for subtle borders.
   static const Color neutral10 = Color(0xFF1B1C1C);

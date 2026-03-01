@@ -161,7 +161,7 @@ class _StatusDialog extends ConsumerWidget {
             offset: Offset(0, 10),
           ),
         ],
-        border: .all(color: const Color(0x1A000000)),
+        border: .all(color: VineTheme.innerShadow),
       ),
       child: Column(
         spacing: 20,

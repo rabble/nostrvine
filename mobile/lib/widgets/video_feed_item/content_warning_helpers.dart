@@ -39,7 +39,7 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.warning_amber_rounded,
-                      color: Color(0xFFFFB84D),
+                      color: VineTheme.contentWarningAmber,
                       size: 48,
                     ),
                     const SizedBox(height: 16),

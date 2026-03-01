@@ -547,7 +547,7 @@ class _VideoInfoSection extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Color(0x80000000)],
+          colors: [Colors.transparent, VineTheme.scrim50],
         ),
       ),
       child: Column(
@@ -570,7 +570,7 @@ class _VideoInfoSection extends StatelessWidget {
                   Shadow(
                     offset: Offset(0, 1),
                     blurRadius: 2,
-                    color: Color(0x26000000),
+                    color: VineTheme.scrim15,
                   ),
                 ],
               ),
@@ -594,7 +594,7 @@ class _VideoInfoSection extends StatelessWidget {
                     Shadow(
                       offset: Offset(0, 1),
                       blurRadius: 2,
-                      color: Color(0x26000000),
+                      color: VineTheme.scrim15,
                     ),
                   ],
                 ),
