@@ -36,6 +36,9 @@ void main() {
     when(
       () => mockAuthService.authStateStream,
     ).thenAnswer((_) => Stream.value(AuthState.authenticated));
+    when(
+      () => mockAuthService.hasExpiredOAuthSession,
+    ).thenReturn(false);
   });
 
   Widget createTestWidget({AuthState authState = AuthState.authenticated}) {
