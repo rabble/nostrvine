@@ -86,9 +86,7 @@ void main() {
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           pageContextProvider.overrideWith((ref) {
-            return Stream.value(
-              const RouteContext(type: RouteType.explore),
-            );
+            return Stream.value(const RouteContext(type: RouteType.explore));
           }),
           seenVideosProvider.overrideWith(SeenVideosNotifier.new),
           videoEventsProvider.overrideWith(
@@ -128,9 +126,7 @@ void main() {
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           pageContextProvider.overrideWith((ref) {
-            return Stream.value(
-              const RouteContext(type: RouteType.explore),
-            );
+            return Stream.value(const RouteContext(type: RouteType.explore));
           }),
           seenVideosProvider.overrideWith(SeenVideosNotifier.new),
           videoEventsProvider.overrideWith(() => _MockVideoEventsWithData([])),
@@ -165,9 +161,7 @@ void main() {
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           pageContextProvider.overrideWith((ref) {
-            return Stream.value(
-              const RouteContext(type: RouteType.explore),
-            );
+            return Stream.value(const RouteContext(type: RouteType.explore));
           }),
           seenVideosProvider.overrideWith(SeenVideosNotifier.new),
           // Return a never-completing stream to simulate loading
@@ -203,9 +197,7 @@ void main() {
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           pageContextProvider.overrideWith((ref) {
-            return Stream.value(
-              const RouteContext(type: RouteType.explore),
-            );
+            return Stream.value(const RouteContext(type: RouteType.explore));
           }),
           seenVideosProvider.overrideWith(SeenVideosNotifier.new),
           videoEventsProvider.overrideWith(

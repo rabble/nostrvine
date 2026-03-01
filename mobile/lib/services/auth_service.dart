@@ -385,7 +385,7 @@ class AuthService implements BackgroundAwareService {
             category: LogCategory.auth,
           );
           if (_oauthClient != null) {
-            final refreshed = await _oauthClient!.refreshSession();
+            final refreshed = await _oauthClient.refreshSession();
             if (refreshed != null && refreshed.hasRpcAccess) {
               Log.info(
                 'initialize: refresh succeeded, restoring session',
@@ -421,11 +421,7 @@ class AuthService implements BackgroundAwareService {
               }
             }
           } catch (e, stack) {
-            _reportStorageError(
-              e,
-              stack,
-              'divineOAuth fallback to local keys',
-            );
+            _reportStorageError(e, stack, 'divineOAuth fallback to local keys');
           }
           Log.info(
             'initialize: refresh failed, no local keys — '

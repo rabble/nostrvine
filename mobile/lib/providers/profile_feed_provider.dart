@@ -172,10 +172,7 @@ class ProfileFeed extends _$ProfileFeed {
 
     // Check if provider is still mounted after async gap
     if (!ref.mounted) {
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     // Register for video update callbacks to auto-refresh when this user's video is updated
@@ -579,10 +576,7 @@ class ProfileFeed extends _$ProfileFeed {
       final eventCountBefore = videoEventService.authorVideos(userId).length;
 
       // Query for older events from this specific user
-      await videoEventService.queryHistoricalUserVideos(
-        userId,
-        until: until,
-      );
+      await videoEventService.queryHistoricalUserVideos(userId, until: until);
 
       // Check if provider is still mounted after async gap
       if (!ref.mounted) return;

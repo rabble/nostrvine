@@ -58,11 +58,7 @@ class ProofModeBadgeRow extends StatelessWidget {
       badges.add(OriginalVineBadge(size: size));
     }
 
-    return Wrap(
-      spacing: spacing,
-      runSpacing: spacing,
-      children: badges,
-    );
+    return Wrap(spacing: spacing, runSpacing: spacing, children: badges);
   }
 
   /// Extract host domain from video URL

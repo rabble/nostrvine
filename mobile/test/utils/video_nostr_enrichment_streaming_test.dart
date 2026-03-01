@@ -41,10 +41,7 @@ void main() {
     });
 
     test('returns original videos immediately', () {
-      final videos = [
-        _createTestVideo(id: 'v1'),
-        _createTestVideo(id: 'v2'),
-      ];
+      final videos = [_createTestVideo(id: 'v1'), _createTestVideo(id: 'v2')];
 
       // Set up a slow query that never completes quickly
       when(() => mockNostrService.queryEvents(any())).thenAnswer(
@@ -83,9 +80,9 @@ void main() {
         _createTestVideo(id: nostrEvent.id), // rawTags empty, needs enrichment
       ];
 
-      when(() => mockNostrService.queryEvents(any())).thenAnswer(
-        (_) async => [nostrEvent],
-      );
+      when(
+        () => mockNostrService.queryEvents(any()),
+      ).thenAnswer((_) async => [nostrEvent]);
 
       final enrichedCompleter = Completer<List<VideoEvent>>();
 
@@ -105,13 +102,11 @@ void main() {
     });
 
     test('enrichment failure does not affect initial return', () async {
-      final videos = [
-        _createTestVideo(id: 'v1'),
-      ];
+      final videos = [_createTestVideo(id: 'v1')];
 
-      when(() => mockNostrService.queryEvents(any())).thenThrow(
-        Exception('Network error'),
-      );
+      when(
+        () => mockNostrService.queryEvents(any()),
+      ).thenThrow(Exception('Network error'));
 
       var onEnrichedCalled = false;
 

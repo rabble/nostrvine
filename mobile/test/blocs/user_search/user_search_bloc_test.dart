@@ -66,9 +66,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer(
-            (_) async => [createTestProfile('a' * 64, 'Alice')],
-          );
+          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
@@ -470,9 +468,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer(
-            (_) async => [createTestProfile('a' * 64, 'Alice')],
-          );
+          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
         },
         build: createBloc,
         seed: () => UserSearchState(

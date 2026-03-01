@@ -72,10 +72,7 @@ class PopularNowFeed extends _$PopularNowFeed {
         name: 'PopularNowFeedProvider',
         category: LogCategory.video,
       );
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: true,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: true);
     }
 
     // Try REST API first if available (use centralized availability check)
@@ -173,10 +170,7 @@ class PopularNowFeed extends _$PopularNowFeed {
 
     // Check if still mounted after async gap
     if (!ref.mounted) {
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     // Set up continuous listener for updates

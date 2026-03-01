@@ -177,9 +177,7 @@ void main() {
             id: 'notif_1',
             createdAtSeconds: 1700000100,
           ),
-          createMockRelayNotification(
-            id: 'notif_2',
-          ),
+          createMockRelayNotification(id: 'notif_2'),
         ];
 
         when(
@@ -225,9 +223,7 @@ void main() {
         'converts RelayNotification to NotificationModel correctly',
         () async {
           final mockNotifications = [
-            createMockRelayNotification(
-              id: 'notif_1',
-            ),
+            createMockRelayNotification(id: 'notif_1'),
           ];
 
           when(
@@ -292,11 +288,7 @@ void main() {
           ),
         ];
         // Additional notifications for loadMore
-        final moreNotifications = [
-          createMockRelayNotification(
-            id: 'notif_2',
-          ),
-        ];
+        final moreNotifications = [createMockRelayNotification(id: 'notif_2')];
 
         var callCount = 0;
         when(
@@ -552,11 +544,7 @@ void main() {
         expect(result.unreadCount, 0);
 
         // Verify API was called without specific IDs (mark all)
-        verify(
-          () => mockApiService.markAsRead(
-            pubkey: testPubkey,
-          ),
-        ).called(1);
+        verify(() => mockApiService.markAsRead(pubkey: testPubkey)).called(1);
 
         container.dispose();
       });
@@ -574,9 +562,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => NotificationsResponse(
-              notifications: [
-                createMockRelayNotification(id: 'notif_1'),
-              ],
+              notifications: [createMockRelayNotification(id: 'notif_1')],
               unreadCount: 1,
             ),
           );
@@ -822,16 +808,12 @@ void main() {
         ).thenAnswer(
           (_) async => NotificationsResponse(
             notifications: [
-              createMockRelayNotification(
-                id: 'like_1',
-              ),
+              createMockRelayNotification(id: 'like_1'),
               createMockRelayNotification(
                 id: 'follow_1',
                 notificationType: 'follow',
               ),
-              createMockRelayNotification(
-                id: 'like_2',
-              ),
+              createMockRelayNotification(id: 'like_2'),
             ],
             unreadCount: 3,
           ),

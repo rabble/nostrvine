@@ -44,11 +44,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(
-              body: AgeVerificationDialog(),
-            ),
-          ),
+          const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
         );
 
         expect(find.text('Age Verification'), findsOneWidget);
@@ -355,11 +351,7 @@ void main() {
       ) async {
         // Test creation type
         await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(
-              body: AgeVerificationDialog(),
-            ),
-          ),
+          const MaterialApp(home: Scaffold(body: AgeVerificationDialog())),
         );
 
         expect(find.text('Age Verification'), findsOneWidget);

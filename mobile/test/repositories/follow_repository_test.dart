@@ -1289,9 +1289,8 @@ void main() {
 
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
-          () => mockFunnelcakeClient.getFollowers(
-            pubkey: testCurrentUserPubkey,
-          ),
+          () =>
+              mockFunnelcakeClient.getFollowers(pubkey: testCurrentUserPubkey),
         ).thenAnswer((_) async => testPaginatedPubkeys);
 
         final repo = FollowRepository(
@@ -1307,9 +1306,8 @@ void main() {
 
         expect(result, equals(testPaginatedPubkeys));
         verify(
-          () => mockFunnelcakeClient.getFollowers(
-            pubkey: testCurrentUserPubkey,
-          ),
+          () =>
+              mockFunnelcakeClient.getFollowers(pubkey: testCurrentUserPubkey),
         ).called(1);
       });
 
@@ -1435,9 +1433,8 @@ void main() {
 
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
-          () => mockFunnelcakeClient.getFollowing(
-            pubkey: testCurrentUserPubkey,
-          ),
+          () =>
+              mockFunnelcakeClient.getFollowing(pubkey: testCurrentUserPubkey),
         ).thenAnswer((_) async => testPaginatedPubkeys);
 
         final repo = FollowRepository(
@@ -1453,9 +1450,8 @@ void main() {
 
         expect(result, equals(testPaginatedPubkeys));
         verify(
-          () => mockFunnelcakeClient.getFollowing(
-            pubkey: testCurrentUserPubkey,
-          ),
+          () =>
+              mockFunnelcakeClient.getFollowing(pubkey: testCurrentUserPubkey),
         ).called(1);
       });
 

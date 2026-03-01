@@ -106,9 +106,8 @@ void main() {
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         );
         verify(
-          () => mockBlossomAuthService.createGetAuthHeader(
-            sha256Hash: 'abc123',
-          ),
+          () =>
+              mockBlossomAuthService.createGetAuthHeader(sha256Hash: 'abc123'),
         ).called(1);
       },
     );
@@ -141,9 +140,8 @@ void main() {
           () => mockAgeVerificationService.verifyAdultContentAccess(any()),
         ).called(1);
         verify(
-          () => mockBlossomAuthService.createGetAuthHeader(
-            sha256Hash: 'abc123',
-          ),
+          () =>
+              mockBlossomAuthService.createGetAuthHeader(sha256Hash: 'abc123'),
         ).called(1);
       },
     );
@@ -199,9 +197,7 @@ void main() {
 
       // Assert - Should still work (currently only handles nudity/adult content)
       verify(
-        () => mockBlossomAuthService.createGetAuthHeader(
-          sha256Hash: 'abc123',
-        ),
+        () => mockBlossomAuthService.createGetAuthHeader(sha256Hash: 'abc123'),
       ).called(1);
     });
 

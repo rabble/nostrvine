@@ -138,10 +138,7 @@ void main() {
 
       test('should sort videos using provided comparator', () async {
         // Arrange
-        final video1 = _createMockVideo(
-          id: 'v1',
-          createdAt: DateTime(2025),
-        );
+        final video1 = _createMockVideo(id: 'v1', createdAt: DateTime(2025));
         final video2 = _createMockVideo(
           id: 'v2',
           createdAt: DateTime(2025, 1, 3),

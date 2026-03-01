@@ -20,10 +20,7 @@ final videosForProfileRouteProvider = Provider<AsyncValue<VideoFeedState>>((
   );
   if (ctx == null || ctx.type != RouteType.profile) {
     return const AsyncValue.data(
-      VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      ),
+      VideoFeedState(videos: [], hasMoreContent: false),
     );
   }
 
@@ -32,10 +29,7 @@ final videosForProfileRouteProvider = Provider<AsyncValue<VideoFeedState>>((
   final hex = npubToHexOrNull(npub);
   if (hex == null) {
     return const AsyncValue.data(
-      VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      ),
+      VideoFeedState(videos: [], hasMoreContent: false),
     );
   }
 
@@ -58,7 +52,5 @@ final videosForProfileRouteProvider = Provider<AsyncValue<VideoFeedState>>((
     category: LogCategory.system,
   );
 
-  return AsyncValue.data(
-    VideoFeedState(videos: items, hasMoreContent: false),
-  );
+  return AsyncValue.data(VideoFeedState(videos: items, hasMoreContent: false));
 });

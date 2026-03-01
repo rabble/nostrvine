@@ -284,10 +284,7 @@ void main() {
     });
 
     test('isPolling returns true only when status is polling', () {
-      expect(
-        const EmailVerificationState().isPolling,
-        isFalse,
-      );
+      expect(const EmailVerificationState().isPolling, isFalse);
       expect(
         const EmailVerificationState(
           status: EmailVerificationStatus.polling,
@@ -361,11 +358,7 @@ void main() {
       test('states with different values are not equal', () {
         expect(
           const EmailVerificationState(status: EmailVerificationStatus.polling),
-          isNot(
-            equals(
-              const EmailVerificationState(),
-            ),
-          ),
+          isNot(equals(const EmailVerificationState())),
         );
 
         expect(

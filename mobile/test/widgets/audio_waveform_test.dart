@@ -171,11 +171,7 @@ void main() {
     testWidgets('handles isPlaying state change', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AudioWaveform(
-              duration: Duration(seconds: 6),
-            ),
-          ),
+          home: Scaffold(body: AudioWaveform(duration: Duration(seconds: 6))),
         ),
       );
 
@@ -325,9 +321,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AudioWaveform(duration: Duration(seconds: 6)),
-          ),
+          home: Scaffold(body: AudioWaveform(duration: Duration(seconds: 6))),
         ),
       );
 

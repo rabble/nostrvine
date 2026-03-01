@@ -117,14 +117,8 @@ class ProfileCommentsBloc
 
       emit(
         state.copyWith(
-          videoReplies: [
-            ...state.videoReplies,
-            ...uniqueVideoReplies,
-          ],
-          textComments: [
-            ...state.textComments,
-            ...uniqueTextComments,
-          ],
+          videoReplies: [...state.videoReplies, ...uniqueVideoReplies],
+          textComments: [...state.textComments, ...uniqueTextComments],
           isLoadingMore: false,
           hasMoreContent: comments.length >= _pageSize,
           paginationCursor: cursor,

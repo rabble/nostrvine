@@ -133,7 +133,7 @@ void main() {
       });
 
       test('round-trips refreshToken', () {
-        final original = KeycastSession(
+        const original = KeycastSession(
           bunkerUrl: 'bunker://test',
           accessToken: 'token',
           refreshToken: 'refresh_abc',
@@ -158,7 +158,7 @@ void main() {
 
     group('fromTokenResponse - refreshToken', () {
       test('preserves refreshToken from response', () {
-        final tokenResponse = TokenResponse(
+        const tokenResponse = TokenResponse(
           bunkerUrl: 'bunker://test',
           accessToken: 'access_abc',
           expiresIn: 3600,
@@ -170,7 +170,7 @@ void main() {
       });
 
       test('handles null refreshToken from response', () {
-        final tokenResponse = TokenResponse(
+        const tokenResponse = TokenResponse(
           bunkerUrl: 'bunker://test',
           accessToken: 'access_abc',
           expiresIn: 3600,

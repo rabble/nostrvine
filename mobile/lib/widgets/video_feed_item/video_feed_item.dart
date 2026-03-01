@@ -923,9 +923,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       return Stack(
                         fit: StackFit.expand,
                         children: [
-                          VideoThumbnailWidget(
-                            video: video,
-                          ),
+                          VideoThumbnailWidget(video: video),
                           const ColoredBox(
                             color: Colors.black54,
                             child: Center(
@@ -978,9 +976,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                VideoThumbnailWidget(
-                                  video: video,
-                                ),
+                                VideoThumbnailWidget(video: video),
                                 if (isActive)
                                   const Center(
                                     child: BrandedLoadingIndicator(size: 60),
@@ -2374,9 +2370,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'Content Warnings',
-                  style: VineTheme.titleFont(
-                    fontSize: 18,
-                  ),
+                  style: VineTheme.titleFont(fontSize: 18),
                 ),
               ],
             ),

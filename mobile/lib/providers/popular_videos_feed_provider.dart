@@ -53,10 +53,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           return existing;
         }
       }
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: true,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: true);
     }
 
     try {
@@ -64,10 +61,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       final videos = await videosRepository.getPopularVideos(limit: 100);
 
       if (!ref.mounted) {
-        return const VideoFeedState(
-          videos: [],
-          hasMoreContent: true,
-        );
+        return const VideoFeedState(videos: [], hasMoreContent: true);
       }
 
       if (videos.isNotEmpty) {
@@ -101,10 +95,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         category: LogCategory.video,
       );
 
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     } catch (e) {
       Log.error(
         'PopularVideosFeed: Error loading videos: $e',

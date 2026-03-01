@@ -11,9 +11,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedMobile,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
         ),
       );
@@ -32,9 +30,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedWeb,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedWeb),
           ),
         ),
       );
@@ -50,9 +46,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.basicProof,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.basicProof),
           ),
         ),
       );
@@ -68,9 +62,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.unverified,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.unverified),
           ),
         ),
       );
@@ -87,9 +79,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedMobile,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
         ),
       );
@@ -132,9 +122,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedMobile,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
         ),
       );
@@ -154,9 +142,7 @@ void main() {
   group('OriginalVineBadge Widget', () {
     testWidgets('renders Original Vine badge correctly', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge()),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       // Should display 'V' text
@@ -173,9 +159,7 @@ void main() {
     testWidgets('renders different Vine badge sizes correctly', (tester) async {
       // Test small size
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge()),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       var badge = tester.widget<OriginalVineBadge>(
@@ -206,9 +190,7 @@ void main() {
 
     testWidgets('Vine badge has proper visual structure', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge()),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       // Should have Container for styling
@@ -223,9 +205,7 @@ void main() {
 
     testWidgets('Vine badge has teal background color', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge()),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       final container = tester.widget<Container>(

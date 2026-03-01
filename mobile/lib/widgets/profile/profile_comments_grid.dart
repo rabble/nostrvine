@@ -15,10 +15,7 @@ import 'package:openvine/screens/video_detail_screen.dart';
 ///
 /// Requires [ProfileCommentsBloc] to be provided in the widget tree.
 class ProfileCommentsGrid extends StatelessWidget {
-  const ProfileCommentsGrid({
-    required this.isOwnProfile,
-    super.key,
-  });
+  const ProfileCommentsGrid({required this.isOwnProfile, super.key});
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
@@ -30,9 +27,7 @@ class ProfileCommentsGrid extends StatelessWidget {
         if (state.status == ProfileCommentsStatus.initial ||
             state.status == ProfileCommentsStatus.loading) {
           return const Center(
-            child: CircularProgressIndicator(
-              color: VineTheme.vineGreen,
-            ),
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
           );
         }
 
@@ -80,17 +75,14 @@ class ProfileCommentsGrid extends StatelessWidget {
                           crossAxisSpacing: 2,
                           mainAxisSpacing: 2,
                         ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        if (index >= state.videoReplies.length) {
-                          return const SizedBox.shrink();
-                        }
-                        return _VideoReplyTile(
-                          comment: state.videoReplies[index],
-                        );
-                      },
-                      childCount: state.videoReplies.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      if (index >= state.videoReplies.length) {
+                        return const SizedBox.shrink();
+                      }
+                      return _VideoReplyTile(
+                        comment: state.videoReplies[index],
+                      );
+                    }, childCount: state.videoReplies.length),
                   ),
                 ),
               ],
@@ -101,17 +93,14 @@ class ProfileCommentsGrid extends StatelessWidget {
                   child: _SectionHeader(title: 'Comments'),
                 ),
                 SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      if (index >= state.textComments.length) {
-                        return const SizedBox.shrink();
-                      }
-                      return _ProfileCommentCard(
-                        comment: state.textComments[index],
-                      );
-                    },
-                    childCount: state.textComments.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    if (index >= state.textComments.length) {
+                      return const SizedBox.shrink();
+                    }
+                    return _ProfileCommentCard(
+                      comment: state.textComments[index],
+                    );
+                  }, childCount: state.textComments.length),
                 ),
               ],
 
@@ -217,21 +206,16 @@ class _VideoReplyTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(
-        VideoDetailScreen.pathForId(comment.rootEventId),
-      ),
+      onTap: () =>
+          context.push(VideoDetailScreen.pathForId(comment.rootEventId)),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: VineTheme.cardBackground,
-          ),
+          decoration: const BoxDecoration(color: VineTheme.cardBackground),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              _VideoReplyThumbnail(
-                thumbnailUrl: comment.thumbnailUrl,
-              ),
+              _VideoReplyThumbnail(thumbnailUrl: comment.thumbnailUrl),
               // Play icon overlay
               const Center(
                 child: Icon(
@@ -290,14 +274,10 @@ class _ProfileCommentCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(
-        VideoDetailScreen.pathForId(comment.rootEventId),
-      ),
+      onTap: () =>
+          context.push(VideoDetailScreen.pathForId(comment.rootEventId)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 8,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

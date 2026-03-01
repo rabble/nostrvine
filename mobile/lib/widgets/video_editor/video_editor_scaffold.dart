@@ -35,13 +35,7 @@ class VideoEditorScaffold extends ConsumerWidget {
         body: Stack(
           fit: .expand,
           clipBehavior: .none,
-          children: [
-            VideoEditorCanvas(),
-
-            _OverlayControls(),
-
-            _BottomActions(),
-          ],
+          children: [VideoEditorCanvas(), _OverlayControls(), _BottomActions()],
         ),
       ),
     );

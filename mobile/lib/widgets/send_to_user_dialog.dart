@@ -231,9 +231,7 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
             category: LogCategory.ui,
           );
           // Still add the contact without profile data
-          contacts.add(
-            ShareableUser(pubkey: pubkey),
-          );
+          contacts.add(ShareableUser(pubkey: pubkey));
         }
       }
 

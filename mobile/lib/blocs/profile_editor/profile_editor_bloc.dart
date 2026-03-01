@@ -124,10 +124,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     if (username.isEmpty) {
       emit(
-        state.copyWith(
-          username: username,
-          usernameStatus: UsernameStatus.idle,
-        ),
+        state.copyWith(username: username, usernameStatus: UsernameStatus.idle),
       );
       return;
     }
@@ -170,10 +167,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final initial = state.initialUsername;
     if (initial != null && username == initial.toLowerCase()) {
       emit(
-        state.copyWith(
-          username: username,
-          usernameStatus: UsernameStatus.idle,
-        ),
+        state.copyWith(username: username, usernameStatus: UsernameStatus.idle),
       );
       return;
     }
@@ -191,17 +185,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     switch (result) {
       case UsernameAvailable():
-        emit(
-          state.copyWith(
-            usernameStatus: UsernameStatus.available,
-          ),
-        );
+        emit(state.copyWith(usernameStatus: UsernameStatus.available));
       case UsernameTaken():
-        emit(
-          state.copyWith(
-            usernameStatus: UsernameStatus.taken,
-          ),
-        );
+        emit(state.copyWith(usernameStatus: UsernameStatus.taken));
       case UsernameInvalidFormat(:final reason):
         emit(
           state.copyWith(
@@ -230,12 +216,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   ) {
     if (event.mode == Nip05Mode.divine) {
       // Switching back to divine mode — clear external NIP-05 state
-      emit(
-        state.copyWith(
-          nip05Mode: Nip05Mode.divine,
-          externalNip05: '',
-        ),
-      );
+      emit(state.copyWith(nip05Mode: Nip05Mode.divine, externalNip05: ''));
     } else {
       // Switching to external mode — reset divine username status to idle
       emit(

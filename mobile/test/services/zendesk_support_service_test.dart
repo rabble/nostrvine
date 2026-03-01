@@ -211,9 +211,7 @@ void main() {
 
       const testNpub =
           'npub1abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345';
-      await ZendeskSupportService.setUserIdentity(
-        npub: testNpub,
-      );
+      await ZendeskSupportService.setUserIdentity(npub: testNpub);
 
       // CRITICAL: Uses full npub for unique user identification
       // Email format: {npub}@divine.video
@@ -241,9 +239,7 @@ void main() {
 
       const testNpub =
           'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuv';
-      await ZendeskSupportService.setUserIdentity(
-        npub: testNpub,
-      );
+      await ZendeskSupportService.setUserIdentity(npub: testNpub);
 
       // CRITICAL: Uses full npub (never truncated) for traceability
       expect(capturedName, testNpub);

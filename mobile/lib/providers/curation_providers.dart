@@ -322,9 +322,7 @@ class AnalyticsTrending extends _$AnalyticsTrending {
       final service = ref.read(analyticsApiServiceProvider);
 
       // Use cursor-based pagination with 'before' parameter
-      final videos = await service.getTrendingVideos(
-        before: _nextCursor,
-      );
+      final videos = await service.getTrendingVideos(before: _nextCursor);
 
       // Check if provider is still mounted after async gap
       if (!ref.mounted) return;

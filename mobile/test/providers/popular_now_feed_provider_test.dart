@@ -73,10 +73,7 @@ void main() {
       'should get videos from popularNowVideos getter',
       () async {
         // Arrange
-        final video1 = _createMockVideo(
-          id: 'v1',
-          createdAt: DateTime(2025),
-        );
+        final video1 = _createMockVideo(id: 'v1', createdAt: DateTime(2025));
         final video2 = _createMockVideo(
           id: 'v2',
           createdAt: DateTime(2025, 1, 2),
@@ -100,10 +97,7 @@ void main() {
       'should sort videos by timestamp (newest first)',
       () async {
         // Arrange
-        final video1 = _createMockVideo(
-          id: 'v1',
-          createdAt: DateTime(2025),
-        );
+        final video1 = _createMockVideo(id: 'v1', createdAt: DateTime(2025));
         final video2 = _createMockVideo(
           id: 'v2',
           createdAt: DateTime(2025, 1, 3),

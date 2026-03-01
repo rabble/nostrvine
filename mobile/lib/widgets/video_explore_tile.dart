@@ -64,11 +64,7 @@ class VideoExploreTile extends ConsumerWidget {
             ),
 
             // ProofMode and Vine badges
-            Positioned(
-              top: 8,
-              left: 8,
-              child: ProofModeBadgeRow(video: video),
-            ),
+            Positioned(top: 8, left: 8, child: ProofModeBadgeRow(video: video)),
 
             // Video info overlay - conditionally shown
             if (showTextOverlay)

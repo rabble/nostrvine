@@ -6,16 +6,12 @@ class ZendeskConfig {
   /// Zendesk Mobile SDK "Application ID"
   /// Get from: Admin → Channels → Mobile SDK
   /// Set via: --dart-define=ZENDESK_APP_ID=xxx
-  static const String appId = String.fromEnvironment(
-    'ZENDESK_APP_ID',
-  );
+  static const String appId = String.fromEnvironment('ZENDESK_APP_ID');
 
   /// App identifier for Zendesk (can be any string, e.g., "divine.video")
   /// Get from: Admin → Channels → Mobile SDK
   /// Set via: --dart-define=ZENDESK_CLIENT_ID=xxx
-  static const String clientId = String.fromEnvironment(
-    'ZENDESK_CLIENT_ID',
-  );
+  static const String clientId = String.fromEnvironment('ZENDESK_CLIENT_ID');
 
   /// Zendesk instance URL
   /// Set via: --dart-define=ZENDESK_URL=xxx
@@ -27,9 +23,7 @@ class ZendeskConfig {
   /// Zendesk API token for REST API (used when native SDK unavailable)
   /// Get from: Admin → Channels → API → Add API Token
   /// Set via: --dart-define=ZENDESK_API_TOKEN=xxx
-  static const String apiToken = String.fromEnvironment(
-    'ZENDESK_API_TOKEN',
-  );
+  static const String apiToken = String.fromEnvironment('ZENDESK_API_TOKEN');
 
   /// Email for API authentication (used with API token)
   /// Set via: --dart-define=ZENDESK_API_EMAIL=xxx

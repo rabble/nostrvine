@@ -115,9 +115,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           hashtag: widget.hashtag,
           forceRefresh: forceRefresh,
         ),
-        analyticsService.getClassicVideosByHashtag(
-          hashtag: widget.hashtag,
-        ),
+        analyticsService.getClassicVideosByHashtag(hashtag: widget.hashtag),
       ]).timeout(const Duration(seconds: 5));
 
       if (!mounted) return;

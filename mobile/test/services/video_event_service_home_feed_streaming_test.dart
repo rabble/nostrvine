@@ -90,9 +90,7 @@ void main() {
         return controller.stream;
       });
 
-      when(
-        () => mockNostrService.unsubscribe(any()),
-      ).thenAnswer((_) async {});
+      when(() => mockNostrService.unsubscribe(any())).thenAnswer((_) async {});
 
       await service.seedHomeFeedFromFollowedUsers(['pubkey1']);
 
@@ -132,9 +130,7 @@ void main() {
         return controller.stream;
       });
 
-      when(
-        () => mockNostrService.unsubscribe(any()),
-      ).thenAnswer((_) async {});
+      when(() => mockNostrService.unsubscribe(any())).thenAnswer((_) async {});
 
       await service.seedHomeFeedFromFollowedUsers(['pubkey1']);
 
@@ -164,9 +160,7 @@ void main() {
         return controller.stream;
       });
 
-      when(
-        () => mockNostrService.unsubscribe(any()),
-      ).thenAnswer((_) async {});
+      when(() => mockNostrService.unsubscribe(any())).thenAnswer((_) async {});
 
       // Should not throw
       await service.seedHomeFeedFromFollowedUsers(['pubkey1']);

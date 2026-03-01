@@ -180,45 +180,42 @@ void main() {
       },
     );
 
-    test(
-      'refresh fails + no local keys → falls to unauthenticated',
-      () async {
-        SharedPreferences.setMockInitialValues({
-          'authentication_source': 'divineOAuth',
-          'tos_accepted': true,
-        });
+    test('refresh fails + no local keys → falls to unauthenticated', () async {
+      SharedPreferences.setMockInitialValues({
+        'authentication_source': 'divineOAuth',
+        'tos_accepted': true,
+      });
 
-        // Expired session but NO local nsec
-        final expiredSession = KeycastSession(
-          bunkerUrl: 'https://login.divine.video/api/nostr',
-          accessToken: 'expired_token',
-          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
-        );
-        secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
+      // Expired session but NO local nsec
+      final expiredSession = KeycastSession(
+        bunkerUrl: 'https://login.divine.video/api/nostr',
+        accessToken: 'expired_token',
+        expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+      );
+      secureStorage['keycast_session'] = jsonEncode(expiredSession.toJson());
 
-        when(
-          () => mockOAuthClient.refreshSession(),
-        ).thenAnswer((_) async => null);
+      when(
+        () => mockOAuthClient.refreshSession(),
+      ).thenAnswer((_) async => null);
 
-        final authService = createAuthService();
+      final authService = createAuthService();
 
-        await runZonedGuarded(
-          () async {
-            await authService.initialize();
+      await runZonedGuarded(
+        () async {
+          await authService.initialize();
 
-            expect(
-              authService.authState,
-              equals(AuthState.unauthenticated),
-              reason: 'No local keys + refresh failed → unauthenticated',
-            );
-            verify(() => mockOAuthClient.refreshSession()).called(1);
-          },
-          (error, stack) {
-            // Ignore background errors
-          },
-        );
-      },
-    );
+          expect(
+            authService.authState,
+            equals(AuthState.unauthenticated),
+            reason: 'No local keys + refresh failed → unauthenticated',
+          );
+          verify(() => mockOAuthClient.refreshSession()).called(1);
+        },
+        (error, stack) {
+          // Ignore background errors
+        },
+      );
+    });
 
     test(
       'refresh succeeds → saves new session and attempts signInWithDivineOAuth',

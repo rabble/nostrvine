@@ -107,10 +107,7 @@ class _ActionButton extends StatelessWidget {
                 border: .all(width: 2, color: const Color(0xFF0E2B21)),
                 borderRadius: .circular(20),
               ),
-              child: DivineIcon(
-                icon: icon,
-                color: VineTheme.whiteText,
-              ),
+              child: DivineIcon(icon: icon, color: VineTheme.whiteText),
             ),
           ),
         ),

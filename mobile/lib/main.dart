@@ -916,9 +916,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       );
     });
 
-    const bool crashProbe = bool.fromEnvironment(
-      'CRASHLYTICS_PROBE',
-    );
+    const bool crashProbe = bool.fromEnvironment('CRASHLYTICS_PROBE');
 
     final router = ref.read(goRouterProvider);
 

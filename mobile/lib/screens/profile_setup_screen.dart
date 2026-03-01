@@ -1832,9 +1832,7 @@ class _CustomColorButton extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
         ),
         child: const Icon(Icons.colorize, color: Colors.white, size: 20),
       ),

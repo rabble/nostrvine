@@ -121,14 +121,8 @@ void main() {
       });
 
       test('finds lists by tags', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tech', 'tutorial'],
-        );
-        await service.createList(
-          name: 'List 2',
-          tags: ['cooking', 'food'],
-        );
+        await service.createList(name: 'List 1', tags: ['tech', 'tutorial']);
+        await service.createList(name: 'List 2', tags: ['cooking', 'food']);
 
         final results = service.searchLists('tech');
 
@@ -205,20 +199,11 @@ void main() {
 
     group('getListsByTag()', () {
       test('returns lists with specific tag', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tech', 'tutorial'],
-        );
+        await service.createList(name: 'List 1', tags: ['tech', 'tutorial']);
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(
-          name: 'List 2',
-          tags: ['cooking', 'food'],
-        );
+        await service.createList(name: 'List 2', tags: ['cooking', 'food']);
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(
-          name: 'List 3',
-          tags: ['tech', 'news'],
-        );
+        await service.createList(name: 'List 3', tags: ['tech', 'news']);
 
         final results = service.getListsByTag('tech');
 
@@ -242,10 +227,7 @@ void main() {
       });
 
       test('returns empty list for non-existent tag', () async {
-        await service.createList(
-          name: 'Test List',
-          tags: ['tech'],
-        );
+        await service.createList(name: 'Test List', tags: ['tech']);
 
         final results = service.getListsByTag('cooking');
 
@@ -253,10 +235,7 @@ void main() {
       });
 
       test('only returns public lists', () async {
-        await service.createList(
-          name: 'Public List',
-          tags: ['tech'],
-        );
+        await service.createList(name: 'Public List', tags: ['tech']);
         await service.createList(
           name: 'Private List',
           tags: ['tech'],
@@ -272,20 +251,11 @@ void main() {
 
     group('getAllTags()', () {
       test('returns all unique tags across lists', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tech', 'tutorial'],
-        );
+        await service.createList(name: 'List 1', tags: ['tech', 'tutorial']);
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(
-          name: 'List 2',
-          tags: ['cooking', 'food'],
-        );
+        await service.createList(name: 'List 2', tags: ['cooking', 'food']);
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(
-          name: 'List 3',
-          tags: ['tech', 'news'],
-        );
+        await service.createList(name: 'List 3', tags: ['tech', 'news']);
 
         final tags = service.getAllTags();
 
@@ -297,14 +267,8 @@ void main() {
       });
 
       test('removes duplicates', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tech', 'tutorial'],
-        );
-        await service.createList(
-          name: 'List 2',
-          tags: ['tech', 'news'],
-        );
+        await service.createList(name: 'List 1', tags: ['tech', 'tutorial']);
+        await service.createList(name: 'List 2', tags: ['tech', 'news']);
 
         final tags = service.getAllTags();
 
@@ -323,10 +287,7 @@ void main() {
       });
 
       test('only includes tags from public lists', () async {
-        await service.createList(
-          name: 'Public List',
-          tags: ['public_tag'],
-        );
+        await service.createList(name: 'Public List', tags: ['public_tag']);
         await service.createList(
           name: 'Private List',
           tags: ['private_tag'],
@@ -348,10 +309,7 @@ void main() {
       });
 
       test('handles lists with no tags', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tag1'],
-        );
+        await service.createList(name: 'List 1', tags: ['tag1']);
         await Future.delayed(const Duration(milliseconds: 5));
         await service.createList(name: 'List 2', tags: []);
 
@@ -467,10 +425,7 @@ void main() {
       });
 
       test('getListsByTag with tag that has spaces', () async {
-        await service.createList(
-          name: 'Test List',
-          tags: ['with spaces'],
-        );
+        await service.createList(name: 'Test List', tags: ['with spaces']);
 
         final results = service.getListsByTag('with spaces');
 

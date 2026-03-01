@@ -209,9 +209,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
         expect: () => [
-          const VideoFeedState(
-            mode: FeedMode.latest,
-          ),
+          const VideoFeedState(mode: FeedMode.latest),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.mode, 'mode', FeedMode.latest),
@@ -237,9 +235,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted()),
         expect: () => [
-          const VideoFeedState(
-            mode: FeedMode.forYou,
-          ),
+          const VideoFeedState(mode: FeedMode.forYou),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.mode, 'mode', FeedMode.forYou),
@@ -277,9 +273,7 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.popular)),
         expect: () => [
-          const VideoFeedState(
-            mode: FeedMode.popular,
-          ),
+          const VideoFeedState(mode: FeedMode.popular),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.mode, 'mode', FeedMode.popular),
@@ -406,9 +400,7 @@ void main() {
         ),
         act: (bloc) => bloc.add(const VideoFeedModeChanged(FeedMode.latest)),
         expect: () => [
-          const VideoFeedState(
-            mode: FeedMode.latest,
-          ),
+          const VideoFeedState(mode: FeedMode.latest),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.mode, 'mode', FeedMode.latest)
@@ -522,9 +514,7 @@ void main() {
       blocTest<VideoFeedBloc, VideoFeedState>(
         'does nothing when videos list is empty',
         build: createBloc,
-        seed: () => const VideoFeedState(
-          status: VideoFeedStatus.success,
-        ),
+        seed: () => const VideoFeedState(status: VideoFeedStatus.success),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
         expect: () => <VideoFeedState>[],
       );
@@ -1240,18 +1230,12 @@ void main() {
           const VideoFeedState(),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having(
-                (s) => s.videoListSources,
-                'videoListSources',
-                {
-                  'video-0': {'list-1'},
-                },
-              )
-              .having(
-                (s) => s.listOnlyVideoIds,
-                'listOnlyVideoIds',
-                {'video-0'},
-              ),
+              .having((s) => s.videoListSources, 'videoListSources', {
+                'video-0': {'list-1'},
+              })
+              .having((s) => s.listOnlyVideoIds, 'listOnlyVideoIds', {
+                'video-0',
+              }),
         ],
       );
 
@@ -1300,19 +1284,14 @@ void main() {
           ),
           isA<VideoFeedState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
-              .having(
-                (s) => s.videoListSources,
-                'videoListSources',
-                {
-                  'existing-0': {'list-1'},
-                  'more-0': {'list-2'},
-                },
-              )
-              .having(
-                (s) => s.listOnlyVideoIds,
-                'listOnlyVideoIds',
-                {'existing-0', 'more-0'},
-              ),
+              .having((s) => s.videoListSources, 'videoListSources', {
+                'existing-0': {'list-1'},
+                'more-0': {'list-2'},
+              })
+              .having((s) => s.listOnlyVideoIds, 'listOnlyVideoIds', {
+                'existing-0',
+                'more-0',
+              }),
         ],
       );
     });

@@ -37,9 +37,7 @@ class HashtagScreenRouter extends ConsumerWidget {
         name: 'HashtagRouter',
         category: LogCategory.ui,
       );
-      return const Scaffold(
-        body: Center(child: Text('Invalid hashtag route')),
-      );
+      return const Scaffold(body: Center(child: Text('Invalid hashtag route')));
     }
 
     final hashtag = routeCtx.hashtag ?? 'trending';

@@ -2133,10 +2133,7 @@ class VideoEventService extends ChangeNotifier {
 
           // Only add events with video URLs
           if (videoEvent.hasVideo) {
-            _addVideoToSubscription(
-              videoEvent,
-              subscriptionType,
-            );
+            _addVideoToSubscription(videoEvent, subscriptionType);
 
             // Keep only the most recent events to prevent memory issues
             final list = _eventLists[subscriptionType] ?? [];
@@ -4897,10 +4894,7 @@ class VideoEventService extends ChangeNotifier {
 
   /// Add a video event to the cache (for external services like CurationService)
   void addVideoEvent(VideoEvent videoEvent) {
-    _addVideoToSubscription(
-      videoEvent,
-      SubscriptionType.discovery,
-    );
+    _addVideoToSubscription(videoEvent, SubscriptionType.discovery);
   }
 
   /// Update a video event (for addressable events with same pubkey/d-tag).
@@ -5196,10 +5190,7 @@ class VideoEventService extends ChangeNotifier {
     final videoEvent = VideoEvent.fromNostrEvent(event);
 
     // Use centralized method for filtering (blocklist, expiry, URL validation)
-    _addVideoToSubscription(
-      videoEvent,
-      SubscriptionType.search,
-    );
+    _addVideoToSubscription(videoEvent, SubscriptionType.search);
     _scheduleFrameUpdate();
   }
 

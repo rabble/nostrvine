@@ -66,9 +66,7 @@ void main() {
     }
 
     testWidgets('displays clip counter with correct format', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(),
-      );
+      await tester.pumpWidget(buildTestWidget());
 
       expect(find.text('1/3'), findsOneWidget);
     });
@@ -113,9 +111,7 @@ void main() {
     testWidgets('displays correct clip counter for single clip', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildTestWidget(totalClips: 1),
-      );
+      await tester.pumpWidget(buildTestWidget(totalClips: 1));
 
       expect(find.text('1/1'), findsOneWidget);
     });

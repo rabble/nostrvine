@@ -131,9 +131,7 @@ class _InspiredByContent extends ConsumerWidget {
                     color: VineTheme.whiteText,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    shadows: [
-                      Shadow(blurRadius: 4),
-                    ],
+                    shadows: [Shadow(blurRadius: 4)],
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

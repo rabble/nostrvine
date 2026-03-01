@@ -53,9 +53,7 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     emit(state.copyWith(status: HashtagSearchStatus.loading, query: query));
 
     try {
-      final results = await _hashtagRepository.searchHashtags(
-        query: query,
-      );
+      final results = await _hashtagRepository.searchHashtags(query: query);
 
       emit(
         state.copyWith(status: HashtagSearchStatus.success, results: results),

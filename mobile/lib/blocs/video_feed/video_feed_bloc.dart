@@ -395,9 +395,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         return HomeFeedResult(videos: videos);
 
       case FeedMode.popular:
-        final videos = await _videosRepository.getPopularVideos(
-          until: until,
-        );
+        final videos = await _videosRepository.getPopularVideos(until: until);
         return HomeFeedResult(videos: videos);
     }
   }

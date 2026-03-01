@@ -11,10 +11,7 @@ import 'package:openvine/services/video_event_service.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
-VideoEvent _createMockVideo({
-  required String id,
-  DateTime? createdAt,
-}) {
+VideoEvent _createMockVideo({required String id, DateTime? createdAt}) {
   final timestamp = createdAt ?? DateTime.now();
   return VideoEvent(
     id: id,
@@ -38,10 +35,7 @@ void main() {
     });
 
     test('buildFeed returns immediately with available videos', () async {
-      final videos = [
-        _createMockVideo(id: 'v1'),
-        _createMockVideo(id: 'v2'),
-      ];
+      final videos = [_createMockVideo(id: 'v1'), _createMockVideo(id: 'v2')];
       final config = VideoFeedConfig(
         subscriptionType: SubscriptionType.discovery,
         subscribe: (service) async {},

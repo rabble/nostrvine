@@ -52,10 +52,7 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     // Get current user pubkey
@@ -68,10 +65,7 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     final analyticsService = ref.read(analyticsApiServiceProvider);
@@ -90,10 +84,7 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     try {

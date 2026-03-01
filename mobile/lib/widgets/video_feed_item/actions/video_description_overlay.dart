@@ -44,13 +44,8 @@ class VideoDescriptionOverlay extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 height: 1.3,
                 shadows: [
-                  Shadow(
-                    blurRadius: 8,
-                  ),
-                  Shadow(
-                    offset: Offset(2, 2),
-                    blurRadius: 4,
-                  ),
+                  Shadow(blurRadius: 8),
+                  Shadow(offset: Offset(2, 2), blurRadius: 4),
                 ],
               ),
               hashtagStyle: const TextStyle(
@@ -59,13 +54,8 @@ class VideoDescriptionOverlay extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 height: 1.3,
                 shadows: [
-                  Shadow(
-                    blurRadius: 8,
-                  ),
-                  Shadow(
-                    offset: Offset(2, 2),
-                    blurRadius: 4,
-                  ),
+                  Shadow(blurRadius: 8),
+                  Shadow(offset: Offset(2, 2), blurRadius: 4),
                 ],
               ),
               maxLines: 3,
@@ -87,13 +77,8 @@ class VideoDescriptionOverlay extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   shadows: [
-                    Shadow(
-                      blurRadius: 6,
-                    ),
-                    Shadow(
-                      offset: Offset(1, 1),
-                      blurRadius: 3,
-                    ),
+                    Shadow(blurRadius: 6),
+                    Shadow(offset: Offset(1, 1), blurRadius: 3),
                   ],
                 ),
               ),

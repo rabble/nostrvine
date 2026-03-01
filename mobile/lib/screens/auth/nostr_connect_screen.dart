@@ -246,9 +246,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Invalid bunker URL. It should start with bunker://',
-          ),
+          content: Text('Invalid bunker URL. It should start with bunker://'),
           backgroundColor: VineTheme.error,
         ),
       );

@@ -33,9 +33,7 @@ void main() {
       id: id,
       content: 'Text comment $id',
       authorPubkey: _testAuthorPubkey,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        createdAtSeconds * 1000,
-      ),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(createdAtSeconds * 1000),
       rootEventId: _testRootEventId,
       rootAuthorPubkey: _testRootAuthorPubkey,
     );
@@ -47,9 +45,7 @@ void main() {
       id: id,
       content: 'Video reply $id',
       authorPubkey: _testAuthorPubkey,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(
-        createdAtSeconds * 1000,
-      ),
+      createdAt: DateTime.fromMillisecondsSinceEpoch(createdAtSeconds * 1000),
       rootEventId: _testRootEventId,
       rootAuthorPubkey: _testRootAuthorPubkey,
       videoUrl: 'https://example.com/$id.mp4',
@@ -72,9 +68,7 @@ void main() {
 
       test('copyWith preserves existing values', () {
         const state = ProfileCommentsState();
-        final updated = state.copyWith(
-          status: ProfileCommentsStatus.success,
-        );
+        final updated = state.copyWith(status: ProfileCommentsStatus.success);
         expect(updated.status, equals(ProfileCommentsStatus.success));
         expect(updated.videoReplies, isEmpty);
         expect(updated.textComments, isEmpty);
@@ -108,9 +102,7 @@ void main() {
 
       test('totalCount returns sum of video and text comments', () {
         final state = ProfileCommentsState(
-          videoReplies: [
-            createVideoComment(id: 'v1', createdAtSeconds: 1000),
-          ],
+          videoReplies: [createVideoComment(id: 'v1', createdAtSeconds: 1000)],
           textComments: [
             createTextComment(id: 't1', createdAtSeconds: 1000),
             createTextComment(id: 't2', createdAtSeconds: 1001),
@@ -146,26 +138,10 @@ void main() {
             ProfileCommentsStatus.loading,
           ),
           isA<ProfileCommentsState>()
-              .having(
-                (s) => s.status,
-                'status',
-                ProfileCommentsStatus.success,
-              )
-              .having(
-                (s) => s.videoReplies.length,
-                'videoReplies.length',
-                1,
-              )
-              .having(
-                (s) => s.textComments.length,
-                'textComments.length',
-                2,
-              )
-              .having(
-                (s) => s.hasMoreContent,
-                'hasMoreContent',
-                isFalse,
-              ),
+              .having((s) => s.status, 'status', ProfileCommentsStatus.success)
+              .having((s) => s.videoReplies.length, 'videoReplies.length', 1)
+              .having((s) => s.textComments.length, 'textComments.length', 2)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', isFalse),
         ],
       );
 
@@ -188,21 +164,9 @@ void main() {
             ProfileCommentsStatus.loading,
           ),
           isA<ProfileCommentsState>()
-              .having(
-                (s) => s.status,
-                'status',
-                ProfileCommentsStatus.success,
-              )
-              .having(
-                (s) => s.videoReplies,
-                'videoReplies',
-                isEmpty,
-              )
-              .having(
-                (s) => s.textComments,
-                'textComments',
-                isEmpty,
-              ),
+              .having((s) => s.status, 'status', ProfileCommentsStatus.success)
+              .having((s) => s.videoReplies, 'videoReplies', isEmpty)
+              .having((s) => s.textComments, 'textComments', isEmpty),
         ],
       );
 
@@ -227,11 +191,7 @@ void main() {
             ProfileCommentsStatus.loading,
           ),
           isA<ProfileCommentsState>()
-              .having(
-                (s) => s.status,
-                'status',
-                ProfileCommentsStatus.failure,
-              )
+              .having((s) => s.status, 'status', ProfileCommentsStatus.failure)
               .having(
                 (s) => s.error,
                 'error',
@@ -251,9 +211,8 @@ void main() {
           ).thenAnswer((_) async => []);
           return createBloc();
         },
-        seed: () => const ProfileCommentsState(
-          status: ProfileCommentsStatus.loading,
-        ),
+        seed: () =>
+            const ProfileCommentsState(status: ProfileCommentsStatus.loading),
         act: (bloc) => bloc.add(const ProfileCommentsSyncRequested()),
         expect: () => <ProfileCommentsState>[],
         verify: (_) {
@@ -310,9 +269,7 @@ void main() {
         createTextComment(id: 't1', createdAtSeconds: 1700000500),
         createTextComment(id: 't2', createdAtSeconds: 1700000000),
       ];
-      final seedCursor = DateTime.fromMillisecondsSinceEpoch(
-        1700000000 * 1000,
-      );
+      final seedCursor = DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000);
 
       blocTest<ProfileCommentsBloc, ProfileCommentsState>(
         'appends new comments to existing lists',
@@ -325,14 +282,8 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => [
-              createVideoComment(
-                id: 'v2',
-                createdAtSeconds: 1699999500,
-              ),
-              createTextComment(
-                id: 't3',
-                createdAtSeconds: 1699999000,
-              ),
+              createVideoComment(id: 'v2', createdAtSeconds: 1699999500),
+              createTextComment(id: 't3', createdAtSeconds: 1699999000),
             ],
           );
           return createBloc();
@@ -351,21 +302,9 @@ void main() {
             isTrue,
           ),
           isA<ProfileCommentsState>()
-              .having(
-                (s) => s.isLoadingMore,
-                'isLoadingMore',
-                isFalse,
-              )
-              .having(
-                (s) => s.videoReplies.length,
-                'videoReplies.length',
-                2,
-              )
-              .having(
-                (s) => s.textComments.length,
-                'textComments.length',
-                3,
-              ),
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse)
+              .having((s) => s.videoReplies.length, 'videoReplies.length', 2)
+              .having((s) => s.textComments.length, 'textComments.length', 3),
         ],
       );
 
@@ -381,15 +320,9 @@ void main() {
           ).thenAnswer(
             (_) async => [
               // Duplicate of existing
-              createTextComment(
-                id: 't2',
-                createdAtSeconds: 1700000000,
-              ),
+              createTextComment(id: 't2', createdAtSeconds: 1700000000),
               // New
-              createTextComment(
-                id: 't3',
-                createdAtSeconds: 1699999000,
-              ),
+              createTextComment(id: 't3', createdAtSeconds: 1699999000),
             ],
           );
           return createBloc();
@@ -408,25 +341,16 @@ void main() {
             isTrue,
           ),
           isA<ProfileCommentsState>()
-              .having(
-                (s) => s.textComments.length,
-                'textComments.length',
-                3,
-              )
-              .having(
-                (s) => s.isLoadingMore,
-                'isLoadingMore',
-                isFalse,
-              ),
+              .having((s) => s.textComments.length, 'textComments.length', 3)
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse),
         ],
       );
 
       blocTest<ProfileCommentsBloc, ProfileCommentsState>(
         'does nothing when not in success state',
         build: createBloc,
-        seed: () => const ProfileCommentsState(
-          status: ProfileCommentsStatus.loading,
-        ),
+        seed: () =>
+            const ProfileCommentsState(status: ProfileCommentsStatus.loading),
         act: (bloc) => bloc.add(const ProfileCommentsLoadMoreRequested()),
         expect: () => <ProfileCommentsState>[],
       );
@@ -485,21 +409,9 @@ void main() {
             isTrue,
           ),
           isA<ProfileCommentsState>()
-              .having(
-                (s) => s.isLoadingMore,
-                'isLoadingMore',
-                isFalse,
-              )
-              .having(
-                (s) => s.videoReplies.length,
-                'videoReplies.length',
-                1,
-              )
-              .having(
-                (s) => s.textComments.length,
-                'textComments.length',
-                2,
-              ),
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse)
+              .having((s) => s.videoReplies.length, 'videoReplies.length', 1)
+              .having((s) => s.textComments.length, 'textComments.length', 2),
         ],
       );
     });

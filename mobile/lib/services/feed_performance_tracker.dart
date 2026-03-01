@@ -94,10 +94,7 @@ class FeedPerformanceTracker {
   void trackFeedRefresh(String feedType, {String? trigger}) {
     _analytics.logEvent(
       name: 'feed_refresh',
-      parameters: {
-        'feed_type': feedType,
-        'trigger': ?trigger,
-      },
+      parameters: {'feed_type': feedType, 'trigger': ?trigger},
     );
 
     UnifiedLogger.info(

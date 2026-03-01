@@ -435,10 +435,7 @@ class _SessionExpiredBanner extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Session Expired',
-                  style: VineTheme.titleSmallFont(),
-                ),
+                Text('Session Expired', style: VineTheme.titleSmallFont()),
                 const SizedBox(height: 4),
                 Text(
                   'Sign in again to restore full access',
@@ -454,19 +451,14 @@ class _SessionExpiredBanner extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.whiteText,
               foregroundColor: VineTheme.accentOrange,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
             child: Text(
               'Sign in',
-              style: VineTheme.labelMediumFont(
-                color: VineTheme.accentOrange,
-              ),
+              style: VineTheme.labelMediumFont(color: VineTheme.accentOrange),
             ),
           ),
         ],

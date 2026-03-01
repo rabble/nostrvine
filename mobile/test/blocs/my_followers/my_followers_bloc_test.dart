@@ -30,10 +30,7 @@ void main() {
 
     test('initial state is initial with empty list', () {
       final bloc = createBloc();
-      expect(
-        bloc.state,
-        const MyFollowersState(),
-      );
+      expect(bloc.state, const MyFollowersState());
       bloc.close();
     });
 
@@ -99,9 +96,7 @@ void main() {
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
         expect: () => [
           const MyFollowersState(status: MyFollowersStatus.loading),
-          const MyFollowersState(
-            status: MyFollowersStatus.success,
-          ),
+          const MyFollowersState(status: MyFollowersStatus.success),
         ],
       );
 

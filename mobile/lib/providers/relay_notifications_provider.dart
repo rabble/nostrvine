@@ -177,9 +177,7 @@ class RelayNotifications extends _$RelayNotifications {
     }
 
     // Emit initial loading state
-    state = const AsyncData(
-      NotificationFeedState(notifications: []),
-    );
+    state = const AsyncData(NotificationFeedState(notifications: []));
 
     try {
       // Fetch initial notifications from REST API

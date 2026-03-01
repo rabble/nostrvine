@@ -28,9 +28,7 @@ Comment _createTextComment({
   id: id,
   content: 'Text comment $id',
   authorPubkey: _testAuthorPubkey,
-  createdAt: DateTime.fromMillisecondsSinceEpoch(
-    createdAtSeconds * 1000,
-  ),
+  createdAt: DateTime.fromMillisecondsSinceEpoch(createdAtSeconds * 1000),
   rootEventId: _testRootEventId,
   rootAuthorPubkey: _testRootAuthorPubkey,
 );
@@ -42,9 +40,7 @@ Comment _createVideoComment({
   id: id,
   content: 'Video reply $id',
   authorPubkey: _testAuthorPubkey,
-  createdAt: DateTime.fromMillisecondsSinceEpoch(
-    createdAtSeconds * 1000,
-  ),
+  createdAt: DateTime.fromMillisecondsSinceEpoch(createdAtSeconds * 1000),
   rootEventId: _testRootEventId,
   rootAuthorPubkey: _testRootAuthorPubkey,
   videoUrl: 'https://example.com/$id.mp4',
@@ -64,310 +60,222 @@ void main() {
       ).thenAnswer((_) async => null);
     });
 
-    Widget buildSubject({
-      bool isOwnProfile = true,
-      MockGoRouter? goRouter,
-    }) {
+    Widget buildSubject({bool isOwnProfile = true, MockGoRouter? goRouter}) {
       final app = MaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
           body: BlocProvider<ProfileCommentsBloc>.value(
             value: mockBloc,
-            child: ProfileCommentsGrid(
-              isOwnProfile: isOwnProfile,
-            ),
+            child: ProfileCommentsGrid(isOwnProfile: isOwnProfile),
           ),
         ),
       );
       if (goRouter != null) {
-        return MockGoRouterProvider(
-          goRouter: goRouter,
-          child: app,
-        );
+        return MockGoRouterProvider(goRouter: goRouter, child: app);
       }
       return app;
     }
 
     group('renders', () {
-      testWidgets(
-        'loading indicator when status is initial',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const ProfileCommentsState(),
-          );
+      testWidgets('loading indicator when status is initial', (tester) async {
+        when(() => mockBloc.state).thenReturn(const ProfileCommentsState());
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(
-            find.byType(CircularProgressIndicator),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
-      testWidgets(
-        'loading indicator when status is loading',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const ProfileCommentsState(
-              status: ProfileCommentsStatus.loading,
-            ),
-          );
+      testWidgets('loading indicator when status is loading', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          const ProfileCommentsState(status: ProfileCommentsStatus.loading),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(
-            find.byType(CircularProgressIndicator),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
-      testWidgets(
-        'error message when status is failure',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const ProfileCommentsState(
-              status: ProfileCommentsStatus.failure,
-              error: 'Failed to load comments',
-            ),
-          );
+      testWidgets('error message when status is failure', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          const ProfileCommentsState(
+            status: ProfileCommentsStatus.failure,
+            error: 'Failed to load comments',
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(
-            find.text('Error loading comments'),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.text('Error loading comments'), findsOneWidget);
+      });
 
-      testWidgets(
-        'own profile empty state when no comments',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-            ),
-          );
+      testWidgets('own profile empty state when no comments', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          const ProfileCommentsState(status: ProfileCommentsStatus.success),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.text('No Comments Yet'), findsOneWidget);
-          expect(
-            find.text(
-              'Your comments and replies will appear here',
-            ),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.text('No Comments Yet'), findsOneWidget);
+        expect(
+          find.text('Your comments and replies will appear here'),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'other profile empty state when no comments',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-            ),
-          );
+      testWidgets('other profile empty state when no comments', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          const ProfileCommentsState(status: ProfileCommentsStatus.success),
+        );
 
-          await tester.pumpWidget(
-            buildSubject(isOwnProfile: false),
-          );
+        await tester.pumpWidget(buildSubject(isOwnProfile: false));
 
-          expect(find.text('No Comments'), findsOneWidget);
-          expect(
-            find.text(
-              'Their comments and replies will appear here',
-            ),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.text('No Comments'), findsOneWidget);
+        expect(
+          find.text('Their comments and replies will appear here'),
+          findsOneWidget,
+        );
+      });
 
-      testWidgets(
-        'video replies section when video comments exist',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-              videoReplies: [
-                _createVideoComment(id: 'v1'),
-                _createVideoComment(id: 'v2'),
-              ],
-            ),
-          );
+      testWidgets('video replies section when video comments exist', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            videoReplies: [
+              _createVideoComment(id: 'v1'),
+              _createVideoComment(id: 'v2'),
+            ],
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.text('Video Replies'), findsOneWidget);
-        },
-      );
+        expect(find.text('Video Replies'), findsOneWidget);
+      });
 
-      testWidgets(
-        'text comments section when text comments exist',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-              textComments: [
-                _createTextComment(id: 't1'),
-                _createTextComment(id: 't2'),
-              ],
-            ),
-          );
+      testWidgets('text comments section when text comments exist', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            textComments: [
+              _createTextComment(id: 't1'),
+              _createTextComment(id: 't2'),
+            ],
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.text('Comments'), findsOneWidget);
-          expect(
-            find.text('Text comment t1'),
-            findsOneWidget,
-          );
-          expect(
-            find.text('Text comment t2'),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.text('Comments'), findsOneWidget);
+        expect(find.text('Text comment t1'), findsOneWidget);
+        expect(find.text('Text comment t2'), findsOneWidget);
+      });
 
-      testWidgets(
-        'both sections when both types exist',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-              videoReplies: [
-                _createVideoComment(id: 'v1'),
-              ],
-              textComments: [
-                _createTextComment(id: 't1'),
-              ],
-            ),
-          );
+      testWidgets('both sections when both types exist', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            videoReplies: [_createVideoComment(id: 'v1')],
+            textComments: [_createTextComment(id: 't1')],
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          expect(find.text('Video Replies'), findsOneWidget);
-          expect(find.text('Comments'), findsOneWidget);
-        },
-      );
+        expect(find.text('Video Replies'), findsOneWidget);
+        expect(find.text('Comments'), findsOneWidget);
+      });
 
-      testWidgets(
-        'bottom loading indicator when loading more',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-              textComments: [
-                _createTextComment(id: 't1'),
-              ],
-              isLoadingMore: true,
-            ),
-          );
+      testWidgets('bottom loading indicator when loading more', (tester) async {
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            textComments: [_createTextComment(id: 't1')],
+            isLoadingMore: true,
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          // One for the bottom loading indicator
-          expect(
-            find.byType(CircularProgressIndicator),
-            findsOneWidget,
-          );
-        },
-      );
+        // One for the bottom loading indicator
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
     });
 
     group('interactions', () {
-      testWidgets(
-        'dispatches load more when scrolled near bottom',
-        (tester) async {
-          // Create enough items to make the list scrollable
-          final manyComments = List.generate(
-            20,
-            (i) => _createTextComment(
-              id: 't$i',
-              createdAtSeconds: 1700000000 - i,
-            ),
-          );
+      testWidgets('dispatches load more when scrolled near bottom', (
+        tester,
+      ) async {
+        // Create enough items to make the list scrollable
+        final manyComments = List.generate(
+          20,
+          (i) =>
+              _createTextComment(id: 't$i', createdAtSeconds: 1700000000 - i),
+        );
 
-          when(() => mockBloc.state).thenReturn(
-            ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-              textComments: manyComments,
-            ),
-          );
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            textComments: manyComments,
+          ),
+        );
 
-          await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject());
 
-          // Scroll to the bottom
-          await tester.drag(
-            find.byType(CustomScrollView),
-            const Offset(0, -5000),
-          );
-          await tester.pumpAndSettle();
+        // Scroll to the bottom
+        await tester.drag(
+          find.byType(CustomScrollView),
+          const Offset(0, -5000),
+        );
+        await tester.pumpAndSettle();
 
-          verify(
-            () => mockBloc.add(
-              const ProfileCommentsLoadMoreRequested(),
-            ),
-          ).called(greaterThanOrEqualTo(1));
-        },
-      );
+        verify(
+          () => mockBloc.add(const ProfileCommentsLoadMoreRequested()),
+        ).called(greaterThanOrEqualTo(1));
+      });
 
-      testWidgets(
-        'navigates to video when text comment is tapped',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-              textComments: [
-                _createTextComment(id: 't1'),
-              ],
-            ),
-          );
+      testWidgets('navigates to video when text comment is tapped', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            textComments: [_createTextComment(id: 't1')],
+          ),
+        );
 
-          await tester.pumpWidget(
-            buildSubject(goRouter: mockGoRouter),
-          );
+        await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
 
-          await tester.tap(find.text('Text comment t1'));
-          await tester.pumpAndSettle();
+        await tester.tap(find.text('Text comment t1'));
+        await tester.pumpAndSettle();
 
-          verify(
-            () => mockGoRouter.push<Object?>(
-              '/video/$_testRootEventId',
-            ),
-          ).called(1);
-        },
-      );
+        verify(
+          () => mockGoRouter.push<Object?>('/video/$_testRootEventId'),
+        ).called(1);
+      });
 
-      testWidgets(
-        'navigates to video when video reply tile is tapped',
-        (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            ProfileCommentsState(
-              status: ProfileCommentsStatus.success,
-              videoReplies: [
-                _createVideoComment(id: 'v1'),
-              ],
-            ),
-          );
+      testWidgets('navigates to video when video reply tile is tapped', (
+        tester,
+      ) async {
+        when(() => mockBloc.state).thenReturn(
+          ProfileCommentsState(
+            status: ProfileCommentsStatus.success,
+            videoReplies: [_createVideoComment(id: 'v1')],
+          ),
+        );
 
-          await tester.pumpWidget(
-            buildSubject(goRouter: mockGoRouter),
-          );
+        await tester.pumpWidget(buildSubject(goRouter: mockGoRouter));
 
-          await tester.tap(find.byType(GestureDetector).first);
-          await tester.pumpAndSettle();
+        await tester.tap(find.byType(GestureDetector).first);
+        await tester.pumpAndSettle();
 
-          verify(
-            () => mockGoRouter.push<Object?>(
-              '/video/$_testRootEventId',
-            ),
-          ).called(1);
-        },
-      );
+        verify(
+          () => mockGoRouter.push<Object?>('/video/$_testRootEventId'),
+        ).called(1);
+      });
     });
   });
 }

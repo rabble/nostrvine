@@ -257,9 +257,7 @@ void main() {
       testWidgets('rebuilds when fontSize changes', (tester) async {
         final controller = StreamController<VideoEditorTextState>.broadcast();
 
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoEditorTextState());
+        when(() => mockBloc.state).thenReturn(const VideoEditorTextState());
         when(() => mockBloc.stream).thenAnswer((_) => controller.stream);
 
         await tester.pumpWidget(buildWidget());

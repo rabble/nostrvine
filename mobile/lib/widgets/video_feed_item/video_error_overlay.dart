@@ -69,9 +69,7 @@ class VideoErrorOverlay extends ConsumerWidget {
       fit: StackFit.expand,
       children: [
         // Show thumbnail as background
-        VideoThumbnailWidget(
-          video: video,
-        ),
+        VideoThumbnailWidget(video: video),
         // Error overlay (only show on active video)
         if (isActive)
           ColoredBox(

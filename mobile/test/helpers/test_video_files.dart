@@ -226,19 +226,13 @@ class TestVideoFiles {
     ),
     TestVideoScenario(
       name: 'High resolution (1080p, 30 frames)',
-      frames: createVideoFrames(
-        width: largeWidth,
-        height: largeHeight,
-      ),
+      frames: createVideoFrames(width: largeWidth, height: largeHeight),
       description: 'High resolution processing test',
       expectedProcessingTime: const Duration(seconds: 1),
     ),
     TestVideoScenario(
       name: 'Low resolution (240p, 30 frames)',
-      frames: createVideoFrames(
-        width: smallWidth,
-        height: smallHeight,
-      ),
+      frames: createVideoFrames(width: smallWidth, height: smallHeight),
       description: 'Low resolution optimization test',
       expectedProcessingTime: const Duration(milliseconds: 200),
     ),

@@ -206,9 +206,7 @@ void main() {
       testWidgets('updates tool selection when state changes', (tester) async {
         final controller = StreamController<VideoEditorDrawState>.broadcast();
 
-        when(() => mockBloc.state).thenReturn(
-          const VideoEditorDrawState(),
-        );
+        when(() => mockBloc.state).thenReturn(const VideoEditorDrawState());
         when(() => mockBloc.stream).thenAnswer((_) => controller.stream);
 
         await tester.pumpWidget(buildWidget());

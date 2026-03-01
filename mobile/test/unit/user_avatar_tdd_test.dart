@@ -30,9 +30,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       const MaterialApp(
-        home: Scaffold(
-          body: UserAvatar(name: 'Test User', size: 40),
-        ),
+        home: Scaffold(body: UserAvatar(name: 'Test User', size: 40)),
       ),
     );
 
@@ -61,9 +59,7 @@ void main() {
 
   testWidgets('UserAvatar has rounded border decoration', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(body: UserAvatar(size: 40)),
-      ),
+      const MaterialApp(home: Scaffold(body: UserAvatar(size: 40))),
     );
 
     await tester.pump();

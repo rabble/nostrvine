@@ -122,9 +122,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   Widget _buildHeader() => Container(
     padding: const EdgeInsets.all(16),
     decoration: const BoxDecoration(
-      border: Border(
-        bottom: BorderSide(color: VineTheme.cardBackground),
-      ),
+      border: Border(bottom: BorderSide(color: VineTheme.cardBackground)),
     ),
     child: Row(
       children: [
@@ -937,10 +935,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
   /// Show delete confirmation dialog
   void _showDeleteDialog() {
-    showDialog(
-      context: context,
-      builder: _buildDeleteDialog,
-    );
+    showDialog(context: context, builder: _buildDeleteDialog);
   }
 
   void _showAllListsDialog(List<CuratedList> lists) {
