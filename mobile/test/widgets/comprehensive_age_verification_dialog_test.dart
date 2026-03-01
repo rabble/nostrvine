@@ -239,7 +239,10 @@ void main() {
         final noButton = tester.widget<OutlinedButton>(
           find.widgetWithText(OutlinedButton, 'No'),
         );
-        expect(noButton.style?.side?.resolve({})?.color, Colors.white54);
+        expect(
+          noButton.style?.side?.resolve({})?.color,
+          VineTheme.onSurfaceMuted,
+        );
       });
 
       testWidgets('has correct dialog structure and constraints', (
@@ -284,7 +287,7 @@ void main() {
             'least 16 years old.',
           ),
         );
-        expect(explanationText.style?.color, Colors.white70);
+        expect(explanationText.style?.color, VineTheme.onSurfaceVariant);
         expect(explanationText.textAlign, TextAlign.center);
 
         // Check question text style

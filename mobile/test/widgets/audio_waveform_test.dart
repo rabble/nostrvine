@@ -1,6 +1,7 @@
 // ABOUTME: Tests for AudioWaveform widget
 // ABOUTME: Validates visual elements, progress display, and animation behavior
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/audio_waveform.dart';
@@ -384,7 +385,7 @@ void main() {
 
       final textWidget = tester.widget<Text>(find.text('--:-- / --:--'));
 
-      expect(textWidget.style?.color, Colors.grey);
+      expect(textWidget.style?.color, VineTheme.lightText);
     });
   });
 }

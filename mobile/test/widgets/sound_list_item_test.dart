@@ -1,6 +1,7 @@
 // ABOUTME: Tests for SoundListItem widget - displays sound preview with play button
 // ABOUTME: Verifies dark theme, selection state, and playback controls
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/vine_sound.dart';
@@ -199,7 +200,7 @@ void main() {
 
       // Subtitle should use grey text
       final subtitle = listTile.subtitle! as Text;
-      expect(subtitle.style?.color, equals(Colors.grey));
+      expect(subtitle.style?.color, equals(VineTheme.lightText));
     });
 
     testWidgets('displays sound without artist', (tester) async {
