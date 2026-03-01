@@ -97,6 +97,7 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
               : video.collaboratorPubkeys,
           inspiredByVideo: video.inspiredByVideo ?? parsed.inspiredByVideo,
           textTrackRef: video.textTrackRef ?? parsed.textTrackRef,
+          textTrackContent: video.textTrackContent ?? parsed.textTrackContent,
           nostrEventTags: video.nostrEventTags.isEmpty
               ? parsed.nostrEventTags
               : video.nostrEventTags,
