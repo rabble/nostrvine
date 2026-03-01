@@ -3,10 +3,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/screens/comments/widgets/comment_item.dart';
 import 'package:openvine/screens/comments/widgets/widgets.dart';
 
-class CommentsList extends StatefulWidget {
+class CommentsList extends ConsumerStatefulWidget {
   const CommentsList({
     required this.isOriginalVine,
     required this.scrollController,
@@ -17,10 +21,10 @@ class CommentsList extends StatefulWidget {
   final ScrollController scrollController;
 
   @override
-  State<CommentsList> createState() => _CommentsListState();
+  ConsumerState<CommentsList> createState() => _CommentsListState();
 }
 
-class _CommentsListState extends State<CommentsList> {
+class _CommentsListState extends ConsumerState<CommentsList> {
   final _autoPlayNotifier = ValueNotifier<bool>(false);
 
   @override
@@ -57,7 +61,16 @@ class _CommentsListState extends State<CommentsList> {
           return const _ErrorState();
         }
 
-        final threaded = state.threadedComments;
+        final isVideoRepliesEnabled = ref.watch(
+          isFeatureEnabledProvider(FeatureFlag.videoReplies),
+        );
+
+        // Filter out video-only comments when feature flag is off
+        final threaded = isVideoRepliesEnabled
+            ? state.threadedComments
+            : state.threadedComments
+                  .where((node) => !isVideoOnlyComment(node.comment))
+                  .toList();
 
         if (threaded.isEmpty) {
           return CommentsEmptyState(isClassicVine: widget.isOriginalVine);

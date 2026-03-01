@@ -24,6 +24,13 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
+/// Returns true if the comment is a video-only comment (no text beyond URL).
+bool isVideoOnlyComment(Comment comment) {
+  if (!comment.hasVideo) return false;
+  final stripped = _stripVideoUrl(comment);
+  return stripped.trim().isEmpty;
+}
+
 /// Returns true if the comment has text content beyond just the video URL.
 bool _hasTextBeyondVideoUrl(Comment comment) {
   if (!comment.hasVideo) return true;
@@ -86,13 +93,6 @@ class _CommentItemState extends ConsumerState<CommentItem> {
       isFeatureEnabledProvider(FeatureFlag.videoReplies),
     );
     final showVideo = widget.comment.hasVideo && isVideoRepliesEnabled;
-
-    // Hide video-only comments entirely when feature flag is off
-    if (widget.comment.hasVideo &&
-        !isVideoRepliesEnabled &&
-        !_hasTextBeyondVideoUrl(widget.comment)) {
-      return const SizedBox.shrink();
-    }
 
     return GestureDetector(
       onLongPressStart: (_) {
