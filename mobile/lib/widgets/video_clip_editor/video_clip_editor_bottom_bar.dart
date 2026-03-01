@@ -197,7 +197,7 @@ class _ClipRemoveArea extends ConsumerWidget {
           key: deleteButtonKey,
           padding: const .all(10),
           decoration: ShapeDecoration(
-            color: const Color(0xFFF44336),
+            color: VineTheme.error,
             shape: RoundedRectangleBorder(borderRadius: .circular(20)),
           ),
           child: const DivineIcon(

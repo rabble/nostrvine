@@ -201,7 +201,7 @@ class _NextButton extends StatelessWidget {
               fontWeight: .w800,
               height: 1.33,
               letterSpacing: 0.15,
-              color: const Color(0xFF00452D),
+              color: VineTheme.inverseOnSurface,
             ),
           ),
         ),

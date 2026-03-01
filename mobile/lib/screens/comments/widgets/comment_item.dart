@@ -265,7 +265,7 @@ class _CommentHeader extends ConsumerWidget {
                     Text(
                       ' • ',
                       style: VineTheme.bodyFont(
-                        color: Colors.white54,
+                        color: VineTheme.onSurfaceMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -273,7 +273,7 @@ class _CommentHeader extends ConsumerWidget {
                     Text(
                       'You',
                       style: VineTheme.bodyFont(
-                        color: Colors.white54,
+                        color: VineTheme.onSurfaceMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -290,7 +290,7 @@ class _CommentHeader extends ConsumerWidget {
                     ? Text(
                         UserProfile.generatedNameFor(authorPubkey),
                         style: const TextStyle(
-                          color: Color(0xF2FFFFFF), // rgba(255,255,255,0.95)
+                          color: VineTheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.1,
@@ -301,7 +301,7 @@ class _CommentHeader extends ConsumerWidget {
                     : UserName.fromUserProfile(
                         profile,
                         style: const TextStyle(
-                          color: Color(0xF2FFFFFF),
+                          color: VineTheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.1,

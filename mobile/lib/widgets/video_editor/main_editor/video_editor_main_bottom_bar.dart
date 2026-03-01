@@ -103,8 +103,8 @@ class _ActionButton extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF032017),
-                border: .all(width: 2, color: const Color(0xFF0E2B21)),
+                color: VineTheme.surfaceContainer,
+                border: .all(width: 2, color: VineTheme.containerLow),
                 borderRadius: .circular(20),
               ),
               child: DivineIcon(icon: icon, color: VineTheme.whiteText),

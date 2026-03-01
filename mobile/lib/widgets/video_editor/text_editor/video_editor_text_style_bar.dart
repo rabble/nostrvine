@@ -182,7 +182,7 @@ class _StyleIconButton extends StatelessWidget {
         child: Container(
           padding: const .all(12),
           decoration: BoxDecoration(
-            color: const Color(0xA6000000),
+            color: VineTheme.scrim65,
             borderRadius: BorderRadius.circular(20),
           ),
           child: SvgPicture.asset(

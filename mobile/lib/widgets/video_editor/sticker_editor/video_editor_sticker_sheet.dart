@@ -164,7 +164,7 @@ class _SearchBarState extends State<_SearchBar> {
             hintStyle: VineTheme.bodyFont(
               height: 1.5,
               letterSpacing: 0.15,
-              color: const Color(0x80FFFFFF),
+              color: VineTheme.onSurfaceMuted,
             ),
             filled: true,
             fillColor: VineTheme.surfaceContainer,

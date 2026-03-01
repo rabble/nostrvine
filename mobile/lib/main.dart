@@ -177,7 +177,7 @@ Future<void> _startOpenVineApp() async {
             WindowSizeConstants.baseHeight,
           ),
           center: true,
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.backgroundColor,
           skipTaskbar: false,
           titleBarStyle: TitleBarStyle.normal,
         );

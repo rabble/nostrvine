@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -72,7 +73,7 @@ class RecordButton extends ConsumerWidget {
                   width: state.isRecording ? 32 : 64,
                   height: state.isRecording ? 32 : 64,
                   decoration: ShapeDecoration(
-                    color: const Color(0xFFF44336),
+                    color: VineTheme.error,
                     shape: RoundedRectangleBorder(
                       borderRadius: .circular(state.isRecording ? 6 : 20),
                     ),

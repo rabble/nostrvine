@@ -236,7 +236,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
   @override
   Widget build(BuildContext context) {
-    const backgroundColor = Color(0xFF000A06);
+    const backgroundColor = VineTheme.surfaceContainerHigh;
 
     return BlocProvider<SoundWaveformBloc>(
       create: (context) {

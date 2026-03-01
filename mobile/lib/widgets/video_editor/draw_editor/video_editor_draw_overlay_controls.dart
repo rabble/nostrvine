@@ -110,7 +110,7 @@ class _DoneButton extends StatelessWidget {
           ),
           child: Text(
             'Done',
-            style: VineTheme.titleMediumFont(color: const Color(0xFF00452D)),
+            style: VineTheme.titleMediumFont(color: VineTheme.inverseOnSurface),
           ),
         ),
       ),
