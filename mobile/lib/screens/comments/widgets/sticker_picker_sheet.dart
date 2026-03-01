@@ -99,7 +99,6 @@ class _StickerContent extends StatelessWidget {
           snap: true,
           automaticallyImplyLeading: false,
           backgroundColor: VineTheme.surfaceBackground,
-          toolbarHeight: 56,
           title: _SearchBar(
             onChanged: (query) {
               context.read<StickerPickerBloc>().add(
@@ -119,13 +118,10 @@ class _StickerContent extends StatelessWidget {
                 mainAxisSpacing: _gridSpacing,
                 crossAxisSpacing: _gridSpacing,
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final sticker = stickers[index];
-                  return _StickerTile(sticker: sticker);
-                },
-                childCount: stickers.length,
-              ),
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final sticker = stickers[index];
+                return _StickerTile(sticker: sticker);
+              }, childCount: stickers.length),
             ),
           ),
       ],

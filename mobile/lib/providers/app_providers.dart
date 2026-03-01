@@ -37,7 +37,6 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/models/auth_rpc_capability.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/models/known_account.dart';
-import 'package:sticker_pack_repository/sticker_pack_repository.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -122,6 +121,7 @@ import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:sound_service/sound_service.dart';
+import 'package:sticker_pack_repository/sticker_pack_repository.dart';
 import 'package:unified_logger/unified_logger.dart';
 import 'package:videos_repository/videos_repository.dart';
 
