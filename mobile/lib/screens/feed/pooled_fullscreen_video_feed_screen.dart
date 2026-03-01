@@ -326,7 +326,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
           if (state.status == FullscreenFeedStatus.initial ||
               !state.hasVideos) {
             return const Scaffold(
-              backgroundColor: Colors.black,
+              backgroundColor: VineTheme.backgroundColor,
               appBar: _FullscreenAppBar(),
               body: Center(child: BrandedLoadingIndicator(size: 60)),
             );
@@ -334,12 +334,12 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
 
           if (!state.hasPooledVideos) {
             return const Scaffold(
-              backgroundColor: Colors.black,
+              backgroundColor: VineTheme.backgroundColor,
               appBar: _FullscreenAppBar(),
               body: Center(
                 child: Text(
                   'No videos available',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: VineTheme.whiteText),
                 ),
               ),
             );
@@ -352,7 +352,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               currentUserPubkey == state.currentVideo?.pubkey;
 
           return Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: VineTheme.backgroundColor,
             extendBodyBehindAppBar: true,
             appBar: _FullscreenAppBar(
               currentVideo: state.currentVideo,
@@ -567,7 +567,7 @@ class _PooledFullscreenItemContentState
     final isPortrait = video.dimensions != null && video.isPortrait;
 
     return ColoredBox(
-      color: Colors.black,
+      color: VineTheme.backgroundColor,
       child: PooledVideoPlayer(
         index: widget.index,
         thumbnailUrl: video.thumbnailUrl,
@@ -669,10 +669,11 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
           Image.network(
             url,
             fit: boxFit,
-            errorBuilder: (_, _, _) => const ColoredBox(color: Colors.black),
+            errorBuilder: (_, _, _) =>
+                const ColoredBox(color: VineTheme.backgroundColor),
           )
         else
-          const ColoredBox(color: Colors.black),
+          const ColoredBox(color: VineTheme.backgroundColor),
         // Loading indicator overlay
         const _LoadingIndicator(),
       ],

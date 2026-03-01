@@ -105,7 +105,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -115,7 +115,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         ),
         title: Text('Safety & Privacy', style: VineTheme.titleFont()),
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
@@ -182,7 +182,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
             style: TextStyle(color: VineTheme.secondaryText),
           ),
           activeColor: VineTheme.vineGreen,
-          checkColor: Colors.black,
+          checkColor: VineTheme.backgroundColor,
           controlAffinity: ListTileControlAffinity.leading,
         ),
       ],

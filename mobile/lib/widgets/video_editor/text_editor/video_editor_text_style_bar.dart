@@ -148,7 +148,7 @@ class _ColorSwatchButton extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: .circle,
-              border: .all(color: Colors.white, width: 2),
+              border: .all(color: VineTheme.whiteText, width: 2),
             ),
           ),
         ),
@@ -189,7 +189,7 @@ class _StyleIconButton extends StatelessWidget {
             iconPath,
             width: 24,
             height: 24,
-            colorFilter: const .mode(Colors.white, .srcIn),
+            colorFilter: const .mode(VineTheme.whiteText, .srcIn),
           ),
         ),
       ),
@@ -220,12 +220,12 @@ class _FontSelectorButton extends StatelessWidget {
             borderRadius: .circular(20),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x1A000000),
+                color: VineTheme.innerShadow,
                 offset: Offset(1, 1),
                 blurRadius: 1,
               ),
               BoxShadow(
-                color: Color(0x1A000000),
+                color: VineTheme.innerShadow,
                 offset: Offset(0.4, 0.4),
                 blurRadius: 0.6,
               ),

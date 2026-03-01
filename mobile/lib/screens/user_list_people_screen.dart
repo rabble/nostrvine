@@ -62,7 +62,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                     width: 32,
                     height: 32,
                     colorFilter: const ColorFilter.mode(
-                      Colors.white,
+                      VineTheme.whiteText,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -78,8 +78,8 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                   if (widget.userList.description != null)
                     Text(
                       widget.userList.description!,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
+                      style: const TextStyle(
+                        color: VineTheme.onSurfaceVariant,
                         fontSize: 12,
                       ),
                       maxLines: 1,
@@ -280,12 +280,12 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                     horizontal: 8,
                     vertical: 8,
                   ),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.7),
+                        VineTheme.scrim70,
                         Colors.transparent,
                       ],
                     ),
@@ -296,8 +296,8 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                       IconButton(
                         icon: Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
+                          decoration: const BoxDecoration(
+                            color: VineTheme.scrim50,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -352,7 +352,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.5),
+                          color: VineTheme.scrim50,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(

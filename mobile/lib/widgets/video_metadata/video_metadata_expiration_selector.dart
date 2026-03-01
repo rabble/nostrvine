@@ -68,7 +68,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
               Text(
                 'Expiration',
                 style: GoogleFonts.inter(
-                  color: const Color(0xBFFFFFFF),
+                  color: VineTheme.onSurfaceVariant,
                   fontSize: 11,
                   fontWeight: .w600,
                   height: 1.45,
@@ -84,7 +84,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
                       currentOption.description,
                       style: VineTheme.titleFont(
                         fontSize: 17,
-                        color: const Color(0xF2FFFFFF),
+                        color: VineTheme.onSurface,
                         letterSpacing: 0.15,
                       ),
                     ),

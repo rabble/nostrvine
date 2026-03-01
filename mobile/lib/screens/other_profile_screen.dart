@@ -321,7 +321,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             profile?.bestDisplayName ?? widget.displayNameHint ?? 'Profile';
 
         return Scaffold(
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.backgroundColor,
           appBar: AppBar(
             elevation: 0,
             scrolledUnderElevation: 0,
@@ -346,7 +346,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                   width: 32,
                   height: 32,
                   colorFilter: const ColorFilter.mode(
-                    Colors.white,
+                    VineTheme.whiteText,
                     BlendMode.srcIn,
                   ),
                   semanticsLabel: 'Back',
@@ -380,7 +380,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                           width: 28,
                           height: 28,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: VineTheme.whiteText,
                             strokeWidth: 2,
                           ),
                         )
@@ -389,7 +389,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                           width: 28,
                           height: 28,
                           colorFilter: const ColorFilter.mode(
-                            Colors.white,
+                            VineTheme.whiteText,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -416,7 +416,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                       width: 28,
                       height: 28,
                       colorFilter: const ColorFilter.mode(
-                        Colors.white,
+                        VineTheme.whiteText,
                         BlendMode.srcIn,
                       ),
                       semanticsLabel: 'More options',
@@ -432,7 +432,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             AsyncError(:final error) => Center(
               child: Text(
                 'Error: $error',
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: VineTheme.whiteText),
               ),
             ),
             AsyncData(:final value) => ProfileGridView(
@@ -463,7 +463,7 @@ class _ProfileErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -488,7 +488,7 @@ class _ProfileErrorScreen extends StatelessWidget {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -503,7 +503,10 @@ class _ProfileErrorScreen extends StatelessWidget {
         ),
       ),
       body: Center(
-        child: Text(message, style: const TextStyle(color: Colors.white)),
+        child: Text(
+          message,
+          style: const TextStyle(color: VineTheme.whiteText),
+        ),
       ),
     );
   }

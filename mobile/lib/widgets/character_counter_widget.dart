@@ -1,6 +1,7 @@
 // ABOUTME: Character counter widget for text input fields with customizable limits and warning states
 // ABOUTME: Provides visual feedback for character limits with color-coded status indicators
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 class CharacterCounterWidget extends StatelessWidget {
@@ -23,9 +24,9 @@ class CharacterCounterWidget extends StatelessWidget {
     final isWarning = showWarning && ratio >= warningThreshold && !isOverLimit;
 
     Color getColor() {
-      if (isOverLimit) return Colors.red;
-      if (isWarning) return Colors.orange;
-      return Colors.grey;
+      if (isOverLimit) return VineTheme.error;
+      if (isWarning) return VineTheme.warning;
+      return VineTheme.lightText;
     }
 
     return Row(

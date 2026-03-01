@@ -319,15 +319,18 @@ class _FeedErrorWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 64),
+          const Icon(Icons.error_outline, color: VineTheme.error, size: 64),
           const SizedBox(height: 16),
           const Text(
             'Failed to load videos',
-            style: TextStyle(color: Colors.white, fontSize: 18),
+            style: TextStyle(color: VineTheme.whiteText, fontSize: 18),
           ),
           if (error != null) ...[
             const SizedBox(height: 8),
-            Text(error.toString(), style: const TextStyle(color: Colors.grey)),
+            Text(
+              error.toString(),
+              style: const TextStyle(color: VineTheme.lightText),
+            ),
           ],
           const SizedBox(height: 24),
           ElevatedButton(
@@ -355,13 +358,13 @@ class FeedEmptyWidget extends StatelessWidget {
         children: [
           const Icon(
             Icons.video_library_outlined,
-            color: Colors.grey,
+            color: VineTheme.lightText,
             size: 64,
           ),
           const SizedBox(height: 16),
           Text(
             _getEmptyMessage(state),
-            style: const TextStyle(color: Colors.white, fontSize: 18),
+            style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
             textAlign: TextAlign.center,
           ),
         ],
@@ -454,7 +457,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
     final isPortrait = !(video.dimensions != null) || video.isPortrait;
 
     return ColoredBox(
-      color: Colors.black,
+      color: VineTheme.backgroundColor,
       child: PooledVideoPlayer(
         index: index,
         thumbnailUrl: video.thumbnailUrl,

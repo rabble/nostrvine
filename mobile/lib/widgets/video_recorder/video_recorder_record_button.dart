@@ -63,7 +63,7 @@ class RecordButton extends ConsumerWidget {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                border: .all(color: Colors.white, width: 4),
+                border: .all(color: VineTheme.whiteText, width: 4),
                 borderRadius: .circular(36),
               ),
               child: Center(
@@ -79,7 +79,7 @@ class RecordButton extends ConsumerWidget {
                     ),
                     shadows: const [
                       BoxShadow(
-                        color: Color(0x19000000),
+                        color: VineTheme.innerShadow,
                         blurRadius: 1,
                         offset: Offset(1, 1),
                       ),

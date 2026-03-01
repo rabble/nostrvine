@@ -27,7 +27,7 @@ class VideoRecorderCountdownOverlay extends ConsumerWidget {
         duration: const Duration(milliseconds: 100),
         opacity: isActive ? 1 : 0,
         child: ColoredBox(
-          color: const Color(0xB3000000),
+          color: VineTheme.scrim70,
           child: Center(
             child: Text(
               countdownValue.toString(),

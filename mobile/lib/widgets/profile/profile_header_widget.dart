@@ -214,7 +214,7 @@ class _SetupProfileBanner extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Colors.purple, Colors.blue],
+          colors: [VineTheme.accentPurple, VineTheme.info],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -246,7 +246,7 @@ class _SetupProfileBanner extends StatelessWidget {
             onPressed: onSetup,
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.whiteText,
-              foregroundColor: Colors.purple,
+              foregroundColor: VineTheme.accentPurple,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -254,7 +254,7 @@ class _SetupProfileBanner extends StatelessWidget {
             ),
             child: Text(
               'Set Up',
-              style: VineTheme.labelMediumFont(color: Colors.purple),
+              style: VineTheme.labelMediumFont(color: VineTheme.accentPurple),
             ),
           ),
         ],
@@ -377,7 +377,7 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
           onPressed: () => context.push(SecureAccountScreen.path),
           style: ElevatedButton.styleFrom(
             backgroundColor: VineTheme.whiteText,
-            foregroundColor: Colors.red,
+            foregroundColor: VineTheme.error,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -385,7 +385,7 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
           ),
           child: Text(
             'Retry',
-            style: VineTheme.labelMediumFont(color: Colors.red),
+            style: VineTheme.labelMediumFont(color: VineTheme.error),
           ),
         );
       case EmailVerificationStatus.initial:

@@ -229,12 +229,16 @@ class _ProfileVideosEmptyState extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.videocam_outlined, color: Colors.grey, size: 64),
+              const Icon(
+                Icons.videocam_outlined,
+                color: VineTheme.lightText,
+                size: 64,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'No Videos Yet',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -244,7 +248,10 @@ class _ProfileVideosEmptyState extends StatelessWidget {
                 isOwnProfile
                     ? 'Share your first video to see it here'
                     : "This user hasn't shared any videos yet",
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
+                style: const TextStyle(
+                  color: VineTheme.lightText,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 32),
               IconButton(

@@ -1,6 +1,7 @@
 // ABOUTME: Generic fullscreen video feed screen (no bottom nav)
 // ABOUTME: Displays videos with swipe navigation, used from profile/hashtag grids
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -325,14 +326,17 @@ class _FullscreenVideoFeedScreenState
           height: 48,
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: VineTheme.backgroundColor.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(20),
           ),
           child: SvgPicture.asset(
             'assets/icon/content-controls/pencil.svg',
             width: 32,
             height: 32,
-            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+            colorFilter: const ColorFilter.mode(
+              VineTheme.whiteText,
+              BlendMode.srcIn,
+            ),
           ),
         ),
         onPressed: () {
@@ -368,7 +372,7 @@ class _FullscreenVideoFeedScreenState
     // Show loading state if we don't have videos yet
     if (videos.isEmpty || !_initializedPageController) {
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
@@ -384,7 +388,7 @@ class _FullscreenVideoFeedScreenState
               height: 48,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.3),
+                color: VineTheme.backgroundColor.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: SvgPicture.asset(
@@ -392,7 +396,7 @@ class _FullscreenVideoFeedScreenState
                 width: 32,
                 height: 32,
                 colorFilter: const ColorFilter.mode(
-                  Colors.white,
+                  VineTheme.whiteText,
                   BlendMode.srcIn,
                 ),
                 semanticsLabel: 'Close video player',
@@ -402,7 +406,7 @@ class _FullscreenVideoFeedScreenState
           ),
         ),
         body: const Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(color: VineTheme.whiteText),
         ),
       );
     }
@@ -411,7 +415,7 @@ class _FullscreenVideoFeedScreenState
     final editButton = _buildEditButton(videos);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -430,7 +434,7 @@ class _FullscreenVideoFeedScreenState
             height: 48,
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: VineTheme.backgroundColor.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(20),
             ),
             child: SvgPicture.asset(
@@ -438,7 +442,7 @@ class _FullscreenVideoFeedScreenState
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
               semanticsLabel: 'Close video player',

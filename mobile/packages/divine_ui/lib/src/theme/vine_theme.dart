@@ -400,6 +400,42 @@ class VineTheme {
   /// Accent yellow color.
   static const Color accentYellow = Color(0xFFFFF140);
 
+  // --------------------------------------------------------------------------
+  // Semantic status colors
+  // --------------------------------------------------------------------------
+
+  /// Warning color for status indicators and alerts.
+  static const Color warning = Color(0xFFFF9800);
+
+  /// Success color for positive status indicators.
+  static const Color success = Color(0xFF4CAF50);
+
+  /// Informational color for badges and links.
+  static const Color info = Color(0xFF2196F3);
+
+  /// Content warning amber color.
+  static const Color contentWarningAmber = Color(0xFFFFB84D);
+
+  // --------------------------------------------------------------------------
+  // Button shadows
+  // --------------------------------------------------------------------------
+
+  /// Inner shadow for elevated buttons (10% black).
+  static const Color innerShadow = Color(0x1A000000);
+
+  /// Pressed-state inner shadow for buttons (24% black).
+  static const Color innerShadowPressed = Color(0x3D000000);
+
+  // --------------------------------------------------------------------------
+  // Additional scrims
+  // --------------------------------------------------------------------------
+
+  /// Scrim at 50% opacity (black 50%).
+  static const Color scrim50 = Color(0x80000000);
+
+  /// Scrim at 70% opacity (black 70%).
+  static const Color scrim70 = Color(0xB3000000);
+
   /// Accent blue color.
   static const Color accentBlue = Color(0xFF34BBF1);
 

@@ -296,7 +296,7 @@ class _Thumb extends StatelessWidget {
               borderRadius: BorderRadius.horizontal(left: .circular(3)),
               boxShadow: [
                 BoxShadow(
-                  color: Color(0x3C000000),
+                  color: VineTheme.innerShadowPressed,
                   offset: Offset(1, 1),
                   blurRadius: 1,
                 ),

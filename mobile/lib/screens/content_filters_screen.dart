@@ -80,7 +80,7 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -90,7 +90,7 @@ class _ContentFiltersScreenState extends ConsumerState<ContentFiltersScreen> {
         ),
         title: Text('Content Filters', style: VineTheme.titleFont()),
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
@@ -312,7 +312,7 @@ class _FilterSegmentedControl extends StatelessWidget {
             color: locked
                 ? VineTheme.onSurfaceDisabled
                 : selected
-                ? Colors.black
+                ? VineTheme.backgroundColor
                 : VineTheme.secondaryText,
             fontSize: 12,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,

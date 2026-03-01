@@ -92,7 +92,7 @@ class VideoEditorColorPickerSheet extends StatelessWidget {
               itemBuilder: (context, index) {
                 final isColorPicker = index == 0;
                 final color = isColorPicker
-                    ? Colors.white
+                    ? VineTheme.whiteText
                     : VideoEditorConstants.colors[index - 1];
                 final isSelected = color == selectedColor;
 
@@ -162,7 +162,7 @@ class _ColorButton extends StatelessWidget {
             border: isSelected
                 ? .all(
                     strokeAlign: BorderSide.strokeAlignOutside,
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     width: 4,
                   )
                 : null,

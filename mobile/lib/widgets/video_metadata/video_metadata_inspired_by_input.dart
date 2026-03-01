@@ -211,7 +211,7 @@ class _InspiredByDisplay extends ConsumerWidget {
                 child: SvgPicture.asset(
                   'assets/icon/close.svg',
                   colorFilter: const ColorFilter.mode(
-                    Color(0xFF818F8B),
+                    VineTheme.lightText,
                     BlendMode.srcIn,
                   ),
                 ),

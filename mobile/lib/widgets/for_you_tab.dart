@@ -193,7 +193,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
             onTap: () => _showAlgorithmExplainer(context),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.black,
+              color: VineTheme.backgroundColor,
               child: const Row(
                 children: [
                   Icon(

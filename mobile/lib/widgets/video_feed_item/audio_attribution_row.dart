@@ -101,7 +101,7 @@ class _AudioAttributionContent extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: VineTheme.backgroundColor.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
@@ -117,7 +117,7 @@ class _AudioAttributionContent extends ConsumerWidget {
                 child: Text(
                   '$soundName · @$creatorName',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                     shadows: [Shadow(blurRadius: 4)],
@@ -127,7 +127,11 @@ class _AudioAttributionContent extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, size: 14, color: Colors.white70),
+              const Icon(
+                Icons.chevron_right,
+                size: 14,
+                color: VineTheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),
@@ -160,19 +164,19 @@ class _AudioAttributionSkeleton extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
+        color: VineTheme.backgroundColor.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.music_note, size: 14, color: Colors.grey),
+          const Icon(Icons.music_note, size: 14, color: VineTheme.lightText),
           const SizedBox(width: 4),
           Container(
             width: 100,
             height: 12,
             decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.3),
+              color: VineTheme.lightText.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),

@@ -13,7 +13,7 @@ class GeoBlockedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -54,7 +54,7 @@ class GeoBlockedScreen extends StatelessWidget {
                   geoInfo.reason ??
                       'This service is not available in your region due to local regulations.',
                   style: const TextStyle(
-                    color: Colors.grey,
+                    color: VineTheme.lightText,
                     fontSize: 16,
                     height: 1.5,
                   ),
@@ -86,7 +86,7 @@ class GeoBlockedScreen extends StatelessWidget {
                   'We respect your local laws and regulations. '
                   'This restriction is based on your IP address location.',
                   style: TextStyle(
-                    color: Colors.grey,
+                    color: VineTheme.lightText,
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
                   ),
@@ -104,7 +104,10 @@ class GeoBlockedScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+        ),
         Text(
           value,
           style: const TextStyle(

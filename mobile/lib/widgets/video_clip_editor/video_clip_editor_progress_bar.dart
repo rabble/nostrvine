@@ -197,7 +197,7 @@ class _ProgressHandle extends StatelessWidget {
       width: 4,
       height: 32,
       decoration: ShapeDecoration(
-        color: const Color(0xF1FFFFFF),
+        color: VineTheme.onSurface,
         shape: RoundedRectangleBorder(borderRadius: .circular(8)),
       ),
     );

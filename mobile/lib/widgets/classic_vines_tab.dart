@@ -344,7 +344,7 @@ class _ClassicVideoItem extends StatelessWidget {
                   embeddedName: video.authorName,
                   maxLines: 1,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     shadows: [

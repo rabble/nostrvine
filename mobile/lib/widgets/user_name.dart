@@ -143,10 +143,14 @@ class UserName extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(2),
             decoration: const BoxDecoration(
-              color: Colors.blue,
+              color: VineTheme.info,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check, color: Colors.white, size: 10),
+            child: const Icon(
+              Icons.check,
+              color: VineTheme.whiteText,
+              size: 10,
+            ),
           ),
       ],
     );

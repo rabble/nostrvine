@@ -267,7 +267,7 @@ class _PostButton extends ConsumerWidget {
                 child: Text(
                   'Post',
                   style: VineTheme.titleSmallFont(
-                    color: const Color(0xFF002C1C),
+                    color: VineTheme.surfaceContainer,
                   ),
                 ),
               ),

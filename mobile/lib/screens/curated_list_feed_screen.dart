@@ -95,7 +95,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                     width: 32,
                     height: 32,
                     colorFilter: const ColorFilter.mode(
-                      Colors.white,
+                      VineTheme.whiteText,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -271,8 +271,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             child: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
+                decoration: const BoxDecoration(
+                  color: VineTheme.scrim50,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
@@ -306,10 +306,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            const Text(
               'By ',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: VineTheme.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -318,7 +318,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               child: UserName.fromPubKey(
                 widget.authorPubkey!,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -328,8 +328,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             ),
             Text(
               ' • $videoText',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
+              style: const TextStyle(
+                color: VineTheme.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -341,8 +341,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     // No author - just show video count
     return Text(
       videoText,
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.7),
+      style: const TextStyle(
+        color: VineTheme.onSurfaceVariant,
         fontSize: 12,
       ),
     );
@@ -394,7 +394,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                   width: 32,
                   height: 32,
                   colorFilter: ColorFilter.mode(
-                    isSubscribed ? VineTheme.vineGreen : Colors.white,
+                    isSubscribed ? VineTheme.vineGreen : VineTheme.whiteText,
                     BlendMode.srcIn,
                   ),
                 ),

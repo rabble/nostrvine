@@ -108,7 +108,7 @@ class _RestoreButton extends ConsumerWidget {
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: VineTheme.vineGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: VineTheme.whiteText,
         padding: const .symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: .circular(20)),
       ),

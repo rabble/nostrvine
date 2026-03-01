@@ -31,12 +31,12 @@ class DivineSecondaryButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x1A000000),
+              color: VineTheme.innerShadow,
               blurRadius: 0.6,
               offset: Offset(0.4, 0.4),
             ),
             BoxShadow(
-              color: Color(0x1A000000),
+              color: VineTheme.innerShadow,
               blurRadius: 1,
               offset: Offset(1, 1),
             ),

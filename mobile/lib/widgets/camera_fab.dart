@@ -39,7 +39,7 @@ class CameraFAB extends ConsumerWidget {
               ScaffoldMessenger.of(scaffoldContext).showSnackBar(
                 const SnackBar(
                   content: Text('You must be 16 or older to create content'),
-                  backgroundColor: Colors.red,
+                  backgroundColor: VineTheme.error,
                 ),
               );
             }
