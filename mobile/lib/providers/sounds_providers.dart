@@ -88,8 +88,9 @@ Future<AudioEvent?> soundById(Ref ref, String eventId) async {
   if (eventId.isEmpty) return null;
 
   // Handle bundled sounds (from app assets)
-  if (eventId.startsWith('bundled_')) {
-    final soundId = eventId.substring('bundled_'.length);
+  const bundledPrefix = '${AudioEvent.bundledMarker}_';
+  if (eventId.startsWith(bundledPrefix)) {
+    final soundId = eventId.substring(bundledPrefix.length);
     final soundService = await ref.watch(
       soundLibraryServiceProvider.future,
     );

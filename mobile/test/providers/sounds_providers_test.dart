@@ -300,11 +300,16 @@ void main() {
         addTearDown(container.dispose);
 
         final result = await container.read(
-          soundByIdProvider('bundled_classic-vine-beat').future,
+          soundByIdProvider(
+            '${AudioEvent.bundledMarker}_classic-vine-beat',
+          ).future,
         );
 
         expect(result, isNotNull);
-        expect(result!.id, equals('bundled_classic-vine-beat'));
+        expect(
+          result!.id,
+          equals('${AudioEvent.bundledMarker}_classic-vine-beat'),
+        );
         expect(result.title, equals('Classic Vine Beat'));
         expect(result.isBundled, isTrue);
         verifyNever(() => mockRepository.fetchSoundById(any()));
@@ -328,7 +333,9 @@ void main() {
         addTearDown(container.dispose);
 
         final result = await container.read(
-          soundByIdProvider('bundled_nonexistent-sound').future,
+          soundByIdProvider(
+            '${AudioEvent.bundledMarker}_nonexistent-sound',
+          ).future,
         );
 
         expect(result, isNull);
@@ -359,7 +366,7 @@ void main() {
         addTearDown(container.dispose);
 
         await container.read(
-          soundByIdProvider('bundled_test-sound').future,
+          soundByIdProvider('${AudioEvent.bundledMarker}_test-sound').future,
         );
 
         verifyNever(() => mockRepository.fetchSoundById(any()));

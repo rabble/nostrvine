@@ -226,8 +226,8 @@ void main() {
         final audioEvent = AudioEvent.fromBundledSound(vineSound);
 
         // Assert
-        expect(audioEvent.id, equals('bundled_bruh'));
-        expect(audioEvent.pubkey, equals('bundled'));
+        expect(audioEvent.id, equals('${AudioEvent.bundledMarker}_bruh'));
+        expect(audioEvent.pubkey, equals(AudioEvent.bundledMarker));
         expect(audioEvent.createdAt, equals(0));
         expect(
           audioEvent.url,
