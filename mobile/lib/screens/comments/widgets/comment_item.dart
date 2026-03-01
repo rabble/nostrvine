@@ -87,6 +87,13 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     );
     final showVideo = widget.comment.hasVideo && isVideoRepliesEnabled;
 
+    // Hide video-only comments entirely when feature flag is off
+    if (widget.comment.hasVideo &&
+        !isVideoRepliesEnabled &&
+        !_hasTextBeyondVideoUrl(widget.comment)) {
+      return const SizedBox.shrink();
+    }
+
     return GestureDetector(
       onLongPressStart: (_) {
         setState(() {
@@ -152,9 +159,9 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                           parentAuthorPubkey:
                               widget.comment.replyToAuthorPubkey!,
                         ),
-                      // Hide text content when it's just the video URL
-                      // (only when video replies feature is enabled)
-                      if (!showVideo || _hasTextBeyondVideoUrl(widget.comment))
+                      // Always strip video URL from text; show text
+                      // only if there's content beyond the URL.
+                      if (_hasTextBeyondVideoUrl(widget.comment))
                         Padding(
                           padding: EdgeInsets.only(
                             top:
@@ -165,11 +172,12 @@ class _CommentItemState extends ConsumerState<CommentItem> {
                           ),
                           child: _CommentContent(
                             commentId: widget.comment.id,
-                            content: showVideo
+                            content: widget.comment.hasVideo
                                 ? _stripVideoUrl(widget.comment)
                                 : widget.comment.content,
                           ),
                         ),
+                      // Show video player only when feature flag is on
                       if (showVideo)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
