@@ -135,12 +135,14 @@ class VideoStats {
 
     // Parse text-track fields from API response (text_track_ref,
     // text_track_content are top-level fields on video endpoints).
-    var textTrackRef = json['text_track_ref']?.toString() ??
+    var textTrackRef =
+        json['text_track_ref']?.toString() ??
         eventData['text_track_ref']?.toString() ??
         statsData['text_track_ref']?.toString();
     if (textTrackRef != null && textTrackRef.isEmpty) textTrackRef = null;
 
-    var textTrackContent = json['text_track_content']?.toString() ??
+    var textTrackContent =
+        json['text_track_content']?.toString() ??
         eventData['text_track_content']?.toString() ??
         statsData['text_track_content']?.toString();
     if (textTrackContent != null && textTrackContent.isEmpty) {
