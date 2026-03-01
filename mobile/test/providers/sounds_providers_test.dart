@@ -310,6 +310,7 @@ void main() {
           result!.id,
           equals('${AudioEvent.bundledMarker}_classic-vine-beat'),
         );
+        expect(result.pubkey, equals(AudioEvent.bundledMarker));
         expect(result.title, equals('Classic Vine Beat'));
         expect(result.isBundled, isTrue);
         verifyNever(() => mockRepository.fetchSoundById(any()));
@@ -340,6 +341,9 @@ void main() {
 
         expect(result, isNull);
         verifyNever(() => mockRepository.fetchSoundById(any()));
+        verify(
+          () => mockSoundService.getSoundById('nonexistent-sound'),
+        ).called(1);
       });
 
       test('does not query repository for bundled sound IDs', () async {
@@ -365,10 +369,12 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        await container.read(
+        final result = await container.read(
           soundByIdProvider('${AudioEvent.bundledMarker}_test-sound').future,
         );
 
+        expect(result, isNotNull);
+        expect(result!.isBundled, isTrue);
         verifyNever(() => mockRepository.fetchSoundById(any()));
         verify(() => mockSoundService.getSoundById('test-sound')).called(1);
       });
