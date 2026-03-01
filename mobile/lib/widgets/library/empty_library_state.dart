@@ -18,7 +18,7 @@ class EmptyLibraryState extends StatelessWidget {
   });
 
   /// Icon to display in the center circle.
-  final IconData icon;
+  final DivineIconName icon;
 
   /// Title text (e.g., "No Clips Yet").
   final String title;
@@ -43,7 +43,11 @@ class EmptyLibraryState extends StatelessWidget {
               color: VineTheme.cardBackground,
               border: .all(color: VineTheme.outlineDisabled, width: 2),
             ),
-            child: Icon(icon, size: 60, color: VineTheme.secondaryText),
+            child: DivineIcon(
+              icon: icon,
+              size: 60,
+              color: VineTheme.secondaryText,
+            ),
           ),
           const SizedBox(height: 24),
           Text(
@@ -60,7 +64,7 @@ class EmptyLibraryState extends StatelessWidget {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () => context.push(VideoRecorderScreen.path),
-              icon: const Icon(Icons.videocam),
+              icon: const DivineIcon(icon: DivineIconName.videoCamera),
               // TODO(l10n): Replace with context.l10n when localization
               // is added.
               label: const Text('Record a Video'),

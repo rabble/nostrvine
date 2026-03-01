@@ -40,7 +40,7 @@ class DraftsTab extends ConsumerWidget {
           ),
           DraftsLibraryLoaded(:final drafts) when drafts.isEmpty =>
             const EmptyLibraryState(
-              icon: Icons.edit_note_outlined,
+              icon: DivineIconName.pencilSimple,
               // TODO(l10n): Replace with context.l10n when localization is
               // added.
               title: 'No Drafts Yet',
@@ -250,8 +250,8 @@ class DraftListTile extends StatelessWidget {
         ),
         child: thumbnailExists
             ? null
-            : const Icon(
-                Icons.video_library_outlined,
+            : const DivineIcon(
+                icon: DivineIconName.filmSlate,
                 color: VineTheme.secondaryText,
                 size: 20,
               ),

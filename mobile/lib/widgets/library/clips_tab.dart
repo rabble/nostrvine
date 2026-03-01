@@ -47,7 +47,7 @@ class ClipsTab extends StatelessWidget {
 
         if (state.clips.isEmpty) {
           return EmptyLibraryState(
-            icon: Icons.video_library_outlined,
+            icon: DivineIconName.filmSlate,
             // TODO(l10n): Replace with context.l10n when localization is added.
             title: 'No Clips Yet',
             // TODO(l10n): Replace with context.l10n when localization is added.

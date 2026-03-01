@@ -9,7 +9,7 @@ import 'package:openvine/widgets/library/empty_library_state.dart';
 void main() {
   group(EmptyLibraryState, () {
     Widget buildWidget({
-      IconData icon = Icons.movie,
+      DivineIconName icon = DivineIconName.filmSlate,
       String title = 'Test Title',
       String subtitle = 'Test Subtitle',
       bool showRecordButton = true,
@@ -28,10 +28,16 @@ void main() {
     }
 
     group('renders', () {
-      testWidgets('displays icon with correct IconData', (tester) async {
-        await tester.pumpWidget(buildWidget(icon: Icons.video_library));
+      testWidgets('displays icon with correct $DivineIconName', (tester) async {
+        await tester.pumpWidget(buildWidget(icon: DivineIconName.play));
 
-        expect(find.byIcon(Icons.video_library), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon && widget.icon == DivineIconName.play,
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('displays title text', (tester) async {
@@ -69,7 +75,7 @@ void main() {
 
         final container = tester.widget<Container>(
           find.ancestor(
-            of: find.byType(Icon),
+            of: find.byType(DivineIcon),
             matching: find.byType(Container),
           ),
         );
@@ -82,7 +88,14 @@ void main() {
       testWidgets('record button has videocam icon', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        expect(find.byIcon(Icons.videocam), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is DivineIcon &&
+                widget.icon == DivineIconName.videoCamera,
+          ),
+          findsOneWidget,
+        );
       });
     });
   });
