@@ -18,6 +18,7 @@ class AudioEvent {
   /// Marker for bundled sounds to distinguish from Nostr events.
   /// Used as ID prefix (with underscore) and as pubkey value.
   static const bundledMarker = 'bundled';
+
   /// Creates a new AudioEvent with the specified fields.
   const AudioEvent({
     required this.id,
