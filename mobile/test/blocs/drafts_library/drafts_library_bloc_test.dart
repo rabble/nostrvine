@@ -201,7 +201,7 @@ void main() {
       );
 
       blocTest<DraftsLibraryBloc, DraftsLibraryState>(
-        'deletes draft and updates list',
+        'deletes draft and updates list with success result',
         setUp: () {
           when(
             () => mockDraftStorageService.deleteDraft('draft1'),
@@ -218,7 +218,12 @@ void main() {
         expect: () => [
           isA<DraftsLibraryLoaded>()
               .having((s) => s.drafts.length, 'drafts.length', 1)
-              .having((s) => s.drafts.first.id, 'remaining draft', 'draft2'),
+              .having((s) => s.drafts.first.id, 'remaining draft', 'draft2')
+              .having(
+                (s) => s.deleteResult,
+                'deleteResult',
+                DeleteResult.success,
+              ),
         ],
         verify: (_) {
           verify(() => mockDraftStorageService.deleteDraft('draft1')).called(1);
@@ -226,7 +231,7 @@ void main() {
       );
 
       blocTest<DraftsLibraryBloc, DraftsLibraryState>(
-        'keeps current state when deletion fails',
+        'emits failure result when deletion fails',
         setUp: () {
           when(
             () => mockDraftStorageService.deleteDraft(any()),
@@ -236,15 +241,20 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const DraftsLibraryDeleteRequested('draft1')),
         errors: () => [isA<Exception>()],
-        // No state change emitted because BLoC emits the same state
-        // which is filtered by Equatable
-        expect: () => [],
-        verify: (bloc) {
-          // Verify state still has the draft
-          final state = bloc.state;
-          expect(state, isA<DraftsLibraryLoaded>());
-          expect((state as DraftsLibraryLoaded).drafts.length, 1);
-        },
+        expect: () => [
+          isA<DraftsLibraryLoaded>()
+              .having((s) => s.drafts.length, 'drafts.length', 1)
+              .having(
+                (s) => s.deleteResult,
+                'deleteResult',
+                DeleteResult.failure,
+              )
+              .having(
+                (s) => s.deleteError,
+                'deleteError',
+                contains('Delete failed'),
+              ),
+        ],
       );
     });
   });

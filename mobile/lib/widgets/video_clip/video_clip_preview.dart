@@ -100,7 +100,6 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
         GallerySavePermissionDenied() => '$destination permission denied',
         GallerySaveFailure(:final reason) => 'Failed to save clip: $reason',
       };
-      context.pop();
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -113,6 +112,8 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
           ),
         ),
       );
+
+      context.pop();
     } catch (e, s) {
       Log.error(
         'Failed to save clip to gallery',

@@ -154,6 +154,8 @@ class VideoEditorProviderState {
   /// [inspiredByVideo] to null.
   /// Use [clearInspiredByNpub] = true to explicitly set
   /// [inspiredByNpub] to null.
+  /// Use [clearProofManifestJson] = true to explicitly set
+  /// [proofManifestJson] to null independently of [clearFinalRenderedClip].
   VideoEditorProviderState copyWith({
     int? currentClipIndex,
     Duration? currentPosition,
@@ -177,6 +179,7 @@ class VideoEditorProviderState {
     RecordingClip? finalRenderedClip,
     bool clearFinalRenderedClip = false,
     String? proofManifestJson,
+    bool clearProofManifestJson = false,
     Map<String, dynamic>? editorStateHistory,
     CompleteParameters? editorEditingParameters,
     List<String>? collaboratorPubkeys,
@@ -226,7 +229,7 @@ class VideoEditorProviderState {
       selectedAudioRelay: selectedAudioRelay == _sentinel
           ? this.selectedAudioRelay
           : selectedAudioRelay as String?,
-      proofManifestJson: clearFinalRenderedClip
+      proofManifestJson: clearProofManifestJson || clearFinalRenderedClip
           ? null
           : proofManifestJson ?? this.proofManifestJson,
     );

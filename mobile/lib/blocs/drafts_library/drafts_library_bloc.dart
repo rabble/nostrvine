@@ -90,7 +90,12 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
           .where((d) => d.id != event.draftId)
           .toList();
 
-      emit(DraftsLibraryLoaded(drafts: updatedDrafts));
+      emit(
+        DraftsLibraryLoaded(
+          drafts: updatedDrafts,
+          deleteResult: DeleteResult.success,
+        ),
+      );
     } catch (e, stackTrace) {
       Log.error(
         '📚 Failed to delete draft: $e',
@@ -98,8 +103,14 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      // Keep showing the current list on error
-      emit(currentState);
+      // Keep showing the current list on error, but signal failure
+      emit(
+        DraftsLibraryLoaded(
+          drafts: currentState.drafts,
+          deleteResult: DeleteResult.failure,
+          deleteError: e.toString(),
+        ),
+      );
     }
   }
 }

@@ -10,7 +10,6 @@ import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -40,14 +39,16 @@ class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({
     super.key,
     this.selectionMode = false,
-    this.onClipSelected,
   });
 
-  /// When true, tapping a clip calls onClipSelected instead of previewing
+  /// When true, enables multi-select mode for adding clips to the editor.
+  ///
+  /// In selection mode:
+  /// - Only the Clips tab is shown (no Drafts tab)
+  /// - Clips can be multi-selected via [ClipsLibraryBloc]
+  /// - A header shows remaining duration and "Add" button
+  /// - Selected clips are added to the video editor on confirmation
   final bool selectionMode;
-
-  /// Called when a clip is selected in selection mode
-  final void Function(SavedClip clip)? onClipSelected;
 
   @override
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();

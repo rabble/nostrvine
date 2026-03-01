@@ -43,10 +43,12 @@ class EmptyLibraryState extends StatelessWidget {
               color: VineTheme.cardBackground,
               border: .all(color: VineTheme.outlineDisabled, width: 2),
             ),
-            child: DivineIcon(
-              icon: icon,
-              size: 60,
-              color: VineTheme.secondaryText,
+            child: Center(
+              child: DivineIcon(
+                icon: icon,
+                size: 48,
+                color: VineTheme.secondaryText,
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -64,10 +66,16 @@ class EmptyLibraryState extends StatelessWidget {
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () => context.push(VideoRecorderScreen.path),
-              icon: const DivineIcon(icon: DivineIconName.videoCamera),
+              icon: const DivineIcon(
+                icon: DivineIconName.videoCamera,
+                size: 18,
+              ),
               // TODO(l10n): Replace with context.l10n when localization
               // is added.
-              label: const Text('Record a Video'),
+              label: Text(
+                'Record a Video',
+                style: VineTheme.titleMediumFont(),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
                 foregroundColor: VineTheme.whiteText,

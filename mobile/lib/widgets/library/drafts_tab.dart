@@ -26,7 +26,31 @@ class DraftsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return BlocBuilder<DraftsLibraryBloc, DraftsLibraryState>(
+    return BlocConsumer<DraftsLibraryBloc, DraftsLibraryState>(
+      listenWhen: (previous, current) {
+        // Listen when a delete operation completes
+        if (current is DraftsLibraryLoaded) {
+          return current.deleteResult != null;
+        }
+        return false;
+      },
+      listener: (context, state) {
+        if (state is! DraftsLibraryLoaded) return;
+        final deleteResult = state.deleteResult;
+        if (deleteResult == null) return;
+
+        final isSuccess = deleteResult == DeleteResult.success;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            content: DivineSnackbarContainer(
+              label: isSuccess ? 'Draft deleted' : 'Failed to delete draft',
+            ),
+          ),
+        );
+      },
       builder: (context, state) {
         return switch (state) {
           DraftsLibraryInitial() || DraftsLibraryLoading() => const Center(
@@ -185,15 +209,6 @@ class DraftsTab extends ConsumerWidget {
       );
       context.read<DraftsLibraryBloc>().add(
         DraftsLibraryDeleteRequested(draft.id),
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          behavior: SnackBarBehavior.floating,
-          content: DivineSnackbarContainer(label: 'Draft deleted'),
-        ),
       );
     }
   }

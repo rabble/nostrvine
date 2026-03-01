@@ -73,12 +73,56 @@ void main() {
         );
       });
 
-      test('props contains drafts', () {
+      test('props contains drafts, deleteResult, and deleteError', () {
         final drafts = [createDraft(id: 'draft1')];
         expect(
           DraftsLibraryLoaded(drafts: drafts).props,
-          [drafts],
+          [drafts, null, null],
         );
+        expect(
+          DraftsLibraryLoaded(
+            drafts: drafts,
+            deleteResult: DeleteResult.success,
+          ).props,
+          [drafts, DeleteResult.success, null],
+        );
+        expect(
+          DraftsLibraryLoaded(
+            drafts: drafts,
+            deleteResult: DeleteResult.failure,
+            deleteError: 'error',
+          ).props,
+          [drafts, DeleteResult.failure, 'error'],
+        );
+      });
+
+      test('states with different deleteResult are not equal', () {
+        final drafts = [createDraft(id: 'draft1')];
+        expect(
+          DraftsLibraryLoaded(drafts: drafts),
+          isNot(
+            equals(
+              DraftsLibraryLoaded(
+                drafts: drafts,
+                deleteResult: DeleteResult.success,
+              ),
+            ),
+          ),
+        );
+      });
+
+      test('clearDeleteResult returns state without deleteResult', () {
+        final drafts = [createDraft(id: 'draft1')];
+        final stateWithResult = DraftsLibraryLoaded(
+          drafts: drafts,
+          deleteResult: DeleteResult.success,
+        );
+
+        final cleared = stateWithResult.clearDeleteResult();
+
+        expect(cleared.drafts, equals(drafts));
+        expect(cleared.deleteResult, isNull);
+        expect(cleared.deleteError, isNull);
       });
     });
 
