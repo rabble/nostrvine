@@ -268,39 +268,27 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           // Profile Header
           SliverToBoxAdapter(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: ProfileHeaderWidget(
-                  userIdHex: widget.userIdHex,
-                  isOwnProfile: widget.isOwnProfile,
-                  videoCount: widget.videos.length,
-                  profileStatsAsync: widget.profileStatsAsync,
-                  onSetupProfile: widget.onSetupProfile,
-                  displayNameHint: widget.displayNameHint,
-                  avatarUrlHint: widget.avatarUrlHint,
-                ),
-              ),
+            child: ProfileHeaderWidget(
+              userIdHex: widget.userIdHex,
+              isOwnProfile: widget.isOwnProfile,
+              videoCount: widget.videos.length,
+              profileStatsAsync: widget.profileStatsAsync,
+              onSetupProfile: widget.onSetupProfile,
+              displayNameHint: widget.displayNameHint,
+              avatarUrlHint: widget.avatarUrlHint,
             ),
           ),
 
           // Action Buttons
           SliverToBoxAdapter(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: ProfileActionButtons(
-                  userIdHex: widget.userIdHex,
-                  isOwnProfile: widget.isOwnProfile,
-                  displayName: widget.displayName,
-                  onEditProfile: widget.onEditProfile,
-                  onOpenClips: widget.onOpenClips,
-                  onOpenAnalytics: widget.onOpenAnalytics,
-                  onBlockedTap: widget.onBlockedTap,
-                ),
-              ),
+            child: ProfileActionButtons(
+              userIdHex: widget.userIdHex,
+              isOwnProfile: widget.isOwnProfile,
+              displayName: widget.displayName,
+              onEditProfile: widget.onEditProfile,
+              onOpenClips: widget.onOpenClips,
+              onOpenAnalytics: widget.onOpenAnalytics,
+              onBlockedTap: widget.onBlockedTap,
             ),
           ),
 
