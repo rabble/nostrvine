@@ -170,9 +170,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        buildWidget(remainingDuration: const Duration(seconds: 30)),
-      );
+      await tester.pumpWidget(buildWidget());
 
       // Format is "30.00s remaining" (2 decimal places)
       expect(find.text('30.00s remaining'), findsOneWidget);
