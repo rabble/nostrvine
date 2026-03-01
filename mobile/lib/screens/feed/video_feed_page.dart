@@ -497,7 +497,7 @@ class _FittedVideoPlayer extends StatelessWidget {
       controller: videoController,
       fit: boxFit,
       filterQuality: FilterQuality.high,
-      controls: NoVideoControls as VideoControlsBuilder,
+      controls: null,
     );
   }
 }
