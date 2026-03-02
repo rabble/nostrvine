@@ -3840,26 +3840,27 @@ void main() {
 
       test('returns matching videos from local cache', () async {
         final mockLocalStorage = MockVideoLocalStorage();
+        final matchingEvent = _createVideoEvent(
+          id: 'local-1',
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/local.mp4',
+          createdAt: 1704067200,
+          hashtags: ['flutter'],
+        );
 
         when(
-          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
-        ).thenAnswer(
-          (_) async => [
-            _createVideoEvent(
-              id: 'local-1',
-              pubkey: 'pubkey-1',
-              videoUrl: 'https://example.com/local.mp4',
-              createdAt: 1704067200,
-              hashtags: ['flutter'],
-            ),
-            _createVideoEvent(
-              id: 'local-2',
-              pubkey: 'pubkey-2',
-              videoUrl: 'https://example.com/unrelated.mp4',
-              createdAt: 1704067100,
-            ),
-          ],
-        );
+          () => mockLocalStorage.searchEvents(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [matchingEvent]);
+
+        when(
+          () => mockLocalStorage.getEventsByHashtags(
+            hashtags: any(named: 'hashtags'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [matchingEvent]);
 
         final repoWithStorage = VideosRepository(
           nostrClient: mockNostrClient,
@@ -3880,26 +3881,34 @@ void main() {
           blockedPubkeys: {'blocked-pubkey'},
         );
 
-        when(
-          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
-        ).thenAnswer(
-          (_) async => [
-            _createVideoEvent(
-              id: 'ok-video',
-              pubkey: 'good-pubkey',
-              videoUrl: 'https://example.com/ok.mp4',
-              createdAt: 1704067200,
-              hashtags: ['video'],
-            ),
-            _createVideoEvent(
-              id: 'blocked-video',
-              pubkey: 'blocked-pubkey',
-              videoUrl: 'https://example.com/blocked.mp4',
-              createdAt: 1704067100,
-              hashtags: ['video'],
-            ),
-          ],
+        final okEvent = _createVideoEvent(
+          id: 'ok-video',
+          pubkey: 'good-pubkey',
+          videoUrl: 'https://example.com/ok.mp4',
+          createdAt: 1704067200,
+          hashtags: ['video'],
         );
+        final blockedEvent = _createVideoEvent(
+          id: 'blocked-video',
+          pubkey: 'blocked-pubkey',
+          videoUrl: 'https://example.com/blocked.mp4',
+          createdAt: 1704067100,
+          hashtags: ['video'],
+        );
+
+        when(
+          () => mockLocalStorage.searchEvents(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [okEvent, blockedEvent]);
+
+        when(
+          () => mockLocalStorage.getEventsByHashtags(
+            hashtags: any(named: 'hashtags'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [okEvent, blockedEvent]);
 
         final repoWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
@@ -3914,6 +3923,70 @@ void main() {
         expect(result, hasLength(1));
         expect(result.first.id, equals('ok-video'));
       });
+
+      test(
+        'combines content and hashtag matches without duplicates',
+        () async {
+          final mockLocalStorage = MockVideoLocalStorage();
+
+          final contentMatch = _createVideoEvent(
+            id: 'content-match',
+            pubkey: 'pubkey-1',
+            videoUrl: 'https://example.com/content.mp4',
+            createdAt: 1704067200,
+            content: 'flutter tutorial',
+          );
+          final hashtagMatch = _createVideoEvent(
+            id: 'hashtag-match',
+            pubkey: 'pubkey-2',
+            videoUrl: 'https://example.com/hashtag.mp4',
+            createdAt: 1704067100,
+            hashtags: ['flutter'],
+          );
+          final sharedMatch = _createVideoEvent(
+            id: 'shared-match',
+            pubkey: 'pubkey-3',
+            videoUrl: 'https://example.com/shared.mp4',
+            createdAt: 1704067000,
+            content: 'flutter tips',
+            hashtags: ['flutter'],
+          );
+
+          when(
+            () => mockLocalStorage.searchEvents(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [contentMatch, sharedMatch],
+          );
+
+          when(
+            () => mockLocalStorage.getEventsByHashtags(
+              hashtags: any(named: 'hashtags'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer(
+            (_) async => [hashtagMatch, sharedMatch],
+          );
+
+          final repoWithStorage = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          final result = await repoWithStorage.searchVideosLocally(
+            query: 'flutter',
+          );
+
+          // Should have 3 unique videos, not 4 (sharedMatch deduplicated)
+          expect(result, hasLength(3));
+          final ids = result.map((v) => v.id).toSet();
+          expect(ids, contains('content-match'));
+          expect(ids, contains('hashtag-match'));
+          expect(ids, contains('shared-match'));
+        },
+      );
     });
 
     group('searchVideosOnRelays', () {
@@ -4290,19 +4363,27 @@ void main() {
 
       test('yields local results first', () async {
         final mockLocalStorage = MockVideoLocalStorage();
-        when(
-          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
-        ).thenAnswer(
-          (_) async => [
-            _createVideoEvent(
-              id: 'local-1',
-              pubkey: 'pubkey-1',
-              videoUrl: 'https://example.com/local.mp4',
-              createdAt: 1704067200,
-              hashtags: ['flutter'],
-            ),
-          ],
+        final localEvent = _createVideoEvent(
+          id: 'local-1',
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/local.mp4',
+          createdAt: 1704067200,
+          hashtags: ['flutter'],
         );
+
+        when(
+          () => mockLocalStorage.searchEvents(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [localEvent]);
+
+        when(
+          () => mockLocalStorage.getEventsByHashtags(
+            hashtags: any(named: 'hashtags'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [localEvent]);
 
         when(
           () => mockNostrClient.searchVideos(
@@ -4328,20 +4409,27 @@ void main() {
       test('yields combined results as remote sources complete', () async {
         final mockLocalStorage = MockVideoLocalStorage();
         final mockFunnelcake = MockFunnelcakeApiClient();
+        final localEvent = _createVideoEvent(
+          id: 'local-1',
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/local.mp4',
+          createdAt: 1704067200,
+          hashtags: ['flutter'],
+        );
 
         when(
-          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
-        ).thenAnswer(
-          (_) async => [
-            _createVideoEvent(
-              id: 'local-1',
-              pubkey: 'pubkey-1',
-              videoUrl: 'https://example.com/local.mp4',
-              createdAt: 1704067200,
-              hashtags: ['flutter'],
-            ),
-          ],
-        );
+          () => mockLocalStorage.searchEvents(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [localEvent]);
+
+        when(
+          () => mockLocalStorage.getEventsByHashtags(
+            hashtags: any(named: 'hashtags'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [localEvent]);
 
         when(() => mockFunnelcake.isAvailable).thenReturn(true);
         when(
@@ -4394,20 +4482,27 @@ void main() {
 
       test('skips empty remote results without extra emission', () async {
         final mockLocalStorage = MockVideoLocalStorage();
+        final localEvent = _createVideoEvent(
+          id: 'local-1',
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/local.mp4',
+          createdAt: 1704067200,
+          hashtags: ['flutter'],
+        );
 
         when(
-          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
-        ).thenAnswer(
-          (_) async => [
-            _createVideoEvent(
-              id: 'local-1',
-              pubkey: 'pubkey-1',
-              videoUrl: 'https://example.com/local.mp4',
-              createdAt: 1704067200,
-              hashtags: ['flutter'],
-            ),
-          ],
-        );
+          () => mockLocalStorage.searchEvents(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [localEvent]);
+
+        when(
+          () => mockLocalStorage.getEventsByHashtags(
+            hashtags: any(named: 'hashtags'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [localEvent]);
 
         // Both remote sources return empty
         when(
@@ -4443,7 +4538,17 @@ void main() {
         );
 
         when(
-          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
+          () => mockLocalStorage.searchEvents(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [sharedEvent]);
+
+        when(
+          () => mockLocalStorage.getEventsByHashtags(
+            hashtags: any(named: 'hashtags'),
+            limit: any(named: 'limit'),
+          ),
         ).thenAnswer((_) async => [sharedEvent]);
 
         // Relay returns the same video
@@ -4469,20 +4574,27 @@ void main() {
 
       test('handles remote source failure gracefully', () async {
         final mockLocalStorage = MockVideoLocalStorage();
+        final localEvent = _createVideoEvent(
+          id: 'local-1',
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/local.mp4',
+          createdAt: 1704067200,
+          hashtags: ['flutter'],
+        );
 
         when(
-          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
-        ).thenAnswer(
-          (_) async => [
-            _createVideoEvent(
-              id: 'local-1',
-              pubkey: 'pubkey-1',
-              videoUrl: 'https://example.com/local.mp4',
-              createdAt: 1704067200,
-              hashtags: ['flutter'],
-            ),
-          ],
-        );
+          () => mockLocalStorage.searchEvents(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [localEvent]);
+
+        when(
+          () => mockLocalStorage.getEventsByHashtags(
+            hashtags: any(named: 'hashtags'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [localEvent]);
 
         // Relay throws — caught by searchVideosOnRelays internally
         when(
@@ -5417,6 +5529,7 @@ Event _createVideoEvent({
   int? loops,
   List<String>? hashtags,
   bool hasContentWarning = false,
+  String content = '',
 }) {
   final tags = <List<String>>[
     if (videoUrl != null) ['url', videoUrl],
@@ -5433,7 +5546,7 @@ Event _createVideoEvent({
     'created_at': createdAt,
     'kind': EventKind.videoVertical,
     'tags': tags,
-    'content': '',
+    'content': content,
     'sig': '',
   });
 }

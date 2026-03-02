@@ -852,10 +852,31 @@ class VideosRepository {
     final trimmed = query.trim();
     if (trimmed.isEmpty || _localStorage == null) return [];
 
-    final cached = await _localStorage.getAllEvents(limit: 500);
-    final localVideos = _transformAndFilter(cached);
-    final queryLower = trimmed.toLowerCase();
+    // Phase 1: SQL-level content search (fast, reduces event count)
+    final contentMatches = await _localStorage.searchEvents(
+      query: trimmed,
+    );
 
+    // Phase 2: Hashtag search (tags stored as JSON, need separate query)
+    final hashtagMatches = await _localStorage.getEventsByHashtags(
+      hashtags: [trimmed],
+      limit: 100,
+    );
+
+    // Merge and deduplicate by event ID
+    final allMatches = <String, Event>{};
+    for (final event in contentMatches) {
+      allMatches[event.id] = event;
+    }
+    for (final event in hashtagMatches) {
+      allMatches[event.id] = event;
+    }
+
+    // Transform to VideoEvent (now on ~20-50 events instead of 500)
+    final localVideos = _transformAndFilter(allMatches.values.toList());
+
+    // Precise in-memory refinement on parsed fields
+    final queryLower = trimmed.toLowerCase();
     return localVideos
         .where(
           (v) =>
