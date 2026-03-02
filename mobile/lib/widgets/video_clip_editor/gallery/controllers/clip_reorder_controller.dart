@@ -153,9 +153,9 @@ class ClipReorderController extends ChangeNotifier {
 
   /// Calculates the new index after deletion.
   int calculateIndexAfterDeletion(int remainingClipCount) {
-    return _targetIndex >= remainingClipCount
+    return startIndex >= remainingClipCount
         ? remainingClipCount - 1
-        : _targetIndex;
+        : startIndex;
   }
 
   @override

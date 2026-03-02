@@ -249,9 +249,9 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
         // Update selected index after deletion - based on startIndex since
         // that's where the deleted clip was
         final remainingClips = ref.read(clipManagerProvider).clips;
-        final newIndex = startIndex >= remainingClips.length
-            ? remainingClips.length - 1
-            : startIndex;
+        final newIndex = _reorderController.calculateIndexAfterDeletion(
+          remainingClips.length,
+        );
         _reorderController.updateTargetIndex(newIndex);
         ref.read(videoEditorProvider.notifier).selectClipByIndex(newIndex);
 
