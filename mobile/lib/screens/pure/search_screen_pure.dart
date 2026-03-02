@@ -206,10 +206,10 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
     final tabContent = TabBarView(
       controller: _tabController,
-      children: [
-        _VideosTab(videoSearchBloc: _videoSearchBloc),
-        const UserSearchView(),
-        const HashtagSearchView(),
+      children: const [
+        _VideosTab(),
+        UserSearchView(),
+        HashtagSearchView(),
       ],
     );
 
@@ -353,14 +353,11 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _VideosTab extends StatelessWidget {
-  const _VideosTab({required this.videoSearchBloc});
-
-  final VideoSearchBloc videoSearchBloc;
+  const _VideosTab();
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<VideoSearchBloc, VideoSearchState>(
-      bloc: videoSearchBloc,
       builder: (context, state) {
         if (state.status == VideoSearchStatus.searching &&
             state.videos.isEmpty) {
