@@ -1224,6 +1224,13 @@ class AuthService implements BackgroundAwareService {
         final session = await KeycastSession.load(_flutterSecureStorage);
         if (session != null && session.hasRpcAccess) {
           await signInWithDivineOAuth(session);
+        } else if (session != null && session.isExpired) {
+          Log.warning(
+            'signInForAccount: OAuth session expired for $pubkeyHex',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          throw SessionExpiredException();
         } else {
           Log.error(
             'signInForAccount: no archived OAuth session for $pubkeyHex '
