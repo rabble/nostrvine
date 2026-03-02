@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
@@ -4103,6 +4106,31 @@ void main() {
         expect(result.first.id, equals('ok-video'));
       });
 
+      test('returns partial results when stream times out', () {
+        return fakeAsync((async) {
+          final controller = StreamController<Event>();
+
+          when(
+            () => mockNostrClient.searchVideos(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final future = repository.searchVideosOnRelays(
+            query: 'flutter',
+          );
+
+          // Advance past the 15-second timeout
+          async.elapse(const Duration(seconds: 16));
+
+          return future.then((result) async {
+            expect(result, isEmpty);
+            await controller.close();
+          });
+        });
+      });
+
       test('collects stream events within timeout', () async {
         when(
           () => mockNostrClient.searchVideos(
@@ -4622,6 +4650,59 @@ void main() {
         // returns [], so the stream completes normally with local only
         expect(results.first, hasLength(1));
       });
+
+      test(
+        'catches API phase exception when searchVideosViaApi throws '
+        'non-FunnelcakeException',
+        () async {
+          final mockLocalStorage = MockVideoLocalStorage();
+          final mockFunnelcake = MockFunnelcakeApiClient();
+
+          when(
+            () => mockLocalStorage.searchEvents(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockLocalStorage.getEventsByHashtags(
+              hashtags: any(named: 'hashtags'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          // Funnelcake throws a non-FunnelcakeException which escapes
+          // searchVideosViaApi's internal catch
+          when(() => mockFunnelcake.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcake.searchVideos(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenThrow(Exception('unexpected API error'));
+
+          when(
+            () => mockNostrClient.searchVideos(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => const Stream.empty());
+
+          final repoWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+            funnelcakeApiClient: mockFunnelcake,
+          );
+
+          final results = await repoWithApi
+              .searchVideos(query: 'flutter')
+              .toList();
+
+          // Should still complete with local results (empty in this case)
+          expect(results, isNotEmpty);
+        },
+      );
     });
     group('getVideosByLoops', () {
       late MockFunnelcakeApiClient mockFunnelcakeClient;

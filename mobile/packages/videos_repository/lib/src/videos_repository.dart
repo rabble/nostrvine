@@ -1035,25 +1035,18 @@ class VideosRepository {
     }
 
     // Phase 3: NIP-50 relay search (slower)
-    try {
-      final relayResults = await searchVideosOnRelays(
-        query: trimmed,
-        limit: limit,
-      );
-      if (relayResults.isNotEmpty) {
-        accumulated = deduplicateAndSortVideos([
-          ...accumulated,
-          ...relayResults,
-        ]);
-        yield accumulated;
-      }
-    } on Exception catch (e, stackTrace) {
-      developer.log(
-        'searchVideos relay phase failed for "$trimmed"',
-        name: 'VideosRepository',
-        error: e,
-        stackTrace: stackTrace,
-      );
+    // Note: searchVideosOnRelays handles exceptions internally and returns []
+    // on failure, so no outer try-catch is needed.
+    final relayResults = await searchVideosOnRelays(
+      query: trimmed,
+      limit: limit,
+    );
+    if (relayResults.isNotEmpty) {
+      accumulated = deduplicateAndSortVideos([
+        ...accumulated,
+        ...relayResults,
+      ]);
+      yield accumulated;
     }
   }
 
