@@ -164,19 +164,23 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   /// Build quick AI report button for one-tap reporting
   Widget _buildQuickAIReportButton() => Container(
     decoration: BoxDecoration(
-      color: Colors.orange.withValues(alpha: 0.1),
+      color: VineTheme.warning.withValues(alpha: 0.1),
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+      border: Border.all(color: VineTheme.warning.withValues(alpha: 0.3)),
     ),
     child: ListTile(
       leading: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: 0.2),
+          color: VineTheme.warning.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Icon(Icons.psychology_alt, color: Colors.orange, size: 20),
+        child: const Icon(
+          Icons.psychology_alt,
+          color: VineTheme.warning,
+          size: 20,
+        ),
       ),
       title: const Text(
         'Report AI Content',
@@ -191,7 +195,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       ),
       trailing: const Icon(
         Icons.arrow_forward_ios,
-        color: Colors.orange,
+        color: VineTheme.warning,
         size: 16,
       ),
       onTap: _quickReportAI,
@@ -212,14 +216,14 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                   ),
                 ),
                 SizedBox(width: 12),
                 Text('Reporting AI content...'),
               ],
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: VineTheme.warning,
             duration: Duration(seconds: 2),
           ),
         );
@@ -250,14 +254,14 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.error, color: Colors.white),
+                  const Icon(Icons.error, color: VineTheme.whiteText),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text('Failed to report content: ${result.error}'),
                   ),
                 ],
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: VineTheme.error,
             ),
           );
         }
@@ -273,7 +277,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to report AI content: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -331,9 +335,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 margin: const EdgeInsets.only(top: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade900,
+                  color: VineTheme.cardBackground,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade700),
+                  border: Border.all(color: VineTheme.cardBackground),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -917,7 +921,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       // Delete content option
       _buildActionTile(
         icon: Icons.delete_outline,
-        iconColor: Colors.red,
+        iconColor: VineTheme.error,
         title: 'Delete Video',
         subtitle: 'Permanently remove this content',
         onTap: _showDeleteDialog,
@@ -1028,7 +1032,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           dialogContext.pop();
           _deleteContent();
         },
-        style: TextButton.styleFrom(foregroundColor: Colors.red),
+        style: TextButton.styleFrom(foregroundColor: VineTheme.error),
         child: const Text('Delete'),
       ),
     ],
@@ -1056,14 +1060,14 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                   ),
                 ),
                 SizedBox(width: 12),
                 Text('Deleting content...'),
               ],
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: VineTheme.warning,
             duration: Duration(seconds: 2),
           ),
         );
@@ -1081,7 +1085,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
               children: [
                 Icon(
                   result.success ? Icons.check_circle : Icons.error,
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1093,7 +1097,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                 ),
               ],
             ),
-            backgroundColor: result.success ? VineTheme.vineGreen : Colors.red,
+            backgroundColor: result.success
+                ? VineTheme.vineGreen
+                : VineTheme.error,
           ),
         );
 
@@ -1132,7 +1138,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to delete content: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -1464,13 +1470,13 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.red,
+                      color: VineTheme.error,
                     ),
                   )
-                : const Icon(Icons.delete_outline, color: Colors.red),
+                : const Icon(Icons.delete_outline, color: VineTheme.error),
             label: Text(
               _isDeleting ? 'Deleting...' : 'Delete Video',
-              style: const TextStyle(color: Colors.red),
+              style: const TextStyle(color: VineTheme.error),
             ),
           ),
         ],
@@ -1702,7 +1708,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update video: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -1730,7 +1736,10 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
           ),
           TextButton(
             onPressed: () => context.pop(true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: VineTheme.error),
+            ),
           ),
         ],
       ),
@@ -1787,7 +1796,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to delete video: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -2209,7 +2218,7 @@ class _SelectBookmarkSetDialog extends StatelessWidget {
                   // Divider if there are existing sets
                   if (bookmarkSets.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Divider(color: Colors.grey.shade700),
+                    const Divider(color: VineTheme.cardBackground),
                     const SizedBox(height: 8),
                   ],
 

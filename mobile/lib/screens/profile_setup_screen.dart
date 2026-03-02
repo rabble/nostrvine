@@ -211,7 +211,7 @@ class _ProfileSetupScreenViewState
                         ),
                         child: const Icon(
                           Icons.check,
-                          color: Colors.white,
+                          color: VineTheme.whiteText,
                           size: 17,
                         ),
                       ),
@@ -222,7 +222,7 @@ class _ProfileSetupScreenViewState
                       ),
                     ],
                   ),
-                  backgroundColor: Colors.white,
+                  backgroundColor: VineTheme.whiteText,
                 ),
               );
               if (widget.isNewUser) {
@@ -286,13 +286,13 @@ class _ProfileSetupScreenViewState
               switch (state.error) {
                 case ProfileEditorError.usernameTaken:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
+                    const SnackBar(
+                      content: Text(
                         'Username was just taken. '
                         'Please choose another.',
                       ),
-                      backgroundColor: Colors.red[700],
-                      duration: const Duration(seconds: 3),
+                      backgroundColor: VineTheme.error,
+                      duration: Duration(seconds: 3),
                     ),
                   );
                 case ProfileEditorError.usernameReserved:
@@ -303,11 +303,11 @@ class _ProfileSetupScreenViewState
                   );
                 case ProfileEditorError.claimFailed:
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
+                    const SnackBar(
+                      content: Text(
                         'Failed to claim username. Please try again.',
                       ),
-                      backgroundColor: Colors.red[700],
+                      backgroundColor: VineTheme.error,
                     ),
                   );
                 case ProfileEditorError.publishFailed:
@@ -316,7 +316,7 @@ class _ProfileSetupScreenViewState
                       content: Text(
                         'Failed to publish profile. Please try again.',
                       ),
-                      backgroundColor: Colors.red,
+                      backgroundColor: VineTheme.error,
                     ),
                   );
                 case null:
@@ -353,7 +353,7 @@ class _ProfileSetupScreenViewState
                     width: 32,
                     height: 32,
                     colorFilter: const ColorFilter.mode(
-                      Colors.white,
+                      VineTheme.whiteText,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -397,7 +397,7 @@ class _ProfileSetupScreenViewState
                         width: 32,
                         height: 32,
                         colorFilter: const ColorFilter.mode(
-                          Colors.white,
+                          VineTheme.whiteText,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -450,7 +450,7 @@ class _ProfileSetupScreenViewState
                                           borderRadius: BorderRadius.circular(
                                             33,
                                           ),
-                                          color: Colors.grey[800],
+                                          color: VineTheme.cardBackground,
                                           border: Border.all(
                                             color: VineTheme.onSurfaceDisabled,
                                             width: 1.64,
@@ -474,9 +474,10 @@ class _ProfileSetupScreenViewState
                                             decoration: BoxDecoration(
                                               borderRadius:
                                                   BorderRadius.circular(33),
-                                              color: Colors.black.withValues(
-                                                alpha: 0.7,
-                                              ),
+                                              color: VineTheme.backgroundColor
+                                                  .withValues(
+                                                    alpha: 0.7,
+                                                  ),
                                             ),
                                             child: const Center(
                                               child: CircularProgressIndicator(
@@ -631,42 +632,43 @@ class _ProfileSetupScreenViewState
                                 style: VineTheme.bodyLargeFont(
                                   color: VineTheme.onSurface,
                                 ),
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   isCollapsed: true,
                                   hintText: 'How should people know you?',
-                                  hintStyle: TextStyle(color: Colors.grey[600]),
-                                  border: const UnderlineInputBorder(
+                                  hintStyle: TextStyle(
+                                    color: VineTheme.lightText,
+                                  ),
+                                  border: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  enabledBorder: const UnderlineInputBorder(
+                                  enabledBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedBorder: const UnderlineInputBorder(
+                                  focusedBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  errorBorder: const UnderlineInputBorder(
+                                  errorBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedErrorBorder:
-                                      const UnderlineInputBorder(
-                                        borderRadius: BorderRadius.zero,
-                                        borderSide: BorderSide(
-                                          color: VineTheme.neutral10,
-                                        ),
-                                      ),
-                                  contentPadding: const EdgeInsets.all(16),
+                                  focusedErrorBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  contentPadding: EdgeInsets.all(16),
                                 ),
                                 textInputAction: TextInputAction.next,
                                 onFieldSubmitted: (_) =>
@@ -712,42 +714,43 @@ class _ProfileSetupScreenViewState
                                 style: VineTheme.bodyLargeFont(
                                   color: VineTheme.onSurface,
                                 ),
-                                decoration: InputDecoration(
+                                decoration: const InputDecoration(
                                   isCollapsed: true,
                                   hintText: 'Tell people about yourself...',
-                                  hintStyle: TextStyle(color: Colors.grey[600]),
-                                  border: const UnderlineInputBorder(
+                                  hintStyle: TextStyle(
+                                    color: VineTheme.lightText,
+                                  ),
+                                  border: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  enabledBorder: const UnderlineInputBorder(
+                                  enabledBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedBorder: const UnderlineInputBorder(
+                                  focusedBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  errorBorder: const UnderlineInputBorder(
+                                  errorBorder: UnderlineInputBorder(
                                     borderRadius: BorderRadius.zero,
                                     borderSide: BorderSide(
                                       color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  focusedErrorBorder:
-                                      const UnderlineInputBorder(
-                                        borderRadius: BorderRadius.zero,
-                                        borderSide: BorderSide(
-                                          color: VineTheme.neutral10,
-                                        ),
-                                      ),
-                                  contentPadding: const EdgeInsets.all(16),
+                                  focusedErrorBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  contentPadding: EdgeInsets.all(16),
                                   counterText: '',
                                 ),
                                 maxLines: null,
@@ -1156,11 +1159,11 @@ class _ProfileSetupScreenViewState
                   ? 'Image selection failed. Please paste an image URL below instead.'
                   : 'Camera access failed: $e',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: 'Got it',
-              textColor: Colors.white,
+              textColor: VineTheme.whiteText,
               onPressed: () {},
             ),
           ),
@@ -1311,7 +1314,7 @@ class _ProfileSetupScreenViewState
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Profile picture uploaded successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: VineTheme.success,
             ),
           );
         }
@@ -1354,11 +1357,11 @@ class _ProfileSetupScreenViewState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(userMessage),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
             duration: const Duration(seconds: 5),
             action: SnackBarAction(
               label: 'Got it',
-              textColor: Colors.white,
+              textColor: VineTheme.whiteText,
               onPressed: () {},
             ),
           ),
@@ -1411,11 +1414,11 @@ class _ProfileSetupScreenViewState
             ),
             child: TextFormField(
               controller: _pictureController,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: VineTheme.whiteText),
               cursorColor: VineTheme.primary,
               decoration: InputDecoration(
                 hintText: 'https://example.com/image.jpg',
-                hintStyle: TextStyle(color: Colors.grey[600]),
+                hintStyle: const TextStyle(color: VineTheme.lightText),
                 filled: true,
                 fillColor: VineTheme.surfaceContainer,
                 border: OutlineInputBorder(
@@ -1491,19 +1494,19 @@ class _UsernameCheckingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
+    return const Padding(
+      padding: EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 16,
             height: 16,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: 8),
           Text(
             'Checking availability...',
-            style: TextStyle(color: Colors.grey[400], fontSize: 12),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
           ),
         ],
       ),
@@ -1537,15 +1540,15 @@ class _UsernameTakenIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
+    return const Padding(
+      padding: EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          Icon(Icons.cancel, color: Colors.red[400], size: 16),
-          const SizedBox(width: 8),
+          Icon(Icons.cancel, color: VineTheme.error, size: 16),
+          SizedBox(width: 8),
           Text(
             'Username already taken',
-            style: TextStyle(color: Colors.red[400], fontSize: 12),
+            style: TextStyle(color: VineTheme.error, fontSize: 12),
           ),
         ],
       ),
@@ -1558,15 +1561,15 @@ class _UsernameReservedIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
+    return const Padding(
+      padding: EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          Icon(Icons.lock, color: Colors.orange[400], size: 16),
-          const SizedBox(width: 8),
+          Icon(Icons.lock, color: VineTheme.warning, size: 16),
+          SizedBox(width: 8),
           Text(
             'Username is reserved',
-            style: TextStyle(color: Colors.orange[400], fontSize: 12),
+            style: TextStyle(color: VineTheme.warning, fontSize: 12),
           ),
         ],
       ),
@@ -1585,11 +1588,11 @@ class _UsernameErrorIndicator extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.orange[400], size: 16),
+          const Icon(Icons.error_outline, color: VineTheme.warning, size: 16),
           const SizedBox(width: 8),
           Text(
             message,
-            style: TextStyle(color: Colors.orange[400], fontSize: 12),
+            style: const TextStyle(color: VineTheme.warning, fontSize: 12),
           ),
         ],
       ),
@@ -1794,14 +1797,14 @@ class _ColorSwatch extends StatelessWidget {
           color: color ?? VineTheme.surfaceContainer,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? Colors.white : Colors.transparent,
+            color: isSelected ? VineTheme.whiteText : Colors.transparent,
             width: 3,
           ),
         ),
         child: color == null
             ? const Icon(Icons.block, color: VineTheme.onSurfaceMuted, size: 20)
             : isSelected
-            ? const Icon(Icons.check, color: Colors.white, size: 20)
+            ? const Icon(Icons.check, color: VineTheme.whiteText, size: 20)
             : null,
       ),
     );
@@ -1827,14 +1830,21 @@ class _CustomColorButton extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Colors.red, Colors.orange, Colors.yellow, Colors.green],
+            colors: [
+              VineTheme.error,
+              VineTheme.warning,
+              VineTheme.accentYellow,
+              VineTheme.success,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: VineTheme.whiteText.withValues(alpha: 0.3),
+          ),
         ),
-        child: const Icon(Icons.colorize, color: Colors.white, size: 20),
+        child: const Icon(Icons.colorize, color: VineTheme.whiteText, size: 20),
       ),
     );
   }

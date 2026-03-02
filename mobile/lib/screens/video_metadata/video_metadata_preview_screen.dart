@@ -96,7 +96,7 @@ class _VideoMetadataPreviewScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF000A06),
+      backgroundColor: VineTheme.surfaceContainerHigh,
       body: Stack(
         children: [
           Column(

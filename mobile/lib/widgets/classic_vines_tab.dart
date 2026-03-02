@@ -344,14 +344,14 @@ class _ClassicVideoItem extends StatelessWidget {
                   embeddedName: video.authorName,
                   maxLines: 1,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     shadows: [
                       Shadow(
                         offset: Offset(0, 1),
                         blurRadius: 3,
-                        color: Color(0x80000000),
+                        color: VineTheme.scrim50,
                       ),
                     ],
                   ),

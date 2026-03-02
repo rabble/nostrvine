@@ -462,13 +462,13 @@ class _QrCodeCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: VineTheme.inverseSurface,
             borderRadius: BorderRadius.circular(12),
           ),
           child: QrImageView(
             data: connectUrl,
             size: 200,
-            backgroundColor: Colors.white,
+            backgroundColor: VineTheme.inverseSurface,
             errorCorrectionLevel: QrErrorCorrectLevel.M,
           ),
         ),

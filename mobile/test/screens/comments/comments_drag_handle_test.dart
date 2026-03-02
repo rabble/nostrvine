@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for CommentsDragHandle component
 // ABOUTME: Tests visual appearance and dimensions of the drag handle indicator
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/screens/comments/comments.dart';
@@ -32,7 +33,7 @@ void main() {
       final decoration = container.decoration as BoxDecoration?;
 
       expect(decoration, isNotNull);
-      expect(decoration!.color, equals(Colors.white54));
+      expect(decoration!.color, equals(VineTheme.onSurfaceMuted));
       expect(decoration.borderRadius, equals(BorderRadius.circular(2)));
     });
 

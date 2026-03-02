@@ -195,7 +195,7 @@ class _AudioWaveformState extends State<AudioWaveform>
       return const Text(
         '--:-- / --:--',
         style: TextStyle(
-          color: Colors.grey,
+          color: VineTheme.lightText,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
@@ -208,7 +208,7 @@ class _AudioWaveformState extends State<AudioWaveform>
     return Text(
       '$positionText / $durationText',
       style: const TextStyle(
-        color: Colors.white,
+        color: VineTheme.whiteText,
         fontSize: 12,
         fontWeight: FontWeight.w500,
       ),

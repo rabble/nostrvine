@@ -155,7 +155,7 @@ class _ThumbnailState extends State<_Thumbnail> {
       );
     }
 
-    return const Icon(Icons.videocam, color: VineTheme.secondaryText, size: 32);
+    return const Icon(Icons.videocam, color: VineTheme.lightText, size: 32);
   }
 }
 
@@ -175,7 +175,7 @@ class _DurationBadge extends StatelessWidget {
       child: Container(
         padding: const .symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.65),
+          color: VineTheme.scrim65,
           borderRadius: .circular(4),
         ),
         child: Text(
@@ -229,7 +229,7 @@ class _SelectionOverlay extends StatelessWidget {
             ),
             child: SvgPicture.asset(
               'assets/icon/Check.svg',
-              colorFilter: const .mode(Color(0xFF002C1C), .srcIn),
+              colorFilter: const .mode(VineTheme.surfaceContainer, .srcIn),
             ),
           ),
         ),

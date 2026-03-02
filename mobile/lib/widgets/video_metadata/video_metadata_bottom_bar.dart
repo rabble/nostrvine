@@ -108,7 +108,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xE5032017),
+          color: VineTheme.surfaceContainer90,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: VineTheme.outlineVariant),
           boxShadow: const [
@@ -179,7 +179,7 @@ class _SaveForLaterButton extends ConsumerWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xAA0E2B21), Color(0xE5032017)],
+                  colors: [Color(0xAA0E2B21), VineTheme.surfaceContainer90],
                 ),
                 border: Border.all(color: const Color(0xFF184235), width: 1.5),
                 borderRadius: BorderRadius.circular(18),
@@ -267,7 +267,7 @@ class _PostButton extends ConsumerWidget {
                 child: Text(
                   'Post',
                   style: VineTheme.titleSmallFont(
-                    color: const Color(0xFF002C1C),
+                    color: VineTheme.surfaceContainer,
                   ),
                 ),
               ),

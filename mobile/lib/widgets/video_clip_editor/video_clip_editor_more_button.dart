@@ -211,7 +211,7 @@ class _VideoEditorMoreButtonState
   @override
   Widget build(BuildContext context) {
     return VideoEditorIconButton(
-      backgroundColor: const Color(0x00000000),
+      backgroundColor: Colors.transparent,
       icon: .moreHoriz,
       onTap: _showMoreOptions,
       // TODO(l10n): Replace with context.l10n when localization is added.

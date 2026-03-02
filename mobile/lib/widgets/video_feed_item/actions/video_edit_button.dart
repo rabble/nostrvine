@@ -1,6 +1,7 @@
 // ABOUTME: Edit button for video feed overlay.
 // ABOUTME: Only shown for owned videos when feature flag is enabled.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -62,7 +63,7 @@ class VideoEditButton extends ConsumerWidget {
             showEditDialogForVideo(context, video);
           },
           tooltip: 'Edit video',
-          icon: const Icon(Icons.edit, color: Colors.white, size: 32),
+          icon: const Icon(Icons.edit, color: VineTheme.whiteText, size: 32),
         ),
       ],
     );

@@ -264,8 +264,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 : 'Some REST endpoints failed - see details above',
           ),
           backgroundColor: blossomOk && funnelCakeOk
-              ? Colors.green[700]
-              : Colors.orange[700],
+              ? VineTheme.success
+              : VineTheme.warning,
         ),
       );
     }
@@ -460,8 +460,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               'Found ${videoEvents.length} video events in database',
             ),
             backgroundColor: videoEvents.isNotEmpty
-                ? Colors.green[700]
-                : Colors.orange[700],
+                ? VineTheme.success
+                : VineTheme.warning,
           ),
         );
       }
@@ -471,7 +471,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Query failed: $e'),
-            backgroundColor: Colors.red[700],
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -508,8 +508,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   : 'Failed to connect to any relays',
             ),
             backgroundColor: connectedCount > 0
-                ? Colors.green[700]
-                : Colors.red[700],
+                ? VineTheme.success
+                : VineTheme.error,
           ),
         );
       }
@@ -527,7 +527,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Connection retry failed: $e'),
-            backgroundColor: Colors.red[700],
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -554,7 +554,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
     final discoveryCount = videoService.discoveryVideos.length;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -579,7 +579,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -605,7 +605,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 width: 32,
                 height: 32,
                 colorFilter: const ColorFilter.mode(
-                  Colors.white,
+                  VineTheme.whiteText,
                   BlendMode.srcIn,
                 ),
               ),
@@ -629,7 +629,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Text(
                     'Last refresh: ${_formatTime(_lastRefresh!)}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    style: const TextStyle(
+                      color: VineTheme.lightText,
+                      fontSize: 12,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -675,7 +678,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     'Connected',
                     '${connectedRelays.length}/${configuredRelays.length}',
                   ),
-                  const Divider(color: Colors.grey),
+                  const Divider(color: VineTheme.lightText),
                   ...configuredRelays.map((relayUrl) {
                     final isConnected = connectedRelays.contains(relayUrl);
                     final status = relayStatuses[relayUrl];
@@ -705,14 +708,17 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                   ),
                   if (videoService.error != null)
                     _buildErrorRow('Error', videoService.error!),
-                  const Divider(color: Colors.grey),
+                  const Divider(color: VineTheme.lightText),
                   Center(
                     child: ElevatedButton.icon(
                       onPressed: _testDirectEventQuery,
-                      icon: const Icon(Icons.search, color: Colors.white),
+                      icon: const Icon(
+                        Icons.search,
+                        color: VineTheme.whiteText,
+                      ),
                       label: const Text(
                         'Test Direct Query',
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: VineTheme.whiteText),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: VineTheme.vineGreen,
@@ -733,10 +739,13 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     Center(
                       child: ElevatedButton.icon(
                         onPressed: _testNetworkConnectivity,
-                        icon: const Icon(Icons.play_arrow, color: Colors.white),
+                        icon: const Icon(
+                          Icons.play_arrow,
+                          color: VineTheme.whiteText,
+                        ),
                         label: const Text(
                           'Run Network Test',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: VineTheme.whiteText),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: VineTheme.vineGreen,
@@ -760,7 +769,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                       return _buildInfoRow(
                         entry.key,
                         entry.value,
-                        textColor: isOk ? Colors.green : Colors.red,
+                        textColor: isOk ? VineTheme.success : VineTheme.error,
                       );
                     }),
                 ],
@@ -777,10 +786,13 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     Center(
                       child: ElevatedButton.icon(
                         onPressed: _testRestEndpoints,
-                        icon: const Icon(Icons.play_arrow, color: Colors.white),
+                        icon: const Icon(
+                          Icons.play_arrow,
+                          color: VineTheme.whiteText,
+                        ),
                         label: const Text(
                           'Test All Endpoints',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: VineTheme.whiteText),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: VineTheme.vineGreen,
@@ -805,8 +817,8 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                           ? 'OK (${_blossomResult!.latencyMs}ms)'
                           : 'FAILED',
                       textColor: _blossomResult!.isReachable
-                          ? Colors.green
-                          : Colors.red,
+                          ? VineTheme.success
+                          : VineTheme.error,
                     ),
                     if (_blossomResult!.serverUrl != null)
                       _buildInfoRow('URL', _blossomResult!.serverUrl!),
@@ -827,10 +839,13 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                     Center(
                       child: ElevatedButton.icon(
                         onPressed: _testRestEndpoints,
-                        icon: const Icon(Icons.play_arrow, color: Colors.white),
+                        icon: const Icon(
+                          Icons.play_arrow,
+                          color: VineTheme.whiteText,
+                        ),
                         label: const Text(
                           'Test All Endpoints',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: VineTheme.whiteText),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: VineTheme.vineGreen,
@@ -856,10 +871,10 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                       '${_funnelCakeResults!.successCount}/${_funnelCakeResults!.endpoints.length} OK '
                           '(avg ${_funnelCakeResults!.avgLatencyMs}ms)',
                       textColor: _funnelCakeResults!.allSuccess
-                          ? Colors.green
-                          : Colors.orange,
+                          ? VineTheme.success
+                          : VineTheme.warning,
                     ),
-                    const Divider(color: Colors.grey),
+                    const Divider(color: VineTheme.lightText),
                     // Individual endpoint results
                     ..._funnelCakeResults!.endpoints.map(
                       _buildEndpointResultRow,
@@ -890,14 +905,17 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
+                            VineTheme.whiteText,
                           ),
                         ),
                       )
-                    : const Icon(Icons.refresh, color: Colors.white),
+                    : const Icon(Icons.refresh, color: VineTheme.whiteText),
                 label: Text(
                   _isRetrying ? 'Retrying...' : 'Retry Connection',
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  style: const TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 16,
+                  ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: VineTheme.vineGreen,
@@ -915,38 +933,41 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey[900],
+                  color: VineTheme.cardBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
+                child: const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: Colors.grey[400],
+                          color: VineTheme.secondaryText,
                           size: 20,
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text(
                           'Troubleshooting',
                           style: TextStyle(
-                            color: Colors.grey[300],
+                            color: VineTheme.secondaryText,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       '• Green status = Connected and working\n'
                       '• Red status = Connection failed\n'
                       '• If network test fails, check internet connection\n'
                       '• If relays are configured but not connected, tap "Retry Connection"\n'
                       '• Screenshot this screen for debugging',
-                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                      style: TextStyle(
+                        color: VineTheme.lightText,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
@@ -965,7 +986,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        color: VineTheme.cardBackground,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -980,7 +1001,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -988,7 +1009,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               ],
             ),
           ),
-          const Divider(height: 1, color: Colors.grey),
+          const Divider(height: 1, color: VineTheme.lightText),
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -1008,17 +1029,20 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         children: [
           Icon(
             isOk ? Icons.check_circle : Icons.error,
-            color: isOk ? Colors.green : Colors.red,
+            color: isOk ? VineTheme.success : VineTheme.error,
             size: 20,
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(label, style: const TextStyle(color: Colors.white70)),
+            child: Text(
+              label,
+              style: const TextStyle(color: VineTheme.onSurfaceVariant),
+            ),
           ),
           Text(
             value,
             style: TextStyle(
-              color: isOk ? Colors.green : Colors.red,
+              color: isOk ? VineTheme.success : VineTheme.error,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1033,13 +1057,16 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       child: Row(
         children: [
           Expanded(
-            child: Text(label, style: const TextStyle(color: Colors.white70)),
+            child: Text(
+              label,
+              style: const TextStyle(color: VineTheme.onSurfaceVariant),
+            ),
           ),
           Flexible(
             child: Text(
               value,
               style: TextStyle(
-                color: textColor ?? Colors.white,
+                color: textColor ?? VineTheme.whiteText,
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.right,
@@ -1056,17 +1083,20 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70)),
+          Text(
+            label,
+            style: const TextStyle(color: VineTheme.onSurfaceVariant),
+          ),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.red[900]?.withValues(alpha: 0.3),
+              color: VineTheme.errorContainer,
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
               error,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
+              style: const TextStyle(color: VineTheme.error, fontSize: 12),
             ),
           ),
         ],
@@ -1082,7 +1112,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         children: [
           Icon(
             result.isSuccess ? Icons.check_circle : Icons.error,
-            color: result.isSuccess ? Colors.green : Colors.red,
+            color: result.isSuccess ? VineTheme.success : VineTheme.error,
             size: 16,
           ),
           const SizedBox(width: 8),
@@ -1093,7 +1123,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 Text(
                   result.endpoint,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     fontSize: 13,
                     fontFamily: 'monospace',
                   ),
@@ -1102,12 +1132,18 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 if (result.isSuccess)
                   Text(
                     '${result.latencyMs}ms${result.details != null ? ' • ${result.details}' : ''}',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 11,
+                    ),
                   )
                 else
                   Text(
                     result.errorMessage ?? 'Failed',
-                    style: TextStyle(color: Colors.red[300], fontSize: 11),
+                    style: const TextStyle(
+                      color: VineTheme.error,
+                      fontSize: 11,
+                    ),
                   ),
               ],
             ),
@@ -1147,14 +1183,14 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
             children: [
               Icon(
                 isConnected ? Icons.cloud_done : Icons.cloud_off,
-                color: isConnected ? Colors.green : Colors.red,
+                color: isConnected ? VineTheme.success : VineTheme.error,
                 size: 20,
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   relayUrl,
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(color: VineTheme.whiteText),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -1170,7 +1206,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                         : 'Connected')
                   : 'Not connected',
               style: TextStyle(
-                color: isConnected ? Colors.green[300] : Colors.red[300],
+                color: isConnected ? VineTheme.success : VineTheme.error,
                 fontSize: 12,
               ),
             ),

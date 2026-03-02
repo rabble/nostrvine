@@ -3,6 +3,7 @@
 
 import 'dart:async' show unawaited;
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -73,20 +74,23 @@ class VideoErrorOverlay extends ConsumerWidget {
         // Error overlay (only show on active video)
         if (isActive)
           ColoredBox(
-            color: Colors.black54,
+            color: VineTheme.scrim50,
             child: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     _is401Error ? Icons.lock_outline : Icons.error_outline,
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     size: 48,
                   ),
                   const SizedBox(height: 16),
                   Text(
                     _is401Error ? 'Age-restricted content' : _errorMessage,
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    style: const TextStyle(
+                      color: VineTheme.whiteText,
+                      fontSize: 14,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -218,8 +222,8 @@ class VideoErrorOverlay extends ConsumerWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
+                      backgroundColor: VineTheme.whiteText,
+                      foregroundColor: VineTheme.backgroundColor,
                     ),
                     child: Text(_is401Error ? 'Verify Age' : 'Retry'),
                   ),

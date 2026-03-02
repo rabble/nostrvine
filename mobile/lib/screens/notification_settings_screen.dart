@@ -60,7 +60,10 @@ class _NotificationSettingsScreenState
             'assets/icon/CaretLeft.svg',
             width: 32,
             height: 32,
-            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+            colorFilter: const ColorFilter.mode(
+              VineTheme.whiteText,
+              BlendMode.srcIn,
+            ),
           ),
         ),
         onPressed: context.pop,
@@ -69,7 +72,7 @@ class _NotificationSettingsScreenState
       title: Text('Notifications', style: VineTheme.titleFont()),
       actions: [
         IconButton(
-          icon: const Icon(Icons.refresh, color: Colors.white),
+          icon: const Icon(Icons.refresh, color: VineTheme.whiteText),
           onPressed: () {
             setState(() {
               _likesEnabled = true;
@@ -131,7 +134,7 @@ class _NotificationSettingsScreenState
             ),
             _buildNotificationCard(
               icon: Icons.alternate_email,
-              iconColor: Colors.orange,
+              iconColor: VineTheme.warning,
               title: 'Mentions',
               subtitle: 'When you are mentioned',
               value: _mentionsEnabled,

@@ -48,7 +48,10 @@ class CommentsEmptyState extends StatelessWidget {
                   "We're still working on importing old comments "
                   "from the archive. They're not ready yet.",
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: TextStyle(
+                    color: VineTheme.onSurfaceVariant,
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -69,7 +72,7 @@ class CommentsEmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: VineTheme.bodyFont(
                 fontSize: 14,
-                color: const Color(0xBFFFFFFF), // rgba(255,255,255,0.75)
+                color: VineTheme.onSurfaceVariant,
               ).copyWith(height: 20 / 14, letterSpacing: 0.25),
             ),
           ],

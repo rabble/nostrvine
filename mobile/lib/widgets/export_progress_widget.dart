@@ -1,6 +1,7 @@
 // ABOUTME: Widget displaying export progress with stage tracking
 // ABOUTME: Shows progress bar, percentage, stage text, and optional cancel button
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/models/export_progress.dart';
 
@@ -49,10 +50,10 @@ class ExportProgressWidget extends StatelessWidget {
     final percentageText = '${(progress * 100).toInt()}%';
 
     return ColoredBox(
-      color: Colors.black.withValues(alpha: 0.9),
+      color: VineTheme.backgroundColor.withValues(alpha: 0.9),
       child: Center(
         child: Card(
-          color: Colors.grey[900],
+          color: VineTheme.cardBackground,
           margin: const EdgeInsets.all(32.0),
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -64,10 +65,10 @@ class ExportProgressWidget extends StatelessWidget {
                   _getStageIcon(stage),
                   size: 64,
                   color: stage == ExportStage.complete
-                      ? Colors.green
+                      ? VineTheme.success
                       : stage == ExportStage.error
-                      ? Colors.red
-                      : Colors.white,
+                      ? VineTheme.error
+                      : VineTheme.whiteText,
                 ),
                 const SizedBox(height: 24),
 
@@ -75,7 +76,7 @@ class ExportProgressWidget extends StatelessWidget {
                 Text(
                   _getStageText(stage),
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     fontSize: 18,
                     fontWeight: FontWeight.w500,
                   ),
@@ -86,15 +87,20 @@ class ExportProgressWidget extends StatelessWidget {
                 // Progress bar
                 LinearProgressIndicator(
                   value: progress,
-                  backgroundColor: Colors.grey[700],
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+                  backgroundColor: VineTheme.cardBackground,
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    VineTheme.success,
+                  ),
                 ),
                 const SizedBox(height: 16),
 
                 // Percentage
                 Text(
                   percentageText,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  style: const TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 16,
+                  ),
                 ),
 
                 // Cancel button (if provided)
@@ -104,7 +110,7 @@ class ExportProgressWidget extends StatelessWidget {
                     onPressed: onCancel,
                     child: const Text(
                       'Cancel',
-                      style: TextStyle(color: Colors.white70),
+                      style: TextStyle(color: VineTheme.onSurfaceVariant),
                     ),
                   ),
                 ],

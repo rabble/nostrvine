@@ -73,12 +73,12 @@ class GlobalUploadIndicator extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: hasFailedUploads
-                  ? Colors.red.withValues(alpha: 0.9)
-                  : Colors.black.withValues(alpha: 0.8),
+                  ? VineTheme.error.withValues(alpha: 0.9)
+                  : VineTheme.backgroundColor.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
+                  color: VineTheme.backgroundColor.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -91,13 +91,13 @@ class GlobalUploadIndicator extends ConsumerWidget {
                 if (hasFailedUploads)
                   const Icon(
                     Icons.warning_amber_rounded,
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     size: 16,
                   )
                 else if (hasPendingUploads)
                   const Icon(
                     Icons.hourglass_empty,
-                    color: Colors.white70,
+                    color: VineTheme.onSurfaceVariant,
                     size: 16,
                   )
                 else
@@ -107,7 +107,7 @@ class GlobalUploadIndicator extends ConsumerWidget {
                     child: CircularProgressIndicator(
                       value: latestUpload.progressValue,
                       strokeWidth: 2,
-                      backgroundColor: Colors.grey[600],
+                      backgroundColor: VineTheme.lightText,
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         VineTheme.vineGreen,
                       ),
@@ -120,7 +120,7 @@ class GlobalUploadIndicator extends ConsumerWidget {
                   child: Text(
                     _getStatusText(latestUpload, allUploads.length),
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: VineTheme.whiteText,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
@@ -134,7 +134,7 @@ class GlobalUploadIndicator extends ConsumerWidget {
                   const SizedBox(width: 4),
                   const Icon(
                     Icons.chevron_right,
-                    color: Colors.white70,
+                    color: VineTheme.onSurfaceVariant,
                     size: 16,
                   ),
                 ],
@@ -212,7 +212,7 @@ class GlobalUploadIndicator extends ConsumerWidget {
                         Text(
                           '${uploads.where((u) => u.status == UploadStatus.failed).length} failed - tap to retry',
                           style: const TextStyle(
-                            color: Colors.red,
+                            color: VineTheme.error,
                             fontSize: 12,
                           ),
                         ),

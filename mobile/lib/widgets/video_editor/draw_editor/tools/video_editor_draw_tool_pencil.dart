@@ -1,6 +1,7 @@
 // ABOUTME: Button for selecting the pencil drawing tool.
 // ABOUTME: Displays a pencil icon with colored tip.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item_button.dart';
 
@@ -104,7 +105,7 @@ class _PencilPainter extends CustomPainter {
     // Part 2: Funnel/cone (white) - rounded trapezoid
     // Combined with body since both are white
     final whitePaint = Paint()
-      ..color = Colors.white
+      ..color = VineTheme.whiteText
       ..style = .fill;
 
     final funnelPath = Path()

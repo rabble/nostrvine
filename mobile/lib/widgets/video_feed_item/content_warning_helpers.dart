@@ -29,7 +29,7 @@ class ContentWarningBlurOverlay extends StatelessWidget {
           filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.6),
+              color: VineTheme.backgroundColor.withValues(alpha: 0.6),
             ),
             child: Center(
               child: Padding(
@@ -39,7 +39,7 @@ class ContentWarningBlurOverlay extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.warning_amber_rounded,
-                      color: Color(0xFFFFB84D),
+                      color: VineTheme.contentWarningAmber,
                       size: 48,
                     ),
                     const SizedBox(height: 16),

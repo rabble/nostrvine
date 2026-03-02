@@ -187,7 +187,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           leading: IconButton(
             icon: const Icon(
               Icons.arrow_back,
-              color: Colors.white,
+              color: VineTheme.whiteText,
               semanticLabel: 'Close video player',
             ),
             onPressed: context.pop,
@@ -196,7 +196,10 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         body: const Center(
           child: Text(
             'This account is not available',
-            style: TextStyle(color: Colors.grey, fontSize: 16),
+            style: TextStyle(
+              color: VineTheme.lightText,
+              fontSize: 16,
+            ),
           ),
         ),
       );

@@ -477,7 +477,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                     width: 24,
                     height: 24,
                     colorFilter: const ColorFilter.mode(
-                      Color(0xFF818E8A),
+                      VineTheme.lightText,
                       BlendMode.srcIn,
                     ),
                   ),

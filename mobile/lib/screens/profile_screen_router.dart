@@ -187,7 +187,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       final profileColor = profileAsync?.value?.profileBackgroundColor;
 
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         onDrawerChanged: (isOpen) {
           ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
         },
@@ -219,7 +219,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                   width: 32,
                   height: 32,
                   colorFilter: const ColorFilter.mode(
-                    Colors.white,
+                    VineTheme.whiteText,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -260,7 +260,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                         width: 28,
                         height: 28,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: VineTheme.whiteText,
                           strokeWidth: 2,
                         ),
                       )
@@ -269,7 +269,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                         width: 28,
                         height: 28,
                         colorFilter: const ColorFilter.mode(
-                          Colors.white,
+                          VineTheme.whiteText,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -299,7 +299,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                     width: 28,
                     height: 28,
                     colorFilter: const ColorFilter.mode(
-                      Colors.white,
+                      VineTheme.whiteText,
                       BlendMode.srcIn,
                     ),
                   ),

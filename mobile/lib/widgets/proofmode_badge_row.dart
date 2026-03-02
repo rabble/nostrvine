@@ -82,11 +82,11 @@ class ProofModeBadgeRow extends StatelessWidget {
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+        title: const Row(
           children: [
-            Icon(Icons.public_off, color: Colors.grey.shade400, size: 24),
-            const SizedBox(width: 8),
-            const Text(
+            Icon(Icons.public_off, color: VineTheme.secondaryText, size: 24),
+            SizedBox(width: 8),
+            Text(
               'External Content',
               style: TextStyle(
                 color: VineTheme.whiteText,
@@ -131,14 +131,14 @@ class ProofModeBadgeRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade900,
+                color: VineTheme.cardBackground,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
+              child: const Text(
                 'This content is not hosted, verified, or moderated by Divine. '
                 'We cannot guarantee its authenticity or safety.',
                 style: TextStyle(
-                  color: Colors.grey.shade400,
+                  color: VineTheme.secondaryText,
                   fontSize: 13,
                   height: 1.4,
                 ),

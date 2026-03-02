@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/known_account.dart';
@@ -922,6 +923,33 @@ void main() {
               contains('No archived OAuth session found'),
             ),
           ),
+        );
+      },
+    );
+
+    test(
+      'throws $SessionExpiredException when OAuth session is expired',
+      () async {
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        // Store an expired session (expired 1 hour ago)
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'wss://relay.example.com',
+          accessToken: 'expired-token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        );
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session'),
+        ).thenAnswer((_) async => jsonEncode(expiredSession.toJson()));
+
+        await expectLater(
+          _ignoringDiscoveryErrors(
+            () => authService.signInForAccount(
+              pubkeyHex,
+              AuthenticationSource.divineOAuth,
+            ),
+          ),
+          throwsA(isA<SessionExpiredException>()),
         );
       },
     );

@@ -58,7 +58,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Could not open $pageName'),
-              backgroundColor: Colors.red,
+              backgroundColor: VineTheme.error,
             ),
           );
         }
@@ -68,7 +68,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening $pageName: $error'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -291,7 +291,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
           'How can we help?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: VineTheme.whiteText),
         ),
         scrollable: true,
         content: Column(
@@ -335,7 +335,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Support chat not available'),
-                        backgroundColor: Colors.red,
+                        backgroundColor: VineTheme.error,
                       ),
                     );
                   }
@@ -523,7 +523,7 @@ class _SupportOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: VineTheme.backgroundColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade800),
+          border: Border.all(color: VineTheme.cardBackground),
         ),
         child: Row(
           children: [
@@ -536,7 +536,7 @@ class _SupportOption extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: VineTheme.whiteText,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -544,12 +544,15 @@ class _SupportOption extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey.shade600),
+            const Icon(Icons.chevron_right, color: VineTheme.lightText),
           ],
         ),
       ),

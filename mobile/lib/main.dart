@@ -177,7 +177,7 @@ Future<void> _startOpenVineApp() async {
             WindowSizeConstants.baseHeight,
           ),
           center: true,
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.backgroundColor,
           skipTaskbar: false,
           titleBarStyle: TitleBarStyle.normal,
         );
@@ -1136,7 +1136,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             messenger.showSnackBar(
               SnackBar(
                 content: Text(state.error!),
-                backgroundColor: Colors.red[700],
+                backgroundColor: VineTheme.error,
                 behavior: SnackBarBehavior.floating,
                 duration: const Duration(seconds: 5),
               ),
