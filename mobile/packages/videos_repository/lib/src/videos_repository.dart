@@ -24,6 +24,12 @@ const int _videoKind = EventKind.videoVertical;
 /// Kept small to stay "a couple videos ahead" in the buffer.
 const int _defaultLimit = 5;
 
+/// Timeout for relay search queries.
+///
+/// Set higher than the app-wide 5s default to accommodate slower
+/// user-configured personal relays.
+const Duration _relaySearchTimeout = Duration(seconds: 15);
+
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
 ///
@@ -910,7 +916,7 @@ class VideosRepository {
       final events = await _nostrClient
           .searchVideos(trimmed, limit: limit)
           .timeout(
-            const Duration(seconds: 5),
+            _relaySearchTimeout,
             onTimeout: (sink) => sink.close(),
           )
           .toList();
@@ -975,8 +981,7 @@ class VideosRepository {
       if (seenIds.contains(v.id)) return false;
       seenIds.add(v.id);
       return true;
-    }).toList();
-    unique.sort(VideoEvent.compareByLoopsThenTime);
+    }).toList()..sort(VideoEvent.compareByLoopsThenTime);
     return unique;
   }
 
