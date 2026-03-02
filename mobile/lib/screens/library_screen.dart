@@ -16,8 +16,6 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
-import 'package:openvine/services/clip_library_service.dart';
-import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/library/library.dart';
@@ -207,13 +205,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       providers: [
         BlocProvider<ClipsLibraryBloc>(
           create: (_) => ClipsLibraryBloc(
-            clipLibraryService: ClipLibraryService(),
+            clipLibraryService: ref.read(clipLibraryServiceProvider),
             gallerySaveService: ref.read(gallerySaveServiceProvider),
           )..add(const ClipsLibraryLoadRequested()),
         ),
         BlocProvider<DraftsLibraryBloc>(
           create: (_) => DraftsLibraryBloc(
-            draftStorageService: DraftStorageService(),
+            draftStorageService: ref.read(draftStorageServiceProvider),
           )..add(const DraftsLibraryLoadRequested()),
         ),
       ],

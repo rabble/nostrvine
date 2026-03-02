@@ -25,7 +25,10 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
       _onLoadRequested,
       transformer: droppable(),
     );
-    on<DraftsLibraryDeleteRequested>(_onDeleteRequested);
+    on<DraftsLibraryDeleteRequested>(
+      _onDeleteRequested,
+      transformer: sequential(),
+    );
   }
 
   final DraftStorageService _draftStorageService;

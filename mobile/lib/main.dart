@@ -688,7 +688,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     Future.microtask(() async {
       try {
         final prefs = ref.read(sharedPreferencesProvider);
-        final draftService = await ref.read(draftStorageServiceProvider.future);
+        final draftService = ref.read(draftStorageServiceProvider);
         final clipService = ref.read(clipLibraryServiceProvider);
 
         final migrationService = DraftMigrationService(

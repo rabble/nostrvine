@@ -52,8 +52,3 @@ final class ClipsLibraryDeleteClip extends ClipsLibraryEvent {
 final class ClipsLibrarySaveToGallery extends ClipsLibraryEvent {
   const ClipsLibrarySaveToGallery();
 }
-
-/// Event to add selected clips to the video editor.
-final class ClipsLibraryAddToEditor extends ClipsLibraryEvent {
-  const ClipsLibraryAddToEditor();
-}

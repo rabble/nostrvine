@@ -2030,13 +2030,11 @@ const draftStorageServiceProvider = DraftStorageServiceProvider._();
 final class DraftStorageServiceProvider
     extends
         $FunctionalProvider<
-          AsyncValue<DraftStorageService>,
           DraftStorageService,
-          FutureOr<DraftStorageService>
+          DraftStorageService,
+          DraftStorageService
         >
-    with
-        $FutureModifier<DraftStorageService>,
-        $FutureProvider<DraftStorageService> {
+    with $Provider<DraftStorageService> {
   /// Draft storage service for persisting vine drafts
   const DraftStorageServiceProvider._()
     : super(
@@ -2054,18 +2052,26 @@ final class DraftStorageServiceProvider
 
   @$internal
   @override
-  $FutureProviderElement<DraftStorageService> $createElement(
+  $ProviderElement<DraftStorageService> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $ProviderElement(pointer);
 
   @override
-  FutureOr<DraftStorageService> create(Ref ref) {
+  DraftStorageService create(Ref ref) {
     return draftStorageService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DraftStorageService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DraftStorageService>(value),
+    );
   }
 }
 
 String _$draftStorageServiceHash() =>
-    r'7261c841e01e1a1792419ccc2600e52a417ac927';
+    r'7f6d820281c8b94ed9168af4e0d8ce67755557b1';
 
 /// Clip library service for persisting individual video clips
 

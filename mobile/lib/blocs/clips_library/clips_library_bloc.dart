@@ -253,24 +253,36 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
     var failureCount = 0;
 
     for (final clip in clipsToSave) {
-      final result = await _gallerySaveService.saveVideoToGallery(
-        EditorVideo.file(clip.filePath),
-      );
+      try {
+        final result = await _gallerySaveService.saveVideoToGallery(
+          EditorVideo.file(clip.filePath),
+        );
 
-      switch (result) {
-        case GallerySaveSuccess():
-          successCount++;
-        case GallerySavePermissionDenied():
-          // Stop immediately on permission denied
-          emit(
-            state.copyWith(
-              status: ClipsLibraryStatus.loaded,
-              lastGallerySaveResult: const GallerySaveResultPermissionDenied(),
-            ),
-          );
-          return;
-        case GallerySaveFailure():
-          failureCount++;
+        switch (result) {
+          case GallerySaveSuccess():
+            successCount++;
+          case GallerySavePermissionDenied():
+            // Stop immediately on permission denied
+            emit(
+              state.copyWith(
+                status: ClipsLibraryStatus.loaded,
+                lastGallerySaveResult:
+                    const GallerySaveResultPermissionDenied(),
+              ),
+            );
+            return;
+          case GallerySaveFailure():
+            failureCount++;
+        }
+      } catch (e, s) {
+        addError(e, s);
+        emit(
+          state.copyWith(
+            status: ClipsLibraryStatus.loaded,
+            lastGallerySaveResult: GallerySaveResultError(e.toString()),
+          ),
+        );
+        return;
       }
     }
 

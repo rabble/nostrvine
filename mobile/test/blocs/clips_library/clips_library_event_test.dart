@@ -116,18 +116,5 @@ void main() {
         expect(const ClipsLibrarySaveToGallery().props, isEmpty);
       });
     });
-
-    group(ClipsLibraryAddToEditor, () {
-      test('supports value equality', () {
-        expect(
-          const ClipsLibraryAddToEditor(),
-          equals(const ClipsLibraryAddToEditor()),
-        );
-      });
-
-      test('props are empty', () {
-        expect(const ClipsLibraryAddToEditor().props, isEmpty);
-      });
-    });
   });
 }

@@ -476,6 +476,38 @@ void main() {
               ),
         ],
       );
+
+      blocTest<ClipsLibraryBloc, ClipsLibraryState>(
+        'emits error result when exception is thrown',
+        setUp: () {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenThrow(Exception('Unexpected error'));
+        },
+        seed: () => ClipsLibraryState(
+          status: ClipsLibraryStatus.loaded,
+          clips: [clip1],
+          selectedClipIds: const {'clip1'},
+          selectedDuration: const Duration(seconds: 5),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ClipsLibrarySaveToGallery()),
+        errors: () => [isA<Exception>()],
+        expect: () => [
+          isA<ClipsLibraryState>().having(
+            (s) => s.status,
+            'status',
+            ClipsLibraryStatus.savingToGallery,
+          ),
+          isA<ClipsLibraryState>()
+              .having((s) => s.status, 'status', ClipsLibraryStatus.loaded)
+              .having(
+                (s) => s.lastGallerySaveResult,
+                'lastGallerySaveResult',
+                isA<GallerySaveResultError>(),
+              ),
+        ],
+      );
     });
 
     group('selectedClips', () {

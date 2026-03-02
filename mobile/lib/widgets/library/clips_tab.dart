@@ -181,7 +181,7 @@ class ClipSelectionHeader extends StatelessWidget {
                         '${remainingDuration.toFormattedSeconds()}s remaining',
                         style:
                             VineTheme.bodyFont(
-                              color: const Color(0xBEFFFFFF),
+                              color: VineTheme.onSurfaceVariant,
                               fontSize: 12,
                               height: 1.33,
                               letterSpacing: 0.40,
@@ -276,7 +276,7 @@ class _AddClipButton extends StatelessWidget {
       // TODO(l10n): Replace with context.l10n when localization is added.
       label: 'Add',
       child: GestureDetector(
-        onTap: onTap,
+        onTap: enable ? onTap : null,
         child: Opacity(
           opacity: enable ? 1 : 0.32,
           child: Container(
@@ -294,7 +294,7 @@ class _AddClipButton extends StatelessWidget {
               'Add',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF002C1C),
+                color: VineTheme.onPrimary,
                 fontSize: 18,
                 fontFamily: VineTheme.fontFamilyBricolage,
                 fontWeight: FontWeight.w800,
