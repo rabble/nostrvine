@@ -231,7 +231,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: searchBar,
                   ),
-                  Container(color: VineTheme.navGreen, child: tabBar),
+                  ColoredBox(color: VineTheme.navGreen, child: tabBar),
                   Expanded(child: tabContent),
                 ],
               ),
@@ -310,10 +310,7 @@ class _SearchBar extends StatelessWidget {
                 borderSide: BorderSide.none,
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              prefixIconConstraints: const BoxConstraints(
-                minWidth: 0,
-                minHeight: 0,
-              ),
+              prefixIconConstraints: const BoxConstraints(),
               prefixIcon: Padding(
                 padding: const EdgeInsets.only(left: 12, right: 8),
                 child: isSearching
@@ -405,7 +402,7 @@ class _VideosTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.video_library,
                   size: 64,
                   color: VineTheme.secondaryText,
@@ -413,7 +410,10 @@ class _VideosTab extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   'No videos found for "${state.query}"',
-                  style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
+                  style: const TextStyle(
+                    color: VineTheme.primaryText,
+                    fontSize: 18,
+                  ),
                 ),
               ],
             ),

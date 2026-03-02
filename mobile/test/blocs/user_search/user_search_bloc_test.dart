@@ -187,7 +187,7 @@ void main() {
         seed: () => UserSearchState(
           status: UserSearchStatus.success,
           query: 'flutter',
-          results: [createTestProfile('${'a' * 64}', 'Flutter Dev')],
+          results: [createTestProfile('a' * 64, 'Flutter Dev')],
           offset: 1,
         ),
         act: (bloc) => bloc.add(const UserSearchQueryChanged('flutter')),

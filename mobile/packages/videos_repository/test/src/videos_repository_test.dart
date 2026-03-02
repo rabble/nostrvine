@@ -4198,7 +4198,7 @@ void main() {
 
         expect(result, hasLength(1));
         verify(
-          () => mockFunnelcake.searchVideos(query: 'flutter', limit: 50),
+          () => mockFunnelcake.searchVideos(query: 'flutter'),
         ).called(1);
       });
 
@@ -4612,11 +4612,11 @@ void main() {
         // The stream should yield local results; relay error is caught
         // internally by searchVideosOnRelays
         final results = <List<VideoEvent>>[];
-        await for (final result in repoWithStorage.searchVideos(
-          query: 'flutter',
-        )) {
-          results.add(result);
-        }
+        await repoWithStorage
+            .searchVideos(
+              query: 'flutter',
+            )
+            .forEach(results.add);
 
         // searchVideosOnRelays catches exceptions internally and
         // returns [], so the stream completes normally with local only
