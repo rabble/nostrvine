@@ -1,6 +1,8 @@
 // ABOUTME: Unit tests for ReportContentDialog widget
 // ABOUTME: Tests Apple compliance requirements, reason selection, submission, and blocking
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -363,55 +365,93 @@ void main() {
       );
     });
 
-    testWidgets('report with block checkbox calls reportUser and muteUser', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(800, 1200));
-      await openReportDialog(tester);
+    testWidgets(
+      'report with block checkbox calls muteUser but NOT reportUser '
+      '(no duplicate Kind 1984)',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openReportDialog(tester);
 
-      // Select a reason
-      await tester.tap(find.text('Harassment, Bullying, or Threats'));
-      await tester.pumpAndSettle();
+        // Select a reason
+        await tester.tap(find.text('Harassment, Bullying, or Threats'));
+        await tester.pumpAndSettle();
 
-      // Check block user
-      await tester.tap(find.text('Block this user'));
-      await tester.pumpAndSettle();
+        // Check block user
+        await tester.tap(find.text('Block this user'));
+        await tester.pumpAndSettle();
 
-      // Tap Report
-      await tester.tap(find.widgetWithText(TextButton, 'Report'));
-      await tester.pumpAndSettle();
+        // Tap Report
+        await tester.tap(find.widgetWithText(TextButton, 'Report'));
+        await tester.pumpAndSettle();
 
-      // Verify content report was made
-      verify(
-        () => mockReportingService.reportContent(
-          eventId: any(named: 'eventId'),
-          authorPubkey: any(named: 'authorPubkey'),
-          reason: any(named: 'reason'),
-          details: any(named: 'details'),
-          additionalContext: any(named: 'additionalContext'),
-          hashtags: any(named: 'hashtags'),
-        ),
-      ).called(1);
+        verify(
+          () => mockReportingService.reportContent(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
+            reason: any(named: 'reason'),
+            details: any(named: 'details'),
+            additionalContext: any(named: 'additionalContext'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        ).called(1);
 
-      // Verify user report was made
-      verify(
-        () => mockReportingService.reportUser(
-          userPubkey: any(named: 'userPubkey'),
-          reason: any(named: 'reason'),
-          details: any(named: 'details'),
-          relatedEventIds: any(named: 'relatedEventIds'),
-        ),
-      ).called(1);
+        verifyNever(
+          () => mockReportingService.reportUser(
+            userPubkey: any(named: 'userPubkey'),
+            reason: any(named: 'reason'),
+            details: any(named: 'details'),
+            relatedEventIds: any(named: 'relatedEventIds'),
+          ),
+        );
 
-      // Verify mute was called
-      verify(
-        () => mockMuteService.muteUser(
-          any(),
-          reason: any(named: 'reason'),
-          duration: any(named: 'duration'),
-        ),
-      ).called(1);
-    });
+        verify(
+          () => mockMuteService.muteUser(
+            any(),
+            reason: any(named: 'reason'),
+            duration: any(named: 'duration'),
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'Report button is disabled while submission is in progress '
+      '(prevents double-tap duplicate Kind 1984)',
+      (tester) async {
+        final completer = Completer<ReportResult>();
+        when(
+          () => mockReportingService.reportContent(
+            eventId: any(named: 'eventId'),
+            authorPubkey: any(named: 'authorPubkey'),
+            reason: any(named: 'reason'),
+            details: any(named: 'details'),
+            additionalContext: any(named: 'additionalContext'),
+            hashtags: any(named: 'hashtags'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openReportDialog(tester);
+
+        // Select a reason
+        await tester.tap(find.text('Spam or Unwanted Content'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(TextButton, 'Report'));
+        await tester.pump();
+
+        final buttons = tester.widgetList<TextButton>(
+          find.byType(TextButton),
+        );
+        final hasDisabledReportButton = buttons.any(
+          (btn) => btn.onPressed == null,
+        );
+        expect(hasDisabledReportButton, isTrue);
+
+        completer.complete(ReportResult.createSuccess('test_report_id'));
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets('failed report shows error snackbar', (tester) async {
       when(
