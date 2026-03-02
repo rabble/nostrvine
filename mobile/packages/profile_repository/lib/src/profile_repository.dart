@@ -373,7 +373,7 @@ class ProfileRepository {
           'merged total: ${wsProfiles.length}, $wsWithPic with picture',
           name: 'ProfileRepository.searchUsers',
         );
-      } catch (e) {
+      } on Object catch (e) {
         developer.log(
           'Phase 2 (WebSocket NIP-50) failed: $e',
           name: 'ProfileRepository.searchUsers',
