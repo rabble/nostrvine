@@ -63,9 +63,12 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
     try {
       await emit.forEach<List<VideoEvent>>(
         _videosRepository.searchVideos(query: query),
-        onData: (videos) =>
-            state.copyWith(status: VideoSearchStatus.success, videos: videos),
+        onData: (videos) => state.copyWith(
+          status: VideoSearchStatus.searching,
+          videos: videos,
+        ),
       );
+      emit(state.copyWith(status: VideoSearchStatus.success));
     } on Exception {
       emit(state.copyWith(status: VideoSearchStatus.failure));
     }

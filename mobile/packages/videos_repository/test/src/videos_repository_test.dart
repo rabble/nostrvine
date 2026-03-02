@@ -3932,21 +3932,19 @@ void main() {
       });
 
       test('returns NIP-50 results', () async {
+        final event = _createVideoEvent(
+          id: 'nip50-1',
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
-        ).thenAnswer(
-          (_) async => [
-            _createVideoEvent(
-              id: 'nip50-1',
-              pubkey: 'pubkey-1',
-              videoUrl: 'https://example.com/video.mp4',
-              createdAt: 1704067200,
-            ),
-          ],
-        );
+        ).thenAnswer((_) => Stream.value(event));
 
         final result = await repository.searchVideosOnRelays(
           query: 'flutter',
@@ -3955,17 +3953,17 @@ void main() {
         expect(result, hasLength(1));
         expect(result.first.id, equals('nip50-1'));
         verify(
-          () => mockNostrClient.querySearchVideos('flutter', limit: 100),
+          () => mockNostrClient.searchVideos('flutter', limit: 100),
         ).called(1);
       });
 
       test('passes custom limit to NIP-50 search', () async {
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer((_) => const Stream.empty());
 
         await repository.searchVideosOnRelays(
           query: 'flutter',
@@ -3973,17 +3971,17 @@ void main() {
         );
 
         verify(
-          () => mockNostrClient.querySearchVideos('flutter', limit: 50),
+          () => mockNostrClient.searchVideos('flutter', limit: 50),
         ).called(1);
       });
 
       test('handles NIP-50 failure gracefully', () async {
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
-        ).thenThrow(Exception('relay error'));
+        ).thenAnswer((_) => Stream.error(Exception('relay error')));
 
         final result = await repository.searchVideosOnRelays(
           query: 'flutter',
@@ -3998,12 +3996,12 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
-          (_) async => [
+          (_) => Stream.fromIterable([
             _createVideoEvent(
               id: 'ok-video',
               pubkey: 'good-pubkey',
@@ -4016,7 +4014,7 @@ void main() {
               videoUrl: 'https://example.com/blocked.mp4',
               createdAt: 1704067100,
             ),
-          ],
+          ]),
         );
 
         final repoWithFilter = VideosRepository(
@@ -4032,21 +4030,21 @@ void main() {
         expect(result.first.id, equals('ok-video'));
       });
 
-      test('waits for relay response without timeout', () async {
+      test('collects stream events within timeout', () async {
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
-          (_) async => [
+          (_) => Stream.value(
             _createVideoEvent(
               id: 'slow-result',
               pubkey: 'pubkey-1',
               videoUrl: 'https://example.com/video.mp4',
               createdAt: 1704067200,
             ),
-          ],
+          ),
         );
 
         final result = await repository.searchVideosOnRelays(
@@ -4307,11 +4305,11 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer((_) => const Stream.empty());
 
         final repoWithStorage = VideosRepository(
           nostrClient: mockNostrClient,
@@ -4363,19 +4361,19 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
-          (_) async => [
+          (_) => Stream.value(
             _createVideoEvent(
               id: 'relay-1',
               pubkey: 'pubkey-3',
               videoUrl: 'https://example.com/relay.mp4',
               createdAt: 1704067100,
             ),
-          ],
+          ),
         );
 
         final repoWithAll = VideosRepository(
@@ -4388,8 +4386,7 @@ void main() {
             .searchVideos(query: 'flutter')
             .toList();
 
-        // Should have 3 emissions: local, local+first-remote,
-        // local+both-remotes
+        // Should have 3 emissions: local, local+API, local+API+relay
         expect(results, hasLength(3));
         expect(results[0], hasLength(1)); // local only
         expect(results.last, hasLength(3)); // all sources combined
@@ -4414,11 +4411,11 @@ void main() {
 
         // Both remote sources return empty
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer((_) => const Stream.empty());
 
         final repoWithStorage = VideosRepository(
           nostrClient: mockNostrClient,
@@ -4451,11 +4448,11 @@ void main() {
 
         // Relay returns the same video
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
-        ).thenAnswer((_) async => [sharedEvent]);
+        ).thenAnswer((_) => Stream.value(sharedEvent));
 
         final repoWithStorage = VideosRepository(
           nostrClient: mockNostrClient,
@@ -4487,23 +4484,22 @@ void main() {
           ],
         );
 
-        // Relay throws — Stream.fromFutures propagates the error
+        // Relay throws — caught by searchVideosOnRelays internally
         when(
-          () => mockNostrClient.querySearchVideos(
+          () => mockNostrClient.searchVideos(
             any(),
             limit: any(named: 'limit'),
           ),
-        ).thenThrow(Exception('relay error'));
+        ).thenAnswer((_) => Stream.error(Exception('relay error')));
 
         final repoWithStorage = VideosRepository(
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
         );
 
-        // The stream should yield local results then error from the
-        // failing future in Stream.fromFutures
+        // The stream should yield local results; relay error is caught
+        // internally by searchVideosOnRelays
         final results = <List<VideoEvent>>[];
-        Object? caughtError;
         await for (final result in repoWithStorage.searchVideos(
           query: 'flutter',
         )) {
@@ -4511,9 +4507,8 @@ void main() {
         }
 
         // searchVideosOnRelays catches exceptions internally and
-        // returns [], so the stream completes normally
+        // returns [], so the stream completes normally with local only
         expect(results.first, hasLength(1));
-        expect(caughtError, isNull);
       });
     });
     group('getVideosByLoops', () {

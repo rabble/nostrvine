@@ -362,19 +362,20 @@ class _VideosTab extends StatelessWidget {
     return BlocBuilder<VideoSearchBloc, VideoSearchState>(
       bloc: videoSearchBloc,
       builder: (context, state) {
-        if (state.status == VideoSearchStatus.searching) {
-          return Center(
+        if (state.status == VideoSearchStatus.searching &&
+            state.videos.isEmpty) {
+          return const Center(
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
           );
         }
 
         if (state.query.isEmpty) {
-          return Center(
+          return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.search, size: 64, color: VineTheme.secondaryText),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Text(
                   'Search for videos',
                   style: TextStyle(color: VineTheme.primaryText, fontSize: 18),

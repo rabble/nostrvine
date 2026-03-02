@@ -4,6 +4,8 @@
 // ABOUTME: Returns Future<List<VideoEvent>>, not streams -
 // ABOUTME: loading is pagination-based.
 
+import 'dart:developer' as developer;
+
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -866,7 +868,7 @@ class VideosRepository {
 
   /// Searches NIP-50 relays for videos matching [query].
   ///
-  /// Full-text search via [NostrClient.querySearchVideos] with a 5-second
+  /// Full-text search via [NostrClient.searchVideos] with a 5-second
   /// timeout to avoid blocking the caller. Returns empty on timeout or
   /// failure.
   ///
@@ -884,12 +886,21 @@ class VideosRepository {
     if (trimmed.isEmpty) return [];
 
     try {
-      final events = await _nostrClient.querySearchVideos(
-        trimmed,
-        limit: limit,
-      );
+      final events = await _nostrClient
+          .searchVideos(trimmed, limit: limit)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: (sink) => sink.close(),
+          )
+          .toList();
       return _transformAndFilter(events, sortByCreatedAt: false);
-    } on Exception {
+    } on Exception catch (e, stackTrace) {
+      developer.log(
+        'searchVideosOnRelays failed for "$trimmed"',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return [];
     }
   }
@@ -922,7 +933,13 @@ class VideosRepository {
         limit: limit,
       );
       return _transformVideoStats(stats, sortByCreatedAt: false);
-    } on FunnelcakeException {
+    } on FunnelcakeException catch (e, stackTrace) {
+      developer.log(
+        'searchVideosViaApi failed for "$trimmed"',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
       return [];
     }
   }
@@ -947,12 +964,12 @@ class VideosRepository {
   /// Returns a [Stream] that emits accumulated [VideoEvent] lists as each
   /// source completes:
   /// 1. Local cache results (instant)
-  /// 2. First remote source to finish (API or relay)
-  /// 3. Second remote source to finish (all done)
+  /// 2. Funnelcake API results (fast, ~1s)
+  /// 3. NIP-50 relay results (slower, ~5s)
   ///
   /// Each emission contains the full deduplicated+sorted result set so far.
-  /// Uses [Stream.fromFutures] so the faster remote source yields first —
-  /// typically API (~1s) before relay (~5s).
+  /// Each phase is isolated — a failure in one phase does not prevent
+  /// subsequent phases from yielding results.
   ///
   /// Parameters:
   /// - [query]: The search query string. Returns empty stream if blank.
@@ -969,21 +986,48 @@ class VideosRepository {
     var accumulated = deduplicateAndSortVideos(local);
     yield accumulated;
 
-    // Phase 2: API + relay in parallel — yield as each completes.
-    // Stream.fromFutures emits in completion order, so the faster
-    // source (typically API ~1s) yields before the slower one
-    // (relay ~5s).
-    await for (final result in Stream.fromFutures([
-      searchVideosViaApi(query: trimmed, limit: limit),
-      searchVideosOnRelays(query: trimmed, limit: limit),
-    ])) {
-      if (result.isNotEmpty) {
+    // Phase 2: Funnelcake API (fast)
+    try {
+      final apiResults = await searchVideosViaApi(
+        query: trimmed,
+        limit: limit,
+      );
+      if (apiResults.isNotEmpty) {
         accumulated = deduplicateAndSortVideos([
           ...accumulated,
-          ...result,
+          ...apiResults,
         ]);
         yield accumulated;
       }
+    } on Exception catch (e, stackTrace) {
+      developer.log(
+        'searchVideos API phase failed for "$trimmed"',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+
+    // Phase 3: NIP-50 relay search (slower)
+    try {
+      final relayResults = await searchVideosOnRelays(
+        query: trimmed,
+        limit: limit,
+      );
+      if (relayResults.isNotEmpty) {
+        accumulated = deduplicateAndSortVideos([
+          ...accumulated,
+          ...relayResults,
+        ]);
+        yield accumulated;
+      }
+    } on Exception catch (e, stackTrace) {
+      developer.log(
+        'searchVideos relay phase failed for "$trimmed"',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
     }
   }
 
