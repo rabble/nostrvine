@@ -496,9 +496,9 @@ void main() {
             userPubkey: 'my-pubkey',
           );
 
-          expect(result, hasLength(1));
+          expect(result.videos, hasLength(1));
           expect(
-            result.first.videoUrl,
+            result.videos.first.videoUrl,
             equals('https://example.com/video.mp4'),
           );
           verifyNever(() => mockNostrClient.queryEvents(any()));
@@ -570,8 +570,8 @@ void main() {
             userPubkey: 'my-pubkey',
           );
 
-          expect(result, hasLength(1));
-          expect(result.first.id, equals('nostr-video'));
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('nostr-video'));
           verify(() => mockNostrClient.queryEvents(any())).called(1);
         });
 
@@ -607,8 +607,8 @@ void main() {
             userPubkey: 'my-pubkey',
           );
 
-          expect(result, hasLength(1));
-          expect(result.first.id, equals('nostr-video'));
+          expect(result.videos, hasLength(1));
+          expect(result.videos.first.id, equals('nostr-video'));
         });
 
         test('skips API when userPubkey is null', () async {
@@ -704,9 +704,9 @@ void main() {
             userPubkey: 'my-pubkey',
           );
 
-          expect(result, hasLength(1));
+          expect(result.videos, hasLength(1));
           expect(
-            result.first.videoUrl,
+            result.videos.first.videoUrl,
             equals('https://example.com/allowed.mp4'),
           );
         });
@@ -715,7 +715,7 @@ void main() {
       test('returns empty list when authors is empty', () async {
         final result = await repository.getHomeFeedVideos(authors: []);
 
-        expect(result, isEmpty);
+        expect(result.videos, isEmpty);
         verifyNever(() => mockNostrClient.queryEvents(any()));
       });
 
@@ -728,7 +728,7 @@ void main() {
           authors: ['pubkey1', 'pubkey2'],
         );
 
-        expect(result, isEmpty);
+        expect(result.videos, isEmpty);
         verify(() => mockNostrClient.queryEvents(any())).called(1);
       });
 
@@ -786,9 +786,9 @@ void main() {
           authors: ['followed-user'],
         );
 
-        expect(result, hasLength(1));
-        expect(result.first.id, equals('home-video-123'));
-        expect(result.first.pubkey, equals('followed-user'));
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('home-video-123'));
+        expect(result.videos.first.pubkey, equals('followed-user'));
       });
 
       test('sorts videos by creation time (newest first)', () async {
@@ -813,9 +813,9 @@ void main() {
           authors: ['user1', 'user2'],
         );
 
-        expect(result, hasLength(2));
-        expect(result.first.id, equals('newer'));
-        expect(result.last.id, equals('older'));
+        expect(result.videos, hasLength(2));
+        expect(result.videos.first.id, equals('newer'));
+        expect(result.videos.last.id, equals('older'));
       });
     });
 
@@ -2080,8 +2080,8 @@ void main() {
           authors: [blockedPubkey, allowedPubkey],
         );
 
-        expect(result, hasLength(1));
-        expect(result.first.pubkey, equals(allowedPubkey));
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.pubkey, equals(allowedPubkey));
       });
 
       test('filters blocked pubkeys in popular feed', () async {

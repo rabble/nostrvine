@@ -1091,25 +1091,6 @@ class VideosRepository {
     return _transformVideoStats(stats, sortByCreatedAt: false);
   }
 
-  /// Searches videos by text query.
-  ///
-  /// Returns empty list if Funnelcake API is unavailable.
-  ///
-  /// Throws [FunnelcakeException] subtypes on API errors.
-  Future<List<VideoEvent>> searchVideos({
-    required String query,
-    int limit = 20,
-  }) async {
-    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
-      return [];
-    }
-    final stats = await _funnelcakeApiClient.searchVideos(
-      query: query,
-      limit: limit,
-    );
-    return _transformVideoStats(stats, sortByCreatedAt: false);
-  }
-
   /// Fetches classic Vine videos (pre-Nostr archive).
   ///
   /// Returns empty list if Funnelcake API is unavailable.
