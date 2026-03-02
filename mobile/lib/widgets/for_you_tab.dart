@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -25,13 +26,25 @@ import 'package:rxdart/rxdart.dart';
 /// - Loading/error/data states
 /// - Empty state when recommendations unavailable
 class ForYouTab extends ConsumerStatefulWidget {
-  const ForYouTab({super.key});
+  const ForYouTab({super.key, this.feedTracker});
+
+  /// Optional analytics tracker (for testing, defaults to singleton).
+  final FeedPerformanceTracker? feedTracker;
 
   @override
   ConsumerState<ForYouTab> createState() => _ForYouTabState();
 }
 
 class _ForYouTabState extends ConsumerState<ForYouTab> {
+  late final FeedPerformanceTracker? _feedTracker;
+  DateTime? _feedLoadStartTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _feedTracker = widget.feedTracker;
+  }
+
   @override
   Widget build(BuildContext context) {
     final forYouAsync = ref.watch(forYouFeedProvider);
@@ -50,12 +63,24 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
       return const _ForYouUnavailableState();
     }
 
+    // Track feed loading start
+    if (forYouAsync.isLoading && _feedLoadStartTime == null) {
+      _feedLoadStartTime = DateTime.now();
+      _feedTracker?.startFeedLoad('for_you');
+    }
+
     // Check hasValue FIRST before isLoading
     if (forYouAsync.hasValue && forYouAsync.value != null) {
       return _buildDataState(forYouAsync.value!);
     }
 
     if (forYouAsync.hasError) {
+      _feedTracker?.trackFeedError(
+        'for_you',
+        errorType: 'load_failed',
+        errorMessage: forYouAsync.error.toString(),
+      );
+      _feedLoadStartTime = null;
       return _ForYouErrorState(error: forYouAsync.error.toString());
     }
 
@@ -72,7 +97,15 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
       category: LogCategory.video,
     );
 
+    // Track feed loaded with videos
+    if (_feedLoadStartTime != null) {
+      _feedTracker?.markFirstVideosReceived('for_you', videos.length);
+      _feedTracker?.markFeedDisplayed('for_you', videos.length);
+      _feedLoadStartTime = null;
+    }
+
     if (videos.isEmpty) {
+      _feedTracker?.trackEmptyFeed('for_you');
       return const _ForYouEmptyState();
     }
 

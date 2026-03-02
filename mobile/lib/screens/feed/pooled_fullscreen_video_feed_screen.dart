@@ -15,6 +15,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/router/app_router.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -363,6 +364,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               controller: _controller,
               initialIndex: state.currentIndex,
               onActiveVideoChanged: (video, index) {
+                FeedPerformanceTracker().startVideoSwipeTracking(video.id);
                 context.read<FullscreenFeedBloc>().add(
                   FullscreenFeedIndexChanged(index),
                 );
