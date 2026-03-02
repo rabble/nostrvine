@@ -72,4 +72,3 @@ linter:
     use_named_constants: false
     omit_local_variable_types: false
     use_setters_to_change_properties: false
-
