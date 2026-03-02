@@ -337,7 +337,6 @@ bool _isEmojiOnly(String text) {
   // Check each grapheme is emoji (no ASCII text, no nostr: mentions).
   // Includes Emoji_Component for keycap (\u20e3) and tag sequences,
   // and Regional_Indicator for flag emojis.
-  // ignore: valid_regexps
   final emojiRegex = RegExp(
     // Emoji component chars (ZWJ, VS-16, keycap, skin tones, digits/#/*)
     r'^[\u200d\ufe0f\u20e30-9#*\u{1F3FB}-\u{1F3FF}'
