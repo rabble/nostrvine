@@ -50,7 +50,7 @@ void main() {
           videoUrl: 'https://example.com/video1.mp4',
           createdAt: timestamp,
           timestamp: now,
-          hashtags: ['flutter', 'development'],
+          hashtags: const ['flutter', 'development'],
         ),
         VideoEvent(
           id: 'video2',
@@ -60,7 +60,7 @@ void main() {
           videoUrl: 'https://example.com/video2.mp4',
           createdAt: timestamp,
           timestamp: now,
-          hashtags: ['dart', 'programming'],
+          hashtags: const ['dart', 'programming'],
         ),
       ];
     });

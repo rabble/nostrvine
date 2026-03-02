@@ -749,7 +749,7 @@ class VideoEvent {
   ///
   /// Returns true if any subtitle source exists: embedded VTT content,
   /// a text-track reference (Kind 39307), or a sha256 hash (Blossom server
-  /// may have auto-generated VTT at `{server}/{sha256}/vtt`).
+  /// auto-generates VTT at `{server}/{sha256}/vtt`).
   bool get hasSubtitles =>
       (textTrackRef != null && textTrackRef!.isNotEmpty) ||
       (textTrackContent != null && textTrackContent!.isNotEmpty) ||

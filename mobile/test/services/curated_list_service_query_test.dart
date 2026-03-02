@@ -1,15 +1,14 @@
 // ABOUTME: Unit tests for CuratedListService query operations
 // ABOUTME: Tests searching, filtering, and retrieving lists
 
-// ignore_for_file: invalid_use_of_null_value
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -61,7 +60,7 @@ void main() {
       // Mock subscribeToEvents for relay sync
       when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
 
       // Mock event creation
       when(
@@ -93,9 +92,9 @@ void main() {
     group('searchLists()', () {
       test('finds lists by name', () async {
         // FIXME: Test isolation issue - passes individually, fails in batch
-        await service.createList(name: 'Cooking Videos', isPublic: true);
-        await service.createList(name: 'Travel Adventures', isPublic: true);
-        await service.createList(name: 'Cooking Recipes', isPublic: true);
+        await service.createList(name: 'Cooking Videos');
+        await service.createList(name: 'Travel Adventures');
+        await service.createList(name: 'Cooking Recipes');
 
         final results = service.searchLists('cooking');
 
@@ -109,12 +108,10 @@ void main() {
         await service.createList(
           name: 'Random List',
           description: 'Videos about cooking',
-          isPublic: true,
         );
         await service.createList(
           name: 'Another List',
           description: 'Travel videos',
-          isPublic: true,
         );
 
         final results = service.searchLists('cooking');
@@ -124,16 +121,8 @@ void main() {
       });
 
       test('finds lists by tags', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tech', 'tutorial'],
-          isPublic: true,
-        );
-        await service.createList(
-          name: 'List 2',
-          tags: ['cooking', 'food'],
-          isPublic: true,
-        );
+        await service.createList(name: 'List 1', tags: ['tech', 'tutorial']);
+        await service.createList(name: 'List 2', tags: ['cooking', 'food']);
 
         final results = service.searchLists('tech');
 
@@ -145,7 +134,7 @@ void main() {
       }, skip: true);
 
       test('is case-insensitive', () async {
-        await service.createList(name: 'Cooking Videos', isPublic: true);
+        await service.createList(name: 'Cooking Videos');
 
         final results1 = service.searchLists('COOKING');
         final results2 = service.searchLists('cooking');
@@ -157,8 +146,8 @@ void main() {
       });
 
       test('returns empty list for no matches', () async {
-        await service.createList(name: 'Cooking Videos', isPublic: true);
-        await service.createList(name: 'Travel Adventures', isPublic: true);
+        await service.createList(name: 'Cooking Videos');
+        await service.createList(name: 'Travel Adventures');
 
         final results = service.searchLists('programming');
 
@@ -166,7 +155,7 @@ void main() {
       });
 
       test('returns empty list for empty query', () async {
-        await service.createList(name: 'Test List', isPublic: true);
+        await service.createList(name: 'Test List');
 
         final results = service.searchLists('');
 
@@ -174,7 +163,7 @@ void main() {
       });
 
       test('returns empty list for whitespace-only query', () async {
-        await service.createList(name: 'Test List', isPublic: true);
+        await service.createList(name: 'Test List');
 
         final results = service.searchLists('   ');
 
@@ -182,7 +171,7 @@ void main() {
       });
 
       test('only returns public lists', () async {
-        await service.createList(name: 'Public Cooking', isPublic: true);
+        await service.createList(name: 'Public Cooking');
         await service.createList(name: 'Private Cooking', isPublic: false);
 
         final results = service.searchLists('cooking');
@@ -196,7 +185,6 @@ void main() {
           name: 'Tech Videos',
           description: 'Programming tutorials',
           tags: ['coding'],
-          isPublic: true,
         );
 
         final byName = service.searchLists('tech');
@@ -211,23 +199,11 @@ void main() {
 
     group('getListsByTag()', () {
       test('returns lists with specific tag', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tech', 'tutorial'],
-          isPublic: true,
-        );
+        await service.createList(name: 'List 1', tags: ['tech', 'tutorial']);
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(
-          name: 'List 2',
-          tags: ['cooking', 'food'],
-          isPublic: true,
-        );
+        await service.createList(name: 'List 2', tags: ['cooking', 'food']);
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(
-          name: 'List 3',
-          tags: ['tech', 'news'],
-          isPublic: true,
-        );
+        await service.createList(name: 'List 3', tags: ['tech', 'news']);
 
         final results = service.getListsByTag('tech');
 
@@ -239,7 +215,6 @@ void main() {
         await service.createList(
           name: 'Test List',
           tags: ['tech'], // Tags stored lowercase
-          isPublic: true,
         );
 
         final results1 = service.getListsByTag('tech');
@@ -252,11 +227,7 @@ void main() {
       });
 
       test('returns empty list for non-existent tag', () async {
-        await service.createList(
-          name: 'Test List',
-          tags: ['tech'],
-          isPublic: true,
-        );
+        await service.createList(name: 'Test List', tags: ['tech']);
 
         final results = service.getListsByTag('cooking');
 
@@ -264,11 +235,7 @@ void main() {
       });
 
       test('only returns public lists', () async {
-        await service.createList(
-          name: 'Public List',
-          tags: ['tech'],
-          isPublic: true,
-        );
+        await service.createList(name: 'Public List', tags: ['tech']);
         await service.createList(
           name: 'Private List',
           tags: ['tech'],
@@ -284,23 +251,11 @@ void main() {
 
     group('getAllTags()', () {
       test('returns all unique tags across lists', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tech', 'tutorial'],
-          isPublic: true,
-        );
+        await service.createList(name: 'List 1', tags: ['tech', 'tutorial']);
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(
-          name: 'List 2',
-          tags: ['cooking', 'food'],
-          isPublic: true,
-        );
+        await service.createList(name: 'List 2', tags: ['cooking', 'food']);
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(
-          name: 'List 3',
-          tags: ['tech', 'news'],
-          isPublic: true,
-        );
+        await service.createList(name: 'List 3', tags: ['tech', 'news']);
 
         final tags = service.getAllTags();
 
@@ -312,16 +267,8 @@ void main() {
       });
 
       test('removes duplicates', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tech', 'tutorial'],
-          isPublic: true,
-        );
-        await service.createList(
-          name: 'List 2',
-          tags: ['tech', 'news'],
-          isPublic: true,
-        );
+        await service.createList(name: 'List 1', tags: ['tech', 'tutorial']);
+        await service.createList(name: 'List 2', tags: ['tech', 'news']);
 
         final tags = service.getAllTags();
 
@@ -332,7 +279,6 @@ void main() {
         await service.createList(
           name: 'List 1',
           tags: ['zebra', 'alpha', 'middle'],
-          isPublic: true,
         );
 
         final tags = service.getAllTags();
@@ -341,11 +287,7 @@ void main() {
       });
 
       test('only includes tags from public lists', () async {
-        await service.createList(
-          name: 'Public List',
-          tags: ['public_tag'],
-          isPublic: true,
-        );
+        await service.createList(name: 'Public List', tags: ['public_tag']);
         await service.createList(
           name: 'Private List',
           tags: ['private_tag'],
@@ -359,7 +301,7 @@ void main() {
       });
 
       test('returns empty list when no tags', () async {
-        await service.createList(name: 'Test List', isPublic: true);
+        await service.createList(name: 'Test List');
 
         final tags = service.getAllTags();
 
@@ -367,13 +309,9 @@ void main() {
       });
 
       test('handles lists with no tags', () async {
-        await service.createList(
-          name: 'List 1',
-          tags: ['tag1'],
-          isPublic: true,
-        );
+        await service.createList(name: 'List 1', tags: ['tag1']);
         await Future.delayed(const Duration(milliseconds: 5));
-        await service.createList(name: 'List 2', tags: [], isPublic: true);
+        await service.createList(name: 'List 2', tags: []);
 
         final tags = service.getAllTags();
 
@@ -385,12 +323,12 @@ void main() {
 
     group('fetchPublicListsContainingVideo()', () {
       test('returns empty list when no public lists contain video', () async {
-        final targetVideoId = 'orphan_video_id_123456789abcdef';
+        const targetVideoId = 'orphan_video_id_123456789abcdef';
 
         // Setup mock to return empty stream
         when(
           () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
-        ).thenAnswer((_) => Stream.empty());
+        ).thenAnswer((_) => const Stream.empty());
 
         // Act
         final lists = await service.fetchPublicListsContainingVideo(
@@ -402,7 +340,7 @@ void main() {
       });
 
       test('returns stream for progressive loading', () async {
-        final targetVideoId = 'target_video_123456789abcdef';
+        const targetVideoId = 'target_video_123456789abcdef';
         final mockListEvent1 = Event.fromJson({
           'id': 'list_1',
           'pubkey': 'user1_pubkey_123456789abcdef',
@@ -454,8 +392,8 @@ void main() {
 
     group('Query Operations - Edge Cases', () {
       test('search handles special characters', () async {
-        await service.createList(name: 'C++ Programming', isPublic: true);
-        await service.createList(name: 'C# Development', isPublic: true);
+        await service.createList(name: 'C++ Programming');
+        await service.createList(name: 'C# Development');
 
         final results1 = service.searchLists('c++');
         final results2 = service.searchLists('c#');
@@ -466,8 +404,8 @@ void main() {
       }, skip: true);
 
       test('search handles unicode characters', () async {
-        await service.createList(name: 'Español Videos', isPublic: true);
-        await service.createList(name: '日本語 Content', isPublic: true);
+        await service.createList(name: 'Español Videos');
+        await service.createList(name: '日本語 Content');
 
         final results1 = service.searchLists('español');
         final results2 = service.searchLists('日本語');
@@ -478,7 +416,7 @@ void main() {
       }, skip: true);
 
       test('search with partial match', () async {
-        await service.createList(name: 'Programming Tutorials', isPublic: true);
+        await service.createList(name: 'Programming Tutorials');
 
         final results = service.searchLists('program');
 
@@ -487,11 +425,7 @@ void main() {
       });
 
       test('getListsByTag with tag that has spaces', () async {
-        await service.createList(
-          name: 'Test List',
-          tags: ['with spaces'],
-          isPublic: true,
-        );
+        await service.createList(name: 'Test List', tags: ['with spaces']);
 
         final results = service.getListsByTag('with spaces');
 
@@ -502,7 +436,6 @@ void main() {
         await service.createList(
           name: 'Test List',
           tags: ['valid', '', 'another'],
-          isPublic: true,
         );
 
         final tags = service.getAllTags();
@@ -517,9 +450,8 @@ void main() {
         for (var i = 0; i < 50; i++) {
           await service.createList(
             name: 'List $i',
-            description: i % 2 == 0 ? 'even number' : 'odd number',
+            description: i.isEven ? 'even number' : 'odd number',
             tags: ['tag$i'],
-            isPublic: true,
           );
         }
 
@@ -712,7 +644,7 @@ void main() {
           'pubkey':
               'pubkey_123456789abcdef0123456789abcdef'
               '0123456789abcdef01234567',
-          'created_at': DateTime(2024, 1, 1).millisecondsSinceEpoch ~/ 1000,
+          'created_at': DateTime(2024).millisecondsSinceEpoch ~/ 1000,
           'kind': 30005,
           'tags': [
             ['d', 'old-list'],
@@ -728,7 +660,7 @@ void main() {
         ).thenAnswer((_) => Stream.fromIterable([oldEvent]));
 
         // Act: Request with until date
-        final until = DateTime(2024, 6, 1);
+        final until = DateTime(2024, 6);
         List<CuratedList>? results;
         await for (final lists in service.streamPublicListsFromRelays(
           until: until,

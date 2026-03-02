@@ -1,6 +1,7 @@
 // ABOUTME: Button for selecting the marker/highlighter tool.
 // ABOUTME: Displays a marker pen icon with semi-transparent colored tip.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item_button.dart';
 
@@ -10,10 +11,10 @@ import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item
 class DrawToolMarker extends StatelessWidget {
   /// Creates a marker tool button.
   const DrawToolMarker({
-    super.key,
     required this.isSelected,
     required this.color,
     required this.onTap,
+    super.key,
   });
 
   /// Whether this tool is currently selected.
@@ -116,7 +117,7 @@ class _MarkerPainter extends CustomPainter {
     // Part 2: Funnel/cone (white) - with kink (rect top + diagonal bottom)
     // Combined with body since both are white
     final whitePaint = Paint()
-      ..color = Colors.white
+      ..color = VineTheme.whiteText
       ..style = .fill;
 
     final funnelPath = Path()

@@ -1,20 +1,20 @@
 // ABOUTME: Reusable row of ProofMode and Vine badges for consistent display across video UI
 // ABOUTME: Automatically shows appropriate badges based on VideoEvent metadata
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';
+import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/user_name.dart';
 
 /// Reusable badge row for displaying ProofMode verification and Vine badges
 class ProofModeBadgeRow extends StatelessWidget {
   const ProofModeBadgeRow({
-    super.key,
     required this.video,
+    super.key,
     this.size = BadgeSize.small,
     this.spacing = 8.0,
     this.mainAxisAlignment = MainAxisAlignment.start,
@@ -58,12 +58,7 @@ class ProofModeBadgeRow extends StatelessWidget {
       badges.add(OriginalVineBadge(size: size));
     }
 
-    return Wrap(
-      spacing: spacing,
-      runSpacing: spacing,
-      alignment: WrapAlignment.start,
-      children: badges,
-    );
+    return Wrap(spacing: spacing, runSpacing: spacing, children: badges);
   }
 
   /// Extract host domain from video URL
@@ -87,11 +82,11 @@ class ProofModeBadgeRow extends StatelessWidget {
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
+        title: const Row(
           children: [
-            Icon(Icons.public_off, color: Colors.grey.shade400, size: 24),
-            const SizedBox(width: 8),
-            const Text(
+            Icon(Icons.public_off, color: VineTheme.secondaryText, size: 24),
+            SizedBox(width: 8),
+            Text(
               'External Content',
               style: TextStyle(
                 color: VineTheme.whiteText,
@@ -105,7 +100,7 @@ class ProofModeBadgeRow extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'This video is hosted on:',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
             ),
@@ -119,7 +114,7 @@ class ProofModeBadgeRow extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'Published by:',
               style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
             ),
@@ -136,14 +131,14 @@ class ProofModeBadgeRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.grey.shade900,
+                color: VineTheme.cardBackground,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
+              child: const Text(
                 'This content is not hosted, verified, or moderated by Divine. '
                 'We cannot guarantee its authenticity or safety.',
                 style: TextStyle(
-                  color: Colors.grey.shade400,
+                  color: VineTheme.secondaryText,
                   fontSize: 13,
                   height: 1.4,
                 ),

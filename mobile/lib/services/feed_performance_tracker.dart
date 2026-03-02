@@ -94,10 +94,7 @@ class FeedPerformanceTracker {
   void trackFeedRefresh(String feedType, {String? trigger}) {
     _analytics.logEvent(
       name: 'feed_refresh',
-      parameters: {
-        'feed_type': feedType,
-        if (trigger != null) 'trigger': trigger,
-      },
+      parameters: {'feed_type': feedType, 'trigger': ?trigger},
     );
 
     UnifiedLogger.info(
@@ -162,7 +159,7 @@ class FeedPerformanceTracker {
         'engagement_type': engagementType,
         'position_in_feed': positionInFeed,
         'video_id': videoId,
-        if (watchDurationMs != null) 'watch_duration_ms': watchDurationMs,
+        'watch_duration_ms': ?watchDurationMs,
       },
     );
   }
@@ -171,7 +168,7 @@ class FeedPerformanceTracker {
   void trackEmptyFeed(String feedType, {String? reason}) {
     _analytics.logEvent(
       name: 'feed_empty',
-      parameters: {'feed_type': feedType, if (reason != null) 'reason': reason},
+      parameters: {'feed_type': feedType, 'reason': ?reason},
     );
 
     UnifiedLogger.warning(
@@ -232,7 +229,7 @@ class FeedPerformanceTracker {
       parameters: {
         'video_id': videoId,
         'discovery_source': discoverySource,
-        if (positionInList != null) 'position': positionInList,
+        'position': ?positionInList,
       },
     );
   }

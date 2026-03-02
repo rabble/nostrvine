@@ -19,13 +19,11 @@ void main() {
       videoWithThumbnail = createTestVideoEvent(
         id: 'test1',
         thumbnailUrl: 'https://example.com/thumb1.jpg',
-        blurhash: null,
       );
 
       // Video with only blurhash
       videoWithBlurhash = createTestVideoEvent(
         id: 'test2',
-        thumbnailUrl: null,
         blurhash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
       );
 
@@ -37,11 +35,7 @@ void main() {
       );
 
       // Video with neither
-      videoWithNeither = createTestVideoEvent(
-        id: 'test4',
-        thumbnailUrl: null,
-        blurhash: null,
-      );
+      videoWithNeither = createTestVideoEvent(id: 'test4');
     });
 
     testWidgets('builds widget tree correctly when thumbnail URL exists', (

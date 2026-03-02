@@ -18,9 +18,9 @@ Nip05VerificationService nip05VerificationService(Ref ref) {
   final service = Nip05VerificationService(db.nip05VerificationsDao);
 
   // Clean up expired entries on startup
-  Future.microtask(() => service.deleteExpired());
+  Future.microtask(service.deleteExpired);
 
-  ref.onDispose(() => service.dispose());
+  ref.onDispose(service.dispose);
 
   return service;
 }

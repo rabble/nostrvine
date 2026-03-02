@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -5,7 +6,7 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 
 /// Circular record button for starting/stopping video recording.
 class RecordButton extends ConsumerWidget {
-  const RecordButton();
+  const RecordButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -62,7 +63,7 @@ class RecordButton extends ConsumerWidget {
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                border: .all(color: Colors.white, width: 4),
+                border: .all(color: VineTheme.whiteText, width: 4),
                 borderRadius: .circular(36),
               ),
               child: Center(
@@ -72,13 +73,13 @@ class RecordButton extends ConsumerWidget {
                   width: state.isRecording ? 32 : 64,
                   height: state.isRecording ? 32 : 64,
                   decoration: ShapeDecoration(
-                    color: const Color(0xFFF44336),
+                    color: VineTheme.error,
                     shape: RoundedRectangleBorder(
                       borderRadius: .circular(state.isRecording ? 6 : 20),
                     ),
                     shadows: const [
                       BoxShadow(
-                        color: Color(0x19000000),
+                        color: VineTheme.innerShadow,
                         blurRadius: 1,
                         offset: Offset(1, 1),
                       ),

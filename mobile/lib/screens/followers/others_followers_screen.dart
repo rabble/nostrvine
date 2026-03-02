@@ -1,6 +1,7 @@
 // ABOUTME: Screen displaying another user's followers list
 // ABOUTME: Uses OthersFollowersBloc for list + MyFollowingBloc for follow button state
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,6 @@ import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
@@ -20,9 +20,9 @@ import 'package:openvine/widgets/user_profile_tile.dart';
 /// (for follow button state) and provides them to the view.
 class OthersFollowersScreen extends ConsumerWidget {
   const OthersFollowersScreen({
-    super.key,
     required this.pubkey,
     required this.displayName,
+    super.key,
   });
 
   final String pubkey;
@@ -93,7 +93,7 @@ class _OthersFollowersView extends StatelessWidget {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -191,15 +191,15 @@ class _FollowersEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey[600]),
-          const SizedBox(height: 16),
+          Icon(Icons.people_outline, size: 64, color: VineTheme.lightText),
+          SizedBox(height: 16),
           Text(
             'No followers yet',
-            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
           ),
         ],
       ),
@@ -218,11 +218,11 @@ class _FollowersErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.grey[600]),
+          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load followers list',
-            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
           ),
           const SizedBox(height: 8),
           TextButton(onPressed: onRetry, child: const Text('Retry')),

@@ -64,15 +64,13 @@ class TestVideoPlayerController extends VideoPlayerController {
 
   @override
   VideoPlayerValue get value => _isDisposed
-      ? VideoPlayerValue.uninitialized()
+      ? const VideoPlayerValue.uninitialized()
       : VideoPlayerValue(
           duration: const Duration(seconds: 6),
           size: const Size(1080, 1920),
           position: _position,
           isPlaying: _isPlaying,
           isInitialized: _isInitialized,
-          isBuffering: false,
-          errorDescription: null,
         );
 
   @override

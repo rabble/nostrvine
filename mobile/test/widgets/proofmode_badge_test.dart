@@ -11,10 +11,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedMobile,
-              size: BadgeSize.small,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
         ),
       );
@@ -33,10 +30,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedWeb,
-              size: BadgeSize.small,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedWeb),
           ),
         ),
       );
@@ -52,10 +46,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.basicProof,
-              size: BadgeSize.small,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.basicProof),
           ),
         ),
       );
@@ -71,10 +62,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.unverified,
-              size: BadgeSize.small,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.unverified),
           ),
         ),
       );
@@ -91,10 +79,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedMobile,
-              size: BadgeSize.small,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
         ),
       );
@@ -137,10 +122,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedMobile,
-              size: BadgeSize.small,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
         ),
       );
@@ -160,9 +142,7 @@ void main() {
   group('OriginalVineBadge Widget', () {
     testWidgets('renders Original Vine badge correctly', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge(size: BadgeSize.small)),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       // Should display 'V' text
@@ -179,9 +159,7 @@ void main() {
     testWidgets('renders different Vine badge sizes correctly', (tester) async {
       // Test small size
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge(size: BadgeSize.small)),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       var badge = tester.widget<OriginalVineBadge>(
@@ -212,9 +190,7 @@ void main() {
 
     testWidgets('Vine badge has proper visual structure', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge(size: BadgeSize.small)),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       // Should have Container for styling
@@ -229,9 +205,7 @@ void main() {
 
     testWidgets('Vine badge has teal background color', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge(size: BadgeSize.small)),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       final container = tester.widget<Container>(
@@ -243,7 +217,7 @@ void main() {
             .first,
       );
 
-      final decoration = container.decoration as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(decoration.color, const Color(0xFF00BF8F)); // Vine teal
     });
   });

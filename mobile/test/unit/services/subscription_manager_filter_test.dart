@@ -1,10 +1,8 @@
-// ignore_for_file: invalid_use_of_null_value
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:nostr_client/nostr_client.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 

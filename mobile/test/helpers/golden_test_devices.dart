@@ -14,7 +14,7 @@ class GoldenTestDevices {
   );
 
   /// iPhone 11 - Standard phone
-  static const iphone11 = Device.iphone11;
+  static const Device iphone11 = Device.iphone11;
 
   /// iPhone 14 Pro Max - Large phone
   static const iphone14ProMax = Device(
@@ -24,10 +24,10 @@ class GoldenTestDevices {
   );
 
   /// iPad - Tablet portrait
-  static const ipadPortrait = Device.tabletPortrait;
+  static const Device ipadPortrait = Device.tabletPortrait;
 
   /// iPad - Tablet landscape
-  static const ipadLandscape = Device.tabletLandscape;
+  static const Device ipadLandscape = Device.tabletLandscape;
 
   /// Android Phone - Medium size
   static const androidPhone = Device(
@@ -37,7 +37,7 @@ class GoldenTestDevices {
   );
 
   /// Default test devices for most golden tests
-  static const defaultDevices = [
+  static const List<Device> defaultDevices = [
     iphoneSE,
     iphone11,
     androidPhone,
@@ -45,10 +45,10 @@ class GoldenTestDevices {
   ];
 
   /// Minimal device set for quick tests
-  static const minimalDevices = [iphone11, androidPhone];
+  static const List<Device> minimalDevices = [iphone11, androidPhone];
 
   /// Comprehensive device set for critical UI components
-  static const comprehensiveDevices = [
+  static const List<Device> comprehensiveDevices = [
     iphoneSE,
     iphone11,
     iphone14ProMax,
@@ -58,7 +58,7 @@ class GoldenTestDevices {
   ];
 
   /// Phone-only device set
-  static const phoneDevices = [
+  static const List<Device> phoneDevices = [
     iphoneSE,
     iphone11,
     iphone14ProMax,
@@ -66,5 +66,5 @@ class GoldenTestDevices {
   ];
 
   /// Tablet-only device set
-  static const tabletDevices = [ipadPortrait, ipadLandscape];
+  static const List<Device> tabletDevices = [ipadPortrait, ipadLandscape];
 }

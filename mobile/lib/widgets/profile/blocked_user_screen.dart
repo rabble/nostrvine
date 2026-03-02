@@ -1,8 +1,8 @@
 // ABOUTME: Screen displayed when viewing a blocked or unavailable user's profile
 // ABOUTME: Shows a simple message with back navigation
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
 
 /// Screen shown when viewing a blocked or unavailable user's profile.
 class BlockedUserScreen extends StatelessWidget {
@@ -19,14 +19,14 @@ class BlockedUserScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
           onPressed: onBack,
         ),
       ),
       body: const Center(
         child: Text(
           'This account is not available',
-          style: TextStyle(color: Colors.grey, fontSize: 16),
+          style: TextStyle(color: VineTheme.lightText, fontSize: 16),
         ),
       ),
     );

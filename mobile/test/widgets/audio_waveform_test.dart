@@ -1,6 +1,7 @@
 // ABOUTME: Tests for AudioWaveform widget
 // ABOUTME: Validates visual elements, progress display, and animation behavior
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/widgets/audio_waveform.dart';
@@ -27,7 +28,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform(duration: null))),
+        const MaterialApp(home: Scaffold(body: AudioWaveform())),
       );
 
       expect(find.text('--:-- / --:--'), findsOneWidget);
@@ -171,12 +172,7 @@ void main() {
     testWidgets('handles isPlaying state change', (WidgetTester tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AudioWaveform(
-              duration: Duration(seconds: 6),
-              isPlaying: false,
-            ),
-          ),
+          home: Scaffold(body: AudioWaveform(duration: Duration(seconds: 6))),
         ),
       );
 
@@ -295,7 +291,7 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform(duration: null))),
+        const MaterialApp(home: Scaffold(body: AudioWaveform())),
       );
 
       // Verify Semantics widget exists
@@ -326,9 +322,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AudioWaveform(duration: Duration(seconds: 6), barCount: 30),
-          ),
+          home: Scaffold(body: AudioWaveform(duration: Duration(seconds: 6))),
         ),
       );
 
@@ -386,12 +380,12 @@ void main() {
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: AudioWaveform(duration: null))),
+        const MaterialApp(home: Scaffold(body: AudioWaveform())),
       );
 
       final textWidget = tester.widget<Text>(find.text('--:-- / --:--'));
 
-      expect(textWidget.style?.color, Colors.grey);
+      expect(textWidget.style?.color, VineTheme.lightText);
     });
   });
 }

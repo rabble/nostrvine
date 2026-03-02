@@ -3,15 +3,15 @@
 
 import 'dart:math';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings_screen.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
@@ -58,7 +58,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Could not open $pageName'),
-              backgroundColor: Colors.red,
+              backgroundColor: VineTheme.error,
             ),
           );
         }
@@ -68,7 +68,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening $pageName: $error'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -86,7 +86,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         margin: EdgeInsets.only(top: statusBarHeight),
         decoration: const BoxDecoration(
           color: VineTheme.surfaceBackground,
-          borderRadius: const BorderRadius.only(topRight: Radius.circular(32)),
+          borderRadius: BorderRadius.only(topRight: Radius.circular(32)),
         ),
         clipBehavior: Clip.antiAlias,
         child: SafeArea(
@@ -291,7 +291,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
           'How can we help?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: VineTheme.whiteText),
         ),
         scrollable: true,
         content: Column(
@@ -335,7 +335,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Support chat not available'),
-                        backgroundColor: Colors.red,
+                        backgroundColor: VineTheme.error,
                       ),
                     );
                   }
@@ -423,10 +423,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   ) async {
     // Set Zendesk identity for all paths (native SDK and REST API)
     await _setZendeskIdentityWithService(userPubkey, userProfileService);
+    if (!context.mounted) return;
 
     if (isZendeskAvailable) {
       // Get device and app info
       final packageInfo = await PackageInfo.fromPlatform();
+      if (!context.mounted) return;
       final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
 
       final description =
@@ -521,7 +523,7 @@ class _SupportOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: VineTheme.backgroundColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade800),
+          border: Border.all(color: VineTheme.cardBackground),
         ),
         child: Row(
           children: [
@@ -534,7 +536,7 @@ class _SupportOption extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: VineTheme.whiteText,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -542,12 +544,15 @@ class _SupportOption extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey.shade600),
+            const Icon(Icons.chevron_right, color: VineTheme.lightText),
           ],
         ),
       ),

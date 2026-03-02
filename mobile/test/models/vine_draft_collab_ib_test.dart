@@ -50,7 +50,7 @@ void main() {
       });
 
       test('accepts inspiredByVideo', () {
-        final ib = InspiredByInfo(
+        const ib = InspiredByInfo(
           addressableId:
               '34236:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc:my-video',
           relayUrl: 'wss://relay.divine.video',
@@ -120,7 +120,7 @@ void main() {
       });
 
       test('includes inspiredByVideo when set', () {
-        final ib = InspiredByInfo(
+        const ib = InspiredByInfo(
           addressableId: '34236:pubkey123:dtag456',
           relayUrl: 'wss://relay.divine.video',
         );
@@ -208,7 +208,7 @@ void main() {
       });
 
       test('preserves inspiredByVideo through serialization', () {
-        final ib = InspiredByInfo(
+        const ib = InspiredByInfo(
           addressableId: '34236:pubkey123:dtag456',
           relayUrl: 'wss://relay.divine.video',
         );
@@ -253,7 +253,7 @@ void main() {
       });
 
       test('preserves all collab+IB fields together', () {
-        final ib = InspiredByInfo(addressableId: '34236:pubkey:dtag');
+        const ib = InspiredByInfo(addressableId: '34236:pubkey:dtag');
 
         final original = VineDraft.create(
           clips: [_testClip()],
@@ -358,7 +358,7 @@ void main() {
           selectedApproach: 'native',
         );
 
-        final ib = InspiredByInfo(addressableId: '34236:pub:dtag');
+        const ib = InspiredByInfo(addressableId: '34236:pub:dtag');
         final updated = draft.copyWith(inspiredByVideo: ib);
 
         expect(updated.inspiredByVideo, isNotNull);

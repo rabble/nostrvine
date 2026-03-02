@@ -48,7 +48,7 @@ class CollaboratorAvatarRow extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: VineTheme.backgroundColor.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
@@ -157,7 +157,7 @@ class _CollaboratorLabel extends ConsumerWidget {
         color: VineTheme.whiteText,
         fontSize: 12,
         fontWeight: FontWeight.w500,
-        shadows: [Shadow(blurRadius: 4, color: VineTheme.backgroundColor)],
+        shadows: [Shadow(blurRadius: 4)],
       ),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,

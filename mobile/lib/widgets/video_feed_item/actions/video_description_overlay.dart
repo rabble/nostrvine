@@ -1,9 +1,9 @@
 // ABOUTME: Video description overlay for video feed.
 // ABOUTME: Shows video title/content with clickable hashtags and loop count.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 
@@ -21,7 +21,7 @@ class VideoDescriptionOverlay extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.4),
+        color: VineTheme.backgroundColor.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -39,39 +39,23 @@ class VideoDescriptionOverlay extends StatelessWidget {
                   ? video.content
                   : video.title ?? '',
               style: const TextStyle(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
                 shadows: [
-                  Shadow(
-                    offset: Offset(0, 0),
-                    blurRadius: 8,
-                    color: Colors.black,
-                  ),
-                  Shadow(
-                    offset: Offset(2, 2),
-                    blurRadius: 4,
-                    color: Colors.black,
-                  ),
+                  Shadow(blurRadius: 8),
+                  Shadow(offset: Offset(2, 2), blurRadius: 4),
                 ],
               ),
-              hashtagStyle: TextStyle(
+              hashtagStyle: const TextStyle(
                 color: VineTheme.vineGreen,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
-                shadows: const [
-                  Shadow(
-                    offset: Offset(0, 0),
-                    blurRadius: 8,
-                    color: Colors.black,
-                  ),
-                  Shadow(
-                    offset: Offset(2, 2),
-                    blurRadius: 4,
-                    color: Colors.black,
-                  ),
+                shadows: [
+                  Shadow(blurRadius: 8),
+                  Shadow(offset: Offset(2, 2), blurRadius: 4),
                 ],
               ),
               maxLines: 3,
@@ -89,20 +73,12 @@ class VideoDescriptionOverlay extends StatelessWidget {
               child: Text(
                 '🔁 ${StringUtils.formatCompactNumber((video.originalLoops ?? 0) + (int.tryParse(video.rawTags['views'] ?? '') ?? 0))} loops',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   shadows: [
-                    Shadow(
-                      offset: Offset(0, 0),
-                      blurRadius: 6,
-                      color: Colors.black,
-                    ),
-                    Shadow(
-                      offset: Offset(1, 1),
-                      blurRadius: 3,
-                      color: Colors.black,
-                    ),
+                    Shadow(blurRadius: 6),
+                    Shadow(offset: Offset(1, 1), blurRadius: 3),
                   ],
                 ),
               ),

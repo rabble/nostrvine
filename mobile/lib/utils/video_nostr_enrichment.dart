@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
@@ -78,26 +80,22 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           group: video.group ?? parsed.group,
           altText: video.altText ?? parsed.altText,
           blurhash: video.blurhash ?? parsed.blurhash,
-          // Original Vine metrics: use Nostr values, clear if no tag exists
-          originalLoops: parsed.originalLoops,
-          originalLikes: parsed.originalLikes,
-          originalComments: parsed.originalComments,
-          originalReposts: parsed.originalReposts,
-          clearOriginalLoops: parsed.originalLoops == null,
-          clearOriginalLikes: parsed.originalLikes == null,
-          clearOriginalComments: parsed.originalComments == null,
-          clearOriginalReposts: parsed.originalReposts == null,
-          /* FIXME: The audio show always a skeleton below of the video
-          description, so we don't add them for the ZapStore.
-
-          audioEventId: video.audioEventId? parsed.audioEventId: null
+          // Original Vine metrics: keep Funnelcake values when present
+          // (they include Nostr-era counts), fill from Nostr tags only
+          // when missing. Don't clear existing values — Funnelcake's
+          // aggregates are more accurate than the static Nostr tags.
+          originalLoops: video.originalLoops ?? parsed.originalLoops,
+          originalLikes: video.originalLikes ?? parsed.originalLikes,
+          originalComments: video.originalComments ?? parsed.originalComments,
+          originalReposts: video.originalReposts ?? parsed.originalReposts,
+          audioEventId: video.audioEventId ?? parsed.audioEventId,
           audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay,
-          */
           collaboratorPubkeys: video.collaboratorPubkeys.isEmpty
               ? parsed.collaboratorPubkeys
               : video.collaboratorPubkeys,
           inspiredByVideo: video.inspiredByVideo ?? parsed.inspiredByVideo,
           textTrackRef: video.textTrackRef ?? parsed.textTrackRef,
+          textTrackContent: video.textTrackContent ?? parsed.textTrackContent,
           nostrEventTags: video.nostrEventTags.isEmpty
               ? parsed.nostrEventTags
               : video.nostrEventTags,
@@ -114,4 +112,32 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
     );
     return videos;
   }
+}
+
+/// Fire-and-forget enrichment that calls [onEnriched] when complete.
+///
+/// Returns the original [videos] immediately. Enrichment runs in the
+/// background; when it finishes, [onEnriched] is called with the
+/// enriched list so the caller can update its state. If enrichment
+/// fails, [onEnriched] is never called and the un-enriched videos
+/// remain visible.
+List<VideoEvent> enrichVideosInBackground(
+  List<VideoEvent> videos, {
+  required NostrClient nostrService,
+  required void Function(List<VideoEvent> enrichedVideos) onEnriched,
+  String callerName = 'VideoEnrichment',
+}) {
+  unawaited(
+    enrichVideosWithNostrTags(
+      videos,
+      nostrService: nostrService,
+      callerName: callerName,
+    ).then((enriched) {
+      // Only call back if enrichment actually changed something
+      if (enriched != videos) {
+        onEnriched(enriched);
+      }
+    }),
+  );
+  return videos;
 }

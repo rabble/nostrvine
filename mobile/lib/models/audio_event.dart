@@ -15,6 +15,10 @@ const int audioEventKind = 1063;
 ///
 /// See NIP-94 for the full file metadata specification.
 class AudioEvent {
+  /// Marker for bundled sounds to distinguish from Nostr events.
+  /// Used as ID prefix (with underscore) and as pubkey value.
+  static const bundledMarker = 'bundled';
+
   /// Creates a new AudioEvent with the specified fields.
   const AudioEvent({
     required this.id,
@@ -105,7 +109,7 @@ class AudioEvent {
   /// Create an AudioEvent from a bundled VineSound asset.
   ///
   /// Uses a special `asset://` URL scheme to indicate this is a bundled sound.
-  /// The ID is prefixed with `bundled_` to distinguish from Nostr events.
+  /// The ID is prefixed with [bundledPrefix] to distinguish from Nostr events.
   ///
   /// Usage:
   /// ```dart
@@ -116,8 +120,8 @@ class AudioEvent {
   /// ```
   factory AudioEvent.fromBundledSound(VineSound sound) {
     return AudioEvent(
-      id: 'bundled_${sound.id}',
-      pubkey: 'bundled', // Indicates this is not from a Nostr user
+      id: '${bundledMarker}_${sound.id}',
+      pubkey: bundledMarker, // Indicates this is not from a Nostr user
       createdAt: 0, // No timestamp for bundled sounds
       url: 'asset://${sound.assetPath}',
       mimeType: 'audio/mpeg',
@@ -127,7 +131,7 @@ class AudioEvent {
   }
 
   /// Whether this audio is a bundled sound (from app assets).
-  bool get isBundled => id.startsWith('bundled_');
+  bool get isBundled => id.startsWith('${bundledMarker}_');
 
   /// Get the asset path for bundled sounds.
   /// Returns null if this is not a bundled sound.

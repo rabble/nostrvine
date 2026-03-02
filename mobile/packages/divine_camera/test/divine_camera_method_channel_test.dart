@@ -15,7 +15,7 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           channel,
-          (MethodCall methodCall) async {
+          (methodCall) async {
             final args = methodCall.arguments as Map<dynamic, dynamic>?;
             switch (methodCall.method) {
               case 'getPlatformVersion':
@@ -311,7 +311,7 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(
             channel,
-            (MethodCall methodCall) async {
+            (methodCall) async {
               if (methodCall.method == 'startRecording') {
                 throw PlatformException(
                   code: 'RECORD_START_ERROR',

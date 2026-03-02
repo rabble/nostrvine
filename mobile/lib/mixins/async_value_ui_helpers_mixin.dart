@@ -1,9 +1,9 @@
 // ABOUTME: Reusable AsyncValue UI helpers mixin for consistent loading/error states
 // ABOUTME: Eliminates .when() boilerplate across 6+ router and feed screens
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// Mixin that provides consistent AsyncValue UI handling with default loading/error widgets.
 ///
@@ -66,13 +66,13 @@ mixin AsyncValueUIHelpersMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const Icon(Icons.error_outline, color: VineTheme.error, size: 48),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               'Error: $error',
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: VineTheme.whiteText),
               textAlign: TextAlign.center,
             ),
           ),

@@ -8,7 +8,6 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Maps provider types to appropriate startup phases
-// ignore: avoid_classes_with_only_static_members
 class StartupPhaseMapper {
   static StartupPhase getPhaseForProvider(String providerName) {
     // Critical services - must init before app can function

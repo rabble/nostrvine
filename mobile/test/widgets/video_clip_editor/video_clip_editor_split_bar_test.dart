@@ -116,14 +116,10 @@ void main() {
     });
 
     testWidgets('slider max is at least split position value', (tester) async {
-      const clipDuration = Duration(seconds: 5);
       const splitPosition = Duration(seconds: 7); // Greater than clip duration
 
       await tester.pumpWidget(
-        buildTestWidget(
-          splitPosition: splitPosition,
-          clips: [_createClip(duration: clipDuration)],
-        ),
+        buildTestWidget(splitPosition: splitPosition, clips: [_createClip()]),
       );
 
       final slider = tester.widget<Slider>(find.byType(Slider));
@@ -155,7 +151,7 @@ void main() {
       final clips = [
         _createClip(id: 'clip1', duration: const Duration(seconds: 3)),
         _createClip(id: 'clip2', duration: const Duration(seconds: 7)),
-        _createClip(id: 'clip3', duration: const Duration(seconds: 5)),
+        _createClip(id: 'clip3'),
       ];
 
       await tester.pumpWidget(

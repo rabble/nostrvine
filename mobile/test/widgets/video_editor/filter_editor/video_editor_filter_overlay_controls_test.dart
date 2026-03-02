@@ -35,14 +35,10 @@ void main() {
       editorKey = GlobalKey<ProImageEditorState>();
 
       // Default state - no filter selected
-      when(() => mockBloc.state).thenReturn(
-        VideoEditorFilterState(
-          filters: presetFiltersList,
-          selectedFilter: null,
-          opacity: 1.0,
-        ),
-      );
-      when(() => mockBloc.stream).thenAnswer((_) => Stream.empty());
+      when(
+        () => mockBloc.state,
+      ).thenReturn(VideoEditorFilterState(filters: presetFiltersList));
+      when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
     });
 
     Widget buildWidget() {
@@ -116,7 +112,6 @@ void main() {
           VideoEditorFilterState(
             filters: presetFiltersList,
             selectedFilter: presetFiltersList[1],
-            opacity: 1.0,
           ),
         );
 

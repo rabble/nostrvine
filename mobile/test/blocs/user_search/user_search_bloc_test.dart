@@ -66,9 +66,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer(
-            (_) async => [createTestProfile('${'a' * 64}', 'Alice')],
-          );
+          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
@@ -470,17 +468,14 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer(
-            (_) async => [createTestProfile('${'a' * 64}', 'Alice')],
-          );
+          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
         },
         build: createBloc,
         seed: () => UserSearchState(
           status: UserSearchStatus.success,
           query: 'alice',
-          results: [createTestProfile('${'a' * 64}', 'Alice')],
+          results: [createTestProfile('a' * 64, 'Alice')],
           offset: 1,
-          hasMore: false,
         ),
         act: (bloc) => bloc.add(const UserSearchCleared()),
         expect: () => [const UserSearchState()],
@@ -514,7 +509,6 @@ void main() {
               query: 'test',
               limit: 50,
               sortBy: 'followers',
-              hasVideos: false,
             ),
           ).called(1);
         },
@@ -529,7 +523,6 @@ void main() {
               limit: 50,
               offset: 50,
               sortBy: 'followers',
-              hasVideos: false,
             ),
           ).thenAnswer((_) async => createTestProfiles(10));
         },
@@ -552,7 +545,6 @@ void main() {
               limit: 50,
               offset: 50,
               sortBy: 'followers',
-              hasVideos: false,
             ),
           ).called(1);
         },
@@ -610,7 +602,7 @@ void main() {
         final state = UserSearchState(
           status: UserSearchStatus.success,
           query: 'test',
-          results: [createTestProfile('${'a' * 64}', 'Alice')],
+          results: [createTestProfile('a' * 64, 'Alice')],
           offset: 10,
           hasMore: true,
           isLoadingMore: true,
@@ -627,14 +619,13 @@ void main() {
       });
 
       test('props includes all fields', () {
-        final profile = createTestProfile('${'a' * 64}', 'Alice');
+        final profile = createTestProfile('a' * 64, 'Alice');
         final state = UserSearchState(
           status: UserSearchStatus.success,
           query: 'alice',
           results: [profile],
           offset: 1,
           hasMore: true,
-          isLoadingMore: false,
         );
 
         expect(state.props, [

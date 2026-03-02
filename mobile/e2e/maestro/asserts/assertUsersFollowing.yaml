@@ -1,6 +1,7 @@
 appId: co.openvine.app
 ---
+- assertVisible: |-
+    Following
+    1 users
 - assertVisible: Back
-- assertVisible: Following
-- assertVisible:
-    text: ${VIDEO_USER}
+- assertVisible: Unfollow user 0

@@ -1,6 +1,7 @@
 // ABOUTME: Loader widget for sound detail screen
 // ABOUTME: Fetches sound by ID before displaying SoundDetailScreen
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/sounds_providers.dart';
@@ -10,7 +11,7 @@ import 'package:openvine/widgets/branded_loading_scaffold.dart';
 /// Loader widget that fetches a sound by ID before displaying SoundDetailScreen.
 /// Used when navigating via deep link without the sound object.
 class SoundDetailLoader extends ConsumerWidget {
-  const SoundDetailLoader({super.key, required this.soundId});
+  const SoundDetailLoader({required this.soundId, super.key});
 
   final String soundId;
 
@@ -22,15 +23,15 @@ class SoundDetailLoader extends ConsumerWidget {
       data: (sound) {
         if (sound == null) {
           return Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: VineTheme.backgroundColor,
             appBar: AppBar(
-              backgroundColor: Colors.black,
+              backgroundColor: VineTheme.backgroundColor,
               title: const Text('Sound Not Found'),
             ),
             body: const Center(
               child: Text(
                 'This sound could not be found',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: VineTheme.whiteText),
               ),
             ),
           );
@@ -39,15 +40,15 @@ class SoundDetailLoader extends ConsumerWidget {
       },
       loading: () => const BrandedLoadingScaffold(),
       error: (error, stack) => Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.backgroundColor,
           title: const Text('Error'),
         ),
         body: Center(
           child: Text(
             'Failed to load sound: $error',
-            style: const TextStyle(color: Colors.white),
+            style: const TextStyle(color: VineTheme.whiteText),
           ),
         ),
       ),

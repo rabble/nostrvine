@@ -46,12 +46,9 @@ void main() {
 
     group('button state', () {
       testWidgets('shows follow icon when not following', (tester) async {
-        when(() => mockMyFollowingBloc.state).thenReturn(
-          const MyFollowingState(
-            status: MyFollowingStatus.success,
-            followingPubkeys: [],
-          ),
-        );
+        when(
+          () => mockMyFollowingBloc.state,
+        ).thenReturn(const MyFollowingState(status: MyFollowingStatus.success));
 
         await tester.pumpWidget(createTestWidget(pubkey: validPubkey('other')));
         await tester.pump();
@@ -64,12 +61,9 @@ void main() {
       testWidgets('has Follow semantic label when not following', (
         tester,
       ) async {
-        when(() => mockMyFollowingBloc.state).thenReturn(
-          const MyFollowingState(
-            status: MyFollowingStatus.success,
-            followingPubkeys: [],
-          ),
-        );
+        when(
+          () => mockMyFollowingBloc.state,
+        ).thenReturn(const MyFollowingState(status: MyFollowingStatus.success));
 
         await tester.pumpWidget(createTestWidget(pubkey: validPubkey('other')));
         await tester.pump();
@@ -118,10 +112,7 @@ void main() {
         (tester) async {
           final otherPubkey = validPubkey('other');
           when(() => mockMyFollowingBloc.state).thenReturn(
-            const MyFollowingState(
-              status: MyFollowingStatus.success,
-              followingPubkeys: [],
-            ),
+            const MyFollowingState(status: MyFollowingStatus.success),
           );
 
           await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));

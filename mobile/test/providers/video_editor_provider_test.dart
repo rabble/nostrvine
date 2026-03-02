@@ -533,7 +533,7 @@ void main() {
 
     group('setDraftId', () {
       test('should set the draft ID', () {
-        final id = 'test-draft-id';
+        const id = 'test-draft-id';
         container.read(videoEditorProvider.notifier).setDraftId(id);
 
         expect(id, container.read(videoEditorProvider.notifier).draftId);

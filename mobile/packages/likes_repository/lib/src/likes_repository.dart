@@ -18,8 +18,11 @@ import 'package:rxdart/rxdart.dart';
 /// Default limit for fetching user reactions from relays.
 const _defaultReactionFetchLimit = 500;
 
-/// NIP-25 reaction content for a like.
+/// NIP-25 reaction content for a like/upvote.
 const _likeContent = '+';
+
+/// NIP-25 reaction content for a downvote.
+const _downvoteContent = '-';
 
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
@@ -53,48 +56,33 @@ typedef QueueOfflineActionCallback =
 /// - Uses `LikesLocalStorage` to persist like records locally
 /// - Maintains an in-memory cache for fast lookups
 /// - Provides reactive streams for UI updates
-/// - Handles authentication state changes automatically
+/// - Supports real-time cross-device sync via persistent subscriptions
 class LikesRepository {
   /// Creates a new likes repository.
   ///
   /// Parameters:
   /// - [nostrClient]: Client for Nostr relay communication
   /// - [localStorage]: Optional local storage for persistence
-  /// - [authStateStream]: Optional stream of authentication state
-  /// (true=authenticated)
-  /// - [isAuthenticated]: Initial authentication state
   /// - [isOnline]: Optional callback to check connectivity status
   /// - [queueOfflineAction]: Optional callback to queue actions when offline
   LikesRepository({
     required NostrClient nostrClient,
     LikesLocalStorage? localStorage,
-    Stream<bool>? authStateStream,
-    bool isAuthenticated = false,
     IsOnlineCallback? isOnline,
     QueueOfflineActionCallback? queueOfflineAction,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
-       _isAuthenticated = isAuthenticated,
        _isOnline = isOnline,
-       _queueOfflineAction = queueOfflineAction {
-    // Listen to auth state changes if stream provided
-    if (authStateStream != null) {
-      _authSubscription = authStateStream.listen(_handleAuthChange);
-    }
-  }
+       _queueOfflineAction = queueOfflineAction;
 
   final NostrClient _nostrClient;
   final LikesLocalStorage? _localStorage;
-  StreamSubscription<bool>? _authSubscription;
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
 
   /// Callback to queue actions for offline sync
   final QueueOfflineActionCallback? _queueOfflineAction;
-
-  /// Whether the user is currently authenticated.
-  bool _isAuthenticated;
 
   /// In-memory cache of like records keyed by target event ID.
   final Map<String, LikeRecord> _likeRecords = {};
@@ -107,8 +95,12 @@ class LikesRepository {
 
   /// Whether [dispose] has been called.
   ///
-  /// Once disposed, all stream emissions and auth-change handlers are no-ops.
+  /// Once disposed, all stream emissions are no-ops.
   bool _isDisposed = false;
+
+  /// Real-time sync subscription for cross-device synchronization.
+  StreamSubscription<Event>? _reactionSubscription;
+  String? _reactionSubscriptionId;
 
   /// Emits the current liked event IDs ordered by recency (most recent first).
   ///
@@ -566,6 +558,137 @@ class LikesRepository {
     return counts;
   }
 
+  /// Get vote counts (upvotes and downvotes) for multiple events.
+  ///
+  /// Queries relays for Kind 7 reactions on each event, differentiating
+  /// between `+` (upvote) and `-` (downvote) content.
+  ///
+  /// Returns a record of upvote and downvote count maps.
+  Future<({Map<String, int> upvotes, Map<String, int> downvotes})>
+  getVoteCounts(List<String> eventIds) async {
+    if (eventIds.isEmpty) {
+      return (upvotes: <String, int>{}, downvotes: <String, int>{});
+    }
+
+    final filter = Filter(
+      kinds: const [EventKind.reaction],
+      e: eventIds,
+    );
+
+    final events = await _nostrClient.queryEvents([filter]);
+
+    final upvotes = <String, int>{};
+    final downvotes = <String, int>{};
+    for (final eventId in eventIds) {
+      upvotes[eventId] = 0;
+      downvotes[eventId] = 0;
+    }
+
+    for (final event in events) {
+      for (final tag in event.tags) {
+        if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          final targetId = tag[1] as String;
+          if (upvotes.containsKey(targetId)) {
+            if (event.content == _downvoteContent) {
+              downvotes[targetId] = downvotes[targetId]! + 1;
+            } else {
+              // '+' and any other content counts as upvote
+              upvotes[targetId] = upvotes[targetId]! + 1;
+            }
+          }
+        }
+      }
+    }
+
+    return (upvotes: upvotes, downvotes: downvotes);
+  }
+
+  /// Get the user's current vote status for multiple events.
+  ///
+  /// Returns maps of event IDs the user has upvoted or downvoted.
+  Future<({Set<String> upvotedIds, Set<String> downvotedIds})>
+  getUserVoteStatuses(List<String> eventIds) async {
+    if (eventIds.isEmpty) {
+      return (upvotedIds: <String>{}, downvotedIds: <String>{});
+    }
+
+    final filter = Filter(
+      kinds: const [EventKind.reaction],
+      authors: [_nostrClient.publicKey],
+      e: eventIds,
+    );
+
+    final events = await _nostrClient.queryEvents([filter]);
+
+    // Also fetch deletions to exclude deleted votes
+    final deletionFilter = Filter(
+      kinds: const [EventKind.eventDeletion],
+      authors: [_nostrClient.publicKey],
+    );
+    final deletions = await _nostrClient.queryEvents([deletionFilter]);
+
+    final deletedIds = <String>{};
+    for (final deletion in deletions) {
+      for (final tag in deletion.tags) {
+        if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          deletedIds.add(tag[1] as String);
+        }
+      }
+    }
+
+    final upvotedIds = <String>{};
+    final downvotedIds = <String>{};
+
+    for (final event in events) {
+      if (deletedIds.contains(event.id)) continue;
+
+      final targetId = _extractTargetEventId(event);
+      if (targetId == null || !eventIds.contains(targetId)) continue;
+
+      if (event.content == _downvoteContent) {
+        downvotedIds.add(targetId);
+      } else {
+        upvotedIds.add(targetId);
+      }
+    }
+
+    return (upvotedIds: upvotedIds, downvotedIds: downvotedIds);
+  }
+
+  /// Publish a downvote (Kind 7 reaction with content '-').
+  ///
+  /// Returns the reaction event ID.
+  ///
+  /// Throws `LikeFailedException` if the operation fails.
+  Future<String> downvoteEvent({
+    required String eventId,
+    required String authorPubkey,
+    int? targetKind,
+  }) async {
+    final reactionEvent = await _nostrClient.sendLike(
+      eventId,
+      content: _downvoteContent,
+      targetAuthorPubkey: authorPubkey,
+      targetKind: targetKind,
+    );
+
+    if (reactionEvent == null) {
+      throw const LikeFailedException('Failed to publish downvote reaction');
+    }
+
+    return reactionEvent.id;
+  }
+
+  /// Delete a reaction event by its ID (Kind 5 deletion).
+  ///
+  /// Used for vote switching (removing old vote before publishing new one).
+  Future<void> deleteReaction(String reactionEventId) async {
+    final deletionEvent = await _nostrClient.deleteEvent(reactionEventId);
+    if (deletionEvent == null) {
+      throw const UnlikeFailedException('Failed to delete reaction');
+    }
+  }
+
   /// Get a like record by target event ID.
   ///
   /// Returns the full [LikeRecord] including the reaction event ID,
@@ -756,6 +879,99 @@ class LikesRepository {
     );
   }
 
+  /// Initialize the repository — load from local cache, then subscribe for
+  /// real-time cross-device sync.
+  ///
+  /// Follows the same pattern as `FollowRepository.initialize()`:
+  /// 1. Load persisted records from local storage for immediate UI display.
+  /// 2. Set up a persistent Kind 7 subscription for live updates.
+  ///
+  /// Safe to call multiple times (idempotent).
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    // Load from local storage first for immediate UI display
+    if (_localStorage != null) {
+      final records = await _localStorage.getAllLikeRecords();
+      for (final record in records) {
+        _likeRecords[record.targetEventId] = record;
+      }
+      _emitLikedIds();
+    }
+
+    // Subscribe to reactions for real-time sync and cross-device updates
+    if (_nostrClient.hasKeys) {
+      _subscribeToReactions();
+    }
+
+    _isInitialized = true;
+  }
+
+  /// Subscribe to reactions for real-time sync and cross-device updates.
+  ///
+  /// Creates a long-running subscription to the current user's Kind 7 events.
+  /// When a newer reaction arrives (from another device or this one),
+  /// updates the local cache.
+  void _subscribeToReactions() {
+    final currentUserPubkey = _nostrClient.publicKey;
+    if (currentUserPubkey.isEmpty) return;
+
+    // Use a deterministic subscription ID so we can unsubscribe later
+    _reactionSubscriptionId = 'likes_repo_reactions_$currentUserPubkey';
+
+    final eventStream = _nostrClient.subscribe(
+      [
+        Filter(
+          authors: [currentUserPubkey],
+          kinds: const [EventKind.reaction],
+          limit: 1,
+        ),
+      ],
+      subscriptionId: _reactionSubscriptionId,
+    );
+
+    _reactionSubscription = eventStream.listen(
+      _processIncomingReaction,
+      onError: (Object error) {
+        // Subscription errors are non-fatal; log and continue
+      },
+    );
+  }
+
+  /// Process an incoming Kind 7 reaction event from the subscription.
+  ///
+  /// Validates the event, deduplicates against existing records, and
+  /// updates the in-memory cache + local storage.
+  void _processIncomingReaction(Event event) {
+    if (_isDisposed) return;
+
+    // Only process Kind 7 '+' reactions from the current user
+    if (event.kind != EventKind.reaction) return;
+    if (event.content != _likeContent) return;
+    if (event.pubkey != _nostrClient.publicKey) return;
+
+    final targetId = _extractTargetEventId(event);
+    if (targetId == null) return;
+
+    final createdAt = DateTime.fromMillisecondsSinceEpoch(
+      event.createdAt * 1000,
+    );
+
+    // Deduplicate: only update if newer than existing record
+    final existing = _likeRecords[targetId];
+    if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
+
+    final record = LikeRecord(
+      targetEventId: targetId,
+      reactionEventId: event.id,
+      createdAt: createdAt,
+    );
+
+    _likeRecords[targetId] = record;
+    unawaited(_localStorage?.saveLikeRecord(record));
+    _emitLikedIds();
+  }
+
   /// Clear all local like data.
   ///
   /// Used when logging out or clearing user data.
@@ -772,34 +988,16 @@ class LikesRepository {
 
   /// Dispose of resources.
   ///
-  /// Cancels the auth subscription first so that no further auth-change
-  /// callbacks can fire, then closes the stream controller.
+  /// Cancels the reaction subscription and closes the stream controller.
   /// Should be called when the repository is no longer needed.
   void dispose() {
     _isDisposed = true;
-    unawaited(_authSubscription?.cancel());
-    _authSubscription = null;
-    unawaited(_likedIdsController.close());
-  }
-
-  /// Handle authentication state changes.
-  ///
-  /// When user logs out, clears the cache.
-  /// When user logs in, triggers a sync.
-  void _handleAuthChange(bool isAuthenticated) {
-    if (_isDisposed) return;
-    if (isAuthenticated == _isAuthenticated) return;
-
-    _isAuthenticated = isAuthenticated;
-
-    if (!isAuthenticated) {
-      // User logged out - clear cache
-      unawaited(clearCache());
-    } else {
-      // User logged in - sync will be triggered by BLoC
-      // Just mark as not initialized so next operation triggers init
-      _isInitialized = false;
+    unawaited(_reactionSubscription?.cancel());
+    if (_reactionSubscriptionId != null) {
+      unawaited(_nostrClient.unsubscribe(_reactionSubscriptionId!));
+      _reactionSubscriptionId = null;
     }
+    unawaited(_likedIdsController.close());
   }
 
   /// Ensures the repository is initialized with data from storage.

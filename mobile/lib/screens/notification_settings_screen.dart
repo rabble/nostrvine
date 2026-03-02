@@ -1,12 +1,12 @@
 // ABOUTME: Settings screen for notification preferences and controls
 // ABOUTME: Allows users to customize notification types and behavior
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -60,7 +60,10 @@ class _NotificationSettingsScreenState
             'assets/icon/CaretLeft.svg',
             width: 32,
             height: 32,
-            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+            colorFilter: const ColorFilter.mode(
+              VineTheme.whiteText,
+              BlendMode.srcIn,
+            ),
           ),
         ),
         onPressed: context.pop,
@@ -69,7 +72,7 @@ class _NotificationSettingsScreenState
       title: Text('Notifications', style: VineTheme.titleFont()),
       actions: [
         IconButton(
-          icon: const Icon(Icons.refresh, color: Colors.white),
+          icon: const Icon(Icons.refresh, color: VineTheme.whiteText),
           onPressed: () {
             setState(() {
               _likesEnabled = true;
@@ -131,7 +134,7 @@ class _NotificationSettingsScreenState
             ),
             _buildNotificationCard(
               icon: Icons.alternate_email,
-              iconColor: Colors.orange,
+              iconColor: VineTheme.warning,
               title: 'Mentions',
               subtitle: 'When you are mentioned',
               value: _mentionsEnabled,
@@ -307,9 +310,9 @@ class _NotificationSettingsScreenState
     ),
   );
 
-  Widget _buildInfoCard() => Card(
+  Widget _buildInfoCard() => const Card(
     color: VineTheme.cardBackground,
-    child: const Padding(
+    child: Padding(
       padding: EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

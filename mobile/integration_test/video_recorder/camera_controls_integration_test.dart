@@ -22,7 +22,7 @@ void main() {
 
     setUpAll(() async {
       // Request permissions once at the start
-      final service = PermissionHandlerPermissionsService();
+      const service = PermissionHandlerPermissionsService();
       await service.requestCameraPermission();
       await service.requestMicrophonePermission();
 
@@ -70,7 +70,7 @@ void main() {
         for (final mode in DivineFlashMode.values) {
           final success = await cameraService.setFlashMode(mode);
           expect(success, isA<bool>());
-          await tester.pump(Duration(milliseconds: 100));
+          await tester.pump(const Duration(milliseconds: 100));
         }
       });
     });
@@ -108,49 +108,53 @@ void main() {
         for (var i = 0; i <= 5; i++) {
           final zoom = minZoom + (maxZoom - minZoom) * (i / 5);
           await cameraService.setZoomLevel(zoom);
-          await tester.pump(Duration(milliseconds: 50));
+          await tester.pump(const Duration(milliseconds: 50));
         }
       });
     });
 
     group('Focus Control', () {
       testWidgets('can set focus point at center', (tester) async {
-        final success = await cameraService.setFocusPoint(Offset(0.5, 0.5));
+        final success = await cameraService.setFocusPoint(
+          const Offset(0.5, 0.5),
+        );
         expect(success, isA<bool>());
       });
 
       testWidgets('can set focus point at corners', (tester) async {
         final points = [
-          Offset(0.0, 0.0), // Top-left
-          Offset(1.0, 0.0), // Top-right
-          Offset(0.0, 1.0), // Bottom-left
-          Offset(1.0, 1.0), // Bottom-right
+          const Offset(0.0, 0.0), // Top-left
+          const Offset(1.0, 0.0), // Top-right
+          const Offset(0.0, 1.0), // Bottom-left
+          const Offset(1.0, 1.0), // Bottom-right
         ];
 
         for (final point in points) {
           final success = await cameraService.setFocusPoint(point);
           expect(success, isA<bool>());
-          await tester.pump(Duration(milliseconds: 100));
+          await tester.pump(const Duration(milliseconds: 100));
         }
       });
 
       testWidgets('can set exposure point', (tester) async {
-        final success = await cameraService.setExposurePoint(Offset(0.5, 0.5));
+        final success = await cameraService.setExposurePoint(
+          const Offset(0.5, 0.5),
+        );
         expect(success, isA<bool>());
       });
 
       testWidgets('can set exposure at corners', (tester) async {
         final points = [
-          Offset(0.0, 0.0), // Top-left
-          Offset(1.0, 0.0), // Top-right
-          Offset(0.0, 1.0), // Bottom-left
-          Offset(1.0, 1.0), // Bottom-right
+          const Offset(0.0, 0.0), // Top-left
+          const Offset(1.0, 0.0), // Top-right
+          const Offset(0.0, 1.0), // Bottom-left
+          const Offset(1.0, 1.0), // Bottom-right
         ];
 
         for (final point in points) {
           final success = await cameraService.setExposurePoint(point);
           expect(success, isA<bool>());
-          await tester.pump(Duration(milliseconds: 100));
+          await tester.pump(const Duration(milliseconds: 100));
         }
       });
     });
@@ -158,13 +162,13 @@ void main() {
     group('Combined Controls', () {
       testWidgets('can change multiple settings in sequence', (tester) async {
         await cameraService.setFlashMode(DivineFlashMode.auto);
-        await tester.pump(Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
 
         await cameraService.setZoomLevel(2.0);
-        await tester.pump(Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
 
-        await cameraService.setFocusPoint(Offset(0.5, 0.5));
-        await tester.pump(Duration(milliseconds: 100));
+        await cameraService.setFocusPoint(const Offset(0.5, 0.5));
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Verify no exceptions occurred during the operations
         expect(tester.takeException(), isNull);

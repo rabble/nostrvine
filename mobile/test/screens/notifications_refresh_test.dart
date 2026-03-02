@@ -2,8 +2,8 @@
 // ABOUTME: Ensures RefreshIndicator is present and relay provider refresh works
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/notifications_screen.dart';

@@ -44,9 +44,9 @@ void main() {
     });
 
     Widget buildSubject({ProviderContainer? container, VideoFeedState? state}) {
-      when(() => videoFeedBloc.state).thenReturn(
-        state ?? const VideoFeedState(status: VideoFeedStatus.loading),
-      );
+      when(
+        () => videoFeedBloc.state,
+      ).thenReturn(state ?? const VideoFeedState());
 
       return testMaterialApp(
         home: BlocProvider<VideoFeedBloc>.value(

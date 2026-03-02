@@ -52,11 +52,7 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return VideoFeedState(
-        videos: const [],
-        hasMoreContent: false,
-        isLoadingMore: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     // Get current user pubkey
@@ -69,11 +65,7 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return VideoFeedState(
-        videos: const [],
-        hasMoreContent: false,
-        isLoadingMore: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     final analyticsService = ref.read(analyticsApiServiceProvider);
@@ -92,18 +84,13 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return VideoFeedState(
-        videos: const [],
-        hasMoreContent: false,
-        isLoadingMore: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     try {
       final result = await analyticsService.getRecommendations(
         pubkey: currentUserPubkey,
         limit: _currentLimit,
-        fallback: 'popular',
       );
 
       Log.info(
@@ -121,7 +108,6 @@ class ForYouFeed extends _$ForYouFeed {
       return VideoFeedState(
         videos: filteredVideos,
         hasMoreContent: filteredVideos.length >= 20,
-        isLoadingMore: false,
         lastUpdated: DateTime.now(),
       );
     } catch (e) {
@@ -133,7 +119,6 @@ class ForYouFeed extends _$ForYouFeed {
       return VideoFeedState(
         videos: const [],
         hasMoreContent: false,
-        isLoadingMore: false,
         error: e.toString(),
       );
     }
@@ -169,7 +154,6 @@ class ForYouFeed extends _$ForYouFeed {
       final result = await analyticsService.getRecommendations(
         pubkey: currentUserPubkey,
         limit: newLimit,
-        fallback: 'popular',
       );
 
       if (!ref.mounted) return;
@@ -193,7 +177,6 @@ class ForYouFeed extends _$ForYouFeed {
         VideoFeedState(
           videos: filteredVideos,
           hasMoreContent: newEventsLoaded > 0,
-          isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
       );

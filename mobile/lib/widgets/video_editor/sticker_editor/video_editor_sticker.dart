@@ -2,6 +2,7 @@
 // ABOUTME: Includes memory-efficient caching based on displayed size.
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' show StickerData;
 
@@ -11,8 +12,8 @@ import 'package:models/models.dart' show StickerData;
 /// caching based on the displayed size.
 class VideoEditorSticker extends StatelessWidget {
   const VideoEditorSticker({
-    super.key,
     required this.sticker,
+    super.key,
     this.enableLimitCacheSize = true,
   });
 
@@ -97,7 +98,7 @@ class _ErrorImage extends StatelessWidget {
     return const Icon(
       Icons.broken_image_outlined,
       size: 48,
-      color: Colors.grey,
+      color: VineTheme.lightText,
     );
   }
 }

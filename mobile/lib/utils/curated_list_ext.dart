@@ -1,7 +1,7 @@
 // ABOUTME: Extension methods for CuratedList
 // ABOUTME: Provides methods to extract event tags for Nostr event creation
 
-import 'package:openvine/services/curated_list_service.dart';
+import 'package:models/models.dart';
 
 extension CuratedListExt on CuratedList {
   List<List<String>> getEventTags() {

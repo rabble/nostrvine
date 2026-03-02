@@ -2,10 +2,10 @@
 // ABOUTME: Ensures hashtags are sorted by video count and relay queries work correctly
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:models/models.dart';
-import 'package:mocktail/mocktail.dart';
 
 // Mock class for VideoEventService
 class MockVideoEventService extends Mock implements VideoEventService {}
@@ -110,19 +110,13 @@ void main() {
         ).thenReturn(expectedVideos);
 
         // Act
-        await mockVideoService.subscribeToHashtagVideos(
-          testHashtags,
-          limit: 100,
-        );
+        await mockVideoService.subscribeToHashtagVideos(testHashtags);
         final videos = mockVideoService.getVideos(SubscriptionType.hashtag);
 
         // Assert
         // Verify subscription was called with correct parameters
         verify(
-          () => mockVideoService.subscribeToHashtagVideos(
-            testHashtags,
-            limit: 100,
-          ),
+          () => mockVideoService.subscribeToHashtagVideos(testHashtags),
         ).called(1);
 
         // Verify videos are returned
@@ -134,7 +128,7 @@ void main() {
 
     test('should fetch videos from relay when hashtag is clicked', () async {
       // Arrange
-      final hashtag = 'viral';
+      const hashtag = 'viral';
       final expectedVideos = [
         _createVideoWithHashtags(['viral', 'trending']),
         _createVideoWithHashtags(['viral']),
@@ -152,13 +146,13 @@ void main() {
       ).thenReturn(expectedVideos);
 
       // Act - Simulate clicking a hashtag
-      await mockVideoService.subscribeToHashtagVideos([hashtag], limit: 100);
+      await mockVideoService.subscribeToHashtagVideos([hashtag]);
       final videos = mockVideoService.getVideos(SubscriptionType.hashtag);
 
       // Assert
       // Verify subscription was created with the hashtag
       verify(
-        () => mockVideoService.subscribeToHashtagVideos([hashtag], limit: 100),
+        () => mockVideoService.subscribeToHashtagVideos([hashtag]),
       ).called(1);
 
       // Verify videos with the hashtag are returned
@@ -168,21 +162,22 @@ void main() {
   });
 }
 
+// Auto-incrementing counter to guarantee unique IDs across calls.
+int _videoIdCounter = 0;
+
 // Helper function to create test video events
 VideoEvent _createVideoWithHashtags(List<String> hashtags) {
+  final id = _videoIdCounter++;
   final now = DateTime.now();
   final timestamp = now.millisecondsSinceEpoch ~/ 1000;
   return VideoEvent(
-    id: 'test_${DateTime.now().microsecondsSinceEpoch}',
+    id: 'test_video_$id',
     pubkey: 'test_pubkey',
     createdAt: timestamp,
     timestamp: now, // Required parameter - DateTime type
     content: 'Test video',
     videoUrl: 'https://example.com/video.mp4',
     hashtags: hashtags,
-    thumbnailUrl: null,
-    blurhash: null,
-    vineId: 'test_vine_$timestamp',
-    isRepost: false,
+    vineId: 'test_vine_$id',
   );
 }

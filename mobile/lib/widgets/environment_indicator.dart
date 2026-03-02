@@ -1,10 +1,10 @@
 // ABOUTME: Environment indicator widgets for showing current environment
 // ABOUTME: Includes badge overlay and bottom banner with tap callback
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// Badge showing environment name for non-production environments
 /// Returns SizedBox.shrink for production, small badge for dev/staging
@@ -74,7 +74,7 @@ class EnvironmentBanner extends ConsumerWidget {
           child: Text(
             'Environment: ${environment.displayName} - Tap for options',
             style: const TextStyle(
-              color: Colors.white,
+              color: VineTheme.whiteText,
               fontSize: 12,
               fontWeight: FontWeight.bold,
             ),

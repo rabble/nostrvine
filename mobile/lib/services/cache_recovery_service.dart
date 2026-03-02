@@ -2,9 +2,10 @@
 // ABOUTME: Works on all platforms including iOS devices where shell scripts don't work
 
 import 'dart:io';
+
 import 'package:hive_ce/hive.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// Service to recover from corrupted app data and caches
 class CacheRecoveryService {
@@ -121,7 +122,7 @@ class CacheRecoveryService {
 
     try {
       final appSupportDir = await getApplicationSupportDirectory();
-      if (await appSupportDir.exists()) {
+      if (appSupportDir.existsSync()) {
         final files = appSupportDir.listSync();
         for (final file in files) {
           try {
@@ -153,7 +154,7 @@ class CacheRecoveryService {
 
     try {
       final tempDir = await getTemporaryDirectory();
-      if (await tempDir.exists()) {
+      if (tempDir.existsSync()) {
         final files = tempDir.listSync();
         for (final file in files) {
           try {
@@ -185,7 +186,7 @@ class CacheRecoveryService {
 
     try {
       final cacheDir = await getApplicationCacheDirectory();
-      if (await cacheDir.exists()) {
+      if (cacheDir.existsSync()) {
         final files = cacheDir.listSync();
         for (final file in files) {
           try {
@@ -223,7 +224,7 @@ class CacheRecoveryService {
       ];
 
       for (final dir in dirs) {
-        if (await dir.exists()) {
+        if (dir.existsSync()) {
           totalSize += await _getDirectorySize(dir);
         }
       }
@@ -253,8 +254,9 @@ class CacheRecoveryService {
   static String _formatBytes(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }

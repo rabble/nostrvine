@@ -1,9 +1,9 @@
 // ABOUTME: Action buttons widget for profile page (edit, library, follow)
 // ABOUTME: Shows different buttons for own profile vs other user profiles
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/profile/follow_from_profile_button.dart';
 
 /// Action buttons shown on profile page

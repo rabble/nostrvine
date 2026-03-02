@@ -2,14 +2,14 @@
 // ABOUTME: Tests complete user journey from video to report dialog to service storage
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:models/models.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
-import 'package:openvine/services/content_moderation_service.dart';
+import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/widgets/share_video_menu.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -245,7 +245,7 @@ void main() {
 
       final reports = reportServiceAsync.getReportsForEvent(testVideo.id);
       expect(reports.length, equals(1));
-      expect(reports.first.reason, equals(ContentFilterReason.aiGenerated));
+      expect(reports.first.reason, equals(ContentFilterReason.other));
       expect(reports.first.details, equals('Suspected AI-generated content'));
     });
   });

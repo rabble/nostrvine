@@ -21,7 +21,6 @@ void main() {
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
         title: 'Test',
-        hashtags: [],
       );
 
       final container = ProviderContainer(

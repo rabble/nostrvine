@@ -3,10 +3,10 @@
 
 import 'dart:convert';
 
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -466,23 +466,23 @@ class ContentReportingService {
       // Format ticket description with NIP-56 report details
       final description = StringBuffer();
       description.writeln('Content Report - NIP-56');
-      description.writeln('');
+      description.writeln();
       description.writeln('Report ID: $reportId');
       description.writeln('Event ID: $eventId');
       description.writeln('Author Pubkey: $authorPubkey');
-      description.writeln('');
+      description.writeln();
       description.writeln('Violation Type: ${reason.name}');
-      description.writeln('');
+      description.writeln();
       description.writeln('Reporter Details:');
       description.writeln(details);
 
       if (additionalContext != null) {
-        description.writeln('');
+        description.writeln();
         description.writeln('Additional Context:');
         description.writeln(additionalContext);
       }
 
-      description.writeln('');
+      description.writeln();
       description.writeln('---');
       description.writeln('Reported via diVine mobile app');
       description.writeln('NIP-56 Nostr event created: $eventId');
@@ -523,19 +523,19 @@ class ContentReportingService {
       case ContentFilterReason.spam:
         return 'This content appears to be spam or unwanted promotional material.';
       case ContentFilterReason.harassment:
-        return 'This content contains harassment, bullying, or abusive behavior.';
+        return 'This content contains harassment, profanity, or abusive behavior.';
       case ContentFilterReason.violence:
-        return 'This content contains violence, threats, or harmful behavior.';
+        return 'This content contains violent or extremist material.';
       case ContentFilterReason.sexualContent:
-        return 'This content contains inappropriate sexual or adult material.';
+        return 'This content contains nudity, pornography, or sexual material.';
       case ContentFilterReason.copyright:
-        return 'This content appears to violate copyright or intellectual property rights.';
+        return 'This content appears to violate copyright.';
       case ContentFilterReason.falseInformation:
-        return 'This content contains misinformation or deliberately false information.';
+        return 'This content contains misinformation or false claims.';
       case ContentFilterReason.csam:
-        return 'This content violates child safety policies and may contain illegal material.';
+        return 'This content violates child safety policies.';
       case ContentFilterReason.aiGenerated:
-        return 'This content appears to be AI-generated and may violate authenticity policies.';
+        return 'This content appears to be deceptive AI-generated media.';
       case ContentFilterReason.other:
         return 'This content violates community guidelines.';
     }

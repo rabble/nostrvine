@@ -70,12 +70,9 @@ void main() {
       });
 
       testWidgets('displays "Following" label for home mode', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const VideoFeedState(
-            status: VideoFeedStatus.success,
-            mode: FeedMode.home,
-          ),
-        );
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoFeedState(status: VideoFeedStatus.success));
         await tester.pumpWidget(createTestWidget());
 
         expect(find.text('Following'), findsOneWidget);

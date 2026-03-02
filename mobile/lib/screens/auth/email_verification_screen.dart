@@ -374,7 +374,7 @@ class _CloseButton extends StatelessWidget {
       child: Container(
         width: 36,
         height: 36,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: VineTheme.surfaceContainer,
           shape: BoxShape.circle,
         ),
@@ -530,7 +530,7 @@ class _PollingContent extends StatelessWidget {
         const SizedBox(height: 16),
 
         if (isPollingMode && email != null && email!.isNotEmpty) ...[
-          Text(
+          const Text(
             'We sent a verification link to:',
             style: TextStyle(
               fontSize: 16,
@@ -550,7 +550,7 @@ class _PollingContent extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Please click the link in your email to\ncomplete your '
             'registration.',
             style: TextStyle(
@@ -561,7 +561,7 @@ class _PollingContent extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ] else ...[
-          Text(
+          const Text(
             'Please wait while we verify your email...',
             style: TextStyle(
               fontSize: 16,
@@ -603,15 +603,15 @@ class _SuccessContent extends StatelessWidget {
   Widget build(BuildContext context) {
     // Navigation happens automatically via BlocConsumer listener
     // This UI is shown briefly during the transition
-    return Column(
+    return const Column(
       children: [
-        const Spacer(),
+        Spacer(),
 
         // Shaka sticker (celebration)
-        const DivineSticker(sticker: DivineStickerName.hangLoose, size: 120),
-        const SizedBox(height: 32),
+        DivineSticker(sticker: DivineStickerName.hangLoose, size: 120),
+        SizedBox(height: 32),
 
-        const Text(
+        Text(
           'Welcome to Divine!',
           style: TextStyle(
             fontFamily: VineTheme.fontFamilyBricolage,
@@ -621,7 +621,7 @@ class _SuccessContent extends StatelessWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Text(
           'Your email has been verified.',
           style: TextStyle(
@@ -632,10 +632,10 @@ class _SuccessContent extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
 
-        const Spacer(),
+        Spacer(),
 
         // Signing you in status button
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(bottom: 32),
           child: _StatusButton(label: 'Signing you in'),
         ),
@@ -671,7 +671,7 @@ class _ErrorContent extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
-        Text(
+        const Text(
           'We failed to verify your email.\nPlease try again.',
           style: TextStyle(
             fontSize: 16,

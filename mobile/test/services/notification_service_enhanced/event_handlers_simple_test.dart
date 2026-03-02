@@ -5,13 +5,14 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:models/models.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+
 import '../../helpers/real_integration_test_helper.dart';
 
 /// Fake NostrService for testing
@@ -135,9 +136,9 @@ void main() {
 
     test('reaction event with "+" creates like notification', () async {
       // Arrange
-      final actorPubkey =
+      const actorPubkey =
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-      final videoEventId = 'video123';
+      const videoEventId = 'video123';
 
       // Add profile (use factory method)
       final profileEvent = Event(
@@ -180,7 +181,9 @@ void main() {
 
       // Act
       fakeNostrService.injectEvent(reactionEvent);
-      await Future.delayed(Duration(milliseconds: 200)); // Let handlers run
+      await Future.delayed(
+        const Duration(milliseconds: 200),
+      ); // Let handlers run
 
       // Assert
       expect(service.notifications.length, 1);
@@ -205,7 +208,7 @@ void main() {
 
       // Act
       fakeNostrService.injectEvent(reactionEvent);
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       // Assert
       expect(service.notifications, isEmpty);
@@ -223,7 +226,7 @@ void main() {
 
       // Act
       fakeNostrService.injectEvent(reactionEvent);
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       // Assert
       expect(service.notifications, isEmpty);
@@ -231,9 +234,9 @@ void main() {
 
     test('comment event creates comment notification', () async {
       // Arrange
-      final actorPubkey =
+      const actorPubkey =
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-      final videoEventId = 'video_comment';
+      const videoEventId = 'video_comment';
 
       // Add profile
       final profileEvent = Event(
@@ -276,7 +279,7 @@ void main() {
 
       // Act
       fakeNostrService.injectEvent(commentEvent);
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       // Assert
       expect(service.notifications.length, 1);
@@ -289,7 +292,7 @@ void main() {
 
     test('follow event creates follow notification', () async {
       // Arrange
-      final actorPubkey =
+      const actorPubkey =
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
       // Add profile
@@ -310,7 +313,7 @@ void main() {
 
       // Act
       fakeNostrService.injectEvent(followEvent);
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       // Assert
       expect(service.notifications.length, 1);
@@ -321,7 +324,7 @@ void main() {
 
     test('duplicate notifications are not added', () async {
       // Arrange
-      final actorPubkey =
+      const actorPubkey =
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
       // Add profile
@@ -342,9 +345,9 @@ void main() {
 
       // Act - inject same event twice
       fakeNostrService.injectEvent(followEvent);
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
       fakeNostrService.injectEvent(followEvent);
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       // Assert - only one notification
       expect(service.notifications.length, 1);
@@ -353,7 +356,7 @@ void main() {
 
     test('markAsRead marks notification as read', () async {
       // Arrange
-      final actorPubkey =
+      const actorPubkey =
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
       final profileEvent = Event(
@@ -371,7 +374,7 @@ void main() {
       final followEvent = Event(actorPubkey, 3, [], '', createdAt: 1700000000);
 
       fakeNostrService.injectEvent(followEvent);
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       expect(
         service.notifications,
@@ -395,7 +398,7 @@ void main() {
 
     test('markAllAsRead marks all notifications as read', () async {
       // Arrange - create multiple notifications
-      final actorPubkey =
+      const actorPubkey =
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
       final profileEvent = Event(
@@ -422,9 +425,9 @@ void main() {
       );
 
       fakeNostrService.injectEvent(followEvent1);
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
       fakeNostrService.injectEvent(followEvent2);
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
 
       expect(service.notifications.length, 2);
       expect(service.unreadCount, 2);
@@ -440,7 +443,7 @@ void main() {
 
     test('clearAll removes all notifications', () async {
       // Arrange
-      final actorPubkey =
+      const actorPubkey =
           '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
       final profileEvent = Event(
@@ -458,7 +461,7 @@ void main() {
       final followEvent = Event(actorPubkey, 3, [], '', createdAt: 1700000000);
 
       fakeNostrService.injectEvent(followEvent);
-      await Future.delayed(Duration(milliseconds: 200));
+      await Future.delayed(const Duration(milliseconds: 200));
 
       expect(service.notifications, isNotEmpty);
 
@@ -474,7 +477,7 @@ void main() {
       'actor name resolution priority: name > displayName > nip05 > Unknown user',
       () async {
         // Test 1: name is used
-        final pubkey1 =
+        const pubkey1 =
             '1111111111111111111111111111111111111111111111111111111111111111';
         final profileEvent1 = Event(
           pubkey1,
@@ -490,7 +493,7 @@ void main() {
 
         final followEvent1 = Event(pubkey1, 3, [], '', createdAt: 1700000000);
         fakeNostrService.injectEvent(followEvent1);
-        await Future.delayed(Duration(milliseconds: 200));
+        await Future.delayed(const Duration(milliseconds: 200));
 
         expect(
           service.notifications,
@@ -500,7 +503,7 @@ void main() {
         expect(service.notifications.last.actorName, 'NameValue');
 
         // Test 2: displayName is used when name is missing
-        final pubkey2 =
+        const pubkey2 =
             '2222222222222222222222222222222222222222222222222222222222222222';
         final profileEvent2 = Event(
           pubkey2,
@@ -516,12 +519,12 @@ void main() {
 
         final followEvent2 = Event(pubkey2, 3, [], '', createdAt: 1700000001);
         fakeNostrService.injectEvent(followEvent2);
-        await Future.delayed(Duration(milliseconds: 200));
+        await Future.delayed(const Duration(milliseconds: 200));
 
         expect(service.notifications.last.actorName, 'DisplayValue');
 
         // Test 3: nip05 username is used when name and displayName are missing
-        final pubkey3 =
+        const pubkey3 =
             '3333333333333333333333333333333333333333333333333333333333333333';
         final profileEvent3 = Event(
           pubkey3,
@@ -537,18 +540,18 @@ void main() {
 
         final followEvent3 = Event(pubkey3, 3, [], '', createdAt: 1700000002);
         fakeNostrService.injectEvent(followEvent3);
-        await Future.delayed(Duration(milliseconds: 200));
+        await Future.delayed(const Duration(milliseconds: 200));
 
         expect(service.notifications.last.actorName, 'username');
 
         // Test 4: "Unknown user" is used when no profile data exists
-        final pubkey4 =
+        const pubkey4 =
             '4444444444444444444444444444444444444444444444444444444444444444';
         // No profile added for pubkey4
 
         final followEvent4 = Event(pubkey4, 3, [], '', createdAt: 1700000003);
         fakeNostrService.injectEvent(followEvent4);
-        await Future.delayed(Duration(milliseconds: 200));
+        await Future.delayed(const Duration(milliseconds: 200));
 
         expect(service.notifications.last.actorName, 'Unknown user');
       },

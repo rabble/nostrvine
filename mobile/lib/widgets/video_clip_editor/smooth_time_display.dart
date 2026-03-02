@@ -1,6 +1,7 @@
 // ABOUTME: Widget for smooth interpolated time display during video playback
 // ABOUTME: Uses Ticker for 60 FPS updates between position updates from video player
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -125,7 +126,7 @@ class _SmoothTimeDisplayState extends ConsumerState<SmoothTimeDisplay>
     final style =
         widget.style ??
         const TextStyle(
-          color: Colors.white,
+          color: VineTheme.whiteText,
           fontSize: 14,
           fontWeight: .w800,
           letterSpacing: 0.1,

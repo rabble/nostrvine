@@ -2,8 +2,9 @@
 // ABOUTME: Provides progressive image loading experience for video thumbnails
 
 import 'dart:async';
-import 'dart:ui' as ui;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:openvine/services/blurhash_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -46,11 +47,7 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
 
   void _decodeBlurhash() {
     try {
-      final data = BlurhashService.decodeBlurhash(
-        widget.blurhash,
-        width: 32, // Small size for performance
-        height: 32,
-      );
+      final data = BlurhashService.decodeBlurhash(widget.blurhash);
 
       if (mounted && data != null) {
         setState(() {

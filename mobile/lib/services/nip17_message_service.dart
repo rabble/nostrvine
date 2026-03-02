@@ -2,14 +2,14 @@
 // ABOUTME: Handles three-layer encryption (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
 
 import 'package:models/models.dart' show NIP17SendResult;
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/relay.dart';
 import 'package:nostr_sdk/signer/local_nostr_signer.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for sending encrypted private messages using NIP-17 gift wrapping

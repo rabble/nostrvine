@@ -3,11 +3,12 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -54,7 +55,7 @@ void main() {
 
       when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
 
       when(
         () => mockAuth.createAndSignEvent(
@@ -100,10 +101,7 @@ void main() {
       });
 
       test('sets play order to manual after reordering', () async {
-        final list = await service.createList(
-          name: 'Test List',
-          playOrder: PlayOrder.chronological,
-        );
+        final list = await service.createList(name: 'Test List');
         await service.addVideoToList(list!.id, 'video_1');
         await service.addVideoToList(list.id, 'video_2');
 
@@ -156,10 +154,7 @@ void main() {
       });
 
       test('publishes update to Nostr for public list', () async {
-        final list = await service.createList(
-          name: 'Test List',
-          isPublic: true,
-        );
+        final list = await service.createList(name: 'Test List');
         await service.addVideoToList(list!.id, 'video_1');
         await service.addVideoToList(list.id, 'video_2');
         reset(mockNostr);
@@ -263,10 +258,7 @@ void main() {
 
     group('PlayOrder enum', () {
       test('creates list with specific play order', () async {
-        final list1 = await service.createList(
-          name: 'Chronological',
-          playOrder: PlayOrder.chronological,
-        );
+        final list1 = await service.createList(name: 'Chronological');
         final list2 = await service.createList(
           name: 'Reverse',
           playOrder: PlayOrder.reverse,
@@ -287,10 +279,7 @@ void main() {
       });
 
       test('updates play order via updateList', () async {
-        final list = await service.createList(
-          name: 'Test List',
-          playOrder: PlayOrder.chronological,
-        );
+        final list = await service.createList(name: 'Test List');
 
         await service.updateList(
           listId: list!.id,

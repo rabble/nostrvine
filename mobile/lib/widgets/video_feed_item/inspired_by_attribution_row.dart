@@ -2,6 +2,7 @@
 // ABOUTME: on video feed items. Shows "Inspired by @DisplayName" with tap
 // ABOUTME: navigation to the inspiring creator's profile.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,7 +10,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -112,7 +112,7 @@ class _InspiredByContent extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: VineTheme.backgroundColor.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
@@ -131,16 +131,14 @@ class _InspiredByContent extends ConsumerWidget {
                     color: VineTheme.whiteText,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    shadows: [
-                      Shadow(blurRadius: 4, color: VineTheme.backgroundColor),
-                    ],
+                    shadows: [Shadow(blurRadius: 4)],
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 4),
-              Icon(
+              const Icon(
                 Icons.chevron_right,
                 size: 14,
                 color: VineTheme.onSurfaceVariant,

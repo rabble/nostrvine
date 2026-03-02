@@ -72,7 +72,7 @@ void main() {
     when(() => mockCubit.state).thenReturn(initialState);
     whenListen(
       mockCubit,
-      Stream<EmailVerificationState>.empty(),
+      const Stream<EmailVerificationState>.empty(),
       initialState: initialState,
     );
 
@@ -90,10 +90,10 @@ void main() {
         routerConfig: GoRouter(
           initialLocation: '/verify-email',
           routes: [
-            GoRoute(path: '/', builder: (_, __) => const Scaffold()),
+            GoRoute(path: '/', builder: (_, _) => const Scaffold()),
             GoRoute(
               path: '/verify-email',
-              builder: (_, __) => BlocProvider<EmailVerificationCubit>.value(
+              builder: (_, _) => BlocProvider<EmailVerificationCubit>.value(
                 value: mockCubit,
                 child: EmailVerificationScreen(
                   deviceCode: deviceCode,
@@ -105,11 +105,11 @@ void main() {
             ),
             GoRoute(
               path: '/login-options',
-              builder: (_, __) => const Scaffold(body: Text('Login Options')),
+              builder: (_, _) => const Scaffold(body: Text('Login Options')),
             ),
             GoRoute(
               path: '/explore',
-              builder: (_, __) => const Scaffold(body: Text('Explore')),
+              builder: (_, _) => const Scaffold(body: Text('Explore')),
             ),
           ],
         ),

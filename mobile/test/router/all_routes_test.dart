@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -268,38 +268,6 @@ void main() {
         HashtagScreenRouter.pathForTag('bitcoin'),
       );
     });
-
-    testWidgets(
-      '${HashtagScreenRouter.pathWithIndex} route works (feed mode)',
-      (tester) async {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp.router(
-              routerConfig: container.read(goRouterProvider),
-            ),
-          ),
-        );
-
-        final router = container.read(goRouterProvider);
-        router.go(HashtagScreenRouter.pathForTag('bitcoin', index: 0));
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          HashtagScreenRouter.pathForTag('bitcoin', index: 0),
-        );
-
-        router.go(HashtagScreenRouter.pathForTag('nostr', index: 5));
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          HashtagScreenRouter.pathForTag('nostr', index: 5),
-        );
-      },
-    );
 
     testWidgets('${SettingsScreen.path} route works', (tester) async {
       final container = ProviderContainer();

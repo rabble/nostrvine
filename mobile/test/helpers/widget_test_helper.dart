@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 
@@ -11,12 +11,14 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 /// Pass in your test-generated MockSharedPreferences instance
 dynamic createMockSharedPreferences(dynamic mockPrefs) {
   for (final flag in FeatureFlag.values) {
-    when(mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
+    when(() => mockPrefs.getBool('ff_${flag.name}')).thenReturn(null);
     when(
-      mockPrefs.setBool('ff_${flag.name}', any),
+      () => mockPrefs.setBool('ff_${flag.name}', any()),
     ).thenAnswer((_) async => true);
-    when(mockPrefs.remove('ff_${flag.name}')).thenAnswer((_) async => true);
-    when(mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
+    when(
+      () => mockPrefs.remove('ff_${flag.name}'),
+    ).thenAnswer((_) async => true);
+    when(() => mockPrefs.containsKey('ff_${flag.name}')).thenReturn(false);
   }
   return mockPrefs;
 }

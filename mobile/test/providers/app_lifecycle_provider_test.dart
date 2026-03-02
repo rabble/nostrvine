@@ -1,13 +1,13 @@
 // ABOUTME: Tests for app lifecycle provider (foreground/background state)
 // ABOUTME: Verifies reactive lifecycle tracking and activeVideoIdProvider integration
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/active_video_provider.dart';
-import 'package:openvine/router/router.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
@@ -51,18 +51,14 @@ void main() {
         // videosForExploreRouteProvider for explore routes
         videosForExploreRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
-            VideoFeedState(
-              videos: mockVideos,
-              hasMoreContent: false,
-              isLoadingMore: false,
-            ),
+            VideoFeedState(videos: mockVideos, hasMoreContent: false),
           );
         }),
       ],
     );
 
     // Create active subscription to force reactive chain evaluation
-    container.listen(activeVideoIdProvider, (_, __) {}, fireImmediately: true);
+    container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
     await pumpEventQueue();
 
@@ -105,18 +101,14 @@ void main() {
         // Feed (one item)
         videosForExploreRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
-            VideoFeedState(
-              videos: mockVideos,
-              hasMoreContent: false,
-              isLoadingMore: false,
-            ),
+            VideoFeedState(videos: mockVideos, hasMoreContent: false),
           );
         }),
       ],
     );
 
     // Create active subscription to force reactive chain evaluation
-    container.listen(activeVideoIdProvider, (_, __) {}, fireImmediately: true);
+    container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
     await pumpEventQueue();
 

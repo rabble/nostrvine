@@ -1,6 +1,7 @@
 // ABOUTME: Edge gradient overlays for clip gallery
 // ABOUTME: Darkens left and right edges to focus attention on centered clip
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Edge gradient overlays that darken the left and right sides of the gallery.
@@ -11,8 +12,8 @@ class ClipGalleryEdgeGradients extends StatelessWidget {
   /// Creates edge gradient overlays.
   const ClipGalleryEdgeGradients({
     required this.opacity,
-    super.key,
     required this.isReordering,
+    super.key,
   });
 
   /// Opacity of the gradients (0.0-1.0).
@@ -29,15 +30,13 @@ class ClipGalleryEdgeGradients extends StatelessWidget {
       child: Opacity(
         opacity: opacity * 0.65,
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              begin: .centerLeft,
-              end: .centerRight,
               colors: [
-                const Color(0xFF000A06),
+                VineTheme.surfaceContainerHigh,
                 if (!isReordering) const Color(0x00000A06),
-                const Color(0xFF000A06),
+                VineTheme.surfaceContainerHigh,
               ],
             ),
           ),

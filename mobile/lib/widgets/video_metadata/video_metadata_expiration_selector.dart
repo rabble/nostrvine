@@ -27,7 +27,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
       context: context,
       selectedValue: currentOption.name,
       // TODO(l10n): Replace with context.l10n when localization is added.
-      title: Text('Expiration'),
+      title: const Text('Expiration'),
       options: VideoMetadataExpiration.values.map((option) {
         return VineBottomSheetSelectionOptionData(
           label: option.description,
@@ -68,7 +68,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
               Text(
                 'Expiration',
                 style: GoogleFonts.inter(
-                  color: const Color(0xBFFFFFFF),
+                  color: VineTheme.onSurfaceVariant,
                   fontSize: 11,
                   fontWeight: .w600,
                   height: 1.45,
@@ -84,7 +84,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
                       currentOption.description,
                       style: VineTheme.titleFont(
                         fontSize: 17,
-                        color: const Color(0xF2FFFFFF),
+                        color: VineTheme.onSurface,
                         letterSpacing: 0.15,
                       ),
                     ),
@@ -93,7 +93,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: const Color(0x8C032017),
+                      color: VineTheme.surfaceContainer55,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: VineTheme.outlineVariant),
                     ),

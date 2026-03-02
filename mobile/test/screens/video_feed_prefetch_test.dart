@@ -4,8 +4,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/constants/app_constants.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/app_constants.dart';
 
 class MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
@@ -236,8 +236,7 @@ void main() {
 
       // Act & Assert - should not throw
       expect(
-        () async =>
-            await _triggerPrefetch(mockCacheManager, videos, currentIndex),
+        () async => _triggerPrefetch(mockCacheManager, videos, currentIndex),
         returnsNormally,
       );
     });
@@ -270,7 +269,7 @@ void main() {
       final actualVideoIds = items.map((item) => item.key).toList();
 
       // Total videos to prefetch should be preloadBefore + preloadAfter
-      final expectedCount =
+      const expectedCount =
           AppConstants.preloadBefore + AppConstants.preloadAfter;
       expect(actualVideoIds.length, lessThanOrEqualTo(expectedCount));
     });
@@ -291,7 +290,6 @@ List<VideoEvent> _createMockVideoEvents(int count) {
       timestamp: timestamp,
       videoUrl: 'https://example.com/video-$index.mp4',
       title: 'Test Video $index',
-      hashtags: [],
     );
   });
 }

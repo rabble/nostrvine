@@ -72,7 +72,7 @@ class VideoClipEditorTopBar extends ConsumerWidget {
             Text(
               '${state.currentClipIndex + 1}/$totalClips',
               style: GoogleFonts.bricolageGrotesque(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 18,
                 height: 1.33,
                 letterSpacing: 0.15,
@@ -127,7 +127,7 @@ class _BackToCameraButton extends StatelessWidget {
       child: GestureDetector(
         behavior: .opaque,
         onTap: onTap,
-        child: Row(
+        child: const Row(
           spacing: 6,
           children: [
             DivineIcon(icon: .caretLeft, size: 32, color: VineTheme.whiteText),
@@ -156,7 +156,7 @@ class _CloseButton extends StatelessWidget {
       label: 'Close video editor',
       child: GestureDetector(
         onTap: onTap,
-        child: DivineIcon(icon: .x, size: 32, color: VineTheme.whiteText),
+        child: const DivineIcon(icon: .x, size: 32, color: VineTheme.whiteText),
       ),
     );
   }
@@ -178,16 +178,16 @@ class _NextButton extends StatelessWidget {
         child: Container(
           padding: const .symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: VineTheme.whiteText,
             borderRadius: .circular(16),
             boxShadow: const [
               BoxShadow(
-                color: Color(0x1A000000),
+                color: VineTheme.innerShadow,
                 offset: Offset(1, 1),
                 blurRadius: 1,
               ),
               BoxShadow(
-                color: Color(0x1A000000),
+                color: VineTheme.innerShadow,
                 offset: Offset(0.4, 0.4),
                 blurRadius: 0.6,
               ),
@@ -201,7 +201,7 @@ class _NextButton extends StatelessWidget {
               fontWeight: .w800,
               height: 1.33,
               letterSpacing: 0.15,
-              color: const Color(0xFF00452D),
+              color: VineTheme.inverseOnSurface,
             ),
           ),
         ),

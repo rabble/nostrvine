@@ -58,7 +58,7 @@ void main() {
             onActiveVideoChanged: onActiveVideoChanged,
             onNearEnd: onNearEnd,
             nearEndThreshold: nearEndThreshold,
-            itemBuilder: (context, video, index, {required bool isActive}) {
+            itemBuilder: (context, video, index, {required isActive}) {
               return ColoredBox(
                 key: Key('video_item_$index'),
                 color: isActive ? Colors.blue : Colors.grey,

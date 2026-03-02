@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -50,9 +50,7 @@ void main() {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     await tester.pumpWidget(shell(c));
-    c
-        .read(goRouterProvider)
-        .go(HashtagScreenRouter.pathForTag('rust%20lang', index: 0));
+    c.read(goRouterProvider).go(HashtagScreenRouter.pathForTag('rust%20lang'));
     await tester.pump();
     expect(find.text('#rust lang'), findsOneWidget);
     // TODO(any): Fix and re-enable these tests
@@ -77,9 +75,7 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
-      c
-          .read(goRouterProvider)
-          .go(HashtagScreenRouter.pathForTag('comedy', index: 0));
+      c.read(goRouterProvider).go(HashtagScreenRouter.pathForTag('comedy'));
       await tester.pumpAndSettle();
 
       // Should find back button in AppBar

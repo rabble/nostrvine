@@ -1,13 +1,13 @@
 // ABOUTME: Tests for overlay visibility provider (drawer, settings, modal tracking)
 // ABOUTME: Verifies overlays pause video playback via activeVideoIdProvider integration
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
-import 'package:openvine/router/router.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
@@ -136,11 +136,7 @@ void main() {
           ),
           videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(
-                videos: videos,
-                hasMoreContent: false,
-                isLoadingMore: false,
-              ),
+              VideoFeedState(videos: videos, hasMoreContent: false),
             );
           }),
         ],
@@ -156,7 +152,7 @@ void main() {
         // Create active subscription to force reactive chain evaluation
         container.listen(
           activeVideoIdProvider,
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 
@@ -172,11 +168,7 @@ void main() {
       addTearDown(container.dispose);
 
       // Create active subscription to force reactive chain evaluation
-      container.listen(
-        activeVideoIdProvider,
-        (_, __) {},
-        fireImmediately: true,
-      );
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
       await pumpEventQueue();
 
@@ -190,11 +182,7 @@ void main() {
       addTearDown(container.dispose);
 
       // Create active subscription to force reactive chain evaluation
-      container.listen(
-        activeVideoIdProvider,
-        (_, __) {},
-        fireImmediately: true,
-      );
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
       await pumpEventQueue();
 
@@ -208,11 +196,7 @@ void main() {
       addTearDown(container.dispose);
 
       // Create active subscription to force reactive chain evaluation
-      container.listen(
-        activeVideoIdProvider,
-        (_, __) {},
-        fireImmediately: true,
-      );
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
       await pumpEventQueue();
 

@@ -12,9 +12,9 @@ import 'package:flutter/material.dart';
 /// - Smooth drag interaction
 class VideoEditorVerticalSlider extends StatefulWidget {
   const VideoEditorVerticalSlider({
-    super.key,
     required this.value,
     required this.onChanged,
+    super.key,
     this.onChangeEnd,
     this.height = 300,
   });
@@ -296,7 +296,7 @@ class _Thumb extends StatelessWidget {
               borderRadius: BorderRadius.horizontal(left: .circular(3)),
               boxShadow: [
                 BoxShadow(
-                  color: Color(0x3C000000),
+                  color: VineTheme.innerShadowPressed,
                   offset: Offset(1, 1),
                   blurRadius: 1,
                 ),

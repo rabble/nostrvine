@@ -2,19 +2,19 @@
 // ABOUTME: Provides age verification gate and navigation to sub-screens
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/content_filters_screen.dart';
-import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/services/image_cache_manager.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 class SafetySettingsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
@@ -105,7 +105,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -115,7 +115,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         ),
         title: Text('Safety & Privacy', style: VineTheme.titleFont()),
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
@@ -182,7 +182,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
             style: TextStyle(color: VineTheme.secondaryText),
           ),
           activeColor: VineTheme.vineGreen,
-          checkColor: Colors.black,
+          checkColor: VineTheme.backgroundColor,
           controlAffinity: ListTileControlAffinity.leading,
         ),
       ],
@@ -474,7 +474,7 @@ class _BlockedUserTile extends ConsumerWidget {
         height: 40,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: VineTheme.onSurfaceDisabled, width: 1),
+          border: Border.all(color: VineTheme.onSurfaceDisabled),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(11),
@@ -593,10 +593,7 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                 children: [
                   Text(
                     'Account Content Labels',
-                    style: VineTheme.titleFont(
-                      fontSize: 18,
-                      color: VineTheme.whiteText,
-                    ),
+                    style: VineTheme.titleFont(fontSize: 18),
                   ),
                   if (_selected.isNotEmpty)
                     TextButton(
@@ -609,8 +606,8 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'Select all that apply to your account',
                 style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),

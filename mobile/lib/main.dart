@@ -25,27 +25,26 @@ import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/back_button_handler.dart';
+import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/draft_migration_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
-import 'package:openvine/services/bandwidth_tracker_service.dart';
-import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
@@ -178,7 +177,7 @@ Future<void> _startOpenVineApp() async {
             WindowSizeConstants.baseHeight,
           ),
           center: true,
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.backgroundColor,
           skipTaskbar: false,
           titleBarStyle: TitleBarStyle.normal,
         );
@@ -319,7 +318,6 @@ Future<void> _startOpenVineApp() async {
         // Use our batcher for these specific messages
         LogMessageBatcher.instance.tryBatchMessage(
           message,
-          level: LogLevel.info,
           category: LogCategory.relay,
         );
         return; // Don't print the individual message
@@ -349,11 +347,11 @@ Future<void> _startOpenVineApp() async {
   // Configure global error widget builder for user-friendly error display
   // Wrap in Directionality to enable Text widgets even before MaterialApp is ready
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    return Directionality(
+    return const Directionality(
       textDirection: TextDirection.ltr,
-      child: Container(
+      child: ColoredBox(
         color: VineTheme.backgroundColor,
-        child: const Center(
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -791,7 +789,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
-              break;
             case DeepLinkType.profile:
               if (deepLink.npub != null) {
                 final index = deepLink.index ?? 0;
@@ -823,13 +820,10 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
-              break;
             case DeepLinkType.hashtag:
               if (deepLink.hashtag != null) {
-                // Include index if present, otherwise use grid view
                 final targetPath = HashtagScreenRouter.pathForTag(
                   deepLink.hashtag!,
-                  index: deepLink.index,
                 );
                 Log.info(
                   '📱 Navigating to hashtag: $targetPath',
@@ -857,7 +851,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
-              break;
             case DeepLinkType.search:
               if (deepLink.searchTerm != null) {
                 // Include index if present, otherwise use grid view
@@ -891,7 +884,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
-              break;
             case DeepLinkType.signerCallback:
               Log.info(
                 '📱 Signer callback - triggering relay reconnection',
@@ -899,14 +891,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                 category: LogCategory.auth,
               );
               ref.read(authServiceProvider).onSignerCallbackReceived();
-              break;
             case DeepLinkType.unknown:
               Log.warning(
                 '📱 Unknown deep link type',
                 name: 'DeepLinkHandler',
                 category: LogCategory.ui,
               );
-              break;
           }
         },
         loading: () {
@@ -926,10 +916,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       );
     });
 
-    const bool crashProbe = bool.fromEnvironment(
-      'CRASHLYTICS_PROBE',
-      defaultValue: false,
-    );
+    const bool crashProbe = bool.fromEnvironment('CRASHLYTICS_PROBE');
 
     final router = ref.read(goRouterProvider);
 
@@ -939,7 +926,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     }
 
     // Helper functions for tab navigation
-    RouteType _routeTypeForTab(int index) {
+    RouteType routeTypeForTab(int index) {
       switch (index) {
         case 0:
           return RouteType.home;
@@ -954,7 +941,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       }
     }
 
-    int? _tabIndexFromRouteType(RouteType type) {
+    int? tabIndexFromRouteType(RouteType type) {
       switch (type) {
         case RouteType.home:
           return 0;
@@ -1030,7 +1017,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // If there's a previous tab in history, navigate to it
       if (previousTab != null) {
         // Navigate to previous tab
-        final previousRouteType = _routeTypeForTab(previousTab);
+        final previousRouteType = routeTypeForTab(previousTab);
         final lastIndex = ref
             .read(lastTabPositionProvider.notifier)
             .getPosition(previousRouteType);
@@ -1044,17 +1031,14 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         switch (previousTab) {
           case 0:
             router.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
-            break;
           case 1:
             if (lastIndex != null) {
               router.go(ExploreScreen.pathForIndex(lastIndex));
             } else {
               router.go(ExploreScreen.path);
             }
-            break;
           case 2:
             router.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
-            break;
           case 3:
             // Get current user's npub for profile
             final authService = ref.read(authServiceProvider);
@@ -1064,14 +1048,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             } else {
               router.go(VideoFeedPage.pathForIndex(0));
             }
-            break;
         }
         return true; // Handled
       }
 
       // No previous tab - check if we're on a non-home tab
       // If so, go to home first before exiting
-      final currentTab = _tabIndexFromRouteType(ctx.type);
+      final currentTab = tabIndexFromRouteType(ctx.type);
       if (currentTab != null && currentTab != 0) {
         // Go to home first
         router.go(VideoFeedPage.pathForIndex(0));
@@ -1153,7 +1136,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             messenger.showSnackBar(
               SnackBar(
                 content: Text(state.error!),
-                backgroundColor: Colors.red[700],
+                backgroundColor: VineTheme.error,
                 behavior: SnackBarBehavior.floating,
                 duration: const Duration(seconds: 5),
               ),
@@ -1193,7 +1176,7 @@ class _CrashProbeHotspotState extends State<_CrashProbeHotspot> {
   int _taps = 0;
   DateTime? _windowStart;
 
-  void _onTap() async {
+  Future<void> _onTap() async {
     final now = DateTime.now();
     if (_windowStart == null ||
         now.difference(_windowStart!) > const Duration(seconds: 5)) {

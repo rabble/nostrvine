@@ -11,11 +11,11 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/blocs/video_search/video_search_bloc.dart';
+import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
-import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/hashtag_search_view.dart';
@@ -440,7 +440,7 @@ class _SearchFeedModeContent extends ConsumerWidget {
         pageContext.whenOrNull(data: (ctx) => ctx.videoIndex ?? 0) ?? 0;
 
     if (videos.isEmpty || startIndex >= videos.length) {
-      return Center(
+      return const Center(
         child: Text(
           'No videos available',
           style: TextStyle(color: VineTheme.whiteText),

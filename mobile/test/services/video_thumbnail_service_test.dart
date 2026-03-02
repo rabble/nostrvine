@@ -5,11 +5,9 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 
-@GenerateMocks([])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -35,7 +33,7 @@ void main() {
 
     tearDownAll(() async {
       // Clean up temporary directory
-      if (await tempDir.exists()) {
+      if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
 
@@ -187,8 +185,8 @@ void main() {
         await thumb2.writeAsBytes(Uint8List.fromList([4, 5, 6]));
 
         // Verify files exist
-        expect(await thumb1.exists(), isTrue);
-        expect(await thumb2.exists(), isTrue);
+        expect(thumb1.existsSync(), isTrue);
+        expect(thumb2.existsSync(), isTrue);
 
         // Clean up thumbnails
         await VideoThumbnailService.cleanupThumbnails([
@@ -197,8 +195,8 @@ void main() {
         ]);
 
         // Verify files are deleted
-        expect(await thumb1.exists(), isFalse);
-        expect(await thumb2.exists(), isFalse);
+        expect(thumb1.existsSync(), isFalse);
+        expect(thumb2.existsSync(), isFalse);
       });
 
       test('handles non-existent files gracefully', () async {
@@ -224,7 +222,7 @@ void main() {
         ]);
 
         // Verify existing file is deleted
-        expect(await existingThumb.exists(), isFalse);
+        expect(existingThumb.existsSync(), isFalse);
       });
     });
 

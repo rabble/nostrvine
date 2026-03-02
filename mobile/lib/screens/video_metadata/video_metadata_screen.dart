@@ -12,8 +12,8 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
-import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_inspired_by_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_tags_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_upload_status.dart';
@@ -95,8 +95,8 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: VineTheme.outlineVariant),
                       ),
-                      child: Padding(
-                        padding: const .all(4.0),
+                      child: const Padding(
+                        padding: .all(4.0),
                         child: DivineIcon(
                           size: 32,
                           icon: .caretLeft,
@@ -144,15 +144,15 @@ class _BackgroundGradient extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    return const DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xFF062117),
+            Color(0xFF062117),
             VineTheme.surfaceContainerHigh,
-            const Color(0xFF000704),
+            Color(0xFF000704),
           ],
         ),
       ),
@@ -310,7 +310,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF4A1C00),
         border: Border.all(
-          color: const Color(0xFFFFB84D).withValues(alpha: 0.6),
+          color: VineTheme.contentWarningAmber.withValues(alpha: 0.6),
         ),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -318,7 +318,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            color: Color(0xFFFFB84D),
+            color: VineTheme.contentWarningAmber,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -328,7 +328,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
               // added.
               '64KB limit reached. Remove some content to continue.',
               style: VineTheme.bodyFont(
-                color: const Color(0xFFFFB84D),
+                color: VineTheme.contentWarningAmber,
                 fontSize: 14,
                 fontWeight: .w600,
                 height: 1.43,

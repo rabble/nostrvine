@@ -7,7 +7,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:reposts_repository/src/exceptions.dart';
@@ -50,47 +49,33 @@ typedef QueueOfflineRepostCallback =
 /// - Uses `RepostsLocalStorage` to persist repost records locally
 /// - Maintains an in-memory cache for fast lookups
 /// - Provides reactive streams for UI updates
-/// - Handles authentication state changes automatically
+/// - Supports real-time cross-device sync via persistent subscriptions
 class RepostsRepository {
   /// Creates a new reposts repository.
   ///
   /// Parameters:
   /// - [nostrClient]: Client for Nostr relay communication
   /// - [localStorage]: Optional local storage for persistence
-  /// - [authStateStream]: Optional stream of authentication state
-  /// - [isAuthenticated]: Initial authentication state
   /// - [isOnline]: Optional callback to check connectivity status
   /// - [queueOfflineAction]: Optional callback to queue actions when offline
   RepostsRepository({
     required NostrClient nostrClient,
     RepostsLocalStorage? localStorage,
-    Stream<bool>? authStateStream,
-    bool isAuthenticated = false,
     IsOnlineCallback? isOnline,
     QueueOfflineRepostCallback? queueOfflineAction,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
-       _isAuthenticated = isAuthenticated,
        _isOnline = isOnline,
-       _queueOfflineAction = queueOfflineAction {
-    // Listen to auth state changes if stream provided
-    if (authStateStream != null) {
-      _authSubscription = authStateStream.listen(_handleAuthChange);
-    }
-  }
+       _queueOfflineAction = queueOfflineAction;
 
   final NostrClient _nostrClient;
   final RepostsLocalStorage? _localStorage;
-  StreamSubscription<bool>? _authSubscription;
 
   /// Callback to check if the device is online
   final IsOnlineCallback? _isOnline;
 
   /// Callback to queue actions for offline sync
   final QueueOfflineRepostCallback? _queueOfflineAction;
-
-  /// Whether the user is currently authenticated.
-  bool _isAuthenticated;
 
   /// In-memory cache of repost records keyed by addressable ID.
   final Map<String, RepostRecord> _repostRecords = {};
@@ -111,8 +96,12 @@ class RepostsRepository {
 
   /// Whether [dispose] has been called.
   ///
-  /// Once disposed, all stream emissions and auth-change handlers are no-ops.
+  /// Once disposed, all stream emissions are no-ops.
   bool _isDisposed = false;
+
+  /// Real-time sync subscription for cross-device synchronization.
+  StreamSubscription<Event>? _repostSubscription;
+  String? _repostSubscriptionId;
 
   /// Emits the current set of reposted addressable IDs.
   ///
@@ -702,6 +691,102 @@ class RepostsRepository {
     );
   }
 
+  /// Initialize the repository — load from local cache, then subscribe for
+  /// real-time cross-device sync.
+  ///
+  /// Follows the same pattern as `FollowRepository.initialize()`:
+  /// 1. Load persisted records from local storage for immediate UI display.
+  /// 2. Set up a persistent Kind 16 subscription for live updates.
+  ///
+  /// Safe to call multiple times (idempotent).
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    // Load from local storage first for immediate UI display
+    if (_localStorage != null) {
+      final records = await _localStorage.getAllRepostRecords();
+      for (final record in records) {
+        _repostRecords[record.addressableId] = record;
+      }
+      _emitRepostedIds();
+    }
+
+    // Subscribe to reposts for real-time sync and cross-device updates
+    if (_nostrClient.hasKeys) {
+      _subscribeToReposts();
+    }
+
+    _isInitialized = true;
+  }
+
+  /// Subscribe to reposts for real-time sync and cross-device updates.
+  ///
+  /// Creates a long-running subscription to the current user's Kind 16 events.
+  /// When a newer repost arrives (from another device or this one),
+  /// updates the local cache.
+  void _subscribeToReposts() {
+    final currentUserPubkey = _nostrClient.publicKey;
+    if (currentUserPubkey.isEmpty) return;
+
+    // Use a deterministic subscription ID so we can unsubscribe later
+    _repostSubscriptionId = 'reposts_repo_reposts_$currentUserPubkey';
+
+    final eventStream = _nostrClient.subscribe(
+      [
+        Filter(
+          authors: [currentUserPubkey],
+          kinds: const [EventKind.genericRepost],
+          limit: 1,
+        ),
+      ],
+      subscriptionId: _repostSubscriptionId,
+    );
+
+    _repostSubscription = eventStream.listen(
+      _processIncomingRepost,
+      onError: (Object error) {
+        // Subscription errors are non-fatal; log and continue
+      },
+    );
+  }
+
+  /// Process an incoming Kind 16 repost event from the subscription.
+  ///
+  /// Validates the event, deduplicates against existing records, and
+  /// updates the in-memory cache + local storage.
+  void _processIncomingRepost(Event event) {
+    if (_isDisposed) return;
+
+    // Only process Kind 16 generic reposts from the current user
+    if (event.kind != EventKind.genericRepost) return;
+    if (event.pubkey != _nostrClient.publicKey) return;
+
+    final addressableId = _extractAddressableId(event);
+    if (addressableId == null) return;
+
+    final authorPubkey = _extractOriginalAuthorPubkey(event);
+    if (authorPubkey == null) return;
+
+    final createdAt = DateTime.fromMillisecondsSinceEpoch(
+      event.createdAt * 1000,
+    );
+
+    // Deduplicate: only update if newer than existing record
+    final existing = _repostRecords[addressableId];
+    if (existing != null && !createdAt.isAfter(existing.createdAt)) return;
+
+    final record = RepostRecord(
+      addressableId: addressableId,
+      repostEventId: event.id,
+      originalAuthorPubkey: authorPubkey,
+      createdAt: createdAt,
+    );
+
+    _repostRecords[addressableId] = record;
+    unawaited(_localStorage?.saveRepostRecord(record));
+    _emitRepostedIds();
+  }
+
   /// Clear all local repost data.
   ///
   /// Used when logging out or clearing user data.
@@ -719,41 +804,17 @@ class RepostsRepository {
 
   /// Dispose of resources.
   ///
-  /// Cancels the auth subscription first so that no further auth-change
-  /// callbacks can fire, then closes the stream controller.
+  /// Cancels the repost subscription and closes the stream controller.
   /// Should be called when the repository is no longer needed.
   void dispose() {
     _isDisposed = true;
-    unawaited(_authSubscription?.cancel());
-    _authSubscription = null;
+    unawaited(_repostSubscription?.cancel());
+    if (_repostSubscriptionId != null) {
+      unawaited(_nostrClient.unsubscribe(_repostSubscriptionId!));
+      _repostSubscriptionId = null;
+    }
     unawaited(_repostedIdsController.close());
   }
-
-  /// Handle authentication state changes.
-  ///
-  /// When user logs out, clears the cache.
-  /// When user logs in, triggers a sync.
-  void _handleAuthChange(bool isAuthenticated) {
-    if (_isDisposed) return;
-    if (isAuthenticated == _isAuthenticated) return;
-
-    _isAuthenticated = isAuthenticated;
-
-    if (!isAuthenticated) {
-      // User logged out - clear cache
-      unawaited(clearCache());
-    } else {
-      // User logged in - sync will be triggered by BLoC
-      // Just mark as not initialized so next operation triggers init
-      _isInitialized = false;
-    }
-  }
-
-  /// Whether the repository is ready for operations.
-  ///
-  /// Returns false if not authenticated.
-  @visibleForTesting
-  bool get isAuthenticated => _isAuthenticated;
 
   /// Ensures the repository is initialized with data from storage.
   Future<void> _ensureInitialized() async {

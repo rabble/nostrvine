@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 
 void main() {
@@ -126,9 +126,7 @@ void main() {
       expect(bottomNav.currentIndex, 1);
     });
 
-    testWidgets('navigating to /hashtag/rust/3 selects Tags tab', (
-      tester,
-    ) async {
+    testWidgets('navigating to /hashtag/rust selects Tags tab', (tester) async {
       final c = ProviderContainer();
       addTearDown(c.dispose);
 
@@ -136,17 +134,12 @@ void main() {
 
       c.read(routeNormalizationProvider);
 
-      c
-          .read(goRouterProvider)
-          .go(HashtagScreenRouter.pathForTag('rust', index: 3));
+      c.read(goRouterProvider).go(HashtagScreenRouter.pathForTag('rust'));
       await tester.pump(); // Process the navigation
       await tester.pump(); // Process the post-frame callback
 
       // Should be at hashtag route
-      expect(
-        currentLocation(c),
-        HashtagScreenRouter.pathForTag('rust', index: 3),
-      );
+      expect(currentLocation(c), HashtagScreenRouter.pathForTag('rust'));
 
       // Bottom nav should show Tags tab (index 2) as selected
       final bottomNav = tester.widget<BottomNavigationBar>(

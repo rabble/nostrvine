@@ -8,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -28,17 +28,31 @@ class ProfileLikedGrid extends StatelessWidget {
         if (state.status == ProfileLikedVideosStatus.initial ||
             state.status == ProfileLikedVideosStatus.syncing ||
             state.status == ProfileLikedVideosStatus.loading) {
-          return const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          return const CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: CircularProgressIndicator(color: VineTheme.vineGreen),
+                ),
+              ),
+            ],
           );
         }
 
         if (state.status == ProfileLikedVideosStatus.failure) {
-          return const Center(
-            child: Text(
-              'Error loading liked videos',
-              style: TextStyle(color: Colors.white),
-            ),
+          return const CustomScrollView(
+            slivers: [
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Text(
+                    'Error loading liked videos',
+                    style: TextStyle(color: VineTheme.whiteText),
+                  ),
+                ),
+              ),
+            ],
           );
         }
 
@@ -74,7 +88,6 @@ class ProfileLikedGrid extends StatelessWidget {
                     crossAxisCount: 3,
                     crossAxisSpacing: 4,
                     mainAxisSpacing: 4,
-                    childAspectRatio: 1,
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
                     if (index >= likedVideos.length) {
@@ -127,12 +140,16 @@ class _LikedEmptyState extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.favorite_border, color: Colors.grey, size: 64),
+              const Icon(
+                Icons.favorite_border,
+                color: VineTheme.lightText,
+                size: 64,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'No Liked Videos Yet',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -142,7 +159,10 @@ class _LikedEmptyState extends StatelessWidget {
                 isOwnProfile
                     ? 'Videos you like will appear here'
                     : 'Videos they like will appear here',
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
+                style: const TextStyle(
+                  color: VineTheme.lightText,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
@@ -174,11 +194,10 @@ class _LikedGridTile extends StatelessWidget {
           'videoId=${videoEvent.id}',
           category: LogCategory.video,
         );
-        // Use LikedVideosFeedSource for fullscreen playback
         context.push(
-          FullscreenVideoFeedScreen.path,
-          extra: FullscreenVideoFeedArgs(
-            source: LikedVideosFeedSource(allVideos),
+          PooledFullscreenVideoFeedScreen.path,
+          extra: PooledFullscreenVideoFeedArgs(
+            videosStream: Stream.value(allVideos),
             initialIndex: index,
             trafficSource: ViewTrafficSource.profile,
           ),
@@ -192,7 +211,7 @@ class _LikedGridTile extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
         child: DecoratedBox(
-          decoration: BoxDecoration(color: VineTheme.cardBackground),
+          decoration: const BoxDecoration(color: VineTheme.cardBackground),
           child: _LikedThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
         ),
       ),

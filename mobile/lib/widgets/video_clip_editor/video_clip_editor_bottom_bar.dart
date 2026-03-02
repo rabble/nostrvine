@@ -8,9 +8,9 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
-import 'package:openvine/widgets/video_editor_icon_button.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_more_button.dart';
 import 'package:openvine/widgets/video_clip_editor/video_time_display.dart';
+import 'package:openvine/widgets/video_editor_icon_button.dart';
 
 /// Bottom bar with playback controls and time display.
 class VideoClipEditorBottomBar extends ConsumerWidget {
@@ -24,7 +24,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         behavior: .floating,
-        duration: Duration(seconds: 3),
+        duration: const Duration(seconds: 3),
         content: DivineSnackbarContainer(label: message),
       ),
     );
@@ -103,7 +103,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                     spacing: 16,
                     children: [
                       VideoEditorIconButton(
-                        backgroundColor: const Color(0x00000000),
+                        backgroundColor: Colors.transparent,
                         icon: state.isPlaying ? .pause : .play,
                         onTap: notifier.togglePlayPause,
                         // TODO(l10n): Replace with context.l10n when localization is added.
@@ -111,7 +111,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                       ),
                       if (state.isEditing)
                         VideoEditorIconButton(
-                          backgroundColor: const Color(0x00000000),
+                          backgroundColor: Colors.transparent,
                           icon: .scissors,
                           onTap: () => _handleSplitClip(context, ref),
                           // TODO(l10n): Replace with context.l10n when localization is added.
@@ -197,10 +197,10 @@ class _ClipRemoveArea extends ConsumerWidget {
           key: deleteButtonKey,
           padding: const .all(10),
           decoration: ShapeDecoration(
-            color: const Color(0xFFF44336),
+            color: VineTheme.error,
             shape: RoundedRectangleBorder(borderRadius: .circular(20)),
           ),
-          child: DivineIcon(
+          child: const DivineIcon(
             icon: .trash,
             size: 28,
             color: VineTheme.backgroundColor,

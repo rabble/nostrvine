@@ -52,13 +52,11 @@ void main() {
       final id1 = generateSubscriptionId(
         subscriptionType: 'discovery',
         limit: 100,
-        includeReposts: false,
       );
 
       final id2 = generateSubscriptionId(
         subscriptionType: 'discovery',
         limit: 100,
-        includeReposts: false,
       );
 
       expect(id1, equals(id2));
@@ -153,7 +151,6 @@ void main() {
       final id2 = generateSubscriptionId(
         subscriptionType: 'discovery',
         limit: 100,
-        includeReposts: false,
       );
 
       expect(id1, isNot(equals(id2)));
@@ -189,25 +186,25 @@ void main() {
 
       // Generate ID multiple times with same parameters
       final id1 = generateSubscriptionId(
-        subscriptionType: params['subscriptionType'] as String,
-        authors: params['authors'] as List<String>,
-        hashtags: params['hashtags'] as List<String>,
-        group: params['group'] as String,
-        since: params['since'] as int,
-        until: params['until'] as int,
-        limit: params['limit'] as int,
-        includeReposts: params['includeReposts'] as bool,
+        subscriptionType: params['subscriptionType']! as String,
+        authors: params['authors']! as List<String>,
+        hashtags: params['hashtags']! as List<String>,
+        group: params['group']! as String,
+        since: params['since']! as int,
+        until: params['until']! as int,
+        limit: params['limit']! as int,
+        includeReposts: params['includeReposts']! as bool,
       );
 
       final id2 = generateSubscriptionId(
-        subscriptionType: params['subscriptionType'] as String,
-        authors: params['authors'] as List<String>,
-        hashtags: params['hashtags'] as List<String>,
-        group: params['group'] as String,
-        since: params['since'] as int,
-        until: params['until'] as int,
-        limit: params['limit'] as int,
-        includeReposts: params['includeReposts'] as bool,
+        subscriptionType: params['subscriptionType']! as String,
+        authors: params['authors']! as List<String>,
+        hashtags: params['hashtags']! as List<String>,
+        group: params['group']! as String,
+        since: params['since']! as int,
+        until: params['until']! as int,
+        limit: params['limit']! as int,
+        includeReposts: params['includeReposts']! as bool,
       );
 
       expect(id1, equals(id2));

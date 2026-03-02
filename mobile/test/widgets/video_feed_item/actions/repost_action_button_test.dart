@@ -111,11 +111,7 @@ void main() {
         'renders with VideoInteractionsBloc when isPreviewMode is false',
         (tester) async {
           await tester.pumpWidget(
-            buildSubject(
-              video: testVideo,
-              isPreviewMode: false,
-              bloc: mockBloc,
-            ),
+            buildSubject(video: testVideo, bloc: mockBloc),
           );
 
           expect(find.byType(RepostActionButton), findsOneWidget);
@@ -123,21 +119,15 @@ void main() {
         },
       );
 
-      testWidgets(
-        'displays combined repost count from bloc and video metadata',
-        (tester) async {
-          // Bloc has 5 reposts, video has 15 originalReposts = 20 total
-          await tester.pumpWidget(
-            buildSubject(
-              video: testVideo,
-              isPreviewMode: false,
-              bloc: mockBloc,
-            ),
-          );
+      testWidgets('displays relay repost count when available from bloc', (
+        tester,
+      ) async {
+        // When bloc has repostCount (5), it takes precedence over
+        // video metadata to avoid double-counting.
+        await tester.pumpWidget(buildSubject(video: testVideo, bloc: mockBloc));
 
-          expect(find.text('20'), findsOneWidget);
-        },
-      );
+        expect(find.text('5'), findsOneWidget);
+      });
     });
   });
 }

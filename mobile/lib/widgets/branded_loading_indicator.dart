@@ -1,6 +1,7 @@
 // ABOUTME: Branded loading indicator using sprite sheet animation
 // ABOUTME: Efficient GPU-based rendering with single texture, cached frames
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// A branded loading indicator that displays the animated divine logo.
@@ -62,7 +63,6 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
           width: widget.size,
           height: widget.size,
           child: ClipRect(
-            clipBehavior: Clip.hardEdge,
             child: OverflowBox(
               maxWidth: widget.size,
               maxHeight: widget.size * _frameCount,
@@ -80,7 +80,6 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
         width: widget.size,
         height: widget.size * _frameCount,
         fit: BoxFit.fitWidth,
-        filterQuality: FilterQuality.medium,
         errorBuilder: (context, error, stackTrace) {
           debugPrint('Failed to load sprite sheet: $error');
           return SizedBox(
@@ -89,7 +88,9 @@ class _BrandedLoadingIndicatorState extends State<BrandedLoadingIndicator>
             child: const Center(
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white54),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  VineTheme.onSurfaceMuted,
+                ),
               ),
             ),
           );

@@ -57,15 +57,18 @@ void main() {
       repostedIdsController.close();
     });
 
-    VideoInteractionsBloc createBloc({String? addressableId}) =>
-        VideoInteractionsBloc(
-          eventId: testEventId,
-          authorPubkey: testAuthorPubkey,
-          likesRepository: mockLikesRepository,
-          commentsRepository: mockCommentsRepository,
-          repostsRepository: mockRepostsRepository,
-          addressableId: addressableId,
-        );
+    VideoInteractionsBloc createBloc({
+      String? addressableId,
+      int? initialLikeCount,
+    }) => VideoInteractionsBloc(
+      eventId: testEventId,
+      authorPubkey: testAuthorPubkey,
+      likesRepository: mockLikesRepository,
+      commentsRepository: mockCommentsRepository,
+      repostsRepository: mockRepostsRepository,
+      addressableId: addressableId,
+      initialLikeCount: initialLikeCount,
+    );
 
     test('initial state is initial with default values', () {
       final bloc = createBloc();
@@ -78,6 +81,12 @@ void main() {
       expect(bloc.state.isLikeInProgress, isFalse);
       expect(bloc.state.isRepostInProgress, isFalse);
       expect(bloc.state.error, isNull);
+      bloc.close();
+    });
+
+    test('initial state seeds likeCount from initialLikeCount', () {
+      final bloc = createBloc(initialLikeCount: 42);
+      expect(bloc.state.likeCount, equals(42));
       bloc.close();
     });
 
@@ -113,6 +122,45 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'skips relay like count query when seeded with initialLikeCount',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockCommentsRepository.getCommentsCount(testEventId),
+          ).thenAnswer((_) async => 10);
+          when(
+            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+          ).thenAnswer((_) async => 5);
+        },
+        build: () => createBloc(initialLikeCount: 100),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.loading,
+            likeCount: 100,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 100,
+            repostCount: 5,
+            commentCount: 10,
+          ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockLikesRepository.getLikeCount(any()));
+          verifyNever(
+            () => mockLikesRepository.getLikeCount(
+              any(),
+              addressableId: any(named: 'addressableId'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'emits [loading, success] when video is not liked',
         setUp: () {
           when(
@@ -134,7 +182,6 @@ void main() {
           const VideoInteractionsState(status: VideoInteractionsStatus.loading),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: false,
             likeCount: 5,
             repostCount: 0,
             commentCount: 0,
@@ -175,7 +222,6 @@ void main() {
           const VideoInteractionsState(status: VideoInteractionsStatus.loading),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: false,
             isReposted: true,
             likeCount: 10,
             repostCount: 3,
@@ -222,7 +268,6 @@ void main() {
           const VideoInteractionsState(status: VideoInteractionsStatus.loading),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: false,
             likeCount: 10,
             repostCount: 2,
             commentCount: 5,
@@ -313,22 +358,18 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
-              addressableId: null,
-              targetKind: null,
             ),
           ).thenAnswer((_) async => true);
         },
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
-          isLiked: false,
           likeCount: 10,
         ),
         act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: false,
             likeCount: 10,
             isLikeInProgress: true,
           ),
@@ -336,7 +377,6 @@ void main() {
             status: VideoInteractionsStatus.success,
             isLiked: true,
             likeCount: 11,
-            isLikeInProgress: false,
           ),
         ],
       );
@@ -357,14 +397,12 @@ void main() {
         build: () => createBloc(addressableId: testAddressableId),
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
-          isLiked: false,
           likeCount: 10,
         ),
         act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: false,
             likeCount: 10,
             isLikeInProgress: true,
           ),
@@ -372,7 +410,6 @@ void main() {
             status: VideoInteractionsStatus.success,
             isLiked: true,
             likeCount: 11,
-            isLikeInProgress: false,
           ),
         ],
         verify: (_) {
@@ -394,8 +431,6 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
-              addressableId: null,
-              targetKind: null,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -415,9 +450,7 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: false,
             likeCount: 9,
-            isLikeInProgress: false,
           ),
         ],
       );
@@ -429,8 +462,6 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
-              addressableId: null,
-              targetKind: null,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -450,9 +481,7 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: false,
             likeCount: 0,
-            isLikeInProgress: false,
           ),
         ],
       );
@@ -475,27 +504,22 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
-              addressableId: null,
-              targetKind: null,
             ),
           ).thenThrow(const AlreadyLikedException(testEventId));
         },
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
-          isLiked: false,
         ),
         act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: false,
             isLikeInProgress: true,
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isLiked: true,
-            isLikeInProgress: false,
           ),
         ],
       );
@@ -507,8 +531,6 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
-              addressableId: null,
-              targetKind: null,
             ),
           ).thenThrow(const NotLikedException(testEventId));
         },
@@ -524,11 +546,7 @@ void main() {
             isLiked: true,
             isLikeInProgress: true,
           ),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            isLiked: false,
-            isLikeInProgress: false,
-          ),
+          const VideoInteractionsState(status: VideoInteractionsStatus.success),
         ],
       );
 
@@ -539,8 +557,6 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
-              addressableId: null,
-              targetKind: null,
             ),
           ).thenThrow(Exception('Network error'));
         },
@@ -556,7 +572,6 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLikeInProgress: false,
             error: VideoInteractionsError.likeFailed,
           ),
         ],
@@ -579,14 +594,12 @@ void main() {
         build: () => createBloc(addressableId: testAddressableId),
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
-          isReposted: false,
           repostCount: 5,
         ),
         act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isReposted: false,
             repostCount: 5,
             isRepostInProgress: true,
           ),
@@ -594,7 +607,6 @@ void main() {
             status: VideoInteractionsStatus.success,
             isReposted: true,
             repostCount: 6,
-            isRepostInProgress: false,
           ),
         ],
       );
@@ -627,9 +639,7 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isReposted: false,
             repostCount: 4,
-            isRepostInProgress: false,
           ),
         ],
       );
@@ -662,9 +672,7 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isReposted: false,
             repostCount: 0,
-            isRepostInProgress: false,
           ),
         ],
       );
@@ -710,19 +718,16 @@ void main() {
         build: () => createBloc(addressableId: testAddressableId),
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
-          isReposted: false,
         ),
         act: (bloc) => bloc.add(const VideoInteractionsRepostToggled()),
         expect: () => [
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isReposted: false,
             isRepostInProgress: true,
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isReposted: true,
-            isRepostInProgress: false,
           ),
         ],
       );
@@ -751,11 +756,7 @@ void main() {
             isReposted: true,
             isRepostInProgress: true,
           ),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            isReposted: false,
-            isRepostInProgress: false,
-          ),
+          const VideoInteractionsState(status: VideoInteractionsStatus.success),
         ],
       );
 
@@ -783,7 +784,6 @@ void main() {
           ),
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isRepostInProgress: false,
             error: VideoInteractionsError.repostFailed,
           ),
         ],
@@ -796,7 +796,6 @@ void main() {
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
-          isLiked: false,
           likeCount: 10,
         ),
         act: (bloc) async {
@@ -834,7 +833,6 @@ void main() {
           // likeCount stays at 10 — count is only adjusted by _onLikeToggled
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
-            isLiked: false,
             likeCount: 10,
           ),
         ],

@@ -1,6 +1,7 @@
 // ABOUTME: Widget that renders text with clickable hashtags, nostr: mentions, and @mentions
 // ABOUTME: Parses hashtags, nostr: URIs, and plain @mentions - makes them tappable for navigation
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,13 +40,13 @@ class ClickableHashtagText extends ConsumerWidget {
 
   /// Regex to detect nostr: URIs (npub and nprofile)
   static final _nostrUriRegex = RegExp(
-    r'nostr:(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)',
+    'nostr:(npub1[a-z0-9]{58}|nprofile1[a-z0-9]+)',
     caseSensitive: false,
   );
 
   /// Regex to detect plain @ mentions (legacy format from Vine)
   /// Matches @username where username is alphanumeric with underscores
-  static final _plainMentionRegex = RegExp(r'@([a-zA-Z][a-zA-Z0-9_]{0,30})');
+  static final _plainMentionRegex = RegExp('@([a-zA-Z][a-zA-Z0-9_]{0,30})');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -76,11 +77,12 @@ class ClickableHashtagText extends ConsumerWidget {
   List<TextSpan> _buildTextSpans(BuildContext context, WidgetRef ref) {
     final spans = <TextSpan>[];
     final defaultStyle =
-        style ?? const TextStyle(color: Colors.white70, fontSize: 14);
+        style ??
+        const TextStyle(color: VineTheme.onSurfaceVariant, fontSize: 14);
     final tagStyle =
         hashtagStyle ??
         const TextStyle(
-          color: Colors.blue,
+          color: VineTheme.info,
           fontSize: 14,
           fontWeight: FontWeight.w500,
         );

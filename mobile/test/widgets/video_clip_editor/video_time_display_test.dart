@@ -45,9 +45,7 @@ void main() {
     testWidgets('displays time with separator and total duration', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildTestWidget(totalDuration: const Duration(seconds: 30)),
-      );
+      await tester.pumpWidget(buildTestWidget());
       await tester.pump();
 
       // Widget should render

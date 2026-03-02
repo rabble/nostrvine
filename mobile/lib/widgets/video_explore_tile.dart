@@ -1,6 +1,7 @@
 // ABOUTME: Simple video thumbnail tile for explore screen
 // ABOUTME: Shows clean thumbnail with title/hashtag overlay - full screen handled by parent
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,7 +12,6 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
@@ -45,7 +45,7 @@ class VideoExploreTile extends ConsumerWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: VineTheme.backgroundColor,
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         clipBehavior: Clip.hardEdge,
@@ -59,19 +59,13 @@ class VideoExploreTile extends ConsumerWidget {
                   video: video,
                   width: constraints.maxWidth,
                   height: constraints.maxHeight,
-                  fit: BoxFit.cover,
-                  showPlayIcon: false,
                   borderRadius: BorderRadius.circular(borderRadius),
                 );
               },
             ),
 
             // ProofMode and Vine badges
-            Positioned(
-              top: 8,
-              left: 8,
-              child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
-            ),
+            Positioned(top: 8, left: 8, child: ProofModeBadgeRow(video: video)),
 
             // Video info overlay - conditionally shown
             if (showTextOverlay)
@@ -90,7 +84,7 @@ class VideoExploreTile extends ConsumerWidget {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.8),
+                        VineTheme.backgroundColor.withValues(alpha: 0.8),
                         Colors.transparent,
                       ],
                     ),
@@ -105,7 +99,7 @@ class VideoExploreTile extends ConsumerWidget {
                         Text(
                           video.title ?? '',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: VineTheme.whiteText,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -118,7 +112,7 @@ class VideoExploreTile extends ConsumerWidget {
                         Text(
                           video.hashtags.map((tag) => '#$tag').join(' '),
                           style: const TextStyle(
-                            color: Colors.white70,
+                            color: VineTheme.onSurfaceVariant,
                             fontSize: 12,
                           ),
                           maxLines: 1,
@@ -174,13 +168,13 @@ class _CreatorInfo extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.person, color: Colors.white70, size: 14),
+          const Icon(Icons.person, color: VineTheme.onSurfaceVariant, size: 14),
           const SizedBox(width: 4),
           Flexible(
             child: Text(
               displayName,
               style: const TextStyle(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 decoration: TextDecoration.underline,
@@ -194,10 +188,14 @@ class _CreatorInfo extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(1),
               decoration: const BoxDecoration(
-                color: Colors.blue,
+                color: VineTheme.info,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check, color: Colors.white, size: 8),
+              child: const Icon(
+                Icons.check,
+                color: VineTheme.whiteText,
+                size: 8,
+              ),
             ),
           ],
         ],

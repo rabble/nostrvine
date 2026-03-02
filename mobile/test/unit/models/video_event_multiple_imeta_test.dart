@@ -6,7 +6,7 @@ import 'package:models/models.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 void main() {
-  group('VideoEvent Multiple Imeta Parsing (Postel\'s Law)', () {
+  group("VideoEvent Multiple Imeta Parsing (Postel's Law)", () {
     test('selects best URL from multiple imeta tags with broken and working URLs', () {
       // Real-world example: Event with two imeta tags
       // First has working MP4 and HLS, second has broken manifest URL

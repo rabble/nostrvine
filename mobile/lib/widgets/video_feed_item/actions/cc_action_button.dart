@@ -41,8 +41,8 @@ class CcActionButton extends ConsumerWidget {
         icon: Icon(
           Icons.closed_caption,
           size: 32,
-          color: isActive ? VineTheme.vineGreen : Colors.white,
-          shadows: const [Shadow(color: Colors.black, blurRadius: 15)],
+          color: isActive ? VineTheme.vineGreen : VineTheme.whiteText,
+          shadows: const [Shadow(blurRadius: 15)],
         ),
       ),
     );

@@ -107,7 +107,6 @@ class ImmediateCompletionHelper {
           case CompletionMode.first:
             // Complete immediately on first event
             tryComplete(isEarly: true);
-            break;
 
           case CompletionMode.count:
             // Complete when we have enough events
@@ -115,7 +114,6 @@ class ImmediateCompletionHelper {
                 receivedItems.length >= config.expectedCount!) {
               tryComplete(isEarly: true);
             }
-            break;
 
           case CompletionMode.all:
             // Complete when all expected items are received
@@ -127,7 +125,6 @@ class ImmediateCompletionHelper {
                 tryComplete(isEarly: true);
               }
             }
-            break;
 
           case CompletionMode.exhaustive:
             // For exhaustive mode, rely on natural stream completion
@@ -274,7 +271,6 @@ class ContactListCompletionHelper {
       mode: CompletionMode.first,
       fallbackTimeoutSeconds: fallbackTimeoutSeconds,
       serviceName: 'ContactListQuery',
-      logCategory: LogCategory.system,
     );
 
     final result =

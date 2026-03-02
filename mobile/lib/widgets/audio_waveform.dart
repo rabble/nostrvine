@@ -3,8 +3,8 @@
 
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
 
 /// A visual waveform widget that displays audio playback progress.
 ///
@@ -195,7 +195,7 @@ class _AudioWaveformState extends State<AudioWaveform>
       return const Text(
         '--:-- / --:--',
         style: TextStyle(
-          color: Colors.grey,
+          color: VineTheme.lightText,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
@@ -208,7 +208,7 @@ class _AudioWaveformState extends State<AudioWaveform>
     return Text(
       '$positionText / $durationText',
       style: const TextStyle(
-        color: Colors.white,
+        color: VineTheme.whiteText,
         fontSize: 12,
         fontWeight: FontWeight.w500,
       ),
@@ -239,7 +239,7 @@ class _WaveformPainter extends CustomPainter {
     if (barHeights.isEmpty) return;
 
     final barCount = barHeights.length;
-    final barSpacing = 2.0;
+    const barSpacing = 2.0;
     final availableWidth = size.width - (barSpacing * (barCount - 1));
     final barWidth = availableWidth / barCount;
 

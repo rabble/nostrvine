@@ -2,13 +2,14 @@
 // ABOUTME: Verifies all RPC methods with mocked HTTP, error handling, auth headers
 
 import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:keycast_flutter/src/rpc/keycast_rpc.dart';
-import 'package:keycast_flutter/src/oauth/oauth_config.dart';
-import 'package:keycast_flutter/src/models/keycast_session.dart';
 import 'package:keycast_flutter/src/models/exceptions.dart';
+import 'package:keycast_flutter/src/models/keycast_session.dart';
+import 'package:keycast_flutter/src/oauth/oauth_config.dart';
+import 'package:keycast_flutter/src/rpc/keycast_rpc.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 void main() {
@@ -23,7 +24,7 @@ void main() {
 
     group('fromSession factory', () {
       test('creates RPC client from valid session', () {
-        final config = OAuthConfig(
+        const config = OAuthConfig(
           serverUrl: 'https://login.divine.video',
           clientId: 'test',
           redirectUri: 'divine://callback',
@@ -31,7 +32,7 @@ void main() {
         final session = KeycastSession(
           bunkerUrl: 'bunker://test',
           accessToken: 'valid_token',
-          expiresAt: DateTime.now().add(Duration(hours: 1)),
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
         );
 
         final rpc = KeycastRpc.fromSession(config, session);
@@ -39,7 +40,7 @@ void main() {
       });
 
       test('throws SessionExpiredException for expired session', () {
-        final config = OAuthConfig(
+        const config = OAuthConfig(
           serverUrl: 'https://login.divine.video',
           clientId: 'test',
           redirectUri: 'divine://callback',
@@ -47,7 +48,7 @@ void main() {
         final session = KeycastSession(
           bunkerUrl: 'bunker://test',
           accessToken: 'expired_token',
-          expiresAt: DateTime.now().subtract(Duration(hours: 1)),
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
         );
 
         expect(
@@ -57,14 +58,13 @@ void main() {
       });
 
       test('throws SessionExpiredException for null accessToken', () {
-        final config = OAuthConfig(
+        const config = OAuthConfig(
           serverUrl: 'https://login.divine.video',
           clientId: 'test',
           redirectUri: 'divine://callback',
         );
-        final session = KeycastSession(
+        const session = KeycastSession(
           bunkerUrl: 'bunker://test',
-          accessToken: null,
         );
 
         expect(
@@ -254,7 +254,7 @@ void main() {
           httpClient: mockClient,
         );
 
-        expect(() => rpc.getPublicKey(), throwsA(isA<RpcException>()));
+        expect(rpc.getPublicKey, throwsA(isA<RpcException>()));
       });
 
       test('throws RpcException on HTTP error', () async {
@@ -268,7 +268,7 @@ void main() {
           httpClient: mockClient,
         );
 
-        expect(() => rpc.getPublicKey(), throwsA(isA<RpcException>()));
+        expect(rpc.getPublicKey, throwsA(isA<RpcException>()));
       });
     });
   });

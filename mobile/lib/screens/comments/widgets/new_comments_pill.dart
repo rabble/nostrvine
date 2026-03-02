@@ -29,11 +29,7 @@ class NewCommentsPill extends StatelessWidget {
         ),
         child: Text(
           '$count new',
-          style: VineTheme.bodyFont(
-            fontSize: 12,
-            color: VineTheme.whiteText,
-            fontWeight: FontWeight.w600,
-          ),
+          style: VineTheme.bodyFont(fontSize: 12, fontWeight: FontWeight.w600),
         ),
       ),
     );

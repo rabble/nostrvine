@@ -12,11 +12,11 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
-import 'package:openvine/models/known_account.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_profile_service.dart' as ups;
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -42,7 +42,8 @@ enum AuthenticationSource {
   importedKeys('imported_keys'),
   automatic('automatic'),
   bunker('bunker'),
-  amber('amber');
+  amber('amber')
+  ;
 
   const AuthenticationSource(this.code);
 
@@ -168,6 +169,7 @@ class AuthService implements BackgroundAwareService {
   UserProfile? _currentProfile;
   String? _lastError;
   bool _storageErrorOccurred = false;
+  bool _hasExpiredOAuthSession = false;
   KeycastRpc? _keycastSigner;
 
   // NIP-46 bunker signer state
@@ -239,6 +241,11 @@ class AuthService implements BackgroundAwareService {
 
   /// Check if user is using an anonymous auto-generated identity
   bool get isAnonymous => _authSource == AuthenticationSource.automatic;
+
+  /// True when a divineOAuth user's session expired and refresh failed.
+  /// The user's identity is intact but remote signing is unavailable.
+  /// UI should prompt re-login instead of "Secure Your Account".
+  bool get hasExpiredOAuthSession => _hasExpiredOAuthSession;
 
   /// Get discovered user relays (NIP-65)
   List<DiscoveredRelay> get userRelays => List.unmodifiable(_userRelays);
@@ -368,11 +375,57 @@ class AuthService implements BackgroundAwareService {
             await signInWithDivineOAuth(session);
             return;
           }
-          // session not restored — fall back to unauthenticated
-          Log.warning(
-            'initialize: Divine OAuth session not restored '
+          // Session expired or missing — attempt token refresh
+          Log.info(
+            'initialize: Divine OAuth session expired or missing '
             '(session=${session != null}, '
-            'hasRpcAccess=${session?.hasRpcAccess})',
+            'hasRpcAccess=${session?.hasRpcAccess}), '
+            'attempting refresh...',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          if (_oauthClient != null) {
+            final refreshed = await _oauthClient.refreshSession();
+            if (refreshed != null && refreshed.hasRpcAccess) {
+              Log.info(
+                'initialize: refresh succeeded, restoring session',
+                name: 'AuthService',
+                category: LogCategory.auth,
+              );
+              await refreshed.save(_flutterSecureStorage);
+              await signInWithDivineOAuth(refreshed);
+              return;
+            }
+          }
+          // Refresh failed — mark expired session so UI shows
+          // "Session Expired" instead of "Secure Your Account"
+          _hasExpiredOAuthSession = true;
+          // Try to fall back to local keys while preserving
+          // divineOAuth source so future launches can retry refresh
+          try {
+            final hasKeys = await _keyStorage.hasKeys();
+            if (hasKeys) {
+              final keyContainer = await _keyStorage.getKeyContainer();
+              if (keyContainer != null) {
+                Log.info(
+                  'initialize: refresh failed, using local keys '
+                  'with divineOAuth source preserved',
+                  name: 'AuthService',
+                  category: LogCategory.auth,
+                );
+                await _setupUserSession(
+                  keyContainer,
+                  AuthenticationSource.divineOAuth,
+                );
+                return;
+              }
+            }
+          } catch (e, stack) {
+            _reportStorageError(e, stack, 'divineOAuth fallback to local keys');
+          }
+          Log.info(
+            'initialize: refresh failed, no local keys — '
+            'unauthenticated with expired session flag',
             name: 'AuthService',
             category: LogCategory.auth,
           );
@@ -1056,7 +1109,6 @@ class AuthService implements BackgroundAwareService {
             name: 'AuthService',
             category: LogCategory.auth,
           );
-          break;
       }
 
       // Set the auth source so initialize() picks the right path
@@ -1172,6 +1224,13 @@ class AuthService implements BackgroundAwareService {
         final session = await KeycastSession.load(_flutterSecureStorage);
         if (session != null && session.hasRpcAccess) {
           await signInWithDivineOAuth(session);
+        } else if (session != null && session.isExpired) {
+          Log.warning(
+            'signInForAccount: OAuth session expired for $pubkeyHex',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          throw SessionExpiredException();
         } else {
           Log.error(
             'signInForAccount: no archived OAuth session for $pubkeyHex '
@@ -2175,6 +2234,7 @@ class AuthService implements BackgroundAwareService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
+    _hasExpiredOAuthSession = false;
 
     try {
       _keycastSigner = KeycastRpc.fromSession(_oauthConfig, session);

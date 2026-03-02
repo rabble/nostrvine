@@ -1,11 +1,11 @@
 // ABOUTME: Reusable camera FAB widget for consistent camera access across all screens
 // ABOUTME: Handles age verification and navigation to camera screen
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/age_verification_dialog.dart';
@@ -39,7 +39,7 @@ class CameraFAB extends ConsumerWidget {
               ScaffoldMessenger.of(scaffoldContext).showSnackBar(
                 const SnackBar(
                   content: Text('You must be 16 or older to create content'),
-                  backgroundColor: Colors.red,
+                  backgroundColor: VineTheme.error,
                 ),
               );
             }

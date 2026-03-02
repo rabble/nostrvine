@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/recording_clip.dart';
@@ -231,10 +232,11 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
               borderRadius: .circular(16),
               border: .all(
                 color: isOverDeleteZone
-                    ? const Color(0xFFF44336) // Red when over delete zone
+                    ? VineTheme
+                          .error // Red when over delete zone
                     : widget.isReordering
                     ? const Color(0xFFEBDE3B) // Yellow when reordering
-                    : const Color(0x00000000), // Transparent otherwise
+                    : Colors.transparent, // Transparent otherwise
                 width: 6,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
@@ -302,15 +304,15 @@ class _ThumbnailVisibility extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Only watch hasPlayedOnce for current clip
-    final hasPlayedOnce = isCurrentClip
-        ? ref.watch(videoEditorProvider.select((s) => s.hasPlayedOnce))
-        : false;
+    final hasPlayedOnce =
+        isCurrentClip &&
+        ref.watch(videoEditorProvider.select((s) => s.hasPlayedOnce));
 
     return AnimatedSwitcher(
       layoutBuilder: (currentChild, previousChildren) => Stack(
         fit: StackFit.expand,
         alignment: Alignment.center,
-        children: [...previousChildren, if (currentChild != null) currentChild],
+        children: [...previousChildren, ?currentChild],
       ),
       duration: const Duration(milliseconds: 150),
       child: hasPlayedOnce
@@ -333,12 +335,12 @@ class _ClipThumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (clip.thumbnailPath == null) {
-      return Container(
-        color: Colors.grey.shade400,
-        child: const Icon(
+      return const ColoredBox(
+        color: VineTheme.lightText,
+        child: Icon(
           Icons.play_circle_outline,
           size: 64,
-          color: Colors.white,
+          color: VineTheme.whiteText,
         ),
       );
     }

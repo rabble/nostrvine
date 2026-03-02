@@ -42,6 +42,7 @@ class VideoFeedPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
+    final curatedListRepository = ref.watch(curatedListRepositoryProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -52,6 +53,7 @@ class VideoFeedPage extends ConsumerWidget {
       create: (_) => VideoFeedBloc(
         videosRepository: videosRepository,
         followRepository: followRepository,
+        curatedListRepository: curatedListRepository,
       )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),
     );
@@ -193,6 +195,18 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       color: VineTheme.backgroundColor,
       child: MultiBlocListener(
         listeners: [
+          // Reset controller when mode changes so a fresh one is
+          // created for the new feed.
+          BlocListener<VideoFeedBloc, VideoFeedState>(
+            listenWhen: (previous, current) =>
+                previous.mode != current.mode && current.isLoading,
+            listener: (_, state) {
+              if (ownsController) controller?.dispose();
+              controller = null;
+              lastPooledVideos = null;
+              lastPrefetchIndex = null;
+            },
+          ),
           // Initialize controller when videos first become available
           BlocListener<VideoFeedBloc, VideoFeedState>(
             listenWhen: (previous, current) =>
@@ -212,7 +226,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           builder: (context, state) {
             // Loading state (including initial state before first load)
             if (state.isLoading) {
-              return const Center(child: BrandedLoadingIndicator(size: 80));
+              return const Center(child: BrandedLoadingIndicator());
             }
 
             // Error state
@@ -239,15 +253,21 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
             return Stack(
               children: [
                 PooledVideoFeed(
+                  key: ValueKey(state.mode),
                   videos: pooledVideos,
                   controller: controller,
                   itemBuilder: (context, video, index, {required isActive}) {
                     final originalEvent = state.videos[index];
+                    final listSources =
+                        state.listOnlyVideoIds.contains(originalEvent.id)
+                        ? state.videoListSources[originalEvent.id]
+                        : null;
                     return _PooledVideoFeedItem(
                       video: originalEvent,
                       index: index,
                       isActive: isActive,
                       contextTitle: state.mode.name,
+                      listSources: listSources,
                     );
                   },
                   onActiveVideoChanged: (video, index) {
@@ -299,15 +319,18 @@ class _FeedErrorWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 64),
+          const Icon(Icons.error_outline, color: VineTheme.error, size: 64),
           const SizedBox(height: 16),
           const Text(
             'Failed to load videos',
-            style: TextStyle(color: Colors.white, fontSize: 18),
+            style: TextStyle(color: VineTheme.whiteText, fontSize: 18),
           ),
           if (error != null) ...[
             const SizedBox(height: 8),
-            Text(error.toString(), style: const TextStyle(color: Colors.grey)),
+            Text(
+              error.toString(),
+              style: const TextStyle(color: VineTheme.lightText),
+            ),
           ],
           const SizedBox(height: 24),
           ElevatedButton(
@@ -335,13 +358,13 @@ class FeedEmptyWidget extends StatelessWidget {
         children: [
           const Icon(
             Icons.video_library_outlined,
-            color: Colors.grey,
+            color: VineTheme.lightText,
             size: 64,
           ),
           const SizedBox(height: 16),
           Text(
             _getEmptyMessage(state),
-            style: const TextStyle(color: Colors.white, fontSize: 18),
+            style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
             textAlign: TextAlign.center,
           ),
         ],
@@ -368,12 +391,14 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     this.contextTitle,
+    this.listSources,
   });
 
   final VideoEvent video;
   final int index;
   final bool isActive;
   final String? contextTitle;
+  final Set<String>? listSources;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -393,6 +418,9 @@ class _PooledVideoFeedItem extends ConsumerWidget {
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
               addressableId: addressableId,
+              initialLikeCount: video.nostrLikeCount != null
+                  ? video.totalLikes
+                  : null,
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),
@@ -401,6 +429,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
         index: index,
         isActive: isActive,
         contextTitle: contextTitle,
+        listSources: listSources,
       ),
     );
   }
@@ -412,21 +441,23 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
     required this.index,
     required this.isActive,
     this.contextTitle,
+    this.listSources,
   });
 
   final VideoEvent video;
   final int index;
   final bool isActive;
   final String? contextTitle;
+  final Set<String>? listSources;
 
   @override
   Widget build(BuildContext context) {
     // All videos without dimensions are treated as portrait as its default
     // usecase (e.g. Reels-style vertical videos).
-    final isPortrait = video.dimensions != null ? video.isPortrait : true;
+    final isPortrait = !(video.dimensions != null) || video.isPortrait;
 
-    return Container(
-      color: Colors.black,
+    return ColoredBox(
+      color: VineTheme.backgroundColor,
       child: PooledVideoPlayer(
         index: index,
         thumbnailUrl: video.thumbnailUrl,
@@ -439,8 +470,12 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
         ),
-        overlayBuilder: (context, videoController, player) =>
-            FeedVideoOverlay(video: video, isActive: isActive, player: player),
+        overlayBuilder: (context, videoController, player) => FeedVideoOverlay(
+          video: video,
+          isActive: isActive,
+          player: player,
+          listSources: listSources,
+        ),
       ),
     );
   }
@@ -489,8 +524,7 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
       child: Image.network(
         thumbnailUrl!,
         fit: boxFit,
-        alignment: Alignment.center,
-        errorBuilder: (_, __, ___) => const _LoadingIndicator(),
+        errorBuilder: (_, _, _) => const _LoadingIndicator(),
       ),
     );
   }

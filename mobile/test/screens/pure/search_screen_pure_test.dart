@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:mockito/mockito.dart' as mockito;
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -71,9 +70,7 @@ void main() {
 
     Widget createTestWidget({List<VideoEvent>? searchResults}) {
       final mockUserProfileService = createMockUserProfileService();
-      mockito
-          .when(mockUserProfileService.getDisplayName(mockito.any))
-          .thenReturn('');
+      when(() => mockUserProfileService.getDisplayName(any())).thenReturn('');
 
       if (searchResults != null) {
         when(
@@ -111,9 +108,7 @@ void main() {
         List<VideoEvent>? searchVideos,
       }) {
         final mockUserProfileService = createMockUserProfileService();
-        mockito
-            .when(mockUserProfileService.getDisplayName(mockito.any))
-            .thenReturn('');
+        when(() => mockUserProfileService.getDisplayName(any())).thenReturn('');
 
         return ProviderScope(
           overrides: [
@@ -181,13 +176,13 @@ void main() {
         final testVideos = [
           VideoEvent(
             id: 'video1',
-            pubkey: '${'a' * 64}',
+            pubkey: 'a' * 64,
             content: 'Test video about flutter',
             title: 'Flutter Tutorial',
             videoUrl: 'https://example.com/video1.mp4',
             createdAt: timestamp,
             timestamp: now,
-            hashtags: ['flutter'],
+            hashtags: const ['flutter'],
           ),
         ];
 
@@ -196,8 +191,7 @@ void main() {
         ).thenAnswer((_) => Stream.value(testVideos));
 
         when(
-          () =>
-              mockHashtagRepository.searchHashtags(query: 'flutter', limit: 20),
+          () => mockHashtagRepository.searchHashtags(query: 'flutter'),
         ).thenAnswer((_) async => ['flutter']);
 
         await tester.pumpWidget(createTestWidget(searchResults: testVideos));

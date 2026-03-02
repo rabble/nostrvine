@@ -25,7 +25,7 @@ Future<void> showRemoveKeysWarningDialog({
       title: const Text(
         '⚠️ Remove Keys from Device?',
         style: TextStyle(
-          color: Colors.white,
+          color: VineTheme.whiteText,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
@@ -37,14 +37,14 @@ Future<void> showRemoveKeysWarningDialog({
         '• Your content will REMAIN on Nostr relays\n\n'
         'Make sure you have your nsec backed up elsewhere or you will lose access to your account!\n\n'
         'Continue?',
-        style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
+        style: TextStyle(color: VineTheme.whiteText, fontSize: 16, height: 1.5),
       ),
       actions: [
         TextButton(
           onPressed: context.pop,
           child: const Text(
             'Cancel',
-            style: TextStyle(color: Colors.grey, fontSize: 16),
+            style: TextStyle(color: VineTheme.lightText, fontSize: 16),
           ),
         ),
         ElevatedButton(
@@ -53,8 +53,8 @@ Future<void> showRemoveKeysWarningDialog({
             onConfirm();
           },
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
+            backgroundColor: VineTheme.warning,
+            foregroundColor: VineTheme.whiteText,
           ),
           child: const Text(
             'Remove Keys',
@@ -88,7 +88,7 @@ Future<void> showDeleteAllContentWarningDialog({
         title: const Text(
           '⚠️ Final Confirmation',
           style: TextStyle(
-            color: Colors.red,
+            color: VineTheme.error,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -99,13 +99,17 @@ Future<void> showDeleteAllContentWarningDialog({
           children: [
             const Text(
               'To confirm permanent deletion of ALL your content from Nostr relays, type:',
-              style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
+              style: TextStyle(
+                color: VineTheme.whiteText,
+                fontSize: 16,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               requiredText,
               style: TextStyle(
-                color: Colors.red.shade300,
+                color: VineTheme.error,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'monospace',
@@ -114,17 +118,17 @@ Future<void> showDeleteAllContentWarningDialog({
             const SizedBox(height: 16),
             TextField(
               controller: confirmationController,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: VineTheme.whiteText),
               autocorrect: false,
               textCapitalization: TextCapitalization.characters,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Type DELETE',
-                hintStyle: const TextStyle(color: Colors.grey),
+                hintStyle: TextStyle(color: VineTheme.lightText),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade700),
+                  borderSide: BorderSide(color: VineTheme.cardBackground),
                 ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.red),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: VineTheme.error),
                 ),
               ),
               onChanged: (_) => setState(() {}),
@@ -137,7 +141,7 @@ Future<void> showDeleteAllContentWarningDialog({
             onPressed: context.pop,
             child: const Text(
               'Cancel',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(color: VineTheme.lightText, fontSize: 16),
             ),
           ),
           ElevatedButton(
@@ -148,10 +152,10 @@ Future<void> showDeleteAllContentWarningDialog({
                   }
                 : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              disabledBackgroundColor: Colors.grey.shade800,
-              disabledForegroundColor: Colors.grey,
+              backgroundColor: VineTheme.error,
+              foregroundColor: VineTheme.whiteText,
+              disabledBackgroundColor: VineTheme.cardBackground,
+              disabledForegroundColor: VineTheme.lightText,
             ),
             child: const Text(
               'Delete All Content',
@@ -192,13 +196,13 @@ class _DeletionProgressDialog extends StatelessWidget {
                           CircularProgressIndicator(
                             value: current / total,
                             color: VineTheme.vineGreen,
-                            backgroundColor: Colors.grey.shade800,
+                            backgroundColor: VineTheme.cardBackground,
                           ),
                           const SizedBox(height: 16),
                           const Text(
                             'Deleting content...',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: VineTheme.whiteText,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
@@ -206,8 +210,8 @@ class _DeletionProgressDialog extends StatelessWidget {
                           const SizedBox(height: 8),
                           Text(
                             '$current / $total events',
-                            style: TextStyle(
-                              color: Colors.grey.shade400,
+                            style: const TextStyle(
+                              color: VineTheme.secondaryText,
                               fontSize: 14,
                             ),
                           ),
@@ -220,7 +224,7 @@ class _DeletionProgressDialog extends StatelessWidget {
                         const Text(
                           'Preparing deletion...',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: VineTheme.whiteText,
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
@@ -325,9 +329,9 @@ Future<void> executeAccountDeletion({
           SnackBar(
             content: Text(
               result.error ?? 'Failed to delete content from relays',
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: VineTheme.whiteText),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }

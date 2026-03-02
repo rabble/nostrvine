@@ -3,12 +3,11 @@
 
 import 'dart:async';
 
-import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -122,7 +121,7 @@ class DiscoveredLists extends _$DiscoveredLists {
 /// Provider for videos in a specific curated list
 @riverpod
 Future<List<String>> curatedListVideos(Ref ref, String listId) async {
-  final service = await ref.read(curatedListsStateProvider.notifier).service;
+  final service = ref.read(curatedListsStateProvider.notifier).service;
   final list = service?.getListById(listId);
 
   if (list == null) {
@@ -180,7 +179,7 @@ Stream<List<CuratedList>> publicListsContainingVideo(
   yield const <CuratedList>[];
 
   // Stream events from Nostr relays, accumulating as they arrive
-  await for (final list in curatedListStream ?? Stream.empty()) {
+  await for (final list in curatedListStream ?? const Stream.empty()) {
     if (!seenIds.contains(list.id)) {
       seenIds.add(list.id);
       accumulated.add(list);

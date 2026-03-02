@@ -1,6 +1,7 @@
 // ABOUTME: Widget that checks geo-blocking status before showing main app
 // ABOUTME: Displays GeoBlockedScreen if user is in a restricted region
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -11,7 +12,7 @@ import 'package:openvine/utils/unified_logger.dart';
 class GeoBlockingGate extends ConsumerStatefulWidget {
   final Widget child;
 
-  const GeoBlockingGate({super.key, required this.child});
+  const GeoBlockingGate({required this.child, super.key});
 
   @override
   ConsumerState<GeoBlockingGate> createState() => _GeoBlockingGateState();
@@ -58,11 +59,11 @@ class _GeoBlockingGateState extends ConsumerState<GeoBlockingGate> {
   Widget build(BuildContext context) {
     // Show loading indicator while checking
     if (_isChecking) {
-      return Container(
-        color: Colors.black,
-        child: const Center(
+      return const ColoredBox(
+        color: VineTheme.backgroundColor,
+        child: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            valueColor: AlwaysStoppedAnimation<Color>(VineTheme.whiteText),
           ),
         ),
       );

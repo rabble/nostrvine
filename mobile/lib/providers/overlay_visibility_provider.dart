@@ -2,8 +2,8 @@
 // ABOUTME: Videos should pause when overlays are visible
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'overlay_visibility_provider.g.dart';
 

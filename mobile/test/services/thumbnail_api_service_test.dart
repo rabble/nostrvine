@@ -53,10 +53,7 @@ void main() {
       });
 
       test('generates correct URL with medium size (no size param)', () {
-        final url = ThumbnailApiService.getThumbnailUrl(
-          'test-video-id',
-          size: ThumbnailSize.medium,
-        );
+        final url = ThumbnailApiService.getThumbnailUrl('test-video-id');
         expect(
           url,
           equals('https://api.openvine.co/thumbnail/test-video-id?t=2.5'),
@@ -117,8 +114,8 @@ void main() {
         ];
 
         for (final testCase in testCases) {
-          final size = testCase['size'] as ThumbnailSize;
-          final expectedSuffix = testCase['expected'] as String;
+          final size = testCase['size']! as ThumbnailSize;
+          final expectedSuffix = testCase['expected']! as String;
           final url = ThumbnailApiService.getThumbnailUrl(
             'test-id',
             timeSeconds: 1,
@@ -188,8 +185,8 @@ void main() {
         ];
 
         for (final testCase in testCases) {
-          final code = testCase['code'] as int;
-          final expected = testCase['expected'] as String;
+          final code = testCase['code']! as int;
+          final expected = testCase['expected']! as String;
           final exception = ThumbnailApiException(
             code == 400
                 ? 'Bad request'
@@ -303,7 +300,6 @@ void main() {
             final url = ThumbnailApiService.getThumbnailUrl(
               'test-id',
               timeSeconds: time,
-              size: ThumbnailSize.medium,
             );
             expect(url, isNot(contains('size=')));
             expect(url, contains('t=$time'));

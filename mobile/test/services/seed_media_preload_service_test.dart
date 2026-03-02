@@ -34,7 +34,7 @@ void main() {
 
     tearDown(() async {
       // Clean up temp directory
-      if (await tempDir.exists()) {
+      if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
 
@@ -61,7 +61,7 @@ void main() {
 
         // Assert: Should skip loading (verified by no errors and fast execution)
         expect(
-          await markerFile.exists(),
+          markerFile.existsSync(),
           isTrue,
           reason: 'Marker file should still exist',
         );
@@ -127,7 +127,7 @@ void main() {
         );
         final markerFile = File(path.join(cacheDir.path, '.seed_media_loaded'));
         expect(
-          await markerFile.exists(),
+          markerFile.existsSync(),
           isTrue,
           reason: 'Marker file should be created after load',
         );
@@ -143,7 +143,7 @@ void main() {
 
       // Act & Assert: Should not throw, just log error
       expect(
-        () async => await SeedMediaPreloadService.loadSeedMediaIfNeeded(),
+        () async => SeedMediaPreloadService.loadSeedMediaIfNeeded(),
         returnsNormally,
         reason: 'Missing manifest should be non-critical',
       );
@@ -164,7 +164,7 @@ void main() {
 
         // Act & Assert: Should not throw
         expect(
-          () async => await SeedMediaPreloadService.loadSeedMediaIfNeeded(),
+          () async => SeedMediaPreloadService.loadSeedMediaIfNeeded(),
           returnsNormally,
           reason: 'Corrupted manifest should be non-critical',
         );
@@ -175,9 +175,9 @@ void main() {
       'loadSeedMediaIfNeeded uses eventId as filename in cache directory',
       () async {
         // Setup: Mock manifest with specific eventId
-        final testEventId =
+        const testEventId =
             'unique0000test1111cafe2222beef3333dead4444face5555abcd6666ef0012345678';
-        final testFilename = '$testEventId.mp4'; // Filename matches eventId
+        const testFilename = '$testEventId.mp4'; // Filename matches eventId
         final manifestJson = jsonEncode({
           'videos': [
             {
@@ -230,7 +230,7 @@ void main() {
         final videoFile = File(path.join(cacheDir.path, testEventId));
 
         expect(
-          await videoFile.exists(),
+          videoFile.existsSync(),
           isTrue,
           reason: 'Video file should exist with eventId as filename',
         );

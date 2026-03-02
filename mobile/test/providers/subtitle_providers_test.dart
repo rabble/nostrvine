@@ -43,11 +43,7 @@ void main() {
       addTearDown(container.dispose);
 
       final cues = await container.read(
-        subtitleCuesProvider(
-          videoId: 'test-id',
-          textTrackRef: null,
-          textTrackContent: null,
-        ).future,
+        subtitleCuesProvider(videoId: 'test-id').future,
       );
 
       expect(cues, isEmpty);
@@ -64,7 +60,6 @@ void main() {
       final cues = await container.read(
         subtitleCuesProvider(
           videoId: 'test-id',
-          textTrackRef: null,
           textTrackContent: vttContent,
         ).future,
       );
@@ -116,7 +111,6 @@ void main() {
         subtitleCuesProvider(
           videoId: 'test-id',
           textTrackRef: '39307:$testPubkey:subtitles:test-vine-id',
-          textTrackContent: null,
         ).future,
       );
 
@@ -181,7 +175,6 @@ void main() {
           subtitleCuesProvider(
             videoId: 'test-id',
             textTrackRef: '39307:$testPubkey:subtitles:test-vine-id',
-            textTrackContent: null,
           ).future,
         );
 
@@ -221,7 +214,6 @@ void main() {
         subtitleCuesProvider(
           videoId: 'test-id',
           textTrackRef: '39307:$testPubkey:subtitles:test-vine-id',
-          textTrackContent: null,
         ).future,
       );
 
@@ -242,7 +234,6 @@ void main() {
         subtitleCuesProvider(
           videoId: 'test-id',
           textTrackRef: 'invalid-ref',
-          textTrackContent: null,
         ).future,
       );
 
@@ -262,11 +253,7 @@ void main() {
       addTearDown(container.dispose);
 
       final cues = await container.read(
-        subtitleCuesProvider(
-          videoId: 'test-id',
-          textTrackRef: null,
-          textTrackContent: '',
-        ).future,
+        subtitleCuesProvider(videoId: 'test-id', textTrackContent: '').future,
       );
 
       expect(cues, isEmpty);

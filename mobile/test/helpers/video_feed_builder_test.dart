@@ -1,16 +1,13 @@
 // ABOUTME: Tests for VideoFeedBuilder helper class that encapsulates common feed logic
-// ABOUTME: Validates debouncing, stability waiting, and state management patterns
-
-import 'dart:async';
+// ABOUTME: Validates debouncing, streaming return, and state management patterns
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:openvine/helpers/video_feed_builder.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:openvine/services/video_event_service.dart';
 
-import 'video_feed_builder_test.mocks.dart';
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 // Helper to create mock VideoEvent for testing
 VideoEvent _createMockVideo({
@@ -31,14 +28,13 @@ VideoEvent _createMockVideo({
   );
 }
 
-@GenerateMocks([VideoEventService])
 void main() {
   group('VideoFeedBuilder', () {
-    late MockVideoEventService mockService;
+    late _MockVideoEventService mockService;
     late VideoFeedBuilder builder;
 
     setUp(() {
-      mockService = MockVideoEventService();
+      mockService = _MockVideoEventService();
       builder = VideoFeedBuilder(mockService);
     });
 
@@ -62,7 +58,7 @@ void main() {
           );
 
           when(
-            mockService.subscribeToVideoFeed(
+            () => mockService.subscribeToVideoFeed(
               subscriptionType: SubscriptionType.popularNow,
               limit: 100,
             ),
@@ -73,7 +69,7 @@ void main() {
 
           // Assert
           verify(
-            mockService.subscribeToVideoFeed(
+            () => mockService.subscribeToVideoFeed(
               subscriptionType: SubscriptionType.popularNow,
               limit: 100,
             ),
@@ -81,82 +77,68 @@ void main() {
         },
       );
 
-      test('should wait for video count stability before returning', () async {
-        // Arrange
-        final videos = <VideoEvent>[];
-        var listenerCallCount = 0;
-
+      test('should return immediately without waiting for stability', () async {
+        // Arrange - subscribe adds videos asynchronously but buildFeed
+        // should NOT wait for them
         final config = VideoFeedConfig(
           subscriptionType: SubscriptionType.popularNow,
-          subscribe: (service) async {
-            // Simulate delayed video arrival
-            Future.delayed(Duration(milliseconds: 100), () {
-              videos.add(_createMockVideo(id: 'video1'));
-              mockService.notifyListeners();
-            });
-            Future.delayed(Duration(milliseconds: 200), () {
-              videos.add(_createMockVideo(id: 'video2'));
-              mockService.notifyListeners();
-            });
-            // Stable after 500ms (300ms stability threshold)
-          },
-          getVideos: (service) => videos,
+          subscribe: (service) async {},
+          getVideos: (service) => [],
           sortVideos: (videos) => videos,
         );
-
-        when(mockService.addListener(any)).thenAnswer((invocation) {
-          // Capture listener and simulate calls
-          listenerCallCount++;
-        });
 
         // Act
         final stopwatch = Stopwatch()..start();
         final state = await builder.buildFeed(config: config);
         stopwatch.stop();
 
-        // Assert
-        expect(state.videos.length, greaterThanOrEqualTo(0));
-        expect(listenerCallCount, greaterThanOrEqualTo(1));
+        // Assert - should return nearly instantly (no 300ms+ stability wait)
+        expect(stopwatch.elapsedMilliseconds, lessThan(100));
+        expect(state.videos, isEmpty);
+        expect(state.isInitialLoad, isTrue);
+      });
 
-        // Should wait at least 300ms for stability
-        expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(100));
+      test('should set isInitialLoad true when no videos available', () async {
+        // Arrange
+        final config = VideoFeedConfig(
+          subscriptionType: SubscriptionType.discovery,
+          subscribe: (service) async {},
+          getVideos: (service) => [],
+          sortVideos: (videos) => videos,
+        );
+
+        // Act
+        final state = await builder.buildFeed(config: config);
+
+        // Assert
+        expect(state.videos, isEmpty);
+        expect(state.isInitialLoad, isTrue);
       });
 
       test(
-        'should timeout after 3 seconds if videos never stabilize',
+        'should set isInitialLoad false when videos are available',
         () async {
           // Arrange
+          final videos = [_createMockVideo(id: 'v1')];
           final config = VideoFeedConfig(
             subscriptionType: SubscriptionType.discovery,
-            subscribe: (service) async {
-              // Continuously add videos - never stabilize
-              Timer.periodic(Duration(milliseconds: 100), (timer) {
-                // Keep changing count
-              });
-            },
-            getVideos: (service) => [],
+            subscribe: (service) async {},
+            getVideos: (service) => videos,
             sortVideos: (videos) => videos,
           );
 
           // Act
-          final stopwatch = Stopwatch()..start();
           final state = await builder.buildFeed(config: config);
-          stopwatch.stop();
 
           // Assert
-          expect(state.videos.length, greaterThanOrEqualTo(0));
-          // Should timeout at 3 seconds
-          expect(stopwatch.elapsedMilliseconds, lessThan(3500));
-          expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(2800));
+          expect(state.videos.length, 1);
+          expect(state.isInitialLoad, isFalse);
         },
       );
 
       test('should sort videos using provided comparator', () async {
         // Arrange
-        final video1 = _createMockVideo(
-          id: 'v1',
-          createdAt: DateTime(2025, 1, 1),
-        );
+        final video1 = _createMockVideo(id: 'v1', createdAt: DateTime(2025));
         final video2 = _createMockVideo(
           id: 'v2',
           createdAt: DateTime(2025, 1, 3),
@@ -251,7 +233,7 @@ void main() {
         expect(onUpdateCallCount, isZero);
 
         // Verify that a listener was added to the service
-        verify(mockService.addListener(any)).called(1);
+        verify(() => mockService.addListener(any())).called(1);
       });
 
       test('should track last known video count', () {
@@ -270,8 +252,9 @@ void main() {
 
         // Assert
         // Verify that the initial count was captured
-        // (This is checked internally by the builder but we can't directly test private fields)
-        verify(mockService.addListener(any)).called(1);
+        // (This is checked internally by the builder but we can't directly
+        // test private fields)
+        verify(() => mockService.addListener(any())).called(1);
       });
     });
 
@@ -291,7 +274,9 @@ void main() {
         builder.cleanup();
 
         // Assert
-        verify(mockService.removeListener(any)).called(greaterThanOrEqualTo(1));
+        verify(
+          () => mockService.removeListener(any()),
+        ).called(greaterThanOrEqualTo(1));
       });
     });
   });

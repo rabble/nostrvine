@@ -11,8 +11,8 @@ import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_top_bar.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -66,9 +66,7 @@ void main() {
     }
 
     testWidgets('displays clip counter with correct format', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(currentClipIndex: 0, totalClips: 3),
-      );
+      await tester.pumpWidget(buildTestWidget());
 
       expect(find.text('1/3'), findsOneWidget);
     });
@@ -82,7 +80,7 @@ void main() {
     });
 
     testWidgets('displays camera icon when not editing', (tester) async {
-      await tester.pumpWidget(buildTestWidget(isEditing: false));
+      await tester.pumpWidget(buildTestWidget());
 
       expect(find.bySemanticsLabel('Go back to camera'), findsOneWidget);
     });
@@ -94,7 +92,7 @@ void main() {
     });
 
     testWidgets('displays done button when not editing', (tester) async {
-      await tester.pumpWidget(buildTestWidget(isEditing: false));
+      await tester.pumpWidget(buildTestWidget());
 
       expect(find.text('Next'), findsOneWidget);
     });
@@ -113,9 +111,7 @@ void main() {
     testWidgets('displays correct clip counter for single clip', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildTestWidget(currentClipIndex: 0, totalClips: 1),
-      );
+      await tester.pumpWidget(buildTestWidget(totalClips: 1));
 
       expect(find.text('1/1'), findsOneWidget);
     });

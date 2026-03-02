@@ -136,10 +136,7 @@ void main() {
     group('Visibility', () {
       testWidgets('shows SizedBox.shrink when not recording', (tester) async {
         await tester.pumpWidget(
-          buildWidget(
-            recordingState: VideoRecorderState.idle,
-            selectedSound: _createTestAudioEvent(),
-          ),
+          buildWidget(selectedSound: _createTestAudioEvent()),
         );
         await tester.pumpAndSettle();
 
@@ -154,10 +151,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildWidget(
-            recordingState: VideoRecorderState.recording,
-            selectedSound: null,
-          ),
+          buildWidget(recordingState: VideoRecorderState.recording),
         );
         await tester.pumpAndSettle();
 
@@ -170,12 +164,7 @@ void main() {
       testWidgets('shows SizedBox.shrink when not recording and no sound', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          buildWidget(
-            recordingState: VideoRecorderState.idle,
-            selectedSound: null,
-          ),
-        );
+        await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
         expect(
@@ -397,6 +386,7 @@ class _TestClipManagerNotifier extends ClipManagerNotifier {
     required this.activeRecordingDuration,
   });
 
+  @override
   final List<RecordingClip> clips;
   final Duration activeRecordingDuration;
 

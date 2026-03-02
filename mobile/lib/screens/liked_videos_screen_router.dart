@@ -1,6 +1,7 @@
 // ABOUTME: Router-aware liked videos screen that shows grid or feed based on URL
 // ABOUTME: Reads route context to determine grid mode vs feed mode
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +15,6 @@ import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 
@@ -53,9 +53,12 @@ class _LikedVideosScreenRouterState
         category: LogCategory.ui,
       );
       return const Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         body: Center(
-          child: Text('Invalid route', style: TextStyle(color: Colors.white)),
+          child: Text(
+            'Invalid route',
+            style: TextStyle(color: VineTheme.whiteText),
+          ),
         ),
       );
     }
@@ -75,15 +78,15 @@ class _LikedVideosScreenRouterState
         category: LogCategory.ui,
       );
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         appBar: AppBar(
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.backgroundColor,
           title: const Text(
             'Liked Videos',
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: VineTheme.whiteText),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
             onPressed: () {
               // Navigate to own profile grid
               final authService = ref.read(authServiceProvider);
@@ -167,7 +170,7 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
             state.status == ProfileLikedVideosStatus.syncing ||
             state.status == ProfileLikedVideosStatus.loading) {
           return const Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: VineTheme.backgroundColor,
             body: Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),
@@ -176,7 +179,7 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
 
         if (state.status == ProfileLikedVideosStatus.failure) {
           return const Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: VineTheme.backgroundColor,
             body: Center(
               child: Text(
                 'Error loading liked videos',
@@ -190,7 +193,7 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
 
         if (videos.isEmpty) {
           return const Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: VineTheme.backgroundColor,
             body: Center(
               child: Text(
                 'No liked videos',

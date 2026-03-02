@@ -1,6 +1,7 @@
 // ABOUTME: Router-driven Instagram-style profile screen implementation
 // ABOUTME: Uses CustomScrollView with slivers for smooth scrolling, URL is source of truth
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,22 +12,21 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
-import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/user_profile_utils.dart';
+import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
@@ -187,7 +187,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       final profileColor = profileAsync?.value?.profileBackgroundColor;
 
       return Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         onDrawerChanged: (isOpen) {
           ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
         },
@@ -219,7 +219,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                   width: 32,
                   height: 32,
                   colorFilter: const ColorFilter.mode(
-                    Colors.white,
+                    VineTheme.whiteText,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -260,7 +260,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                         width: 28,
                         height: 28,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
+                          color: VineTheme.whiteText,
                           strokeWidth: 2,
                         ),
                       )
@@ -269,7 +269,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                         width: 28,
                         height: 28,
                         colorFilter: const ColorFilter.mode(
-                          Colors.white,
+                          VineTheme.whiteText,
                           BlendMode.srcIn,
                         ),
                       ),
@@ -299,7 +299,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                     width: 28,
                     height: 28,
                     colorFilter: const ColorFilter.mode(
-                      Colors.white,
+                      VineTheme.whiteText,
                       BlendMode.srcIn,
                     ),
                   ),
@@ -797,7 +797,6 @@ class ProfileViewSwitcher extends StatelessWidget {
             right: 16,
             child: Dismissible(
               key: ValueKey(faultUpload.draft.id),
-              direction: DismissDirection.horizontal,
               onDismissed: (_) {
                 backgroundPublishBloc.add(
                   BackgroundPublishVanished(draftId: faultUpload.draft.id),

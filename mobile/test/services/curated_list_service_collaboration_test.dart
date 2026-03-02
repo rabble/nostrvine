@@ -3,11 +3,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -59,7 +59,7 @@ void main() {
 
       when(
         () => mockNostr.subscribe(any(), onEose: any(named: 'onEose')),
-      ).thenAnswer((_) => Stream.empty());
+      ).thenAnswer((_) => const Stream.empty());
 
       when(
         () => mockAuth.createAndSignEvent(
@@ -126,10 +126,7 @@ void main() {
       });
 
       test('returns false when adding to non-collaborative list', () async {
-        final list = await service.createList(
-          name: 'Test List',
-          isCollaborative: false,
-        );
+        final list = await service.createList(name: 'Test List');
 
         final result = await service.addCollaborator(
           list!.id,
@@ -171,7 +168,6 @@ void main() {
         final list = await service.createList(
           name: 'Test List',
           isCollaborative: true,
-          isPublic: true,
         );
         // Add a video so the list isn't empty (empty lists skip publishing)
         await service.addVideoToList(list!.id, 'test_video_id');
@@ -251,7 +247,6 @@ void main() {
         final list = await service.createList(
           name: 'Test List',
           isCollaborative: true,
-          isPublic: true,
         );
         // Add a video so the list isn't empty (empty lists skip publishing)
         await service.addVideoToList(list!.id, 'test_video_id');
@@ -319,10 +314,7 @@ void main() {
       });
 
       test('returns false for non-collaborative list', () async {
-        final list = await service.createList(
-          name: 'Test List',
-          isCollaborative: false,
-        );
+        final list = await service.createList(name: 'Test List');
 
         final result = service.canCollaborate(list!.id, 'random_user');
 
@@ -338,10 +330,7 @@ void main() {
 
     group('Collaboration - Edge Cases', () {
       test('converting non-collaborative list to collaborative', () async {
-        final list = await service.createList(
-          name: 'Test List',
-          isCollaborative: false,
-        );
+        final list = await service.createList(name: 'Test List');
 
         await service.updateList(listId: list!.id, isCollaborative: true);
 

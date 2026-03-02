@@ -13,7 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Sort options for funnelcake video API
 enum VideoSortOption {
   recent('recent'),
-  trending('trending');
+  trending('trending')
+  ;
 
   const VideoSortOption(this.value);
   final String value;
@@ -1135,7 +1136,7 @@ class AnalyticsApiService {
     SharedPreferences? prefs,
   }) async {
     if (!isAvailable || pubkey.isEmpty) {
-      return const HomeFeedResult(videos: [], hasMore: false);
+      return const HomeFeedResult(videos: []);
     }
 
     try {
@@ -1194,14 +1195,14 @@ class AnalyticsApiService {
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );
-        return const HomeFeedResult(videos: [], hasMore: false);
+        return const HomeFeedResult(videos: []);
       } else {
         Log.error(
           'Home feed failed: ${response.statusCode}',
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );
-        return const HomeFeedResult(videos: [], hasMore: false);
+        return const HomeFeedResult(videos: []);
       }
     } catch (e) {
       Log.error(
@@ -1209,7 +1210,7 @@ class AnalyticsApiService {
         name: 'AnalyticsApiService',
         category: LogCategory.video,
       );
-      return const HomeFeedResult(videos: [], hasMore: false);
+      return const HomeFeedResult(videos: []);
     }
   }
 

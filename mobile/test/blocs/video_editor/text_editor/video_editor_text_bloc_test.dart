@@ -171,7 +171,7 @@ void main() {
     });
 
     group('VideoEditorTextAlignmentChanged', () {
-      for (var align in [TextAlign.left, TextAlign.center, TextAlign.right]) {
+      for (final align in [TextAlign.left, TextAlign.center, TextAlign.right]) {
         blocTest<VideoEditorTextBloc, VideoEditorTextState>(
           'emits state with ${align.name} alignment',
           build: buildBloc,
@@ -278,7 +278,7 @@ void main() {
     });
 
     group('VideoEditorTextBackgroundStyleChanged', () {
-      for (var mode in LayerBackgroundMode.values) {
+      for (final mode in LayerBackgroundMode.values) {
         blocTest<VideoEditorTextBloc, VideoEditorTextState>(
           'emits state with ${mode.name} background style',
           build: buildBloc,
@@ -678,7 +678,7 @@ void main() {
     });
 
     test('different font index values are not equal', () {
-      const state1 = VideoEditorTextState(selectedFontIndex: 0);
+      const state1 = VideoEditorTextState();
       const state2 = VideoEditorTextState(selectedFontIndex: 1);
       expect(state1, isNot(equals(state2)));
     });
@@ -713,13 +713,13 @@ void main() {
 
     test('different showFontSelector values are not equal', () {
       const state1 = VideoEditorTextState(showFontSelector: true);
-      const state2 = VideoEditorTextState(showFontSelector: false);
+      const state2 = VideoEditorTextState();
       expect(state1, isNot(equals(state2)));
     });
 
     test('different showColorPicker values are not equal', () {
       const state1 = VideoEditorTextState(showColorPicker: true);
-      const state2 = VideoEditorTextState(showColorPicker: false);
+      const state2 = VideoEditorTextState();
       expect(state1, isNot(equals(state2)));
     });
 

@@ -6,10 +6,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -80,6 +80,9 @@ class MockAuthService extends Mock implements AuthService {
   @override
   Stream<AuthState> get authStateStream =>
       Stream.value(AuthState.authenticated);
+
+  @override
+  bool get hasExpiredOAuthSession => false;
 }
 
 const testUserHex =
@@ -100,11 +103,11 @@ void main() {
       return UserProfile(
         pubkey: testUserHex,
         rawData: {
-          if (displayName != null) 'display_name': displayName,
-          if (name != null) 'name': name,
-          if (about != null) 'about': about,
-          if (picture != null) 'picture': picture,
-          if (nip05 != null) 'nip05': nip05,
+          'display_name': ?displayName,
+          'name': ?name,
+          'about': ?about,
+          'picture': ?picture,
+          'nip05': ?nip05,
         },
         displayName: displayName,
         name: name,
@@ -339,7 +342,6 @@ void main() {
             userIdHex: testUserHex,
             isOwnProfile: false,
             profileStatsAsync: AsyncValue.data(createTestStats()),
-            profile: null,
             displayNameHint: 'Unknown',
             avatarUrlHint: 'https://example.com/fallback.png',
           ),
@@ -516,7 +518,6 @@ void main() {
               isOwnProfile: true,
               profileStatsAsync: AsyncValue.data(createTestStats()),
               profile: testProfile,
-              isAnonymous: false,
             ),
           );
           await tester.pumpAndSettle();

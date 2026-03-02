@@ -19,12 +19,8 @@ final videosForProfileRouteProvider = Provider<AsyncValue<VideoFeedState>>((
     category: LogCategory.system,
   );
   if (ctx == null || ctx.type != RouteType.profile) {
-    return AsyncValue.data(
-      VideoFeedState(
-        videos: const [],
-        hasMoreContent: false,
-        isLoadingMore: false,
-      ),
+    return const AsyncValue.data(
+      VideoFeedState(videos: [], hasMoreContent: false),
     );
   }
 
@@ -32,12 +28,8 @@ final videosForProfileRouteProvider = Provider<AsyncValue<VideoFeedState>>((
   final npub = (ctx.npub ?? '').trim();
   final hex = npubToHexOrNull(npub);
   if (hex == null) {
-    return AsyncValue.data(
-      VideoFeedState(
-        videos: const [],
-        hasMoreContent: false,
-        isLoadingMore: false,
-      ),
+    return const AsyncValue.data(
+      VideoFeedState(videos: [], hasMoreContent: false),
     );
   }
 
@@ -60,7 +52,5 @@ final videosForProfileRouteProvider = Provider<AsyncValue<VideoFeedState>>((
     category: LogCategory.system,
   );
 
-  return AsyncValue.data(
-    VideoFeedState(videos: items, hasMoreContent: false, isLoadingMore: false),
-  );
+  return AsyncValue.data(VideoFeedState(videos: items, hasMoreContent: false));
 });

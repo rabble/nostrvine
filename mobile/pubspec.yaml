@@ -24,6 +24,7 @@ environment:
 
 workspace:
   - packages/comments_repository
+  - packages/curated_list_repository
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
@@ -40,6 +41,7 @@ workspace:
   - packages/pooled_video_player
   - packages/profile_repository
   - packages/reposts_repository
+  - packages/sound_service
   - packages/videos_repository
 
 # Dependencies specify other packages that your package needs in order to work.
@@ -119,6 +121,9 @@ dependencies:
   blurhash_dart: ^1.2.1 # Generate blurhash for progressive image loading
   skeletonizer: ^2.1.2 # Skeleton loading animations with shimmer effect
 
+  # Sound Service - Sound effects (countdown beeps, etc.)
+  sound_service:
+
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_sdk:
 
@@ -194,16 +199,10 @@ dev_dependencies:
     sdk: flutter
   flutter_launcher_icons: ^0.14.4
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-  flutter_lints: ^6.0.0
+  very_good_analysis: ^10.2.0
 
   # Testing
   mocktail: ^1.0.3
-  mockito: ^5.4.4
   bloc_test: ^10.0.0
 
   # Code generation

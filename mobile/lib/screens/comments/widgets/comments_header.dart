@@ -1,6 +1,7 @@
 // ABOUTME: Header widget for the comments sheet
 // ABOUTME: Shows "Comments" title with close button
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Header widget for the comments draggable sheet.
@@ -20,7 +21,7 @@ class CommentsHeader extends StatelessWidget {
         const Text(
           'Comments',
           style: TextStyle(
-            color: Colors.white,
+            color: VineTheme.whiteText,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -31,7 +32,7 @@ class CommentsHeader extends StatelessWidget {
           button: true,
           label: 'Close comments',
           child: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: const Icon(Icons.close, color: VineTheme.whiteText),
             onPressed: onClose,
           ),
         ),

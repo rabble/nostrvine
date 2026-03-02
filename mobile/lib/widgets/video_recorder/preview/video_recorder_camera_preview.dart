@@ -3,13 +3,14 @@
 
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/utils/platform_helpers.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_macos_preview.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_mobile_preview.dart';
-import 'package:openvine/utils/platform_helpers.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_camera_placeholder.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_focus_point.dart';
 
@@ -159,7 +160,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xBEFFFFFF)
+      ..color = VineTheme.onSurfaceVariant
       ..strokeWidth = 1;
 
     // Vertical lines

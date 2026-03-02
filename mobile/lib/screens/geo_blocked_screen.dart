@@ -1,19 +1,19 @@
 // ABOUTME: Screen displayed when user's location is in a geo-blocked region
 // ABOUTME: Shows information about regional restrictions and legal compliance
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 class GeoBlockedScreen extends StatelessWidget {
   final GeoBlockResponse geoInfo;
 
-  const GeoBlockedScreen({super.key, required this.geoInfo});
+  const GeoBlockedScreen({required this.geoInfo, super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -22,11 +22,11 @@ class GeoBlockedScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Icon
-                Icon(Icons.block, size: 80, color: VineTheme.vineGreen),
+                const Icon(Icons.block, size: 80, color: VineTheme.vineGreen),
                 const SizedBox(height: 32),
 
                 // Title
-                Text(
+                const Text(
                   'Service Unavailable',
                   style: TextStyle(
                     color: VineTheme.whiteText,
@@ -40,7 +40,7 @@ class GeoBlockedScreen extends StatelessWidget {
                 // Region info
                 Text(
                   geoInfo.region,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: VineTheme.vineGreen,
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
@@ -54,7 +54,7 @@ class GeoBlockedScreen extends StatelessWidget {
                   geoInfo.reason ??
                       'This service is not available in your region due to local regulations.',
                   style: const TextStyle(
-                    color: Colors.grey,
+                    color: VineTheme.lightText,
                     fontSize: 16,
                     height: 1.5,
                   ),
@@ -82,11 +82,11 @@ class GeoBlockedScreen extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Legal notice
-                Text(
+                const Text(
                   'We respect your local laws and regulations. '
                   'This restriction is based on your IP address location.',
-                  style: const TextStyle(
-                    color: Colors.grey,
+                  style: TextStyle(
+                    color: VineTheme.lightText,
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
                   ),
@@ -104,10 +104,13 @@ class GeoBlockedScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+        Text(
+          label,
+          style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
+        ),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             color: VineTheme.whiteText,
             fontSize: 14,
             fontWeight: FontWeight.w500,

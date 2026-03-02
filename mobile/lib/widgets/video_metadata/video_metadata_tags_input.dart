@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -6,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// Input widget for adding and managing hashtags for video metadata.
 ///
@@ -96,7 +96,7 @@ class _VideoMetadataTagsInputState
     // them separate.
     final newTags = value
         .split(RegExp(r'\s+'))
-        .map((tag) => tag.replaceAll(RegExp(r'[^a-zA-Z0-9]'), ''))
+        .map((tag) => tag.replaceAll(RegExp('[^a-zA-Z0-9]'), ''))
         .where((tag) => tag.isNotEmpty)
         .toSet();
 
@@ -133,8 +133,8 @@ class _VideoMetadataTagsInputState
     // Dynamic label color based on focus state
     final labelStyle = VineTheme.bodyFont(
       color: _focusNode.hasFocus
-          ? const Color(0xFF27C58B)
-          : const Color(0xB6FFFFFF),
+          ? VineTheme.primary
+          : VineTheme.onSurfaceVariant,
       fontSize: 11,
       fontWeight: .w600,
       height: 1.45,
@@ -163,7 +163,7 @@ class _VideoMetadataTagsInputState
                     Text(
                       '${tags.length}/${VideoEditorConstants.tagLimit}',
                       style: labelStyle.copyWith(
-                        color: const Color(0x80FFFFFF),
+                        color: VineTheme.onSurfaceMuted,
                       ),
                     ),
                 ],
@@ -185,7 +185,6 @@ class _VideoMetadataTagsInputState
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     label: tags.isEmpty ? 'Tags' : null,
                     contentPadding: .zero,
-                    textCapitalization: .none,
                     textInputAction: .done,
                     maxLines: 1,
                     inputFormatters: [
@@ -234,7 +233,7 @@ class _TagChip extends ConsumerWidget {
       padding: const .symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: .circular(16),
-        color: const Color(0xFF032017),
+        color: VineTheme.surfaceContainer,
       ),
       child: Row(
         mainAxisSize: .min,
@@ -243,7 +242,7 @@ class _TagChip extends ConsumerWidget {
           Text(
             '#',
             style: VineTheme.bodyFont(
-              color: const Color(0xFF27C58B),
+              color: VineTheme.primary,
               height: 1.50,
               letterSpacing: 0.15,
             ),
@@ -271,7 +270,7 @@ class _TagChip extends ConsumerWidget {
             button: true,
             child: GestureDetector(
               onTap: () => _removeTag(ref),
-              child: DivineIcon(
+              child: const DivineIcon(
                 icon: .x,
                 size: 16,
                 color: VineTheme.onSurfaceMuted,

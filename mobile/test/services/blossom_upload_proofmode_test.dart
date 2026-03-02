@@ -14,13 +14,14 @@
 
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Mock classes
 class MockAuthService extends Mock implements AuthService {}
@@ -102,14 +103,14 @@ void main() {
 
         final mockFile = MockFile();
         when(() => mockFile.path).thenReturn('/test/image.jpg');
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(
-          () => mockFile.readAsBytes(),
+          mockFile.readAsBytes,
         ).thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
         when(
-          () => mockFile.readAsBytesSync(),
+          mockFile.readAsBytesSync,
         ).thenReturn(Uint8List.fromList([1, 2, 3]));
-        when(() => mockFile.lengthSync()).thenReturn(3);
+        when(mockFile.lengthSync).thenReturn(3);
 
         // Mock 409 Conflict response (file already exists)
         final mockResponse = MockResponse();
@@ -130,7 +131,6 @@ void main() {
         final result = await service.uploadImage(
           imageFile: mockFile,
           nostrPubkey: testPublicKey,
-          mimeType: 'image/jpeg',
         );
 
         // Assert

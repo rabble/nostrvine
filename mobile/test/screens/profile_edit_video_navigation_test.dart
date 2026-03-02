@@ -15,7 +15,7 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
-  Widget _shell(ProviderContainer c, {GoRouter? customRouter}) {
+  Widget shell(ProviderContainer c, {GoRouter? customRouter}) {
     final router = customRouter ?? c.read(goRouterProvider);
     return UncontrolledProviderScope(
       container: c,
@@ -78,18 +78,14 @@ void main() {
         overrides: [
           videosForProfileRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-                isLoadingMore: false,
-              ),
+              VideoFeedState(videos: mockVideos, hasMoreContent: false),
             );
           }),
         ],
       );
       addTearDown(c.dispose);
 
-      await tester.pumpWidget(_shell(c, customRouter: testRouter));
+      await tester.pumpWidget(shell(c, customRouter: testRouter));
       await tester.pumpAndSettle();
 
       // Find and tap the edit button
@@ -143,7 +139,7 @@ void main() {
     final c = ProviderContainer();
     addTearDown(c.dispose);
 
-    await tester.pumpWidget(_shell(c, customRouter: testRouter));
+    await tester.pumpWidget(shell(c, customRouter: testRouter));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byKey(const Key('edit-button')));
@@ -168,18 +164,14 @@ void main() {
           overrides: [
             videosForProfileRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
-                VideoFeedState(
-                  videos: mockVideos,
-                  hasMoreContent: false,
-                  isLoadingMore: false,
-                ),
+                VideoFeedState(videos: mockVideos, hasMoreContent: false),
               );
             }),
           ],
         );
         addTearDown(c.dispose);
 
-        await tester.pumpWidget(_shell(c));
+        await tester.pumpWidget(shell(c));
         await tester.pumpAndSettle();
 
         // On desktop, we expect a snackbar message instead of navigation

@@ -9,7 +9,7 @@ appId: co.openvine.app
 - doubleTapOn:
     id: home_tab
     delay: 100
-- tapOn: "Menu"
+- tapOn: Open menu
 - runFlow: "../asserts/assertMenu.yaml"
 
 # 2. Tap on Settings: validate

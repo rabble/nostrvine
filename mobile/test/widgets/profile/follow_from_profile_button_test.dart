@@ -71,12 +71,9 @@ void main() {
       testWidgets('shows ElevatedButton with "Follow" when not following', (
         tester,
       ) async {
-        when(() => mockMyFollowingBloc.state).thenReturn(
-          const MyFollowingState(
-            status: MyFollowingStatus.success,
-            followingPubkeys: [],
-          ),
-        );
+        when(
+          () => mockMyFollowingBloc.state,
+        ).thenReturn(const MyFollowingState(status: MyFollowingStatus.success));
 
         await tester.pumpWidget(createTestWidget(pubkey: validPubkey('other')));
         await tester.pump();
@@ -111,12 +108,9 @@ void main() {
         tester,
       ) async {
         final otherPubkey = validPubkey('other');
-        when(() => mockMyFollowingBloc.state).thenReturn(
-          const MyFollowingState(
-            status: MyFollowingStatus.success,
-            followingPubkeys: [],
-          ),
-        );
+        when(
+          () => mockMyFollowingBloc.state,
+        ).thenReturn(const MyFollowingState(status: MyFollowingStatus.success));
 
         await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
         await tester.pump();
@@ -222,16 +216,10 @@ void main() {
           final currentUserPubkey = validPubkey('me');
 
           when(() => mockMyFollowingBloc.state).thenReturn(
-            const MyFollowingState(
-              status: MyFollowingStatus.success,
-              followingPubkeys: [],
-            ),
+            const MyFollowingState(status: MyFollowingStatus.success),
           );
           when(() => mockOthersFollowersBloc.state).thenReturn(
-            const OthersFollowersState(
-              status: OthersFollowersStatus.success,
-              followersPubkeys: [],
-            ),
+            const OthersFollowersState(status: OthersFollowersStatus.success),
           );
 
           await tester.pumpWidget(
@@ -315,10 +303,7 @@ void main() {
           final currentUserPubkey = validPubkey('me');
 
           when(() => mockMyFollowingBloc.state).thenReturn(
-            const MyFollowingState(
-              status: MyFollowingStatus.success,
-              followingPubkeys: [],
-            ),
+            const MyFollowingState(status: MyFollowingStatus.success),
           );
 
           await tester.pumpWidget(

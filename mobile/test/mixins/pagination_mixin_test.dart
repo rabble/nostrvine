@@ -23,9 +23,7 @@ void main() {
     testWidgets('calls onLoadMore when within threshold of end', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        _TestPaginationWidget(onLoadMore: onLoadMore, threshold: 3),
-      );
+      await tester.pumpWidget(_TestPaginationWidget(onLoadMore: onLoadMore));
 
       final state = tester.state<_TestPaginationWidgetState>(
         find.byType(_TestPaginationWidget),
@@ -66,9 +64,7 @@ void main() {
     });
 
     testWidgets('throttles duplicate calls immediately', (tester) async {
-      await tester.pumpWidget(
-        _TestPaginationWidget(onLoadMore: onLoadMore, throttleSeconds: 5),
-      );
+      await tester.pumpWidget(_TestPaginationWidget(onLoadMore: onLoadMore));
 
       final state = tester.state<_TestPaginationWidgetState>(
         find.byType(_TestPaginationWidget),
@@ -79,7 +75,6 @@ void main() {
         currentIndex: 8,
         totalItems: 10,
         onLoadMore: () => onLoadMore(8),
-        throttleSeconds: 5,
       );
       await tester.pump();
       expect(loadMoreCallCount, 1);
@@ -89,7 +84,6 @@ void main() {
         currentIndex: 9,
         totalItems: 10,
         onLoadMore: () => onLoadMore(9),
-        throttleSeconds: 5,
       );
       await tester.pump();
       expect(loadMoreCallCount, 1); // Still 1, throttled
@@ -97,9 +91,7 @@ void main() {
     });
 
     testWidgets('resetPagination clears throttle', (tester) async {
-      await tester.pumpWidget(
-        _TestPaginationWidget(onLoadMore: onLoadMore, throttleSeconds: 5),
-      );
+      await tester.pumpWidget(_TestPaginationWidget(onLoadMore: onLoadMore));
 
       final state = tester.state<_TestPaginationWidgetState>(
         find.byType(_TestPaginationWidget),
@@ -172,6 +164,7 @@ class _TestPaginationWidget extends StatefulWidget {
   const _TestPaginationWidget({
     required this.onLoadMore,
     this.threshold = 3,
+    // ignore: unused_element_parameter
     this.throttleSeconds = 5,
   });
 

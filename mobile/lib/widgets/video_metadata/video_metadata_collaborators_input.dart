@@ -42,7 +42,6 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                 'Collaborators',
                 style: VineTheme.bodyFont(
                   color: VineTheme.onSurface,
-                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                   height: 1.25,
                 ),
@@ -126,9 +125,13 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
   }
 
   Future<void> _addCollaborator(BuildContext context, WidgetRef ref) async {
+    final currentCollaborators = ref.read(
+      videoEditorProvider.select((s) => s.collaboratorPubkeys),
+    );
     final profile = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.mutualFollowsOnly,
+      excludePubkeys: currentCollaborators.toSet(),
       // TODO(l10n): Replace with context.l10n
       //   when localization is added.
       title: 'Add collaborator',
@@ -196,7 +199,6 @@ class _CollaboratorChip extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: VineTheme.bodyFont(
-                color: VineTheme.whiteText,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 height: 1.38,
@@ -219,7 +221,7 @@ class _CollaboratorChip extends ConsumerWidget {
                 child: SvgPicture.asset(
                   'assets/icon/close.svg',
                   colorFilter: const ColorFilter.mode(
-                    Color(0xFF818F8B),
+                    VineTheme.lightText,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -251,7 +253,7 @@ class _AddCollaboratorButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: const Color(0x8C032017),
+          color: VineTheme.surfaceContainer55,
           border: Border.all(color: VineTheme.outlineVariant),
         ),
         child: Row(
@@ -262,7 +264,7 @@ class _AddCollaboratorButton extends StatelessWidget {
               height: 22,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(7),
-                color: const Color(0xFF0E2B21),
+                color: VineTheme.outlineMuted,
               ),
               child: const Icon(Icons.add, color: VineTheme.primary, size: 15),
             ),
@@ -270,7 +272,7 @@ class _AddCollaboratorButton extends StatelessWidget {
             Text(
               // TODO(l10n): Replace with context.l10n
               //   when localization is added.
-              'Add collaborator (${remainingSlots} left)',
+              'Add collaborator ($remainingSlots left)',
               style: VineTheme.bodyFont(
                 color: VineTheme.onSurfaceVariant,
                 fontSize: 13,
@@ -312,7 +314,7 @@ class _HelpButton extends StatelessWidget {
           width: 22,
           height: 22,
           decoration: BoxDecoration(
-            color: const Color(0x8C032017),
+            color: VineTheme.surfaceContainer55,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: VineTheme.outlineVariant),
           ),
