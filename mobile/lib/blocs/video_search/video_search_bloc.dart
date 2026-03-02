@@ -56,6 +56,8 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
       return;
     }
 
+    if (query == state.query) return;
+
     emit(state.copyWith(status: VideoSearchStatus.searching, query: query));
 
     try {

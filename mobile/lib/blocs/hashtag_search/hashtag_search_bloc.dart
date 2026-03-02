@@ -50,6 +50,8 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
       return;
     }
 
+    if (query == state.query) return;
+
     emit(state.copyWith(status: HashtagSearchStatus.loading, query: query));
 
     try {

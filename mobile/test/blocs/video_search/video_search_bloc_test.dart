@@ -220,6 +220,26 @@ void main() {
       );
 
       blocTest<VideoSearchBloc, VideoSearchState>(
+        'does not re-search when query has not changed',
+        build: createBloc,
+        seed: () => VideoSearchState(
+          status: VideoSearchStatus.success,
+          query: 'flutter',
+          videos: [createVideo(id: 'v1', title: 'Flutter Tutorial')],
+        ),
+        act: (bloc) => bloc.add(const VideoSearchQueryChanged('flutter')),
+        wait: debounceDuration,
+        expect: () => <VideoSearchState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.searchVideos(
+              query: any(named: 'query'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
         'passes query to repository trimmed',
         build: createBloc,
         act: (bloc) => bloc.add(const VideoSearchQueryChanged('  flutter  ')),
