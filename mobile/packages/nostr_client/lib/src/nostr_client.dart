@@ -960,6 +960,26 @@ class NostrClient {
     return queryEvents([filter], tempRelays: _nip50SearchRelays);
   }
 
+  /// Queries for video events using NIP-50 search.
+  ///
+  /// Returns a list of video events (kind 34236) matching the search query.
+  /// Uses NIP-50 search parameter on dedicated search relays for coverage.
+  ///
+  /// Unlike [searchVideos], this returns a Future that completes once,
+  /// making it suitable for one-time search operations in repositories.
+  Future<List<Event>> querySearchVideos(
+    String query, {
+    int? limit,
+  }) {
+    final filter = Filter(
+      kinds: const [EventKind.videoVertical],
+      limit: limit ?? 100,
+      search: query,
+    );
+
+    return queryEvents([filter], tempRelays: _nip50SearchRelays);
+  }
+
   /// Creates a NIP-98 HTTP authentication header.
   ///
   /// Generates a signed kind 27235 event containing the [url] and [method],

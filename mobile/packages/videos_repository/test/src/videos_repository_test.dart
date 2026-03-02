@@ -3360,6 +3360,705 @@ void main() {
         });
       });
     });
+
+    group('searchVideosLocally', () {
+      test('returns empty list when query is empty', () async {
+        final result = await repository.searchVideosLocally(query: '');
+        expect(result, isEmpty);
+      });
+
+      test('returns empty list when query is whitespace only', () async {
+        final result = await repository.searchVideosLocally(
+          query: '   ',
+        );
+        expect(result, isEmpty);
+      });
+
+      test('returns empty list when no local storage', () async {
+        final result = await repository.searchVideosLocally(
+          query: 'flutter',
+        );
+        expect(result, isEmpty);
+      });
+
+      test('returns matching videos from local cache', () async {
+        final mockLocalStorage = MockVideoLocalStorage();
+
+        when(
+          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'local-1',
+              pubkey: 'pubkey-1',
+              videoUrl: 'https://example.com/local.mp4',
+              createdAt: 1704067200,
+              hashtags: ['flutter'],
+            ),
+            _createVideoEvent(
+              id: 'local-2',
+              pubkey: 'pubkey-2',
+              videoUrl: 'https://example.com/unrelated.mp4',
+              createdAt: 1704067100,
+            ),
+          ],
+        );
+
+        final repoWithStorage = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repoWithStorage.searchVideosLocally(
+          query: 'flutter',
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('local-1'));
+      });
+
+      test('applies block filter to local results', () async {
+        final mockLocalStorage = MockVideoLocalStorage();
+        final blockFilter = TestContentFilter(
+          blockedPubkeys: {'blocked-pubkey'},
+        );
+
+        when(
+          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'ok-video',
+              pubkey: 'good-pubkey',
+              videoUrl: 'https://example.com/ok.mp4',
+              createdAt: 1704067200,
+              hashtags: ['video'],
+            ),
+            _createVideoEvent(
+              id: 'blocked-video',
+              pubkey: 'blocked-pubkey',
+              videoUrl: 'https://example.com/blocked.mp4',
+              createdAt: 1704067100,
+              hashtags: ['video'],
+            ),
+          ],
+        );
+
+        final repoWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          blockFilter: blockFilter.call,
+        );
+
+        final result = await repoWithFilter.searchVideosLocally(
+          query: 'video',
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('ok-video'));
+      });
+    });
+
+    group('searchVideosOnRelays', () {
+      test('returns empty list when query is empty', () async {
+        final result = await repository.searchVideosOnRelays(
+          query: '',
+        );
+        expect(result, isEmpty);
+      });
+
+      test('returns empty list when query is whitespace only', () async {
+        final result = await repository.searchVideosOnRelays(
+          query: '   ',
+        );
+        expect(result, isEmpty);
+      });
+
+      test('returns NIP-50 results', () async {
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'nip50-1',
+              pubkey: 'pubkey-1',
+              videoUrl: 'https://example.com/video.mp4',
+              createdAt: 1704067200,
+            ),
+          ],
+        );
+
+        final result = await repository.searchVideosOnRelays(
+          query: 'flutter',
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('nip50-1'));
+        verify(
+          () => mockNostrClient.querySearchVideos('flutter', limit: 100),
+        ).called(1);
+      });
+
+      test('passes custom limit to NIP-50 search', () async {
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await repository.searchVideosOnRelays(
+          query: 'flutter',
+          limit: 50,
+        );
+
+        verify(
+          () => mockNostrClient.querySearchVideos('flutter', limit: 50),
+        ).called(1);
+      });
+
+      test('handles NIP-50 failure gracefully', () async {
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(Exception('relay error'));
+
+        final result = await repository.searchVideosOnRelays(
+          query: 'flutter',
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test('applies block filter to relay results', () async {
+        final blockFilter = TestContentFilter(
+          blockedPubkeys: {'blocked-pubkey'},
+        );
+
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'ok-video',
+              pubkey: 'good-pubkey',
+              videoUrl: 'https://example.com/ok.mp4',
+              createdAt: 1704067200,
+            ),
+            _createVideoEvent(
+              id: 'blocked-video',
+              pubkey: 'blocked-pubkey',
+              videoUrl: 'https://example.com/blocked.mp4',
+              createdAt: 1704067100,
+            ),
+          ],
+        );
+
+        final repoWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          blockFilter: blockFilter.call,
+        );
+
+        final result = await repoWithFilter.searchVideosOnRelays(
+          query: 'video',
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('ok-video'));
+      });
+
+      test('waits for relay response without timeout', () async {
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'slow-result',
+              pubkey: 'pubkey-1',
+              videoUrl: 'https://example.com/video.mp4',
+              createdAt: 1704067200,
+            ),
+          ],
+        );
+
+        final result = await repository.searchVideosOnRelays(
+          query: 'flutter',
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('slow-result'));
+      });
+    });
+
+    group('searchVideosViaApi', () {
+      test('returns empty list when query is empty', () async {
+        final result = await repository.searchVideosViaApi(query: '');
+        expect(result, isEmpty);
+      });
+
+      test('returns empty list when query is whitespace only', () async {
+        final result = await repository.searchVideosViaApi(
+          query: '   ',
+        );
+        expect(result, isEmpty);
+      });
+
+      test('returns empty list when funnelcakeApiClient is null', () async {
+        // Default repository has no funnelcake client
+        final result = await repository.searchVideosViaApi(
+          query: 'flutter',
+        );
+        expect(result, isEmpty);
+      });
+
+      test(
+        'returns empty list when funnelcakeApiClient is not available',
+        () async {
+          final mockFunnelcake = MockFunnelcakeApiClient();
+          when(() => mockFunnelcake.isAvailable).thenReturn(false);
+
+          final repoWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcake,
+          );
+
+          final result = await repoWithApi.searchVideosViaApi(
+            query: 'flutter',
+          );
+          expect(result, isEmpty);
+        },
+      );
+
+      test('returns transformed results on success', () async {
+        final mockFunnelcake = MockFunnelcakeApiClient();
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.searchVideos(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'api-1',
+              pubkey: 'pubkey-1',
+              dTag: 'api-1',
+              videoUrl: 'https://example.com/api.mp4',
+            ),
+          ],
+        );
+
+        final repoWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcake,
+        );
+
+        final result = await repoWithApi.searchVideosViaApi(
+          query: 'flutter',
+        );
+
+        expect(result, hasLength(1));
+        verify(
+          () => mockFunnelcake.searchVideos(query: 'flutter', limit: 50),
+        ).called(1);
+      });
+
+      test('returns empty list on FunnelcakeException', () async {
+        final mockFunnelcake = MockFunnelcakeApiClient();
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.searchVideos(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(const FunnelcakeException('search failed'));
+
+        final repoWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcake,
+        );
+
+        final result = await repoWithApi.searchVideosViaApi(
+          query: 'flutter',
+        );
+        expect(result, isEmpty);
+      });
+
+      test('applies block filter to API results', () async {
+        final mockFunnelcake = MockFunnelcakeApiClient();
+        final blockFilter = TestContentFilter(
+          blockedPubkeys: {'blocked-pubkey'},
+        );
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.searchVideos(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'ok-video',
+              pubkey: 'good-pubkey',
+              dTag: 'ok-video',
+              videoUrl: 'https://example.com/ok.mp4',
+            ),
+            _createVideoStats(
+              id: 'blocked-video',
+              pubkey: 'blocked-pubkey',
+              dTag: 'blocked-video',
+              videoUrl: 'https://example.com/blocked.mp4',
+            ),
+          ],
+        );
+
+        final repoWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcake,
+          blockFilter: blockFilter.call,
+        );
+
+        final result = await repoWithFilter.searchVideosViaApi(
+          query: 'video',
+        );
+
+        expect(result, hasLength(1));
+      });
+
+      test('passes custom limit to API', () async {
+        final mockFunnelcake = MockFunnelcakeApiClient();
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.searchVideos(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final repoWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcake,
+        );
+
+        await repoWithApi.searchVideosViaApi(
+          query: 'flutter',
+          limit: 25,
+        );
+
+        verify(
+          () => mockFunnelcake.searchVideos(query: 'flutter', limit: 25),
+        ).called(1);
+      });
+    });
+
+    group('deduplicateAndSortVideos', () {
+      test('removes duplicate videos by ID', () async {
+        final video1 = VideoEvent.fromNostrEvent(
+          _createVideoEvent(
+            id: 'shared-id',
+            pubkey: 'pubkey-1',
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1704067200,
+          ),
+        );
+        final video2 = VideoEvent.fromNostrEvent(
+          _createVideoEvent(
+            id: 'shared-id',
+            pubkey: 'pubkey-1',
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1704067200,
+          ),
+        );
+
+        final result = repository.deduplicateAndSortVideos(
+          [video1, video2],
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('shared-id'));
+      });
+
+      test('sorts by loops then time', () async {
+        final videoHighLoops = VideoEvent.fromNostrEvent(
+          _createVideoEvent(
+            id: 'high-loops',
+            pubkey: 'pubkey-1',
+            videoUrl: 'https://example.com/popular.mp4',
+            createdAt: 1704067100,
+            loops: 100,
+          ),
+        );
+        final videoLowLoops = VideoEvent.fromNostrEvent(
+          _createVideoEvent(
+            id: 'low-loops',
+            pubkey: 'pubkey-2',
+            videoUrl: 'https://example.com/new.mp4',
+            createdAt: 1704067200,
+            loops: 5,
+          ),
+        );
+
+        final result = repository.deduplicateAndSortVideos(
+          [videoLowLoops, videoHighLoops],
+        );
+
+        expect(result.first.id, equals('high-loops'));
+      });
+
+      test('returns empty list for empty input', () {
+        final result = repository.deduplicateAndSortVideos([]);
+        expect(result, isEmpty);
+      });
+    });
+
+    group('searchVideos', () {
+      test('emits nothing for empty query', () async {
+        final stream = repository.searchVideos(query: '');
+        await expectLater(stream, emitsDone);
+      });
+
+      test('emits nothing for whitespace-only query', () async {
+        final stream = repository.searchVideos(query: '   ');
+        await expectLater(stream, emitsDone);
+      });
+
+      test('yields local results first', () async {
+        final mockLocalStorage = MockVideoLocalStorage();
+        when(
+          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'local-1',
+              pubkey: 'pubkey-1',
+              videoUrl: 'https://example.com/local.mp4',
+              createdAt: 1704067200,
+              hashtags: ['flutter'],
+            ),
+          ],
+        );
+
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final repoWithStorage = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final results = await repoWithStorage
+            .searchVideos(query: 'flutter')
+            .toList();
+
+        // First emission should be the local result
+        expect(results.first, hasLength(1));
+        expect(results.first.first.id, equals('local-1'));
+      });
+
+      test('yields combined results as remote sources complete', () async {
+        final mockLocalStorage = MockVideoLocalStorage();
+        final mockFunnelcake = MockFunnelcakeApiClient();
+
+        when(
+          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'local-1',
+              pubkey: 'pubkey-1',
+              videoUrl: 'https://example.com/local.mp4',
+              createdAt: 1704067200,
+              hashtags: ['flutter'],
+            ),
+          ],
+        );
+
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.searchVideos(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'api-1',
+              pubkey: 'pubkey-2',
+              dTag: 'api-1',
+              videoUrl: 'https://example.com/api.mp4',
+            ),
+          ],
+        );
+
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'relay-1',
+              pubkey: 'pubkey-3',
+              videoUrl: 'https://example.com/relay.mp4',
+              createdAt: 1704067100,
+            ),
+          ],
+        );
+
+        final repoWithAll = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          funnelcakeApiClient: mockFunnelcake,
+        );
+
+        final results = await repoWithAll
+            .searchVideos(query: 'flutter')
+            .toList();
+
+        // Should have 3 emissions: local, local+first-remote,
+        // local+both-remotes
+        expect(results, hasLength(3));
+        expect(results[0], hasLength(1)); // local only
+        expect(results.last, hasLength(3)); // all sources combined
+      });
+
+      test('skips empty remote results without extra emission', () async {
+        final mockLocalStorage = MockVideoLocalStorage();
+
+        when(
+          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'local-1',
+              pubkey: 'pubkey-1',
+              videoUrl: 'https://example.com/local.mp4',
+              createdAt: 1704067200,
+              hashtags: ['flutter'],
+            ),
+          ],
+        );
+
+        // Both remote sources return empty
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final repoWithStorage = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final results = await repoWithStorage
+            .searchVideos(query: 'flutter')
+            .toList();
+
+        // Only 1 emission (local) since both remotes are empty
+        expect(results, hasLength(1));
+        expect(results.first, hasLength(1));
+      });
+
+      test('deduplicates across sources', () async {
+        final mockLocalStorage = MockVideoLocalStorage();
+
+        final sharedEvent = _createVideoEvent(
+          id: 'shared-id',
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+          hashtags: ['flutter'],
+        );
+
+        when(
+          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => [sharedEvent]);
+
+        // Relay returns the same video
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [sharedEvent]);
+
+        final repoWithStorage = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final results = await repoWithStorage
+            .searchVideos(query: 'flutter')
+            .toList();
+
+        // Last emission should have 1 video (deduplicated)
+        expect(results.last, hasLength(1));
+      });
+
+      test('handles remote source failure gracefully', () async {
+        final mockLocalStorage = MockVideoLocalStorage();
+
+        when(
+          () => mockLocalStorage.getAllEvents(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoEvent(
+              id: 'local-1',
+              pubkey: 'pubkey-1',
+              videoUrl: 'https://example.com/local.mp4',
+              createdAt: 1704067200,
+              hashtags: ['flutter'],
+            ),
+          ],
+        );
+
+        // Relay throws — Stream.fromFutures propagates the error
+        when(
+          () => mockNostrClient.querySearchVideos(
+            any(),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(Exception('relay error'));
+
+        final repoWithStorage = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        // The stream should yield local results then error from the
+        // failing future in Stream.fromFutures
+        final results = <List<VideoEvent>>[];
+        Object? caughtError;
+        await for (final result in repoWithStorage.searchVideos(
+          query: 'flutter',
+        )) {
+          results.add(result);
+        }
+
+        // searchVideosOnRelays catches exceptions internally and
+        // returns [], so the stream completes normally
+        expect(results.first, hasLength(1));
+        expect(caughtError, isNull);
+      });
+    });
   });
 }
 

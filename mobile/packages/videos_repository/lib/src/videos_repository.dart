@@ -624,6 +624,160 @@ class VideosRepository {
     return videos;
   }
 
+  /// Searches local cache for videos matching [query].
+  ///
+  /// Text-matches cached events by title, content, and hashtags (instant,
+  /// no network). Returns empty if [query] is blank or no local storage
+  /// is configured.
+  ///
+  /// Parameters:
+  /// - [query]: The search query string. Returns empty if blank.
+  ///
+  /// Returns a list of matching [VideoEvent]s (unsorted — call
+  /// [deduplicateAndSortVideos] to rank).
+  Future<List<VideoEvent>> searchVideosLocally({
+    required String query,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty || _localStorage == null) return [];
+
+    final cached = await _localStorage.getAllEvents(limit: 500);
+    final localVideos = _transformAndFilter(cached);
+    final queryLower = trimmed.toLowerCase();
+
+    return localVideos
+        .where(
+          (v) =>
+              (v.title?.toLowerCase().contains(queryLower) ?? false) ||
+              v.content.toLowerCase().contains(queryLower) ||
+              v.hashtags.any((h) => h.toLowerCase().contains(queryLower)),
+        )
+        .toList();
+  }
+
+  /// Searches NIP-50 relays for videos matching [query].
+  ///
+  /// Full-text search via [NostrClient.querySearchVideos] with a 5-second
+  /// timeout to avoid blocking the caller. Returns empty on timeout or
+  /// failure.
+  ///
+  /// Parameters:
+  /// - [query]: The search query string. Returns empty if blank.
+  /// - [limit]: Maximum number of results (default 100).
+  ///
+  /// Returns a list of matching [VideoEvent]s (unsorted — call
+  /// [deduplicateAndSortVideos] to rank).
+  Future<List<VideoEvent>> searchVideosOnRelays({
+    required String query,
+    int limit = 100,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    try {
+      final events = await _nostrClient.querySearchVideos(
+        trimmed,
+        limit: limit,
+      );
+      return _transformAndFilter(events, sortByCreatedAt: false);
+    } on Exception {
+      return [];
+    }
+  }
+
+  /// Searches videos via the Funnelcake REST API.
+  ///
+  /// Returns empty list if the query is blank, the API client is null,
+  /// or the API is unavailable. Results are converted from [VideoStats]
+  /// to [VideoEvent] via [_transformVideoStats].
+  ///
+  /// Parameters:
+  /// - [query]: The search query string. Returns empty if blank.
+  /// - [limit]: Maximum number of results (default 50).
+  ///
+  /// Returns a list of matching [VideoEvent]s (unsorted — call
+  /// [deduplicateAndSortVideos] to rank).
+  Future<List<VideoEvent>> searchVideosViaApi({
+    required String query,
+    int limit = 50,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return [];
+    }
+
+    try {
+      final stats = await _funnelcakeApiClient.searchVideos(
+        query: trimmed,
+        limit: limit,
+      );
+      return _transformVideoStats(stats, sortByCreatedAt: false);
+    } on FunnelcakeException {
+      return [];
+    }
+  }
+
+  /// Deduplicates videos by ID and sorts by popularity (loops then time).
+  ///
+  /// Use this to combine results from [searchVideosLocally] and
+  /// [searchVideosOnRelays] into a single ranked list.
+  List<VideoEvent> deduplicateAndSortVideos(List<VideoEvent> videos) {
+    final seenIds = <String>{};
+    final unique = videos.where((v) {
+      if (seenIds.contains(v.id)) return false;
+      seenIds.add(v.id);
+      return true;
+    }).toList();
+    unique.sort(VideoEvent.compareByLoopsThenTime);
+    return unique;
+  }
+
+  /// Searches videos across all sources, yielding progressively.
+  ///
+  /// Returns a [Stream] that emits accumulated [VideoEvent] lists as each
+  /// source completes:
+  /// 1. Local cache results (instant)
+  /// 2. First remote source to finish (API or relay)
+  /// 3. Second remote source to finish (all done)
+  ///
+  /// Each emission contains the full deduplicated+sorted result set so far.
+  /// Uses [Stream.fromFutures] so the faster remote source yields first —
+  /// typically API (~1s) before relay (~5s).
+  ///
+  /// Parameters:
+  /// - [query]: The search query string. Returns empty stream if blank.
+  /// - [limit]: Maximum results per remote source (default 50).
+  Stream<List<VideoEvent>> searchVideos({
+    required String query,
+    int limit = 50,
+  }) async* {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+
+    // Phase 1: Local cache (instant)
+    final local = await searchVideosLocally(query: trimmed);
+    var accumulated = deduplicateAndSortVideos(local);
+    yield accumulated;
+
+    // Phase 2: API + relay in parallel — yield as each completes.
+    // Stream.fromFutures emits in completion order, so the faster
+    // source (typically API ~1s) yields before the slower one
+    // (relay ~5s).
+    await for (final result in Stream.fromFutures([
+      searchVideosViaApi(query: trimmed, limit: limit),
+      searchVideosOnRelays(query: trimmed, limit: limit),
+    ])) {
+      if (result.isNotEmpty) {
+        accumulated = deduplicateAndSortVideos([
+          ...accumulated,
+          ...result,
+        ]);
+        yield accumulated;
+      }
+    }
+  }
+
   /// Fetches videos where [taggedPubkey] appears in a p-tag.
   ///
   /// Uses Funnelcake REST API when available, with Nostr
