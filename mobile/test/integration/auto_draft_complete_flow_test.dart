@@ -3,8 +3,8 @@
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -47,9 +47,9 @@ void main() {
       // (Tested in VineRecordingProvider tests)
 
       // 2. Preview screen loads draft by ID
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'id',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 4),
@@ -99,9 +99,9 @@ void main() {
       final draftStorage = DraftStorageService();
 
       // 1. Auto-draft created
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'id',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 4),

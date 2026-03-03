@@ -4,7 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 
@@ -27,7 +27,7 @@ class VideoClipThumbnailCard extends StatefulWidget {
 
   /// The clip data to display, including thumbnail path, duration, and
   /// aspect ratio.
-  final SavedClip clip;
+  final DivineVideoClip clip;
 
   /// Callback invoked when the card is tapped.
   final VoidCallback onTap;
@@ -59,7 +59,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
   @override
   Widget build(BuildContext context) {
     // Calculate aspect ratio for container
-    final aspectRatio = widget.clip.aspectRatio == 'vertical' ? 9 / 16 : 1.0;
+    final aspectRatio = widget.clip.targetAspectRatio.value;
 
     return Semantics(
       // TODO(l10n): Replace with context.l10n when localization is added.
@@ -123,7 +123,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
 class _Thumbnail extends StatefulWidget {
   const _Thumbnail({required this.clip});
 
-  final SavedClip clip;
+  final DivineVideoClip clip;
 
   @override
   State<_Thumbnail> createState() => _ThumbnailState();
@@ -165,7 +165,7 @@ class _ThumbnailState extends State<_Thumbnail> {
 class _DurationBadge extends StatelessWidget {
   const _DurationBadge({required this.clip});
 
-  final SavedClip clip;
+  final DivineVideoClip clip;
 
   @override
   Widget build(BuildContext context) {

@@ -179,7 +179,8 @@ Stream<List<CuratedList>> publicListsContainingVideo(
   yield const <CuratedList>[];
 
   // Stream events from Nostr relays, accumulating as they arrive
-  await for (final list in curatedListStream ?? const Stream.empty()) {
+  await for (final CuratedList list
+      in curatedListStream ?? const Stream.empty()) {
     if (!seenIds.contains(list.id)) {
       seenIds.add(list.id);
       accumulated.add(list);

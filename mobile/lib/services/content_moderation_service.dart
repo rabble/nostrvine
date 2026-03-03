@@ -67,8 +67,8 @@ class MuteListEntry {
   };
 
   static MuteListEntry fromJson(Map<String, dynamic> json) => MuteListEntry(
-    type: json['type'],
-    value: json['value'],
+    type: json['type'] as String,
+    value: json['value'] as String,
     reason: ContentFilterReason.values.firstWhere(
       (r) => r.name == json['reason'],
       orElse: () => ContentFilterReason.other,
@@ -77,8 +77,8 @@ class MuteListEntry {
       (s) => s.name == json['severity'],
       orElse: () => ContentSeverity.hide,
     ),
-    createdAt: DateTime.parse(json['createdAt']),
-    note: json['note'],
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    note: json['note'] as String?,
   );
 
   /// Convert to NIP-51 list entry tag format
@@ -683,7 +683,7 @@ class ContentModerationService with NostrListServiceMixin {
     final listsJson = _prefs.getString(_subscribedListsKey);
     if (listsJson != null) {
       try {
-        _subscribedLists = List<String>.from(jsonDecode(listsJson));
+        _subscribedLists = List<String>.from(jsonDecode(listsJson) as Iterable);
       } catch (e) {
         Log.error(
           'Failed to load subscribed lists: $e',

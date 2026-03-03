@@ -2,17 +2,17 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('VineDraft AspectRatio', () {
     test('create() includes aspect ratio', () {
       final testFile = File('test_video.mp4');
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
             duration: const Duration(seconds: 6),
@@ -32,9 +32,9 @@ void main() {
 
     test('toJson includes aspectRatio', () {
       final testFile = File('test_video.mp4');
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
             duration: const Duration(seconds: 6),
@@ -56,7 +56,7 @@ void main() {
       final json = {
         'id': 'test-id',
         'clips': [
-          RecordingClip(
+          DivineVideoClip(
             id: 'id',
             video: EditorVideo.file('video.mp4'),
             duration: const Duration(seconds: 5),
@@ -75,7 +75,7 @@ void main() {
         'publishAttempts': 0,
       };
 
-      final draft = VineDraft.fromJson(json, '/test/documents');
+      final draft = DivineVideoDraft.fromJson(json, '/test/documents');
       expect(draft.clips.first.targetAspectRatio, equals(AspectRatio.vertical));
     });
 
@@ -94,7 +94,7 @@ void main() {
         // No aspectRatio field (legacy draft)
       };
 
-      final draft = VineDraft.fromJson(json, '/path/to');
+      final draft = DivineVideoDraft.fromJson(json, '/path/to');
       expect(draft.clips.first.targetAspectRatio, equals(AspectRatio.square));
     });
   });

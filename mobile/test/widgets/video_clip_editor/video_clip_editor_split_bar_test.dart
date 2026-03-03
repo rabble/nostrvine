@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -30,7 +30,7 @@ class TestVideoEditorNotifier extends VideoEditorNotifier {
 
 class TestClipManagerNotifier extends ClipManagerNotifier {
   TestClipManagerNotifier(this._clips);
-  final List<RecordingClip> _clips;
+  final List<DivineVideoClip> _clips;
 
   @override
   ClipManagerState build() {
@@ -38,11 +38,11 @@ class TestClipManagerNotifier extends ClipManagerNotifier {
   }
 }
 
-RecordingClip _createClip({
+DivineVideoClip _createClip({
   String id = 'test-clip',
   Duration duration = const Duration(seconds: 5),
 }) {
-  return RecordingClip(
+  return DivineVideoClip(
     id: id,
     video: EditorVideo.file('/test/video.mp4'),
     duration: duration,
@@ -59,7 +59,7 @@ void main() {
     Widget buildTestWidget({
       Duration splitPosition = Duration.zero,
       int currentClipIndex = 0,
-      List<RecordingClip>? clips,
+      List<DivineVideoClip>? clips,
     }) {
       final testClips = clips ?? [_createClip()];
 

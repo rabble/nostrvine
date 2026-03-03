@@ -35,4 +35,3 @@ export 'src/video_event.dart';
 export 'src/video_state.dart';
 export 'src/video_stats.dart';
 export 'src/video_views_response.dart';
-export 'src/vine_draft.dart';

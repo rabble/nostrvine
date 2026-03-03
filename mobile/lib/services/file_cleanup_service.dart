@@ -4,9 +4,8 @@
 
 import 'dart:convert';
 
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/saved_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -32,7 +31,7 @@ class FileCleanupService {
       try {
         final List<dynamic> jsonList = json.decode(draftsJson) as List<dynamic>;
         for (final draftJson in jsonList) {
-          final draft = VineDraft.fromJson(
+          final draft = DivineVideoDraft.fromJson(
             draftJson as Map<String, dynamic>,
             documentsPath,
           );
@@ -60,11 +59,13 @@ class FileCleanupService {
       try {
         final List<dynamic> jsonList = json.decode(clipsJson) as List<dynamic>;
         for (final clipJson in jsonList) {
-          final clip = SavedClip.fromJson(
+          final clip = DivineVideoClip.fromJson(
             clipJson as Map<String, dynamic>,
             documentsPath,
           );
-          paths.add(clip.filePath);
+          if (clip.video.file != null) {
+            paths.add(clip.video.file!.path);
+          }
           if (clip.thumbnailPath != null) {
             paths.add(clip.thumbnailPath!);
           }
@@ -113,7 +114,7 @@ class FileCleanupService {
   }
 
   /// Deletes files for a RecordingClip if not referenced
-  static Future<void> deleteRecordingClipFiles(RecordingClip clip) async {
+  static Future<void> deleteRecordingClipFiles(DivineVideoClip clip) async {
     await deleteFilesIfUnreferenced([
       clip.video.file?.path,
       clip.thumbnailPath,
@@ -122,7 +123,7 @@ class FileCleanupService {
 
   /// Deletes files for multiple RecordingClips if not referenced
   static Future<void> deleteRecordingClipsFiles(
-    List<RecordingClip> clips,
+    List<DivineVideoClip> clips,
   ) async {
     final paths = clips
         .expand((clip) => [clip.video.file?.path, clip.thumbnailPath])
@@ -132,15 +133,21 @@ class FileCleanupService {
   }
 
   /// Deletes files for a SavedClip if not referenced
-  static Future<void> deleteSavedClipFiles(SavedClip clip) async {
-    await deleteFilesIfUnreferenced([clip.filePath, clip.thumbnailPath]);
+  static Future<void> deleteSavedClipFiles(DivineVideoClip clip) async {
+    await deleteFilesIfUnreferenced([
+      clip.video.file?.path,
+      clip.thumbnailPath,
+    ]);
   }
 
   /// Deletes files for multiple SavedClips if not referenced
-  static Future<void> deleteSavedClipsFiles(List<SavedClip> clips) async {
-    final paths = clips
-        .expand((clip) => [clip.filePath, clip.thumbnailPath])
-        .toList();
+  static Future<void> deleteSavedClipsFiles(List<DivineVideoClip> clips) async {
+    final paths = <String?>[
+      for (final clip in clips) ...[
+        await clip.video.safeFilePath(),
+        clip.thumbnailPath,
+      ],
+    ];
 
     await deleteFilesIfUnreferenced(paths);
   }

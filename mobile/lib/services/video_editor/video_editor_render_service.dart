@@ -9,7 +9,7 @@ import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -44,7 +44,7 @@ class _ClipAnalysisEntry {
     required this.cropParams,
   });
 
-  final RecordingClip clip;
+  final DivineVideoClip clip;
   final Size resolution;
   final _CropParameters cropParams;
 }
@@ -264,7 +264,7 @@ class VideoEditorRenderService {
   /// documents directory instead of the temporary directory. Use this when
   /// the rendered video should persist across app restarts.
   static Future<String?> renderVideo({
-    required List<RecordingClip> clips,
+    required List<DivineVideoClip> clips,
     String? customAudioPath,
     double? originalAudioVolume,
     double? customAudioVolume,
@@ -344,7 +344,7 @@ class VideoEditorRenderService {
 
   /// Limits a clip's duration to a specified length.
   static Future limitClipDuration({
-    required RecordingClip clip,
+    required DivineVideoClip clip,
     required Duration duration,
     required ValueChanged<bool> onComplete,
   }) async {
@@ -461,7 +461,7 @@ class VideoEditorRenderService {
   ///
   /// Returns video segments ready for concatenation and temp file paths for cleanup.
   static Future<_NormalizationResult> _normalizeClipsToAspectRatio({
-    required List<RecordingClip> clips,
+    required List<DivineVideoClip> clips,
     required model.AspectRatio aspectRatio,
     required bool enableAudio,
     required Directory cacheDir,
@@ -536,7 +536,7 @@ class VideoEditorRenderService {
 
   /// Analyzes all clips to determine their crop parameters.
   static Future<_ClipAnalysis> _analyzeClips(
-    List<RecordingClip> clips,
+    List<DivineVideoClip> clips,
     model.AspectRatio aspectRatio,
   ) async {
     final entries = <_ClipAnalysisEntry>[];
@@ -562,7 +562,7 @@ class VideoEditorRenderService {
 
   /// Renders a single clip with crop transform to normalize its aspect ratio.
   static Future<String> _renderNormalizedClip({
-    required RecordingClip clip,
+    required DivineVideoClip clip,
     required int index,
     required _CropParameters cropParams,
     required bool enableAudio,

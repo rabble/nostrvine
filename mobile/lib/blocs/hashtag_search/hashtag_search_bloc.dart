@@ -5,6 +5,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 part 'hashtag_search_event.dart';
@@ -26,9 +27,12 @@ EventTransformer<E> _debounceRestartable<E>() {
 /// hashtag search endpoint. Results are sorted by popularity/trending
 /// on the server.
 class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
-  HashtagSearchBloc({required HashtagRepository hashtagRepository})
-    : _hashtagRepository = hashtagRepository,
-      super(const HashtagSearchState()) {
+  HashtagSearchBloc({
+    required HashtagRepository hashtagRepository,
+    FeedPerformanceTracker? feedTracker,
+  }) : _hashtagRepository = hashtagRepository,
+       _feedTracker = feedTracker,
+       super(const HashtagSearchState()) {
     on<HashtagSearchQueryChanged>(
       _onQueryChanged,
       transformer: _debounceRestartable(),
@@ -37,6 +41,7 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
   }
 
   final HashtagRepository _hashtagRepository;
+  final FeedPerformanceTracker? _feedTracker;
 
   Future<void> _onQueryChanged(
     HashtagSearchQueryChanged event,
@@ -52,13 +57,27 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
 
     emit(state.copyWith(status: HashtagSearchStatus.loading, query: query));
 
+    _feedTracker?.startFeedLoad('hashtag_search');
+
     try {
       final results = await _hashtagRepository.searchHashtags(query: query);
+
+      _feedTracker?.markFirstVideosReceived(
+        'hashtag_search',
+        results.length,
+      );
 
       emit(
         state.copyWith(status: HashtagSearchStatus.success, results: results),
       );
-    } on Exception {
+
+      _feedTracker?.markFeedDisplayed('hashtag_search', results.length);
+    } on Exception catch (e) {
+      _feedTracker?.trackFeedError(
+        'hashtag_search',
+        errorType: 'search_failed',
+        errorMessage: e.toString(),
+      );
       emit(state.copyWith(status: HashtagSearchStatus.failure));
     }
   }

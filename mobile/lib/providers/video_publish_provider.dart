@@ -9,9 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -176,7 +176,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
   /// Publishes the video with ProofMode attestation and navigates to
   /// profile on success.
-  Future<void> publishVideo(BuildContext context, VineDraft draft) async {
+  Future<void> publishVideo(
+    BuildContext context,
+    DivineVideoDraft draft,
+  ) async {
     // Only block if actively preparing/uploading
     if (state.publishState == .preparing || state.publishState == .uploading) {
       Log.warning(
@@ -196,7 +199,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
 
-      RecordingClip? finalRenderedClip = draft.finalRenderedClip;
+      DivineVideoClip? finalRenderedClip = draft.finalRenderedClip;
       String? proofManifestJson = draft.proofManifestJson;
 
       if (finalRenderedClip == null) {
@@ -244,7 +247,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           category: .video,
         );
 
-        final filePath = await finalRenderedClip.video.safeFilePath();
+        final filePath = await finalRenderedClip!.video.safeFilePath();
         final result = await NativeProofModeService.proofFile(File(filePath));
         proofManifestJson = result != null ? jsonEncode(result) : null;
 
@@ -263,7 +266,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         }
       }
 
-      final VineDraft publishDraft = draft.copyWith(
+      final publishDraft = draft.copyWith(
         id:
             '${VideoEditorConstants.publishPrefixId}_'
             '${DateTime.now().microsecondsSinceEpoch}',

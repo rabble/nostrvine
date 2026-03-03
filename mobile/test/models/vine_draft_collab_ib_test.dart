@@ -3,11 +3,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio, InspiredByInfo;
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-RecordingClip _testClip() => RecordingClip(
+DivineVideoClip _testClip() => DivineVideoClip(
   id: 'test_clip',
   video: EditorVideo.file('/path/to/video.mp4'),
   duration: const Duration(seconds: 6),
@@ -20,7 +20,7 @@ void main() {
   group('VineDraft collaborator and Inspired By fields', () {
     group('create', () {
       test('defaults to empty collaborators and null IB', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -34,7 +34,7 @@ void main() {
       });
 
       test('accepts collaborator pubkeys', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -56,7 +56,7 @@ void main() {
           relayUrl: 'wss://relay.divine.video',
         );
 
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -70,7 +70,7 @@ void main() {
       });
 
       test('accepts inspiredByNpub', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -85,7 +85,7 @@ void main() {
 
     group('toJson', () {
       test('includes collaboratorPubkeys when non-empty', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -107,7 +107,7 @@ void main() {
       });
 
       test('omits collaboratorPubkeys when empty', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -125,7 +125,7 @@ void main() {
           relayUrl: 'wss://relay.divine.video',
         );
 
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -141,7 +141,7 @@ void main() {
       });
 
       test('omits inspiredByVideo when null', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -154,7 +154,7 @@ void main() {
       });
 
       test('includes inspiredByNpub when set', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -168,7 +168,7 @@ void main() {
       });
 
       test('omits inspiredByNpub when null', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -183,7 +183,7 @@ void main() {
 
     group('fromJson round-trip', () {
       test('preserves collaboratorPubkeys through serialization', () {
-        final original = VineDraft.create(
+        final original = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Collab Video',
           description: 'With friends',
@@ -196,7 +196,7 @@ void main() {
         );
 
         final json = original.toJson();
-        final restored = VineDraft.fromJson(json, '/path/to');
+        final restored = DivineVideoDraft.fromJson(json, '/path/to');
 
         expect(restored.collaboratorPubkeys, hasLength(2));
         expect(
@@ -213,7 +213,7 @@ void main() {
           relayUrl: 'wss://relay.divine.video',
         );
 
-        final original = VineDraft.create(
+        final original = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'IB Video',
           description: 'Inspired',
@@ -223,7 +223,7 @@ void main() {
         );
 
         final json = original.toJson();
-        final restored = VineDraft.fromJson(json, '/path/to');
+        final restored = DivineVideoDraft.fromJson(json, '/path/to');
 
         expect(restored.inspiredByVideo, isNotNull);
         expect(
@@ -237,7 +237,7 @@ void main() {
       });
 
       test('preserves inspiredByNpub through serialization', () {
-        final original = VineDraft.create(
+        final original = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'IB Video',
           description: 'Inspired by person',
@@ -247,7 +247,7 @@ void main() {
         );
 
         final json = original.toJson();
-        final restored = VineDraft.fromJson(json, '/path/to');
+        final restored = DivineVideoDraft.fromJson(json, '/path/to');
 
         expect(restored.inspiredByNpub, equals('npub1testvalue'));
       });
@@ -255,7 +255,7 @@ void main() {
       test('preserves all collab+IB fields together', () {
         const ib = InspiredByInfo(addressableId: '34236:pubkey:dtag');
 
-        final original = VineDraft.create(
+        final original = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Full Collab',
           description: '',
@@ -269,7 +269,7 @@ void main() {
         );
 
         final json = original.toJson();
-        final restored = VineDraft.fromJson(json, '/path/to');
+        final restored = DivineVideoDraft.fromJson(json, '/path/to');
 
         expect(restored.collaboratorPubkeys, hasLength(1));
         expect(restored.inspiredByVideo, isNotNull);
@@ -293,7 +293,7 @@ void main() {
           // No collaboratorPubkeys, inspiredByVideo, or inspiredByNpub
         };
 
-        final draft = VineDraft.fromJson(json, '/path/to');
+        final draft = DivineVideoDraft.fromJson(json, '/path/to');
 
         expect(draft.collaboratorPubkeys, isEmpty);
         expect(draft.inspiredByVideo, isNull);
@@ -303,7 +303,7 @@ void main() {
 
     group('copyWith', () {
       test('preserves collab fields when not updated', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Original',
           description: '',
@@ -323,7 +323,7 @@ void main() {
       });
 
       test('can update collaboratorPubkeys', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',
@@ -350,7 +350,7 @@ void main() {
       });
 
       test('can update inspiredByVideo', () {
-        final draft = VineDraft.create(
+        final draft = DivineVideoDraft.create(
           clips: [_testClip()],
           title: 'Test',
           description: '',

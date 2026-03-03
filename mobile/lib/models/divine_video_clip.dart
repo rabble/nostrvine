@@ -9,8 +9,8 @@ import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
-class RecordingClip {
-  RecordingClip({
+class DivineVideoClip {
+  DivineVideoClip({
     required this.id,
     required this.video,
     required this.duration,
@@ -60,7 +60,7 @@ class RecordingClip {
   /// Returns the original aspect ratio, or 9/16 as fallback if not set.
   double get originalAspectRatio => _originalAspectRatio ?? 9 / 16;
 
-  RecordingClip copyWith({
+  DivineVideoClip copyWith({
     String? id,
     EditorVideo? video,
     Duration? duration,
@@ -72,7 +72,7 @@ class RecordingClip {
     Completer<bool>? processingCompleter,
     CameraLensMetadata? lensMetadata,
   }) {
-    return RecordingClip(
+    return DivineVideoClip(
       id: id ?? this.id,
       video: video ?? this.video,
       duration: duration ?? this.duration,
@@ -105,7 +105,7 @@ class RecordingClip {
     };
   }
 
-  factory RecordingClip.fromJson(
+  factory DivineVideoClip.fromJson(
     Map<String, dynamic> json,
     String documentsPath, {
     bool useOriginalPath = false,
@@ -114,7 +114,7 @@ class RecordingClip {
         (json['targetAspectRatio'] ?? json['aspectRatio']) as String?;
     final thumbnailTimestampMs = json['thumbnailTimestampMs'] as int?;
 
-    return RecordingClip(
+    return DivineVideoClip(
       id: json['id'] as String,
       video: EditorVideo.file(
         resolvePath(
@@ -124,7 +124,9 @@ class RecordingClip {
         ),
       ),
       duration: Duration(milliseconds: json['durationMs'] as int),
-      recordedAt: DateTime.parse(json['recordedAt'] as String),
+      recordedAt: DateTime.parse(
+        (json['recordedAt'] ?? json['createdAt']) as String,
+      ),
       thumbnailPath: resolvePath(
         json['thumbnailPath'] as String?,
         documentsPath,

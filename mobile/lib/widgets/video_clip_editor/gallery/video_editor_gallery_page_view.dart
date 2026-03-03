@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_clip_editor/gallery/controllers/clip_reorder_controller.dart';
 import 'package:openvine/widgets/video_clip_editor/gallery/extended_sliver_fill_viewport.dart';
@@ -39,7 +39,7 @@ class VideoEditorGalleryPageView extends ConsumerStatefulWidget {
   final double pageWidth;
 
   /// List of clips to display.
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
 
   /// Controller for page scrolling.
   final PageController pageController;
@@ -190,7 +190,7 @@ class _AnimatedGalleryItem extends StatelessWidget {
     required this.onTap,
   });
 
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   final bool enableTweenOffset;
   final bool canStartReorder;

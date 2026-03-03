@@ -11,7 +11,7 @@ class FeedPerformanceTracker {
   factory FeedPerformanceTracker() => _instance;
   FeedPerformanceTracker._internal();
 
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  late final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
   final Map<String, _FeedLoadSession> _activeSessions = {};
 
   /// Start tracking feed load
@@ -215,6 +215,24 @@ class FeedPerformanceTracker {
         'result_count': resultCount,
       },
     );
+  }
+
+  /// Start tracking time-to-play for a video swipe transition.
+  ///
+  /// Called when the user swipes to a new video. The session completes
+  /// when [markVideoSwipeComplete] is called (typically from
+  /// [VideoLoadingMetrics.markPlaybackStart]).
+  void startVideoSwipeTracking(String videoId) {
+    final feedType = 'video_swipe_$videoId';
+    startFeedLoad(feedType);
+  }
+
+  /// Mark a video swipe as complete (video is now playing).
+  ///
+  /// Closes the session started by [startVideoSwipeTracking].
+  void markVideoSwipeComplete(String videoId) {
+    final feedType = 'video_swipe_$videoId';
+    markFeedDisplayed(feedType, 1);
   }
 
   /// Track video discovery source

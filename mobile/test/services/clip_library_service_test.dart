@@ -2,8 +2,10 @@
 // ABOUTME: Covers save, load, delete, and thumbnail generation for clips
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:models/models.dart' as models show AspectRatio;
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -17,13 +19,14 @@ void main() {
 
     group('saveClip', () {
       test('saves a clip and retrieves it', () async {
-        final clip = SavedClip(
+        final clip = DivineVideoClip(
           id: 'clip_123',
-          filePath: '/tmp/test_video.mp4',
+          video: EditorVideo.file('/tmp/test_video.mp4'),
           thumbnailPath: '/tmp/test_thumb.jpg',
           duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
         );
 
         await service.saveClip(clip);
@@ -32,26 +35,30 @@ void main() {
         expect(clips.length, 1);
         expect(clips.first.id, 'clip_123');
         // Path uses platform separator, so check filename
-        expect(clips.first.filePath, endsWith('test_video.mp4'));
+        expect(
+          await clips.first.video.safeFilePath(),
+          endsWith('test_video.mp4'),
+        );
       });
 
       test('updates existing clip with same ID', () async {
-        final clip1 = SavedClip(
+        final clip1 = DivineVideoClip(
           id: 'clip_123',
-          filePath: '/tmp/test_video.mp4',
-          thumbnailPath: null,
+          video: EditorVideo.file('/tmp/test_video.mp4'),
           duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
         );
 
-        final clip2 = SavedClip(
+        final clip2 = DivineVideoClip(
           id: 'clip_123',
-          filePath: '/tmp/test_video.mp4',
+          video: EditorVideo.file('/tmp/test_video.mp4'),
           thumbnailPath: '/tmp/updated_thumb.jpg',
           duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
         );
 
         await service.saveClip(clip1);
@@ -66,13 +73,13 @@ void main() {
 
     group('deleteClip', () {
       test('removes clip by ID', () async {
-        final clip = SavedClip(
+        final clip = DivineVideoClip(
           id: 'clip_to_delete',
-          filePath: '/tmp/test_video.mp4',
-          thumbnailPath: null,
+          video: EditorVideo.file('/tmp/test_video.mp4'),
           duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
         );
 
         await service.saveClip(clip);
@@ -83,13 +90,13 @@ void main() {
       });
 
       test('does nothing when clip ID not found', () async {
-        final clip = SavedClip(
+        final clip = DivineVideoClip(
           id: 'existing_clip',
-          filePath: '/tmp/test_video.mp4',
-          thumbnailPath: null,
+          video: EditorVideo.file('/tmp/test_video.mp4'),
           duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
         );
 
         await service.saveClip(clip);
@@ -106,22 +113,22 @@ void main() {
       });
 
       test('returns clips sorted by creation date (newest first)', () async {
-        final oldClip = SavedClip(
+        final oldClip = DivineVideoClip(
           id: 'old_clip',
-          filePath: '/tmp/old.mp4',
-          thumbnailPath: null,
+          video: EditorVideo.file('/tmp/old.mp4'),
           duration: const Duration(seconds: 1),
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-          aspectRatio: 'square',
+          recordedAt: DateTime.now().subtract(const Duration(days: 1)),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
         );
 
-        final newClip = SavedClip(
+        final newClip = DivineVideoClip(
           id: 'new_clip',
-          filePath: '/tmp/new.mp4',
-          thumbnailPath: null,
+          video: EditorVideo.file('/tmp/new.mp4'),
           duration: const Duration(seconds: 1),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
         );
 
         await service.saveClip(oldClip);
@@ -135,13 +142,13 @@ void main() {
 
     group('getClipById', () {
       test('returns clip when found', () async {
-        final clip = SavedClip(
+        final clip = DivineVideoClip(
           id: 'find_me',
-          filePath: '/tmp/test.mp4',
-          thumbnailPath: null,
+          video: EditorVideo.file('/tmp/test.mp4'),
           duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'vertical',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         );
 
         await service.saveClip(clip);
@@ -149,7 +156,7 @@ void main() {
 
         expect(found, isNotNull);
         expect(found!.id, 'find_me');
-        expect(found.aspectRatio, 'vertical');
+        expect(found.targetAspectRatio, models.AspectRatio.vertical);
       });
 
       test('returns null when clip not found', () async {
@@ -162,13 +169,13 @@ void main() {
       test('removes all clips', () async {
         for (var i = 0; i < 5; i++) {
           await service.saveClip(
-            SavedClip(
+            DivineVideoClip(
               id: 'clip_$i',
-              filePath: '/tmp/video_$i.mp4',
-              thumbnailPath: null,
+              video: EditorVideo.file('/tmp/video_$i.mp4'),
               duration: const Duration(seconds: 1),
-              createdAt: DateTime.now(),
-              aspectRatio: 'square',
+              recordedAt: DateTime.now(),
+              targetAspectRatio: .vertical,
+              originalAspectRatio: 9 / 16,
             ),
           );
         }
@@ -181,15 +188,16 @@ void main() {
     });
   });
 
-  group('SavedClip', () {
-    test('serializes to and from JSON correctly', () {
-      final original = SavedClip(
+  group('DivineVideoClip', () {
+    test('serializes to and from JSON correctly', () async {
+      final original = DivineVideoClip(
         id: 'test_clip',
-        filePath: '/path/to/video.mp4',
+        video: EditorVideo.file('/path/to/video.mp4'),
         thumbnailPath: '/path/to/thumb.jpg',
         duration: const Duration(milliseconds: 2500),
-        createdAt: DateTime(2024, 1, 15, 10, 30),
-        aspectRatio: 'vertical',
+        recordedAt: DateTime.now(),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       final json = original.toJson();
@@ -198,68 +206,46 @@ void main() {
       expect(json['thumbnailPath'], 'thumb.jpg');
 
       // Roundtrip with same base path restores paths
-      final restored = SavedClip.fromJson(json, '/path/to');
+      final restored = DivineVideoClip.fromJson(json, '/path/to');
 
       expect(restored.id, original.id);
       // Path uses platform separator, check it ends with filename
-      expect(restored.filePath, endsWith('video.mp4'));
+      expect(await restored.video.safeFilePath(), endsWith('video.mp4'));
       expect(restored.thumbnailPath, endsWith('thumb.jpg'));
       expect(restored.duration, original.duration);
-      expect(restored.createdAt, original.createdAt);
-      expect(restored.aspectRatio, original.aspectRatio);
+      expect(restored.recordedAt, original.recordedAt);
+      expect(restored.targetAspectRatio, original.targetAspectRatio);
+      expect(restored.originalAspectRatio, original.originalAspectRatio);
+      expect(restored.lensMetadata, original.lensMetadata);
     });
 
     test('handles null thumbnailPath in JSON', () {
-      final clip = SavedClip(
+      final clip = DivineVideoClip(
         id: 'no_thumb',
-        filePath: '/path/to/video.mp4',
-        thumbnailPath: null,
+        video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 3),
-        createdAt: DateTime.now(),
-        aspectRatio: 'square',
+        recordedAt: DateTime.now(),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       final json = clip.toJson();
-      final restored = SavedClip.fromJson(json, '/path/to');
+      final restored = DivineVideoClip.fromJson(json, '/path/to');
 
       expect(restored.thumbnailPath, isNull);
     });
 
     test('durationInSeconds returns correct value', () {
-      final clip = SavedClip(
+      final clip = DivineVideoClip(
         id: 'test',
-        filePath: '/test.mp4',
-        thumbnailPath: null,
+        video: EditorVideo.file('/test.mp4'),
         duration: const Duration(milliseconds: 2500),
-        createdAt: DateTime.now(),
-        aspectRatio: 'square',
+        recordedAt: DateTime.now(),
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       expect(clip.durationInSeconds, 2.5);
-    });
-
-    test('displayDuration formats correctly', () {
-      final recentClip = SavedClip(
-        id: 'recent',
-        filePath: '/test.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-        aspectRatio: 'square',
-      );
-
-      expect(recentClip.displayDuration, '5m ago');
-
-      final oldClip = SavedClip(
-        id: 'old',
-        filePath: '/test.mp4',
-        thumbnailPath: null,
-        duration: const Duration(seconds: 1),
-        createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        aspectRatio: 'square',
-      );
-
-      expect(oldClip.displayDuration, '2d ago');
     });
   });
 }
