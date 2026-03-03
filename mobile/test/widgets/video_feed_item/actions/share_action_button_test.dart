@@ -74,7 +74,7 @@ void main() {
     });
 
     group('share menu', () {
-      MockAuthService _createAuthenticatedMock(String pubkey) {
+      MockAuthService createAuthenticatedMock(String pubkey) {
         final mockAuth = createMockAuthService();
         when(() => mockAuth.isAuthenticated).thenReturn(true);
         when(() => mockAuth.currentPublicKeyHex).thenReturn(pubkey);
@@ -82,7 +82,7 @@ void main() {
       }
 
       testWidgets('shows save options for own content', (tester) async {
-        final mockAuth = _createAuthenticatedMock(ownPubkey);
+        final mockAuth = createAuthenticatedMock(ownPubkey);
         final mockProfile = createMockUserProfileService();
 
         await tester.pumpWidget(
@@ -105,7 +105,7 @@ void main() {
       testWidgets(
         'shows Save Video for other user content',
         (tester) async {
-          final mockAuth = _createAuthenticatedMock(otherPubkey);
+          final mockAuth = createAuthenticatedMock(otherPubkey);
           final mockProfile = createMockUserProfileService();
 
           // Video pubkey is ownPubkey, but logged in as otherPubkey
