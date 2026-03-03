@@ -8,8 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -34,10 +33,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   int _clipCounter = 0;
   Timer? _recordingDurationTimer;
   final _recordStopwatch = Stopwatch();
-  final List<RecordingClip> _clips = [];
+  final List<DivineVideoClip> _clips = [];
 
   /// Returns an unmodifiable view of all clips.
-  List<RecordingClip> get clips => List.unmodifiable(_clips);
+  List<DivineVideoClip> get clips => List.unmodifiable(_clips);
 
   /// Calculates the remaining recording time available.
   ///
@@ -150,7 +149,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// asynchronously in the background while the clip is displayed immediately.
   ///
   /// Returns the created clip with unique ID.
-  RecordingClip addClip({
+  DivineVideoClip addClip({
     required EditorVideo video,
     required double originalAspectRatio,
     required model.AspectRatio targetAspectRatio,
@@ -169,7 +168,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // Create a completer to track async trimming progress
     final processingCompleter = isClipToLong ? Completer<bool>() : null;
 
-    var clip = RecordingClip(
+    var clip = DivineVideoClip(
       id: 'clip_${DateTime.now().millisecondsSinceEpoch}_${_clipCounter++}',
       video: video,
       duration: isClipToLong ? remainingDuration : clipDuration,
@@ -230,7 +229,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   ///
   /// Adds [clip] at [index], shifting subsequent clips forward.
   /// Returns the inserted clip.
-  RecordingClip insertClip(int index, RecordingClip clip) {
+  DivineVideoClip insertClip(int index, DivineVideoClip clip) {
     _clips.insert(index, clip);
     Log.info(
       '📎 Insert clip: ${clip.id}, '
@@ -250,7 +249,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   ///
   /// Appends all clips to the end of the current clip list and updates state.
   /// Used when restoring drafts or importing multiple clips from library.
-  void addMultipleClips(List<RecordingClip> clips) {
+  void addMultipleClips(List<DivineVideoClip> clips) {
     if (clips.isEmpty) {
       Log.debug(
         '📎 No clips to add - empty list provided',
@@ -439,7 +438,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   ///
   /// Replaces the entire clip instance at the matching ID position.
   void refreshClip(
-    RecordingClip clip, {
+    DivineVideoClip clip, {
     String? newId,
     bool createNewClipId = false,
   }) {
@@ -480,7 +479,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Get a clip by its ID.
   ///
   /// Returns the clip with [clipId], or null if not found.
-  RecordingClip? getClipById(String clipId) {
+  DivineVideoClip? getClipById(String clipId) {
     final index = _clips.indexWhere((c) => c.id == clipId);
     return index >= 0 ? _clips[index] : null;
   }
@@ -580,7 +579,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Save specific clip to library.
   ///
   /// Returns true if the clip was successfully saved, false otherwise.
-  Future<bool> saveClipToLibrary(RecordingClip clip) async {
+  Future<bool> saveClipToLibrary(DivineVideoClip clip) async {
     Log.info(
       '💾 Starting to save clip to library',
       name: 'ClipManagerNotifier',
@@ -590,15 +589,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     try {
       final clipService = ref.read(clipLibraryServiceProvider);
 
-      final savedClip = SavedClip(
-        id: clip.id,
-        aspectRatio: clip.targetAspectRatio.name,
-        createdAt: DateTime.now(),
-        duration: clip.duration,
-        filePath: await clip.video.safeFilePath(),
-        thumbnailPath: clip.thumbnailPath,
-      );
-      await clipService.saveClip(savedClip);
+      await clipService.saveClip(clip);
 
       Log.debug(
         '✅ Saved clip ${clip.id} to library (${clip.durationInSeconds}s)',

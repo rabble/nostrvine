@@ -4,11 +4,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -40,24 +41,24 @@ void main() {
     testWidgets('displays clips in grid with thumbnails', (tester) async {
       // Add test clips
       await clipService.saveClip(
-        SavedClip(
+        DivineVideoClip(
           id: 'clip_1',
-          filePath: '/tmp/video1.mp4',
-          thumbnailPath: null, // No thumbnail, will show placeholder
+          video: EditorVideo.file('/tmp/video1.mp4'),
           duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
         ),
       );
 
       await clipService.saveClip(
-        SavedClip(
+        DivineVideoClip(
           id: 'clip_2',
-          filePath: '/tmp/video2.mp4',
-          thumbnailPath: null,
+          video: EditorVideo.file('/tmp/video2.mp4'),
           duration: const Duration(milliseconds: 1500),
-          createdAt: DateTime.now(),
-          aspectRatio: 'vertical',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         ),
       );
 
@@ -70,16 +71,16 @@ void main() {
     });
 
     group('delete clips functionality', () {
-      late SavedClip testClip;
+      late DivineVideoClip testClip;
 
       setUp(() {
-        testClip = SavedClip(
+        testClip = DivineVideoClip(
           id: 'test_clip',
-          filePath: '/tmp/video.mp4',
-          thumbnailPath: null,
+          video: EditorVideo.file('/tmp/video.mp4'),
           duration: const Duration(seconds: 2),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .square,
+          originalAspectRatio: 9 / 16,
         );
       });
 

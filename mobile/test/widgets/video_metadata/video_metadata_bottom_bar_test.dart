@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as models;
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
@@ -63,7 +63,7 @@ void main() {
       // Create valid state with title and final rendered clip
       final validState = VideoEditorProviderState(
         title: 'Test Video',
-        finalRenderedClip: RecordingClip(
+        finalRenderedClip: DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('test.mp4'),
           duration: const Duration(seconds: 10),
@@ -102,7 +102,7 @@ void main() {
       final mockNotifier = _MockVideoEditorNotifier(
         VideoEditorProviderState(
           title: 'Test',
-          finalRenderedClip: RecordingClip(
+          finalRenderedClip: DivineVideoClip(
             id: 'test',
             video: EditorVideo.file('test.mp4'),
             duration: const Duration(seconds: 5),
@@ -135,7 +135,7 @@ void main() {
       final mockNotifier = _MockVideoEditorNotifier(
         VideoEditorProviderState(
           title: 'Test',
-          finalRenderedClip: RecordingClip(
+          finalRenderedClip: DivineVideoClip(
             id: 'test',
             video: EditorVideo.file('test.mp4'),
             duration: const Duration(seconds: 5),

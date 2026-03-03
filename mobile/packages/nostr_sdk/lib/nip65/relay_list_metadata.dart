@@ -20,7 +20,7 @@ class RelayListMetadata {
     writeAbleRelays = [];
     if (event.kind == EventKind.relayListMetadata) {
       for (var tag in event.tags) {
-        if (tag is List && tag.length > 1) {
+        if (tag.length > 1) {
           var k = tag[0];
           if (k != "r") {
             continue;

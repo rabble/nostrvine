@@ -8,10 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
@@ -56,7 +56,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       ref.read(clipManagerProvider.notifier);
 
   /// Get clips from clip manager.
-  List<RecordingClip> get _clips => ref.read(clipManagerProvider).clips;
+  List<DivineVideoClip> get _clips => ref.read(clipManagerProvider).clips;
 
   final _draftService = DraftStorageService();
 
@@ -594,7 +594,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// publisher to add an `["e", ..., "audio"]` tag. Also auto-populates
   /// [inspiredByVideo] from the sound's [sourceVideoReference] if not
   /// already set.
-  VineDraft getActiveDraft({
+  DivineVideoDraft getActiveDraft({
     bool isAutosave = false,
     bool enforceSeparatedClips = false,
   }) {
@@ -611,7 +611,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
     }
 
-    return VineDraft.create(
+    return DivineVideoDraft.create(
       id: isAutosave ? VideoEditorConstants.autoSaveId : draftId,
       clips:
           state.finalRenderedClip == null || isAutosave || enforceSeparatedClips
@@ -805,7 +805,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     }
 
     // Regenerate missing thumbnails
-    final clipsWithThumbnails = <RecordingClip>[];
+    final clipsWithThumbnails = <DivineVideoClip>[];
     for (final clip in draft.clips) {
       final thumbnailPath = clip.thumbnailPath;
       final thumbnailExists =
@@ -844,7 +844,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     _clipManager.clearClips();
 
     // Validate finalRenderedClip - only restore if file still exists
-    RecordingClip? validFinalRenderedClip;
+    DivineVideoClip? validFinalRenderedClip;
     final finalClip = draft.finalRenderedClip;
     if (finalClip != null) {
       final videoPath = finalClip.video.file?.path;
@@ -970,7 +970,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     // Create final clip for publishing
-    final finalRenderedClip = RecordingClip(
+    final finalRenderedClip = DivineVideoClip(
       id: 'clip-${DateTime.now()}',
       video: EditorVideo.file(outputPath),
       duration: metaData.duration,

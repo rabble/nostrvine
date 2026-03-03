@@ -61,7 +61,7 @@ void main() {
         final event = Event(
           testPublicKey,
           EventKind.textNote,
-          <List<dynamic>>[],
+          [],
           'Test content',
         );
 
@@ -81,7 +81,7 @@ void main() {
         final event = Event(
           testPublicKey,
           EventKind.textNote,
-          <List<dynamic>>[],
+          [],
           'Test content',
         );
 

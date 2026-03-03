@@ -9,10 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/saved_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
@@ -26,7 +25,6 @@ import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/masonary_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview_sheet.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 
 class ClipLibraryScreen extends ConsumerStatefulWidget {
   /// Route name for drafts path.
@@ -51,15 +49,15 @@ class ClipLibraryScreen extends ConsumerStatefulWidget {
   final bool selectionMode;
 
   /// Called when a clip is selected in selection mode
-  final void Function(SavedClip clip)? onClipSelected;
+  final void Function(DivineVideoClip clip)? onClipSelected;
 
   @override
   ConsumerState<ClipLibraryScreen> createState() => _ClipLibraryScreenState();
 }
 
 class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
-  List<SavedClip> _clips = [];
-  List<VineDraft> _drafts = [];
+  List<DivineVideoClip> _clips = [];
+  List<DivineVideoDraft> _drafts = [];
   bool _isLoading = true;
   bool _isDeleting = false;
   // Always show selection checkboxes when not in single-selection mode
@@ -278,7 +276,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     }
   }
 
-  void _toggleClipSelection(SavedClip clip) {
+  void _toggleClipSelection(DivineVideoClip clip) {
     setState(() {
       if (_selectedClipIds.contains(clip.id)) {
         _selectedClipIds.remove(clip.id);
@@ -314,14 +312,12 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     // Add each selected clip
     for (final clip in selectedClips) {
       clipManagerNotifier.addClip(
-        video: EditorVideo.file(clip.filePath),
+        video: clip.video,
         duration: clip.duration,
         thumbnailPath: clip.thumbnailPath,
-        targetAspectRatio: model.AspectRatio.values.firstWhere(
-          (el) => el.name == clip.aspectRatio,
-          orElse: () => .vertical,
-        ),
-        originalAspectRatio: 9 / 16,
+        targetAspectRatio: clip.targetAspectRatio,
+        originalAspectRatio: clip.originalAspectRatio,
+        lensMetadata: clip.lensMetadata?.copyWith(),
       );
     }
     if (!mounted) return;
@@ -360,7 +356,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
     for (final clip in selectedClips) {
       final result = await gallerySaveService.saveVideoToGallery(
-        EditorVideo.file(clip.filePath),
+        clip.video,
       );
       switch (result) {
         case GallerySaveSuccess():
@@ -407,7 +403,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     _clearSelection();
   }
 
-  Future<void> _showClipPreview(SavedClip clip) async {
+  Future<void> _showClipPreview(DivineVideoClip clip) async {
     Navigator.push(
       context,
       PageRouteBuilder(
@@ -422,7 +418,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     );
   }
 
-  Future<void> _openDraft(VineDraft draft) async {
+  Future<void> _openDraft(DivineVideoDraft draft) async {
     Log.info(
       '📚 Opening draft: ${draft.id}',
       name: 'ClipLibraryScreen',
@@ -443,7 +439,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     await _loadDrafts();
   }
 
-  Future<void> _deleteDraft(VineDraft draft) async {
+  Future<void> _deleteDraft(DivineVideoDraft draft) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -508,7 +504,8 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         : _selectedClipIds.isNotEmpty
         ? _clips
               .firstWhere((el) => el.id == _selectedClipIds.first)
-              .aspectRatioValue
+              .targetAspectRatio
+              .value
         : null;
 
     return Stack(
@@ -812,11 +809,11 @@ class _MasonryLayout extends StatelessWidget {
     this.targetAspectRatio,
   });
 
-  final List<SavedClip> clips;
+  final List<DivineVideoClip> clips;
   final Set<String> selectedClipIds;
   final Duration remainingDuration;
-  final ValueChanged<SavedClip> onTapClip;
-  final ValueChanged<SavedClip> onLongPressClip;
+  final ValueChanged<DivineVideoClip> onTapClip;
+  final ValueChanged<DivineVideoClip> onLongPressClip;
   final double? targetAspectRatio;
 
   @override
@@ -827,7 +824,9 @@ class _MasonryLayout extends StatelessWidget {
         columnCount: 2,
         rowGap: 4,
         columnGap: 4,
-        itemAspectRatios: clips.map((clip) => clip.aspectRatioValue).toList(),
+        itemAspectRatios: clips
+            .map((clip) => clip.targetAspectRatio.value)
+            .toList(),
         children: clips.map((clip) {
           final isSelected = selectedClipIds.contains(clip.id);
           return VideoClipThumbnailCard(
@@ -835,7 +834,7 @@ class _MasonryLayout extends StatelessWidget {
             isSelected: isSelected,
             disabled:
                 (targetAspectRatio != null &&
-                    targetAspectRatio != clip.aspectRatioValue) ||
+                    targetAspectRatio != clip.targetAspectRatio.value) ||
                 (!isSelected && clip.duration > remainingDuration),
             onTap: () => onTapClip(clip),
             onLongPress: () => onLongPressClip(clip),
@@ -1016,7 +1015,7 @@ class _DraftListTile extends StatelessWidget {
     required this.onDelete,
   });
 
-  final VineDraft draft;
+  final DivineVideoDraft draft;
   final VoidCallback onTap;
   final VoidCallback onDelete;
 

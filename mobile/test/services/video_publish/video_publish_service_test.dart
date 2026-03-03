@@ -4,9 +4,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -39,7 +39,7 @@ void main() {
   setUpAll(() {
     // Register fallback values for mocktail
     registerFallbackValue(
-      VineDraft.create(
+      DivineVideoDraft.create(
         clips: [_createTestClip()],
         title: 'Test',
         description: 'Test',
@@ -441,8 +441,8 @@ void main() {
 
 // Helper functions
 
-RecordingClip _createTestClip() {
-  return RecordingClip(
+DivineVideoClip _createTestClip() {
+  return DivineVideoClip(
     id: 'test_clip',
     video: EditorVideo.file('/test/video.mp4'),
     duration: const Duration(seconds: 10),
@@ -452,8 +452,8 @@ RecordingClip _createTestClip() {
   );
 }
 
-VineDraft _createTestDraft() {
-  return VineDraft.create(
+DivineVideoDraft _createTestDraft() {
+  return DivineVideoDraft.create(
     clips: [_createTestClip()],
     title: 'Test Video',
     description: 'Test description',

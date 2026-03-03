@@ -2,7 +2,7 @@
 // ABOUTME: Handles scale, offset transformations and opacity animations
 
 import 'package:flutter/material.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_preview.dart';
 
 /// A single clip item in the clip gallery.
@@ -25,7 +25,7 @@ class VideoEditorGalleryItem extends StatelessWidget {
   });
 
   /// The clip to display.
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   /// Index of this clip in the list.
   final int index;

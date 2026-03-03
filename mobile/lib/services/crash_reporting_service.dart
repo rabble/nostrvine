@@ -54,11 +54,11 @@ class CrashReportingService {
 
       // Catch errors in other isolates
       Isolate.current.addErrorListener(
-        RawReceivePort((pair) async {
-          final List<dynamic> errorAndStacktrace = pair;
+        RawReceivePort((dynamic pair) async {
+          final List<dynamic> errorAndStacktrace = pair as List<dynamic>;
           await FirebaseCrashlytics.instance.recordError(
             errorAndStacktrace.first,
-            errorAndStacktrace.last,
+            errorAndStacktrace.last as StackTrace?,
             fatal: true,
           );
         }).sendPort,
@@ -165,7 +165,7 @@ class CrashReportingService {
     if (!_initialized) return;
 
     try {
-      await FirebaseCrashlytics.instance.setCustomKey(key, value);
+      await FirebaseCrashlytics.instance.setCustomKey(key, value as Object);
     } catch (e) {
       Log.error(
         'Failed to set custom key in Crashlytics: $e',

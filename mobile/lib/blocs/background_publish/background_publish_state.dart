@@ -7,12 +7,12 @@ class BackgroundUpload extends Equatable {
     required this.progress,
   });
 
-  final VineDraft draft;
+  final DivineVideoDraft draft;
   final double progress;
   final PublishResult? result;
 
   BackgroundUpload copyWith({
-    VineDraft? draft,
+    DivineVideoDraft? draft,
     double? progress,
     PublishResult? result,
   }) {

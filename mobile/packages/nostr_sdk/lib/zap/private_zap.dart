@@ -20,7 +20,7 @@ class PrivateZap {
 
     String? anonStr;
     for (var tag in tags) {
-      if (tag is List && tag.length > 1) {
+      if (tag.length > 1) {
         var k = tag[0];
         if (k == "anon") {
           anonStr = tag[1];

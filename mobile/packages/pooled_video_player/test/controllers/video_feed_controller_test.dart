@@ -692,6 +692,21 @@ void main() {
           addTearDown(controller.dispose);
         });
 
+        test('resets isPaused when reactivated', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+          addTearDown(controller.dispose);
+
+          controller
+            ..pause()
+            ..setActive(active: false)
+            ..setActive(active: true);
+
+          expect(controller.isPaused, isFalse);
+        });
+
         test('does nothing when value unchanged', () {
           final controller = VideoFeedController(
             videos: createTestVideos(),

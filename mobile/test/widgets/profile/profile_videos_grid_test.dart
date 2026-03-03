@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
@@ -26,10 +26,10 @@ const _ownPubkey =
 const _otherPubkey =
     'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
-VineDraft _createTestDraft() {
-  return VineDraft.create(
+DivineVideoDraft _createTestDraft() {
+  return DivineVideoDraft.create(
     clips: [
-      RecordingClip(
+      DivineVideoClip(
         id: 'clip-1',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 3),

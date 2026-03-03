@@ -12,7 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -79,7 +79,7 @@ void main() {
       VideoRecorderState recordingState = VideoRecorderState.idle,
       AudioEvent? selectedSound,
       SoundWaveformState? waveformState,
-      List<RecordingClip>? clips,
+      List<DivineVideoClip>? clips,
       Duration activeRecordingDuration = Duration.zero,
     }) {
       when(
@@ -272,7 +272,7 @@ void main() {
     group('Progress tracking', () {
       testWidgets('renders with existing clips progress', (tester) async {
         final clips = [
-          RecordingClip(
+          DivineVideoClip(
             id: 'clip1',
             video: EditorVideo.file('/test/clip1.mp4'),
             duration: const Duration(seconds: 2),
@@ -387,7 +387,7 @@ class _TestClipManagerNotifier extends ClipManagerNotifier {
   });
 
   @override
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
   final Duration activeRecordingDuration;
 
   @override

@@ -14,7 +14,7 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -55,7 +55,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   ProImageEditorState? get _editor => _editorKey.currentState;
 
-  RecordingClip get _clip =>
+  DivineVideoClip get _clip =>
       ref.watch(clipManagerProvider.select((s) => s.clips.first));
 
   /// FittedBox scale factor between bodySize and renderSize.

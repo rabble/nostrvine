@@ -6,8 +6,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -36,9 +36,9 @@ void main() {
       final testFile = File('test_video.mp4');
       const proofJson = '{"segments":[],"deviceAttestation":null}';
 
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
             duration: const Duration(seconds: 6),
@@ -74,9 +74,9 @@ void main() {
       final testFile = File('test_video.mp4');
       const proofJson = '{"segments":[],"deviceAttestation":null}';
 
-      final originalDraft = VineDraft.create(
+      final originalDraft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
             duration: const Duration(seconds: 6),
@@ -118,9 +118,9 @@ void main() {
     test('should handle draft without ProofMode data', () async {
       final testFile = File('test_video.mp4');
 
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file(testFile.path),
             duration: const Duration(seconds: 6),

@@ -4,9 +4,9 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -78,7 +78,7 @@ class VideoPublishService {
 
   /// Publishes a video draft.
   /// Returns [PublishSuccess] on success, [PublishError] on failure.
-  Future<PublishResult> publishVideo({required VineDraft draft}) async {
+  Future<PublishResult> publishVideo({required DivineVideoDraft draft}) async {
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
       final error = await _handleActiveUpload(draft.id);
@@ -172,7 +172,7 @@ class VideoPublishService {
   /// Returns null if upload creation fails.
   Future<PendingUpload?> _getOrCreateUpload(
     String pubkey,
-    VineDraft draft,
+    DivineVideoDraft draft,
   ) async {
     if (_backgroundUploadId != null) {
       final existingUpload = uploadManager.getUpload(_backgroundUploadId!);
@@ -254,7 +254,10 @@ class VideoPublishService {
 
   /// Starts a new upload and polls for progress until completion.
   /// Returns the upload if successful, null if failed.
-  Future<PendingUpload?> _startNewUpload(String pubkey, VineDraft draft) async {
+  Future<PendingUpload?> _startNewUpload(
+    String pubkey,
+    DivineVideoDraft draft,
+  ) async {
     // Ensure upload manager is initialized
     if (!uploadManager.isInitialized) {
       Log.info('📝 Initializing upload manager...', category: .video);
@@ -280,7 +283,7 @@ class VideoPublishService {
   }
 
   /// Logs ProofMode attestation status for debugging.
-  void _logProofModeStatus(VineDraft draft) {
+  void _logProofModeStatus(DivineVideoDraft draft) {
     final hasProofMode = draft.hasProofMode;
     final nativeProof = draft.nativeProof;
 
@@ -296,7 +299,7 @@ class VideoPublishService {
   }
 
   /// Retry a failed upload and continue publishing.
-  Future<PublishResult> retryUpload(VineDraft draft) async {
+  Future<PublishResult> retryUpload(DivineVideoDraft draft) async {
     if (_backgroundUploadId == null) {
       Log.warning('⚠️ No background upload to retry', category: .video);
 
@@ -333,7 +336,7 @@ class VideoPublishService {
   Future<PublishError> _handleUploadError(
     Object? e,
     StackTrace stackTrace,
-    VineDraft draft,
+    DivineVideoDraft draft,
   ) async {
     _backgroundUploadId = null;
     Log.error('📝 Publish failed: $e\n$stackTrace', category: .video);

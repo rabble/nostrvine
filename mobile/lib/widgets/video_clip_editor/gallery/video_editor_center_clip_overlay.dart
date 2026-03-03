@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_preview.dart';
 
 /// Overlay widget that renders the centered clip on top of the PageView.
@@ -27,7 +27,7 @@ class VideoEditorCenterClipOverlay extends ConsumerWidget {
   });
 
   /// The clip to display in the center.
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   /// The currently selected clip index.
   final int currentClipIndex;

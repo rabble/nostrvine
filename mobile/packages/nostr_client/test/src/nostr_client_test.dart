@@ -48,7 +48,7 @@ Event _createTestEvent({
   final event = Event(
     eventPubkey,
     eventKind,
-    <List<dynamic>>[],
+    [],
     eventContent,
     createdAt: createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
   );

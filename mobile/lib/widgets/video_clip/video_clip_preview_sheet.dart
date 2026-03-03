@@ -8,11 +8,10 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:video_player/video_player.dart';
 
 /// Preview sheet for playing a video clip in a modal bottom sheet.
@@ -23,7 +22,7 @@ class VideoClipPreviewSheet extends ConsumerStatefulWidget {
   const VideoClipPreviewSheet({required this.clip, super.key});
 
   /// The clip to preview, containing file path, duration, and other metadata.
-  final SavedClip clip;
+  final DivineVideoClip clip;
 
   @override
   ConsumerState<VideoClipPreviewSheet> createState() =>
@@ -55,9 +54,9 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
   /// initializes it, enables looping, and starts playback automatically.
   /// Updates [_isInitialized] when complete.
   Future<void> _initializePlayer() async {
-    final file = File(widget.clip.filePath);
+    final file = File(await widget.clip.video.safeFilePath());
     if (!file.existsSync()) {
-      context.pop();
+      if (mounted) context.pop();
       return;
     }
 
@@ -89,7 +88,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
 
     try {
       final gallerySaveService = ref.read(gallerySaveServiceProvider);
-      final video = EditorVideo.file(widget.clip.filePath);
+      final video = widget.clip.video;
       final result = await gallerySaveService.saveVideoToGallery(video);
 
       if (!mounted) return;
@@ -148,7 +147,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
             child: Padding(
               padding: const .all(36),
               child: AspectRatio(
-                aspectRatio: widget.clip.aspectRatioValue,
+                aspectRatio: widget.clip.targetAspectRatio.value,
                 child: ClipRRect(
                   borderRadius: .circular(16),
                   child: Stack(

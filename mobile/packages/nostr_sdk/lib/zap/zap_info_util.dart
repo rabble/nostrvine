@@ -10,7 +10,7 @@ class ZapInfoUtil {
   static String? parseSenderPubkey(Event event) {
     String? zapRequestEventStr;
     for (var tag in event.tags) {
-      if (tag is List<dynamic> && tag.length > 1) {
+      if (tag.length > 1) {
         var key = tag[0];
         if (key == "description") {
           zapRequestEventStr = tag[1];
@@ -37,9 +37,9 @@ class ZapInfoUtil {
     if (event.kind == EventKind.zap) {
       for (var tag in event.tags) {
         if (tag.length > 1) {
-          var tagType = tag[0] as String;
+          var tagType = tag[0];
           if (tagType == "bolt11") {
-            var zapStr = tag[1] as String;
+            var zapStr = tag[1];
             return getNumFromStr(zapStr);
           }
         }

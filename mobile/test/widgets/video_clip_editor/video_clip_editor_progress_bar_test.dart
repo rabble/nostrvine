@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -19,7 +19,7 @@ void main() {
     ) async {
       final clips = List.generate(
         3,
-        (i) => RecordingClip(
+        (i) => DivineVideoClip(
           id: 'clip$i',
           video: EditorVideo.file('/test/clip$i.mp4'),
           duration: const Duration(seconds: 2),
@@ -59,7 +59,7 @@ void main() {
       tester,
     ) async {
       final clips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
@@ -67,7 +67,7 @@ void main() {
           targetAspectRatio: .vertical,
           originalAspectRatio: 9 / 16,
         ),
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip2',
           video: EditorVideo.file('/test/clip2.mp4'),
           duration: const Duration(seconds: 4),
@@ -106,7 +106,7 @@ void main() {
     testWidgets('completed clips show green color', (tester) async {
       final clips = List.generate(
         3,
-        (i) => RecordingClip(
+        (i) => DivineVideoClip(
           id: 'clip$i',
           video: EditorVideo.file('/test/clip$i.mp4'),
           duration: const Duration(seconds: 2),
@@ -154,7 +154,7 @@ void main() {
 
     testWidgets('reordering clip shows special styling', (tester) async {
       final clips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
@@ -202,7 +202,7 @@ void main() {
 
     testWidgets('displays progress overlay on current clip', (tester) async {
       final clips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 10),
@@ -247,7 +247,7 @@ void main() {
 
     testWidgets('first and last segments have rounded corners', (tester) async {
       final clips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
@@ -255,7 +255,7 @@ void main() {
           targetAspectRatio: .vertical,
           originalAspectRatio: 9 / 16,
         ),
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip2',
           video: EditorVideo.file('/test/clip2.mp4'),
           duration: const Duration(seconds: 2),

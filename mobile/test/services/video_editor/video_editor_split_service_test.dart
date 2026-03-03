@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -58,7 +58,7 @@ void main() {
   group('VideoEditorSplitService', () {
     group('isValidSplitPosition', () {
       test('returns true for valid split position', () {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
@@ -78,7 +78,7 @@ void main() {
       });
 
       test('returns false when start clip is too short', () {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 1),
@@ -98,7 +98,7 @@ void main() {
       });
 
       test('returns false when end clip is too short', () {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 1),
@@ -118,7 +118,7 @@ void main() {
       });
 
       test('returns true for minimum valid durations', () {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(milliseconds: 60),
@@ -140,7 +140,7 @@ void main() {
 
     group('splitClip', () {
       test('throws ArgumentError for invalid split position', () async {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 1),
@@ -162,7 +162,7 @@ void main() {
       });
 
       test('creates two clips with correct durations', () async {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
@@ -171,8 +171,8 @@ void main() {
           originalAspectRatio: 9 / 16,
         );
 
-        RecordingClip? capturedStartClip;
-        RecordingClip? capturedEndClip;
+        DivineVideoClip? capturedStartClip;
+        DivineVideoClip? capturedEndClip;
 
         final result = await VideoEditorSplitService.splitClip(
           sourceClip: clip,
@@ -194,7 +194,7 @@ void main() {
       });
 
       test('calls onClipsCreated before rendering', () async {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
@@ -227,7 +227,7 @@ void main() {
       });
 
       test('renders both clips in parallel', () async {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
@@ -257,7 +257,7 @@ void main() {
       });
 
       test('calls onClipRendered for both clips', () async {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
@@ -266,7 +266,7 @@ void main() {
           originalAspectRatio: 9 / 16,
         );
 
-        final renderedClips = <RecordingClip>[];
+        final renderedClips = <DivineVideoClip>[];
 
         await VideoEditorSplitService.splitClip(
           sourceClip: clip,
@@ -282,7 +282,7 @@ void main() {
       });
 
       test('completes processing completers on success', () async {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
@@ -312,7 +312,7 @@ void main() {
       test('completes processing completers on failure', () async {
         mockProVideoEditor.shouldThrowError = true;
 
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
@@ -336,7 +336,7 @@ void main() {
       });
 
       test('generates unique IDs for split clips', () async {
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'original-clip',
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),

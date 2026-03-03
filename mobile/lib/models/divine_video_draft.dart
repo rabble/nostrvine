@@ -5,15 +5,15 @@ import 'dart:convert';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:models/models.dart' show NativeProofData;
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 enum PublishStatus { draft, publishing, failed, published }
 
-class VineDraft {
-  const VineDraft({
+class DivineVideoDraft {
+  const DivineVideoDraft({
     required this.id,
     required this.clips,
     required this.title,
@@ -38,8 +38,8 @@ class VineDraft {
     this.selectedAudioRelay,
   });
 
-  factory VineDraft.create({
-    required List<RecordingClip> clips,
+  factory DivineVideoDraft.create({
+    required List<DivineVideoClip> clips,
     required String title,
     required String description,
     required Set<String> hashtags,
@@ -50,7 +50,7 @@ class VineDraft {
     String? proofManifestJson,
     Map<String, dynamic>? editorStateHistory,
     Map<String, dynamic>? editorEditingParameters,
-    RecordingClip? finalRenderedClip,
+    DivineVideoClip? finalRenderedClip,
     List<String> collaboratorPubkeys = const [],
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
@@ -58,7 +58,7 @@ class VineDraft {
     String? selectedAudioRelay,
   }) {
     final now = DateTime.now();
-    return VineDraft(
+    return DivineVideoDraft(
       id: id ?? 'draft_${now.millisecondsSinceEpoch}',
       clips: clips,
       title: title,
@@ -83,12 +83,12 @@ class VineDraft {
     );
   }
 
-  factory VineDraft.fromJson(
+  factory DivineVideoDraft.fromJson(
     Map<String, dynamic> json,
     String documentsPath, {
     bool useOriginalPath = false,
   }) {
-    final List<RecordingClip> clips = [];
+    final List<DivineVideoClip> clips = [];
 
     // Backward compatibility: Handle old draft format with single videoFilePath
     // instead of the newer clips array format
@@ -100,7 +100,7 @@ class VineDraft {
       );
 
       clips.add(
-        RecordingClip(
+        DivineVideoClip(
           id: 'draft_${now.millisecondsSinceEpoch}',
           video: EditorVideo.file(
             resolvePath(
@@ -117,9 +117,9 @@ class VineDraft {
       );
     } else {
       clips.addAll(
-        List.from(json['clips'] ?? []).map(
-          (jsonClip) => RecordingClip.fromJson(
-            jsonClip,
+        List.from(json['clips'] as Iterable? ?? []).map(
+          (jsonClip) => DivineVideoClip.fromJson(
+            jsonClip as Map<String, dynamic>,
             documentsPath,
             useOriginalPath: useOriginalPath,
           ),
@@ -127,7 +127,7 @@ class VineDraft {
       );
     }
 
-    return VineDraft(
+    return DivineVideoDraft(
       id: json['id'] as String,
       clips: clips,
       title: json['title'] as String,
@@ -142,7 +142,7 @@ class VineDraft {
       publishStatus: json['publishStatus'] != null
           ? PublishStatus.values.byName(json['publishStatus'] as String)
           : PublishStatus.draft, // Migration: default for old drafts
-      allowAudioReuse: json['allowAudioReuse'] ?? false,
+      allowAudioReuse: json['allowAudioReuse'] as bool? ?? false,
       publishError: json['publishError'] as String?,
       publishAttempts: json['publishAttempts'] as int? ?? 0,
       proofManifestJson: json['proofManifestJson'] as String?,
@@ -152,7 +152,7 @@ class VineDraft {
           (json['editorEditingParameters'] as Map<String, dynamic>?) ??
           const {},
       finalRenderedClip: json['finalRenderedClip'] != null
-          ? RecordingClip.fromJson(
+          ? DivineVideoClip.fromJson(
               json['finalRenderedClip'] as Map<String, dynamic>,
               documentsPath,
               useOriginalPath: useOriginalPath,
@@ -172,7 +172,7 @@ class VineDraft {
     );
   }
 
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
   final String id;
   final String title;
   final String description;
@@ -192,7 +192,7 @@ class VineDraft {
 
   /// The final rendered clip ready for publishing.
   /// Cached to avoid re-rendering when no changes are made.
-  final RecordingClip? finalRenderedClip;
+  final DivineVideoClip? finalRenderedClip;
 
   /// Pubkeys of collaborators tagged in this video.
   final List<String> collaboratorPubkeys;
@@ -233,8 +233,8 @@ class VineDraft {
     }
   }
 
-  VineDraft copyWith({
-    List<RecordingClip>? clips,
+  DivineVideoDraft copyWith({
+    List<DivineVideoClip>? clips,
     String? id,
     String? title,
     String? description,
@@ -253,7 +253,7 @@ class VineDraft {
     String? inspiredByNpub,
     Object? selectedAudioEventId = _sentinel,
     Object? selectedAudioRelay = _sentinel,
-  }) => VineDraft(
+  }) => DivineVideoDraft(
     id: id ?? this.id,
     clips: clips ?? this.clips,
     title: title ?? this.title,
@@ -277,7 +277,7 @@ class VineDraft {
         editorEditingParameters ?? this.editorEditingParameters,
     finalRenderedClip: finalRenderedClip == _sentinel
         ? this.finalRenderedClip
-        : finalRenderedClip as RecordingClip?,
+        : finalRenderedClip as DivineVideoClip?,
     collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
     inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
     inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,

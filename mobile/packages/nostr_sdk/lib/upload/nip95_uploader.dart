@@ -54,8 +54,8 @@ class NIP95Uploader {
       }
     }
 
-    var tags = [
-      ["type", mimeType],
+    var tags = <List<String>>[
+      ["type", mimeType ?? "application/octet-stream"],
       ["alt", "Binary data"],
     ];
 

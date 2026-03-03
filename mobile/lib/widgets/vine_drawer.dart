@@ -10,6 +10,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/services/bug_report_service.dart';
+import 'package:openvine/services/user_profile_service.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -280,8 +282,8 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   /// is closed, because ref becomes invalid after widget unmounts.
   void _showSupportOptionsDialog(
     BuildContext context,
-    dynamic bugReportService,
-    dynamic userProfileService,
+    BugReportService bugReportService,
+    UserProfileService userProfileService,
     String? userPubkey,
     bool isZendeskAvailable,
   ) {
@@ -371,7 +373,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   /// This version doesn't use ref, so it works after drawer is closed
   Future<void> _setZendeskIdentityWithService(
     String? userPubkey,
-    dynamic userProfileService,
+    UserProfileService userProfileService,
   ) async {
     if (userPubkey == null) {
       // Users always have pubkey in this app, but handle edge case gracefully
@@ -416,8 +418,8 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   /// Handle bug report submission
   Future<void> _handleBugReportWithServices(
     BuildContext context,
-    dynamic bugReportService,
-    dynamic userProfileService,
+    BugReportService bugReportService,
+    UserProfileService userProfileService,
     String? userPubkey,
     bool isZendeskAvailable,
   ) async {
@@ -459,7 +461,7 @@ Platform: ${Theme.of(context).platform.name}
   /// Note: Zendesk identity is already set by the calling method
   void _showSupportFallbackWithServices(
     BuildContext context,
-    dynamic bugReportService,
+    BugReportService bugReportService,
     String? userPubkey,
   ) {
     showDialog(
