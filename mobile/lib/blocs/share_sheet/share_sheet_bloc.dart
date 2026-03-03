@@ -328,6 +328,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
+      emit(
+        state.copyWith(
+          actionResult: const ShareSheetActionFailure('Failed to copy link'),
+        ),
+      );
     }
   }
 
@@ -345,6 +350,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         'Failed to generate share text: $e',
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
+      );
+      emit(
+        state.copyWith(
+          actionResult: const ShareSheetActionFailure('Failed to share'),
+        ),
       );
     }
   }
@@ -368,6 +378,13 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         'Failed to generate event JSON: $e',
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
+      );
+      emit(
+        state.copyWith(
+          actionResult: const ShareSheetActionFailure(
+            'Failed to copy event JSON',
+          ),
+        ),
       );
     }
   }
@@ -397,6 +414,13 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         'Failed to generate event ID: $e',
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
+      );
+      emit(
+        state.copyWith(
+          actionResult: const ShareSheetActionFailure(
+            'Failed to copy event ID',
+          ),
+        ),
       );
     }
   }

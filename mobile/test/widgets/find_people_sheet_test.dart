@@ -268,6 +268,71 @@ void main() {
       );
     });
 
+    group('user selection', () {
+      testWidgets(
+        'tapping a contact pops the sheet with the selected $ShareableUser',
+        (tester) async {
+          final pubkey = 'c' * 64;
+          when(() => mockFollowRepo.followingPubkeys).thenReturn([pubkey]);
+          when(
+            () => mockUserProfileService.hasProfile(pubkey),
+          ).thenReturn(true);
+          when(
+            () => mockUserProfileService.getCachedProfile(pubkey),
+          ).thenReturn(
+            UserProfile(
+              pubkey: pubkey,
+              displayName: 'Charlie',
+              createdAt: DateTime.now(),
+              eventId: 'event-$pubkey',
+              rawData: const {'display_name': 'Charlie'},
+            ),
+          );
+
+          ShareableUser? result;
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: Builder(
+                builder: (context) {
+                  return Scaffold(
+                    body: ElevatedButton(
+                      onPressed: () async {
+                        result = await showModalBottomSheet<ShareableUser>(
+                          context: context,
+                          isScrollControlled: true,
+                          useSafeArea: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (context) => const FindPeopleSheet(),
+                        );
+                      },
+                      child: const Text('Open Sheet'),
+                    ),
+                  );
+                },
+              ),
+              mockUserProfileService: mockUserProfileService,
+              additionalOverrides: [
+                profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+                followRepositoryProvider.overrideWithValue(mockFollowRepo),
+              ],
+            ),
+          );
+
+          // Open the sheet
+          await tester.tap(find.text('Open Sheet'));
+          await tester.pumpAndSettle();
+
+          // Tap the contact
+          await tester.tap(find.text('Charlie'));
+          await tester.pumpAndSettle();
+
+          expect(result, isNotNull);
+          expect(result!.pubkey, equals(pubkey));
+          expect(result!.displayName, equals('Charlie'));
+        },
+      );
+    });
+
     group('integration', () {
       testWidgets(
         'creates UserSearchBloc with hasVideos: false (regression guard)',

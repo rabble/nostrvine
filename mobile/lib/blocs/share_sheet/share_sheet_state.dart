@@ -58,6 +58,17 @@ class ShareSheetSaveFailure extends ShareSheetActionResult {
   List<Object?> get props => [];
 }
 
+/// Generic failure for utility actions (copy link, share via, etc.).
+class ShareSheetActionFailure extends ShareSheetActionResult {
+  const ShareSheetActionFailure(this.message);
+
+  /// User-facing error message.
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}
+
 class ShareSheetCopiedToClipboard extends ShareSheetActionResult {
   const ShareSheetCopiedToClipboard({required this.label, required this.text});
 

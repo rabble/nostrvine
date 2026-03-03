@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -92,104 +93,19 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
                 onChanged: _onSearchChanged,
               ),
             ),
-            Expanded(child: _buildResultsList()),
+            Expanded(
+              child: _ResultsList(
+                contactsLoaded: _contactsLoaded,
+                searchQuery: _searchController.text,
+                searchBloc: _searchBloc,
+                contacts: _contacts,
+                userProfileService: ref.read(userProfileServiceProvider),
+                onSelectUser: _selectUser,
+              ),
+            ),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildResultsList() {
-    if (!_contactsLoaded) {
-      return const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      );
-    }
-
-    if (_searchController.text.isNotEmpty && _searchBloc != null) {
-      return BlocBuilder<UserSearchBloc, UserSearchState>(
-        bloc: _searchBloc,
-        builder: (context, state) {
-          return switch (state.status) {
-            UserSearchStatus.loading => const Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
-            ),
-            UserSearchStatus.success when state.results.isNotEmpty =>
-              ListView.builder(
-                itemCount: state.results.length,
-                itemBuilder: (context, index) {
-                  final profile = state.results[index];
-                  return _UserResultTile(
-                    user: ShareableUser(
-                      pubkey: profile.pubkey,
-                      displayName: profile.bestDisplayName,
-                      picture: profile.picture,
-                    ),
-                    nip05: profile.nip05,
-                    onTap: () => _selectUser(
-                      ShareableUser(
-                        pubkey: profile.pubkey,
-                        displayName: profile.bestDisplayName,
-                        picture: profile.picture,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            UserSearchStatus.success => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text(
-                  'No users found',
-                  style: TextStyle(color: VineTheme.secondaryText),
-                ),
-              ),
-            ),
-            UserSearchStatus.failure => const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text(
-                  'Search failed. Please try again.',
-                  style: TextStyle(color: VineTheme.secondaryText),
-                ),
-              ),
-            ),
-            UserSearchStatus.initial => _buildContactsList(),
-          };
-        },
-      );
-    }
-
-    return _buildContactsList();
-  }
-
-  Widget _buildContactsList() {
-    if (_contacts.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32),
-          child: Text(
-            'No contacts found.\nStart following people to see them here.',
-            style: TextStyle(color: VineTheme.secondaryText),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      itemCount: _contacts.length,
-      itemBuilder: (context, index) {
-        final contact = _contacts[index];
-        final userProfileService = ref.read(userProfileServiceProvider);
-        final profile = userProfileService.getCachedProfile(contact.pubkey);
-
-        return _UserResultTile(
-          user: contact,
-          nip05: profile?.nip05,
-          onTap: () => _selectUser(contact),
-        );
-      },
     );
   }
 
@@ -285,6 +201,134 @@ class _DragIndicator extends StatelessWidget {
           borderRadius: BorderRadius.circular(2),
         ),
       ),
+    );
+  }
+}
+
+class _ResultsList extends StatelessWidget {
+  const _ResultsList({
+    required this.contactsLoaded,
+    required this.searchQuery,
+    required this.searchBloc,
+    required this.contacts,
+    required this.userProfileService,
+    required this.onSelectUser,
+  });
+
+  final bool contactsLoaded;
+  final String searchQuery;
+  final UserSearchBloc? searchBloc;
+  final List<ShareableUser> contacts;
+  final UserProfileService userProfileService;
+  final ValueChanged<ShareableUser> onSelectUser;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!contactsLoaded) {
+      return const Center(
+        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      );
+    }
+
+    if (searchQuery.isNotEmpty && searchBloc != null) {
+      return BlocBuilder<UserSearchBloc, UserSearchState>(
+        bloc: searchBloc,
+        builder: (context, state) {
+          return switch (state.status) {
+            UserSearchStatus.loading => const Center(
+              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            ),
+            UserSearchStatus.success when state.results.isNotEmpty =>
+              ListView.builder(
+                itemCount: state.results.length,
+                itemBuilder: (context, index) {
+                  final profile = state.results[index];
+                  final user = ShareableUser(
+                    pubkey: profile.pubkey,
+                    displayName: profile.bestDisplayName,
+                    picture: profile.picture,
+                  );
+                  return _UserResultTile(
+                    user: user,
+                    nip05: profile.nip05,
+                    onTap: () => onSelectUser(user),
+                  );
+                },
+              ),
+            UserSearchStatus.success => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text(
+                  'No users found',
+                  style: TextStyle(color: VineTheme.secondaryText),
+                ),
+              ),
+            ),
+            UserSearchStatus.failure => const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text(
+                  'Search failed. Please try again.',
+                  style: TextStyle(color: VineTheme.secondaryText),
+                ),
+              ),
+            ),
+            UserSearchStatus.initial => _ContactsList(
+              contacts: contacts,
+              userProfileService: userProfileService,
+              onSelectUser: onSelectUser,
+            ),
+          };
+        },
+      );
+    }
+
+    return _ContactsList(
+      contacts: contacts,
+      userProfileService: userProfileService,
+      onSelectUser: onSelectUser,
+    );
+  }
+}
+
+class _ContactsList extends StatelessWidget {
+  const _ContactsList({
+    required this.contacts,
+    required this.userProfileService,
+    required this.onSelectUser,
+  });
+
+  final List<ShareableUser> contacts;
+  final UserProfileService userProfileService;
+  final ValueChanged<ShareableUser> onSelectUser;
+
+  @override
+  Widget build(BuildContext context) {
+    if (contacts.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text(
+            'No contacts found.\nStart following people to see them here.',
+            style: TextStyle(color: VineTheme.secondaryText),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: contacts.length,
+      itemBuilder: (context, index) {
+        final contact = contacts[index];
+        final profile = userProfileService.getCachedProfile(contact.pubkey);
+
+        return _UserResultTile(
+          user: contact,
+          nip05: profile?.nip05,
+          onTap: () => onSelectUser(contact),
+        );
+      },
     );
   }
 }
