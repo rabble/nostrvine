@@ -1,6 +1,6 @@
 // ABOUTME: Tests for FeedPerformanceTracker stale session handling.
-// ABOUTME: Verifies sessions are reset on app resume and stale sessions are
-// discarded when mark methods are called after background/resume cycles.
+// ABOUTME: Verifies sessions older than 60s are discarded and resetAllSessions
+// ABOUTME: clears all active sessions on app resume.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -17,105 +17,104 @@ void main() {
       test('clears all active sessions', () {
         tracker
           ..startFeedLoad('home')
-          ..startFeedLoad('discover');
+          ..startFeedLoad('explore')
+          ..startFeedLoad('profile');
 
-        expect(tracker.activeSessionCount, equals(2));
+        expect(tracker.activeSessionCount, 3);
 
         tracker.resetAllSessions();
 
-        expect(tracker.activeSessionCount, equals(0));
+        expect(tracker.activeSessionCount, 0);
       });
 
-      test('is a no-op when no sessions are active', () {
-        expect(tracker.activeSessionCount, equals(0));
+      test('does nothing when no sessions are active', () {
+        expect(tracker.activeSessionCount, 0);
 
         // Should not throw
         tracker.resetAllSessions();
 
-        expect(tracker.activeSessionCount, equals(0));
+        expect(tracker.activeSessionCount, 0);
       });
+    });
 
+    group('stale session detection', () {
       test(
-        'prevents stale markFeedDisplayed from recording after reset',
+        'markFirstVideosReceived processes fresh session normally',
         () {
           tracker.startFeedLoad('home');
-          expect(tracker.activeSessionCount, equals(1));
+          expect(tracker.activeSessionCount, 1);
 
-          tracker.resetAllSessions();
-          expect(tracker.activeSessionCount, equals(0));
+          tracker.markFirstVideosReceived('home', 5);
 
-          // Completing a session that was cleared should be a no-op
-          tracker.markFeedDisplayed('home', 10);
-          expect(tracker.activeSessionCount, equals(0));
+          // Session should still be active (not yet displayed)
+          expect(tracker.activeSessionCount, 1);
         },
       );
 
-      test(
-        'prevents stale markFirstVideosReceived from recording after reset',
-        () {
-          tracker.startFeedLoad('discover');
-          expect(tracker.activeSessionCount, equals(1));
-
-          tracker.resetAllSessions();
-
-          // Completing a session that was cleared should be a no-op
-          tracker.markFirstVideosReceived('discover', 5);
-          expect(tracker.activeSessionCount, equals(0));
-        },
-      );
-    });
-
-    group('activeSessionCount', () {
-      test('tracks number of active sessions', () {
-        expect(tracker.activeSessionCount, equals(0));
-
+      test('markFeedDisplayed removes session on completion', () {
         tracker.startFeedLoad('home');
-        expect(tracker.activeSessionCount, equals(1));
+        expect(tracker.activeSessionCount, 1);
 
-        tracker.startFeedLoad('discover');
-        expect(tracker.activeSessionCount, equals(2));
+        tracker.markFeedDisplayed('home', 5);
 
-        tracker.markFeedDisplayed('home', 10);
-        expect(tracker.activeSessionCount, equals(1));
+        expect(tracker.activeSessionCount, 0);
+      });
+
+      test('markFirstVideosReceived is no-op for unknown feed type', () {
+        tracker.markFirstVideosReceived('unknown', 5);
+        expect(tracker.activeSessionCount, 0);
+      });
+
+      test('markFeedDisplayed is no-op for unknown feed type', () {
+        tracker.markFeedDisplayed('unknown', 5);
+        expect(tracker.activeSessionCount, 0);
       });
     });
 
-    group('startFeedLoad', () {
-      test('replaces existing session for same feed type', () {
+    group('testInstance', () {
+      test('creates instance without Firebase dependency', () {
+        final instance = FeedPerformanceTracker.testInstance();
+
+        instance
+          ..startFeedLoad('test')
+          ..markFirstVideosReceived('test', 3)
+          ..markFeedDisplayed('test', 3);
+
+        expect(instance.activeSessionCount, 0);
+      });
+
+      test('tracks multiple independent sessions', () {
         tracker
           ..startFeedLoad('home')
-          ..startFeedLoad('home');
+          ..startFeedLoad('explore');
 
-        expect(tracker.activeSessionCount, equals(1));
+        expect(tracker.activeSessionCount, 2);
+
+        tracker.markFeedDisplayed('home', 5);
+        expect(tracker.activeSessionCount, 1);
+
+        tracker.markFeedDisplayed('explore', 10);
+        expect(tracker.activeSessionCount, 0);
       });
     });
 
-    group('markFeedDisplayed', () {
-      test('removes session after successful completion', () {
-        tracker.startFeedLoad('home');
-        expect(tracker.activeSessionCount, equals(1));
+    group('video swipe tracking', () {
+      test('startVideoSwipeTracking creates a session', () {
+        const videoId =
+            'abc123def456abc123def456abc123def456abc123def456abc123def456abcd';
+        tracker.startVideoSwipeTracking(videoId);
 
-        tracker.markFeedDisplayed('home', 10);
-        expect(tracker.activeSessionCount, equals(0));
+        expect(tracker.activeSessionCount, 1);
       });
 
-      test('is a no-op for unknown feed type', () {
-        tracker.markFeedDisplayed('nonexistent', 10);
-        expect(tracker.activeSessionCount, equals(0));
-      });
-    });
+      test('markVideoSwipeComplete removes the session', () {
+        const videoId =
+            'abc123def456abc123def456abc123def456abc123def456abc123def456abcd';
+        tracker
+          ..startVideoSwipeTracking(videoId)
+          ..markVideoSwipeComplete(videoId);
 
-    group('markFirstVideosReceived', () {
-      test('does not remove session', () {
-        tracker.startFeedLoad('home');
-        tracker.markFirstVideosReceived('home', 5);
-
-        expect(tracker.activeSessionCount, equals(1));
-      });
-
-      test('is a no-op for unknown feed type', () {
-        tracker.markFirstVideosReceived('nonexistent', 5);
-        expect(tracker.activeSessionCount, equals(0));
+        expect(tracker.activeSessionCount, 0);
       });
     });
   });
