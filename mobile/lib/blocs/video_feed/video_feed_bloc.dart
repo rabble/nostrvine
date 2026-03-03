@@ -100,6 +100,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
     _feedTracker?.startFeedLoad(mode.name);
 
+    await _followRepository.initialized;
+
     await _loadVideos(mode, emit);
 
     // Subscribe to following list changes.
