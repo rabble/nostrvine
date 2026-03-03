@@ -35,9 +35,7 @@ void main() {
       );
 
       // Video with neither
-      videoWithNeither = createTestVideoEvent(
-        id: 'test4',
-      );
+      videoWithNeither = createTestVideoEvent(id: 'test4');
     });
 
     testWidgets('builds widget tree correctly when thumbnail URL exists', (

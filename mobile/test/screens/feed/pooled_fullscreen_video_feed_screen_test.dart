@@ -110,9 +110,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildSubject(
-            state: const FullscreenFeedState(),
-          ),
+          buildSubject(state: const FullscreenFeedState()),
         );
 
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
@@ -308,10 +306,7 @@ void main() {
         await tester.pumpWidget(buildSubject(state: initialState));
         await tester.pumpAndSettle();
 
-        const seekCommand = SeekCommand(
-          index: 0,
-          position: Duration.zero,
-        );
+        const seekCommand = SeekCommand(index: 0, position: Duration.zero);
         final stateWithSeekCommand = FullscreenFeedState(
           status: FullscreenFeedStatus.ready,
           videos: videos,

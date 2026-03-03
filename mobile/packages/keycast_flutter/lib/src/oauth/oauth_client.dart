@@ -23,6 +23,10 @@ const _storageKeySession = 'keycast_session';
 /// expires)
 const _storageKeyHandle = 'keycast_auth_handle';
 
+/// Storage key for refresh token (stored separately so it survives session
+/// clear)
+const _storageKeyRefreshToken = 'keycast_refresh_token';
+
 class KeycastOAuth {
   final OAuthConfig config;
   final http.Client _client;
@@ -66,6 +70,7 @@ class KeycastOAuth {
   Future<void> logout() async {
     await _storage.delete(_storageKeySession);
     await _storage.delete(_storageKeyHandle);
+    await _storage.delete(_storageKeyRefreshToken);
     // Fire-and-forget server logout with short timeout
     // Local logout is complete, server notification is best-effort
     try {
@@ -83,6 +88,49 @@ class KeycastOAuth {
     await _storage.write(_storageKeySession, jsonEncode(session.toJson()));
     if (session.authorizationHandle != null) {
       await _storage.write(_storageKeyHandle, session.authorizationHandle!);
+    }
+    if (session.refreshToken != null) {
+      await _storage.write(_storageKeyRefreshToken, session.refreshToken!);
+    }
+  }
+
+  /// Attempt to refresh the session using a stored refresh token.
+  ///
+  /// Returns the new [KeycastSession] on success, or `null` if refresh
+  /// is not possible (no refresh token) or fails.
+  ///
+  /// On HTTP error the consumed refresh token is cleared (server may have
+  /// rotated it). On network error the token is preserved since the server
+  /// may not have consumed it.
+  Future<KeycastSession?> refreshSession() async {
+    final refreshToken = await _storage.read(_storageKeyRefreshToken);
+    if (refreshToken == null) return null;
+
+    try {
+      final response = await _client.post(
+        Uri.parse(config.tokenUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'grant_type': 'refresh_token',
+          'refresh_token': refreshToken,
+          'client_id': config.clientId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final tokenResponse = TokenResponse.fromJson(json);
+        final session = KeycastSession.fromTokenResponse(tokenResponse);
+        await _saveSession(session);
+        return session;
+      }
+
+      // HTTP error — server consumed the token, clear it
+      await _storage.delete(_storageKeyRefreshToken);
+      return null;
+    } catch (_) {
+      // Network error — server may not have consumed the token, keep it
+      return null;
     }
   }
 
@@ -556,6 +604,7 @@ class KeycastOAuth {
         // Clear local session after successful deletion
         await _storage.delete(_storageKeySession);
         await _storage.delete(_storageKeyHandle);
+        await _storage.delete(_storageKeyRefreshToken);
         return DeleteAccountResult.fromJson(json);
       }
 

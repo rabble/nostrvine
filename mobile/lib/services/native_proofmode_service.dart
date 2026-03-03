@@ -417,7 +417,7 @@ class NativeProofModeService {
 
   static Future<String> generateSha256FileHash(String filePath) async {
     final file = File(filePath);
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
       throw FileSystemException('File not found at path: $filePath');
     }
 

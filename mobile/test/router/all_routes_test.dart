@@ -269,38 +269,6 @@ void main() {
       );
     });
 
-    testWidgets(
-      '${HashtagScreenRouter.pathWithIndex} route works (feed mode)',
-      (tester) async {
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MaterialApp.router(
-              routerConfig: container.read(goRouterProvider),
-            ),
-          ),
-        );
-
-        final router = container.read(goRouterProvider);
-        router.go(HashtagScreenRouter.pathForTag('bitcoin', index: 0));
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          HashtagScreenRouter.pathForTag('bitcoin', index: 0),
-        );
-
-        router.go(HashtagScreenRouter.pathForTag('nostr', index: 5));
-        await tester.pumpAndSettle();
-        expect(
-          router.routeInformationProvider.value.uri.toString(),
-          HashtagScreenRouter.pathForTag('nostr', index: 5),
-        );
-      },
-    );
-
     testWidgets('${SettingsScreen.path} route works', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);

@@ -4,13 +4,13 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// A tappable row showing audio attribution when a video uses external audio.
@@ -101,7 +101,7 @@ class _AudioAttributionContent extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: VineTheme.backgroundColor.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
@@ -117,21 +117,21 @@ class _AudioAttributionContent extends ConsumerWidget {
                 child: Text(
                   '$soundName · @$creatorName',
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    shadows: [
-                      Shadow(
-                        blurRadius: 4,
-                      ),
-                    ],
+                    shadows: [Shadow(blurRadius: 4)],
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 4),
-              const Icon(Icons.chevron_right, size: 14, color: Colors.white70),
+              const Icon(
+                Icons.chevron_right,
+                size: 14,
+                color: VineTheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),
@@ -146,7 +146,10 @@ class _AudioAttributionContent extends ConsumerWidget {
       category: LogCategory.ui,
     );
 
-    context.push(SoundDetailScreen.pathForId(audio.id), extra: audio);
+    context.pushWithVideoPause(
+      SoundDetailScreen.pathForId(audio.id),
+      extra: audio,
+    );
   }
 
   /// Format pubkey for display (short version with ellipsis in middle).
@@ -161,19 +164,19 @@ class _AudioAttributionSkeleton extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.3),
+        color: VineTheme.backgroundColor.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.music_note, size: 14, color: Colors.grey),
+          const Icon(Icons.music_note, size: 14, color: VineTheme.lightText),
           const SizedBox(width: 4),
           Container(
             width: 100,
             height: 12,
             decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.3),
+              color: VineTheme.lightText.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),

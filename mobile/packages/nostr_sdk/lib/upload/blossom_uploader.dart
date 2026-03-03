@@ -75,7 +75,7 @@ class BolssomUploader {
     }
     headers["Content-Length"] = "$fileSize";
 
-    var tags = [];
+    var tags = <List<String>>[];
     tags.add(["t", "upload"]);
     tags.add([
       "expiration",

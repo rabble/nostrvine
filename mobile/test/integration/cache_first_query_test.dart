@@ -149,7 +149,7 @@ void main() {
     tearDown(() async {
       await db.close();
       final file = File(testDbPath);
-      if (await file.exists()) {
+      if (file.existsSync()) {
         await file.delete();
       }
     });
@@ -434,7 +434,7 @@ void main() {
       videoEventService.dispose();
       await db.close();
       final file = File(testDbPath);
-      if (await file.exists()) {
+      if (file.existsSync()) {
         await file.delete();
       }
     });

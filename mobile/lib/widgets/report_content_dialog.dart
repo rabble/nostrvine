@@ -205,10 +205,12 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
           }
 
           // Show success confirmation dialog using root navigator
-          showDialog(
-            context: context,
-            builder: (context) => const ReportConfirmationDialog(),
-          );
+          if (mounted) {
+            showDialog(
+              context: context,
+              builder: (context) => const ReportConfirmationDialog(),
+            );
+          }
         } else {
           // Show error snackbar
           ScaffoldMessenger.of(context).showSnackBar(
@@ -255,10 +257,7 @@ class ReportConfirmationDialog extends StatelessWidget {
       spacing: 12,
       children: [
         Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
-        Text(
-          'Report Received',
-          style: TextStyle(color: VineTheme.whiteText),
-        ),
+        Text('Report Received', style: TextStyle(color: VineTheme.whiteText)),
       ],
     ),
     content: Column(

@@ -199,7 +199,10 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.lightText),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -207,8 +210,8 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
               _deleteSelectedClips();
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: VineTheme.error,
+              foregroundColor: VineTheme.whiteText,
             ),
             child: const Text('Delete'),
           ),
@@ -317,6 +320,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         lensMetadata: clip.lensMetadata?.copyWith(),
       );
     }
+    if (!mounted) return;
 
     if (widget.selectionMode) {
       context.pop();
@@ -451,13 +455,16 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.lightText),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: VineTheme.error,
+              foregroundColor: VineTheme.whiteText,
             ),
             child: const Text('Delete'),
           ),
@@ -505,18 +512,18 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       children: [
         AnnotatedRegion<SystemUiOverlayStyle>(
           value: const SystemUiOverlayStyle(
-            statusBarColor: Colors.black,
+            statusBarColor: VineTheme.backgroundColor,
             statusBarIconBrightness: Brightness.light,
             statusBarBrightness: Brightness.dark,
           ),
           child: Scaffold(
             backgroundColor: widget.selectionMode
                 ? VineTheme.surfaceBackground
-                : const Color(0xFF101111),
+                : VineTheme.cardBackground,
             appBar: widget.selectionMode
                 ? null
                 : AppBar(
-                    backgroundColor: const Color(0xFF101111),
+                    backgroundColor: VineTheme.cardBackground,
                     foregroundColor: VineTheme.whiteText,
                     leading: IconButton(
                       icon: const Icon(Icons.arrow_back),
@@ -580,7 +587,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         ),
         if (_isDeleting)
           const ColoredBox(
-            color: Colors.black54,
+            color: VineTheme.scrim50,
             child: Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),
@@ -686,10 +693,13 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     '+${_drafts.length - 1} more draft${_drafts.length > 2 ? 's' : ''}',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
-              const Divider(color: Colors.grey, height: 24),
+              const Divider(color: VineTheme.lightText, height: 24),
               Text(
                 'Clips (${_clips.length})',
                 style: const TextStyle(
@@ -759,7 +769,7 @@ class _SelectionHeader extends ConsumerWidget {
                   Text(
                     '${remainingDuration.toFormattedSeconds()}s remaining',
                     style: VineTheme.bodyFont(
-                      color: const Color(0xBEFFFFFF),
+                      color: VineTheme.onSurfaceVariant,
                       fontSize: 12,
                       height: 1.33,
                       letterSpacing: 0.40,
@@ -851,13 +861,13 @@ class _EmptyClips extends StatelessWidget {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey[800],
-              border: .all(color: Colors.grey[600]!, width: 2),
+              color: VineTheme.cardBackground,
+              border: .all(color: VineTheme.lightText, width: 2),
             ),
             child: const Icon(
               Icons.video_library_outlined,
               size: 60,
-              color: Colors.grey,
+              color: VineTheme.lightText,
             ),
           ),
           const SizedBox(height: 24),
@@ -870,9 +880,9 @@ class _EmptyClips extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Your recorded video clips will appear here',
-            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
           ),
           if (!isSelectionMode) ...[
             const SizedBox(height: 32),
@@ -925,7 +935,7 @@ class _AddClipButton extends StatelessWidget {
               'Add',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Color(0xFF002C1C),
+                color: VineTheme.surfaceContainer,
                 fontSize: 18,
                 fontFamily: VineTheme.fontFamilyBricolage,
                 fontWeight: FontWeight.w800,
@@ -954,13 +964,13 @@ class _EmptyLibrary extends StatelessWidget {
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.grey[800],
-              border: Border.all(color: Colors.grey[600]!, width: 2),
+              color: VineTheme.cardBackground,
+              border: Border.all(color: VineTheme.lightText, width: 2),
             ),
             child: const Icon(
               Icons.video_library_outlined,
               size: 60,
-              color: Colors.grey,
+              color: VineTheme.lightText,
             ),
           ),
           const SizedBox(height: 24),
@@ -973,9 +983,9 @@ class _EmptyLibrary extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Your saved videos and drafts will appear here',
-            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 32),
@@ -1026,7 +1036,7 @@ class _DraftListTile extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: Colors.grey[800],
+                  color: VineTheme.cardBackground,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child:
@@ -1039,14 +1049,14 @@ class _DraftListTile extends StatelessWidget {
                           fit: BoxFit.cover,
                           errorBuilder: (_, _, _) => const Icon(
                             Icons.video_file,
-                            color: Colors.grey,
+                            color: VineTheme.lightText,
                             size: 40,
                           ),
                         ),
                       )
                     : const Icon(
                         Icons.video_file,
-                        color: Colors.grey,
+                        color: VineTheme.lightText,
                         size: 40,
                       ),
               ),
@@ -1069,7 +1079,10 @@ class _DraftListTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       draft.displayDuration,
-                      style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                      style: const TextStyle(
+                        color: VineTheme.secondaryText,
+                        fontSize: 14,
+                      ),
                     ),
                     if (draft.hashtags.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -1088,7 +1101,7 @@ class _DraftListTile extends StatelessWidget {
               ),
               // Delete button
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                icon: const Icon(Icons.delete_outline, color: VineTheme.error),
                 onPressed: onDelete,
               ),
             ],

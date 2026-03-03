@@ -49,9 +49,7 @@ void main() {
       });
 
       test('returns open_profile for comment without targetEventId', () {
-        final notification = createNotification(
-          type: NotificationType.comment,
-        );
+        final notification = createNotification(type: NotificationType.comment);
         expect(notification.navigationAction, equals('open_profile'));
       });
 
@@ -74,9 +72,7 @@ void main() {
       });
 
       test('returns open_profile for mention', () {
-        final notification = createNotification(
-          type: NotificationType.mention,
-        );
+        final notification = createNotification(type: NotificationType.mention);
         expect(notification.navigationAction, equals('open_profile'));
       });
 
@@ -109,9 +105,7 @@ void main() {
       });
 
       test('returns actorPubkey for comment without targetEventId', () {
-        final notification = createNotification(
-          type: NotificationType.comment,
-        );
+        final notification = createNotification(type: NotificationType.comment);
         expect(notification.navigationTarget, equals(actorPubkey));
       });
 
@@ -134,9 +128,7 @@ void main() {
       });
 
       test('returns actorPubkey for mention', () {
-        final notification = createNotification(
-          type: NotificationType.mention,
-        );
+        final notification = createNotification(type: NotificationType.mention);
         expect(notification.navigationTarget, equals(actorPubkey));
       });
 

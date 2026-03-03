@@ -1,6 +1,7 @@
 // ABOUTME: Fallback placeholder widget displayed when camera is unavailable
 // ABOUTME: Shows idle icon or error message when camera initialization fails
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Fallback preview widget for when camera is not available
@@ -24,7 +25,7 @@ class VideoRecorderCameraPlaceholder extends StatelessWidget {
                   ? Icons.videocam_off_rounded
                   : Icons.videocam_rounded,
               size: 56,
-              color: const Color(0xB3FFFFFF),
+              color: VineTheme.onSurfaceVariant,
             ),
             if (errorMessage != null) ...[
               const SizedBox(height: 16),

@@ -101,9 +101,7 @@ void main() {
       });
 
       test('sets play order to manual after reordering', () async {
-        final list = await service.createList(
-          name: 'Test List',
-        );
+        final list = await service.createList(name: 'Test List');
         await service.addVideoToList(list!.id, 'video_1');
         await service.addVideoToList(list.id, 'video_2');
 
@@ -156,9 +154,7 @@ void main() {
       });
 
       test('publishes update to Nostr for public list', () async {
-        final list = await service.createList(
-          name: 'Test List',
-        );
+        final list = await service.createList(name: 'Test List');
         await service.addVideoToList(list!.id, 'video_1');
         await service.addVideoToList(list.id, 'video_2');
         reset(mockNostr);
@@ -262,9 +258,7 @@ void main() {
 
     group('PlayOrder enum', () {
       test('creates list with specific play order', () async {
-        final list1 = await service.createList(
-          name: 'Chronological',
-        );
+        final list1 = await service.createList(name: 'Chronological');
         final list2 = await service.createList(
           name: 'Reverse',
           playOrder: PlayOrder.reverse,
@@ -285,9 +279,7 @@ void main() {
       });
 
       test('updates play order via updateList', () async {
-        final list = await service.createList(
-          name: 'Test List',
-        );
+        final list = await service.createList(name: 'Test List');
 
         await service.updateList(
           listId: list!.id,

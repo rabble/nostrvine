@@ -1,6 +1,7 @@
 // ABOUTME: List item widget for sound selection with play/pause preview
 // ABOUTME: Dark theme design with selection indicator and duration display
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/models/vine_sound.dart';
 
@@ -24,14 +25,14 @@ class SoundListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ColoredBox(
       color: isSelected
-          ? Colors.green.withValues(alpha: 0.2)
+          ? VineTheme.success.withValues(alpha: 0.2)
           : Colors.transparent,
       child: ListTile(
         onTap: onTap,
         leading: IconButton(
           icon: Icon(
             isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-            color: isPlaying ? Colors.green : Colors.white,
+            color: isPlaying ? VineTheme.success : VineTheme.whiteText,
             size: 32,
           ),
           onPressed: onPlayPause,
@@ -39,19 +40,19 @@ class SoundListItem extends StatelessWidget {
         title: Text(
           sound.title,
           style: TextStyle(
-            color: isSelected ? Colors.green : Colors.white,
+            color: isSelected ? VineTheme.success : VineTheme.whiteText,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         subtitle: Text(
           sound.artist ?? '${sound.durationInSeconds.round()}s',
-          style: const TextStyle(color: Colors.grey),
+          style: const TextStyle(color: VineTheme.lightText),
         ),
         trailing: isSelected
-            ? const Icon(Icons.check_circle, color: Colors.green, size: 28)
+            ? const Icon(Icons.check_circle, color: VineTheme.success, size: 28)
             : Text(
                 '${sound.durationInSeconds.round()}s',
-                style: const TextStyle(color: Colors.grey),
+                style: const TextStyle(color: VineTheme.lightText),
               ),
       ),
     );

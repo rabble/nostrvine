@@ -226,17 +226,17 @@ class _VerificationDialog extends ConsumerWidget {
             backgroundColor: VineTheme.cardBackground,
             title: const Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red),
+                Icon(Icons.error_outline, color: VineTheme.error),
                 SizedBox(width: 12),
                 Text(
                   'Verification Failed',
-                  style: TextStyle(color: Colors.white),
+                  style: TextStyle(color: VineTheme.whiteText),
                 ),
               ],
             ),
             content: Text(
               verificationState.error!,
-              style: TextStyle(color: Colors.grey[400]),
+              style: const TextStyle(color: VineTheme.secondaryText),
             ),
             actions: [
               TextButton(
@@ -258,12 +258,15 @@ class _VerificationDialog extends ConsumerWidget {
               children: [
                 Icon(Icons.check_circle, color: VineTheme.vineGreen),
                 SizedBox(width: 12),
-                Text('Account Secured!', style: TextStyle(color: Colors.white)),
+                Text(
+                  'Account Secured!',
+                  style: TextStyle(color: VineTheme.whiteText),
+                ),
               ],
             ),
             content: Text(
               'Your account is now linked to your email.',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: VineTheme.onSurfaceVariant),
             ),
           );
         }
@@ -275,30 +278,36 @@ class _VerificationDialog extends ConsumerWidget {
             children: [
               Icon(Icons.email_outlined, color: VineTheme.vineGreen),
               SizedBox(width: 12),
-              Text('Verify Your Email', style: TextStyle(color: Colors.white)),
+              Text(
+                'Verify Your Email',
+                style: TextStyle(color: VineTheme.whiteText),
+              ),
             ],
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'We sent a verification link to:',
-                style: TextStyle(color: Colors.grey[400]),
+                style: TextStyle(color: VineTheme.secondaryText),
               ),
               const SizedBox(height: 8),
               Text(
                 email,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Click the link in your email to complete registration. '
                 'You can continue using the app in the meantime.',
-                style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                style: TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 16),
               const Row(

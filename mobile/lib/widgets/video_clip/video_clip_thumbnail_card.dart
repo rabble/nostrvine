@@ -82,7 +82,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
             child: AspectRatio(
               aspectRatio: aspectRatio,
               child: ColoredBox(
-                color: Colors.grey.shade800,
+                color: VineTheme.cardBackground,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -125,52 +125,32 @@ class _Thumbnail extends StatefulWidget {
 }
 
 class _ThumbnailState extends State<_Thumbnail> {
-  /// Cached future that resolves to whether the thumbnail file exists.
-  /// Initialized once in [initState] to avoid repeated file system checks.
-  late Future<bool> _thumbnailExistsFuture;
+  late bool _thumbnailExists;
 
   @override
   void initState() {
     super.initState();
-    _thumbnailExistsFuture = _checkThumbnailExists();
+    _thumbnailExists = _checkThumbnailExists();
   }
 
   /// Asynchronously checks if the thumbnail file exists
-  Future<bool> _checkThumbnailExists() async {
+  bool _checkThumbnailExists() {
     if (widget.clip.thumbnailPath == null) {
       return false;
     }
-    return File(widget.clip.thumbnailPath!).exists();
+    return File(widget.clip.thumbnailPath!).existsSync();
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
-      future: _thumbnailExistsFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == .waiting) {
-          return const Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-              ),
-            ),
-          );
-        }
+    if (_thumbnailExists && widget.clip.thumbnailPath != null) {
+      return Hero(
+        tag: 'Video-Clip-Preview-${widget.clip.id}',
+        child: Image.file(File(widget.clip.thumbnailPath!), fit: .cover),
+      );
+    }
 
-        if ((snapshot.data ?? false) && widget.clip.thumbnailPath != null) {
-          return Hero(
-            tag: 'Video-Clip-Preview-${widget.clip.id}',
-            child: Image.file(File(widget.clip.thumbnailPath!), fit: .cover),
-          );
-        }
-
-        return const Icon(Icons.videocam, color: Colors.grey, size: 32);
-      },
-    );
+    return const Icon(Icons.videocam, color: VineTheme.lightText, size: 32);
   }
 }
 
@@ -190,13 +170,13 @@ class _DurationBadge extends StatelessWidget {
       child: Container(
         padding: const .symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.65),
+          color: VineTheme.scrim65,
           borderRadius: .circular(4),
         ),
         child: Text(
           clip.durationInSeconds.toStringAsFixed(2),
           style: const TextStyle(
-            color: Colors.white,
+            color: VineTheme.whiteText,
             fontSize: 14,
             fontFamily: VineTheme.fontFamilyBricolage,
             fontWeight: .w800,
@@ -244,7 +224,7 @@ class _SelectionOverlay extends StatelessWidget {
             ),
             child: SvgPicture.asset(
               'assets/icon/Check.svg',
-              colorFilter: const .mode(Color(0xFF002C1C), .srcIn),
+              colorFilter: const .mode(VineTheme.surfaceContainer, .srcIn),
             ),
           ),
         ),

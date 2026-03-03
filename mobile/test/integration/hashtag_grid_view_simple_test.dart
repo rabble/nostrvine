@@ -80,9 +80,7 @@ void main() {
             videoEventServiceProvider.overrideWithValue(mockVideoService),
             hashtagServiceProvider.overrideWithValue(mockHashtagService),
           ],
-          child: const MaterialApp(
-            home: HashtagFeedScreen(hashtag: 'funny'),
-          ),
+          child: const MaterialApp(home: HashtagFeedScreen(hashtag: 'funny')),
         ),
       );
 

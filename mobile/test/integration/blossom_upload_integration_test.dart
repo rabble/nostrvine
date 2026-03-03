@@ -87,7 +87,7 @@ void main() {
     });
 
     tearDown(() async {
-      if (await testFile.exists()) {
+      if (testFile.existsSync()) {
         await testFile.delete();
       }
       container.dispose();

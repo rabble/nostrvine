@@ -44,6 +44,9 @@ class CommentsRepository {
   /// Subscription ID for the active comment watch, if any.
   String? _watchSubscriptionId;
 
+  /// Default page size for author comment queries.
+  static const _authorCommentsLimit = 50;
+
   /// Loads comments for a root event and returns them in a flat list.
   ///
   /// This is a one-shot query that returns all comments organized
@@ -400,9 +403,81 @@ class CommentsRepository {
     }
   }
 
+  /// Loads comments authored by a specific user across all videos.
+  ///
+  /// Returns a list of comments sorted newest first.
+  /// Supports cursor-based pagination via [before].
+  ///
+  /// Throws:
+  ///
+  /// * [LoadCommentsByAuthorFailedException] if the query fails.
+  Future<List<Comment>> loadCommentsByAuthor({
+    required String authorPubkey,
+    int limit = _authorCommentsLimit,
+    DateTime? before,
+  }) async {
+    try {
+      final untilTimestamp = before != null
+          ? before.millisecondsSinceEpoch ~/ 1000
+          : null;
+
+      final filter = Filter(
+        kinds: const [_commentKind],
+        authors: [authorPubkey],
+        limit: limit,
+        until: untilTimestamp,
+      );
+
+      final events = await _nostrClient.queryEvents([filter]);
+
+      final comments =
+          events.map(_eventToCommentFromRawEvent).whereType<Comment>().toList()
+            ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      return comments;
+    } on Exception catch (e) {
+      throw LoadCommentsByAuthorFailedException(e.toString());
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  /// Converts a raw Nostr event to a Comment by extracting root info
+  /// from the event's own NIP-22 tags.
+  ///
+  /// Unlike [_eventToComment] which requires root context from the caller,
+  /// this method reads the uppercase `E` and `K` tags directly from the event.
+  /// Returns `null` if the required root tags are missing.
+  Comment? _eventToCommentFromRawEvent(Event event) {
+    try {
+      String? rootEventId;
+      String? rootEventKind;
+
+      for (final rawTag in event.tags) {
+        final tag = rawTag as List<dynamic>;
+        if (tag.length < 2) continue;
+        final tagType = tag[0] as String;
+        final tagValue = tag[1] as String;
+
+        if (tagType == 'E') {
+          rootEventId = tagValue;
+        } else if (tagType == 'K') {
+          rootEventKind = tagValue;
+        }
+      }
+
+      if (rootEventId == null || rootEventKind == null) return null;
+
+      final kind = int.tryParse(rootEventKind);
+      if (kind == null) return null;
+
+      return _eventToComment(event, rootEventId, kind);
+    } on Exception {
+      return null;
+    }
+  }
 
   /// Converts a Nostr event to a Comment model using NIP-22 format.
   Comment? _eventToComment(Event event, String rootEventId, int rootEventKind) {
@@ -468,6 +543,42 @@ class CommentsRepository {
           parentKind == rootEventKind.toString() ||
           replyToEventId == parsedRootEventId;
 
+      // Parse NIP-92 imeta tags for attached video metadata
+      String? videoUrl;
+      String? thumbnailUrl;
+      String? videoDimensions;
+      int? videoDuration;
+      String? videoBlurhash;
+
+      for (final rawTag in event.tags) {
+        final tag = rawTag as List<dynamic>;
+        if (tag.isEmpty) continue;
+        if (tag[0] as String != 'imeta') continue;
+
+        // imeta tag fields: "key value" pairs after the tag name
+        for (var i = 1; i < tag.length; i++) {
+          final field = (tag[i] as String).trim();
+          if (field.startsWith('url ')) {
+            final url = field.substring(4).trim();
+            // Only treat as video if it has a video extension
+            if (url.endsWith('.mp4') ||
+                url.endsWith('.mov') ||
+                url.endsWith('.webm') ||
+                url.contains('video')) {
+              videoUrl = url;
+            }
+          } else if (field.startsWith('image ')) {
+            thumbnailUrl = field.substring(6).trim();
+          } else if (field.startsWith('dim ')) {
+            videoDimensions = field.substring(4).trim();
+          } else if (field.startsWith('duration ')) {
+            videoDuration = int.tryParse(field.substring(9).trim());
+          } else if (field.startsWith('blurhash ')) {
+            videoBlurhash = field.substring(9).trim();
+          }
+        }
+      }
+
       return Comment(
         id: event.id,
         content: event.content,
@@ -478,6 +589,11 @@ class CommentsRepository {
         replyToEventId: isTopLevel ? null : replyToEventId,
         rootAuthorPubkey: rootAuthorPubkey ?? '',
         replyToAuthorPubkey: isTopLevel ? null : replyToAuthorPubkey,
+        videoUrl: videoUrl,
+        thumbnailUrl: thumbnailUrl,
+        videoDimensions: videoDimensions,
+        videoDuration: videoDuration,
+        videoBlurhash: videoBlurhash,
       );
     } on Exception {
       return null;

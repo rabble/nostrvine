@@ -324,7 +324,7 @@ void main() {
 
         expect(response.statusCode, 200);
 
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
         expect(data, isA<Map<String, dynamic>>());
 
         Log.info('✅ Platform metrics retrieved successfully');

@@ -78,10 +78,7 @@ void main() {
         overrides: [
           videosForProfileRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-              ),
+              VideoFeedState(videos: mockVideos, hasMoreContent: false),
             );
           }),
         ],
@@ -167,10 +164,7 @@ void main() {
           overrides: [
             videosForProfileRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
-                VideoFeedState(
-                  videos: mockVideos,
-                  hasMoreContent: false,
-                ),
+                VideoFeedState(videos: mockVideos, hasMoreContent: false),
               );
             }),
           ],

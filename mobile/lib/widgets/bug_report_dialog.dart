@@ -129,20 +129,20 @@ class _BugReportDialogState extends State<BugReportDialog> {
                 maxLines: 5,
                 enabled: !_isSubmitting,
                 style: const TextStyle(color: VineTheme.whiteText),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Describe the issue (optional)...',
-                  hintStyle: TextStyle(color: Colors.grey.shade600),
-                  border: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
+                  hintStyle: TextStyle(color: VineTheme.lightText),
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: VineTheme.lightText),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey.shade700),
+                    borderSide: BorderSide(color: VineTheme.cardBackground),
                   ),
-                  focusedBorder: const OutlineInputBorder(
+                  focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: VineTheme.vineGreen),
                   ),
                   helperText: 'Diagnostic info will be sent automatically',
-                  helperStyle: TextStyle(color: Colors.grey.shade600),
+                  helperStyle: TextStyle(color: VineTheme.lightText),
                 ),
                 onChanged: (_) =>
                     setState(() {}), // Rebuild to update button state
@@ -168,12 +168,12 @@ class _BugReportDialogState extends State<BugReportDialog> {
                   decoration: BoxDecoration(
                     color: _isSuccess == true
                         ? VineTheme.vineGreen.withValues(alpha: 0.2)
-                        : Colors.red.withValues(alpha: 0.2),
+                        : VineTheme.error.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: _isSuccess == true
                           ? VineTheme.vineGreen
-                          : Colors.red,
+                          : VineTheme.error,
                     ),
                   ),
                   child: Text(
@@ -181,7 +181,7 @@ class _BugReportDialogState extends State<BugReportDialog> {
                     style: TextStyle(
                       color: _isSuccess == true
                           ? VineTheme.vineGreen
-                          : Colors.red,
+                          : VineTheme.error,
                     ),
                   ),
                 ),
@@ -194,7 +194,10 @@ class _BugReportDialogState extends State<BugReportDialog> {
         if (_isSuccess != true)
           TextButton(
             onPressed: _isSubmitting ? null : context.pop,
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.lightText),
+            ),
           ),
 
         // Send/Close button

@@ -51,14 +51,18 @@ class SeenVideoMetrics {
   factory SeenVideoMetrics.fromJson(Map<String, dynamic> json) =>
       SeenVideoMetrics(
         videoId: json['videoId'] as String,
-        firstSeenAt: DateTime.fromMillisecondsSinceEpoch(json['firstSeenAt']),
-        lastSeenAt: DateTime.fromMillisecondsSinceEpoch(json['lastSeenAt']),
-        loopCount: json['loopCount'] ?? 0,
+        firstSeenAt: DateTime.fromMillisecondsSinceEpoch(
+          json['firstSeenAt'] as int,
+        ),
+        lastSeenAt: DateTime.fromMillisecondsSinceEpoch(
+          json['lastSeenAt'] as int,
+        ),
+        loopCount: json['loopCount'] as int? ?? 0,
         totalWatchDuration: Duration(
-          milliseconds: json['totalWatchDurationMs'] ?? 0,
+          milliseconds: json['totalWatchDurationMs'] as int? ?? 0,
         ),
         lastWatchDuration: Duration(
-          milliseconds: json['lastWatchDurationMs'] ?? 0,
+          milliseconds: json['lastWatchDurationMs'] as int? ?? 0,
         ),
       );
 }
@@ -115,7 +119,9 @@ class SeenVideosService {
         final List<dynamic> metricsList = jsonDecode(metricsJson);
         _seenVideos.clear();
         for (final json in metricsList) {
-          final metrics = SeenVideoMetrics.fromJson(json);
+          final metrics = SeenVideoMetrics.fromJson(
+            json as Map<String, dynamic>,
+          );
           _seenVideos[metrics.videoId] = metrics;
         }
         Log.debug(

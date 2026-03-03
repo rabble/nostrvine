@@ -1,5 +1,5 @@
 // ABOUTME: Reusable helper for building video feed providers with common logic
-// ABOUTME: Encapsulates debouncing, stability waiting, and listener setup patterns
+// ABOUTME: Encapsulates debouncing and listener setup patterns for progressive feeds
 
 import 'dart:async';
 
@@ -42,12 +42,12 @@ class VideoFeedBuilder {
 
   final VideoEventService _service;
   Timer? _debounceTimer;
-  Timer? _stabilityTimer;
   VoidCallback? _listener;
   int _lastKnownCount = 0;
 
   /// Build a feed with the provided configuration
-  /// Handles subscription, waiting for stability, and sorting
+  /// Subscribes and returns immediately with whatever videos are available.
+  /// Progressive updates arrive via [setupContinuousListener].
   Future<VideoFeedState> buildFeed({required VideoFeedConfig config}) async {
     Log.debug(
       'VideoFeedBuilder: Building feed for ${config.subscriptionType}',
@@ -55,13 +55,10 @@ class VideoFeedBuilder {
       category: LogCategory.video,
     );
 
-    // Subscribe to the feed
+    // Subscribe to the feed (non-blocking: events stream in progressively)
     await config.subscribe(_service);
 
-    // Wait for initial batch of videos to arrive
-    await _waitForStability(config);
-
-    // Get, filter, and sort videos
+    // Return immediately with whatever videos are available
     var videos = config.getVideos(_service);
     if (config.filterVideos != null) {
       videos = config.filterVideos!(videos);
@@ -77,6 +74,7 @@ class VideoFeedBuilder {
     return VideoFeedState(
       videos: sortedVideos,
       hasMoreContent: sortedVideos.length >= 10,
+      isInitialLoad: sortedVideos.isEmpty,
       lastUpdated: DateTime.now(),
     );
   }
@@ -135,61 +133,9 @@ class VideoFeedBuilder {
     );
   }
 
-  /// Wait for video count to stabilize before returning
-  /// Prevents returning too early while videos are still streaming in
-  Future<void> _waitForStability(VideoFeedConfig config) async {
-    final completer = Completer<void>();
-    int stableCount = 0;
-
-    void checkStability() {
-      final currentCount = config.getVideos(_service).length;
-      if (currentCount != stableCount) {
-        // Count changed, reset stability timer
-        stableCount = currentCount;
-        _stabilityTimer?.cancel();
-        _stabilityTimer = Timer(const Duration(milliseconds: 300), () {
-          // Count stable for 300ms, we're done
-          if (!completer.isCompleted) {
-            completer.complete();
-          }
-        });
-      }
-    }
-
-    _service.addListener(checkStability);
-
-    // Maximum wait time of 3 seconds
-    Timer(const Duration(seconds: 3), () {
-      if (!completer.isCompleted) {
-        Log.debug(
-          'VideoFeedBuilder: Timeout reached (3s) with $stableCount videos for ${config.subscriptionType}',
-          name: 'VideoFeedBuilder',
-          category: LogCategory.video,
-        );
-        completer.complete();
-      }
-    });
-
-    // Trigger initial check
-    checkStability();
-
-    await completer.future;
-
-    // Clean up stability listener
-    _service.removeListener(checkStability);
-    _stabilityTimer?.cancel();
-
-    Log.debug(
-      'VideoFeedBuilder: Stability reached with $stableCount videos for ${config.subscriptionType}',
-      name: 'VideoFeedBuilder',
-      category: LogCategory.video,
-    );
-  }
-
   /// Clean up listeners and timers
   void cleanup() {
     _debounceTimer?.cancel();
-    _stabilityTimer?.cancel();
     if (_listener != null) {
       _service.removeListener(_listener!);
       _listener = null;

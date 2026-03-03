@@ -1,6 +1,7 @@
 // ABOUTME: Overlay widget displaying subtitle text on video playback.
 // ABOUTME: Uses subtitleCuesProvider for dual-fetch (REST embedded or relay).
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
@@ -52,13 +53,13 @@ class SubtitleOverlay extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.black54,
+                color: VineTheme.scrim50,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 currentCue.text,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 16,
                   shadows: [Shadow(blurRadius: 4)],
                 ),

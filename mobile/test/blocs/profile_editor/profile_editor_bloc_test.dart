@@ -1423,9 +1423,7 @@ void main() {
       });
 
       test('returns false when no initial username and status is idle', () {
-        const state = ProfileEditorState(
-          username: 'someuser',
-        );
+        const state = ProfileEditorState(username: 'someuser');
         expect(state.isUsernameSaveReady, isFalse);
       });
     });

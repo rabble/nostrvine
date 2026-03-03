@@ -144,10 +144,7 @@ RouteContext parseRoute(String path) {
         );
       }
       // Grid mode - no videoIndex
-      return RouteContext(
-        type: RouteType.profile,
-        npub: npub,
-      );
+      return RouteContext(type: RouteType.profile, npub: npub);
 
     case 'notifications':
       final rawIndex = segments.length > 1 ? int.tryParse(segments[1]) ?? 0 : 0;
@@ -368,9 +365,7 @@ String buildRoute(RouteContext context) {
 
     case RouteType.hashtag:
       final hashtag = context.hashtag ?? '';
-      final rawIndex = context.videoIndex;
-      final index = rawIndex != null && rawIndex < 0 ? 0 : rawIndex;
-      return HashtagScreenRouter.pathForTag(hashtag, index: index);
+      return HashtagScreenRouter.pathForTag(hashtag);
 
     case RouteType.search:
       // Grid mode (null videoIndex):

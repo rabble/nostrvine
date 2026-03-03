@@ -234,18 +234,6 @@ void main() {
         },
       );
 
-      test(
-        '${HashtagScreenRouter.pathForTag('nostr', index: 3)} parses to RouteType.hashtag with index',
-        () {
-          final context = parseRoute(
-            HashtagScreenRouter.pathForTag('nostr', index: 3),
-          );
-          expect(context.type, RouteType.hashtag);
-          expect(context.hashtag, 'nostr');
-          expect(context.videoIndex, 3);
-        },
-      );
-
       test('${HashtagScreenRouter.path} without tag redirects to home', () {
         final context = parseRoute(HashtagScreenRouter.basePath);
         expect(context.type, RouteType.home);

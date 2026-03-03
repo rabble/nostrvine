@@ -206,10 +206,7 @@ void main() {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 16),
             children: [
-              UploadProgressIndicator(
-                upload: uploadingState,
-                onPause: () {},
-              ),
+              UploadProgressIndicator(upload: uploadingState, onPause: () {}),
               const SizedBox(height: 8),
               UploadProgressIndicator(
                 upload: failedState,

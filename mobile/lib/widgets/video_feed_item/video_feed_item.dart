@@ -709,9 +709,13 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       return Container(
         width: double.infinity,
         height: double.infinity,
-        color: Colors.black,
+        color: VineTheme.backgroundColor,
         child: const Center(
-          child: Icon(Icons.error_outline, color: Colors.white, size: 48),
+          child: Icon(
+            Icons.error_outline,
+            color: VineTheme.whiteText,
+            size: 48,
+          ),
         ),
       );
     }
@@ -866,7 +870,6 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                   ),
                   RouteType.hashtag => HashtagScreenRouter.pathForTag(
                     ctx.hashtag ?? '',
-                    index: widget.index,
                   ),
                   RouteType.likedVideos => LikedVideosScreenRouter.pathForIndex(
                     widget.index,
@@ -900,7 +903,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       child: Container(
         width: double.infinity,
         height: double.infinity,
-        color: Colors.black,
+        color: VineTheme.backgroundColor,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -924,11 +927,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                       return Stack(
                         fit: StackFit.expand,
                         children: [
-                          VideoThumbnailWidget(
-                            video: video,
-                          ),
+                          VideoThumbnailWidget(video: video),
                           const ColoredBox(
-                            color: Colors.black54,
+                            color: VineTheme.scrim50,
                             child: Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -938,7 +939,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   Text(
                                     'Loading video...',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: VineTheme.whiteText,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -975,13 +976,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         // Fallback pending — show thumbnail + loading indicator
                         return SizedBox.expand(
                           child: ColoredBox(
-                            color: Colors.black,
+                            color: VineTheme.backgroundColor,
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                VideoThumbnailWidget(
-                                  video: video,
-                                ),
+                                VideoThumbnailWidget(video: video),
                                 if (isActive)
                                   const Center(
                                     child: BrandedLoadingIndicator(size: 60),
@@ -1029,7 +1028,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     // widgets to maintain stable widget tree during scroll
                     return SizedBox.expand(
                       child: ColoredBox(
-                        color: Colors.black,
+                        color: VineTheme.backgroundColor,
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
@@ -1067,7 +1066,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   minHeight: 12,
                                   backgroundColor: Colors.transparent,
                                   valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                                    VineTheme.whiteText,
                                   ),
                                 ),
                               ),
@@ -1080,7 +1079,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   width: 64,
                                   height: 64,
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.65),
+                                    color: VineTheme.backgroundColor.withValues(
+                                      alpha: 0.65,
+                                    ),
                                     borderRadius: BorderRadius.circular(24),
                                   ),
                                   child: Semantics(
@@ -1094,7 +1095,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                         width: 32,
                                         height: 32,
                                         colorFilter: const ColorFilter.mode(
-                                          Colors.white,
+                                          VineTheme.whiteText,
                                           BlendMode.srcIn,
                                         ),
                                       ),
@@ -1115,9 +1116,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                     width: 64,
                                     height: 64,
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.65,
-                                      ),
+                                      color: VineTheme.backgroundColor
+                                          .withValues(alpha: 0.65),
                                       borderRadius: BorderRadius.circular(24),
                                     ),
                                     child: Center(
@@ -1126,7 +1126,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                         width: 32,
                                         height: 32,
                                         colorFilter: const ColorFilter.mode(
-                                          Colors.white,
+                                          VineTheme.whiteText,
                                           BlendMode.srcIn,
                                         ),
                                       ),
@@ -1149,9 +1149,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                       decoration: BoxDecoration(
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.3,
-                                            ),
+                                            color: VineTheme.backgroundColor
+                                                .withValues(alpha: 0.3),
                                             blurRadius: 20,
                                             spreadRadius: 5,
                                           ),
@@ -1162,7 +1161,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                         width: 120,
                                         height: 120,
                                         colorFilter: const ColorFilter.mode(
-                                          Colors.white,
+                                          VineTheme.whiteText,
                                           BlendMode.srcIn,
                                         ),
                                       ),
@@ -1322,6 +1321,7 @@ class VideoOverlayActions extends ConsumerWidget {
     this.showListAttribution = false,
     this.isPreviewMode = false,
     this.hideFollowButtonIfFollowing = false,
+    this.topOffset = 8.0,
   });
 
   final VideoEvent video;
@@ -1330,6 +1330,7 @@ class VideoOverlayActions extends ConsumerWidget {
   final bool hasBottomNavigation;
   final String? contextTitle;
   final bool isFullscreen;
+  final double topOffset;
 
   /// Displays the overlay in preview mode during video creation.
   /// When true, users can preview how their video will appear to other users
@@ -1354,16 +1355,6 @@ class VideoOverlayActions extends ConsumerWidget {
         video.content.isNotEmpty ||
         (video.title != null && video.title!.isNotEmpty);
 
-    // Stack does not block pointer events by default - taps pass through to GestureDetector below
-    // Only interactive elements (buttons, chips with GestureDetector) absorb taps
-    // When contextTitle is non-empty, a list header exists above - add extra offset to avoid overlap
-    // List header is roughly 64px tall (8px padding + 48px content + 8px padding), add clearance
-    // In fullscreen mode, the AppBar floats transparently over the content
-    // so the badge just needs the same base offset - no extra list header padding
-    final hasListHeader =
-        !isFullscreen && contextTitle != null && contextTitle!.isNotEmpty;
-    final topOffset = hasListHeader ? 80.0 : 16.0;
-
     // In fullscreen mode, ensure badges clear the status bar icons
     // (battery, wifi, clock). viewPaddingOf may return 0 if a parent
     // widget (Scaffold, SafeArea) has already consumed the safe area.
@@ -1372,15 +1363,12 @@ class VideoOverlayActions extends ConsumerWidget {
     final safeAreaTop = isFullscreen
         ? (viewPaddingTop > 0
               ? viewPaddingTop
-              : MediaQuery.of(context).padding.top > 0
-              ? MediaQuery.of(context).padding.top
+              : MediaQuery.paddingOf(context).top > 0
+              ? MediaQuery.paddingOf(context).top
               : 54.0) // Fallback for Dynamic Island iPhones
         : viewPaddingTop;
 
-    // Calculate bottom offset based on navigation state
-    final bottomOffset = hasBottomNavigation
-        ? 14.0
-        : (isFullscreen ? 48.0 : 14.0);
+    const bottomOffset = 14.0;
 
     return Stack(
       children: [
@@ -1400,8 +1388,8 @@ class VideoOverlayActions extends ConsumerWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withValues(alpha: 0.0),
-                        Colors.black.withValues(alpha: 0.5),
+                        VineTheme.backgroundColor.withValues(alpha: 0.0),
+                        VineTheme.backgroundColor.withValues(alpha: 0.5),
                       ],
                     ),
                   ),
@@ -1513,7 +1501,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: Colors.white,
+                                      color: VineTheme.whiteText,
                                       width: 2,
                                     ),
                                   ),
@@ -1533,7 +1521,8 @@ class VideoOverlayActions extends ConsumerWidget {
                                                       VineTheme.cardBackground,
                                                   child: Icon(
                                                     Icons.person,
-                                                    color: Colors.white54,
+                                                    color: VineTheme
+                                                        .onSurfaceMuted,
                                                     size: 24,
                                                   ),
                                                 ),
@@ -1544,7 +1533,8 @@ class VideoOverlayActions extends ConsumerWidget {
                                                           .cardBackground,
                                                       child: Icon(
                                                         Icons.person,
-                                                        color: Colors.white54,
+                                                        color: VineTheme
+                                                            .onSurfaceMuted,
                                                         size: 24,
                                                       ),
                                                     ),
@@ -1553,7 +1543,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                             color: VineTheme.cardBackground,
                                             child: Icon(
                                               Icons.person,
-                                              color: Colors.white54,
+                                              color: VineTheme.onSurfaceMuted,
                                               size: 24,
                                             ),
                                           ),
@@ -1615,7 +1605,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                     fontFamily: 'Inter',
                                     fontSize: 14,
                                     height: 20 / 14,
-                                    color: Colors.white70,
+                                    color: VineTheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -1682,7 +1672,7 @@ class VideoOverlayActions extends ConsumerWidget {
                               .trim(),
                       style: const TextStyle(
                         fontFamily: 'Inter',
-                        color: Colors.white,
+                        color: VineTheme.whiteText,
                         fontSize: 14,
                         height: 20 / 14,
                         letterSpacing: 0.25,
@@ -1836,6 +1826,8 @@ class VideoOverlayActions extends ConsumerWidget {
       }
     }
 
+    if (!context.mounted) return;
+
     await context.showVideoPausingDialog<void>(
       builder: (context) => BadgeExplanationModal(video: video),
     );
@@ -1911,7 +1903,7 @@ class _VideoEditButton extends ConsumerWidget {
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.15),
+                    color: VineTheme.backgroundColor.withValues(alpha: 0.15),
                     blurRadius: 15,
                     spreadRadius: 1,
                   ),
@@ -1922,7 +1914,7 @@ class _VideoEditButton extends ConsumerWidget {
                 width: 32,
                 height: 32,
                 colorFilter: const ColorFilter.mode(
-                  Colors.white,
+                  VineTheme.whiteText,
                   BlendMode.srcIn,
                 ),
               ),
@@ -1984,18 +1976,21 @@ class VideoAuthorRow extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: VineTheme.backgroundColor.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.person, size: 14, color: Colors.white),
+                const Icon(Icons.person, size: 14, color: VineTheme.whiteText),
                 const SizedBox(width: 6),
                 UserName.fromPubKey(
                   video.pubkey,
                   embeddedName: video.authorName,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                  style: const TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 12,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
@@ -2040,7 +2035,7 @@ class VideoRepostHeader extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.7),
+        color: VineTheme.backgroundColor.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -2052,7 +2047,7 @@ class VideoRepostHeader extends ConsumerWidget {
             child: Text(
               '$displayName reposted',
               style: const TextStyle(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -2193,7 +2188,7 @@ class _CommentActionButton extends StatelessWidget {
               StringUtils.formatCompactNumber(totalComments),
               style: const TextStyle(
                 fontFamily: 'Bricolage Grotesque',
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
                 height: 1,
@@ -2231,10 +2226,10 @@ class _Nip05Badge extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(2),
         decoration: const BoxDecoration(
-          color: Colors.blue,
+          color: VineTheme.info,
           shape: BoxShape.circle,
         ),
-        child: const Icon(Icons.check, color: Colors.white, size: 10),
+        child: const Icon(Icons.check, color: VineTheme.whiteText, size: 10),
       ),
     );
   }
@@ -2254,7 +2249,7 @@ class _ContentWarningBadge extends StatelessWidget {
         color: VineTheme.backgroundColor.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: const Color(0xFFFFB84D).withValues(alpha: 0.6),
+          color: VineTheme.contentWarningAmber.withValues(alpha: 0.6),
         ),
       ),
       child: Row(
@@ -2262,14 +2257,14 @@ class _ContentWarningBadge extends StatelessWidget {
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            color: Color(0xFFFFB84D),
+            color: VineTheme.contentWarningAmber,
             size: 14,
           ),
           const SizedBox(width: 4),
           Text(
             labels.length == 1 ? _humanize(labels.first) : 'Content Warning',
             style: const TextStyle(
-              color: Color(0xFFFFB84D),
+              color: VineTheme.contentWarningAmber,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -2378,15 +2373,13 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.warning_amber_rounded,
-                  color: Color(0xFFFFB84D),
+                  color: VineTheme.contentWarningAmber,
                   size: 22,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Content Warnings',
-                  style: VineTheme.titleFont(
-                    fontSize: 18,
-                  ),
+                  style: VineTheme.titleFont(fontSize: 18),
                 ),
               ],
             ),
@@ -2408,7 +2401,7 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
                       height: 6,
                       margin: const EdgeInsets.only(top: 6, right: 10),
                       decoration: const BoxDecoration(
-                        color: Color(0xFFFFB84D),
+                        color: VineTheme.contentWarningAmber,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -2490,7 +2483,7 @@ class _ContentWarningOverlay extends StatelessWidget {
           filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.6),
+              color: VineTheme.backgroundColor.withValues(alpha: 0.6),
             ),
             child: Center(
               child: Padding(
@@ -2500,7 +2493,7 @@ class _ContentWarningOverlay extends StatelessWidget {
                   children: [
                     const Icon(
                       Icons.warning_amber_rounded,
-                      color: Color(0xFFFFB84D),
+                      color: VineTheme.contentWarningAmber,
                       size: 48,
                     ),
                     const SizedBox(height: 16),

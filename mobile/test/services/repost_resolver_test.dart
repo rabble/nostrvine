@@ -158,9 +158,7 @@ void main() {
           id: 'original-id',
           pubkey: 'original-author',
         );
-        final repostEvent = _createRepostEvent(
-          id: 'repost-id',
-        );
+        final repostEvent = _createRepostEvent(id: 'repost-id');
 
         final repost = resolver.createRepostVideoEvent(original, repostEvent);
 

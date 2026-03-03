@@ -141,7 +141,7 @@ class _VideoEditorMoreButtonState
 
     if (remainingClips.isEmpty) {
       // No clips left, navigate back
-      context.pop();
+      if (mounted) context.pop();
     } else {
       // Update currentClipIndex if it's now out of bounds
       final videoEditor = ref.read(videoEditorProvider.notifier);
@@ -211,7 +211,7 @@ class _VideoEditorMoreButtonState
   @override
   Widget build(BuildContext context) {
     return VideoEditorIconButton(
-      backgroundColor: const Color(0x00000000),
+      backgroundColor: Colors.transparent,
       icon: .moreHoriz,
       onTap: _showMoreOptions,
       // TODO(l10n): Replace with context.l10n when localization is added.

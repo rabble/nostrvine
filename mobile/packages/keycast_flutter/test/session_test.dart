@@ -131,6 +131,54 @@ void main() {
         expect(restored.accessToken, isNull);
         expect(restored.expiresAt, isNull);
       });
+
+      test('round-trips refreshToken', () {
+        const original = KeycastSession(
+          bunkerUrl: 'bunker://test',
+          accessToken: 'token',
+          refreshToken: 'refresh_abc',
+        );
+
+        final json = original.toJson();
+        final restored = KeycastSession.fromJson(json);
+
+        expect(restored.refreshToken, 'refresh_abc');
+      });
+
+      test('fromJson handles missing refreshToken as null', () {
+        final json = <String, dynamic>{
+          'bunker_url': 'bunker://test',
+          'access_token': 'token',
+        };
+
+        final session = KeycastSession.fromJson(json);
+        expect(session.refreshToken, isNull);
+      });
+    });
+
+    group('fromTokenResponse - refreshToken', () {
+      test('preserves refreshToken from response', () {
+        const tokenResponse = TokenResponse(
+          bunkerUrl: 'bunker://test',
+          accessToken: 'access_abc',
+          expiresIn: 3600,
+          refreshToken: 'refresh_xyz',
+        );
+
+        final session = KeycastSession.fromTokenResponse(tokenResponse);
+        expect(session.refreshToken, 'refresh_xyz');
+      });
+
+      test('handles null refreshToken from response', () {
+        const tokenResponse = TokenResponse(
+          bunkerUrl: 'bunker://test',
+          accessToken: 'access_abc',
+          expiresIn: 3600,
+        );
+
+        final session = KeycastSession.fromTokenResponse(tokenResponse);
+        expect(session.refreshToken, isNull);
+      });
     });
   });
 }

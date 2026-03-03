@@ -5,6 +5,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
@@ -18,9 +19,9 @@ class BackButtonHandler {
     'org.openvine/navigation',
   );
   static GoRouter? _router;
-  static dynamic _ref;
+  static WidgetRef? _ref;
 
-  static void initialize(GoRouter router, dynamic ref) {
+  static void initialize(GoRouter router, WidgetRef ref) {
     _router = router;
     _ref = ref;
 
@@ -41,7 +42,7 @@ class BackButtonHandler {
     }
 
     // Get current route context
-    final ctxAsync = _ref.read(pageContextProvider);
+    final ctxAsync = _ref!.read(pageContextProvider);
     final ctx = ctxAsync.value;
     if (ctx == null) {
       return false;
@@ -86,14 +87,14 @@ class BackButtonHandler {
     }
 
     // Check tab history for navigation
-    final tabHistory = _ref.read(tabHistoryProvider.notifier);
+    final tabHistory = _ref!.read(tabHistoryProvider.notifier);
     final previousTab = tabHistory.getPreviousTab();
 
     // If there's a previous tab in history, navigate to it
     if (previousTab != null) {
       // Navigate to previous tab
       final previousRouteType = _routeTypeForTab(previousTab);
-      final lastIndex = _ref
+      final lastIndex = _ref!
           .read(lastTabPositionProvider.notifier)
           .getPosition(previousRouteType);
 
@@ -114,7 +115,7 @@ class BackButtonHandler {
           _router!.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
         case 3:
           // Get current user's npub for profile
-          final authService = _ref.read(authServiceProvider);
+          final authService = _ref!.read(authServiceProvider);
           final currentNpub = authService.currentNpub;
           if (currentNpub != null) {
             _router!.go(ProfileScreenRouter.pathForNpub(currentNpub));

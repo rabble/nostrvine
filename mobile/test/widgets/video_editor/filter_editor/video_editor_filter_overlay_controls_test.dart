@@ -35,11 +35,9 @@ void main() {
       editorKey = GlobalKey<ProImageEditorState>();
 
       // Default state - no filter selected
-      when(() => mockBloc.state).thenReturn(
-        VideoEditorFilterState(
-          filters: presetFiltersList,
-        ),
-      );
+      when(
+        () => mockBloc.state,
+      ).thenReturn(VideoEditorFilterState(filters: presetFiltersList));
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
     });
 

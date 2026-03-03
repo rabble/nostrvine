@@ -13,9 +13,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         testProviderScope(
-          child: const MaterialApp(
-            home: Scaffold(body: SearchScreenPure()),
-          ),
+          child: const MaterialApp(home: Scaffold(body: SearchScreenPure())),
         ),
       );
 

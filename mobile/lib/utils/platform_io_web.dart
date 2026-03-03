@@ -22,5 +22,6 @@ class HttpOverrides {
 
 // VineCdnHttpOverrides stub for web platform
 class VineCdnHttpOverrides {
+  // ignore: avoid_unused_constructor_parameters
   VineCdnHttpOverrides({required dynamic overrideAddress});
 }

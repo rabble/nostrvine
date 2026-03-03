@@ -88,7 +88,7 @@ class _MyFollowersView extends StatelessWidget {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -183,15 +183,15 @@ class _FollowersEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey[600]),
-          const SizedBox(height: 16),
+          Icon(Icons.people_outline, size: 64, color: VineTheme.lightText),
+          SizedBox(height: 16),
           Text(
             'No followers yet',
-            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
           ),
         ],
       ),
@@ -210,11 +210,11 @@ class _FollowersErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.grey[600]),
+          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load followers list',
-            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
           ),
           const SizedBox(height: 8),
           TextButton(onPressed: onRetry, child: const Text('Retry')),

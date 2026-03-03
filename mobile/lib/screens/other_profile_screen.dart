@@ -13,6 +13,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -121,9 +122,13 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   /// Whether a refresh is currently in progress.
   bool _isRefreshing = false;
 
+  /// Whether the profile feed load has been tracked.
+  bool _hasTrackedFeedLoad = false;
+
   @override
   void initState() {
     super.initState();
+    FeedPerformanceTracker().startFeedLoad('profile');
   }
 
   @override
@@ -164,6 +169,8 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
     // Invalidate stats to recompute
     ref.invalidate(fetchProfileStatsProvider(widget.pubkey));
+
+    if (!mounted) return;
 
     // Refresh user profile info
     context.read<OtherProfileBloc>().add(const OtherProfileRefreshRequested());
@@ -304,6 +311,14 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           'video_count': videosAsync.asData?.value.videos.length ?? 0,
         },
       );
+
+      if (!_hasTrackedFeedLoad) {
+        _hasTrackedFeedLoad = true;
+        final count = videosAsync.asData?.value.videos.length ?? 0;
+        final tracker = FeedPerformanceTracker();
+        tracker.markFirstVideosReceived('profile', count);
+        tracker.markFeedDisplayed('profile', count);
+      }
     }
 
     return BlocBuilder<OtherProfileBloc, OtherProfileState>(
@@ -319,7 +334,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             profile?.bestDisplayName ?? widget.displayNameHint ?? 'Profile';
 
         return Scaffold(
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.backgroundColor,
           appBar: AppBar(
             elevation: 0,
             scrolledUnderElevation: 0,
@@ -344,7 +359,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                   width: 32,
                   height: 32,
                   colorFilter: const ColorFilter.mode(
-                    Colors.white,
+                    VineTheme.whiteText,
                     BlendMode.srcIn,
                   ),
                   semanticsLabel: 'Back',
@@ -378,7 +393,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                           width: 28,
                           height: 28,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            color: VineTheme.whiteText,
                             strokeWidth: 2,
                           ),
                         )
@@ -387,7 +402,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                           width: 28,
                           height: 28,
                           colorFilter: const ColorFilter.mode(
-                            Colors.white,
+                            VineTheme.whiteText,
                             BlendMode.srcIn,
                           ),
                         ),
@@ -414,7 +429,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                       width: 28,
                       height: 28,
                       colorFilter: const ColorFilter.mode(
-                        Colors.white,
+                        VineTheme.whiteText,
                         BlendMode.srcIn,
                       ),
                       semanticsLabel: 'More options',
@@ -430,7 +445,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             AsyncError(:final error) => Center(
               child: Text(
                 'Error: $error',
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: VineTheme.whiteText),
               ),
             ),
             AsyncData(:final value) => ProfileGridView(
@@ -461,7 +476,7 @@ class _ProfileErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -486,7 +501,7 @@ class _ProfileErrorScreen extends StatelessWidget {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -501,7 +516,10 @@ class _ProfileErrorScreen extends StatelessWidget {
         ),
       ),
       body: Center(
-        child: Text(message, style: const TextStyle(color: Colors.white)),
+        child: Text(
+          message,
+          style: const TextStyle(color: VineTheme.whiteText),
+        ),
       ),
     );
   }

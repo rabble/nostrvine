@@ -37,6 +37,9 @@ void main() {
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
       when(
+        () => mockAuthService.hasExpiredOAuthSession,
+      ).thenReturn(false);
+      when(
         () => mockAudioSharingService.isAudioSharingEnabled,
       ).thenReturn(false);
     });

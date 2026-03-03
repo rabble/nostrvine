@@ -49,11 +49,6 @@ class NavigatorKeys {
     debugLabel: 'hashtag-grid',
   );
 
-  /// Hashtag navigator key for feed mode (with video index).
-  static final hashtagFeed = GlobalKey<NavigatorState>(
-    debugLabel: 'hashtag-feed',
-  );
-
   /// Profile tab navigator key for grid mode (no video index).
   static final profileGrid = GlobalKey<NavigatorState>(
     debugLabel: 'profile-grid',

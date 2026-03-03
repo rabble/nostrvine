@@ -108,7 +108,7 @@ class Nostr {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    List<List<dynamic>> tags = [];
+    List<List<String>> tags = [];
     for (var eventId in eventIds) {
       tags.add(["e", eventId]);
     }
@@ -133,9 +133,9 @@ class Nostr {
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
-    List<dynamic> tag = ["e", id];
+    List<String> tag = ["e", id];
     if (StringUtil.isNotBlank(relayAddr)) {
-      tag.add(relayAddr);
+      tag.add(relayAddr!);
     }
     Event event = Event(_cachedPublicKey, EventKind.repost, [tag], content);
     return await sendEvent(

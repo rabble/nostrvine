@@ -54,16 +54,12 @@ void main() {
 
           // Manually fetch profile after import (app-specific behavior)
           if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-            await mockProfileService.fetchProfile(
-              keyManager.publicKey!,
-            );
+            await mockProfileService.fetchProfile(keyManager.publicKey!);
           }
 
           // Assert: Verify profile fetch was called with correct parameters
           final captured = verify(
-            () => mockProfileService.fetchProfile(
-              captureAny(),
-            ),
+            () => mockProfileService.fetchProfile(captureAny()),
           ).captured;
           expect(captured.length, equals(1));
           expect(captured[0], equals(keyManager.publicKey));
@@ -129,18 +125,14 @@ void main() {
         // This should fail but not affect the import
         try {
           if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-            await mockProfileService.fetchProfile(
-              keyManager.publicKey!,
-            );
+            await mockProfileService.fetchProfile(keyManager.publicKey!);
           }
         } catch (e) {
           // Profile fetch failure is expected in this test
         }
 
         // Verify profile fetch was attempted
-        verify(
-          () => mockProfileService.fetchProfile(any()),
-        ).called(1);
+        verify(() => mockProfileService.fetchProfile(any())).called(1);
       });
 
       test(
@@ -184,15 +176,11 @@ void main() {
 
           // Manually fetch profile after import (app-specific behavior)
           if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-            await mockProfileService.fetchProfile(
-              keyManager.publicKey!,
-            );
+            await mockProfileService.fetchProfile(keyManager.publicKey!);
           }
 
           // Assert: Verify forceRefresh is false (use cached profile if available)
-          verify(
-            () => mockProfileService.fetchProfile(any()),
-          ).called(1);
+          verify(() => mockProfileService.fetchProfile(any())).called(1);
 
           // Ensure forceRefresh=true was NOT called
           verifyNever(
@@ -217,16 +205,12 @@ void main() {
 
           // Manually fetch profile after import (app-specific behavior)
           if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-            await mockProfileService.fetchProfile(
-              keyManager.publicKey!,
-            );
+            await mockProfileService.fetchProfile(keyManager.publicKey!);
           }
 
           // Assert: Verify profile fetch was called
           final captured = verify(
-            () => mockProfileService.fetchProfile(
-              captureAny(),
-            ),
+            () => mockProfileService.fetchProfile(captureAny()),
           ).captured;
           expect(captured.length, equals(1));
           expect(captured[0], equals(keyManager.publicKey));
@@ -250,9 +234,7 @@ void main() {
 
         // Manually fetch profile after import (app-specific behavior)
         if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-          await mockProfileService.fetchProfile(
-            keyManager.publicKey!,
-          );
+          await mockProfileService.fetchProfile(keyManager.publicKey!);
         }
 
         // Assert: Import succeeded even though profile wasn't found

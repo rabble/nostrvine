@@ -1,6 +1,7 @@
 // ABOUTME: Widget that displays a transition message between following and discovery feeds
 // ABOUTME: Shows users they've seen all videos from people they follow
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Widget that displays a transition message when moving from following to discovery feed
@@ -16,23 +17,23 @@ class FeedTransitionIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     height: 200,
-    color: Colors.black,
+    color: VineTheme.backgroundColor,
     child: Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.check_circle_outline,
-              color: Colors.green.shade400,
+              color: VineTheme.success,
               size: 48,
             ),
             const SizedBox(height: 16),
             Text(
               "You've seen all videos from people you follow!",
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
@@ -42,7 +43,7 @@ class FeedTransitionIndicator extends StatelessWidget {
               "From here on we're showing you random vines until you follow somebody new or there are new posts by people you're following.",
               style: Theme.of(
                 context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade400),
+              ).textTheme.bodyMedium?.copyWith(color: VineTheme.secondaryText),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -65,7 +66,7 @@ class FeedTransitionIndicator extends StatelessWidget {
       Text(
         count.toString(),
         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-          color: Colors.white,
+          color: VineTheme.whiteText,
           fontWeight: FontWeight.bold,
         ),
       ),
@@ -73,7 +74,7 @@ class FeedTransitionIndicator extends StatelessWidget {
         label,
         style: Theme.of(
           context,
-        ).textTheme.bodySmall?.copyWith(color: Colors.grey.shade500),
+        ).textTheme.bodySmall?.copyWith(color: VineTheme.lightText),
       ),
     ],
   );

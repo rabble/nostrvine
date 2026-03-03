@@ -120,10 +120,7 @@ void main() {
       overrides: [
         videosForProfileRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
-            VideoFeedState(
-              videos: mockVideos,
-              hasMoreContent: false,
-            ),
+            VideoFeedState(videos: mockVideos, hasMoreContent: false),
           );
         }),
       ],
@@ -153,10 +150,7 @@ void main() {
       overrides: [
         videosForProfileRouteProvider.overrideWith((ref) {
           return const AsyncValue.data(
-            VideoFeedState(
-              videos: [],
-              hasMoreContent: false,
-            ),
+            VideoFeedState(videos: [], hasMoreContent: false),
           );
         }),
       ],
@@ -184,10 +178,7 @@ void main() {
       overrides: [
         videosForProfileRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
-            VideoFeedState(
-              videos: mockVideos,
-              hasMoreContent: false,
-            ),
+            VideoFeedState(videos: mockVideos, hasMoreContent: false),
           );
         }),
         userProfileProvider.overrideWith(() => mockNotifier),
@@ -214,10 +205,7 @@ void main() {
         appForegroundProvider.overrideWithValue(const AsyncValue.data(false)),
         videosForProfileRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
-            VideoFeedState(
-              videos: mockVideos,
-              hasMoreContent: false,
-            ),
+            VideoFeedState(videos: mockVideos, hasMoreContent: false),
           );
         }),
       ],

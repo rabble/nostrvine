@@ -49,10 +49,10 @@ class BookmarkItem {
   };
 
   static BookmarkItem fromJson(Map<String, dynamic> json) => BookmarkItem(
-    type: json['type'],
-    id: json['id'],
-    relay: json['relay'],
-    petname: json['petname'],
+    type: json['type'] as String,
+    id: json['id'] as String,
+    relay: json['relay'] as String?,
+    petname: json['petname'] as String?,
   );
 
   @override
@@ -117,16 +117,16 @@ class BookmarkSet {
   };
 
   static BookmarkSet fromJson(Map<String, dynamic> json) => BookmarkSet(
-    id: json['id'],
-    name: json['name'],
-    description: json['description'],
-    imageUrl: json['imageUrl'],
+    id: json['id'] as String,
+    name: json['name'] as String,
+    description: json['description'] as String?,
+    imageUrl: json['imageUrl'] as String?,
     items: (json['items'] as List<dynamic>)
         .map((item) => BookmarkItem.fromJson(item as Map<String, dynamic>))
         .toList(),
-    createdAt: DateTime.parse(json['createdAt']),
-    updatedAt: DateTime.parse(json['updatedAt']),
-    nostrEventId: json['nostrEventId'],
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+    nostrEventId: json['nostrEventId'] as String?,
   );
 }
 

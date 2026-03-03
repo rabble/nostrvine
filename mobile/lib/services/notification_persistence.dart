@@ -89,9 +89,11 @@ class NotificationPersistence {
 
       for (final entry in _box.toMap().entries) {
         try {
-          final notification = NotificationModel.fromJson(entry.value);
+          final notification = NotificationModel.fromJson(
+            entry.value as Map<String, dynamic>,
+          );
           if (notification.timestamp.isBefore(cutoff)) {
-            keysToRemove.add(entry.key);
+            keysToRemove.add(entry.key as String);
           }
         } catch (e) {
           // If we can't parse it, mark for removal
@@ -100,7 +102,7 @@ class NotificationPersistence {
             name: 'NotificationPersistence',
             category: LogCategory.system,
           );
-          keysToRemove.add(entry.key);
+          keysToRemove.add(entry.key as String);
         }
       }
 

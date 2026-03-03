@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -264,7 +265,7 @@ class _CommentHeader extends ConsumerWidget {
                     Text(
                       ' • ',
                       style: VineTheme.bodyFont(
-                        color: Colors.white54,
+                        color: VineTheme.onSurfaceMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -272,7 +273,7 @@ class _CommentHeader extends ConsumerWidget {
                     Text(
                       'You',
                       style: VineTheme.bodyFont(
-                        color: Colors.white54,
+                        color: VineTheme.onSurfaceMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -287,9 +288,9 @@ class _CommentHeader extends ConsumerWidget {
                 },
                 child: profile == null
                     ? Text(
-                        NostrKeyUtils.encodePubKey(authorPubkey),
+                        UserProfile.generatedNameFor(authorPubkey),
                         style: const TextStyle(
-                          color: Color(0xF2FFFFFF), // rgba(255,255,255,0.95)
+                          color: VineTheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.1,
@@ -300,7 +301,7 @@ class _CommentHeader extends ConsumerWidget {
                     : UserName.fromUserProfile(
                         profile,
                         style: const TextStyle(
-                          color: Color(0xF2FFFFFF),
+                          color: VineTheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.1,
@@ -667,7 +668,7 @@ class _ReplyIndicator extends ConsumerWidget {
     final displayName =
         profile?.displayName ??
         profile?.name ??
-        NostrKeyUtils.encodePubKey(parentAuthorPubkey);
+        UserProfile.generatedNameFor(parentAuthorPubkey);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
