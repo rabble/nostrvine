@@ -1188,6 +1188,41 @@ void main() {
       });
     });
 
+    group('initialized completer', () {
+      test('completes after successful initialize()', () async {
+        await repository.initialize();
+
+        // initialized should complete immediately since initialize() finished
+        await expectLater(repository.initialized, completes);
+      });
+
+      test('completes even when initialization fails', () async {
+        // Force SharedPreferences to throw during load
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': 'invalid json{{{',
+        });
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
+        );
+
+        await repository.initialize();
+
+        // initialized should still complete despite the error
+        await expectLater(repository.initialized, completes);
+      });
+
+      test('completes when dispose() called before initialize()', () async {
+        // dispose without ever calling initialize
+        await repository.dispose();
+
+        // initialized should complete because dispose completes the Completer
+        await expectLater(repository.initialized, completes);
+      });
+    });
+
     group('getSocialCounts', () {
       late _MockFunnelcakeApiClient mockFunnelcakeClient;
 

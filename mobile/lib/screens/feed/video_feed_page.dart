@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -9,6 +10,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/providers/page_context_provider.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -392,6 +394,10 @@ class FeedEmptyWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNoFollowedUsers =
+        state.mode == FeedMode.home &&
+        state.error == VideoFeedError.noFollowedUsers;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -407,6 +413,18 @@ class FeedEmptyWidget extends StatelessWidget {
             style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
             textAlign: TextAlign.center,
           ),
+          if (isNoFollowedUsers) ...[
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => context.go(ExploreScreen.path),
+              icon: const Icon(Icons.explore),
+              label: const Text('Explore Videos'),
+              style: FilledButton.styleFrom(
+                backgroundColor: VineTheme.vineGreen,
+                foregroundColor: VineTheme.backgroundColor,
+              ),
+            ),
+          ],
         ],
       ),
     );
