@@ -612,7 +612,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         unawaited(_countdownSoundService!.playShortBeep());
         // Last tick is shorter to compensate for the long beep duration
         // and post-playback buffer that follow.
-        final delay = i > 0
+        final delay = i > 1
             ? const Duration(seconds: 1)
             : const Duration(seconds: 1) -
                   CountdownSoundService.longBeepDuration -
