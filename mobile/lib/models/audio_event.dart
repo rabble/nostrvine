@@ -59,9 +59,9 @@ class AudioEvent {
 
     // Parse tags according to NIP-94
     for (final tagRaw in event.tags) {
-      if (tagRaw is! List || tagRaw.isEmpty) continue;
+      if (tagRaw.isEmpty) continue;
 
-      final tag = tagRaw.map((e) => e.toString()).toList();
+      final tag = tagRaw.map((e) => e).toList();
       final tagName = tag[0];
       final tagValue = tag.length > 1 ? tag[1] : '';
 

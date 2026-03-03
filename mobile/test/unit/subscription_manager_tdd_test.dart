@@ -77,7 +77,7 @@ void main() {
               name: 'SubscriptionManagerTDDTest',
               category: LogCategory.system,
             );
-            completer.completeError(error);
+            completer.completeError(error as Object);
           },
           onComplete: () {
             Log.debug(

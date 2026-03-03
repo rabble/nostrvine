@@ -207,7 +207,7 @@ class VideoControllerParams {
   /// If null, uses videoUrl for caching.
   final String? cacheUrl;
 
-  final dynamic videoEvent; // VideoEvent for enhanced error reporting
+  final VideoEvent? videoEvent; // VideoEvent for enhanced error reporting
 
   /// Get the URL to use for caching (prefers cacheUrl, falls back to videoUrl)
   String get effectiveCacheUrl => cacheUrl ?? videoUrl;
@@ -729,7 +729,7 @@ VideoPlayerController individualVideoController(
             '❌ VideoPlayerController initialization failed for video $videoIdDisplay...: $errorMessage';
 
         if (params.videoEvent != null) {
-          final event = params.videoEvent as dynamic;
+          final event = params.videoEvent!;
           logMessage += '\n📋 Full Nostr Event Details:';
           logMessage += '\n   • Event ID: ${event.id}';
           logMessage += '\n   • Pubkey: ${event.pubkey}';
@@ -742,10 +742,10 @@ VideoPlayerController individualVideoController(
           logMessage += '\n   • File Size: ${event.fileSize ?? 'null'}';
           logMessage += '\n   • SHA256: ${event.sha256 ?? 'null'}';
           logMessage += '\n   • Thumbnail URL: ${event.thumbnailUrl ?? 'null'}';
-          logMessage += '\n   • Hashtags: ${event.hashtags ?? []}';
+          logMessage += '\n   • Hashtags: ${event.hashtags}';
           logMessage +=
               '\n   • Created At: ${DateTime.fromMillisecondsSinceEpoch(event.createdAt * 1000)}';
-          if (event.rawTags != null && event.rawTags.isNotEmpty) {
+          if (event.rawTags.isNotEmpty) {
             logMessage += '\n   • Raw Tags: ${event.rawTags}';
           }
         } else {
@@ -849,8 +849,8 @@ VideoPlayerController individualVideoController(
 
             if (!alreadyUsedFallback && params.videoEvent is VideoEvent) {
               // Cast to VideoEvent to use the extension method
-              final videoEvent = params.videoEvent as VideoEvent;
-              final hlsFallback = videoEvent.getHlsFallbackUrl();
+              final videoEvent = params.videoEvent;
+              final hlsFallback = videoEvent?.getHlsFallbackUrl();
 
               if (hlsFallback != null) {
                 // Store HLS URL as fallback for retry

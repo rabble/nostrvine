@@ -6,9 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
+
+class _MockFeedPerformanceTracker extends Mock
+    implements FeedPerformanceTracker {}
 
 void main() {
   group('UserSearchBloc', () {
@@ -637,6 +641,100 @@ void main() {
           false,
         ]);
       });
+    });
+
+    group('feed performance tracking', () {
+      late _MockProfileRepository mockRepo;
+      late _MockFeedPerformanceTracker mockTracker;
+
+      // Debounce duration used in the BLoC + buffer
+      const debounceDuration = Duration(milliseconds: 400);
+
+      setUp(() {
+        mockRepo = _MockProfileRepository();
+        mockTracker = _MockFeedPerformanceTracker();
+      });
+
+      UserSearchBloc createBlocWithTracker() => UserSearchBloc(
+        profileRepository: mockRepo,
+        feedTracker: mockTracker,
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'calls startFeedLoad, markFirstVideosReceived, and '
+        'markFeedDisplayed on success',
+        setUp: () {
+          when(
+            () => mockRepo.searchUsers(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [createTestProfile('a' * 64, 'Alice')],
+          );
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
+        wait: debounceDuration,
+        verify: (_) {
+          verify(
+            () => mockTracker.startFeedLoad('user_search'),
+          ).called(1);
+          verify(
+            () => mockTracker.markFirstVideosReceived('user_search', 1),
+          ).called(1);
+          verify(
+            () => mockTracker.markFeedDisplayed('user_search', 1),
+          ).called(1);
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'calls trackFeedError on failure',
+        setUp: () {
+          when(
+            () => mockRepo.searchUsers(
+              query: 'error',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('error')),
+        wait: debounceDuration,
+        verify: (_) {
+          verify(
+            () => mockTracker.startFeedLoad('user_search'),
+          ).called(1);
+          verify(
+            () => mockTracker.trackFeedError(
+              'user_search',
+              errorType: 'search_failed',
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockTracker.markFirstVideosReceived(any(), any()),
+          );
+          verifyNever(
+            () => mockTracker.markFeedDisplayed(any(), any()),
+          );
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'does not call tracker for empty query',
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('')),
+        wait: debounceDuration,
+        verify: (_) {
+          verifyNever(() => mockTracker.startFeedLoad(any()));
+        },
+      );
     });
   });
 }

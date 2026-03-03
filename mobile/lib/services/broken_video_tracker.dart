@@ -36,17 +36,19 @@ class BrokenVideoTracker {
       final timestampsJson = _prefs.getString(_timestampKey);
 
       if (brokenVideosJson != null) {
-        final brokenList = List<String>.from(jsonDecode(brokenVideosJson));
+        final brokenList = List<String>.from(
+          jsonDecode(brokenVideosJson) as Iterable,
+        );
         _brokenVideoIds = Set<String>.from(brokenList);
       }
 
       if (timestampsJson != null) {
         final timestampMap = Map<String, dynamic>.from(
-          jsonDecode(timestampsJson),
+          jsonDecode(timestampsJson) as Map,
         );
         _brokenTimestamps = timestampMap.map(
           (key, value) =>
-              MapEntry(key, DateTime.fromMillisecondsSinceEpoch(value)),
+              MapEntry(key, DateTime.fromMillisecondsSinceEpoch(value as int)),
         );
       }
     } catch (e) {

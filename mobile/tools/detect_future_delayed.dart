@@ -55,15 +55,19 @@ void main(List<String> args) async {
   final occurrences = <FutureDelayedOccurrence>[];
 
   for (final pathArg in paths) {
-    await _scanPath(pathArg, occurrences, argResults['include-tests']);
+    await _scanPath(pathArg, occurrences, argResults['include-tests'] as bool);
   }
 
   var fixed = false;
-  if (argResults['fix'] && occurrences.isNotEmpty) {
+  if (argResults['fix'] == true && occurrences.isNotEmpty) {
     fixed = await _fixOccurrences(occurrences);
   }
 
-  _reportResults(occurrences, argResults['format'], argResults['suggest']);
+  _reportResults(
+    occurrences,
+    argResults['format'] as String,
+    argResults['suggest'] as bool,
+  );
 
   // Exit with 0 if fixed successfully or no occurrences found
   exit(fixed || occurrences.isEmpty ? 0 : 1);

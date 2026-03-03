@@ -10,6 +10,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -37,11 +38,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     required CuratedListRepository curatedListRepository,
     SharedPreferences? sharedPreferences,
     Duration autoRefreshMinInterval = _defaultAutoRefreshMinInterval,
+    FeedPerformanceTracker? feedTracker,
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
        _curatedListRepository = curatedListRepository,
        _sharedPreferences = sharedPreferences,
        _autoRefreshMinInterval = autoRefreshMinInterval,
+       _feedTracker = feedTracker,
        super(const VideoFeedState()) {
     on<VideoFeedStarted>(_onStarted);
     on<VideoFeedModeChanged>(_onModeChanged);
@@ -60,6 +63,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   final CuratedListRepository _curatedListRepository;
   final SharedPreferences? _sharedPreferences;
   final Duration _autoRefreshMinInterval;
+  final FeedPerformanceTracker? _feedTracker;
 
   /// Tracks when the last successful load completed, used by
   /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
@@ -93,6 +97,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         : event.mode;
 
     emit(state.copyWith(status: VideoFeedStatus.loading, mode: mode));
+
+    _feedTracker?.startFeedLoad(mode.name);
 
     await _loadVideos(mode, emit);
 
@@ -342,6 +348,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
       _lastRefreshedAt = DateTime.now();
 
+      _feedTracker?.markFirstVideosReceived(mode.name, validVideos.length);
+
       emit(
         state.copyWith(
           status: VideoFeedStatus.success,
@@ -354,11 +362,19 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           listOnlyVideoIds: result.listOnlyVideoIds,
         ),
       );
+
+      _feedTracker?.markFeedDisplayed(mode.name, validVideos.length);
     } catch (e) {
       Log.error(
         'VideoFeedBloc: Failed to load videos - $e',
         name: 'VideoFeedBloc',
         category: LogCategory.video,
+      );
+
+      _feedTracker?.trackFeedError(
+        mode.name,
+        errorType: 'load_failed',
+        errorMessage: e.toString(),
       );
 
       emit(

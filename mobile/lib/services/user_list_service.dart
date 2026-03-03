@@ -72,16 +72,16 @@ class UserList {
   };
 
   static UserList fromJson(Map<String, dynamic> json) => UserList(
-    id: json['id'],
-    name: json['name'],
-    description: json['description'],
-    imageUrl: json['imageUrl'],
-    pubkeys: List<String>.from(json['pubkeys'] ?? []),
-    createdAt: DateTime.parse(json['createdAt']),
-    updatedAt: DateTime.parse(json['updatedAt']),
-    isPublic: json['isPublic'] ?? true,
-    nostrEventId: json['nostrEventId'],
-    isEditable: json['isEditable'] ?? true,
+    id: json['id'] as String,
+    name: json['name'] as String,
+    description: json['description'] as String?,
+    imageUrl: json['imageUrl'] as String?,
+    pubkeys: List<String>.from(json['pubkeys'] as Iterable? ?? []),
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    updatedAt: DateTime.parse(json['updatedAt'] as String),
+    isPublic: json['isPublic'] as bool? ?? true,
+    nostrEventId: json['nostrEventId'] as String?,
+    isEditable: json['isEditable'] as bool? ?? true,
   );
 }
 

@@ -32,7 +32,7 @@ class GroupMetadata extends GroupObject {
     bool? open;
     int createdAt = event.createdAt;
     for (var tag in event.tags) {
-      if (tag is List && tag.isNotEmpty) {
+      if (tag.isNotEmpty) {
         var key = tag[0];
 
         if (key == "public") {

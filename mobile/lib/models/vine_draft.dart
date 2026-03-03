@@ -117,9 +117,9 @@ class VineDraft {
       );
     } else {
       clips.addAll(
-        List.from(json['clips'] ?? []).map(
+        List.from(json['clips'] as Iterable? ?? []).map(
           (jsonClip) => RecordingClip.fromJson(
-            jsonClip,
+            jsonClip as Map<String, dynamic>,
             documentsPath,
             useOriginalPath: useOriginalPath,
           ),
@@ -142,7 +142,7 @@ class VineDraft {
       publishStatus: json['publishStatus'] != null
           ? PublishStatus.values.byName(json['publishStatus'] as String)
           : PublishStatus.draft, // Migration: default for old drafts
-      allowAudioReuse: json['allowAudioReuse'] ?? false,
+      allowAudioReuse: json['allowAudioReuse'] as bool? ?? false,
       publishError: json['publishError'] as String?,
       publishAttempts: json['publishAttempts'] as int? ?? 0,
       proofManifestJson: json['proofManifestJson'] as String?,

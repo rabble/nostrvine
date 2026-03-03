@@ -12,6 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
@@ -20,6 +21,9 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockCuratedListRepository extends Mock
     implements CuratedListRepository {}
+
+class _MockFeedPerformanceTracker extends Mock
+    implements FeedPerformanceTracker {}
 
 void main() {
   group('VideoFeedBloc', () {
@@ -1305,6 +1309,151 @@ void main() {
         // After closing, stream events should not cause errors
         expect(() => followingController.add(['a']), returnsNormally);
       });
+    });
+
+    group('feed performance tracking', () {
+      late _MockFeedPerformanceTracker mockTracker;
+
+      setUp(() {
+        mockTracker = _MockFeedPerformanceTracker();
+      });
+
+      VideoFeedBloc createBlocWithTracker() => VideoFeedBloc(
+        videosRepository: mockVideosRepository,
+        followRepository: mockFollowRepository,
+        curatedListRepository: mockCuratedListRepository,
+        feedTracker: mockTracker,
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'calls startFeedLoad on VideoFeedStarted',
+        setUp: () {
+          final videos = createTestVideos(3);
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        verify: (_) {
+          verify(() => mockTracker.startFeedLoad('home')).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'calls markFirstVideosReceived and markFeedDisplayed on success',
+        setUp: () {
+          final videos = createTestVideos(3);
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        verify: (_) {
+          verify(
+            () => mockTracker.markFirstVideosReceived('home', 3),
+          ).called(1);
+          verify(
+            () => mockTracker.markFeedDisplayed('home', 3),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'calls trackFeedError on failure',
+        setUp: () {
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        verify: (_) {
+          verify(
+            () => mockTracker.trackFeedError(
+              'home',
+              errorType: 'load_failed',
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockTracker.markFirstVideosReceived(
+              any(),
+              any(),
+            ),
+          );
+          verifyNever(
+            () => mockTracker.markFeedDisplayed(any(), any()),
+          );
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'uses correct feed type for latest mode',
+        setUp: () {
+          final videos = createTestVideos(3);
+          when(
+            () => mockVideosRepository.getNewVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.latest)),
+        verify: (_) {
+          verify(() => mockTracker.startFeedLoad('latest')).called(1);
+          verify(
+            () => mockTracker.markFirstVideosReceived('latest', 3),
+          ).called(1);
+          verify(
+            () => mockTracker.markFeedDisplayed('latest', 3),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'uses correct feed type for popular mode',
+        setUp: () {
+          final videos = createTestVideos(3);
+          when(
+            () => mockVideosRepository.getPopularVideos(
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.popular)),
+        verify: (_) {
+          verify(() => mockTracker.startFeedLoad('popular')).called(1);
+          verify(
+            () => mockTracker.markFirstVideosReceived('popular', 3),
+          ).called(1);
+          verify(
+            () => mockTracker.markFeedDisplayed('popular', 3),
+          ).called(1);
+        },
+      );
     });
   });
 }

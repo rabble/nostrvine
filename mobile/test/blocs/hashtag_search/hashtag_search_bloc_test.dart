@@ -7,8 +7,12 @@ import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 
 class _MockHashtagRepository extends Mock implements HashtagRepository {}
+
+class _MockFeedPerformanceTracker extends Mock
+    implements FeedPerformanceTracker {}
 
 void main() {
   group(HashtagSearchBloc, () {
@@ -307,6 +311,95 @@ void main() {
           ['music', 'musician'],
         ]);
       });
+    });
+
+    group('feed performance tracking', () {
+      late _MockHashtagRepository mockRepo;
+      late _MockFeedPerformanceTracker mockTracker;
+
+      // Debounce duration used in the BLoC + buffer
+      const debounceDuration = Duration(milliseconds: 400);
+
+      setUp(() {
+        mockRepo = _MockHashtagRepository();
+        mockTracker = _MockFeedPerformanceTracker();
+
+        when(
+          () => mockRepo.searchHashtags(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
+      });
+
+      HashtagSearchBloc createBlocWithTracker() => HashtagSearchBloc(
+        hashtagRepository: mockRepo,
+        feedTracker: mockTracker,
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'calls startFeedLoad, markFirstVideosReceived, and '
+        'markFeedDisplayed on success',
+        setUp: () {
+          when(
+            () => mockRepo.searchHashtags(query: 'music'),
+          ).thenAnswer((_) async => ['music', 'musician', 'musicvideo']);
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('music')),
+        wait: debounceDuration,
+        verify: (_) {
+          verify(
+            () => mockTracker.startFeedLoad('hashtag_search'),
+          ).called(1);
+          verify(
+            () => mockTracker.markFirstVideosReceived('hashtag_search', 3),
+          ).called(1);
+          verify(
+            () => mockTracker.markFeedDisplayed('hashtag_search', 3),
+          ).called(1);
+        },
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'calls trackFeedError on failure',
+        setUp: () {
+          when(
+            () => mockRepo.searchHashtags(query: 'error'),
+          ).thenThrow(const FunnelcakeException('search failed'));
+        },
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('error')),
+        wait: debounceDuration,
+        verify: (_) {
+          verify(
+            () => mockTracker.startFeedLoad('hashtag_search'),
+          ).called(1);
+          verify(
+            () => mockTracker.trackFeedError(
+              'hashtag_search',
+              errorType: 'search_failed',
+              errorMessage: any(named: 'errorMessage'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockTracker.markFirstVideosReceived(any(), any()),
+          );
+          verifyNever(
+            () => mockTracker.markFeedDisplayed(any(), any()),
+          );
+        },
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'does not call tracker for empty query',
+        build: createBlocWithTracker,
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('')),
+        wait: debounceDuration,
+        verify: (_) {
+          verifyNever(() => mockTracker.startFeedLoad(any()));
+        },
+      );
     });
   });
 }

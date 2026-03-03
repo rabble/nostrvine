@@ -13,6 +13,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -121,9 +122,13 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   /// Whether a refresh is currently in progress.
   bool _isRefreshing = false;
 
+  /// Whether the profile feed load has been tracked.
+  bool _hasTrackedFeedLoad = false;
+
   @override
   void initState() {
     super.initState();
+    FeedPerformanceTracker().startFeedLoad('profile');
   }
 
   @override
@@ -306,6 +311,14 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           'video_count': videosAsync.asData?.value.videos.length ?? 0,
         },
       );
+
+      if (!_hasTrackedFeedLoad) {
+        _hasTrackedFeedLoad = true;
+        final count = videosAsync.asData?.value.videos.length ?? 0;
+        final tracker = FeedPerformanceTracker();
+        tracker.markFirstVideosReceived('profile', count);
+        tracker.markFeedDisplayed('profile', count);
+      }
     }
 
     return BlocBuilder<OtherProfileBloc, OtherProfileState>(

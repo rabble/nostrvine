@@ -455,7 +455,7 @@ final class PublicListsContainingVideoProvider
 }
 
 String _$publicListsContainingVideoHash() =>
-    r'84d16b0636b8f6434bcc772e75ed189bc793a801';
+    r'904b7d295bc60b70f320aeaf59b2d56d88522306';
 
 /// Provider that streams public lists containing a specific video
 /// Accumulates results as they arrive from Nostr relays, yielding updated list

@@ -225,13 +225,15 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
   /// Otherwise, the drag offset animates back to zero and reorder mode ends.
   Future<void> _handleReorderCancel() async {
     final isOverDeleteZone = ref.read(videoEditorProvider).isOverDeleteZone;
-    final targetIndex = _reorderController.targetIndex;
+    // Use startIndex for deletion - the clip list hasn't been reordered yet,
+    // so the original clip is still at its starting position
+    final startIndex = _reorderController.startIndex;
 
     if (isOverDeleteZone) {
       // Delete the clip if released over delete zone
       final clips = ref.read(clipManagerProvider).clips;
-      if (targetIndex >= 0 && targetIndex < clips.length) {
-        final clipToDelete = clips[targetIndex];
+      if (startIndex >= 0 && startIndex < clips.length) {
+        final clipToDelete = clips[startIndex];
         unawaited(
           ref
               .read(clipManagerProvider.notifier)
@@ -244,13 +246,25 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
           return;
         }
 
-        // Update selected index after deletion
+        // Update selected index after deletion - based on startIndex since
+        // that's where the deleted clip was
         final remainingClips = ref.read(clipManagerProvider).clips;
         final newIndex = _reorderController.calculateIndexAfterDeletion(
           remainingClips.length,
         );
         _reorderController.updateTargetIndex(newIndex);
         ref.read(videoEditorProvider.notifier).selectClipByIndex(newIndex);
+
+        // Skip reorder since we deleted instead
+        _reorderController.completeReorder();
+        ref.read(videoEditorProvider.notifier).stopClipReordering();
+        _wasOverDeleteZone = false;
+
+        Future.delayed(VideoEditorGalleryConstants.scaleAnimationDuration, () {
+          if (mounted) _reorderController.disableTweenOffset();
+          setState(() {});
+        });
+        return;
       }
     }
 
@@ -261,6 +275,7 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     }
     _reorderController.completeReorder();
 
+    // Only reorder if we didn't delete
     ref
         .read(clipManagerProvider.notifier)
         .reorderClip(
