@@ -7,7 +7,28 @@ import 'package:drift/drift.dart';
 
 part 'drafts_dao.g.dart';
 
-@DriftAccessor(tables: [Drafts])
+/// Data transfer object for clip insertion within a transaction.
+class DraftClipData {
+  const DraftClipData({
+    required this.id,
+    required this.orderIndex,
+    required this.durationMs,
+    required this.recordedAt,
+    required this.data,
+    this.filePath,
+    this.thumbnailPath,
+  });
+
+  final String id;
+  final int orderIndex;
+  final int durationMs;
+  final DateTime recordedAt;
+  final String data;
+  final String? filePath;
+  final String? thumbnailPath;
+}
+
+@DriftAccessor(tables: [Drafts, Clips])
 class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
   DraftsDao(super.attachedDatabase);
 
@@ -182,5 +203,61 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
       );
     final result = await query.getSingle();
     return (result.read(drafts.id.count()) ?? 0) > 0;
+  }
+
+  /// Atomically save a draft and its clips in a single transaction.
+  ///
+  /// This ensures readers never observe a draft with 0 clips during updates.
+  Future<void> saveDraftWithClips({
+    required String id,
+    required String title,
+    required String description,
+    required String publishStatus,
+    required DateTime createdAt,
+    required DateTime lastModified,
+    required String data,
+    required String? renderedFilePath,
+    required String? renderedThumbnailPath,
+    required List<DraftClipData> clipDataList,
+    int publishAttempts = 0,
+    String? publishError,
+  }) {
+    return transaction(() async {
+      // 1. Upsert the draft row
+      await into(drafts).insertOnConflictUpdate(
+        DraftsCompanion.insert(
+          id: id,
+          title: Value(title),
+          description: Value(description),
+          publishStatus: Value(publishStatus),
+          publishAttempts: Value(publishAttempts),
+          publishError: Value(publishError),
+          createdAt: createdAt,
+          lastModified: lastModified,
+          data: data,
+          renderedFilePath: Value(renderedFilePath),
+          renderedThumbnailPath: Value(renderedThumbnailPath),
+        ),
+      );
+
+      // 2. Delete existing clips for this draft
+      await (delete(clips)..where((t) => t.draftId.equals(id))).go();
+
+      // 3. Insert new clips
+      for (final clipData in clipDataList) {
+        await into(clips).insertOnConflictUpdate(
+          ClipsCompanion.insert(
+            id: '$id:${clipData.id}',
+            draftId: Value(id),
+            orderIndex: Value(clipData.orderIndex),
+            durationMs: clipData.durationMs,
+            recordedAt: clipData.recordedAt,
+            data: clipData.data,
+            filePath: Value(clipData.filePath),
+            thumbnailPath: Value(clipData.thumbnailPath),
+          ),
+        );
+      }
+    });
   }
 }
