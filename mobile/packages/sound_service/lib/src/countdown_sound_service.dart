@@ -111,6 +111,10 @@ class CountdownSoundService {
     try {
       await _longBeepPlayer!.seek(Duration.zero);
       await _longBeepPlayer!.play();
+      // Extra buffer to ensure audio fully completes before recording starts.
+      // On iOS, play() may return slightly before audio hardware finishes,
+      // which can cause the beep to bleed into the recorded video audio.
+      await Future<void>.delayed(const Duration(milliseconds: 150));
     } on Exception catch (e) {
       log(
         'Failed to play long countdown beep: $e',
