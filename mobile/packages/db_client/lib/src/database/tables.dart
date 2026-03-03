@@ -595,15 +595,13 @@ class Clips extends Table {
     'FOREIGN KEY (draft_id) REFERENCES drafts(id) ON DELETE CASCADE',
   ];
 
-  List<Index> get libraryIndexes => [
+  List<Index> get indexes => [
+    // Partial index for library clips (clips without a draft)
     Index(
       'idx_clip_library',
       'CREATE INDEX IF NOT EXISTS idx_clip_library '
           'ON clips (draft_id) WHERE draft_id IS NULL',
     ),
-  ];
-
-  List<Index> get indexes => [
     Index(
       'idx_clip_draft_id',
       'CREATE INDEX IF NOT EXISTS idx_clip_draft_id '

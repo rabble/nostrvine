@@ -224,11 +224,13 @@ class AppDatabase extends _$AppDatabase {
         CREATE INDEX IF NOT EXISTS idx_clip_recorded_at
         ON clips (recorded_at DESC)
       ''');
-      await customStatement('''
-        CREATE INDEX IF NOT EXISTS idx_clip_library
-        ON clips (draft_id) WHERE draft_id IS NULL
-      ''');
     }
+
+    // Create partial index unconditionally (for new and existing databases)
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_library
+      ON clips (draft_id) WHERE draft_id IS NULL
+    ''');
 
     // Add file_path / thumbnail_path columns to clips (if missing)
     await _addColumnIfMissing('clips', 'file_path', 'TEXT');
@@ -278,24 +280,36 @@ class AppDatabase extends _$AppDatabase {
   /// Populates file_path / thumbnail_path columns from JSON data blobs
   /// for rows where they are still NULL.
   Future<void> _backfillFilePathColumns() async {
-    // Clips: extract filePath and thumbnailPath from JSON data
+    // Clips: backfill file_path where missing
     await customStatement(r'''
       UPDATE clips
-      SET file_path = json_extract(data, '$.filePath'),
-          thumbnail_path = json_extract(data, '$.thumbnailPath')
+      SET file_path = json_extract(data, '$.filePath')
       WHERE file_path IS NULL
     ''');
 
-    // Drafts: extract finalRenderedClip paths from JSON data
+    // Clips: backfill thumbnail_path where missing
+    await customStatement(r'''
+      UPDATE clips
+      SET thumbnail_path = json_extract(data, '$.thumbnailPath')
+      WHERE thumbnail_path IS NULL
+    ''');
+
+    // Drafts: backfill rendered_file_path where missing
     await customStatement(r'''
       UPDATE drafts
       SET rendered_file_path = json_extract(
             data, '$.finalRenderedClip.filePath'
-          ),
-          rendered_thumbnail_path = json_extract(
-            data, '$.finalRenderedClip.thumbnailPath'
           )
       WHERE rendered_file_path IS NULL
+    ''');
+
+    // Drafts: backfill rendered_thumbnail_path where missing
+    await customStatement(r'''
+      UPDATE drafts
+      SET rendered_thumbnail_path = json_extract(
+            data, '$.finalRenderedClip.thumbnailPath'
+          )
+      WHERE rendered_thumbnail_path IS NULL
     ''');
   }
 
