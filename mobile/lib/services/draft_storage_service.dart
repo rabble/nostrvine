@@ -38,6 +38,9 @@ class DraftStorageService {
     final documentsPath = await getDocumentsPath();
     final jsonList = json.decode(jsonString) as List<dynamic>;
 
+    final failedDrafts = <dynamic>[];
+    var successCount = 0;
+
     for (final rawJson in jsonList) {
       try {
         final draftMap = rawJson as Map<String, dynamic>;
@@ -88,21 +91,34 @@ class DraftStorageService {
                 : null,
           );
         }
+        successCount++;
       } catch (e) {
         Log.error(
           'Failed to migrate draft: $e',
           name: 'DraftStorageService',
           category: LogCategory.video,
         );
+        failedDrafts.add(rawJson);
       }
     }
 
-    // Remove old SharedPreferences key after successful migration
-    await prefs.remove(_storageKey);
-    Log.info(
-      '📂 Migrated ${jsonList.length} drafts from SharedPreferences to Drift',
-      name: 'DraftStorageService',
-    );
+    if (failedDrafts.isEmpty) {
+      // All drafts migrated successfully - remove the legacy key
+      await prefs.remove(_storageKey);
+      Log.info(
+        '📂 Migrated $successCount drafts from SharedPreferences to Drift',
+        name: 'DraftStorageService',
+      );
+    } else {
+      // Keep only failed drafts for retry on next app launch
+      await prefs.setString(_storageKey, json.encode(failedDrafts));
+      Log.warning(
+        '⚠️ Migrated $successCount drafts, ${failedDrafts.length} failed and '
+        'will be retried on next launch',
+        name: 'DraftStorageService',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Save a draft to storage. If a draft with the same ID exists, it will be
@@ -153,11 +169,32 @@ class DraftStorageService {
       );
     }
 
-    // Upsert draft row
+    // Upsert draft and clips atomically in a single transaction
     final draftJson = draft.toJson();
     // Remove clips from JSON blob – they live in their own table
     draftJson.remove('clips');
-    await _draftsDao.upsertDraft(
+
+    final clipDataList = <DraftClipData>[];
+    for (var i = 0; i < draft.clips.length; i++) {
+      final clip = draft.clips[i];
+      clipDataList.add(
+        DraftClipData(
+          id: clip.id,
+          orderIndex: i,
+          durationMs: clip.duration.inMilliseconds,
+          recordedAt: clip.recordedAt,
+          data: json.encode(clip.toJson()),
+          filePath: clip.video.file?.path != null
+              ? p.basename(clip.video.file!.path)
+              : null,
+          thumbnailPath: clip.thumbnailPath != null
+              ? p.basename(clip.thumbnailPath!)
+              : null,
+        ),
+      );
+    }
+
+    await _draftsDao.saveDraftWithClips(
       id: draft.id,
       title: draft.title,
       description: draft.description,
@@ -173,30 +210,8 @@ class DraftStorageService {
       renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
           ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
           : null,
+      clipDataList: clipDataList,
     );
-
-    // Replace all clips: delete old, insert new.
-    // Use composite IDs (draftId:clipId) so draft clip rows
-    // coexist with library clip rows that share the same
-    // underlying clip.id.
-    await _clipsDao.deleteClipsByDraftId(draft.id);
-    for (var i = 0; i < draft.clips.length; i++) {
-      final clip = draft.clips[i];
-      await _clipsDao.upsertClip(
-        id: '${draft.id}:${clip.id}',
-        draftId: draft.id,
-        orderIndex: i,
-        durationMs: clip.duration.inMilliseconds,
-        recordedAt: clip.recordedAt,
-        data: json.encode(clip.toJson()),
-        filePath: clip.video.file?.path != null
-            ? p.basename(clip.video.file!.path)
-            : null,
-        thumbnailPath: clip.thumbnailPath != null
-            ? p.basename(clip.thumbnailPath!)
-            : null,
-      );
-    }
   }
 
   /// Get total count of drafts without loading their data.

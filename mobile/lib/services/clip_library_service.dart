@@ -35,6 +35,9 @@ class ClipLibraryService {
     final documentsPath = await getDocumentsPath();
     final jsonList = json.decode(jsonString) as List<dynamic>;
 
+    final failedClips = <dynamic>[];
+    var successCount = 0;
+
     for (final rawJson in jsonList) {
       try {
         final clipMap = rawJson as Map<String, dynamic>;
@@ -53,21 +56,34 @@ class ClipLibraryService {
               ? p.basename(clip.thumbnailPath!)
               : null,
         );
+        successCount++;
       } catch (e) {
         Log.error(
           'Failed to migrate clip: $e',
           name: 'ClipLibraryService',
           category: LogCategory.video,
         );
+        failedClips.add(rawJson);
       }
     }
 
-    // Remove old SharedPreferences key after successful migration
-    await prefs.remove(_storageKey);
-    Log.info(
-      '📂 Migrated ${jsonList.length} clips from SharedPreferences to Drift',
-      name: 'ClipLibraryService',
-    );
+    if (failedClips.isEmpty) {
+      // All clips migrated successfully - remove the legacy key
+      await prefs.remove(_storageKey);
+      Log.info(
+        '📂 Migrated $successCount clips from SharedPreferences to Drift',
+        name: 'ClipLibraryService',
+      );
+    } else {
+      // Keep only failed clips for retry on next app launch
+      await prefs.setString(_storageKey, json.encode(failedClips));
+      Log.warning(
+        '⚠️ Migrated $successCount clips, ${failedClips.length} failed and '
+        'will be retried on next launch',
+        name: 'ClipLibraryService',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Save a clip to the library. Updates existing clip if ID matches.
