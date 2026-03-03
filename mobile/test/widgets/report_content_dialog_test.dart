@@ -73,17 +73,6 @@ void main() {
     ).thenAnswer((_) async => ReportResult.createSuccess('test_report_id'));
 
     when(
-      () => mockReportingService.reportUser(
-        userPubkey: any(named: 'userPubkey'),
-        reason: any(named: 'reason'),
-        details: any(named: 'details'),
-        relatedEventIds: any(named: 'relatedEventIds'),
-      ),
-    ).thenAnswer(
-      (_) async => ReportResult.createSuccess('test_user_report_id'),
-    );
-
-    when(
       () => mockMuteService.muteUser(
         any(),
         reason: any(named: 'reason'),
@@ -585,64 +574,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Close'), findsOneWidget);
-    });
-  });
-
-  // Unit test for Nostr event service calls
-  group('Nostr Event Publishing', () {
-    test('reportUser() and muteUser() are called when blocking', () async {
-      final mockReportingService = _MockContentReportingService();
-      final mockMuteService = _MockMuteService();
-
-      when(
-        () => mockReportingService.reportUser(
-          userPubkey: any(named: 'userPubkey'),
-          reason: any(named: 'reason'),
-          details: any(named: 'details'),
-          relatedEventIds: any(named: 'relatedEventIds'),
-        ),
-      ).thenAnswer((_) async => ReportResult.createSuccess('user_report_id'));
-
-      when(
-        () => mockMuteService.muteUser(
-          any(),
-          reason: any(named: 'reason'),
-          duration: any(named: 'duration'),
-        ),
-      ).thenAnswer((_) async => true);
-
-      final userReportResult = await mockReportingService.reportUser(
-        userPubkey:
-            '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
-        reason: ContentFilterReason.harassment,
-        details: 'Test user report',
-        relatedEventIds: ['test_event_id'],
-      );
-
-      final muteResult = await mockMuteService.muteUser(
-        '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
-        reason: 'Test mute',
-      );
-
-      expect(userReportResult.success, isTrue);
-      expect(muteResult, isTrue);
-
-      verify(
-        () => mockReportingService.reportUser(
-          userPubkey: any(named: 'userPubkey'),
-          reason: any(named: 'reason'),
-          details: any(named: 'details'),
-          relatedEventIds: any(named: 'relatedEventIds'),
-        ),
-      ).called(1);
-
-      verify(
-        () => mockMuteService.muteUser(
-          any(),
-          reason: any(named: 'reason'),
-          duration: any(named: 'duration'),
-        ),
-      ).called(1);
     });
   });
 }
