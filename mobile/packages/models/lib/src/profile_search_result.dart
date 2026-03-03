@@ -141,8 +141,7 @@ class ProfileSearchResult {
   final int? videoCount;
 
   /// Get the best display name available.
-  String get bestDisplayName =>
-      displayName ?? name ?? pubkey.substring(0, 8).toUpperCase();
+  String get bestDisplayName => displayName ?? name ?? pubkey;
 
   /// Converts this [ProfileSearchResult] to a [UserProfile] for app use.
   ///

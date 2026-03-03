@@ -163,6 +163,52 @@ void main() {
       );
     });
 
+    group('contact deduplication', () {
+      const duplicatePubkey =
+          'aaaa456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'deduplicates contacts when pubkey appears in both recents and follows',
+        setUp: () {
+          when(
+            () => mockSharingService.recentlySharedWith,
+          ).thenReturn([
+            const ShareableUser(
+              pubkey: duplicatePubkey,
+              displayName: 'Alice (recent)',
+            ),
+          ]);
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([
+            duplicatePubkey,
+            'bbbb456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          ]);
+          when(() => mockProfileService.hasProfile(any())).thenReturn(true);
+          when(
+            () => mockProfileService.getCachedProfile(any()),
+          ).thenReturn(null);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 2)
+              .having(
+                (s) => s.contacts.first.displayName,
+                'first is from recents',
+                'Alice (recent)',
+              )
+              .having(
+                (s) =>
+                    s.contacts.where((c) => c.pubkey == duplicatePubkey).length,
+                'no duplicate pubkey',
+                1,
+              ),
+        ],
+      );
+    });
+
     // -----------------------------------------------------------------------
     // Recipient selection
     // -----------------------------------------------------------------------
@@ -343,6 +389,69 @@ void main() {
                   'shouldDismiss',
                   isTrue,
                 ),
+              ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'sends null personalMessage when message is whitespace only',
+        setUp: () {
+          when(
+            () => mockSharingService.shareVideoWithUser(
+              video: any(named: 'video'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              personalMessage: any(named: 'personalMessage'),
+            ),
+          ).thenAnswer((_) async => ShareResult.createSuccess('msg-event-id'));
+        },
+        seed: () => const ShareSheetState(
+          status: ShareSheetStatus.ready,
+          selectedRecipient: testRecipient,
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSendRequested(message: '   ')),
+        verify: (_) {
+          final captured = verify(
+            () => mockSharingService.shareVideoWithUser(
+              video: any(named: 'video'),
+              recipientPubkey: captureAny(named: 'recipientPubkey'),
+              personalMessage: captureAny(named: 'personalMessage'),
+            ),
+          ).captured;
+          expect(captured[0], equals(testRecipient.pubkey));
+          expect(captured[1], isNull, reason: 'whitespace trimmed to null');
+        },
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits failure when shareVideoWithUser throws an exception',
+        setUp: () {
+          when(
+            () => mockSharingService.shareVideoWithUser(
+              video: any(named: 'video'),
+              recipientPubkey: any(named: 'recipientPubkey'),
+              personalMessage: any(named: 'personalMessage'),
+            ),
+          ).thenThrow(Exception('Unexpected error'));
+        },
+        seed: () => const ShareSheetState(
+          status: ShareSheetStatus.ready,
+          selectedRecipient: testRecipient,
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetSendRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.isSending,
+            'isSending',
+            isTrue,
+          ),
+          isA<ShareSheetState>()
+              .having((s) => s.isSending, 'isSending', isFalse)
+              .having(
+                (s) => s.actionResult,
+                'actionResult',
+                isA<ShareSheetSendFailure>(),
               ),
         ],
       );
