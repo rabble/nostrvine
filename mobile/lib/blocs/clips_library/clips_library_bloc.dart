@@ -4,11 +4,10 @@
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 
 part 'clips_library_event.dart';
 part 'clips_library_state.dart';
@@ -48,7 +47,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   final GallerySaveService _gallerySaveService;
 
   /// Returns the currently selected clips.
-  List<SavedClip> get selectedClips =>
+  List<DivineVideoClip> get selectedClips =>
       state.clips.where((c) => state.selectedClipIds.contains(c.id)).toList();
 
   Future<void> _onLoadRequested(
@@ -254,9 +253,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
 
     for (final clip in clipsToSave) {
       try {
-        final result = await _gallerySaveService.saveVideoToGallery(
-          EditorVideo.file(clip.filePath),
-        );
+        final result = await _gallerySaveService.saveVideoToGallery(clip.video);
 
         switch (result) {
           case GallerySaveSuccess():

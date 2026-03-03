@@ -3,17 +3,19 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group(ClipsLibraryState, () {
-    final clip1 = SavedClip(
+    final clip1 = DivineVideoClip(
       id: 'clip1',
-      filePath: '/path/to/clip1.mp4',
+      video: EditorVideo.file('/path/to/clip1.mp4'),
       thumbnailPath: '/path/to/thumb1.jpg',
       duration: const Duration(seconds: 5),
-      createdAt: DateTime(2026),
-      aspectRatio: 'vertical',
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
     );
 
     test('supports value equality', () {

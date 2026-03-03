@@ -2,18 +2,19 @@
 // ABOUTME: Basic structure tests - video playback tests require platform setup
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview.dart';
+import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 
 void main() {
   group(VideoClipPreview, () {
-    final testClip = SavedClip(
+    final testClip = DivineVideoClip(
       id: 'test-clip-1',
-      filePath: '/path/to/video.mp4',
-      thumbnailPath: null,
+      video: EditorVideo.file('/path/to/video.mp4'),
       duration: const Duration(seconds: 5),
-      createdAt: DateTime(2026),
-      aspectRatio: 'vertical',
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
     );
 
     test('can be instantiated', () {

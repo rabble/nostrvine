@@ -3,12 +3,12 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 
 void main() {
   group('DraftsLibraryState', () {
-    VineDraft createDraft({String? id}) {
-      return VineDraft(
+    DivineVideoDraft createDraft({String? id}) {
+      return DivineVideoDraft(
         id: id ?? 'draft-${DateTime.now().millisecondsSinceEpoch}',
         clips: const [],
         title: 'Test Draft',

@@ -10,7 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -91,7 +91,7 @@ class DraftsTab extends ConsumerWidget {
   Future<void> _openDraftOptions(
     BuildContext context,
     WidgetRef ref,
-    VineDraft draft,
+    DivineVideoDraft draft,
   ) async {
     await VineBottomSheetActionMenu.show(
       context: context,
@@ -123,7 +123,7 @@ class DraftsTab extends ConsumerWidget {
   Future<void> _postDraft(
     BuildContext context,
     WidgetRef ref,
-    VineDraft draft,
+    DivineVideoDraft draft,
   ) async {
     Log.info(
       '📚 Post draft: ${draft.id}',
@@ -143,7 +143,7 @@ class DraftsTab extends ConsumerWidget {
   Future<void> _openDraft(
     BuildContext context,
     WidgetRef ref,
-    VineDraft draft,
+    DivineVideoDraft draft,
   ) async {
     Log.info(
       '📚 Opening draft: ${draft.id}',
@@ -167,7 +167,10 @@ class DraftsTab extends ConsumerWidget {
     }
   }
 
-  Future<void> _deleteDraft(BuildContext context, VineDraft draft) async {
+  Future<void> _deleteDraft(
+    BuildContext context,
+    DivineVideoDraft draft,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -226,7 +229,7 @@ class DraftListTile extends StatelessWidget {
   });
 
   /// The draft to display.
-  final VineDraft draft;
+  final DivineVideoDraft draft;
 
   /// Callback when the tile is tapped.
   final VoidCallback? onTap;

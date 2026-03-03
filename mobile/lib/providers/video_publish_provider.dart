@@ -247,7 +247,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
           category: .video,
         );
 
-        final filePath = await finalRenderedClip!.video.safeFilePath();
+        final filePath = await finalRenderedClip.video.safeFilePath();
         final result = await NativeProofModeService.proofFile(File(filePath));
         proofManifestJson = result != null ? jsonEncode(result) : null;
 

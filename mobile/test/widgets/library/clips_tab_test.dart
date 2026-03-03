@@ -8,10 +8,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/library/clips_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockClipsLibraryBloc
     extends MockBloc<ClipsLibraryEvent, ClipsLibraryState>
@@ -21,22 +22,22 @@ void main() {
   group(ClipsTab, () {
     late _MockClipsLibraryBloc mockBloc;
 
-    final clip1 = SavedClip(
+    final clip1 = DivineVideoClip(
       id: 'clip1',
-      filePath: '/path/to/clip1.mp4',
-      thumbnailPath: null,
+      video: EditorVideo.file('/path/to/clip1.mp4'),
       duration: const Duration(seconds: 5),
-      createdAt: DateTime(2026),
-      aspectRatio: 'vertical',
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
     );
 
-    final clip2 = SavedClip(
+    final clip2 = DivineVideoClip(
       id: 'clip2',
-      filePath: '/path/to/clip2.mp4',
-      thumbnailPath: null,
+      video: EditorVideo.file('/path/to/clip2.mp4'),
       duration: const Duration(seconds: 3),
-      createdAt: DateTime(2026),
-      aspectRatio: 'vertical',
+      recordedAt: DateTime(2026),
+      targetAspectRatio: .vertical,
+      originalAspectRatio: 9 / 16,
     );
 
     setUp(() {

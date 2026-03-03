@@ -81,7 +81,7 @@ final class ClipsLibraryState extends Equatable {
   final ClipsLibraryStatus status;
 
   /// All available clips.
-  final List<SavedClip> clips;
+  final List<DivineVideoClip> clips;
 
   /// IDs of currently selected clips.
   final Set<String> selectedClipIds;
@@ -110,7 +110,7 @@ final class ClipsLibraryState extends Equatable {
   /// Creates a copy of this state with the given fields replaced.
   ClipsLibraryState copyWith({
     ClipsLibraryStatus? status,
-    List<SavedClip>? clips,
+    List<DivineVideoClip>? clips,
     Set<String>? selectedClipIds,
     Duration? selectedDuration,
     String? errorMessage,

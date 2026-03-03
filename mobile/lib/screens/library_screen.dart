@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' as model;
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -19,7 +18,6 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/library/library.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   /// Route name for drafts path.
@@ -169,13 +167,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
     for (final clip in selectedClips) {
       clipManagerNotifier.addClip(
-        video: EditorVideo.file(clip.filePath),
+        video: clip.video,
         duration: clip.duration,
         thumbnailPath: clip.thumbnailPath,
-        targetAspectRatio: clip.aspectRatio == 'vertical'
-            ? model.AspectRatio.vertical
-            : model.AspectRatio.square,
-        originalAspectRatio: clip.aspectRatioValue,
+        targetAspectRatio: clip.targetAspectRatio,
+        originalAspectRatio: clip.targetAspectRatio.value,
+        lensMetadata: clip.lensMetadata,
       );
     }
 
@@ -282,7 +279,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                             (el) => el.id == clipsState.selectedClipIds.first,
                             orElse: () => clipsState.clips.first,
                           )
-                          .aspectRatioValue
+                          .targetAspectRatio
+                          .value
                     : null;
 
                 final remaining = _remainingDuration(clipsState);

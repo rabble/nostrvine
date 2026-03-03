@@ -39,7 +39,7 @@ final class DraftsLibraryLoaded extends DraftsLibraryState {
   });
 
   /// List of loaded drafts, sorted by most recent first.
-  final List<VineDraft> drafts;
+  final List<DivineVideoDraft> drafts;
 
   /// Result of the last delete operation, if any.
   final DeleteResult? deleteResult;

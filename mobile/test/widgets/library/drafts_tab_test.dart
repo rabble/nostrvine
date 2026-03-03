@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 
@@ -21,11 +21,11 @@ void main() {
   group(DraftsTab, () {
     late _MockDraftsLibraryBloc mockBloc;
 
-    VineDraft createDraft({
+    DivineVideoDraft createDraft({
       String? id,
       String title = 'Test Draft',
     }) {
-      return VineDraft(
+      return DivineVideoDraft(
         id: id ?? 'draft-${DateTime.now().millisecondsSinceEpoch}',
         clips: const [],
         title: title,
@@ -114,12 +114,12 @@ void main() {
   });
 
   group(DraftListTile, () {
-    VineDraft createDraft({
+    DivineVideoDraft createDraft({
       String? id,
       String title = 'Test Draft',
       DateTime? lastModified,
     }) {
-      return VineDraft(
+      return DivineVideoDraft(
         id: id ?? 'draft-${DateTime.now().millisecondsSinceEpoch}',
         clips: const [],
         title: title,
@@ -134,7 +134,7 @@ void main() {
     }
 
     Widget buildWidget({
-      required VineDraft draft,
+      required DivineVideoDraft draft,
       VoidCallback? onTap,
       VoidCallback? onOpenMore,
       bool enableShrink = false,

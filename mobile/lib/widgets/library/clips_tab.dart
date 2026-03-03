@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/library/empty_library_state.dart';
 import 'package:openvine/widgets/masonary_grid.dart';
@@ -70,7 +70,10 @@ class ClipsTab extends StatelessWidget {
     );
   }
 
-  Future<void> _showClipPreview(BuildContext context, SavedClip clip) async {
+  Future<void> _showClipPreview(
+    BuildContext context,
+    DivineVideoClip clip,
+  ) async {
     await Navigator.push(
       context,
       PageRouteBuilder(
@@ -88,7 +91,10 @@ class ClipsTab extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmDeleteClip(BuildContext context, SavedClip clip) async {
+  Future<void> _confirmDeleteClip(
+    BuildContext context,
+    DivineVideoClip clip,
+  ) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -229,11 +235,11 @@ class _MasonryLayout extends StatelessWidget {
     this.targetAspectRatio,
   });
 
-  final List<SavedClip> clips;
+  final List<DivineVideoClip> clips;
   final Set<String> selectedClipIds;
   final Duration remainingDuration;
-  final ValueChanged<SavedClip> onTapClip;
-  final ValueChanged<SavedClip> onLongPressClip;
+  final ValueChanged<DivineVideoClip> onTapClip;
+  final ValueChanged<DivineVideoClip> onLongPressClip;
   final double? targetAspectRatio;
 
   @override
@@ -244,7 +250,9 @@ class _MasonryLayout extends StatelessWidget {
         columnCount: 2,
         rowGap: 4,
         columnGap: 4,
-        itemAspectRatios: clips.map((clip) => clip.aspectRatioValue).toList(),
+        itemAspectRatios: clips
+            .map((clip) => clip.targetAspectRatio.value)
+            .toList(),
         children: clips.map((clip) {
           final isSelected = selectedClipIds.contains(clip.id);
           return VideoClipThumbnailCard(
@@ -252,7 +260,7 @@ class _MasonryLayout extends StatelessWidget {
             isSelected: isSelected,
             disabled:
                 (targetAspectRatio != null &&
-                    targetAspectRatio != clip.aspectRatioValue) ||
+                    targetAspectRatio != clip.targetAspectRatio.value) ||
                 (!isSelected && clip.duration > remainingDuration),
             onTap: () => onTapClip(clip),
             onLongPress: () => onLongPressClip(clip),

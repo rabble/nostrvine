@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
@@ -15,12 +15,12 @@ void main() {
   group(DraftsLibraryBloc, () {
     late _MockDraftStorageService mockDraftStorageService;
 
-    VineDraft createDraft({
+    DivineVideoDraft createDraft({
       String? id,
       PublishStatus publishStatus = PublishStatus.draft,
       DateTime? lastModified,
     }) {
-      return VineDraft(
+      return DivineVideoDraft(
         id: id ?? 'draft-${DateTime.now().millisecondsSinceEpoch}',
         clips: const [],
         title: 'Test Draft',

@@ -176,18 +176,19 @@ class VideoEditorRenderService {
   // Public API
   // ─────────────────────────────────────────────────────────────────────────
 
-  /// Renders multiple clips into a [RecordingClip] ready for publishing.
+  /// Renders multiple clips into a [DivineVideoClip] ready for publishing.
   ///
   /// This is a convenience wrapper around [renderVideo] that also extracts
-  /// metadata, generates ProofMode attestation, and creates a [RecordingClip].
+  /// metadata, generates ProofMode attestation, and creates a [DivineVideoClip].
   ///
   /// Returns a record containing:
-  /// - The rendered [RecordingClip]
+  /// - The rendered [DivineVideoClip]
   /// - The proofManifestJson (or null if ProofMode unavailable)
   ///
   /// Returns null if rendering failed/cancelled.
-  static Future<(RecordingClip, String? proofManifestJson)?> renderVideoToClip({
-    required List<RecordingClip> clips,
+  static Future<(DivineVideoClip, String? proofManifestJson)?>
+  renderVideoToClip({
+    required List<DivineVideoClip> clips,
     bool enableAudio = true,
     CompleteParameters? parameters,
   }) async {
@@ -234,7 +235,7 @@ class VideoEditorRenderService {
       );
     }
 
-    final clip = RecordingClip(
+    final clip = DivineVideoClip(
       id: 'clip-${DateTime.now()}',
       video: EditorVideo.file(outputPath),
       duration: metaData.duration,

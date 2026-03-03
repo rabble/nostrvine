@@ -21,7 +21,7 @@ final class ClipsLibraryToggleSelection extends ClipsLibraryEvent {
   const ClipsLibraryToggleSelection(this.clip);
 
   /// The clip to toggle selection for.
-  final SavedClip clip;
+  final DivineVideoClip clip;
 
   @override
   List<Object?> get props => [clip];
@@ -42,7 +42,7 @@ final class ClipsLibraryDeleteClip extends ClipsLibraryEvent {
   const ClipsLibraryDeleteClip(this.clip);
 
   /// The clip to delete.
-  final SavedClip clip;
+  final DivineVideoClip clip;
 
   @override
   List<Object?> get props => [clip];
