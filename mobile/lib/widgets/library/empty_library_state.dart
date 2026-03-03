@@ -74,7 +74,7 @@ class EmptyLibraryState extends StatelessWidget {
               // is added.
               label: Text(
                 'Record a Video',
-                style: VineTheme.titleMediumFont(),
+                style: VineTheme.labelLargeFont(),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
