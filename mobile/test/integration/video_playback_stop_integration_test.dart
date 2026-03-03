@@ -70,11 +70,7 @@ void main() {
           activeVideoIds.add(next);
         }, fireImmediately: true);
 
-        container.listen(
-          pageContextProvider,
-          (_, _) {},
-          fireImmediately: true,
-        );
+        container.listen(pageContextProvider, (_, _) {}, fireImmediately: true);
 
         // Start at explore video 0
         locationController.add(ExploreScreen.pathForIndex(0));
@@ -130,11 +126,7 @@ void main() {
           activeVideoIds.add(next);
         }, fireImmediately: true);
 
-        container.listen(
-          pageContextProvider,
-          (_, _) {},
-          fireImmediately: true,
-        );
+        container.listen(pageContextProvider, (_, _) {}, fireImmediately: true);
 
         // Start at explore video 0
         locationController.add(ExploreScreen.pathForIndex(0));
@@ -318,11 +310,7 @@ void main() {
           activeVideoIds.add(next);
         }, fireImmediately: true);
 
-        container.listen(
-          pageContextProvider,
-          (_, _) {},
-          fireImmediately: true,
-        );
+        container.listen(pageContextProvider, (_, _) {}, fireImmediately: true);
 
         // Navigate to video while in background state
         locationController.add(ExploreScreen.pathForIndex(0));

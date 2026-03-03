@@ -36,6 +36,8 @@ class VideoStats {
     this.loops,
     this.views,
     this.rawTags = const {},
+    this.textTrackRef,
+    this.textTrackContent,
   });
 
   /// Creates a [VideoStats] from JSON response.
@@ -131,6 +133,22 @@ class VideoStats {
       views = int.tryParse(directViews);
     }
 
+    // Parse text-track fields from API response (text_track_ref,
+    // text_track_content are top-level fields on video endpoints).
+    var textTrackRef =
+        json['text_track_ref']?.toString() ??
+        eventData['text_track_ref']?.toString() ??
+        statsData['text_track_ref']?.toString();
+    if (textTrackRef != null && textTrackRef.isEmpty) textTrackRef = null;
+
+    var textTrackContent =
+        json['text_track_content']?.toString() ??
+        eventData['text_track_content']?.toString() ??
+        statsData['text_track_content']?.toString();
+    if (textTrackContent != null && textTrackContent.isEmpty) {
+      textTrackContent = null;
+    }
+
     // Also check for blurhash and summary in tags (NIP-71 standard)
     // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
     String? blurhashFromTag;
@@ -169,6 +187,9 @@ class VideoStats {
           }
           if (tagName == 'views' && views == null) {
             views = int.tryParse(tagValue);
+          }
+          if (tagName == 'text-track' && textTrackRef == null) {
+            textTrackRef = tagValue;
           }
         }
       }
@@ -254,6 +275,8 @@ class VideoStats {
       loops: loops,
       views: views,
       rawTags: rawTags,
+      textTrackRef: textTrackRef,
+      textTrackContent: textTrackContent,
     );
   }
 
@@ -327,6 +350,13 @@ class VideoStats {
   /// C2PA, verification) that don't have dedicated fields on this model.
   final Map<String, String> rawTags;
 
+  /// Addressable coordinates for subtitle event (from `text-track` tag or
+  /// API `text_track_ref` field).
+  final String? textTrackRef;
+
+  /// Embedded VTT content from API (saves client a relay round-trip).
+  final String? textTrackContent;
+
   /// Converts this [VideoStats] to a [VideoEvent] for use in the app.
   ///
   /// Maps the Funnelcake API response fields to the corresponding
@@ -360,6 +390,8 @@ class VideoStats {
       originalComments: comments,
       originalReposts: reposts,
       originalLoops: loops,
+      textTrackRef: textTrackRef,
+      textTrackContent: textTrackContent,
       rawTags: {
         ...rawTags,
         if (loops != null) 'loops': loops.toString(),

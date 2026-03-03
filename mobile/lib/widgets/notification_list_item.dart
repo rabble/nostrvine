@@ -20,12 +20,10 @@ class NotificationListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Material(
       color: notification.isRead
-          ? (isDarkMode ? Colors.black : Colors.white)
-          : (isDarkMode ? Colors.grey[900] : Colors.grey[50]),
+          ? VineTheme.backgroundColor
+          : VineTheme.cardBackground,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -34,7 +32,7 @@ class NotificationListItem extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Avatar or icon
-              _buildLeadingWidget(isDarkMode),
+              _buildLeadingWidget(),
               const SizedBox(width: 12),
 
               // Content
@@ -43,22 +41,22 @@ class NotificationListItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Main message
-                    _buildMessage(context, isDarkMode),
+                    _buildMessage(context),
                     const SizedBox(height: 4),
 
                     // Additional content (comment text, etc.)
                     if (_hasAdditionalContent()) ...[
                       const SizedBox(height: 4),
-                      _buildAdditionalContent(isDarkMode),
+                      _buildAdditionalContent(),
                     ],
 
                     // Timestamp
                     const SizedBox(height: 4),
                     Text(
                       notification.formattedTimestamp,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
-                        color: isDarkMode ? Colors.grey[600] : Colors.grey[500],
+                        color: VineTheme.lightText,
                       ),
                     ),
                   ],
@@ -67,7 +65,7 @@ class NotificationListItem extends StatelessWidget {
 
               // Thumbnail or action button
               if (notification.targetVideoThumbnail != null)
-                _buildVideoThumbnail(isDarkMode),
+                _buildVideoThumbnail(),
             ],
           ),
         ),
@@ -75,14 +73,14 @@ class NotificationListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildLeadingWidget(bool isDarkMode) {
+  Widget _buildLeadingWidget() {
     if (notification.type == NotificationType.system) {
       // System notification icon
       return Container(
         width: 48,
         height: 48,
-        decoration: BoxDecoration(
-          color: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+        decoration: const BoxDecoration(
+          color: VineTheme.cardBackground,
           shape: BoxShape.circle,
         ),
         child: Center(
@@ -109,7 +107,7 @@ class NotificationListItem extends StatelessWidget {
                   placeholder: (context, url) => Container(
                     width: 48,
                     height: 48,
-                    color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                    color: VineTheme.cardBackground,
                   ),
                   errorWidget: (context, url, error) {
                     // Log the failed URL for debugging
@@ -127,10 +125,10 @@ class NotificationListItem extends StatelessWidget {
                         category: LogCategory.ui,
                       );
                     }
-                    return _buildDefaultAvatar(isDarkMode);
+                    return _buildDefaultAvatar();
                   },
                 )
-              : _buildDefaultAvatar(isDarkMode),
+              : _buildDefaultAvatar(),
         ),
 
         // Type icon overlay
@@ -144,7 +142,6 @@ class NotificationListItem extends StatelessWidget {
               color: _getIconBackgroundColor(),
               shape: BoxShape.circle,
               border: Border.all(
-                color: isDarkMode ? Colors.black : Colors.white,
                 width: 2,
               ),
             ),
@@ -160,7 +157,7 @@ class NotificationListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildDefaultAvatar(bool isDarkMode) => Container(
+  Widget _buildDefaultAvatar() => Container(
     width: 48,
     height: 48,
     decoration: BoxDecoration(
@@ -172,10 +169,10 @@ class NotificationListItem extends StatelessWidget {
     ),
   );
 
-  Widget _buildMessage(BuildContext context, bool isDarkMode) {
-    final textStyle = TextStyle(
+  Widget _buildMessage(BuildContext context) {
+    const textStyle = TextStyle(
       fontSize: 14,
-      color: isDarkMode ? Colors.white : Colors.black,
+      color: VineTheme.whiteText,
     );
 
     if (notification.actorName != null) {
@@ -210,7 +207,7 @@ class NotificationListItem extends StatelessWidget {
     return false;
   }
 
-  Widget _buildAdditionalContent(bool isDarkMode) {
+  Widget _buildAdditionalContent() {
     String? content;
 
     if (notification.type == NotificationType.comment) {
@@ -224,14 +221,14 @@ class NotificationListItem extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.grey[850] : Colors.grey[100],
+        color: VineTheme.cardBackground,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         content,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 13,
-          color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+          color: VineTheme.secondaryText,
         ),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
@@ -239,7 +236,7 @@ class NotificationListItem extends StatelessWidget {
     );
   }
 
-  Widget _buildVideoThumbnail(bool isDarkMode) => Padding(
+  Widget _buildVideoThumbnail() => Padding(
     padding: const EdgeInsets.only(left: 8),
     child: ClipRRect(
       borderRadius: BorderRadius.circular(8),
@@ -252,7 +249,7 @@ class NotificationListItem extends StatelessWidget {
         placeholder: (context, url) => Container(
           width: 64,
           height: 64,
-          color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+          color: VineTheme.cardBackground,
           child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
         errorWidget: (context, url, error) {
@@ -274,10 +271,10 @@ class NotificationListItem extends StatelessWidget {
           return Container(
             width: 64,
             height: 64,
-            color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
-            child: Icon(
+            color: VineTheme.cardBackground,
+            child: const Icon(
               Icons.video_library,
-              color: isDarkMode ? Colors.grey[600] : Colors.grey[400],
+              color: VineTheme.lightText,
             ),
           );
         },
@@ -288,17 +285,17 @@ class NotificationListItem extends StatelessWidget {
   Color _getIconBackgroundColor() {
     switch (notification.type) {
       case NotificationType.like:
-        return Colors.red;
+        return VineTheme.error;
       case NotificationType.comment:
-        return Colors.blue;
+        return VineTheme.info;
       case NotificationType.follow:
         return DivineTheme.primaryPurple;
       case NotificationType.mention:
-        return Colors.orange;
+        return VineTheme.warning;
       case NotificationType.repost:
         return VineTheme.vineGreen;
       case NotificationType.system:
-        return Colors.grey;
+        return VineTheme.lightText;
     }
   }
 }

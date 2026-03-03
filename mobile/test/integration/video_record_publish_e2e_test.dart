@@ -55,7 +55,7 @@ void main() {
 
     tearDown(() async {
       // Clean up
-      if (await testVideoFile.exists()) {
+      if (testVideoFile.existsSync()) {
         await testVideoFile.delete();
       }
 
@@ -271,7 +271,7 @@ void main() {
       } catch (e) {
         print('✅ Upload manager rejected invalid file: $e');
       } finally {
-        if (await invalidVideoFile.exists()) {
+        if (invalidVideoFile.existsSync()) {
           await invalidVideoFile.delete();
         }
       }

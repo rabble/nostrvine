@@ -61,7 +61,7 @@ void main() {
         final event = Event(
           testPubkey,
           EventKind.metadata,
-          <List<dynamic>>[],
+          [],
           jsonEncode({
             'name': 'testname',
             'display_name': 'Test User',
@@ -95,7 +95,7 @@ void main() {
         final event = Event(
           testPubkey,
           EventKind.metadata,
-          <List<dynamic>>[],
+          [],
           jsonEncode({'displayName': 'Alt Display Name'}),
           createdAt: 1704067200,
         )..id = testEventId;
@@ -109,7 +109,7 @@ void main() {
         final event = Event(
           testPubkey,
           EventKind.metadata,
-          <List<dynamic>>[],
+          [],
           jsonEncode({
             'display_name': 'Preferred Name',
             'displayName': 'Alt Name',
@@ -126,7 +126,7 @@ void main() {
         final event = Event(
           testPubkey,
           EventKind.textNote,
-          <List<dynamic>>[],
+          [],
           'text note content',
           createdAt: 1704067200,
         );
@@ -141,7 +141,7 @@ void main() {
         final event = Event(
           testPubkey,
           EventKind.metadata,
-          <List<dynamic>>[],
+          [],
           'invalid json {',
           createdAt: 1704067200,
         )..id = testEventId;
@@ -158,7 +158,7 @@ void main() {
         final event = Event(
           testPubkey,
           EventKind.metadata,
-          <List<dynamic>>[],
+          [],
           jsonEncode({
             'name': 'Test',
             'custom_field': 'custom_value',

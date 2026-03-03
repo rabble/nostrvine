@@ -225,17 +225,17 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       label: 'Sounds screen',
       container: true,
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         appBar: AppBar(
           backgroundColor: VineTheme.cardBackground,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
             onPressed: context.pop,
           ),
           title: const Text(
             'Sounds',
             style: TextStyle(
-              color: Colors.white,
+              color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
@@ -262,13 +262,13 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       child: TextField(
         controller: _searchController,
         onChanged: _onSearchChanged,
-        style: const TextStyle(color: Colors.white),
+        style: const TextStyle(color: VineTheme.whiteText),
         decoration: InputDecoration(
           hintText: 'Search sounds...',
-          hintStyle: TextStyle(color: Colors.grey[500]),
-          prefixIcon: Icon(Icons.search, color: Colors.grey[500]),
+          hintStyle: const TextStyle(color: VineTheme.onSurfaceMuted),
+          prefixIcon: const Icon(Icons.search, color: VineTheme.onSurfaceMuted),
           filled: true,
-          fillColor: Colors.black,
+          fillColor: VineTheme.backgroundColor,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -377,7 +377,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               Text(
                 'Featured Sounds',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -437,7 +437,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               Text(
                 'Trending Sounds',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -491,7 +491,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               Text(
                 _searchQuery.isEmpty ? 'All Sounds' : 'Search Results',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -499,7 +499,10 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               const SizedBox(width: 8),
               Text(
                 '(${sounds.length})',
-                style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                style: const TextStyle(
+                  color: VineTheme.onSurfaceMuted,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
@@ -528,24 +531,27 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.music_off, size: 64, color: Colors.grey[600]),
-          const SizedBox(height: 16),
-          const Text(
+          Icon(Icons.music_off, size: 64, color: VineTheme.lightText),
+          SizedBox(height: 16),
+          Text(
             'No sounds available',
             style: TextStyle(
-              color: Colors.white,
+              color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Sounds will appear here when creators share audio',
-            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            style: TextStyle(
+              color: VineTheme.onSurfaceMuted,
+              fontSize: 14,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -554,24 +560,27 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
   }
 
   Widget _buildNoResultsState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, size: 64, color: Colors.grey[600]),
-          const SizedBox(height: 16),
-          const Text(
+          Icon(Icons.search_off, size: 64, color: VineTheme.lightText),
+          SizedBox(height: 16),
+          Text(
             'No sounds found',
             style: TextStyle(
-              color: Colors.white,
+              color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Try a different search term',
-            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            style: TextStyle(
+              color: VineTheme.onSurfaceMuted,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -590,7 +599,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
             const Text(
               'Failed to load sounds',
               style: TextStyle(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -598,7 +607,10 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              style: const TextStyle(
+                color: VineTheme.onSurfaceMuted,
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -612,7 +624,7 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
-                foregroundColor: Colors.black,
+                foregroundColor: VineTheme.backgroundColor,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

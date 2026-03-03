@@ -330,9 +330,7 @@ void main() {
       blocTest<CommentsBloc, CommentsState>(
         'does nothing when comments list is empty',
         build: createBloc,
-        seed: () => const CommentsState(
-          status: CommentsStatus.success,
-        ),
+        seed: () => const CommentsState(status: CommentsStatus.success),
         act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
         expect: () => <CommentsState>[],
       );
@@ -813,9 +811,7 @@ void main() {
             ),
           ).thenThrow(Exception('Network error'));
         },
-        seed: () => const CommentsState(
-          mainInputText: 'Test comment',
-        ),
+        seed: () => const CommentsState(mainInputText: 'Test comment'),
         build: createBloc,
         act: (bloc) => bloc.add(const CommentSubmitted()),
         expect: () => [
@@ -1831,9 +1827,7 @@ void main() {
       blocTest<CommentsBloc, CommentsState>(
         'does nothing when commentsById is empty',
         build: createBloc,
-        seed: () => const CommentsState(
-          status: CommentsStatus.success,
-        ),
+        seed: () => const CommentsState(status: CommentsStatus.success),
         act: (bloc) => bloc.add(const CommentVoteCountsFetchRequested()),
         expect: () => <CommentsState>[],
         verify: (_) {
@@ -3107,9 +3101,7 @@ void main() {
     });
 
     test('isReplyPosting returns false when not posting', () {
-      const state = CommentsState(
-        activeReplyCommentId: 'comment1',
-      );
+      const state = CommentsState(activeReplyCommentId: 'comment1');
 
       expect(state.isReplyPosting('comment1'), false);
     });

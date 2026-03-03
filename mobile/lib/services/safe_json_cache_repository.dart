@@ -57,7 +57,7 @@ class SafeJsonCacheInfoRepository extends JsonCacheInfoRepository {
       final directory = await getApplicationSupportDirectory();
       final filePath = path.join(directory.path, '$_databaseName.json');
       final file = File(filePath);
-      if (await file.exists()) {
+      if (file.existsSync()) {
         await file.delete();
         Log.info(
           '🗑️ Deleted corrupted cache file: $filePath',

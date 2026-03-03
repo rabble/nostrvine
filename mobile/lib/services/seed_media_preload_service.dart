@@ -25,7 +25,7 @@ class SeedMediaPreloadService {
       );
       final markerFile = File(path.join(cacheDir.path, '.seed_media_loaded'));
 
-      if (await markerFile.exists()) {
+      if (markerFile.existsSync()) {
         Log.info(
           '[SEED] Cache already populated, skipping media preload',
           name: 'SeedMediaPreload',

@@ -108,7 +108,7 @@ class _RestoreButton extends ConsumerWidget {
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: VineTheme.vineGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: VineTheme.whiteText,
         padding: const .symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: .circular(20)),
       ),
@@ -117,7 +117,7 @@ class _RestoreButton extends ConsumerWidget {
         'Yes, continue',
         textAlign: .center,
         style: VineTheme.titleFont(
-          color: const Color(0xFF00150D),
+          color: VineTheme.surfaceBackground,
           fontSize: 18,
           height: 1.33,
           letterSpacing: 0.15,
@@ -138,8 +138,8 @@ class _DiscardButton extends ConsumerWidget {
         ref.read(videoEditorProvider.notifier).removeAutosavedDraft();
       },
       style: OutlinedButton.styleFrom(
-        backgroundColor: const Color(0xFF032017),
-        side: const BorderSide(width: 2, color: Color(0xFF0E2B21)),
+        backgroundColor: VineTheme.surfaceContainer,
+        side: const BorderSide(width: 2, color: VineTheme.containerLow),
         padding: const .symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: .circular(20)),
       ),
@@ -148,7 +148,7 @@ class _DiscardButton extends ConsumerWidget {
         'No, start a new video',
         textAlign: .center,
         style: VineTheme.titleFont(
-          color: const Color(0xFF27C58B),
+          color: VineTheme.primary,
           fontSize: 18,
           height: 1.33,
           letterSpacing: 0.15,

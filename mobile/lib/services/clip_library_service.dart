@@ -26,7 +26,7 @@ class ClipLibraryService {
   /// Migrate clips from SharedPreferences to Drift database.
   ///
   /// TODO(hm21): Remove migration in the future.
-  /// That migration was created at 27.02.2026.
+  /// That migration was created at 03.03.2026.
   Future<void> migrateOldClips() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_storageKey);

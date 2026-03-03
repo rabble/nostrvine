@@ -63,9 +63,7 @@ void main() {
       final bloc = createBloc();
       expect(
         bloc.state,
-        const MyFollowingState(
-          status: MyFollowingStatus.success,
-        ),
+        const MyFollowingState(status: MyFollowingStatus.success),
       );
       bloc.close();
     });

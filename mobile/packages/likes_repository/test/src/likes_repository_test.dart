@@ -629,7 +629,9 @@ void main() {
         const eventId = 'event_id_1234567890abcdef01234567890abcdef';
 
         final mockReaction1 = MockEvent();
-        when(() => mockReaction1.tags).thenReturn(['not_a_list']);
+        when(() => mockReaction1.tags).thenReturn([
+          ['not_a_list'],
+        ]);
         final mockReaction2 = MockEvent();
         when(() => mockReaction2.tags).thenReturn([]);
 

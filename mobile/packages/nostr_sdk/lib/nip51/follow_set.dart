@@ -41,7 +41,7 @@ class FollowSet extends ContactList {
 
   static String? getDTag(Event e) {
     for (var tag in e.tags) {
-      if (tag is List && tag.length > 1) {
+      if (tag.length > 1) {
         var k = tag[0];
         var v = tag[1];
 
@@ -76,7 +76,7 @@ class FollowSet extends ContactList {
     String dTag = "";
     String? title;
     for (var tag in e.tags) {
-      if (tag is List && tag.length > 1) {
+      if (tag.length > 1) {
         var k = tag[0];
         var v = tag[1];
 
@@ -169,12 +169,12 @@ class FollowSet extends ContactList {
   }
 
   Future<Event?> toEventMap(Nostr nostr, String pubkey) async {
-    List<dynamic> tags = [];
+    List<List<String>> tags = [];
     if (StringUtil.isNotBlank(dTag)) {
       tags.add(["d", dTag]);
     }
     if (StringUtil.isNotBlank(title)) {
-      tags.add(["title", title]);
+      tags.add(["title", title!]);
     }
     for (Contact contact in _publicContacts.values) {
       tags.add(["p", contact.publicKey, contact.url, contact.petname]);
@@ -186,7 +186,7 @@ class FollowSet extends ContactList {
       tags.add(["a", id]);
     }
 
-    List<dynamic> privateTags = [];
+    List<List<String>> privateTags = [];
     for (Contact contact in _privateContacts.values) {
       privateTags.add(["p", contact.publicKey, contact.url, contact.petname]);
     }

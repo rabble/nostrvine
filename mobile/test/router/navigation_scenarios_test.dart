@@ -124,36 +124,6 @@ void main() {
       );
     });
 
-    testWidgets('Hashtag feed mode', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      router.go(HashtagScreenRouter.pathForTag('bitcoin', index: 0));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        HashtagScreenRouter.pathForTag('bitcoin', index: 0),
-      );
-
-      router.go(HashtagScreenRouter.pathForTag('nostr', index: 5));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        HashtagScreenRouter.pathForTag('nostr', index: 5),
-      );
-    });
-
     testWidgets('Profile navigation', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -457,39 +427,6 @@ void main() {
       );
     });
 
-    testWidgets('Hashtag back to grid from feed', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      // Navigate to hashtag feed mode
-      router.go(HashtagScreenRouter.pathForTag('bitcoin', index: 5));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        HashtagScreenRouter.pathForTag('bitcoin', index: 5),
-      );
-
-      // Back button should go to hashtag grid mode
-      router.go(HashtagScreenRouter.path);
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        HashtagScreenRouter.path,
-        reason: 'Back from hashtag feed should return to grid mode',
-      );
-    });
-
     testWidgets('Search back to grid from feed', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -539,11 +476,11 @@ void main() {
       final router = container.read(goRouterProvider);
 
       // Hashtags with spaces or special chars should be URL-encoded
-      router.go(HashtagScreenRouter.pathForTag('my%20tag', index: 0));
+      router.go(HashtagScreenRouter.pathForTag('my%20tag'));
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
-        HashtagScreenRouter.pathForTag('my%20tag', index: 0),
+        HashtagScreenRouter.pathForTag('my%20tag'),
         reason: 'URL-encoded hashtags should work',
       );
     });
@@ -570,50 +507,6 @@ void main() {
         router.routeInformationProvider.value.uri.toString(),
         SearchScreenPure.pathForTerm(term: 'hello%20world'),
         reason: 'URL-encoded search terms should work',
-      );
-    });
-
-    testWidgets('Back button navigates from hashtag feed to grid', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      // Navigate to hashtag feed mode
-      router.go(HashtagScreenRouter.pathForTag('bitcoin', index: 5));
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        HashtagScreenRouter.pathForTag('bitcoin', index: 5),
-      );
-
-      // Find and tap the back button in AppBar
-      final backButton = find.byIcon(Icons.arrow_back);
-      expect(
-        backButton,
-        findsOneWidget,
-        reason: 'Back button should be visible in hashtag feed mode',
-      );
-
-      await tester.tap(backButton);
-      await tester.pumpAndSettle();
-
-      // Should navigate to hashtag grid mode
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        HashtagScreenRouter.pathForTag('bitcoin'),
-        reason: 'Tapping back button should navigate from feed to grid mode',
       );
     });
 

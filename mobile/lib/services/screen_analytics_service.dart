@@ -197,11 +197,7 @@ class ScreenAnalyticsService {
   }) {
     _analytics.logEvent(
       name: 'screen_navigation',
-      parameters: {
-        'from_screen': from,
-        'to_screen': to,
-        'trigger': ?trigger,
-      },
+      parameters: {'from_screen': from, 'to_screen': to, 'trigger': ?trigger},
     );
 
     UnifiedLogger.info(

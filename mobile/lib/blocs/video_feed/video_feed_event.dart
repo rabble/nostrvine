@@ -87,3 +87,15 @@ final class VideoFeedFollowingListChanged extends VideoFeedEvent {
   @override
   List<Object?> get props => [followingPubkeys];
 }
+
+/// The subscribed curated lists changed.
+///
+/// Dispatched internally when the [CuratedListRepository.subscribedListsStream]
+/// emits updated lists. Triggers a refresh of the home feed so list videos
+/// are merged in.
+final class VideoFeedCuratedListsChanged extends VideoFeedEvent {
+  const VideoFeedCuratedListsChanged();
+
+  @override
+  List<Object?> get props => [];
+}

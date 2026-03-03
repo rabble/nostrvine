@@ -50,7 +50,7 @@ void main() {
     await Hive.close();
 
     // Delete test directory
-    if (await testDir.exists()) {
+    if (testDir.existsSync()) {
       await testDir.delete(recursive: true);
     }
   });

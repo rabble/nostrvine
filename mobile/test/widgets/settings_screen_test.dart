@@ -29,6 +29,9 @@ void main() {
       when(
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
+      when(
+        () => mockAuthService.hasExpiredOAuthSession,
+      ).thenReturn(false);
     });
 
     testWidgets('Settings screen displays all sections', (tester) async {

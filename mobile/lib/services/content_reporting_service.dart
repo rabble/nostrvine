@@ -69,17 +69,17 @@ class ContentReport {
   };
 
   static ContentReport fromJson(Map<String, dynamic> json) => ContentReport(
-    reportId: json['reportId'],
-    eventId: json['eventId'],
-    authorPubkey: json['authorPubkey'],
+    reportId: json['reportId'] as String,
+    eventId: json['eventId'] as String,
+    authorPubkey: json['authorPubkey'] as String?,
     reason: ContentFilterReason.values.firstWhere(
       (r) => r.name == json['reason'],
       orElse: () => ContentFilterReason.other,
     ),
-    details: json['details'],
-    createdAt: DateTime.parse(json['createdAt']),
-    additionalContext: json['additionalContext'],
-    tags: List<String>.from(json['tags'] ?? []),
+    details: json['details'] as String,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    additionalContext: json['additionalContext'] as String?,
+    tags: List<String>.from(json['tags'] as Iterable? ?? []),
   );
 }
 

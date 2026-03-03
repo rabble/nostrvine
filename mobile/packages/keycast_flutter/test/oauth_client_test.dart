@@ -240,10 +240,11 @@ void main() {
     });
 
     group('logout', () {
-      test('deletes session and handle from storage', () async {
+      test('deletes session, handle, and refresh token from storage', () async {
         final storage = MemoryKeycastStorage();
         await storage.write('keycast_session', 'session_data');
         await storage.write('keycast_auth_handle', 'handle_data');
+        await storage.write('keycast_refresh_token', 'refresh_data');
 
         final mockClient = MockClient((request) async {
           return http.Response('', 200);
@@ -258,6 +259,7 @@ void main() {
 
         expect(await storage.read('keycast_session'), isNull);
         expect(await storage.read('keycast_auth_handle'), isNull);
+        expect(await storage.read('keycast_refresh_token'), isNull);
       });
 
       test('makes POST request to logout endpoint', () async {
@@ -868,6 +870,7 @@ void main() {
         final storage = MemoryKeycastStorage();
         await storage.write('keycast_session', 'session_data');
         await storage.write('keycast_auth_handle', 'handle_data');
+        await storage.write('keycast_refresh_token', 'refresh_data');
 
         final mockClient = MockClient((request) async {
           expect(request.url.path, '/api/user/account');
@@ -890,6 +893,7 @@ void main() {
         expect(result.message, 'Account deleted');
         expect(await storage.read('keycast_session'), isNull);
         expect(await storage.read('keycast_auth_handle'), isNull);
+        expect(await storage.read('keycast_refresh_token'), isNull);
       });
 
       test('returns error on 401 unauthorized', () async {
@@ -982,6 +986,119 @@ void main() {
         expect(result.success, isFalse);
         expect(result.error, contains('Network error'));
       });
+    });
+
+    group('refreshSession', () {
+      test('returns null when no refresh token stored', () async {
+        final storage = MemoryKeycastStorage();
+        final oauth = KeycastOAuth(config: config, storage: storage);
+
+        final result = await oauth.refreshSession();
+        expect(result, isNull);
+      });
+
+      test('exchanges refresh token and saves new session on 200', () async {
+        final storage = MemoryKeycastStorage();
+        await storage.write('keycast_refresh_token', 'old_refresh_token');
+
+        final mockClient = MockClient((request) async {
+          expect(request.url.path, '/api/oauth/token');
+          expect(request.method, 'POST');
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          expect(body['grant_type'], 'refresh_token');
+          expect(body['refresh_token'], 'old_refresh_token');
+          expect(body['client_id'], 'test-client');
+
+          return http.Response(
+            jsonEncode({
+              'bunker_url': 'bunker://refreshed',
+              'access_token': 'new_access_token',
+              'token_type': 'Bearer',
+              'expires_in': 86400,
+              'refresh_token': 'new_refresh_token',
+              'authorization_handle': 'new_handle',
+            }),
+            200,
+          );
+        });
+
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: mockClient,
+          storage: storage,
+        );
+        final result = await oauth.refreshSession();
+
+        expect(result, isNotNull);
+        expect(result!.bunkerUrl, 'bunker://refreshed');
+        expect(result.accessToken, 'new_access_token');
+        expect(result.refreshToken, 'new_refresh_token');
+        expect(result.hasRpcAccess, isTrue);
+
+        // Verify new session was saved
+        final savedSession = await storage.read('keycast_session');
+        expect(savedSession, isNotNull);
+
+        // Verify new refresh token was saved
+        final savedRefresh = await storage.read('keycast_refresh_token');
+        expect(savedRefresh, 'new_refresh_token');
+
+        // Verify new handle was saved
+        final savedHandle = await storage.read('keycast_auth_handle');
+        expect(savedHandle, 'new_handle');
+      });
+
+      test('returns null and clears refresh token on non-200', () async {
+        final storage = MemoryKeycastStorage();
+        await storage.write('keycast_refresh_token', 'expired_refresh');
+
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'error': 'invalid_grant',
+              'error_description': 'Refresh token expired',
+            }),
+            400,
+          );
+        });
+
+        final oauth = KeycastOAuth(
+          config: config,
+          httpClient: mockClient,
+          storage: storage,
+        );
+        final result = await oauth.refreshSession();
+
+        expect(result, isNull);
+        // Refresh token should be cleared (server consumed it)
+        expect(await storage.read('keycast_refresh_token'), isNull);
+      });
+
+      test(
+        'returns null but preserves refresh token on network error',
+        () async {
+          final storage = MemoryKeycastStorage();
+          await storage.write('keycast_refresh_token', 'my_refresh_token');
+
+          final mockClient = MockClient((request) async {
+            throw const SocketException('Connection refused');
+          });
+
+          final oauth = KeycastOAuth(
+            config: config,
+            httpClient: mockClient,
+            storage: storage,
+          );
+          final result = await oauth.refreshSession();
+
+          expect(result, isNull);
+          // Refresh token should be preserved (server didn't consume it)
+          expect(
+            await storage.read('keycast_refresh_token'),
+            'my_refresh_token',
+          );
+        },
+      );
     });
 
     group('close', () {

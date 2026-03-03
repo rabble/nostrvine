@@ -60,7 +60,7 @@ class BulkThumbnailGenerator {
         name: 'BulkThumbnailGenerator',
       );
       final videoEvents = await _fetchVideoEvents(
-        options['limit'] ?? maxVideosToProcess,
+        (options['limit'] as int?) ?? maxVideosToProcess,
       );
 
       if (videoEvents.isEmpty) {
@@ -257,7 +257,7 @@ Examples:
   ) async {
     final isDryRun = options['dryRun'] == true;
     final batchSizeToUse = (options['batchSize'] as int?) ?? batchSize;
-    final timeOffset = options['timeOffset'] ?? 2.5;
+    final timeOffset = (options['timeOffset'] as double?) ?? 2.5;
 
     if (isDryRun) {
       Log.info(

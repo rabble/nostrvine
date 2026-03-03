@@ -1,6 +1,7 @@
 // ABOUTME: Video icon placeholder widget for when thumbnails are missing or loading
 // ABOUTME: Provides a clean video icon instead of fake stock images
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Professional video icon placeholder that displays instead of missing thumbnails
@@ -70,14 +71,8 @@ class _VideoIconPlaceholderState extends State<VideoIconPlaceholder>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    final bgColor =
-        widget.backgroundColor ??
-        (isDark ? Colors.grey[800] : Colors.grey[200]);
-    final iconColorValue =
-        widget.iconColor ?? (isDark ? Colors.grey[400] : Colors.grey[600]);
+    final bgColor = widget.backgroundColor ?? VineTheme.cardBackground;
+    final iconColorValue = widget.iconColor ?? VineTheme.secondaryText;
 
     return Container(
       width: widget.width,
@@ -85,9 +80,7 @@ class _VideoIconPlaceholderState extends State<VideoIconPlaceholder>
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(widget.borderRadius),
-        border: Border.all(
-          color: isDark ? Colors.grey[700]! : Colors.grey[300]!,
-        ),
+        border: Border.all(color: VineTheme.cardBackground),
       ),
       child: widget.showLoading
           ? AnimatedBuilder(
@@ -143,13 +136,8 @@ class VideoIconPlaceholderCompact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    final bgColor =
-        backgroundColor ?? (isDark ? Colors.grey[800] : Colors.grey[200]);
-    final iconColorValue =
-        iconColor ?? (isDark ? Colors.grey[400] : Colors.grey[600]);
+    final bgColor = backgroundColor ?? VineTheme.cardBackground;
+    final iconColorValue = iconColor ?? VineTheme.secondaryText;
 
     return Container(
       width: size,

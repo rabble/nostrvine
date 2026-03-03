@@ -53,9 +53,7 @@ void main() {
       });
 
       test('generates correct URL with medium size (no size param)', () {
-        final url = ThumbnailApiService.getThumbnailUrl(
-          'test-video-id',
-        );
+        final url = ThumbnailApiService.getThumbnailUrl('test-video-id');
         expect(
           url,
           equals('https://api.openvine.co/thumbnail/test-video-id?t=2.5'),

@@ -54,7 +54,7 @@ class C2paSigningService {
 
       // Verify input file exists
       final inputFile = File(videoPath);
-      if (!await inputFile.exists()) {
+      if (!inputFile.existsSync()) {
         return C2paSigningResult(
           signedFilePath: videoPath,
           success: false,
@@ -93,7 +93,7 @@ class C2paSigningService {
 
       // Verify signed file was created
       final signedFile = File(signedPath);
-      if (!await signedFile.exists()) {
+      if (!signedFile.existsSync()) {
         return C2paSigningResult(
           signedFilePath: videoPath,
           success: false,

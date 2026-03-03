@@ -87,9 +87,7 @@ class UserProfileTile extends ConsumerWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: VineTheme.onSurfaceDisabled,
-                      ),
+                      border: Border.all(color: VineTheme.onSurfaceDisabled),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),

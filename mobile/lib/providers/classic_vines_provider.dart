@@ -58,10 +58,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
           return existing;
         }
       }
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     final analyticsService = ref.read(analyticsApiServiceProvider);
@@ -315,10 +312,7 @@ Future<List<ClassicViner>> topClassicViners(Ref ref) async {
   final vinerMap = <String, _VinerAggregator>{};
 
   for (final video in feedState.videos) {
-    final aggregator = vinerMap.putIfAbsent(
-      video.pubkey,
-      _VinerAggregator.new,
-    );
+    final aggregator = vinerMap.putIfAbsent(video.pubkey, _VinerAggregator.new);
     final loops = video.originalLoops ?? 0;
     aggregator.totalLoops = aggregator.totalLoops + loops;
     aggregator.videoCount += 1;

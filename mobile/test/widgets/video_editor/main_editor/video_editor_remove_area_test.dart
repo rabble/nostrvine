@@ -65,11 +65,7 @@ void main() {
     testWidgets('has scale 1.0 when layer is not over remove area', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildWidget(
-          state: const VideoEditorMainState(),
-        ),
-      );
+      await tester.pumpWidget(buildWidget(state: const VideoEditorMainState()));
       await tester.pumpAndSettle();
 
       final animatedScale = tester.widget<AnimatedScale>(
@@ -98,9 +94,7 @@ void main() {
       final stateController =
           StreamController<VideoEditorMainState>.broadcast();
 
-      when(
-        () => mockBloc.state,
-      ).thenReturn(const VideoEditorMainState());
+      when(() => mockBloc.state).thenReturn(const VideoEditorMainState());
       when(() => mockBloc.stream).thenAnswer((_) => stateController.stream);
 
       await tester.pumpWidget(buildWidget());

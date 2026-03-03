@@ -135,7 +135,7 @@ class VideoEvent {
       if ((tagRaw as List).isEmpty) continue;
 
       // Convert List<dynamic> to List<String> safely
-      final tag = tagRaw.map((e) => e.toString()).toList();
+      final tag = tagRaw.map((e) => e).toList();
 
       final tagName = tag[0];
       final tagValue = (tag.length > 1) ? tag[1] : '';
@@ -749,7 +749,7 @@ class VideoEvent {
   ///
   /// Returns true if any subtitle source exists: embedded VTT content,
   /// a text-track reference (Kind 39307), or a sha256 hash (Blossom server
-  /// may have auto-generated VTT at `{server}/{sha256}/vtt`).
+  /// auto-generates VTT at `{server}/{sha256}/vtt`).
   bool get hasSubtitles =>
       (textTrackRef != null && textTrackRef!.isNotEmpty) ||
       (textTrackContent != null && textTrackContent!.isNotEmpty) ||

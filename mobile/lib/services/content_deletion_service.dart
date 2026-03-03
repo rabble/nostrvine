@@ -60,11 +60,11 @@ class ContentDeletion {
   };
 
   static ContentDeletion fromJson(Map<String, dynamic> json) => ContentDeletion(
-    deleteEventId: json['deleteEventId'],
-    originalEventId: json['originalEventId'],
-    reason: json['reason'],
-    deletedAt: DateTime.parse(json['deletedAt']),
-    additionalContext: json['additionalContext'],
+    deleteEventId: json['deleteEventId'] as String,
+    originalEventId: json['originalEventId'] as String,
+    reason: json['reason'] as String,
+    deletedAt: DateTime.parse(json['deletedAt'] as String),
+    additionalContext: json['additionalContext'] as String?,
   );
 }
 

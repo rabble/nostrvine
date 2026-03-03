@@ -50,9 +50,7 @@ void main() {
     testWidgets(
       'displays loading placeholder when hashtags list is empty and not loading',
       (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(hashtags: []),
-        );
+        await tester.pumpWidget(buildTestWidget(hashtags: []));
 
         // Should still show loading placeholder when no hashtags available
         expect(find.text('Loading hashtags...'), findsOneWidget);

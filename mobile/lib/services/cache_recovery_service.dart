@@ -122,7 +122,7 @@ class CacheRecoveryService {
 
     try {
       final appSupportDir = await getApplicationSupportDirectory();
-      if (await appSupportDir.exists()) {
+      if (appSupportDir.existsSync()) {
         final files = appSupportDir.listSync();
         for (final file in files) {
           try {
@@ -154,7 +154,7 @@ class CacheRecoveryService {
 
     try {
       final tempDir = await getTemporaryDirectory();
-      if (await tempDir.exists()) {
+      if (tempDir.existsSync()) {
         final files = tempDir.listSync();
         for (final file in files) {
           try {
@@ -186,7 +186,7 @@ class CacheRecoveryService {
 
     try {
       final cacheDir = await getApplicationCacheDirectory();
-      if (await cacheDir.exists()) {
+      if (cacheDir.existsSync()) {
         final files = cacheDir.listSync();
         for (final file in files) {
           try {
@@ -224,7 +224,7 @@ class CacheRecoveryService {
       ];
 
       for (final dir in dirs) {
-        if (await dir.exists()) {
+        if (dir.existsSync()) {
           totalSize += await _getDirectorySize(dir);
         }
       }

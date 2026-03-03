@@ -136,10 +136,7 @@ void main() {
           ),
           videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(
-                videos: videos,
-                hasMoreContent: false,
-              ),
+              VideoFeedState(videos: videos, hasMoreContent: false),
             );
           }),
         ],
@@ -171,11 +168,7 @@ void main() {
       addTearDown(container.dispose);
 
       // Create active subscription to force reactive chain evaluation
-      container.listen(
-        activeVideoIdProvider,
-        (_, _) {},
-        fireImmediately: true,
-      );
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
       await pumpEventQueue();
 
@@ -189,11 +182,7 @@ void main() {
       addTearDown(container.dispose);
 
       // Create active subscription to force reactive chain evaluation
-      container.listen(
-        activeVideoIdProvider,
-        (_, _) {},
-        fireImmediately: true,
-      );
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
       await pumpEventQueue();
 
@@ -207,11 +196,7 @@ void main() {
       addTearDown(container.dispose);
 
       // Create active subscription to force reactive chain evaluation
-      container.listen(
-        activeVideoIdProvider,
-        (_, _) {},
-        fireImmediately: true,
-      );
+      container.listen(activeVideoIdProvider, (_, _) {}, fireImmediately: true);
 
       await pumpEventQueue();
 

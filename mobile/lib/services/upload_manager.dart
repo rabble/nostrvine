@@ -113,7 +113,7 @@ class UploadManager {
   @Deprecated('Only Blossom uploads are supported')
   Future<void> setUploadTarget(dynamic target) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_uploadTargetKey, target.index);
+    await prefs.setInt(_uploadTargetKey, target.index as int);
     Log.info(
       'Upload target set to: ${target.name}',
       name: 'UploadManager',
@@ -1345,9 +1345,7 @@ class UploadManager {
     );
 
     // Reset status and error
-    final resetUpload = upload.copyWith(
-      status: UploadStatus.pending,
-    );
+    final resetUpload = upload.copyWith(status: UploadStatus.pending);
 
     await _updateUpload(resetUpload);
 
@@ -1525,9 +1523,7 @@ class UploadManager {
       );
 
       // Reset to pending and restart
-      final resetUpload = upload.copyWith(
-        status: UploadStatus.pending,
-      );
+      final resetUpload = upload.copyWith(status: UploadStatus.pending);
 
       await _updateUpload(resetUpload);
       // Intentional fire-and-forget for parallel processing of interrupted uploads

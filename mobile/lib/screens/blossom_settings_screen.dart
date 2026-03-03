@@ -79,7 +79,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
             content: Text(
               'Please enter a valid server URL (e.g., https://blossom.band)',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
         return;
@@ -107,7 +107,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
           const SnackBar(
             content: Text(
               'Blossom settings saved',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: VineTheme.whiteText),
             ),
             backgroundColor: VineTheme.vineGreen,
           ),
@@ -125,7 +125,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to save settings: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -166,7 +166,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                 width: 32,
                 height: 32,
                 colorFilter: const ColorFilter.mode(
-                  Colors.white,
+                  VineTheme.whiteText,
                   BlendMode.srcIn,
                 ),
               ),
@@ -176,7 +176,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
           ),
           title: Text('Media Servers', style: VineTheme.titleFont()),
         ),
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         body: const Center(
           child: CircularProgressIndicator(color: VineTheme.vineGreen),
         ),
@@ -254,7 +254,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
           const SizedBox(width: 16),
         ],
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -264,7 +264,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
             children: [
               // Info card
               Card(
-                color: Colors.black.withValues(alpha: 0.7),
+                color: VineTheme.backgroundColor.withValues(alpha: 0.7),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
@@ -294,11 +294,11 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                         ],
                       ),
                       const SizedBox(height: 12),
-                      Text(
+                      const Text(
                         'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. '
                         "By default, videos are uploaded to diVine's Blossom server. Enable the option below to use a custom server instead.",
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: VineTheme.onSurface,
                           fontSize: 14,
                         ),
                       ),
@@ -312,13 +312,18 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
               SwitchListTile(
                 title: const Text(
                   'Use Custom Blossom Server',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 16,
+                  ),
                 ),
                 subtitle: Text(
                   _isBlossomEnabled
                       ? 'Videos will be uploaded to your custom Blossom server'
                       : "Your videos are currently being uploaded to diVine's Blossom server",
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6)),
+                  style: const TextStyle(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
                 ),
                 value: _isBlossomEnabled,
                 onChanged: (value) {
@@ -327,8 +332,8 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                   });
                 },
                 activeThumbColor: VineTheme.vineGreen,
-                inactiveThumbColor: Colors.grey,
-                inactiveTrackColor: Colors.grey.withValues(alpha: 0.3),
+                inactiveThumbColor: VineTheme.lightText,
+                inactiveTrackColor: VineTheme.lightText.withValues(alpha: 0.3),
               ),
               const SizedBox(height: 20),
 
@@ -340,7 +345,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                     const Text(
                       'Custom Blossom Server URL',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: VineTheme.whiteText,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -348,14 +353,14 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                     const SizedBox(height: 8),
                     TextField(
                       controller: _serverController,
-                      style: const TextStyle(color: Colors.white),
+                      style: const TextStyle(color: VineTheme.whiteText),
                       decoration: InputDecoration(
                         hintText: 'https://blossom.band',
-                        hintStyle: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.4),
+                        hintStyle: const TextStyle(
+                          color: VineTheme.onSurfaceDisabled,
                         ),
                         filled: true,
-                        fillColor: Colors.white.withValues(alpha: 0.1),
+                        fillColor: VineTheme.whiteText.withValues(alpha: 0.1),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
                           borderSide: BorderSide(
@@ -383,10 +388,10 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                       autocorrect: false,
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    const Text(
                       'Enter the URL of your custom Blossom server',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
+                        color: VineTheme.onSurfaceMuted,
                         fontSize: 12,
                       ),
                     ),
@@ -398,7 +403,7 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
                 const Text(
                   'Popular Blossom Servers',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -422,14 +427,17 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
 
   Widget _buildServerOption(String url, String name) {
     return Card(
-      color: Colors.white.withValues(alpha: 0.05),
+      color: VineTheme.whiteText.withValues(alpha: 0.05),
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
-        title: Text(name, style: const TextStyle(color: Colors.white)),
+        title: Text(
+          name,
+          style: const TextStyle(color: VineTheme.whiteText),
+        ),
         subtitle: Text(
           url,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.6),
+          style: const TextStyle(
+            color: VineTheme.onSurfaceMuted,
             fontSize: 12,
           ),
         ),

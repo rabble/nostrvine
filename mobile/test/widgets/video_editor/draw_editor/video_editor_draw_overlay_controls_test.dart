@@ -82,9 +82,7 @@ void main() {
       });
 
       testWidgets('is disabled when canUndo is false', (tester) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoEditorDrawState());
+        when(() => mockBloc.state).thenReturn(const VideoEditorDrawState());
 
         await tester.pumpWidget(buildWidget());
         await tester.pump();
@@ -131,9 +129,7 @@ void main() {
       });
 
       testWidgets('is disabled when canRedo is false', (tester) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoEditorDrawState());
+        when(() => mockBloc.state).thenReturn(const VideoEditorDrawState());
 
         await tester.pumpWidget(buildWidget());
         await tester.pump();
@@ -197,9 +193,7 @@ void main() {
       testWidgets('updates when canUndo changes', (tester) async {
         final controller = StreamController<VideoEditorDrawState>.broadcast();
 
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoEditorDrawState());
+        when(() => mockBloc.state).thenReturn(const VideoEditorDrawState());
         when(() => mockBloc.stream).thenAnswer((_) => controller.stream);
 
         await tester.pumpWidget(buildWidget());
@@ -235,9 +229,7 @@ void main() {
       testWidgets('updates when canRedo changes', (tester) async {
         final controller = StreamController<VideoEditorDrawState>.broadcast();
 
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoEditorDrawState());
+        when(() => mockBloc.state).thenReturn(const VideoEditorDrawState());
         when(() => mockBloc.stream).thenAnswer((_) => controller.stream);
 
         await tester.pumpWidget(buildWidget());

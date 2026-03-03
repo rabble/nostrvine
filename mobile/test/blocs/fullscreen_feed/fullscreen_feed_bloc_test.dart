@@ -103,9 +103,7 @@ void main() {
       });
 
       test('currentVideo returns null when videos empty', () {
-        const state = FullscreenFeedState(
-          status: FullscreenFeedStatus.ready,
-        );
+        const state = FullscreenFeedState(status: FullscreenFeedStatus.ready);
 
         expect(state.currentVideo, isNull);
       });

@@ -41,8 +41,8 @@ class VideoClipEditorSplitBar extends ConsumerWidget {
         return p.clips[clipIndex].duration;
       }),
     );
-    const handleColor = Colors.white;
-    final disabledColor = Colors.white.withAlpha(65);
+    const handleColor = VineTheme.whiteText;
+    final disabledColor = VineTheme.whiteText.withAlpha(65);
 
     final videoPosition = videoEditorState.trimPosition;
 
@@ -110,7 +110,7 @@ class _TallRectangularThumbShape extends SliderComponentShape {
     final rect = Rect.fromCenter(center: adjustedCenter, width: 4, height: 32);
 
     final paint = Paint()
-      ..color = sliderTheme.thumbColor ?? Colors.white
+      ..color = sliderTheme.thumbColor ?? VineTheme.whiteText
       ..style = .fill;
 
     final rRect = RRect.fromRectAndRadius(rect, const .circular(8));
@@ -177,7 +177,7 @@ class UniformTrackShape extends SliderTrackShape {
       bottomRight: trackRadius,
     );
     final inactivePaint = Paint()
-      ..color = sliderTheme.inactiveTrackColor ?? Colors.grey;
+      ..color = sliderTheme.inactiveTrackColor ?? VineTheme.lightText;
     canvas.drawRRect(inactiveTrackRect, inactivePaint);
 
     // Draw active track (left side) - rounded left, flat right
@@ -190,7 +190,7 @@ class UniformTrackShape extends SliderTrackShape {
       bottomLeft: trackRadius,
     );
     final activePaint = Paint()
-      ..color = sliderTheme.activeTrackColor ?? Colors.blue;
+      ..color = sliderTheme.activeTrackColor ?? VineTheme.info;
     canvas.drawRRect(activeTrackRect, activePaint);
   }
 }

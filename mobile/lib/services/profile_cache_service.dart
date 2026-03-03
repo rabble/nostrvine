@@ -261,7 +261,7 @@ class ProfileCacheService {
 
       for (final entry in _profileBox!.toMap().entries) {
         if (_isProfileExpired(entry.value)) {
-          expiredKeys.add(entry.key);
+          expiredKeys.add(entry.key as String);
         }
       }
 

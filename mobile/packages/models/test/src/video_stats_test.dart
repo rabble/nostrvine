@@ -601,6 +601,139 @@ void main() {
       });
     });
 
+    group('text-track fields', () {
+      test('parses text_track_ref from top-level JSON', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+          'text_track_ref': '39307:abc123:subtitles:video-1',
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(
+          stats.textTrackRef,
+          equals('39307:abc123:subtitles:video-1'),
+        );
+      });
+
+      test('parses text_track_content from top-level JSON', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+          'text_track_content':
+              'WEBVTT\n\n00:00:00.000 --> 00:00:04.000\nHello',
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.textTrackContent, isNotNull);
+        expect(stats.textTrackContent, contains('WEBVTT'));
+      });
+
+      test('parses text-track tag from event tags', () {
+        final json = {
+          'event': {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'tags': [
+              ['d', 'video-1'],
+              ['title', 'Test'],
+              ['url', 'https://example.com/video.mp4'],
+              ['thumb', 'https://example.com/thumb.jpg'],
+              ['text-track', '39307:abc123:subtitles:video-1'],
+            ],
+          },
+          'stats': {
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          },
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(
+          stats.textTrackRef,
+          equals('39307:abc123:subtitles:video-1'),
+        );
+      });
+
+      test('normalizes empty text-track fields to null', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+          'text_track_ref': '',
+          'text_track_content': '',
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.textTrackRef, isNull);
+        expect(stats.textTrackContent, isNull);
+      });
+
+      test('passes textTrackRef and textTrackContent to toVideoEvent', () {
+        final stats = VideoStats(
+          id: 'test-id',
+          pubkey: 'test-pubkey',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          kind: 34236,
+          dTag: 'test-dtag',
+          title: 'Test',
+          thumbnail: 'https://example.com/thumb.jpg',
+          videoUrl: 'https://example.com/video.mp4',
+          reactions: 0,
+          comments: 0,
+          reposts: 0,
+          engagementScore: 0,
+          textTrackRef: '39307:abc123:subtitles:test-dtag',
+          textTrackContent: 'WEBVTT\n\n00:00:00.000 --> 00:00:04.000\nHello',
+        );
+
+        final event = stats.toVideoEvent();
+
+        expect(
+          event.textTrackRef,
+          equals('39307:abc123:subtitles:test-dtag'),
+        );
+        expect(event.textTrackContent, contains('WEBVTT'));
+      });
+    });
+
     group('toVideoEvent', () {
       test('converts to VideoEvent with all fields', () {
         final stats = VideoStats(

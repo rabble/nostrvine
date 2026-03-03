@@ -1,6 +1,7 @@
 // ABOUTME: Modal dialog explaining video badge origins (Vine archive vs Proofmode verification)
 // ABOUTME: Shows context-appropriate information based on video metadata
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
@@ -17,7 +18,7 @@ class BadgeExplanationModal extends StatelessWidget {
     final isVineArchive = video.isOriginalVine;
 
     return AlertDialog(
-      backgroundColor: const Color(0xFF1E1E1E), // Dark background
+      backgroundColor: VineTheme.cardBackground,
       title: _buildTitle(isVineArchive),
       content: SingleChildScrollView(
         child: isVineArchive
@@ -27,7 +28,7 @@ class BadgeExplanationModal extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: context.pop,
-          child: const Text('Close', style: TextStyle(color: Colors.blue)),
+          child: const Text('Close', style: TextStyle(color: VineTheme.info)),
         ),
       ],
     );
@@ -38,7 +39,7 @@ class BadgeExplanationModal extends StatelessWidget {
       children: [
         Icon(
           isVineArchive ? Icons.archive : Icons.verified_user,
-          color: isVineArchive ? const Color(0xFF00BF8F) : Colors.blue,
+          color: isVineArchive ? VineTheme.vineGreen : VineTheme.info,
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -47,7 +48,7 @@ class BadgeExplanationModal extends StatelessWidget {
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: VineTheme.whiteText,
             ),
           ),
         ),
@@ -73,13 +74,13 @@ class _VineArchiveExplanation extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: VineTheme.whiteText,
           ),
         ),
         const SizedBox(height: 12),
         const Text(
           'Before Vine shut down in 2017, ArchiveTeam and the Internet Archive worked to preserve millions of Vines for posterity. This content is part of that historic preservation effort.',
-          style: TextStyle(fontSize: 13, color: Colors.white70),
+          style: TextStyle(fontSize: 13, color: VineTheme.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
         if (video.originalLoops != null && video.originalLoops! > 0) ...[
@@ -88,7 +89,7 @@ class _VineArchiveExplanation extends StatelessWidget {
             style: const TextStyle(
               fontSize: 12,
               fontStyle: FontStyle.italic,
-              color: Colors.white60,
+              color: VineTheme.onSurfaceMuted,
             ),
           ),
           const SizedBox(height: 8),
@@ -100,18 +101,18 @@ class _VineArchiveExplanation extends StatelessWidget {
               await launchUrl(uri, mode: LaunchMode.externalApplication);
             }
           },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                const Icon(Icons.open_in_new, size: 16, color: Colors.blue),
-                const SizedBox(width: 6),
+                Icon(Icons.open_in_new, size: 16, color: VineTheme.info),
+                SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Learn more about the Vine archive preservation',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.blue[700],
+                      color: VineTheme.info,
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -142,7 +143,7 @@ class _ProofModeExplanation extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: VineTheme.whiteText,
           ),
         ),
         const SizedBox(height: 12),
@@ -150,7 +151,7 @@ class _ProofModeExplanation extends StatelessWidget {
         const SizedBox(height: 12),
         const Text(
           'Proofmode helps verify that videos are authentic and not AI-generated or manipulated.',
-          style: TextStyle(fontSize: 13, color: Colors.white70),
+          style: TextStyle(fontSize: 13, color: VineTheme.onSurfaceVariant),
         ),
         const SizedBox(height: 12),
         InkWell(
@@ -160,18 +161,18 @@ class _ProofModeExplanation extends StatelessWidget {
               await launchUrl(uri, mode: LaunchMode.externalApplication);
             }
           },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
             child: Row(
               children: [
-                const Icon(Icons.open_in_new, size: 16, color: Colors.blue),
-                const SizedBox(width: 6),
+                Icon(Icons.open_in_new, size: 16, color: VineTheme.info),
+                SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     'Learn more about Proofmode verification',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.blue[700],
+                      color: VineTheme.info,
                       decoration: TextDecoration.underline,
                     ),
                   ),
@@ -189,18 +190,18 @@ class _ProofModeExplanation extends StatelessWidget {
                 await launchUrl(uri, mode: LaunchMode.externalApplication);
               }
             },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
-                  const Icon(Icons.open_in_new, size: 16, color: Colors.blue),
-                  const SizedBox(width: 6),
+                  Icon(Icons.open_in_new, size: 16, color: VineTheme.info),
+                  SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       'Inspect with ProofCheck Tool',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.blue[700],
+                        color: VineTheme.info,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -236,7 +237,7 @@ class _VerificationLevelCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: VineTheme.whiteText,
               ),
             ),
           ],
@@ -244,7 +245,10 @@ class _VerificationLevelCard extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           config.description,
-          style: const TextStyle(fontSize: 12, color: Colors.white70),
+          style: const TextStyle(
+            fontSize: 12,
+            color: VineTheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -252,33 +256,33 @@ class _VerificationLevelCard extends StatelessWidget {
 
   _VerificationConfig _getVerificationConfig(VideoEvent video) {
     if (video.isVerifiedMobile) {
-      return _VerificationConfig(
+      return const _VerificationConfig(
         icon: Icons.verified,
-        color: Colors.green[700]!,
+        color: VineTheme.success,
         title: 'Human Made',
         description:
             'This video has the highest level of proof - captured on a real device with hardware security verification, and embedded Content Credentials (C2PA) in the video file. We can confirm it was recorded using DiVine on an actual phone.',
       );
     } else if (video.isVerifiedWeb) {
-      return _VerificationConfig(
+      return const _VerificationConfig(
         icon: Icons.shield_outlined,
-        color: Colors.blue[700]!,
+        color: VineTheme.info,
         title: 'Verified',
         description:
             "This video has cryptographic signatures proving it hasn't been altered since recording, but we can't verify the capture device.",
       );
     } else if (video.hasBasicProof) {
-      return _VerificationConfig(
+      return const _VerificationConfig(
         icon: Icons.info_outline,
-        color: Colors.orange[700]!,
+        color: VineTheme.warning,
         title: 'Basic Proof',
         description:
             'This video has minimal verification - just basic metadata signatures.',
       );
     } else {
-      return _VerificationConfig(
+      return const _VerificationConfig(
         icon: Icons.shield_outlined,
-        color: Colors.grey[600]!,
+        color: VineTheme.lightText,
         title: 'Unverified',
         description:
             "We can't be sure this video is real and was recorded using Divine on a user's phone.",

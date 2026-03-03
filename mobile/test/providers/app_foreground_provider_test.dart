@@ -83,9 +83,7 @@ void main() {
 
       // Rapid transitions
       for (int i = 0; i < 10; i++) {
-        container
-            .read(appForegroundProvider.notifier)
-            .setForeground(i % 2 == 0);
+        container.read(appForegroundProvider.notifier).setForeground(i.isEven);
       }
 
       // Final state should be false (last iteration i=9, 9%2=1, so false)

@@ -110,17 +110,13 @@ void main() {
         ).thenReturn(expectedVideos);
 
         // Act
-        await mockVideoService.subscribeToHashtagVideos(
-          testHashtags,
-        );
+        await mockVideoService.subscribeToHashtagVideos(testHashtags);
         final videos = mockVideoService.getVideos(SubscriptionType.hashtag);
 
         // Assert
         // Verify subscription was called with correct parameters
         verify(
-          () => mockVideoService.subscribeToHashtagVideos(
-            testHashtags,
-          ),
+          () => mockVideoService.subscribeToHashtagVideos(testHashtags),
         ).called(1);
 
         // Verify videos are returned

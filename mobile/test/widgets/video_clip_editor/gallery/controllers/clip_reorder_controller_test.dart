@@ -375,5 +375,72 @@ void main() {
         expect(controller.calculateIndexAfterDeletion(1), 0);
       });
     });
+
+    group('startIndex preservation for correct clip deletion', () {
+      test('startIndex is preserved when targetIndex changes via drag', () {
+        // Critical test: When reordering clips [A, B, C] and dragging A
+        // from index 0 to index 2, startIndex must stay 0 while targetIndex
+        // becomes 2. This is essential for correct deletion behavior.
+        controller.startReorder(0);
+        expect(controller.startIndex, 0);
+
+        // Simulate dragging right to index 1
+        controller.updateTargetIndex(1);
+        expect(controller.startIndex, 0);
+        expect(controller.targetIndex, 1);
+
+        // Simulate dragging further right to index 2
+        controller.updateTargetIndex(2);
+        expect(controller.startIndex, 0);
+        expect(controller.targetIndex, 2);
+
+        // startIndex should still be 0 - this is where the clip actually is
+        // in the clips array, until reorderClip() is called
+        expect(controller.startIndex, 0);
+      });
+
+      test(
+        'deletion during reorder must use startIndex to get correct clip.id',
+        () {
+          // Scenario: clips = [A, B, C, D, E] with IDs ['id-A', 'id-B', ...]
+          // User drags clip B (index 1) to visual position 3
+          //
+          // WRONG: Using targetIndex (3) would get clip D's ID
+          // CORRECT: Using startIndex (1) gets clip B's ID
+          //
+          // The gallery widget should:
+          // 1. Get clipToDelete = clips[startIndex]  (not targetIndex!)
+          // 2. Delete by clipToDelete.id
+          controller.startReorder(1); // Started dragging clip at index 1
+          controller.updateTargetIndex(3); // Dragged to visual position 3
+
+          // At deletion time:
+          // - clips array is UNCHANGED (reorderClip not called yet)
+          // - clips[startIndex] = the actual clip being dragged
+          // - clips[targetIndex] = a DIFFERENT clip!
+          expect(controller.startIndex, 1);
+          expect(controller.targetIndex, 3);
+
+          // The caller must use startIndex to find the correct clip.id
+        },
+      );
+
+      test(
+        'after multiple target updates startIndex remains unchanged',
+        () {
+          controller.startReorder(2);
+
+          // Drag left, right, left, right
+          controller.updateTargetIndex(1);
+          controller.updateTargetIndex(2);
+          controller.updateTargetIndex(3);
+          controller.updateTargetIndex(0);
+
+          // startIndex should still be original position
+          expect(controller.startIndex, 2);
+          expect(controller.targetIndex, 0);
+        },
+      );
+    });
   });
 }

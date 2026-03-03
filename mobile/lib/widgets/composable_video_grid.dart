@@ -309,7 +309,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
                 ),
                 child: const Icon(
                   Icons.delete_outline,
-                  color: Colors.red,
+                  color: VineTheme.error,
                   size: 20,
                 ),
               ),
@@ -372,7 +372,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
           ),
           TextButton(
             onPressed: () => context.pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: VineTheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -402,14 +402,14 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                   ),
                 ),
                 SizedBox(width: 12),
                 Text('Deleting content...'),
               ],
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: VineTheme.warning,
             duration: Duration(seconds: 2),
           ),
         );
@@ -433,7 +433,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
               children: [
                 Icon(
                   result.success ? Icons.check_circle : Icons.error,
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -445,7 +445,9 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
                 ),
               ],
             ),
-            backgroundColor: result.success ? VineTheme.vineGreen : Colors.red,
+            backgroundColor: result.success
+                ? VineTheme.vineGreen
+                : VineTheme.error,
           ),
         );
       }
@@ -454,7 +456,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to delete content: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -514,7 +516,7 @@ class _VideoItem extends StatelessWidget {
                     child: const Icon(
                       Icons.collections,
                       size: 14,
-                      color: Colors.white,
+                      color: VineTheme.whiteText,
                     ),
                   ),
                 ),
@@ -545,7 +547,7 @@ class _VideoInfoSection extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.transparent, Color(0x80000000)],
+          colors: [Colors.transparent, VineTheme.scrim50],
         ),
       ),
       child: Column(
@@ -568,7 +570,7 @@ class _VideoInfoSection extends StatelessWidget {
                   Shadow(
                     offset: Offset(0, 1),
                     blurRadius: 2,
-                    color: Color(0x26000000),
+                    color: VineTheme.scrim15,
                   ),
                 ],
               ),
@@ -584,7 +586,7 @@ class _VideoInfoSection extends StatelessWidget {
                 video.title ?? video.content,
                 style: const TextStyle(
                   fontFamily: 'Inter',
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 14,
                   height: 20 / 14,
                   letterSpacing: 0.25,
@@ -592,7 +594,7 @@ class _VideoInfoSection extends StatelessWidget {
                     Shadow(
                       offset: Offset(0, 1),
                       blurRadius: 2,
-                      color: Color(0x26000000),
+                      color: VineTheme.scrim15,
                     ),
                   ],
                 ),

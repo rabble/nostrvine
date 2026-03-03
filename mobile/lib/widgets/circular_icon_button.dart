@@ -2,6 +2,7 @@
 // ABOUTME: Used for video overlay action buttons (like, comment, share, etc.)
 // ABOUTME: and camera control buttons.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// A circular icon button with a semi-transparent background.
@@ -13,7 +14,7 @@ import 'package:flutter/material.dart';
 /// ```dart
 /// CircularIconButton(
 ///   onPressed: () => handleLike(),
-///   icon: Icon(Icons.favorite, color: Colors.red),
+///   icon: Icon(Icons.favorite, color: VineTheme.error),
 /// )
 /// ```
 class CircularIconButton extends StatelessWidget {
@@ -25,7 +26,7 @@ class CircularIconButton extends StatelessWidget {
     required this.icon,
     super.key,
     this.backgroundOpacity = 0.3,
-    this.backgroundColor = Colors.black,
+    this.backgroundColor = VineTheme.backgroundColor,
     this.size,
     this.padding,
   });
@@ -46,7 +47,7 @@ class CircularIconButton extends StatelessWidget {
 
   /// The background color of the button.
   ///
-  /// Defaults to [Colors.black].
+  /// Defaults to [VineTheme.backgroundColor].
   final Color backgroundColor;
 
   /// The overall size of the button (width and height).

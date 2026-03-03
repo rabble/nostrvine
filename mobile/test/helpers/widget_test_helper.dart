@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Create a mock SharedPreferences with all feature flags set to null
 /// Pass in your test-generated MockSharedPreferences instance
@@ -26,7 +27,11 @@ dynamic createMockSharedPreferences(dynamic mockPrefs) {
 /// Wrapper for widget tests with common provider overrides
 Widget createTestApp({required Widget child, required dynamic mockPrefs}) {
   return ProviderScope(
-    overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(
+        mockPrefs as SharedPreferences,
+      ),
+    ],
     child: MaterialApp(home: Scaffold(body: child)),
   );
 }

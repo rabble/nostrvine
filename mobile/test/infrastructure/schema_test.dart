@@ -40,7 +40,7 @@ void main() {
 
       // Clean up test database
       final dbFile = File(testDbPath);
-      if (await dbFile.exists()) {
+      if (dbFile.existsSync()) {
         await dbFile.delete();
       }
     });

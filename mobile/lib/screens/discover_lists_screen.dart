@@ -393,7 +393,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),

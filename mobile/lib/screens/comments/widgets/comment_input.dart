@@ -303,7 +303,7 @@ class _SendButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(17),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
+              color: VineTheme.backgroundColor.withValues(alpha: 0.1),
               blurRadius: 2,
               offset: const Offset(0.5, 0.5),
             ),
@@ -318,10 +318,14 @@ class _SendButton extends StatelessWidget {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                   ),
                 )
-              : const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+              : const Icon(
+                  Icons.arrow_upward,
+                  color: VineTheme.whiteText,
+                  size: 20,
+                ),
         ),
       ),
     );

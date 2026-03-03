@@ -170,7 +170,9 @@ class VideoFollowButtonView extends StatelessWidget {
               width: 20,
               height: 20,
               decoration: BoxDecoration(
-                color: isFollowing ? Colors.white : VineTheme.cameraButtonGreen,
+                color: isFollowing
+                    ? VineTheme.whiteText
+                    : VineTheme.cameraButtonGreen,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -182,7 +184,10 @@ class VideoFollowButtonView extends StatelessWidget {
                   height: 13,
                   colorFilter: isFollowing
                       ? null // Icon-Following.svg has its own green color
-                      : const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      : const ColorFilter.mode(
+                          VineTheme.whiteText,
+                          BlendMode.srcIn,
+                        ),
                 ),
               ),
             ),

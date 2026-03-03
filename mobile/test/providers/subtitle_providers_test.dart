@@ -43,9 +43,7 @@ void main() {
       addTearDown(container.dispose);
 
       final cues = await container.read(
-        subtitleCuesProvider(
-          videoId: 'test-id',
-        ).future,
+        subtitleCuesProvider(videoId: 'test-id').future,
       );
 
       expect(cues, isEmpty);
@@ -255,10 +253,7 @@ void main() {
       addTearDown(container.dispose);
 
       final cues = await container.read(
-        subtitleCuesProvider(
-          videoId: 'test-id',
-          textTrackContent: '',
-        ).future,
+        subtitleCuesProvider(videoId: 'test-id', textTrackContent: '').future,
       );
 
       expect(cues, isEmpty);
