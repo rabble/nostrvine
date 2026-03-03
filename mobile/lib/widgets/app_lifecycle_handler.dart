@@ -36,8 +36,8 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       ref.read(videoPublishProvider.notifier).resumePendingPublishes(context);
-      await ref.read(draftStorageServiceProvider).migrateOldDrafts();
       await ref.read(clipLibraryServiceProvider).migrateOldClips();
+      await ref.read(draftStorageServiceProvider).migrateOldDrafts();
     });
   }
 
