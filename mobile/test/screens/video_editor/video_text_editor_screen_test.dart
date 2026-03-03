@@ -356,9 +356,7 @@ void main() {
 
     testWidgets('fontSize 0.5 results in middle fontScale', (tester) async {
       final mockBloc = MockVideoEditorTextBloc();
-      when(
-        () => mockBloc.state,
-      ).thenReturn(const VideoEditorTextState());
+      when(() => mockBloc.state).thenReturn(const VideoEditorTextState());
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(

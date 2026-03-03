@@ -257,10 +257,7 @@ class ReportConfirmationDialog extends StatelessWidget {
       spacing: 12,
       children: [
         Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
-        Text(
-          'Report Received',
-          style: TextStyle(color: VineTheme.whiteText),
-        ),
+        Text('Report Received', style: TextStyle(color: VineTheme.whiteText)),
       ],
     ),
     content: Column(

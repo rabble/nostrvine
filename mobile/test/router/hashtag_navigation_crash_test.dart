@@ -28,58 +28,27 @@ void main() {
         // Navigate to first hashtag
         container
             .read(goRouterProvider)
-            .go(HashtagScreenRouter.pathForTag('comedy', index: 0));
+            .go(HashtagScreenRouter.pathForTag('comedy'));
         await tester.pump(); // Start navigation
         await tester.pump(const Duration(milliseconds: 100)); // Partial settle
 
         // Rapidly switch to second hashtag (triggers widget disposal)
         container
             .read(goRouterProvider)
-            .go(HashtagScreenRouter.pathForTag('lol', index: 0));
+            .go(HashtagScreenRouter.pathForTag('lol'));
         await tester.pump(); // Start navigation
         await tester.pump(const Duration(milliseconds: 100)); // Partial settle
 
         // Switch again to ensure postFrameCallbacks don't crash
         container
             .read(goRouterProvider)
-            .go(HashtagScreenRouter.pathForTag('nostr', index: 0));
+            .go(HashtagScreenRouter.pathForTag('nostr'));
         await tester.pumpAndSettle();
 
         // Should complete without "ref after unmount" crash
         expect(tester.takeException(), isNull);
       },
     );
-
-    testWidgets('navigating from hashtag grid to feed mode works', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      // Navigate to hashtag grid
-      container
-          .read(goRouterProvider)
-          .go(HashtagScreenRouter.pathForTag('bitcoin'));
-      await tester.pumpAndSettle();
-
-      // Navigate to feed mode (parameter change on same route)
-      container
-          .read(goRouterProvider)
-          .go(HashtagScreenRouter.pathForTag('bitcoin', index: 0));
-      await tester.pumpAndSettle();
-
-      // Should complete without crash
-      expect(tester.takeException(), isNull);
-    });
 
     testWidgets('navigating away from hashtag to explore does not crash', (
       tester,
@@ -99,7 +68,7 @@ void main() {
       // Navigate to hashtag
       container
           .read(goRouterProvider)
-          .go(HashtagScreenRouter.pathForTag('comedy', index: 0));
+          .go(HashtagScreenRouter.pathForTag('comedy'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 

@@ -10,6 +10,8 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -54,6 +56,7 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
+        feedTracker: FeedPerformanceTracker(),
       )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),
     );
@@ -79,6 +82,10 @@ class VideoFeedView extends ConsumerStatefulWidget {
 class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     with WidgetsBindingObserver {
   int? lastPrefetchIndex;
+
+  /// Guards so startup milestones fire only once.
+  bool _hasMarkedUIReady = false;
+  bool _hasMarkedVideoReady = false;
 
   /// The controller for the pooled video feed.
   ///
@@ -136,6 +143,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     controller = VideoFeedController(
       videos: pooledVideos,
       pool: PlayerPool.instance,
+      onVideoReady: (index, player) {
+        if (!_hasMarkedVideoReady && index == 0) {
+          _hasMarkedVideoReady = true;
+          StartupPerformanceService.instance.markVideoReady();
+        }
+      },
     );
 
     lastPooledVideos = pooledVideos;
@@ -213,7 +226,13 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                 !previous.isLoaded &&
                 current.isLoaded &&
                 current.videos.isNotEmpty,
-            listener: (_, state) => handleVideoController(state),
+            listener: (_, state) {
+              handleVideoController(state);
+              if (!_hasMarkedUIReady) {
+                _hasMarkedUIReady = true;
+                StartupPerformanceService.instance.markUIReady();
+              }
+            },
           ),
           // Handle new videos from pagination
           BlocListener<VideoFeedBloc, VideoFeedState>(
@@ -271,6 +290,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                     );
                   },
                   onActiveVideoChanged: (video, index) {
+                    FeedPerformanceTracker().startVideoSwipeTracking(video.id);
                     prefetchProfiles(state.videos, index);
                   },
                   onNearEnd: (index) {
@@ -319,15 +339,18 @@ class _FeedErrorWidget extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 64),
+          const Icon(Icons.error_outline, color: VineTheme.error, size: 64),
           const SizedBox(height: 16),
           const Text(
             'Failed to load videos',
-            style: TextStyle(color: Colors.white, fontSize: 18),
+            style: TextStyle(color: VineTheme.whiteText, fontSize: 18),
           ),
           if (error != null) ...[
             const SizedBox(height: 8),
-            Text(error.toString(), style: const TextStyle(color: Colors.grey)),
+            Text(
+              error.toString(),
+              style: const TextStyle(color: VineTheme.lightText),
+            ),
           ],
           const SizedBox(height: 24),
           ElevatedButton(
@@ -355,13 +378,13 @@ class FeedEmptyWidget extends StatelessWidget {
         children: [
           const Icon(
             Icons.video_library_outlined,
-            color: Colors.grey,
+            color: VineTheme.lightText,
             size: 64,
           ),
           const SizedBox(height: 16),
           Text(
             _getEmptyMessage(state),
-            style: const TextStyle(color: Colors.white, fontSize: 18),
+            style: const TextStyle(color: VineTheme.whiteText, fontSize: 18),
             textAlign: TextAlign.center,
           ),
         ],
@@ -454,7 +477,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
     final isPortrait = !(video.dimensions != null) || video.isPortrait;
 
     return ColoredBox(
-      color: Colors.black,
+      color: VineTheme.backgroundColor,
       child: PooledVideoPlayer(
         index: index,
         thumbnailUrl: video.thumbnailUrl,

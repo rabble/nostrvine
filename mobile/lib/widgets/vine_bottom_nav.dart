@@ -94,7 +94,9 @@ class VineBottomNav extends ConsumerWidget {
     String semanticIdentifier,
   ) {
     final isSelected = currentIndex == tabIndex;
-    final iconColor = isSelected ? Colors.white : VineTheme.tabIconInactive;
+    final iconColor = isSelected
+        ? VineTheme.whiteText
+        : VineTheme.tabIconInactive;
 
     return Semantics(
       identifier: semanticIdentifier,

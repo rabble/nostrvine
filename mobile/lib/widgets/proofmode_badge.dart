@@ -1,6 +1,7 @@
 // ABOUTME: ProofMode verification badge widget for displaying video authenticity levels
 // ABOUTME: Shows tiered verification badges (Verified Mobile, Verified Web, Basic Proof, Unverified) plus original Vine badge
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -155,7 +156,7 @@ class OriginalContentBadge extends StatelessWidget {
           Icon(
             Icons.check_circle,
             size: dimensions.iconSize,
-            color: Colors.white,
+            color: VineTheme.whiteText,
           ),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
@@ -163,7 +164,7 @@ class OriginalContentBadge extends StatelessWidget {
             style: GoogleFonts.pacifico(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w400,
-              color: Colors.white,
+              color: VineTheme.whiteText,
             ),
           ),
         ],
@@ -231,7 +232,7 @@ class OriginalVineBadge extends StatelessWidget {
             style: GoogleFonts.pacifico(
               fontSize: dimensions.fontSize + 2,
               fontWeight: FontWeight.w400,
-              color: Colors.white,
+              color: VineTheme.whiteText,
             ),
           ),
           SizedBox(width: dimensions.iconTextSpacing),
@@ -240,7 +241,7 @@ class OriginalVineBadge extends StatelessWidget {
             style: GoogleFonts.pacifico(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w400,
-              color: Colors.white,
+              color: VineTheme.whiteText,
             ),
           ),
         ],
@@ -297,9 +298,9 @@ class NotDivineBadge extends StatelessWidget {
         vertical: dimensions.verticalPadding,
       ),
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: VineTheme.backgroundColor,
         borderRadius: BorderRadius.circular(dimensions.borderRadius),
-        border: Border.all(color: Colors.grey.shade700),
+        border: Border.all(color: VineTheme.cardBackground),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -307,7 +308,7 @@ class NotDivineBadge extends StatelessWidget {
           Icon(
             Icons.public_off,
             size: dimensions.iconSize,
-            color: Colors.grey.shade400,
+            color: VineTheme.secondaryText,
           ),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
@@ -315,7 +316,7 @@ class NotDivineBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade400,
+              color: VineTheme.secondaryText,
             ),
           ),
         ],

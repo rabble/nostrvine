@@ -80,6 +80,9 @@ class MockAuthService extends Mock implements AuthService {
   @override
   Stream<AuthState> get authStateStream =>
       Stream.value(AuthState.authenticated);
+
+  @override
+  bool get hasExpiredOAuthSession => false;
 }
 
 const testUserHex =

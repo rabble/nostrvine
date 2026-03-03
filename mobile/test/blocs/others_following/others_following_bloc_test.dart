@@ -31,10 +31,7 @@ void main() {
 
     test('initial state is initial with empty list', () {
       final bloc = createBloc();
-      expect(
-        bloc.state,
-        const OthersFollowingState(),
-      );
+      expect(bloc.state, const OthersFollowingState());
       bloc.close();
     });
 
@@ -195,9 +192,7 @@ void main() {
     });
 
     test('copyWith creates copy with updated values', () {
-      const state = OthersFollowingState(
-        targetPubkey: 'target1',
-      );
+      const state = OthersFollowingState(targetPubkey: 'target1');
 
       final updated = state.copyWith(
         status: OthersFollowingStatus.loading,

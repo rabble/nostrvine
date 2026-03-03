@@ -106,7 +106,7 @@ class _VideoPublishProgressBar extends ConsumerWidget {
           borderRadius: .circular(4),
           child: LinearProgressIndicator(
             value: progress,
-            backgroundColor: const Color(0xFF424242),
+            backgroundColor: VineTheme.cardBackground,
             valueColor: const AlwaysStoppedAnimation<Color>(
               VineTheme.vineGreen,
             ),
@@ -115,7 +115,10 @@ class _VideoPublishProgressBar extends ConsumerWidget {
         ),
         Text(
           '$percentage%',
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
+          style: const TextStyle(
+            color: VineTheme.onSurfaceVariant,
+            fontSize: 14,
+          ),
         ),
       ],
     );
@@ -147,7 +150,7 @@ class _StatusDialog extends ConsumerWidget {
         gradient: const LinearGradient(
           begin: .topLeft,
           end: .bottomRight,
-          colors: [Color(0xFF2A2A2A), Color(0xFF1A1A1A)],
+          colors: [Color(0xFF2A2A2A), VineTheme.cardBackground],
         ),
         borderRadius: .circular(24),
         boxShadow: const [
@@ -158,7 +161,7 @@ class _StatusDialog extends ConsumerWidget {
             offset: Offset(0, 10),
           ),
         ],
-        border: .all(color: const Color(0x1A000000)),
+        border: .all(color: VineTheme.innerShadow),
       ),
       child: Column(
         spacing: 20,
@@ -168,7 +171,7 @@ class _StatusDialog extends ConsumerWidget {
           Text(
             statusMessage,
             style: const TextStyle(
-              color: Colors.white,
+              color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: .w600,
               letterSpacing: 0.3,
@@ -219,7 +222,11 @@ class _VideoPublishStatusIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (publishState) {
       case .error:
-        return const Icon(Icons.error_outline, color: Colors.red, size: 48);
+        return const Icon(
+          Icons.error_outline,
+          color: VineTheme.error,
+          size: 48,
+        );
       case .completed:
         return const Icon(
           Icons.check_circle,
@@ -246,7 +253,7 @@ class _VideoPublishStatusIcon extends StatelessWidget {
           height: 48,
           child: CircularProgressIndicator(
             strokeWidth: 4,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            valueColor: AlwaysStoppedAnimation<Color>(VineTheme.whiteText),
           ),
         );
     }

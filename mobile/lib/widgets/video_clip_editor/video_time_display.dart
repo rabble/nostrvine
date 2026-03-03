@@ -44,7 +44,7 @@ class VideoTimeDisplay extends ConsumerWidget {
     final defaultCurrentStyle =
         currentStyle ??
         const TextStyle(
-          color: Colors.white,
+          color: VineTheme.whiteText,
           fontSize: 18,
           fontFamily: VineTheme.fontFamilyBricolage,
           fontWeight: .w800,
@@ -56,7 +56,7 @@ class VideoTimeDisplay extends ConsumerWidget {
     final defaultSeparatorStyle =
         separatorStyle ??
         defaultCurrentStyle.copyWith(
-          color: Colors.white.withValues(alpha: 0.5),
+          color: VineTheme.onSurfaceMuted,
         );
 
     final defaultTotalStyle = totalStyle ?? defaultSeparatorStyle;

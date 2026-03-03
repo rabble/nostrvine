@@ -177,7 +177,7 @@ Future<void> _startOpenVineApp() async {
             WindowSizeConstants.baseHeight,
           ),
           center: true,
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.backgroundColor,
           skipTaskbar: false,
           titleBarStyle: TitleBarStyle.normal,
         );
@@ -822,10 +822,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               }
             case DeepLinkType.hashtag:
               if (deepLink.hashtag != null) {
-                // Include index if present, otherwise use grid view
                 final targetPath = HashtagScreenRouter.pathForTag(
                   deepLink.hashtag!,
-                  index: deepLink.index,
                 );
                 Log.info(
                   '📱 Navigating to hashtag: $targetPath',
@@ -918,9 +916,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       );
     });
 
-    const bool crashProbe = bool.fromEnvironment(
-      'CRASHLYTICS_PROBE',
-    );
+    const bool crashProbe = bool.fromEnvironment('CRASHLYTICS_PROBE');
 
     final router = ref.read(goRouterProvider);
 
@@ -1140,7 +1136,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             messenger.showSnackBar(
               SnackBar(
                 content: Text(state.error!),
-                backgroundColor: Colors.red[700],
+                backgroundColor: VineTheme.error,
                 behavior: SnackBarBehavior.floating,
                 duration: const Duration(seconds: 5),
               ),

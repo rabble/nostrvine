@@ -142,7 +142,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
       onTap: () => context.pop(),
       behavior: .translucent,
       child: ColoredBox(
-        color: Colors.black54,
+        color: VineTheme.scrim50,
         child: SafeArea(
           child: Center(
             child: Padding(

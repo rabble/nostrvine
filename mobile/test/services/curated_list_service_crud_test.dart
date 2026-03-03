@@ -330,9 +330,7 @@ void main() {
 
       test('publishes public list to Nostr when it has videos', () async {
         // Create list, add a video, then verify publish
-        final list = await service.createList(
-          name: 'Public List',
-        );
+        final list = await service.createList(name: 'Public List');
 
         // Add a video to the list so it will publish
         await service.addVideoToList(list!.id, 'test_video_id');
@@ -473,9 +471,7 @@ void main() {
       });
 
       test('publishes update to Nostr for public list with videos', () async {
-        final list = await service.createList(
-          name: 'Test List',
-        );
+        final list = await service.createList(name: 'Test List');
         // Add a video so the list will be published (empty lists don't publish)
         await service.addVideoToList(list!.id, 'test_video_id');
         reset(mockNostr); // Clear previous invocations

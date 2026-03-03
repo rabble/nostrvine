@@ -67,10 +67,7 @@ final hasFollowingInCacheProvider = Provider<bool>((ref) {
 /// Returns the redirect path (/explore) or null if no redirect needed.
 /// This is a family provider that takes the current location as a parameter.
 final ProviderFamily<String?, String> checkEmptyFollowingRedirectProvider =
-    Provider.family<String?, String>((
-      ref,
-      location,
-    ) {
+    Provider.family<String?, String>((ref, location) {
       // Only redirect to explore when coming from WelcomeScreen if user follows
       // nobody. After that, let users navigate to home freely (they'll see a
       // message to follow people)

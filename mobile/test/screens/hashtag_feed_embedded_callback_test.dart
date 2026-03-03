@@ -93,9 +93,7 @@ void main() {
     testWidgets('works with embedded=false and no callback', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
-          child: MaterialApp(
-            home: HashtagFeedScreen(hashtag: 'test'),
-          ),
+          child: MaterialApp(home: HashtagFeedScreen(hashtag: 'test')),
         ),
       );
 

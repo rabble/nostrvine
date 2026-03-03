@@ -95,7 +95,7 @@ class _UploadProgressDialogState extends State<UploadProgressDialog> {
             const SizedBox(height: 24),
             LinearProgressIndicator(
               value: _progress,
-              backgroundColor: Colors.grey[800],
+              backgroundColor: VineTheme.cardBackground,
               valueColor: const AlwaysStoppedAnimation<Color>(
                 VineTheme.vineGreen,
               ),

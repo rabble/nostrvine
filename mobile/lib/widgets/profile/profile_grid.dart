@@ -9,6 +9,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
+import 'package:openvine/blocs/profile_comments/profile_comments_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -16,6 +17,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
+import 'package:openvine/widgets/profile/profile_comments_grid.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
@@ -106,6 +108,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   ProfileLikedVideosBloc? _likedVideosBloc;
   ProfileRepostedVideosBloc? _repostedVideosBloc;
   ProfileCollabVideosBloc? _collabVideosBloc;
+  ProfileCommentsBloc? _commentsBloc;
 
   /// Track the userIdHex the BLoCs were created for.
   String? _blocsUserIdHex;
@@ -114,11 +117,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   bool _likedTabSynced = false;
   bool _repostsTabSynced = false;
   bool _collabsTabSynced = false;
+  bool _commentsTabSynced = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(_onTabChanged);
     widget.refreshNotifier?.addListener(_onRefreshRequested);
   }
@@ -152,6 +156,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         _collabVideosBloc != null) {
       _collabsTabSynced = true;
       _collabVideosBloc!.add(const ProfileCollabVideosFetchRequested());
+    } else if (_tabController.index == 4 &&
+        !_commentsTabSynced &&
+        _commentsBloc != null) {
+      _commentsTabSynced = true;
+      _commentsBloc!.add(const ProfileCommentsSyncRequested());
     }
   }
 
@@ -167,6 +176,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     if (_collabsTabSynced) {
       _collabVideosBloc?.add(const ProfileCollabVideosFetchRequested());
     }
+    if (_commentsTabSynced) {
+      _commentsBloc?.add(const ProfileCommentsSyncRequested());
+    }
   }
 
   @override
@@ -178,6 +190,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     _likedVideosBloc?.close();
     _repostedVideosBloc?.close();
     _collabVideosBloc?.close();
+    _commentsBloc?.close();
     super.dispose();
   }
 
@@ -187,6 +200,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final likesRepository = ref.watch(likesRepositoryProvider);
     final repostsRepository = ref.watch(repostsRepositoryProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
+    final commentsRepository = ref.watch(commentsRepositoryProvider);
     final nostrService = ref.watch(nostrServiceProvider);
     final currentUserPubkey = nostrService.publicKey;
 
@@ -201,11 +215,13 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       _likedVideosBloc?.close();
       _repostedVideosBloc?.close();
       _collabVideosBloc?.close();
+      _commentsBloc?.close();
 
       // Reset lazy load flags when switching profiles
       _likedTabSynced = false;
       _repostsTabSynced = false;
       _collabsTabSynced = false;
+      _commentsTabSynced = false;
 
       // Create BLoCs but DON'T sync yet - lazy load when tab is viewed
       // VideosRepository handles cache-first lookups via SQLite localStorage
@@ -231,6 +247,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       );
       // Fetch deferred until user views Collabs tab
 
+      _commentsBloc = ProfileCommentsBloc(
+        commentsRepository: commentsRepository,
+        targetUserPubkey: widget.userIdHex,
+      );
+      // Sync deferred until user views Comments tab
+
       _blocsUserIdHex = widget.userIdHex;
     }
 
@@ -243,6 +265,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           value: _repostedVideosBloc!,
         ),
         BlocProvider<ProfileCollabVideosBloc>.value(value: _collabVideosBloc!),
+        BlocProvider<ProfileCommentsBloc>.value(value: _commentsBloc!),
       ],
       child: TabBarView(
         controller: _tabController,
@@ -256,51 +279,40 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
           ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
           ProfileCollabsGrid(isOwnProfile: widget.isOwnProfile),
+          ProfileCommentsGrid(isOwnProfile: widget.isOwnProfile),
         ],
       ),
     );
 
     // Build the main content
     Widget content = DefaultTabController(
-      length: 4,
+      length: 5,
       child: NestedScrollView(
         controller: widget.scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           // Profile Header
           SliverToBoxAdapter(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: ProfileHeaderWidget(
-                  userIdHex: widget.userIdHex,
-                  isOwnProfile: widget.isOwnProfile,
-                  videoCount: widget.videos.length,
-                  profileStatsAsync: widget.profileStatsAsync,
-                  onSetupProfile: widget.onSetupProfile,
-                  displayNameHint: widget.displayNameHint,
-                  avatarUrlHint: widget.avatarUrlHint,
-                ),
-              ),
+            child: ProfileHeaderWidget(
+              userIdHex: widget.userIdHex,
+              isOwnProfile: widget.isOwnProfile,
+              videoCount: widget.videos.length,
+              profileStatsAsync: widget.profileStatsAsync,
+              onSetupProfile: widget.onSetupProfile,
+              displayNameHint: widget.displayNameHint,
+              avatarUrlHint: widget.avatarUrlHint,
             ),
           ),
 
           // Action Buttons
           SliverToBoxAdapter(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: ProfileActionButtons(
-                  userIdHex: widget.userIdHex,
-                  isOwnProfile: widget.isOwnProfile,
-                  displayName: widget.displayName,
-                  onEditProfile: widget.onEditProfile,
-                  onOpenClips: widget.onOpenClips,
-                  onOpenAnalytics: widget.onOpenAnalytics,
-                  onBlockedTap: widget.onBlockedTap,
-                ),
-              ),
+            child: ProfileActionButtons(
+              userIdHex: widget.userIdHex,
+              isOwnProfile: widget.isOwnProfile,
+              displayName: widget.displayName,
+              onEditProfile: widget.onEditProfile,
+              onOpenClips: widget.onOpenClips,
+              onOpenAnalytics: widget.onOpenAnalytics,
+              onBlockedTap: widget.onBlockedTap,
             ),
           ),
 
@@ -372,6 +384,22 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                         height: 28,
                         colorFilter: ColorFilter.mode(
                           _tabController.index == 3
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Tab(
+                    icon: Semantics(
+                      label: 'comments_tab',
+                      child: SvgPicture.asset(
+                        'assets/icon/chat_circle.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 4
                               ? VineTheme.whiteText
                               : VineTheme.onSurfaceMuted,
                           BlendMode.srcIn,

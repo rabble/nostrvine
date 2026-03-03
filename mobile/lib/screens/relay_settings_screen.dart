@@ -118,7 +118,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -128,25 +128,29 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         ),
         title: Text('Relays', style: VineTheme.titleFont()),
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: Column(
         children: [
           // Info banner with instructions
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.grey[900],
+            color: VineTheme.cardBackground,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.info_outline, color: Colors.grey, size: 20),
+                    Icon(
+                      Icons.info_outline,
+                      color: VineTheme.lightText,
+                      size: 20,
+                    ),
                     SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Divine is an open system - you control your connections',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: VineTheme.whiteText,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -157,7 +161,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   'These relays distribute your content across the decentralized Nostr network. You can add or remove relays as you wish.',
-                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                  style: TextStyle(color: VineTheme.lightText, fontSize: 13),
                 ),
                 const SizedBox(height: 8),
                 GestureDetector(
@@ -194,28 +198,28 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.error_outline,
-                          color: Colors.orange[700],
+                          color: VineTheme.warning,
                           size: 64,
                         ),
                         const SizedBox(height: 16),
                         const Text(
                           'App Not Functional',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: VineTheme.whiteText,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 32),
                           child: Text(
                             'Divine requires at least one relay to load videos, post content, and sync data.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.grey[400],
+                              color: VineTheme.secondaryText,
                               fontSize: 14,
                             ),
                           ),
@@ -223,10 +227,13 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                         const SizedBox(height: 32),
                         ElevatedButton.icon(
                           onPressed: _restoreDefaultRelay,
-                          icon: const Icon(Icons.restore, color: Colors.white),
+                          icon: const Icon(
+                            Icons.restore,
+                            color: VineTheme.whiteText,
+                          ),
                           label: const Text(
                             'Restore Default Relay',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(color: VineTheme.whiteText),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: VineTheme.vineGreen,
@@ -239,13 +246,16 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                         const SizedBox(height: 12),
                         ElevatedButton.icon(
                           onPressed: _showAddRelayDialog,
-                          icon: const Icon(Icons.add, color: Colors.white),
+                          icon: const Icon(
+                            Icons.add,
+                            color: VineTheme.whiteText,
+                          ),
                           label: const Text(
                             'Add Custom Relay',
-                            style: TextStyle(color: Colors.white),
+                            style: TextStyle(color: VineTheme.whiteText),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[700],
+                            backgroundColor: VineTheme.cardBackground,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
                               vertical: 14,
@@ -267,11 +277,11 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                                 onPressed: _showAddRelayDialog,
                                 icon: const Icon(
                                   Icons.add,
-                                  color: Colors.white,
+                                  color: VineTheme.whiteText,
                                 ),
                                 label: const Text(
                                   'Add Relay',
-                                  style: TextStyle(color: Colors.white),
+                                  style: TextStyle(color: VineTheme.whiteText),
                                 ),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: VineTheme.vineGreen,
@@ -288,14 +298,14 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                                 onPressed: _retryConnection,
                                 icon: const Icon(
                                   Icons.refresh,
-                                  color: Colors.white,
+                                  color: VineTheme.whiteText,
                                 ),
                                 label: const Text(
                                   'Retry',
-                                  style: TextStyle(color: Colors.white),
+                                  style: TextStyle(color: VineTheme.whiteText),
                                 ),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey[700],
+                                  backgroundColor: VineTheme.cardBackground,
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 20,
                                     vertical: 12,
@@ -337,18 +347,18 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       child: ExpansionTile(
         leading: Icon(
           isConnected ? Icons.cloud_done : Icons.cloud_off,
-          color: isConnected ? Colors.green[400] : Colors.orange[400],
+          color: isConnected ? VineTheme.success : VineTheme.warning,
           size: 20,
         ),
         title: Text(
           relayUrl,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
+          style: const TextStyle(color: VineTheme.whiteText, fontSize: 14),
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           statusSummary,
           style: TextStyle(
-            color: isConnected ? Colors.grey[500] : Colors.orange[300],
+            color: isConnected ? VineTheme.lightText : VineTheme.warning,
             fontSize: 12,
           ),
         ),
@@ -356,17 +366,17 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+              icon: const Icon(Icons.delete, color: VineTheme.error, size: 20),
               onPressed: () => _removeRelay(relayUrl),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.expand_more, color: Colors.grey, size: 20),
+            const Icon(Icons.expand_more, color: VineTheme.lightText, size: 20),
           ],
         ),
-        iconColor: Colors.grey,
-        collapsedIconColor: Colors.grey,
+        iconColor: VineTheme.lightText,
+        collapsedIconColor: VineTheme.lightText,
         onExpansionChanged: (expanded) {
           if (expanded) {
             _fetchCapabilities(relayUrl);
@@ -379,11 +389,11 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
   Widget _buildRelayDetails(RelayStatistics? stats, String relayUrl) {
     if (stats == null) {
-      return Padding(
-        padding: const EdgeInsets.all(16),
+      return const Padding(
+        padding: EdgeInsets.all(16),
         child: Text(
           'No statistics available yet',
-          style: TextStyle(color: Colors.grey[600], fontSize: 13),
+          style: TextStyle(color: VineTheme.lightText, fontSize: 13),
         ),
       );
     }
@@ -399,76 +409,78 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
           _buildStatRow(
             'Connection',
             stats.isConnected ? 'Connected' : 'Disconnected',
-            stats.isConnected ? Colors.green[400]! : Colors.orange[400]!,
+            stats.isConnected ? VineTheme.success : VineTheme.warning,
           ),
           if (stats.sessionDuration != null)
             _buildStatRow(
               'Session Duration',
               _formatDuration(stats.sessionDuration!),
-              Colors.grey[400]!,
+              VineTheme.secondaryText,
             ),
           if (stats.lastConnected != null)
             _buildStatRow(
               'Last Connected',
               _formatTime(stats.lastConnected!),
-              Colors.grey[400]!,
+              VineTheme.secondaryText,
             ),
           if (!stats.isConnected && stats.lastDisconnected != null)
             _buildStatRow(
               'Disconnected',
               _formatTime(stats.lastDisconnected!),
-              Colors.orange[400]!,
+              VineTheme.warning,
             ),
           if (stats.lastDisconnectReason != null && !stats.isConnected)
             _buildStatRow(
               'Reason',
               stats.lastDisconnectReason!,
-              Colors.orange[400]!,
+              VineTheme.warning,
             ),
-          const Divider(color: Colors.grey, height: 16),
+          const Divider(color: VineTheme.lightText, height: 16),
           _buildStatRow(
             'Active Subscriptions',
             '${stats.activeSubscriptions}',
-            Colors.blue[400]!,
+            VineTheme.info,
           ),
           _buildStatRow(
             'Total Subscriptions',
             '${stats.totalSubscriptions}',
-            Colors.grey[400]!,
+            VineTheme.secondaryText,
           ),
           _buildStatRow(
             'Events Received',
             _formatCount(stats.eventsReceived),
-            Colors.green[400]!,
+            VineTheme.success,
           ),
           _buildStatRow(
             'Events Sent',
             _formatCount(stats.eventsSent),
-            Colors.blue[400]!,
+            VineTheme.info,
           ),
-          const Divider(color: Colors.grey, height: 16),
+          const Divider(color: VineTheme.lightText, height: 16),
           _buildStatRow(
             'Requests This Session',
             '${stats.requestsThisSession}',
-            Colors.grey[400]!,
+            VineTheme.secondaryText,
           ),
           _buildStatRow(
             'Failed Requests',
             '${stats.failedRequests}',
-            stats.failedRequests > 0 ? Colors.red[400]! : Colors.grey[400]!,
+            stats.failedRequests > 0
+                ? VineTheme.error
+                : VineTheme.secondaryText,
           ),
           if (stats.lastError != null) ...[
             const SizedBox(height: 8),
             Text(
               'Last Error: ${stats.lastError}',
-              style: TextStyle(color: Colors.red[300], fontSize: 12),
+              style: const TextStyle(color: VineTheme.error, fontSize: 12),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
             if (stats.lastErrorTime != null)
               Text(
                 _formatTime(stats.lastErrorTime!),
-                style: TextStyle(color: Colors.red[200], fontSize: 11),
+                style: const TextStyle(color: VineTheme.error, fontSize: 11),
               ),
           ],
           // NIP-11 Relay Info Section
@@ -484,13 +496,13 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     bool isLoading,
   ) {
     if (isLoading) {
-      return Column(
+      return const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Divider(color: Colors.grey, height: 24),
+          Divider(color: VineTheme.lightText, height: 24),
           Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
@@ -498,10 +510,10 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                   color: VineTheme.vineGreen,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: 8),
               Text(
                 'Loading relay info...',
-                style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                style: TextStyle(color: VineTheme.lightText, fontSize: 13),
               ),
             ],
           ),
@@ -516,11 +528,11 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(color: Colors.grey, height: 24),
-        Text(
+        const Divider(color: VineTheme.lightText, height: 24),
+        const Text(
           'About Relay',
           style: TextStyle(
-            color: Colors.grey[400],
+            color: VineTheme.secondaryText,
             fontSize: 14,
             fontWeight: FontWeight.w600,
           ),
@@ -532,7 +544,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
             child: Text(
               capabilities.name!,
               style: const TextStyle(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
@@ -544,31 +556,38 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               capabilities.description!,
-              style: TextStyle(color: Colors.grey[400], fontSize: 13),
+              style: const TextStyle(
+                color: VineTheme.secondaryText,
+                fontSize: 13,
+              ),
             ),
           ),
         if (capabilities.supportedNips.isNotEmpty)
           _buildStatRow(
             'Supported NIPs',
             capabilities.supportedNips.join(', '),
-            Colors.grey[400]!,
+            VineTheme.secondaryText,
           ),
         if (capabilities.rawData['software'] != null)
           _buildStatRow(
             'Software',
             _formatSoftwareVersion(capabilities.rawData),
-            Colors.grey[400]!,
+            VineTheme.secondaryText,
           ),
         const SizedBox(height: 12),
         ElevatedButton.icon(
           onPressed: () => _openRelayWebsite(relayUrl),
-          icon: const Icon(Icons.open_in_new, size: 16, color: Colors.white),
+          icon: const Icon(
+            Icons.open_in_new,
+            size: 16,
+            color: VineTheme.whiteText,
+          ),
           label: const Text(
             'View Website',
-            style: TextStyle(color: Colors.white, fontSize: 13),
+            style: TextStyle(color: VineTheme.whiteText, fontSize: 13),
           ),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey[700],
+            backgroundColor: VineTheme.cardBackground,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
         ),
@@ -592,7 +611,10 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+          Text(
+            label,
+            style: const TextStyle(color: VineTheme.lightText, fontSize: 13),
+          ),
           Text(value, style: TextStyle(color: valueColor, fontSize: 13)),
         ],
       ),
@@ -640,23 +662,29 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: VineTheme.cardBackground,
         title: const Text(
           'Remove Relay?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: VineTheme.whiteText),
         ),
         content: Text(
           'Are you sure you want to remove this relay?\n\n$relayUrl',
-          style: TextStyle(color: Colors.grey[300]),
+          style: const TextStyle(color: VineTheme.secondaryText),
         ),
         actions: [
           TextButton(
             onPressed: () => dialogContext.pop(false),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey[400])),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.secondaryText),
+            ),
           ),
           TextButton(
             onPressed: () => dialogContext.pop(true),
-            child: const Text('Remove', style: TextStyle(color: Colors.red)),
+            child: const Text(
+              'Remove',
+              style: TextStyle(color: VineTheme.error),
+            ),
           ),
         ],
       ),
@@ -679,7 +707,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Removed relay: $relayUrl'),
-            backgroundColor: Colors.orange[700],
+            backgroundColor: VineTheme.warning,
           ),
         );
       }
@@ -697,7 +725,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red[700]),
+      SnackBar(content: Text(message), backgroundColor: VineTheme.error),
     );
   }
 
@@ -709,7 +737,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Forcing relay reconnection...'),
-          backgroundColor: Colors.orange,
+          backgroundColor: VineTheme.warning,
         ),
       );
 
@@ -724,7 +752,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Connected to $connectedCount relay(s)!'),
-              backgroundColor: Colors.green[700],
+              backgroundColor: VineTheme.success,
             ),
           );
         }
@@ -748,15 +776,18 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     final relayUrl = await showDialog<String>(
       context: context,
       builder: (BuildContext dialogContext) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text('Add Relay', style: TextStyle(color: Colors.white)),
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          'Add Relay',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Enter the WebSocket URL of the relay you want to add:',
-              style: TextStyle(color: Colors.grey),
+              style: TextStyle(color: VineTheme.lightText),
             ),
             const SizedBox(height: 8),
             GestureDetector(
@@ -774,15 +805,15 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
             TextField(
               controller: controller,
               autofocus: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
+              style: const TextStyle(color: VineTheme.whiteText),
+              decoration: const InputDecoration(
                 hintText: 'wss://relay.example.com',
-                hintStyle: TextStyle(color: Colors.grey[600]),
-                border: const OutlineInputBorder(),
+                hintStyle: TextStyle(color: VineTheme.lightText),
+                border: OutlineInputBorder(),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey[700]!),
+                  borderSide: BorderSide(color: VineTheme.cardBackground),
                 ),
-                focusedBorder: const OutlineInputBorder(
+                focusedBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: VineTheme.vineGreen),
                 ),
               ),
@@ -792,7 +823,10 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
         actions: [
           TextButton(
             onPressed: () => dialogContext.pop(),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey[400])),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.secondaryText),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -834,7 +868,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Added relay: $relayUrl'),
-              backgroundColor: Colors.green[700],
+              backgroundColor: VineTheme.success,
             ),
           );
         }
@@ -864,9 +898,9 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
           setState(() {});
 
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Restored default relay: $defaultRelay'),
-              backgroundColor: Colors.green[700],
+            const SnackBar(
+              content: Text('Restored default relay: $defaultRelay'),
+              backgroundColor: VineTheme.success,
             ),
           );
         }

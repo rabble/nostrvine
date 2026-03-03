@@ -21,7 +21,7 @@ class VideoDescriptionOverlay extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.4),
+        color: VineTheme.backgroundColor.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -39,18 +39,13 @@ class VideoDescriptionOverlay extends StatelessWidget {
                   ? video.content
                   : video.title ?? '',
               style: const TextStyle(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
                 height: 1.3,
                 shadows: [
-                  Shadow(
-                    blurRadius: 8,
-                  ),
-                  Shadow(
-                    offset: Offset(2, 2),
-                    blurRadius: 4,
-                  ),
+                  Shadow(blurRadius: 8),
+                  Shadow(offset: Offset(2, 2), blurRadius: 4),
                 ],
               ),
               hashtagStyle: const TextStyle(
@@ -59,13 +54,8 @@ class VideoDescriptionOverlay extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 height: 1.3,
                 shadows: [
-                  Shadow(
-                    blurRadius: 8,
-                  ),
-                  Shadow(
-                    offset: Offset(2, 2),
-                    blurRadius: 4,
-                  ),
+                  Shadow(blurRadius: 8),
+                  Shadow(offset: Offset(2, 2), blurRadius: 4),
                 ],
               ),
               maxLines: 3,
@@ -83,17 +73,12 @@ class VideoDescriptionOverlay extends StatelessWidget {
               child: Text(
                 '🔁 ${StringUtils.formatCompactNumber((video.originalLoops ?? 0) + (int.tryParse(video.rawTags['views'] ?? '') ?? 0))} loops',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   shadows: [
-                    Shadow(
-                      blurRadius: 6,
-                    ),
-                    Shadow(
-                      offset: Offset(1, 1),
-                      blurRadius: 3,
-                    ),
+                    Shadow(blurRadius: 6),
+                    Shadow(offset: Offset(1, 1), blurRadius: 3),
                   ],
                 ),
               ),

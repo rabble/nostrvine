@@ -31,12 +31,12 @@ class DivineSecondaryButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: const [
             BoxShadow(
-              color: Color(0x1A000000),
+              color: VineTheme.innerShadow,
               blurRadius: 0.6,
               offset: Offset(0.4, 0.4),
             ),
             BoxShadow(
-              color: Color(0x1A000000),
+              color: VineTheme.innerShadow,
               blurRadius: 1,
               offset: Offset(1, 1),
             ),
@@ -45,7 +45,7 @@ class DivineSecondaryButton extends StatelessWidget {
         child: OutlinedButton(
           onPressed: isLoading ? null : onPressed,
           style: OutlinedButton.styleFrom(
-            foregroundColor: VineTheme.vineGreen,
+            foregroundColor: VineTheme.primary,
             backgroundColor: VineTheme.surfaceContainer,
             side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
             shape: RoundedRectangleBorder(
@@ -57,7 +57,7 @@ class DivineSecondaryButton extends StatelessWidget {
                   height: 20,
                   width: 20,
                   child: CircularProgressIndicator(
-                    color: VineTheme.vineGreen,
+                    color: VineTheme.primary,
                     strokeWidth: 2,
                   ),
                 )

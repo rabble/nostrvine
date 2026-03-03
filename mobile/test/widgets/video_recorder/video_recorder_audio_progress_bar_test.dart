@@ -136,9 +136,7 @@ void main() {
     group('Visibility', () {
       testWidgets('shows SizedBox.shrink when not recording', (tester) async {
         await tester.pumpWidget(
-          buildWidget(
-            selectedSound: _createTestAudioEvent(),
-          ),
+          buildWidget(selectedSound: _createTestAudioEvent()),
         );
         await tester.pumpAndSettle();
 
@@ -153,9 +151,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildWidget(
-            recordingState: VideoRecorderState.recording,
-          ),
+          buildWidget(recordingState: VideoRecorderState.recording),
         );
         await tester.pumpAndSettle();
 
@@ -168,9 +164,7 @@ void main() {
       testWidgets('shows SizedBox.shrink when not recording and no sound', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          buildWidget(),
-        );
+        await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
         expect(

@@ -112,12 +112,8 @@ void main() {
 
     test('handles videos with null loop/like counts', () async {
       final videos = [
-        VideoEventBuilder(
-          originalLoops: 100,
-        ).fromUser(testPubkey).build(),
-        VideoEventBuilder(
-          originalLikes: 50,
-        ).fromUser(testPubkey).build(),
+        VideoEventBuilder(originalLoops: 100).fromUser(testPubkey).build(),
+        VideoEventBuilder(originalLikes: 50).fromUser(testPubkey).build(),
         VideoEventBuilder().fromUser(testPubkey).build(),
       ];
 

@@ -2133,10 +2133,7 @@ class VideoEventService extends ChangeNotifier {
 
           // Only add events with video URLs
           if (videoEvent.hasVideo) {
-            _addVideoToSubscription(
-              videoEvent,
-              subscriptionType,
-            );
+            _addVideoToSubscription(videoEvent, subscriptionType);
 
             // Keep only the most recent events to prevent memory issues
             final list = _eventLists[subscriptionType] ?? [];
@@ -2671,7 +2668,9 @@ class VideoEventService extends ChangeNotifier {
     // followed users, not just the most recent ones returned by the subscription.
     // This is especially important when following new users whose older videos
     // might not be in the subscription's initial result set.
-    await seedHomeFeedFromFollowedUsers(followingPubkeys, limit: limit);
+    // Fire-and-forget: don't block the UI waiting for seed results.
+    // Events stream in progressively via _handleNewVideoEvent.
+    unawaited(seedHomeFeedFromFollowedUsers(followingPubkeys, limit: limit));
   }
 
   /// Seeds the home feed with videos from the discovery cache for specified authors.
@@ -2729,17 +2728,19 @@ class VideoEventService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Seeds the home feed by fetching videos from the relay for followed users.
+  /// Seeds the home feed by streaming videos from the relay for followed users.
   ///
   /// Unlike [seedHomeFeedFromDiscoveryCache] which only uses locally cached videos,
-  /// this method actively queries the relay for videos from followed users.
-  /// This ensures that when following new users, their complete video history
-  /// is fetched and added to the home feed.
+  /// this method actively subscribes to the relay for videos from followed users.
+  /// Events are processed progressively as they arrive via [_handleNewVideoEvent],
+  /// so the UI updates incrementally without blocking.
+  ///
+  /// The subscription is cancelled after EOSE (all stored events delivered)
+  /// since we only need the backfill, not ongoing real-time updates.
   ///
   /// [followingPubkeys] - List of pubkeys the user is following
   /// [limit] - Maximum number of videos to fetch per author (default 50)
-  ///
-  /// Videos are deduplicated by ID to prevent duplicates.
+  @visibleForTesting
   Future<void> seedHomeFeedFromFollowedUsers(
     List<String> followingPubkeys, {
     int limit = 50,
@@ -2756,94 +2757,82 @@ class VideoEventService extends ChangeNotifier {
     }
 
     Log.info(
-      '🏠 seedHomeFeedFromFollowedUsers: Fetching videos for ${followingPubkeys.length} followed users',
+      '🏠 seedHomeFeedFromFollowedUsers: Streaming videos for '
+      '${followingPubkeys.length} followed users',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
 
     try {
-      // Query videos for all followed users in a single request
       final filter = Filter(
         kinds: NIP71VideoKinds.getAllVideoKinds(),
         authors: followingPubkeys,
         limit: limit,
       );
 
-      final events = await _nostrService.queryEvents([filter]);
+      final completer = Completer<void>();
+      final subscriptionId =
+          'seed_home_${DateTime.now().millisecondsSinceEpoch}';
 
-      if (events.isEmpty) {
-        Log.debug(
-          '🏠 seedHomeFeedFromFollowedUsers: No videos found for followed users',
-          name: 'VideoEventService',
-          category: LogCategory.video,
-        );
-        return;
-      }
-
-      // Get existing video IDs in home feed for deduplication
-      // Use case-insensitive comparison for Nostr IDs
-      final homeFeedList = _eventLists[SubscriptionType.homeFeed] ?? [];
-      final existingIds = homeFeedList.map((v) => v.id.toLowerCase()).toSet();
-
-      final videosToSeed = <VideoEvent>[];
-
-      for (final event in events) {
-        // Skip if already in home feed (case-insensitive)
-        if (existingIds.contains(event.id.toLowerCase())) continue;
-
-        // Check if video exists in other subscription lists
-        VideoEvent? existingVideo;
-        for (final list in _eventLists.values) {
-          existingVideo = list.cast<VideoEvent?>().firstWhere(
-            (v) => v?.id.toLowerCase() == event.id.toLowerCase(),
-            orElse: () => null,
+      final eventStream = _nostrService.subscribe(
+        [filter],
+        subscriptionId: subscriptionId,
+        onEose: () {
+          // All stored events have been delivered; cancel the seed subscription
+          Log.debug(
+            '🏠 seedHomeFeedFromFollowedUsers: EOSE received, cancelling '
+            'seed subscription',
+            name: 'VideoEventService',
+            category: LogCategory.video,
           );
-          if (existingVideo != null) break;
-        }
-
-        if (existingVideo != null) {
-          // Reuse existing parsed video
-          videosToSeed.add(existingVideo);
-        } else {
-          // Parse new video event
-          final videoEvent = VideoEvent.fromNostrEvent(event);
-          final url = videoEvent.videoUrl;
-          if (url != null && url.isNotEmpty) {
-            videosToSeed.add(videoEvent);
-            // Mark as seen in pagination state
-            _paginationStates[SubscriptionType.homeFeed]?.markEventSeen(
-              event.id,
-            );
+          unawaited(_nostrService.unsubscribe(subscriptionId));
+          if (!completer.isCompleted) {
+            completer.complete();
           }
-        }
-      }
-
-      if (videosToSeed.isEmpty) {
-        Log.debug(
-          '🏠 seedHomeFeedFromFollowedUsers: All ${events.length} videos already in feed',
-          name: 'VideoEventService',
-          category: LogCategory.video,
-        );
-        return;
-      }
-
-      Log.info(
-        '🏠 seedHomeFeedFromFollowedUsers: Seeding ${videosToSeed.length} videos into home feed',
-        name: 'VideoEventService',
-        category: LogCategory.video,
+        },
       );
 
-      // Add videos to home feed list
-      homeFeedList.addAll(videosToSeed);
+      final subscription = eventStream.listen(
+        (event) {
+          _handleNewVideoEvent(event, SubscriptionType.homeFeed);
+        },
+        onError: (Object error) {
+          Log.error(
+            '🏠 seedHomeFeedFromFollowedUsers: Stream error: $error',
+            name: 'VideoEventService',
+            category: LogCategory.video,
+          );
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+        onDone: () {
+          if (!completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
 
-      // Sort by creation time (newest first)
-      homeFeedList.sortByCreationTime();
+      // Safety timeout: don't let the seed run forever
+      final timeoutTimer = Timer(const Duration(seconds: 15), () {
+        if (!completer.isCompleted) {
+          Log.warning(
+            '🏠 seedHomeFeedFromFollowedUsers: Timeout (15s), '
+            'cancelling seed subscription',
+            name: 'VideoEventService',
+            category: LogCategory.video,
+          );
+          unawaited(_nostrService.unsubscribe(subscriptionId));
+          completer.complete();
+        }
+      });
 
-      // Notify listeners so UI updates
-      notifyListeners();
+      await completer.future;
+      timeoutTimer.cancel();
+      await subscription.cancel();
     } catch (e) {
       Log.error(
-        '🏠 seedHomeFeedFromFollowedUsers: Error fetching videos: $e',
+        '🏠 seedHomeFeedFromFollowedUsers: Error streaming videos: $e',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
@@ -4905,10 +4894,7 @@ class VideoEventService extends ChangeNotifier {
 
   /// Add a video event to the cache (for external services like CurationService)
   void addVideoEvent(VideoEvent videoEvent) {
-    _addVideoToSubscription(
-      videoEvent,
-      SubscriptionType.discovery,
-    );
+    _addVideoToSubscription(videoEvent, SubscriptionType.discovery);
   }
 
   /// Update a video event (for addressable events with same pubkey/d-tag).
@@ -5204,10 +5190,7 @@ class VideoEventService extends ChangeNotifier {
     final videoEvent = VideoEvent.fromNostrEvent(event);
 
     // Use centralized method for filtering (blocklist, expiry, URL validation)
-    _addVideoToSubscription(
-      videoEvent,
-      SubscriptionType.search,
-    );
+    _addVideoToSubscription(videoEvent, SubscriptionType.search);
     _scheduleFrameUpdate();
   }
 

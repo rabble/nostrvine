@@ -50,9 +50,7 @@ void main() {
     final c = ProviderContainer();
     addTearDown(c.dispose);
     await tester.pumpWidget(shell(c));
-    c
-        .read(goRouterProvider)
-        .go(HashtagScreenRouter.pathForTag('rust%20lang', index: 0));
+    c.read(goRouterProvider).go(HashtagScreenRouter.pathForTag('rust%20lang'));
     await tester.pump();
     expect(find.text('#rust lang'), findsOneWidget);
     // TODO(any): Fix and re-enable these tests
@@ -77,9 +75,7 @@ void main() {
       final c = ProviderContainer();
       addTearDown(c.dispose);
       await tester.pumpWidget(shell(c));
-      c
-          .read(goRouterProvider)
-          .go(HashtagScreenRouter.pathForTag('comedy', index: 0));
+      c.read(goRouterProvider).go(HashtagScreenRouter.pathForTag('comedy'));
       await tester.pumpAndSettle();
 
       // Should find back button in AppBar

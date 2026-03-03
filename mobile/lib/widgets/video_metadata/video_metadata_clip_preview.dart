@@ -101,12 +101,12 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                                 ? // Video thumbnail image
                                   VideoMetadataPreviewThumbnail(clip: clip)
                                 : // Fallback placeholder
-                                  ColoredBox(
-                                    color: Colors.grey.shade400,
-                                    child: const Icon(
+                                  const ColoredBox(
+                                    color: VineTheme.secondaryText,
+                                    child: Icon(
                                       Icons.play_circle_outline,
                                       size: 64,
-                                      color: Colors.white,
+                                      color: VineTheme.whiteText,
                                     ),
                                   ),
                           ),

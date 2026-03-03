@@ -5,6 +5,7 @@ import 'package:bloc/bloc.dart';
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:db_client/db_client.dart';
 import 'package:equatable/equatable.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/utils/unified_logger.dart';
@@ -171,6 +172,19 @@ class WelcomeBloc extends Bloc<WelcomeEvent, WelcomeState> {
         'WelcomeBloc: sign-in completed for ${account.pubkeyHex}',
         name: 'WelcomeBloc',
         category: LogCategory.auth,
+      );
+    } on SessionExpiredException {
+      Log.warning(
+        'WelcomeBloc: session expired for ${account.pubkeyHex}',
+        name: 'WelcomeBloc',
+        category: LogCategory.auth,
+      );
+      emit(
+        state.copyWith(
+          status: WelcomeStatus.error,
+          error: 'Your session has expired. Please sign in again.',
+          clearSigningIn: true,
+        ),
       );
     } catch (e) {
       Log.error(

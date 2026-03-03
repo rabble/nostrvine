@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -324,10 +325,13 @@ class _SoundPickerModalState extends ConsumerState<SoundPickerModal> {
               style: const TextStyle(color: Colors.white),
               decoration: const InputDecoration(
                 hintText: 'Search sounds...',
-                hintStyle: TextStyle(color: Colors.grey),
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                hintStyle: TextStyle(color: VineTheme.lightText),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: VineTheme.lightText,
+                ),
                 filled: true,
-                fillColor: Color(0xFF1A1A1A),
+                fillColor: VineTheme.cardBackground,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(8)),
                   borderSide: BorderSide.none,

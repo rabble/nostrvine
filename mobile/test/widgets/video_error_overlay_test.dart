@@ -154,9 +154,7 @@ void main() {
 
     testWidgets('shows error overlay when video is active', (tester) async {
       await tester.pumpWidget(
-        buildWidget(
-          errorDescription: 'HttpException: Invalid statusCode: 401',
-        ),
+        buildWidget(errorDescription: 'HttpException: Invalid statusCode: 401'),
       );
 
       // Should show error overlay with button

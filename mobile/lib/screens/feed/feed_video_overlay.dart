@@ -100,8 +100,8 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.0),
-                      Colors.black.withValues(alpha: 0.5),
+                      VineTheme.backgroundColor.withValues(alpha: 0.0),
+                      VineTheme.backgroundColor.withValues(alpha: 0.5),
                     ],
                   ),
                 ),
@@ -117,7 +117,7 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
           ),
         // ProofMode and Vine badges (top-right)
         Positioned(
-          top: MediaQuery.viewPaddingOf(context).top + 8,
+          top: MediaQuery.viewPaddingOf(context).top + 64,
           right: 16,
           child: GestureDetector(
             onTap: () => context.showVideoPausingDialog<void>(

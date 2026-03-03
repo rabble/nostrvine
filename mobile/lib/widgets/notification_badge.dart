@@ -1,6 +1,7 @@
 // ABOUTME: Badge widget to show unread notification count on icons
 // ABOUTME: Displays count or red dot for high numbers with animation support
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 class NotificationBadge extends StatelessWidget {
@@ -38,11 +39,11 @@ class NotificationBadge extends StatelessWidget {
               vertical: 2,
             ),
             decoration: BoxDecoration(
-              color: badgeColor ?? Colors.red,
+              color: badgeColor ?? VineTheme.error,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: VineTheme.backgroundColor.withValues(alpha: 0.2),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -57,13 +58,13 @@ class NotificationBadge extends StatelessWidget {
                         Icons.circle,
                         key: const ValueKey('dot'),
                         size: 8,
-                        color: textColor ?? Colors.white,
+                        color: textColor ?? VineTheme.whiteText,
                       )
                     : Text(
                         count.toString(),
                         key: ValueKey(count),
                         style: TextStyle(
-                          color: textColor ?? Colors.white,
+                          color: textColor ?? VineTheme.whiteText,
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
@@ -163,11 +164,11 @@ class _AnimatedNotificationBadgeState extends State<AnimatedNotificationBadge>
                 vertical: 2,
               ),
               decoration: BoxDecoration(
-                color: widget.badgeColor ?? Colors.red,
+                color: widget.badgeColor ?? VineTheme.error,
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
+                    color: VineTheme.backgroundColor.withValues(alpha: 0.2),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -182,13 +183,13 @@ class _AnimatedNotificationBadgeState extends State<AnimatedNotificationBadge>
                           Icons.circle,
                           key: const ValueKey('dot'),
                           size: 8,
-                          color: widget.textColor ?? Colors.white,
+                          color: widget.textColor ?? VineTheme.whiteText,
                         )
                       : Text(
                           widget.count.toString(),
                           key: ValueKey(widget.count),
                           style: TextStyle(
-                            color: widget.textColor ?? Colors.white,
+                            color: widget.textColor ?? VineTheme.whiteText,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),

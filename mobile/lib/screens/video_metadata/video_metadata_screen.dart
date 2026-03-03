@@ -310,7 +310,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF4A1C00),
         border: Border.all(
-          color: const Color(0xFFFFB84D).withValues(alpha: 0.6),
+          color: VineTheme.contentWarningAmber.withValues(alpha: 0.6),
         ),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -318,7 +318,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            color: Color(0xFFFFB84D),
+            color: VineTheme.contentWarningAmber,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -328,7 +328,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
               // added.
               '64KB limit reached. Remove some content to continue.',
               style: VineTheme.bodyFont(
-                color: const Color(0xFFFFB84D),
+                color: VineTheme.contentWarningAmber,
                 fontSize: 14,
                 fontWeight: .w600,
                 height: 1.43,

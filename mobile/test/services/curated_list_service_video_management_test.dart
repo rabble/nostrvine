@@ -165,9 +165,7 @@ void main() {
       });
 
       test('publishes update to Nostr for public list', () async {
-        final list = await service.createList(
-          name: 'Test List',
-        );
+        final list = await service.createList(name: 'Test List');
         reset(mockNostr);
         stubMocks();
 
@@ -271,9 +269,7 @@ void main() {
       });
 
       test('publishes update to Nostr for public list', () async {
-        final list = await service.createList(
-          name: 'Test List',
-        );
+        final list = await service.createList(name: 'Test List');
         // Add 2 videos so list isn't empty after removal
         // (empty lists skip publish)
         await service.addVideoToList(list!.id, 'video_event_123');

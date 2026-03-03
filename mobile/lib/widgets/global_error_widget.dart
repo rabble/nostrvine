@@ -1,6 +1,7 @@
 // ABOUTME: Global error widget shown when a widget throws during build
 // ABOUTME: The diVine "tangled vine" - our version of Twitter's fail whale
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -57,7 +58,7 @@ class _MinimalFallbackError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ColoredBox(
-      color: Color(0xFF000000),
+      color: VineTheme.backgroundColor,
       child: Center(
         child: SizedBox(
           width: 80,
@@ -89,7 +90,7 @@ class _GlobalErrorWidget extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Container(
-        color: const Color(0xFF000000), // VineTheme.backgroundColor
+        color: VineTheme.backgroundColor,
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Center(
           child: SingleChildScrollView(
@@ -109,7 +110,7 @@ class _GlobalErrorWidget extends StatelessWidget {
                   'got a bit tangled',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFFFFFFFF),
+                    color: VineTheme.primaryText,
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     decoration: TextDecoration.none,
@@ -123,7 +124,7 @@ class _GlobalErrorWidget extends StatelessWidget {
                   "something tripped up here.\nit's not you, it's us.",
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xBFFFFFFF), // 75% white
+                    color: VineTheme.onSurfaceVariant,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
                     decoration: TextDecoration.none,
@@ -137,7 +138,7 @@ class _GlobalErrorWidget extends StatelessWidget {
                   'try navigating away and coming back',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0x80FFFFFF), // 50% white
+                    color: VineTheme.onSurfaceMuted,
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
                     decoration: TextDecoration.none,
@@ -150,10 +151,10 @@ class _GlobalErrorWidget extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
+                      color: VineTheme.cardBackground,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: const Color(0x40FFFFFF), // 25% white
+                        color: VineTheme.onSurfaceDisabled,
                       ),
                     ),
                     child: Column(
@@ -162,7 +163,7 @@ class _GlobalErrorWidget extends StatelessWidget {
                         const Text(
                           'debug info',
                           style: TextStyle(
-                            color: Color(0xFF00B488), // vineGreen
+                            color: VineTheme.vineGreen,
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
                             decoration: TextDecoration.none,
@@ -175,7 +176,7 @@ class _GlobalErrorWidget extends StatelessWidget {
                           maxLines: 6,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            color: Color(0xFFF44336), // error red
+                            color: VineTheme.error,
                             fontSize: 11,
                             fontWeight: FontWeight.w400,
                             fontFamily: 'monospace',
@@ -190,7 +191,7 @@ class _GlobalErrorWidget extends StatelessWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              color: Color(0x80FFFFFF),
+                              color: VineTheme.onSurfaceMuted,
                               fontSize: 11,
                               fontWeight: FontWeight.w400,
                               fontFamily: 'monospace',
@@ -203,7 +204,7 @@ class _GlobalErrorWidget extends StatelessWidget {
                           Text(
                             'library: ${details.library}',
                             style: const TextStyle(
-                              color: Color(0x80FFFFFF),
+                              color: VineTheme.onSurfaceMuted,
                               fontSize: 10,
                               fontWeight: FontWeight.w400,
                               fontFamily: 'monospace',
@@ -241,23 +242,21 @@ class _TangledVinePainter extends CustomPainter {
 
     // Main vine stem paint
     final stemPaint = Paint()
-      ..color =
-          const Color(0xFF00B488) // vineGreen
+      ..color = VineTheme.vineGreen
       ..strokeWidth = 3.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     // Lighter vine for the tangle loops
     final tanglePaint = Paint()
-      ..color =
-          const Color(0xFF33C49F) // vineGreenLight
+      ..color = VineTheme.vineGreenLight
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
 
     // Leaf paint
     final leafPaint = Paint()
-      ..color = const Color(0xFF00B488)
+      ..color = VineTheme.vineGreen
       ..style = PaintingStyle.fill;
 
     // Faded leaf paint for droopy leaves

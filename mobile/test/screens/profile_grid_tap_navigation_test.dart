@@ -116,10 +116,7 @@ void main() {
           appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
           videosForProfileRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-              ),
+              VideoFeedState(videos: mockVideos, hasMoreContent: false),
             );
           }),
           fetchUserProfileProvider(testUserHex).overrideWith((ref) async {
@@ -192,10 +189,7 @@ void main() {
           appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
           videosForProfileRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-              ),
+              VideoFeedState(videos: mockVideos, hasMoreContent: false),
             );
           }),
           fetchUserProfileProvider(testUserHex).overrideWith((ref) async {
@@ -231,10 +225,7 @@ void main() {
             ),
             videosForProfileRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
-                VideoFeedState(
-                  videos: mockVideos,
-                  hasMoreContent: false,
-                ),
+                VideoFeedState(videos: mockVideos, hasMoreContent: false),
               );
             }),
             fetchUserProfileProvider(testUserHex).overrideWith((ref) async {
@@ -275,10 +266,7 @@ void main() {
           appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
           videosForProfileRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-              ),
+              VideoFeedState(videos: mockVideos, hasMoreContent: false),
             );
           }),
           fetchUserProfileProvider(testUserHex).overrideWith((ref) async {

@@ -85,9 +85,7 @@ void main() {
         AudioSortOption? selectedOption;
 
         await tester.pumpWidget(
-          buildDropdown(
-            onChanged: (option) => selectedOption = option,
-          ),
+          buildDropdown(onChanged: (option) => selectedOption = option),
         );
 
         // Open dropdown
@@ -102,9 +100,7 @@ void main() {
       });
 
       testWidgets('closes dropdown after selection', (tester) async {
-        await tester.pumpWidget(
-          buildDropdown(onChanged: (_) {}),
-        );
+        await tester.pumpWidget(buildDropdown(onChanged: (_) {}));
 
         // Open dropdown
         await tester.tap(find.byType(InkWell));

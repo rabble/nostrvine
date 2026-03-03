@@ -378,23 +378,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ),
-
-          // HASHTAG route - feed mode (with video index)
-          GoRoute(
-            path: HashtagScreenRouter.pathWithIndex,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.hashtagFeed,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const HashtagScreenRouter(),
-                  settings: const RouteSettings(
-                    name: HashtagScreenRouter.routeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
 

@@ -44,9 +44,7 @@ void main() {
     late VideoEvent testVideo;
 
     setUpAll(() {
-      registerFallbackValue(
-        const VideoInteractionsSubscriptionRequested(),
-      );
+      registerFallbackValue(const VideoInteractionsSubscriptionRequested());
     });
 
     setUp(() {
@@ -57,14 +55,14 @@ void main() {
 
       // Stub Player.stream for subtitle layer
       when(() => mockPlayer.stream).thenReturn(mockStream);
-      when(() => mockStream.position).thenAnswer(
-        (_) => const Stream<Duration>.empty(),
-      );
+      when(
+        () => mockStream.position,
+      ).thenAnswer((_) => const Stream<Duration>.empty());
 
       // Stub interactions bloc state
-      when(() => mockInteractionsBloc.state).thenReturn(
-        const VideoInteractionsState(),
-      );
+      when(
+        () => mockInteractionsBloc.state,
+      ).thenReturn(const VideoInteractionsState());
 
       testVideo = VideoEvent(
         id: _testVideoId,
@@ -101,31 +99,28 @@ void main() {
     }
 
     group('list attribution', () {
-      testWidgets(
-        'renders $ListAttributionChip when listSources is provided',
-        (tester) async {
-          final testList = CuratedList(
-            id: 'list-1',
-            name: 'Cool Videos',
-            videoEventIds: const ['v1', 'v2'],
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
+      testWidgets('renders $ListAttributionChip when listSources is provided', (
+        tester,
+      ) async {
+        final testList = CuratedList(
+          id: 'list-1',
+          name: 'Cool Videos',
+          videoEventIds: const ['v1', 'v2'],
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-          when(
-            () => mockCuratedListRepository.getListById('list-1'),
-          ).thenReturn(testList);
+        when(
+          () => mockCuratedListRepository.getListById('list-1'),
+        ).thenReturn(testList);
 
-          await tester.pumpWidget(
-            buildSubject(listSources: {'list-1'}),
-          );
-          await tester.pump();
+        await tester.pumpWidget(buildSubject(listSources: {'list-1'}));
+        await tester.pump();
 
-          expect(find.byType(ListAttributionChip), findsOneWidget);
-          expect(find.text('Cool Videos'), findsOneWidget);
-          expect(find.byIcon(Icons.playlist_play), findsOneWidget);
-        },
-      );
+        expect(find.byType(ListAttributionChip), findsOneWidget);
+        expect(find.text('Cool Videos'), findsOneWidget);
+        expect(find.byIcon(Icons.playlist_play), findsOneWidget);
+      });
 
       testWidgets(
         'does not render $ListAttributionChip when listSources is null',
@@ -147,40 +142,39 @@ void main() {
         },
       );
 
-      testWidgets(
-        'renders multiple list chips for multiple sources',
-        (tester) async {
-          final list1 = CuratedList(
-            id: 'list-1',
-            name: 'Cool Videos',
-            videoEventIds: const [],
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
-          final list2 = CuratedList(
-            id: 'list-2',
-            name: 'Funny Clips',
-            videoEventIds: const [],
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-          );
+      testWidgets('renders multiple list chips for multiple sources', (
+        tester,
+      ) async {
+        final list1 = CuratedList(
+          id: 'list-1',
+          name: 'Cool Videos',
+          videoEventIds: const [],
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        final list2 = CuratedList(
+          id: 'list-2',
+          name: 'Funny Clips',
+          videoEventIds: const [],
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
 
-          when(
-            () => mockCuratedListRepository.getListById('list-1'),
-          ).thenReturn(list1);
-          when(
-            () => mockCuratedListRepository.getListById('list-2'),
-          ).thenReturn(list2);
+        when(
+          () => mockCuratedListRepository.getListById('list-1'),
+        ).thenReturn(list1);
+        when(
+          () => mockCuratedListRepository.getListById('list-2'),
+        ).thenReturn(list2);
 
-          await tester.pumpWidget(
-            buildSubject(listSources: {'list-1', 'list-2'}),
-          );
-          await tester.pump();
+        await tester.pumpWidget(
+          buildSubject(listSources: {'list-1', 'list-2'}),
+        );
+        await tester.pump();
 
-          expect(find.byType(ListAttributionChip), findsOneWidget);
-          expect(find.byIcon(Icons.playlist_play), findsNWidgets(2));
-        },
-      );
+        expect(find.byType(ListAttributionChip), findsOneWidget);
+        expect(find.byIcon(Icons.playlist_play), findsNWidgets(2));
+      });
     });
   });
 }

@@ -119,10 +119,7 @@ void main() {
       const splitPosition = Duration(seconds: 7); // Greater than clip duration
 
       await tester.pumpWidget(
-        buildTestWidget(
-          splitPosition: splitPosition,
-          clips: [_createClip()],
-        ),
+        buildTestWidget(splitPosition: splitPosition, clips: [_createClip()]),
       );
 
       final slider = tester.widget<Slider>(find.byType(Slider));
