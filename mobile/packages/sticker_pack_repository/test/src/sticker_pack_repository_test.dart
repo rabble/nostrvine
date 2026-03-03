@@ -1029,7 +1029,7 @@ void main() {
           ],
         );
         // Append a title tag after name
-        (event.tags as List<List<String>>).add(['title', 'Title Tag']);
+        event.tags.add(['title', 'Title Tag']);
 
         when(
           () => mockNostrClient.queryEvents(any()),
