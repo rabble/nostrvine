@@ -8,6 +8,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/providers/page_context_provider.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -82,6 +83,12 @@ class VideoFeedView extends ConsumerStatefulWidget {
 class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     with WidgetsBindingObserver {
   int? lastPrefetchIndex;
+
+  /// Whether the home tab is currently active.
+  ///
+  /// Used to prevent overlay-close from resuming playback when the user
+  /// has navigated away to another tab (e.g. Search).
+  bool _isOnHomeTab = true;
 
   /// Guards so startup milestones fire only once.
   bool _hasMarkedUIReady = false;
@@ -196,11 +203,24 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
   @override
   Widget build(BuildContext context) {
-    // Pause/resume the pooled video feed when overlays (drawer, modals)
-    // become visible or hidden. Without this, the home feed's
-    // PooledVideoFeed continues playing because activeVideoIdProvider
-    // returns null for RouteType.home (self-managed by the pool).
+    // Pause/resume when navigating away from/back to home tab.
+    // The home navigator's GlobalKey keeps this widget alive across
+    // tab switches, so we must explicitly pause on tab change.
+    ref.listen(pageContextProvider, (_, next) {
+      final routeType = next.asData?.value.type;
+      if (routeType == null) return;
+
+      final isHome = routeType == RouteType.home;
+      if (isHome == _isOnHomeTab) return;
+      _isOnHomeTab = isHome;
+      controller?.setActive(active: isHome);
+    });
+
+    // Pause/resume for overlays (drawer, modals), but only when on
+    // the home tab. Without this guard, closing an overlay while on
+    // another tab would incorrectly resume the home feed audio.
     ref.listen(hasVisibleOverlayProvider, (_, hasOverlay) {
+      if (!_isOnHomeTab) return;
       controller?.setActive(active: !hasOverlay);
     });
 
