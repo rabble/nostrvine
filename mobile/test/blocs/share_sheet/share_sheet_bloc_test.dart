@@ -33,7 +33,7 @@ class _ThrowingJsonVideoEvent extends Fake implements VideoEvent {
       'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
 
   @override
-  Map<String, dynamic> toJson() => throw FormatException('bad json');
+  Map<String, dynamic> toJson() => throw const FormatException('bad json');
 }
 
 /// A [VideoEvent] with an invalid hex [id], causing nevent encoding to throw.
