@@ -22,6 +22,30 @@ class _MockBookmarkService extends Mock implements BookmarkService {}
 
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
+/// A [VideoEvent] whose [toJson] always throws, used to test error paths.
+class _ThrowingJsonVideoEvent extends Fake implements VideoEvent {
+  @override
+  String get id =>
+      '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+  @override
+  String get pubkey =>
+      'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+
+  @override
+  Map<String, dynamic> toJson() => throw FormatException('bad json');
+}
+
+/// A [VideoEvent] with an invalid hex [id], causing nevent encoding to throw.
+class _InvalidIdVideoEvent extends Fake implements VideoEvent {
+  @override
+  String get id => 'not-valid-hex';
+
+  @override
+  String get pubkey =>
+      'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeVideoEvent());
@@ -160,6 +184,56 @@ void main() {
               .having((s) => s.status, 'status', ShareSheetStatus.ready)
               .having((s) => s.contacts.length, 'contacts.length', 1),
         ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'fetches uncached profiles when hasProfile returns false',
+        setUp: () {
+          const cachedPubkey =
+              'cccc456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          const uncachedPubkey =
+              'dddd456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+          when(
+            () => mockSharingService.recentlySharedWith,
+          ).thenReturn([]);
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([
+            cachedPubkey,
+            uncachedPubkey,
+          ]);
+          when(
+            () => mockProfileService.hasProfile(cachedPubkey),
+          ).thenReturn(true);
+          when(
+            () => mockProfileService.hasProfile(uncachedPubkey),
+          ).thenReturn(false);
+          when(
+            () => mockProfileService.fetchProfile(uncachedPubkey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileService.getCachedProfile(any()),
+          ).thenReturn(null);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
+        expect: () => [
+          const ShareSheetState(status: ShareSheetStatus.loading),
+          isA<ShareSheetState>()
+              .having((s) => s.status, 'status', ShareSheetStatus.ready)
+              .having((s) => s.contacts.length, 'contacts.length', 2),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileService.fetchProfile(
+              'dddd456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockProfileService.fetchProfile(
+              'cccc456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+            ),
+          );
+        },
       );
     });
 
@@ -582,6 +656,28 @@ void main() {
           ),
         ],
       );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits $ShareSheetActionFailure when generateShareUrl throws',
+        setUp: () {
+          when(
+            () => mockSharingService.generateShareUrl(any()),
+          ).thenThrow(Exception('url error'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetCopyLinkRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetActionFailure>().having(
+              (r) => r.message,
+              'message',
+              'Failed to copy link',
+            ),
+          ),
+        ],
+      );
     });
 
     // -----------------------------------------------------------------------
@@ -606,6 +702,28 @@ void main() {
               (r) => r.shareText,
               'shareText',
               'https://divine.video/video/test-id',
+            ),
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits $ShareSheetActionFailure when generateShareText throws',
+        setUp: () {
+          when(
+            () => mockSharingService.generateShareText(any()),
+          ).thenThrow(Exception('share error'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ShareSheetShareViaRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetActionFailure>().having(
+              (r) => r.message,
+              'message',
+              'Failed to share',
             ),
           ),
         ],
@@ -639,6 +757,27 @@ void main() {
           ),
         ],
       );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits $ShareSheetActionFailure when toJson throws',
+        build: () => ShareSheetBloc(
+          video: _ThrowingJsonVideoEvent(),
+          videoSharingService: mockSharingService,
+          userProfileService: mockProfileService,
+        ),
+        act: (bloc) => bloc.add(const ShareSheetCopyEventJsonRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetActionFailure>().having(
+              (r) => r.message,
+              'message',
+              'Failed to copy event JSON',
+            ),
+          ),
+        ],
+      );
     });
 
     // -----------------------------------------------------------------------
@@ -665,6 +804,27 @@ void main() {
                   'text starts with nevent',
                   isTrue,
                 ),
+          ),
+        ],
+      );
+
+      blocTest<ShareSheetBloc, ShareSheetState>(
+        'emits $ShareSheetActionFailure when encoding throws',
+        build: () => ShareSheetBloc(
+          video: _InvalidIdVideoEvent(),
+          videoSharingService: mockSharingService,
+          userProfileService: mockProfileService,
+        ),
+        act: (bloc) => bloc.add(const ShareSheetCopyEventIdRequested()),
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetActionFailure>().having(
+              (r) => r.message,
+              'message',
+              'Failed to copy event ID',
+            ),
           ),
         ],
       );

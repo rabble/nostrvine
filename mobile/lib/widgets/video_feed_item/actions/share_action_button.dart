@@ -134,7 +134,9 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         return;
       }
     } catch (_) {
-      // GoRouter not found; fall through to Navigator.
+      // GoRouter context extensions throw when the router is not in the
+      // widget tree (e.g., inside modal bottom sheets). Fall through to
+      // the standard Navigator as a safe fallback.
     }
     Navigator.of(ctx).maybePop();
   }
@@ -182,6 +184,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         messenger.showSnackBar(_styledSnackBar(label));
       case ShareSheetShareViaTriggered(:final shareText):
         SharePlus.instance.share(ShareParams(text: shareText));
+      case ShareSheetActionFailure(:final message):
+        messenger.showSnackBar(_styledSnackBar(message));
     }
   }
 
