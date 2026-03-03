@@ -56,7 +56,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
   Future<void> _initializePlayer() async {
     final file = File(await widget.clip.video.safeFilePath());
     if (!file.existsSync()) {
-      context.pop();
+      if (mounted) context.pop();
       return;
     }
 
