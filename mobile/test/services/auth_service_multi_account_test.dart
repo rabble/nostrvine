@@ -777,6 +777,66 @@ void main() {
         () => mockSecureStorage.read(key: 'keycast_session_$pubkeyHex'),
       );
     });
+
+    test(
+      'clears stale global signer keys when switching to automatic',
+      () async {
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInForAccount(
+            pubkeyHex,
+            AuthenticationSource.automatic,
+          ),
+        );
+
+        // Bunker global key must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'bunker_info'),
+        ).called(1);
+        // Amber global keys must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'amber_pubkey'),
+        ).called(1);
+        verify(
+          () => mockSecureStorage.delete(key: 'amber_package'),
+        ).called(1);
+        // Keycast session global key must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'keycast_session'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'clears stale global signer keys when switching to importedKeys',
+      () async {
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInForAccount(
+            pubkeyHex,
+            AuthenticationSource.importedKeys,
+          ),
+        );
+
+        // Bunker global key must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'bunker_info'),
+        ).called(1);
+        // Amber global keys must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'amber_pubkey'),
+        ).called(1);
+        verify(
+          () => mockSecureStorage.delete(key: 'amber_package'),
+        ).called(1);
+        // Keycast session global key must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'keycast_session'),
+        ).called(1);
+      },
+    );
   });
 
   group('signInForAccount', () {
