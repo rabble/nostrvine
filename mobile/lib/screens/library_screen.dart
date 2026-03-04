@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/clips_library/clips_library_bloc.dart';
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -154,15 +155,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   Future<void> _createVideoFromSelected(
-    BuildContext context,
-    ClipsLibraryBloc clipsBloc,
-  ) async {
+    BuildContext context, {
+    required List<DivineVideoClip> selectedClips,
+    required ClipsLibraryBloc clipsBloc,
+  }) async {
+    if (selectedClips.isEmpty) return;
+
     if (!widget.selectionMode) {
       await ref.read(videoPublishProvider.notifier).clearAll();
     }
-
-    final selectedClips = clipsBloc.selectedClips;
-    if (selectedClips.isEmpty) return;
 
     final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
     for (final clip in selectedClips) {
@@ -309,7 +310,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                               targetAspectRatio: targetAspectRatio,
                               onCreate: () => _createVideoFromSelected(
                                 context,
-                                clipsBloc,
+                                selectedClips: clipsState.selectedClips,
+                                clipsBloc: clipsBloc,
                               ),
                             )
                           : _TabBody(
@@ -324,7 +326,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                           : _CreateVideoFab(
                               onPressed: () => _createVideoFromSelected(
                                 context,
-                                clipsBloc,
+                                selectedClips: clipsState.selectedClips,
+                                clipsBloc: clipsBloc,
                               ),
                             ),
                     ),

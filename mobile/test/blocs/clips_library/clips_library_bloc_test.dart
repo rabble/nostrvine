@@ -548,7 +548,7 @@ void main() {
             ),
           );
 
-        expect(bloc.selectedClips, isEmpty);
+        expect(bloc.state.selectedClips, isEmpty);
         bloc.close();
       });
 
@@ -562,7 +562,7 @@ void main() {
             ),
           );
 
-        expect(bloc.selectedClips, [clip1]);
+        expect(bloc.state.selectedClips, [clip1]);
         bloc.close();
       });
     });

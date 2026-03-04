@@ -46,10 +46,6 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
   final ClipLibraryService _clipLibraryService;
   final GallerySaveService _gallerySaveService;
 
-  /// Returns the currently selected clips.
-  List<DivineVideoClip> get selectedClips =>
-      state.clips.where((c) => state.selectedClipIds.contains(c.id)).toList();
-
   Future<void> _onLoadRequested(
     ClipsLibraryLoadRequested event,
     Emitter<ClipsLibraryState> emit,
@@ -239,7 +235,7 @@ class ClipsLibraryBloc extends Bloc<ClipsLibraryEvent, ClipsLibraryState> {
       ),
     );
 
-    final clipsToSave = selectedClips;
+    final clipsToSave = state.selectedClips;
     final clipCount = clipsToSave.length;
 
     Log.info(

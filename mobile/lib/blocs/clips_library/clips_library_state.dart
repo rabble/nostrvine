@@ -107,6 +107,10 @@ final class ClipsLibraryState extends Equatable {
   /// Whether a gallery save is in progress.
   bool get isSavingToGallery => status == ClipsLibraryStatus.savingToGallery;
 
+  /// Returns the currently selected clips.
+  List<DivineVideoClip> get selectedClips =>
+      clips.where((c) => selectedClipIds.contains(c.id)).toList();
+
   /// Creates a copy of this state with the given fields replaced.
   ClipsLibraryState copyWith({
     ClipsLibraryStatus? status,
