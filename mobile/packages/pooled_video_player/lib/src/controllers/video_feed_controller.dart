@@ -555,9 +555,13 @@ class VideoFeedController extends ChangeNotifier {
       // Start position callback timer for current video
       _startPositionTimer(index);
     } else {
-      // Keep playing muted — avoids expensive pause→resume rebuffer stall
-      // in mpv. Volume is already 0 from _loadPlayer, so no audio leak.
-      // When this video becomes current, _playVideo will unmute and seek.
+      // Preloaded video — pause and rewind to the beginning.
+      // The video played muted just long enough to fill the buffer.
+      // Pausing prevents it from advancing to a random position.
+      // Seeking to zero while paused ensures frame 0 is displayed
+      // when the user scrolls to this video.
+      unawaited(player.pause());
+      unawaited(player.seek(Duration.zero));
     }
 
     // Keep buffer subscription alive to handle post-seek rebuffering.
@@ -581,49 +585,43 @@ class VideoFeedController extends ChangeNotifier {
       '_playVideo: index=$index '
       '(playing=${player.state.playing}, '
       'buffering=${player.state.buffering}, '
-      'pos=${player.state.position}) — reopening from start',
+      'pos=${player.state.position})',
       name: _logTag,
     );
 
-    // Re-open the same media from the beginning instead of seeking.
-    // seek(Duration.zero) on a preloaded HLS stream reliably stalls
-    // mpv's renderer (reports playing=true but outputs no frames).
-    // A fresh open() with cached segments is fast and always works.
-    unawaited(_restartAndPlay(index, player));
+    // The player is paused (from _onBufferReady or _pauseVideo).
+    // Seek to the beginning while paused (safe — no renderer stall),
+    // then unmute and play.
+    unawaited(_resumeFromStart(index, player));
     _startPositionTimer(index);
   }
 
-  /// Re-open the media from the beginning and play with audio.
+  /// Seek to the beginning, unmute, and play.
   ///
-  /// More reliable than seek(0) which stalls mpv's renderer on
-  /// preloaded HLS streams. Since the HLS manifest and initial
-  /// segments are already cached from preloading, the re-open is
-  /// fast.
-  Future<void> _restartAndPlay(int index, Player player) async {
+  /// The player is expected to be paused (from [_onBufferReady] for preloaded
+  /// videos, or from [_pauseVideo] for swiped-away videos). Seeking while
+  /// paused avoids the mpv renderer stall that occurs when seeking a playing
+  /// HLS stream.
+  Future<void> _resumeFromStart(int index, Player player) async {
     try {
-      if (index < 0 || index >= _videos.length) return;
+      await player.seek(Duration.zero);
 
-      final video = _videos[index];
-      final source = mediaSourceResolver?.call(video) ?? video.url;
-
-      await player.open(Media(source), play: true);
-      await player.setPlaylistMode(PlaylistMode.single);
-
-      // Guard: the user may have scrolled away during the await.
+      // Guard: user may have scrolled away during the seek.
       if (_isDisposed || _currentIndex != index || !_isActive || _isPaused) {
         return;
       }
       if (_loadedPlayers[index]?.player != player) return;
 
       await player.setVolume(100);
+      await player.play();
 
       developer.log(
-        '_restartAndPlay: index=$index — playing',
+        '_resumeFromStart: index=$index — playing',
         name: _logTag,
       );
     } on Exception catch (e) {
       developer.log(
-        '_restartAndPlay: error for index=$index: $e',
+        '_resumeFromStart: error for index=$index: $e',
         name: _logTag,
       );
     }
@@ -634,12 +632,14 @@ class VideoFeedController extends ChangeNotifier {
     if (player != null) {
       developer.log(
         '_pauseVideo: index=$index '
-        '(playing=${player.state.playing}) — muting',
+        '(playing=${player.state.playing}) — pausing',
         name: _logTag,
       );
-      // Mute instead of pausing — keeps the video playing silently so
-      // resuming (via _playVideo) avoids the expensive mpv rebuffer stall.
+      // Mute and pause. The player stays in the pool for reuse.
+      // _resumeFromStart will seek to 0, unmute, and play when this
+      // video becomes current again.
       unawaited(player.setVolume(0));
+      unawaited(player.pause());
     }
     _stopPositionTimer(index);
   }

@@ -1847,31 +1847,35 @@ void main() {
     });
 
     group('audio leak prevention', () {
-      test('non-current video keeps playing muted when buffer ready', () async {
-        // preloadBehind=0, preloadAhead=2 → loads indices 0, 1, 2.
-        // Default isBuffering=false means _onBufferReady fires during load.
-        final videos = createTestVideos(count: 3);
-        final controller = VideoFeedController(
-          videos: videos,
-          pool: pool,
-          preloadBehind: 0,
-        );
+      test(
+        'non-current video is paused and rewound when buffer ready',
+        () async {
+          // preloadBehind=0, preloadAhead=2 → loads indices 0, 1, 2.
+          // Default isBuffering=false means _onBufferReady fires during load.
+          final videos = createTestVideos(count: 3);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+            preloadBehind: 0,
+          );
 
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        // Video 1 is a preloaded (non-current) video.
-        final setup1 = playerSetups[videos[1].url]!;
+          // Video 1 is a preloaded (non-current) video.
+          final setup1 = playerSetups[videos[1].url]!;
 
-        // Non-current video should NOT be paused — keeps playing muted
-        // to avoid expensive pause→resume rebuffer stall in mpv.
-        verifyNever(setup1.player.pause);
+          // Non-current video should be paused and rewound to the beginning
+          // so it shows frame 0 when the user scrolls to it.
+          verify(setup1.player.pause).called(1);
+          verify(() => setup1.player.seek(Duration.zero)).called(1);
 
-        // Volume should never have been set to 100 — only setVolume(0)
-        // during the loading phase.
-        verifyNever(() => setup1.player.setVolume(100));
+          // Volume should never have been set to 100 — only setVolume(0)
+          // during the loading phase.
+          verifyNever(() => setup1.player.setVolume(100));
 
-        controller.dispose();
-      });
+          controller.dispose();
+        },
+      );
 
       test('current video plays at volume 100 when buffer ready', () async {
         final videos = createTestVideos(count: 1);
@@ -1914,8 +1918,9 @@ void main() {
         // setVolume(0) called twice: once by _pauseVideo (mute on swipe)
         // and once by _releasePlayer (safety mute before pool return).
         verify(() => setup0.player.setVolume(0)).called(2);
-        // pause() called once by _releasePlayer (full stop before return).
-        verify(setup0.player.pause).called(1);
+        // pause() called twice: once by _pauseVideo (pause on swipe)
+        // and once by _releasePlayer (full stop before pool return).
+        verify(setup0.player.pause).called(2);
 
         controller.dispose();
       });
