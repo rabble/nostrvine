@@ -76,8 +76,13 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
     DraftsLibraryDeleteRequested event,
     Emitter<DraftsLibraryState> emit,
   ) async {
-    final currentState = state;
-    if (currentState is! DraftsLibraryLoaded) return;
+    final currentDrafts = switch (state) {
+      DraftsLibraryLoaded(:final drafts) ||
+      DraftsLibraryDraftDeleted(:final drafts) ||
+      DraftsLibraryDeleteFailed(:final drafts) => drafts,
+      _ => null,
+    };
+    if (currentDrafts == null) return;
 
     try {
       Log.info(
@@ -89,16 +94,12 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
       await _draftStorageService.deleteDraft(event.draftId);
 
       // Update the list by removing the deleted draft
-      final updatedDrafts = currentState.drafts
+      final updatedDrafts = currentDrafts
           .where((d) => d.id != event.draftId)
           .toList();
 
-      emit(
-        DraftsLibraryLoaded(
-          drafts: updatedDrafts,
-          deleteResult: DeleteResult.success,
-        ),
-      );
+      emit(DraftsLibraryDraftDeleted(drafts: updatedDrafts));
+      emit(DraftsLibraryLoaded(drafts: updatedDrafts));
     } catch (e, stackTrace) {
       Log.error(
         '📚 Failed to delete draft: $e',
@@ -106,14 +107,8 @@ class DraftsLibraryBloc extends Bloc<DraftsLibraryEvent, DraftsLibraryState> {
         category: LogCategory.video,
       );
       addError(e, stackTrace);
-      // Keep showing the current list on error, but signal failure
-      emit(
-        DraftsLibraryLoaded(
-          drafts: currentState.drafts,
-          deleteResult: DeleteResult.failure,
-          deleteError: e.toString(),
-        ),
-      );
+      emit(DraftsLibraryDeleteFailed(drafts: currentDrafts));
+      emit(DraftsLibraryLoaded(drafts: currentDrafts));
     }
   }
 }

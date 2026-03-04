@@ -73,56 +73,48 @@ void main() {
         );
       });
 
-      test('props contains drafts, deleteResult, and deleteError', () {
+      test('props contains drafts', () {
         final drafts = [createDraft(id: 'draft1')];
         expect(
           DraftsLibraryLoaded(drafts: drafts).props,
-          [drafts, null, null],
+          [drafts],
         );
+      });
+    });
+
+    group(DraftsLibraryDraftDeleted, () {
+      test('supports value equality', () {
+        final draft = createDraft(id: 'draft1');
         expect(
-          DraftsLibraryLoaded(
-            drafts: drafts,
-            deleteResult: DeleteResult.success,
-          ).props,
-          [drafts, DeleteResult.success, null],
-        );
-        expect(
-          DraftsLibraryLoaded(
-            drafts: drafts,
-            deleteResult: DeleteResult.failure,
-            deleteError: 'error',
-          ).props,
-          [drafts, DeleteResult.failure, 'error'],
+          DraftsLibraryDraftDeleted(drafts: [draft]),
+          equals(DraftsLibraryDraftDeleted(drafts: [draft])),
         );
       });
 
-      test('states with different deleteResult are not equal', () {
+      test('props contains drafts', () {
         final drafts = [createDraft(id: 'draft1')];
         expect(
-          DraftsLibraryLoaded(drafts: drafts),
-          isNot(
-            equals(
-              DraftsLibraryLoaded(
-                drafts: drafts,
-                deleteResult: DeleteResult.success,
-              ),
-            ),
-          ),
+          DraftsLibraryDraftDeleted(drafts: drafts).props,
+          [drafts],
+        );
+      });
+    });
+
+    group(DraftsLibraryDeleteFailed, () {
+      test('supports value equality', () {
+        final draft = createDraft(id: 'draft1');
+        expect(
+          DraftsLibraryDeleteFailed(drafts: [draft]),
+          equals(DraftsLibraryDeleteFailed(drafts: [draft])),
         );
       });
 
-      test('clearDeleteResult returns state without deleteResult', () {
+      test('props contains drafts', () {
         final drafts = [createDraft(id: 'draft1')];
-        final stateWithResult = DraftsLibraryLoaded(
-          drafts: drafts,
-          deleteResult: DeleteResult.success,
+        expect(
+          DraftsLibraryDeleteFailed(drafts: drafts).props,
+          [drafts],
         );
-
-        final cleared = stateWithResult.clearDeleteResult();
-
-        expect(cleared.drafts, equals(drafts));
-        expect(cleared.deleteResult, isNull);
-        expect(cleared.deleteError, isNull);
       });
     });
 

@@ -216,14 +216,12 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const DraftsLibraryDeleteRequested('draft1')),
         expect: () => [
+          isA<DraftsLibraryDraftDeleted>()
+              .having((s) => s.drafts.length, 'drafts.length', 1)
+              .having((s) => s.drafts.first.id, 'remaining draft', 'draft2'),
           isA<DraftsLibraryLoaded>()
               .having((s) => s.drafts.length, 'drafts.length', 1)
-              .having((s) => s.drafts.first.id, 'remaining draft', 'draft2')
-              .having(
-                (s) => s.deleteResult,
-                'deleteResult',
-                DeleteResult.success,
-              ),
+              .having((s) => s.drafts.first.id, 'remaining draft', 'draft2'),
         ],
         verify: (_) {
           verify(() => mockDraftStorageService.deleteDraft('draft1')).called(1);
@@ -242,18 +240,16 @@ void main() {
         act: (bloc) => bloc.add(const DraftsLibraryDeleteRequested('draft1')),
         errors: () => [isA<Exception>()],
         expect: () => [
-          isA<DraftsLibraryLoaded>()
-              .having((s) => s.drafts.length, 'drafts.length', 1)
-              .having(
-                (s) => s.deleteResult,
-                'deleteResult',
-                DeleteResult.failure,
-              )
-              .having(
-                (s) => s.deleteError,
-                'deleteError',
-                contains('Delete failed'),
-              ),
+          isA<DraftsLibraryDeleteFailed>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            1,
+          ),
+          isA<DraftsLibraryLoaded>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            1,
+          ),
         ],
       );
     });

@@ -27,19 +27,11 @@ class DraftsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocConsumer<DraftsLibraryBloc, DraftsLibraryState>(
-      listenWhen: (previous, current) {
-        // Listen when a delete operation completes
-        if (current is DraftsLibraryLoaded) {
-          return current.deleteResult != null;
-        }
-        return false;
-      },
+      listenWhen: (previous, current) =>
+          current is DraftsLibraryDraftDeleted ||
+          current is DraftsLibraryDeleteFailed,
       listener: (context, state) {
-        if (state is! DraftsLibraryLoaded) return;
-        final deleteResult = state.deleteResult;
-        if (deleteResult == null) return;
-
-        final isSuccess = deleteResult == DeleteResult.success;
+        final isSuccess = state is DraftsLibraryDraftDeleted;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.transparent,
@@ -62,17 +54,22 @@ class DraftsTab extends ConsumerWidget {
               style: const TextStyle(color: VineTheme.error),
             ),
           ),
-          DraftsLibraryLoaded(:final drafts) when drafts.isEmpty =>
-            const EmptyLibraryState(
-              icon: DivineIconName.pencilSimple,
-              // TODO(l10n): Replace with context.l10n when localization is
-              // added.
-              title: 'No Drafts Yet',
-              // TODO(l10n): Replace with context.l10n when localization is
-              // added.
-              subtitle: 'Videos you save as draft will appear here',
-            ),
-          DraftsLibraryLoaded(:final drafts) => ListView.builder(
+          DraftsLibraryLoaded(:final drafts) ||
+          DraftsLibraryDraftDeleted(:final drafts) ||
+          DraftsLibraryDeleteFailed(
+            :final drafts,
+          ) when drafts.isEmpty => const EmptyLibraryState(
+            icon: DivineIconName.pencilSimple,
+            // TODO(l10n): Replace with context.l10n when localization is
+            // added.
+            title: 'No Drafts Yet',
+            // TODO(l10n): Replace with context.l10n when localization is
+            // added.
+            subtitle: 'Videos you save as draft will appear here',
+          ),
+          DraftsLibraryLoaded(:final drafts) ||
+          DraftsLibraryDraftDeleted(:final drafts) ||
+          DraftsLibraryDeleteFailed(:final drafts) => ListView.builder(
             itemCount: drafts.length,
             itemBuilder: (context, index) {
               final draft = drafts[index];

@@ -21,39 +21,37 @@ final class DraftsLibraryLoading extends DraftsLibraryState {
   const DraftsLibraryLoading();
 }
 
-/// Result of a draft delete operation.
-enum DeleteResult {
-  /// Draft was successfully deleted.
-  success,
-
-  /// Draft deletion failed.
-  failure,
-}
-
 /// Successfully loaded drafts state.
 final class DraftsLibraryLoaded extends DraftsLibraryState {
-  const DraftsLibraryLoaded({
-    required this.drafts,
-    this.deleteResult,
-    this.deleteError,
-  });
+  const DraftsLibraryLoaded({required this.drafts});
 
   /// List of loaded drafts, sorted by most recent first.
   final List<DivineVideoDraft> drafts;
 
-  /// Result of the last delete operation, if any.
-  final DeleteResult? deleteResult;
+  @override
+  List<Object?> get props => [drafts];
+}
 
-  /// Error message if delete failed.
-  final String? deleteError;
+/// A draft was successfully deleted.
+final class DraftsLibraryDraftDeleted extends DraftsLibraryState {
+  const DraftsLibraryDraftDeleted({required this.drafts});
 
-  /// Creates a copy with cleared delete result.
-  DraftsLibraryLoaded clearDeleteResult() {
-    return DraftsLibraryLoaded(drafts: drafts);
-  }
+  /// Updated list of drafts after deletion.
+  final List<DivineVideoDraft> drafts;
 
   @override
-  List<Object?> get props => [drafts, deleteResult, deleteError];
+  List<Object?> get props => [drafts];
+}
+
+/// Draft deletion failed.
+final class DraftsLibraryDeleteFailed extends DraftsLibraryState {
+  const DraftsLibraryDeleteFailed({required this.drafts});
+
+  /// Original list of drafts (unchanged due to failure).
+  final List<DivineVideoDraft> drafts;
+
+  @override
+  List<Object?> get props => [drafts];
 }
 
 /// Error state when draft operations fail.
