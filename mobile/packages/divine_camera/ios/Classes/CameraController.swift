@@ -596,24 +596,17 @@ class CameraController: NSObject {
                     
                     // Stop and restart the session to "kick" it
                     session.stopRunning()
-                    
+
                     // Brief pause before restarting
-                    Thread.sleep(forTimeInterval: 0.1)
-                    
-                    session.startRunning()
-                    print("DivineCamera: ✅ Session restarted by watchdog")
+                    self.sessionQueue.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                        guard let self = self, let session = self.captureSession else { return }
+                        session.startRunning()
+                        print("DivineCamera: ✅ Session restarted by watchdog")
+                    }
                 }
             } else {
                 print("DivineCamera: ✅ Watchdog: Frames are flowing normally")
             }
-        }
-        
-        // Additional check after 0.5s for debugging
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            if let connection = self?.videoOutput?.connection(with: .video) {
-                print("DivineCamera: After 0.5s - Video connection active: \(connection.isActive), enabled: \(connection.isEnabled)")
-            }
-            print("DivineCamera: After 0.5s - pixelBufferRef is nil: \(self?.pixelBufferRef == nil)")
         }
         
         // Register texture after session is running
