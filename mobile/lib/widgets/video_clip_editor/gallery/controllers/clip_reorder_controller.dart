@@ -164,12 +164,14 @@ class ClipReorderController extends ChangeNotifier {
   /// [contentScale] compensates for the outer `AnimatedScale` so the clip
   /// follows the finger 1:1 in screen space.
   void updateVisualDragY(double deltaY, {double contentScale = 1.0}) {
-    final compensatedClamp =
+    final compensatedClampUp =
         VideoEditorGalleryConstants.dragYClampUp / contentScale;
+    final compensatedClampDown =
+        VideoEditorGalleryConstants.dragYClampDown / contentScale;
     dragYOffsetNotifier.value =
         (dragYOffsetNotifier.value + deltaY / contentScale).clamp(
-          -compensatedClamp,
-          double.infinity,
+          -compensatedClampUp,
+          compensatedClampDown,
         );
   }
 

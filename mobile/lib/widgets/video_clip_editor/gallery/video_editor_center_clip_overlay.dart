@@ -60,46 +60,44 @@ class VideoEditorCenterClipOverlay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pageViewOffset = -(page - currentClipIndex) * pageWidth;
-    return ValueListenableBuilder(
-      valueListenable: dragOffsetNotifier,
-      builder: (_, dragOffset, _) {
-        return ValueListenableBuilder(
-          valueListenable: dragYOffsetNotifier,
-          builder: (_, dragYOffset, _) {
-            // Calculate rotation based on drag offset (-15° to +15°)
-            final rotationAngle =
-                (dragOffset / pageWidth) * 0.26; // ~15° in radians
-            final transformMatrix = Matrix4.identity()
-              ..scaleByDouble(scale, scale, scale, 1)
-              ..rotateZ(isReordering ? rotationAngle : 0)
-              ..translateByDouble(
-                xOffset + pageViewOffset + (isReordering ? dragOffset : 0),
-                isReordering ? dragYOffset : 0,
-                0,
-                1,
-              );
+    return AnimatedBuilder(
+      animation: Listenable.merge([dragOffsetNotifier, dragYOffsetNotifier]),
+      builder: (_, _) {
+        final dragOffset = dragOffsetNotifier.value;
+        final dragYOffset = dragYOffsetNotifier.value;
 
-            return RepaintBoundary(
-              child: IgnorePointer(
-                ignoring: !isReordering,
-                child: Center(
-                  child: Transform(
-                    transform: transformMatrix,
-                    alignment: .center,
-                    child: SizedBox(
-                      width: pageWidth,
-                      child: VideoEditorClipPreview(
-                        key: ValueKey('Video-Clip-Preview-${clip.id}'),
-                        clip: clip,
-                        isCurrentClip: true,
-                        isReordering: isReordering,
-                      ),
-                    ),
+        // Calculate rotation based on drag offset (-15° to +15°)
+        final rotationAngle =
+            (dragOffset / pageWidth) * 0.26; // ~15° in radians
+        final transformMatrix = Matrix4.identity()
+          ..scaleByDouble(scale, scale, scale, 1)
+          ..rotateZ(isReordering ? rotationAngle : 0)
+          ..translateByDouble(
+            xOffset + pageViewOffset + (isReordering ? dragOffset : 0),
+            isReordering ? dragYOffset : 0,
+            0,
+            1,
+          );
+
+        return RepaintBoundary(
+          child: IgnorePointer(
+            ignoring: !isReordering,
+            child: Center(
+              child: Transform(
+                transform: transformMatrix,
+                alignment: .center,
+                child: SizedBox(
+                  width: pageWidth,
+                  child: VideoEditorClipPreview(
+                    key: ValueKey('Video-Clip-Preview-${clip.id}'),
+                    clip: clip,
+                    isCurrentClip: true,
+                    isReordering: isReordering,
                   ),
                 ),
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );
