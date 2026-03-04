@@ -85,6 +85,12 @@ class CameraController: NSObject {
     /// Completion handler for camera switch - called when first frame from new camera arrives
     private var switchCameraCompletion: (([String: Any]?, String?) -> Void)?
     
+    /// Completion handler for camera initialization - called when first frame arrives
+    private var initializationCompletion: (([String: Any]?, String?) -> Void)?
+    
+    /// Timeout timer for initialization (fallback if no frames arrive)
+    private var initializationTimeoutTimer: Timer?
+    
     private let sessionQueue = DispatchQueue(label: "com.divine_camera.session")
     private let videoOutputQueue = DispatchQueue(label: "com.divine_camera.videoOutput")
     
@@ -573,7 +579,36 @@ class CameraController: NSObject {
             print("DivineCamera: ERROR - No video connection available!")
         }
         
-        // Check connection status after a short delay
+        // Watchdog: Check if frames are flowing after 1 second
+        // On some iOS devices/versions, AVCaptureSession can be "stuck" and not deliver frames
+        // until it's restarted. This watchdog detects this condition and restarts the session.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+            guard let self = self else { return }
+            
+            self.pixelBufferLock.lock()
+            let hasReceivedFrames = self.pixelBufferRef != nil
+            self.pixelBufferLock.unlock()
+            
+            if !hasReceivedFrames {
+                print("DivineCamera: ⚠️ WATCHDOG: No frames received after 1s - restarting session")
+                self.sessionQueue.async { [weak self] in
+                    guard let self = self, let session = self.captureSession else { return }
+                    
+                    // Stop and restart the session to "kick" it
+                    session.stopRunning()
+                    
+                    // Brief pause before restarting
+                    Thread.sleep(forTimeInterval: 0.1)
+                    
+                    session.startRunning()
+                    print("DivineCamera: ✅ Session restarted by watchdog")
+                }
+            } else {
+                print("DivineCamera: ✅ Watchdog: Frames are flowing normally")
+            }
+        }
+        
+        // Additional check after 0.5s for debugging
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             if let connection = self?.videoOutput?.connection(with: .video) {
                 print("DivineCamera: After 0.5s - Video connection active: \(connection.isActive), enabled: \(connection.isEnabled)")
@@ -588,12 +623,15 @@ class CameraController: NSObject {
         // Pre-warm AVAssetWriter in background to avoid lag on first recording
         self.preWarmAssetWriter()
         
+        // Store completion handler to call when first frame arrives
+        // This ensures the camera is truly delivering frames before we report success
+        self.initializationCompletion = completion
+        
+        // Set a timeout in case frames don't arrive (fallback to complete anyway)
         DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            var state = self.getCameraState()
-            state["textureId"] = self.textureId
-            print("DivineCamera: Returning state with textureId: \(self.textureId)")
-            completion(state, nil)
+            self?.initializationTimeoutTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
+                self?.completeInitializationIfNeeded(timedOut: true)
+            }
         }
     }
     
@@ -627,6 +665,32 @@ class CameraController: NSObject {
             } catch {
                 print("DivineCamera: Pre-warm failed (non-critical): \(error.localizedDescription)")
             }
+        }
+    }
+    
+    /// Completes initialization when first frame is received or timeout occurs.
+    /// This ensures Flutter is notified only when the camera is truly delivering frames.
+    private func completeInitializationIfNeeded(timedOut: Bool = false) {
+        // Cancel timeout timer
+        initializationTimeoutTimer?.invalidate()
+        initializationTimeoutTimer = nil
+        
+        // Only complete once
+        guard let completion = initializationCompletion else { return }
+        initializationCompletion = nil
+        
+        if timedOut {
+            print("DivineCamera: ⚠️ Initialization completed via timeout (frames may not be flowing)")
+        } else {
+            print("DivineCamera: ✅ Initialization completed - first frame received")
+        }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            var state = self.getCameraState()
+            state["textureId"] = self.textureId
+            print("DivineCamera: Returning state with textureId: \(self.textureId)")
+            completion(state, nil)
         }
     }
     
@@ -1429,6 +1493,11 @@ class CameraController: NSObject {
         // Disable auto-flash if it was enabled
         disableAutoFlashTorch()
         
+        // Cancel any pending initialization
+        initializationTimeoutTimer?.invalidate()
+        initializationTimeoutTimer = nil
+        initializationCompletion = nil
+        
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
@@ -1507,6 +1576,11 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
             
             if isFirstFrame {
                 print("DivineCamera: First frame received! Pixel buffer dimensions: \(CVPixelBufferGetWidth(pixelBuffer))x\(CVPixelBufferGetHeight(pixelBuffer))")
+                
+                // Complete initialization now that we know frames are flowing
+                DispatchQueue.main.async { [weak self] in
+                    self?.completeInitializationIfNeeded(timedOut: false)
+                }
             }
             
             // Notify Flutter on main thread that a new frame is available
