@@ -186,7 +186,17 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     PointerMoveEvent event,
     BoxConstraints constraints,
   ) async {
-    // Check delete zone and exit early if needed
+    // Compensate deltas for the AnimatedScale(reorderScale) wrapper so the
+    // clip center follows the finger 1:1 in screen space.
+    final contentScale = VideoEditorGalleryConstants.reorderScale;
+
+    // Always track Y — clip follows finger vertically toward delete zone.
+    _reorderController.updateVisualDragY(
+      event.delta.dy,
+      contentScale: contentScale,
+    );
+
+    // Check delete zone and exit early for horizontal processing
     if (_updateDeleteZoneState(event, constraints)) {
       _resetDragOffsetIfNeeded();
       return;
@@ -196,6 +206,7 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     _reorderController.updateVisualDragOffset(
       event.delta.dx,
       constraints.maxWidth,
+      contentScale: contentScale,
     );
 
     // Accumulate drag offset for page switching
@@ -269,7 +280,7 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     }
 
     // Animate drag offset back to 0 and wait for completion
-    _reorderController.prepareForDragReset();
+    _reorderController.prepareForFullDragReset();
     if (_reorderController.shouldAnimateReset) {
       await _dragResetController.forward(from: 0).orCancel;
     }
@@ -541,6 +552,7 @@ class _GalleryStackState extends ConsumerState<_GalleryStack> {
               pageWidth: pageWidth,
               isReordering: widget.isReordering,
               dragOffsetNotifier: widget.reorderController.dragOffsetNotifier,
+              dragYOffsetNotifier: widget.reorderController.dragYOffsetNotifier,
               scale: _calculator.calculateScale(widget.activeClipIndex),
               xOffset: _calculator.calculateXOffset(widget.activeClipIndex),
             ),

@@ -295,6 +295,10 @@ class VideoEditorGalleryConstants {
   /// Factor for clamping drag offset relative to width.
   static double dragClampFactor = 0.3;
 
+  /// Maximum upward Y clamp (pixels) during drag — prevents clip from
+  /// leaving the gallery area upward.
+  static double dragYClampUp = 40;
+
   /// Scale factor when in reorder mode.
   static double reorderScale = 0.5;
 

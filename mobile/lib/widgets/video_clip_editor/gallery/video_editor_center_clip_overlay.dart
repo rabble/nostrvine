@@ -21,6 +21,7 @@ class VideoEditorCenterClipOverlay extends ConsumerWidget {
     required this.pageWidth,
     required this.isReordering,
     required this.dragOffsetNotifier,
+    required this.dragYOffsetNotifier,
     required this.scale,
     required this.xOffset,
     super.key,
@@ -44,8 +45,11 @@ class VideoEditorCenterClipOverlay extends ConsumerWidget {
   /// Whether the clip is in reordering mode.
   final bool isReordering;
 
-  /// Notifier for drag offset changes.
+  /// Notifier for horizontal drag offset changes (rotation + X translation).
   final ValueNotifier<double> dragOffsetNotifier;
+
+  /// Notifier for vertical drag offset changes (Y translation).
+  final ValueNotifier<double> dragYOffsetNotifier;
 
   /// Pre-calculated scale factor for this clip.
   final double scale;
@@ -59,38 +63,43 @@ class VideoEditorCenterClipOverlay extends ConsumerWidget {
     return ValueListenableBuilder(
       valueListenable: dragOffsetNotifier,
       builder: (_, dragOffset, _) {
-        // Calculate rotation based on drag offset (-15° to +15°)
-        final rotationAngle =
-            (dragOffset / pageWidth) * 0.26; // ~15° in radians
-        final transformMatrix = Matrix4.identity()
-          ..scaleByDouble(scale, scale, scale, 1)
-          ..rotateZ(isReordering ? rotationAngle : 0)
-          ..translateByDouble(
-            xOffset + pageViewOffset + (isReordering ? dragOffset : 0),
-            0,
-            0,
-            1,
-          );
+        return ValueListenableBuilder(
+          valueListenable: dragYOffsetNotifier,
+          builder: (_, dragYOffset, _) {
+            // Calculate rotation based on drag offset (-15° to +15°)
+            final rotationAngle =
+                (dragOffset / pageWidth) * 0.26; // ~15° in radians
+            final transformMatrix = Matrix4.identity()
+              ..scaleByDouble(scale, scale, scale, 1)
+              ..rotateZ(isReordering ? rotationAngle : 0)
+              ..translateByDouble(
+                xOffset + pageViewOffset + (isReordering ? dragOffset : 0),
+                isReordering ? dragYOffset : 0,
+                0,
+                1,
+              );
 
-        return RepaintBoundary(
-          child: IgnorePointer(
-            ignoring: !isReordering,
-            child: Center(
-              child: Transform(
-                transform: transformMatrix,
-                alignment: .center,
-                child: SizedBox(
-                  width: pageWidth,
-                  child: VideoEditorClipPreview(
-                    key: ValueKey('Video-Clip-Preview-${clip.id}'),
-                    clip: clip,
-                    isCurrentClip: true,
-                    isReordering: isReordering,
+            return RepaintBoundary(
+              child: IgnorePointer(
+                ignoring: !isReordering,
+                child: Center(
+                  child: Transform(
+                    transform: transformMatrix,
+                    alignment: .center,
+                    child: SizedBox(
+                      width: pageWidth,
+                      child: VideoEditorClipPreview(
+                        key: ValueKey('Video-Clip-Preview-${clip.id}'),
+                        clip: clip,
+                        isCurrentClip: true,
+                        isReordering: isReordering,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
