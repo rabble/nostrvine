@@ -671,6 +671,180 @@ void main() {
     });
   });
 
+  group('getUserProfile', () {
+    test('returns profile data when user has a Kind 0 profile', () async {
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/api/users/abc123');
+        return http.Response(
+          jsonEncode({
+            'pubkey': 'abc123',
+            'profile': {
+              'name': 'alice',
+              'display_name': 'Alice',
+              'about': 'Hello world',
+              'picture': 'https://example.com/alice.jpg',
+              'banner': null,
+              'nip05': 'alice@example.com',
+              'lud16': null,
+            },
+          }),
+          200,
+        );
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      final result = await service.getUserProfile('abc123');
+
+      expect(result, isNotNull);
+      expect(result!['name'], equals('alice'));
+      expect(result['display_name'], equals('Alice'));
+      expect(result['_noProfile'], isNull);
+    });
+
+    test(
+      'returns _noProfile sentinel when user exists but has no profile data',
+      () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'pubkey': 'abc123',
+              'profile': {
+                'name': null,
+                'display_name': null,
+                'about': null,
+                'picture': null,
+                'banner': null,
+                'nip05': null,
+                'lud16': null,
+              },
+            }),
+            200,
+          );
+        });
+
+        final service = AnalyticsApiService(
+          baseUrl: 'https://funnelcake.test',
+          httpClient: mockClient,
+        );
+
+        final result = await service.getUserProfile('abc123');
+
+        expect(result, isNotNull);
+        expect(result!['_noProfile'], isTrue);
+        expect(result['pubkey'], equals('abc123'));
+      },
+    );
+
+    test(
+      'returns _noProfile sentinel when profile object has no keys',
+      () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'pubkey': 'abc123',
+              'profile': <String, dynamic>{},
+            }),
+            200,
+          );
+        });
+
+        final service = AnalyticsApiService(
+          baseUrl: 'https://funnelcake.test',
+          httpClient: mockClient,
+        );
+
+        final result = await service.getUserProfile('abc123');
+
+        expect(result, isNotNull);
+        expect(result!['_noProfile'], isTrue);
+      },
+    );
+
+    test('returns null when user is not found (404)', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response('Not Found', 404);
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      final result = await service.getUserProfile('nonexistent');
+      expect(result, isNull);
+    });
+
+    test('returns null when API is not available', () async {
+      final service = AnalyticsApiService(baseUrl: null);
+      final result = await service.getUserProfile('abc123');
+      expect(result, isNull);
+    });
+  });
+
+  group('getBulkProfiles', () {
+    test(
+      'returns _noProfile sentinel for users with all-null profile fields',
+      () async {
+        final mockClient = MockClient((request) async {
+          return http.Response(
+            jsonEncode({
+              'users': [
+                {
+                  'pubkey': 'user_with_profile',
+                  'profile': {
+                    'name': 'alice',
+                    'display_name': 'Alice',
+                    'about': null,
+                    'picture': null,
+                  },
+                },
+                {
+                  'pubkey': 'user_without_profile',
+                  'profile': {
+                    'name': null,
+                    'display_name': null,
+                    'about': null,
+                    'picture': null,
+                  },
+                },
+              ],
+            }),
+            200,
+          );
+        });
+
+        final service = AnalyticsApiService(
+          baseUrl: 'https://funnelcake.test',
+          httpClient: mockClient,
+        );
+
+        final result = await service.getBulkProfiles([
+          'user_with_profile',
+          'user_without_profile',
+        ]);
+
+        expect(result.length, 2);
+
+        // Real profile
+        expect(result['user_with_profile']!['name'], equals('alice'));
+        expect(result['user_with_profile']!['_noProfile'], isNull);
+
+        // No-profile sentinel
+        expect(result['user_without_profile']!['_noProfile'], isTrue);
+      },
+    );
+
+    test('returns empty map when API not available', () async {
+      final service = AnalyticsApiService(baseUrl: null);
+      final result = await service.getBulkProfiles(['abc']);
+      expect(result, isEmpty);
+    });
+  });
+
   group('getRawEvent', () {
     test('returns raw event JSON on 200 response', () async {
       final rawEvent = {

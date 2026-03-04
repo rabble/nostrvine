@@ -221,6 +221,8 @@ class VideoFeedController extends ChangeNotifier {
       _pauseVideo(_currentIndex);
       _releaseAllPlayers();
     } else {
+      // Clear any manual pause so playback resumes with audio
+      _isPaused = false;
       // Reload preload window and play current video
       _updatePreloadWindow(_currentIndex);
     }

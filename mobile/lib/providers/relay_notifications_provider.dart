@@ -86,14 +86,29 @@ class RelayNotifications extends _$RelayNotifications {
   void _startAutoRefresh() {
     _autoRefreshTimer?.cancel();
     _autoRefreshTimer = Timer(_autoRefreshInterval, () {
+      if (!ref.mounted) return;
+
+      // Skip refresh when app is backgrounded to avoid NIP-98 auth
+      // attempts while the bunker signer is paused (which would timeout
+      // after 60s and fail).
+      final backgroundManager = ref.read(backgroundActivityManagerProvider);
+      if (backgroundManager.isAppInBackground) {
+        Log.debug(
+          'RelayNotifications: Auto-refresh skipped (app is backgrounded)',
+          name: 'RelayNotificationsProvider',
+          category: LogCategory.system,
+        );
+        // Restart the timer so refresh triggers after app resumes
+        _startAutoRefresh();
+        return;
+      }
+
       Log.info(
         'RelayNotifications: Auto-refresh triggered',
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
-      if (ref.mounted) {
-        refresh();
-      }
+      refresh();
     });
   }
 

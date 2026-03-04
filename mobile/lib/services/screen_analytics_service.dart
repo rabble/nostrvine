@@ -2,8 +2,16 @@
 // ABOUTME: Tracks screen load times, navigation patterns, and user engagement metrics
 
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:openvine/services/page_load_history.dart';
 import 'package:openvine/utils/unified_logger.dart';
+
+/// Maximum age for a session before it is considered stale and discarded.
+///
+/// Mirrors [FeedPerformanceTracker]'s threshold. Sessions older than this
+/// are silently dropped to avoid recording load times inflated by
+/// background/resume cycles.
+const _maxScreenSessionAge = Duration(seconds: 60);
 
 /// Service for tracking screen navigation, performance, and user engagement
 class ScreenAnalyticsService {
@@ -12,14 +20,47 @@ class ScreenAnalyticsService {
   factory ScreenAnalyticsService() => _instance;
   ScreenAnalyticsService._internal();
 
+  /// Creates a testable instance that does not touch [FirebaseAnalytics].
+  @visibleForTesting
+  ScreenAnalyticsService.testInstance({FirebaseAnalytics? analytics})
+    : _analyticsOverride = analytics;
+
   // Lazy-init to avoid crashing when Firebase isn't initialized (e.g. tests).
+  FirebaseAnalytics? _analyticsOverride;
   FirebaseAnalytics? _analyticsInstance;
-  FirebaseAnalytics get _analytics =>
-      _analyticsInstance ??= FirebaseAnalytics.instance;
+  FirebaseAnalytics? get _analytics =>
+      _analyticsOverride ?? (_analyticsInstance ??= _initAnalytics());
+
+  static FirebaseAnalytics? _initAnalytics() {
+    try {
+      return FirebaseAnalytics.instance;
+    } catch (_) {
+      return null;
+    }
+  }
+
   final Map<String, _ScreenSession> _activeSessions = {};
 
   String? _currentScreen;
   DateTime? _currentScreenStartTime;
+
+  /// Number of active tracking sessions (exposed for testing).
+  int get activeSessionCount => _activeSessions.length;
+
+  /// Clear all active sessions.
+  ///
+  /// Call this when the app resumes from background to prevent stale
+  /// start times from producing wildly inaccurate load-time measurements.
+  void resetAllSessions() {
+    if (_activeSessions.isNotEmpty) {
+      UnifiedLogger.info(
+        'Resetting ${_activeSessions.length} stale screen '
+        'analytics sessions on app resume',
+        name: 'ScreenAnalytics',
+      );
+      _activeSessions.clear();
+    }
+  }
 
   /// Start tracking a screen load
   void startScreenLoad(String screenName, {Map<String, dynamic>? params}) {
@@ -42,6 +83,11 @@ class ScreenAnalyticsService {
     final session = _activeSessions[screenName];
     if (session == null) return;
 
+    if (_isStale(session)) {
+      _discardStaleSession(screenName);
+      return;
+    }
+
     session.contentVisibleTime = DateTime.now();
     final loadTime = session.contentVisibleTime!
         .difference(session.loadStartTime)
@@ -53,7 +99,7 @@ class ScreenAnalyticsService {
     );
 
     // Log to Firebase
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'screen_load',
       parameters: {
         'screen_name': screenName,
@@ -80,9 +126,17 @@ class ScreenAnalyticsService {
   }
 
   /// Mark when screen data is fully loaded (async data fetched)
-  void markDataLoaded(String screenName, {Map<String, dynamic>? dataMetrics}) {
+  void markDataLoaded(
+    String screenName, {
+    Map<String, dynamic>? dataMetrics,
+  }) {
     final session = _activeSessions[screenName];
     if (session == null) return;
+
+    if (_isStale(session)) {
+      _discardStaleSession(screenName);
+      return;
+    }
 
     session.dataLoadedTime = DateTime.now();
     final dataLoadTime = session.dataLoadedTime!
@@ -95,7 +149,7 @@ class ScreenAnalyticsService {
     );
 
     // Log to Firebase
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'screen_data_loaded',
       parameters: {
         'screen_name': screenName,
@@ -138,7 +192,7 @@ class ScreenAnalyticsService {
           .difference(_currentScreenStartTime!)
           .inSeconds;
 
-      _analytics.logEvent(
+      _analytics?.logEvent(
         name: 'screen_time',
         parameters: {
           'screen_name': _currentScreen!,
@@ -157,7 +211,7 @@ class ScreenAnalyticsService {
     _currentScreenStartTime = DateTime.now();
 
     // Log screen view
-    _analytics.logScreenView(
+    _analytics?.logScreenView(
       screenName: screenName,
       parameters: params?.cast<String, Object>(),
     );
@@ -174,7 +228,7 @@ class ScreenAnalyticsService {
     String interactionType, {
     Map<String, dynamic>? params,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'user_interaction',
       parameters: {
         'screen_name': screenName,
@@ -195,7 +249,7 @@ class ScreenAnalyticsService {
     required String to,
     String? trigger,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'screen_navigation',
       parameters: {'from_screen': from, 'to_screen': to, 'trigger': ?trigger},
     );
@@ -213,7 +267,7 @@ class ScreenAnalyticsService {
     required int itemsViewed,
     int? totalItems,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'screen_scroll',
       parameters: {
         'screen_name': screenName,
@@ -231,7 +285,7 @@ class ScreenAnalyticsService {
     required int resultsCount,
     required int loadTimeMs,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'search_performed',
       parameters: {
         'screen_name': screenName,
@@ -249,7 +303,7 @@ class ScreenAnalyticsService {
 
   /// Track tab changes
   void trackTabChange({required String screenName, required String tabName}) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'tab_changed',
       parameters: {'screen_name': screenName, 'tab_name': tabName},
     );
@@ -262,7 +316,7 @@ class ScreenAnalyticsService {
     required String errorMessage,
     Map<String, dynamic>? context,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'screen_error',
       parameters: {
         'screen_name': screenName,
@@ -284,6 +338,26 @@ class ScreenAnalyticsService {
   /// End screen session
   void endScreen(String screenName) {
     _activeSessions.remove(screenName);
+  }
+
+  /// Whether a session's start time is older than [_maxScreenSessionAge].
+  bool _isStale(_ScreenSession session) {
+    return DateTime.now().difference(session.loadStartTime) >
+        _maxScreenSessionAge;
+  }
+
+  /// Remove a stale session and log a warning instead of recording garbage
+  /// data.
+  void _discardStaleSession(String screenName) {
+    final session = _activeSessions.remove(screenName);
+    if (session != null) {
+      final age = DateTime.now().difference(session.loadStartTime);
+      UnifiedLogger.warning(
+        'Discarding stale screen session "$screenName" '
+        '(started ${age.inSeconds}s ago)',
+        name: 'ScreenAnalytics',
+      );
+    }
   }
 }
 

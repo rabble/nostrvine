@@ -45,6 +45,9 @@ void main() {
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => followingController.stream);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+      when(
+        () => mockFollowRepository.initialized,
+      ).thenAnswer((_) async {});
 
       when(
         () => mockCuratedListRepository.subscribedListsStream,

@@ -186,6 +186,30 @@ void main() {
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
+        'does not re-search when query has not changed',
+        build: createBloc,
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'flutter',
+          results: [createTestProfile('a' * 64, 'Flutter Dev')],
+          offset: 1,
+        ),
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('flutter')),
+        wait: debounceDuration,
+        expect: () => <UserSearchState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.searchUsers(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          );
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
         'trims whitespace from query',
         setUp: () {
           when(

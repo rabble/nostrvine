@@ -427,6 +427,52 @@ void main() {
       });
     });
 
+    group('searchEvents', () {
+      test('returns events matching query from dao', () async {
+        final events = [
+          createTestEvent(id: testEventId1),
+          createTestEvent(id: testEventId2),
+        ];
+
+        when(
+          () => mockDao.getEventsByFilter(any()),
+        ).thenAnswer((_) async => events);
+
+        final result = await storage.searchEvents(query: 'test');
+
+        expect(result, hasLength(2));
+
+        final captured = verify(
+          () => mockDao.getEventsByFilter(captureAny()),
+        ).captured;
+        final filter = captured.first as Filter;
+        expect(filter.kinds, contains(videoKind));
+        expect(filter.search, equals('test'));
+        expect(filter.limit, equals(100));
+      });
+
+      test('returns empty list when query is empty', () async {
+        final result = await storage.searchEvents(query: '');
+
+        expect(result, isEmpty);
+        verifyNever(() => mockDao.getEventsByFilter(any()));
+      });
+
+      test('respects custom limit parameter', () async {
+        when(
+          () => mockDao.getEventsByFilter(any()),
+        ).thenAnswer((_) async => []);
+
+        await storage.searchEvents(query: 'test', limit: 25);
+
+        final captured = verify(
+          () => mockDao.getEventsByFilter(captureAny()),
+        ).captured;
+        final filter = captured.first as Filter;
+        expect(filter.limit, equals(25));
+      });
+    });
+
     group('getEventCount', () {
       test('returns count from dao', () async {
         when(() => mockDao.getEventCount()).thenAnswer((_) async => 42);

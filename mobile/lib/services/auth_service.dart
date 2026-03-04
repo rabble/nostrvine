@@ -1103,9 +1103,14 @@ class AuthService implements BackgroundAwareService {
         case AuthenticationSource.automatic:
         case AuthenticationSource.importedKeys:
         case AuthenticationSource.none:
+          // Clear any stale global signer keys so they don't hijack signing
+          // operations for the non-bunker/non-keycast account.
+          await _clearBunkerInfo();
+          await _clearAmberInfo();
+          await KeycastSession.clear(_flutterSecureStorage);
           Log.debug(
             '_restoreSignerInfo: local key-based auth — '
-            'no signer info to restore',
+            'cleared stale signer keys',
             name: 'AuthService',
             category: LogCategory.auth,
           );

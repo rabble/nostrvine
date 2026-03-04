@@ -11,40 +11,20 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
-class _MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
-
 class _MockHashtagRepository extends Mock implements HashtagRepository {}
+
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 class _FakeVideoEventService extends ChangeNotifier
     implements VideoEventService {
-  _FakeVideoEventService({this.videos = const []});
-
-  final List<VideoEvent> videos;
-
-  @override
-  List<VideoEvent> get discoveryVideos => videos;
-
-  @override
-  List<VideoEvent> get searchResults => [];
-
-  @override
-  Future<void> searchVideos(
-    String query, {
-    List<String>? authors,
-    DateTime? since,
-    DateTime? until,
-    int? limit,
-  }) async {}
-
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -52,19 +32,16 @@ class _FakeVideoEventService extends ChangeNotifier
 void main() {
   group(SearchScreenPure, () {
     late _MockProfileRepository mockProfileRepository;
-    late _MockContentBlocklistService mockBlocklistService;
-    late _FakeVideoEventService fakeVideoEventService;
     late _MockHashtagRepository mockHashtagRepository;
+    late _MockVideosRepository mockVideosRepository;
+    late _FakeVideoEventService fakeVideoEventService;
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
-      mockBlocklistService = _MockContentBlocklistService();
-      fakeVideoEventService = _FakeVideoEventService();
       mockHashtagRepository = _MockHashtagRepository();
+      mockVideosRepository = _MockVideosRepository();
+      fakeVideoEventService = _FakeVideoEventService();
 
-      when(
-        () => mockBlocklistService.shouldFilterFromFeeds(any()),
-      ).thenReturn(false);
       when(
         () => mockProfileRepository.searchUsers(
           query: any(named: 'query'),
@@ -75,23 +52,34 @@ void main() {
         ),
       ).thenAnswer((_) async => <UserProfile>[]);
 
-      // Default HashtagRepository stub
       when(
         () => mockHashtagRepository.searchHashtags(
           query: any(named: 'query'),
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => []);
+
+      // Single stream stub for searchVideos
+      when(
+        () => mockVideosRepository.searchVideos(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) => Stream.value([]));
     });
 
-    Widget createTestWidget({List<VideoEvent>? videos}) {
-      final videoService = videos != null
-          ? _FakeVideoEventService(videos: videos)
-          : fakeVideoEventService;
-
-      // Create mock with getDisplayName stubbed
+    Widget createTestWidget({List<VideoEvent>? searchResults}) {
       final mockUserProfileService = createMockUserProfileService();
       when(() => mockUserProfileService.getDisplayName(any())).thenReturn('');
+
+      if (searchResults != null) {
+        when(
+          () => mockVideosRepository.searchVideos(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => Stream.value(searchResults));
+      }
 
       return ProviderScope(
         overrides: [
@@ -100,10 +88,8 @@ void main() {
             mockUserProfileService: mockUserProfileService,
           ),
           profileRepositoryProvider.overrideWithValue(mockProfileRepository),
-          videoEventServiceProvider.overrideWithValue(videoService),
-          contentBlocklistServiceProvider.overrideWithValue(
-            mockBlocklistService,
-          ),
+          videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          videoEventServiceProvider.overrideWithValue(fakeVideoEventService),
           hashtagRepositoryProvider.overrideWithValue(mockHashtagRepository),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(const RouteContext(type: RouteType.search));
@@ -131,10 +117,9 @@ void main() {
               mockUserProfileService: mockUserProfileService,
             ),
             profileRepositoryProvider.overrideWithValue(mockProfileRepository),
+            videosRepositoryProvider.overrideWithValue(mockVideosRepository),
             videoEventServiceProvider.overrideWithValue(fakeVideoEventService),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockBlocklistService,
-            ),
+            hashtagRepositoryProvider.overrideWithValue(mockHashtagRepository),
             pageContextProvider.overrideWith((ref) {
               return Stream.value(
                 RouteContext(
@@ -153,16 +138,14 @@ void main() {
         );
       }
 
-      testWidgets(
-        'shows "No videos available" when videoIndex is set but no videos',
-        (tester) async {
-          await tester.pumpWidget(createFeedModeWidget(videoIndex: 0));
-          await tester.pumpAndSettle();
+      testWidgets('shows "No videos available" when videoIndex is set but '
+          'no videos', (tester) async {
+        await tester.pumpWidget(createFeedModeWidget(videoIndex: 0));
+        await tester.pumpAndSettle();
 
-          expect(find.text('No videos available'), findsOneWidget);
-          expect(find.text('Videos (0)'), findsNothing);
-        },
-      );
+        expect(find.text('No videos available'), findsOneWidget);
+        expect(find.text('Videos (0)'), findsNothing);
+      });
 
       testWidgets('hides tabs when in feed mode', (tester) async {
         await tester.pumpWidget(createFeedModeWidget(videoIndex: 0));
@@ -203,17 +186,21 @@ void main() {
           ),
         ];
 
-        // Stub HashtagRepository to return 'flutter' for this query
+        when(
+          () => mockVideosRepository.searchVideos(query: 'flutter'),
+        ).thenAnswer((_) => Stream.value(testVideos));
+
         when(
           () => mockHashtagRepository.searchHashtags(query: 'flutter'),
         ).thenAnswer((_) async => ['flutter']);
 
-        await tester.pumpWidget(createTestWidget(videos: testVideos));
+        await tester.pumpWidget(createTestWidget(searchResults: testVideos));
 
         final textField = find.byType(TextField);
         await tester.enterText(textField, 'flutter');
 
-        // Wait for debounce (300ms) + BLoC debounce (300ms) + processing
+        // Wait for debounce (300ms) + BLoC debounce (300ms) +
+        // processing
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump();

@@ -2,7 +2,16 @@
 // ABOUTME: Tracks video feed load times, scroll behavior, and video discovery metrics
 
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:openvine/utils/unified_logger.dart';
+
+/// Maximum age for a session before it is considered stale and discarded.
+///
+/// After the app is backgrounded and resumed, providers may re-fire and
+/// attempt to complete sessions that were started hours ago. Any session
+/// older than this threshold is silently discarded to avoid logging absurd
+/// load times (e.g. 27+ hours).
+const _maxSessionAge = Duration(seconds: 60);
 
 /// Service for tracking feed performance and user engagement
 class FeedPerformanceTracker {
@@ -11,8 +20,44 @@ class FeedPerformanceTracker {
   factory FeedPerformanceTracker() => _instance;
   FeedPerformanceTracker._internal();
 
-  late final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  /// Creates a testable instance that does not touch [FirebaseAnalytics].
+  @visibleForTesting
+  FeedPerformanceTracker.testInstance({FirebaseAnalytics? analytics})
+    : _analyticsOverride = analytics;
+
+  // Lazy-init to avoid crashing when Firebase isn't initialized (e.g. tests).
+  FirebaseAnalytics? _analyticsOverride;
+  FirebaseAnalytics? _analyticsInstance;
+  FirebaseAnalytics? get _analytics =>
+      _analyticsOverride ?? (_analyticsInstance ??= _initAnalytics());
+
+  static FirebaseAnalytics? _initAnalytics() {
+    try {
+      return FirebaseAnalytics.instance;
+    } catch (_) {
+      return null;
+    }
+  }
+
   final Map<String, _FeedLoadSession> _activeSessions = {};
+
+  /// Number of active tracking sessions (exposed for testing).
+  int get activeSessionCount => _activeSessions.length;
+
+  /// Clear all active sessions.
+  ///
+  /// Call this when the app resumes from background to prevent stale
+  /// start times from producing wildly inaccurate load-time measurements.
+  void resetAllSessions() {
+    if (_activeSessions.isNotEmpty) {
+      UnifiedLogger.info(
+        'Resetting ${_activeSessions.length} stale feed '
+        'performance sessions on app resume',
+        name: 'FeedPerformance',
+      );
+      _activeSessions.clear();
+    }
+  }
 
   /// Start tracking feed load
   void startFeedLoad(String feedType, {Map<String, dynamic>? params}) {
@@ -35,6 +80,11 @@ class FeedPerformanceTracker {
     final session = _activeSessions[feedType];
     if (session == null) return;
 
+    if (_isStale(session)) {
+      _discardStaleSession(feedType);
+      return;
+    }
+
     session.firstVideosReceivedTime = DateTime.now();
     session.firstBatchCount = count;
 
@@ -47,7 +97,7 @@ class FeedPerformanceTracker {
       name: 'FeedPerformance',
     );
 
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'feed_first_batch_received',
       parameters: {
         'feed_type': feedType,
@@ -63,6 +113,11 @@ class FeedPerformanceTracker {
     final session = _activeSessions[feedType];
     if (session == null) return;
 
+    if (_isStale(session)) {
+      _discardStaleSession(feedType);
+      return;
+    }
+
     session.displayedTime = DateTime.now();
     session.totalVideosDisplayed = totalCount;
 
@@ -75,7 +130,7 @@ class FeedPerformanceTracker {
       name: 'FeedPerformance',
     );
 
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'feed_load_complete',
       parameters: {
         'feed_type': feedType,
@@ -92,7 +147,7 @@ class FeedPerformanceTracker {
 
   /// Track feed refresh action
   void trackFeedRefresh(String feedType, {String? trigger}) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'feed_refresh',
       parameters: {'feed_type': feedType, 'trigger': ?trigger},
     );
@@ -110,7 +165,7 @@ class FeedPerformanceTracker {
     required int newCount,
     required int loadTimeMs,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'feed_load_more',
       parameters: {
         'feed_type': feedType,
@@ -133,7 +188,7 @@ class FeedPerformanceTracker {
     required int totalVideos,
     required double scrollPercentage,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'feed_scroll_depth',
       parameters: {
         'feed_type': feedType,
@@ -152,7 +207,7 @@ class FeedPerformanceTracker {
     required int positionInFeed,
     int? watchDurationMs,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'feed_video_engagement',
       parameters: {
         'feed_type': feedType,
@@ -166,7 +221,7 @@ class FeedPerformanceTracker {
 
   /// Track empty feed state
   void trackEmptyFeed(String feedType, {String? reason}) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'feed_empty',
       parameters: {'feed_type': feedType, 'reason': ?reason},
     );
@@ -183,7 +238,7 @@ class FeedPerformanceTracker {
     required String errorType,
     required String errorMessage,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'feed_error',
       parameters: {
         'feed_type': feedType,
@@ -207,7 +262,7 @@ class FeedPerformanceTracker {
     required String filterType,
     required int resultCount,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'feed_filter',
       parameters: {
         'feed_type': feedType,
@@ -242,7 +297,7 @@ class FeedPerformanceTracker {
     discoverySource, // 'home_feed', 'explore', 'hashtag', 'profile', 'search'
     int? positionInList,
   }) {
-    _analytics.logEvent(
+    _analytics?.logEvent(
       name: 'video_discovered',
       parameters: {
         'video_id': videoId,
@@ -250,6 +305,25 @@ class FeedPerformanceTracker {
         'position': ?positionInList,
       },
     );
+  }
+
+  /// Whether a session's start time is older than [_maxSessionAge].
+  bool _isStale(_FeedLoadSession session) {
+    return DateTime.now().difference(session.startTime) > _maxSessionAge;
+  }
+
+  /// Remove a stale session and log a warning instead of recording garbage
+  /// data.
+  void _discardStaleSession(String feedType) {
+    final session = _activeSessions.remove(feedType);
+    if (session != null) {
+      final age = DateTime.now().difference(session.startTime);
+      UnifiedLogger.warning(
+        'Discarding stale feed session "$feedType" '
+        '(started ${age.inSeconds}s ago)',
+        name: 'FeedPerformance',
+      );
+    }
   }
 }
 

@@ -32,6 +32,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   ContentFilterReason? _selectedReason;
   final TextEditingController _detailsController = TextEditingController();
   bool _blockUser = false;
+  bool _isSubmitting = false;
 
   @override
   Widget build(BuildContext context) => AlertDialog(
@@ -106,11 +107,21 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     ),
     actions: [
       TextButton(onPressed: context.pop, child: const Text('Cancel')),
-      TextButton(onPressed: _handleSubmitReport, child: const Text('Report')),
+      TextButton(
+        onPressed: _isSubmitting ? null : _handleSubmitReport,
+        child: _isSubmitting
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Text('Report'),
+      ),
     ],
   );
 
   void _handleSubmitReport() {
+    if (_isSubmitting) return;
     if (_selectedReason == null) {
       // Show error when no reason selected (Apple requires button to be visible)
       ScaffoldMessenger.of(context).showSnackBar(
@@ -150,6 +161,8 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   Future<void> _submitReport() async {
     if (_selectedReason == null) return;
 
+    setState(() => _isSubmitting = true);
+
     try {
       final reportService = await ref.read(
         contentReportingServiceProvider.future,
@@ -170,18 +183,11 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
         }
 
         if (result.success) {
-          // Block user if checkbox was checked - publish proper Nostr events
+          // Block user if checkbox was checked.
+          // The Kind 1984 published by reportContent() already includes the
+          // author pubkey in the `p` tag, so no second Kind 1984 is needed.
           if (_blockUser) {
-            // 1. Report the USER (creates kind 1984 for user harassment/abuse)
-            await reportService.reportUser(
-              userPubkey: widget.video.pubkey,
-              reason: _selectedReason!,
-              details:
-                  'User blocked for ${_getReasonDisplayName(_selectedReason!)}',
-              relatedEventIds: [widget.video.id],
-            );
-
-            // 2. Add to mute list (publishes kind 10000 NIP-51 mute list)
+            // 1. Add to mute list (publishes kind 10000 NIP-51 mute list)
             final muteService = await ref.read(muteServiceProvider.future);
             await muteService.muteUser(
               widget.video.pubkey,
@@ -189,7 +195,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
                   'Reported and blocked for ${_getReasonDisplayName(_selectedReason!)}',
             );
 
-            // 3. Also add to local blocklist for immediate filtering
+            // 2. Also add to local blocklist for immediate filtering
             final blocklistService = ref.read(contentBlocklistServiceProvider);
             final nostrClient = ref.read(nostrServiceProvider);
             blocklistService.blockUser(
@@ -198,7 +204,7 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             );
 
             Log.info(
-              'User blocked with Nostr events: kind 1984 user report + kind 10000 mute list: ${widget.video.pubkey}',
+              'User blocked: kind 10000 mute list published for ${widget.video.pubkey}',
               name: 'ReportContentDialog',
               category: LogCategory.ui,
             );
@@ -235,6 +241,10 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             backgroundColor: VineTheme.error,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
       }
     }
   }

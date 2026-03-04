@@ -13,9 +13,11 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
+import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/send_to_user_dialog.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Share action button for video overlay.
@@ -96,11 +98,24 @@ class _SimpleShareMenuState extends ConsumerState<_SimpleShareMenu> {
     }
   }
 
+  bool _isUserOwnContent() {
+    try {
+      final authService = ref.read(authServiceProvider);
+      if (!authService.isAuthenticated) return false;
+      final userPubkey = authService.currentPublicKeyHex;
+      if (userPubkey == null) return false;
+      return widget.video.pubkey == userPubkey;
+    } catch (e) {
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final showCuratedLists = ref.watch(
       isFeatureEnabledProvider(FeatureFlag.curatedLists),
     );
+    final isOwnContent = _isUserOwnContent();
 
     return Material(
       color: VineTheme.surfaceBackground,
@@ -117,6 +132,9 @@ class _SimpleShareMenuState extends ConsumerState<_SimpleShareMenu> {
               onAddToList: showCuratedLists ? _handleAddToList : null,
               onAddToBookmarks: _handleAddToBookmarks,
               onMoreOptions: _handleMoreOptions,
+              onSaveOriginal: isOwnContent ? _handleSaveOriginal : null,
+              onSaveWithWatermark: _handleSaveWithWatermark,
+              isOwnContent: isOwnContent,
             ),
           ],
         ),
@@ -174,6 +192,33 @@ class _SimpleShareMenuState extends ConsumerState<_SimpleShareMenu> {
         );
       }
     }
+  }
+
+  Future<void> _handleSaveOriginal() async {
+    _safePop(context);
+    if (!context.mounted) return;
+    await showSaveOriginalSheet(
+      context: context,
+      ref: ref,
+      video: widget.video,
+    );
+  }
+
+  Future<void> _handleSaveWithWatermark() async {
+    _safePop(context);
+
+    final profileService = ref.read(userProfileServiceProvider);
+    final profile = profileService.getCachedProfile(widget.video.pubkey);
+    final username =
+        profile?.bestDisplayName ?? widget.video.authorName ?? 'diVine';
+
+    if (!context.mounted) return;
+    await showWatermarkDownloadSheet(
+      context: context,
+      ref: ref,
+      video: widget.video,
+      username: username,
+    );
   }
 
   Future<void> _handleMoreOptions() async {
@@ -285,13 +330,19 @@ class _ShareMenuItems extends StatelessWidget {
     required this.onShareWithUser,
     required this.onAddToBookmarks,
     required this.onMoreOptions,
+    required this.onSaveWithWatermark,
+    required this.isOwnContent,
     this.onAddToList,
+    this.onSaveOriginal,
   });
 
   final VoidCallback onShareWithUser;
   final VoidCallback? onAddToList;
   final VoidCallback onAddToBookmarks;
   final VoidCallback onMoreOptions;
+  final VoidCallback? onSaveOriginal;
+  final VoidCallback onSaveWithWatermark;
+  final bool isOwnContent;
 
   @override
   Widget build(BuildContext context) {
@@ -322,6 +373,17 @@ class _ShareMenuItems extends StatelessWidget {
           ),
           label: 'Add to bookmarks',
           onTap: onAddToBookmarks,
+        ),
+        if (onSaveOriginal != null)
+          _ShareMenuItem(
+            icon: const Icon(Icons.save_alt, color: VineTheme.whiteText),
+            label: 'Save to Gallery',
+            onTap: onSaveOriginal!,
+          ),
+        _ShareMenuItem(
+          icon: const Icon(Icons.download, color: VineTheme.whiteText),
+          label: isOwnContent ? 'Save with Watermark' : 'Save Video',
+          onTap: onSaveWithWatermark,
         ),
         _ShareMenuItem(
           icon: const DivineIcon(
