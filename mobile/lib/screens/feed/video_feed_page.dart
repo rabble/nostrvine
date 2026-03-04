@@ -328,19 +328,6 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   },
                 ),
                 const FeedModeSwitch(),
-                // Loading more indicator
-                if (state.isLoadingMore)
-                  const Positioned(
-                    bottom: 100,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: VineTheme.vineGreen,
-                        strokeWidth: 2,
-                      ),
-                    ),
-                  ),
               ],
             );
           },
