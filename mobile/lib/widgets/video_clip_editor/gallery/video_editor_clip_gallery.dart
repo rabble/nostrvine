@@ -196,18 +196,22 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
       contentScale: contentScale,
     );
 
-    // Check delete zone and exit early for horizontal processing
-    if (_updateDeleteZoneState(event, constraints)) {
-      _resetDragOffsetIfNeeded();
-      return;
-    }
-
-    // Update visual drag offset (for rotation effect)
+    // Always track X — clip follows finger horizontally even in delete zone.
     _reorderController.updateVisualDragOffset(
       event.delta.dx,
       constraints.maxWidth,
       contentScale: contentScale,
     );
+
+    // Check delete zone — block only page-switching reorder logic.
+    if (_updateDeleteZoneState(event, constraints)) {
+      // Only reset X offset when directly over the delete button,
+      // not when simply dragging below the clip area.
+      if (_isPointerOverDeleteButton(event.position)) {
+        _resetDragOffsetIfNeeded();
+      }
+      return;
+    }
 
     // Accumulate drag offset for page switching
     _reorderController.addDragOffset(event.delta.dx);
