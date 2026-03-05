@@ -183,7 +183,7 @@ void main() {
 
       // Verify client attribution tag
       final clientTag = tags.firstWhere((tag) => tag[0] == 'client');
-      expect(clientTag[1], 'Divine');
+      expect(clientTag[1], 'diVine');
 
       // Verify video references as 'e' tags
       final eTags = tags.where((tag) => tag[0] == 'e').toList();
