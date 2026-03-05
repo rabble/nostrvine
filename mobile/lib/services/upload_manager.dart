@@ -801,7 +801,7 @@ class UploadManager {
         category: LogCategory.video,
       );
 
-      // Check if custom server is enabled, otherwise use default diVine server
+      // Check if custom server is enabled, otherwise use default Divine server
       final isCustomServerEnabled = await _blossomService.isBlossomEnabled();
       String blossomServer;
 
@@ -821,7 +821,7 @@ class UploadManager {
       } else {
         blossomServer = BlossomUploadService.defaultBlossomServer;
         Log.info(
-          '🌸 Uploading to default diVine Blossom server: $blossomServer',
+          '🌸 Uploading to default Divine Blossom server: $blossomServer',
           name: 'UploadManager',
           category: LogCategory.video,
         );

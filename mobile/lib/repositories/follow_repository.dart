@@ -273,7 +273,7 @@ class FollowRepository {
   ///
   /// Runs REST API, connected relay, and indexer relay queries in parallel
   /// and merges results (union of pubkeys). The REST API (Funnelcake) only
-  /// indexes kind 3 events seen on the divine relay, so follower lists are
+  /// indexes kind 3 events seen on the Divine relay, so follower lists are
   /// often incomplete. Connected relays may timeout. Indexer relays
   /// (relay.damus.io, purplepag.es) maintain broad kind 3 indexes and
   /// provide the most complete follower lists.

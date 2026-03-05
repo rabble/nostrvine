@@ -103,7 +103,7 @@ class VideoFilterBuilder {
   /// Build a filter with optional server-side sorting
   ///
   /// Returns:
-  /// - DivineFilter if relay supports divine extensions and sortBy is specified
+  /// - DivineFilter if relay supports Divine extensions and sortBy is specified
   /// - Standard Filter otherwise
   Future<Filter> buildFilter({
     required Filter baseFilter,
@@ -121,7 +121,7 @@ class VideoFilterBuilder {
     // If no sorting requested, return standard filter
     if (sortBy == null && intFilters == null && cursor == null) {
       UnifiedLogger.debug(
-        '⏭️  VideoFilterBuilder: No divine extensions requested, returning base filter',
+        '⏭️  VideoFilterBuilder: No Divine extensions requested, returning base filter',
         name: 'VideoFilterBuilder',
       );
       return baseFilter;
@@ -145,7 +145,7 @@ class VideoFilterBuilder {
       // If relay doesn't support divine extensions, fall back to standard filter
       if (!capabilities.hasDivineExtensions) {
         UnifiedLogger.debug(
-          'Relay $relayUrl does not support divine extensions, using standard filter',
+          'Relay $relayUrl does not support Divine extensions, using standard filter',
           name: 'VideoFilterBuilder',
         );
         return baseFilter;

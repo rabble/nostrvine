@@ -175,7 +175,7 @@ co.openvine.app:
 ### iOS (requires physical device)
 
 1. Send yourself an email or message with: `https://divine.video/video/test123`
-2. Long-press the link - should see "Open in divine" option
+2. Long-press the link - should see "Open in Divine" option
 3. Tap the link - should open directly in the app
 
 ### Android

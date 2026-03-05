@@ -510,7 +510,7 @@ Future<void> _startOpenVineApp() async {
   await _initializeCoreServices(container);
   StartupPerformanceService.instance.completePhase('core_services');
 
-  Log.info('divine starting...', name: 'Main');
+  Log.info('Divine starting...', name: 'Main');
   Log.info('Log level: ${UnifiedLogger.currentLevel.name}', name: 'Main');
   // Configure audio session for media playback
   // This ensures audio plays even when iOS mute switch is on
@@ -1029,7 +1029,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // On iOS/macOS/Windows, use PopScope. On Android, platform channel handles it
     final app = (!kIsWeb && io.Platform.isAndroid)
         ? MaterialApp.router(
-            title: 'divine',
+            title: 'Divine',
             debugShowCheckedModeBanner: false,
             theme: VineTheme.theme,
             routerConfig: router,
@@ -1041,7 +1041,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               await handleBackNavigation(router, ref);
             },
             child: MaterialApp.router(
-              title: 'divine',
+              title: 'Divine',
               debugShowCheckedModeBanner: false,
               theme: VineTheme.theme,
               routerConfig: router,

@@ -136,7 +136,7 @@ typedef PreFetchFollowingCallback = Future<void> Function(String pubkeyHex);
 /// blocking app startup.
 typedef UserRelaysDiscoveredCallback = void Function(List<String> relayUrls);
 
-/// Main authentication service for the divine app
+/// Main authentication service for the Divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
 /// Riverpod
 class AuthService implements BackgroundAwareService {
@@ -235,8 +235,8 @@ class AuthService implements BackgroundAwareService {
   /// Get the current authentication source
   AuthenticationSource get authenticationSource => _authSource;
 
-  /// Check if user has registered with divine (email/password)
-  /// Returns true if authenticated via divine OAuth, false for anonymous/imported keys
+  /// Check if user has registered with Divine (email/password)
+  /// Returns true if authenticated via Divine OAuth, false for anonymous/imported keys
   bool get isRegistered => _authSource == AuthenticationSource.divineOAuth;
 
   /// Check if user is using an anonymous auto-generated identity
@@ -1974,7 +1974,7 @@ class AuthService implements BackgroundAwareService {
     // Create the session
     _nostrConnectSession = NostrConnectSession(
       relays: relays,
-      appName: 'diVine',
+      appName: 'Divine',
       appUrl: 'https://divine.video',
       appIcon: 'https://divine.video/icon.png',
       callback: 'divine://nostrconnect',
@@ -2252,7 +2252,7 @@ class AuthService implements BackgroundAwareService {
       _currentProfile = UserProfile(
         npub: NostrKeyUtils.encodePubKey(publicKeyHex),
         publicKeyHex: publicKeyHex,
-        displayName: 'diVine User',
+        displayName: 'Divine User',
       );
 
       final prefs = await SharedPreferences.getInstance();
@@ -2615,7 +2615,7 @@ class AuthService implements BackgroundAwareService {
 
     try {
       // 1. Prepare event metadata and tags
-      // CRITICAL: divine relays require specific tags for storage
+      // CRITICAL: Divine relays require specific tags for storage
       final eventTags = List<List<String>>.from(tags ?? []);
 
       // CRITICAL: Kind 0 events require expiration tag FIRST (matching Python
@@ -2890,7 +2890,7 @@ class AuthService implements BackgroundAwareService {
     _authSource = source;
 
     // Clear any stale remote signers that don't match the new auth source.
-    // This prevents a Keycast RPC signer from a previous divine OAuth session
+    // This prevents a Keycast RPC signer from a previous Divine OAuth session
     // from being used when signing events for an anonymous/imported-key account.
     if (source != AuthenticationSource.divineOAuth) {
       if (_keycastSigner != null) {
@@ -3149,7 +3149,7 @@ class AuthService implements BackgroundAwareService {
       _userRelays = [];
 
       Log.error(
-        '❌ Relay discovery failed: $e - falling back to diVine relay only',
+        '❌ Relay discovery failed: $e - falling back to Divine relay only',
         name: 'AuthService',
         category: LogCategory.auth,
       );

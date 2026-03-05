@@ -46,9 +46,11 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     required ProfileRepository profileRepository,
     required UserProfileService userProfileService,
     required bool hasExistingProfile,
+    String? currentUserPubkey,
   }) : _profileRepository = profileRepository,
        _userProfileService = userProfileService,
        _hasExistingProfile = hasExistingProfile,
+       _currentUserPubkey = currentUserPubkey,
        super(const ProfileEditorState()) {
     on<InitialUsernameSet>(_onInitialUsernameSet);
     on<ProfileSaved>(_onProfileSaved);
@@ -65,6 +67,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   final ProfileRepository _profileRepository;
   final UserProfileService _userProfileService;
   final bool _hasExistingProfile;
+  final String? _currentUserPubkey;
 
   void _onInitialUsernameSet(
     InitialUsernameSet event,
@@ -181,6 +184,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     final result = await _profileRepository.checkUsernameAvailability(
       username: username,
+      currentUserPubkey: _currentUserPubkey,
     );
 
     switch (result) {

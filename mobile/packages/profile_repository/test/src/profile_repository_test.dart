@@ -30,6 +30,8 @@ void main() {
 
     const testPubkey =
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+    const otherPubkey =
+        'b1b2c3d4e5f6b1b2c3d4e5f6b1b2c3d4e5f6b1b2c3d4e5f6b1b2c3d4e5f6b1b2';
     const testEventId =
         'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2';
 
@@ -1696,6 +1698,102 @@ void main() {
         );
         expect(result, isA<UsernameInvalidFormat>());
       });
+
+      test(
+        'returns UsernameAvailable when name is taken but pubkey matches '
+        'current user (admin-assigned)',
+        () async {
+          // Simulate the name-server returning pubkey for an active name
+          when(
+            () => mockHttpClient.get(
+              Uri.parse(
+                'https://names.divine.video/api/username/check/vipuser',
+              ),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'ok': true,
+                'available': false,
+                'status': 'active',
+                'pubkey': testPubkey,
+                'reason': 'Username is already taken',
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'vipuser',
+            currentUserPubkey: testPubkey,
+          );
+
+          expect(result, equals(const UsernameAvailable()));
+        },
+      );
+
+      test(
+        'returns UsernameTaken when name is taken and pubkey does not match '
+        'current user',
+        () async {
+          when(
+            () => mockHttpClient.get(
+              Uri.parse(
+                'https://names.divine.video/api/username/check/vipuser',
+              ),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'ok': true,
+                'available': false,
+                'status': 'active',
+                'pubkey': otherPubkey,
+                'reason': 'Username is already taken',
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'vipuser',
+            currentUserPubkey: testPubkey,
+          );
+
+          expect(result, equals(const UsernameTaken()));
+        },
+      );
+
+      test(
+        'returns UsernameTaken when name is taken and no currentUserPubkey '
+        'provided (backwards compatible)',
+        () async {
+          when(
+            () => mockHttpClient.get(
+              Uri.parse(
+                'https://names.divine.video/api/username/check/vipuser',
+              ),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'ok': true,
+                'available': false,
+                'status': 'active',
+                'pubkey': testPubkey,
+                'reason': 'Username is already taken',
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'vipuser',
+          );
+
+          expect(result, equals(const UsernameTaken()));
+        },
+      );
     });
 
     group('UsernameAvailabilityResult', () {

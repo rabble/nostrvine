@@ -450,7 +450,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         icon: Icons.download,
         title: _isUserOwnContent() ? 'Save with Watermark' : 'Save Video',
         subtitle: _isUserOwnContent()
-            ? 'Download with diVine watermark'
+            ? 'Download with Divine watermark'
             : 'Save video to camera roll',
         onTap: () => _saveWithWatermark(context),
       ),
@@ -820,7 +820,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     }
   }
 
-  /// Save video with diVine watermark overlay
+  /// Save video with Divine watermark overlay
   Future<void> _saveOriginal(BuildContext ctx) async {
     // Close the share menu first
     _safePop(ctx);
@@ -838,7 +838,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     final profileService = ref.read(userProfileServiceProvider);
     final profile = profileService.getCachedProfile(widget.video.pubkey);
     final username =
-        profile?.bestDisplayName ?? widget.video.authorName ?? 'diVine';
+        profile?.bestDisplayName ?? widget.video.authorName ?? 'Divine';
 
     if (!ctx.mounted) return;
 

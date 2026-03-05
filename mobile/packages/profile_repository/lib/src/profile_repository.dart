@@ -214,6 +214,7 @@ class ProfileRepository {
   ///   an unexpected response
   Future<UsernameAvailabilityResult> checkUsernameAvailability({
     required String username,
+    String? currentUserPubkey,
   }) async {
     final normalizedUsername = username.toLowerCase().trim();
 
@@ -275,6 +276,15 @@ class ProfileRepository {
             );
           }
           return const UsernameAvailable();
+        }
+
+        // Name is taken, but check if it's assigned to the current user
+        // (e.g. admin-reserved name assigned to this pubkey).
+        if (currentUserPubkey != null) {
+          final ownerPubkey = data['pubkey'] as String?;
+          if (ownerPubkey != null && ownerPubkey == currentUserPubkey) {
+            return const UsernameAvailable();
+          }
         }
 
         // Server told us it's not available — return appropriate type

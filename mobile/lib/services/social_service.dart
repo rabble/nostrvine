@@ -197,7 +197,7 @@ class SocialService {
   ///
   /// Runs REST API and WebSocket queries in parallel, then uses the
   /// higher count from each source. The REST API (Funnelcake) only
-  /// indexes kind 3 events seen on the divine relay, so follower counts
+  /// indexes kind 3 events seen on the Divine relay, so follower counts
   /// are often undercounted. WebSocket queries reach all connected relays
   /// for broader coverage. Both queries use short timeouts (3s) to keep
   /// profile loading fast.

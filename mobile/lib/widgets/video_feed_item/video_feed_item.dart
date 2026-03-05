@@ -1462,7 +1462,7 @@ class VideoOverlayActions extends ConsumerWidget {
                     final archivedLoops = video.originalLoops ?? 0;
                     final liveViews =
                         int.tryParse(video.rawTags['views'] ?? '') ?? 0;
-                    // Always sum archived (original Vine) and live (new diVine)
+                    // Always sum archived (original Vine) and live (new Divine)
                     // loops so migrated videos show their full combined count.
                     final loopCount = archivedLoops + liveViews;
                     final hasLoopMetadata =

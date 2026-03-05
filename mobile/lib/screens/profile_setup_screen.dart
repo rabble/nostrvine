@@ -62,6 +62,7 @@ class ProfileSetupScreen extends ConsumerWidget {
             profileRepository: profileRepository,
             userProfileService: userProfileService,
             hasExistingProfile: authService.hasExistingProfile,
+            currentUserPubkey: pubkey,
           ),
         ),
         BlocProvider<MyProfileBloc>(

@@ -105,7 +105,7 @@ class UserListService {
     UserList(
       id: 'divine_team',
       name: 'Divine Team',
-      description: 'Curated content from the diVine team',
+      description: 'Curated content from the Divine team',
       pubkeys: AppConstants.divineTeamPubkeys,
       createdAt: DateTime(2024), // Fixed date for default lists
       updatedAt: DateTime(2024),
