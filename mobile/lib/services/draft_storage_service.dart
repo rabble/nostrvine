@@ -1,5 +1,5 @@
-// ABOUTME: Service for persisting vine drafts using shared_preferences
-// ABOUTME: Handles save, load, delete, and clear operations with JSON serialization
+// ABOUTME: Service for persisting vine drafts using Drift database
+// ABOUTME: Handles save, load, delete, clear, and migration from SharedPreferences
 
 import 'dart:convert';
 import 'dart:io';
@@ -8,6 +8,7 @@ import 'package:db_client/db_client.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -320,13 +321,18 @@ class DraftStorageService {
       }
 
       return drafts;
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Failed to load drafts: $e',
         name: 'DraftStorageService',
         category: LogCategory.video,
       );
-      return [];
+      await CrashReportingService.instance.recordError(
+        e,
+        stackTrace,
+        reason: 'Failed to load drafts from database',
+      );
+      rethrow;
     }
   }
 

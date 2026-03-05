@@ -92,7 +92,17 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// Called on app startup to check for drafts with [VideoEditorConstants.publishPrefixId]
   /// prefix and restart their upload process.
   Future<void> resumePendingPublishes(BuildContext context) async {
-    final drafts = await _draftService.getAllDrafts();
+    final List<DivineVideoDraft> drafts;
+    try {
+      drafts = await _draftService.getAllDrafts();
+    } catch (e) {
+      Log.error(
+        '❌ Failed to load drafts for pending publish resume: $e',
+        name: 'VideoPublishNotifier',
+        category: LogCategory.video,
+      );
+      return;
+    }
     if (!context.mounted) return;
 
     final pendingDrafts = drafts.where(

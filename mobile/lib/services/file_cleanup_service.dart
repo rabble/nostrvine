@@ -110,19 +110,6 @@ class FileCleanupService {
     );
   }
 
-  /// Deletes files for a SavedClip if not referenced
-  static Future<void> deleteSavedClipFiles(
-    DivineVideoClip clip, {
-    required DraftsDao draftsDao,
-    required ClipsDao clipsDao,
-  }) async {
-    await deleteFilesIfUnreferenced(
-      [clip.video.file?.path, clip.thumbnailPath],
-      draftsDao: draftsDao,
-      clipsDao: clipsDao,
-    );
-  }
-
   /// Deletes files for multiple SavedClips if not referenced
   static Future<void> deleteSavedClipsFiles(
     List<DivineVideoClip> clips, {

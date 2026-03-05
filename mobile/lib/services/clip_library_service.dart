@@ -155,7 +155,7 @@ class ClipLibraryService {
     await _clipsDao.deleteClip(id);
 
     // Delete files only if not referenced by drafts
-    await FileCleanupService.deleteSavedClipFiles(
+    await FileCleanupService.deleteRecordingClipFiles(
       clip,
       draftsDao: _draftsDao,
       clipsDao: _clipsDao,
