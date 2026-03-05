@@ -348,8 +348,9 @@ void main() {
         ),
       ).called(1);
 
-      // Verify success snackbar
+      // Verify success snackbar with View Chat action
       expect(find.text('Post shared with Alice'), findsOneWidget);
+      expect(find.text('View Chat'), findsOneWidget);
     });
 
     testWidgets('sent contact shows Sent label', (tester) async {
