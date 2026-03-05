@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart';
 
-/// Factory function that creates an [AudioPlayer] instance.
+import 'package:sound_service/src/simple_audio_player.dart';
+
+/// Factory function that creates a [SimpleAudioPlayer] instance.
 ///
-/// Defaults to [AudioPlayer.new]. Override in tests to inject mocks.
-typedef AudioPlayerFactory = AudioPlayer Function();
+/// Defaults to [JustAudioSimplePlayer.new]. Override in tests to
+/// inject mocks.
+typedef AudioPlayerFactory = SimpleAudioPlayer Function();
 
 /// Service for playing countdown beep sounds before recording starts.
 ///
@@ -35,7 +37,7 @@ class CountdownSoundService {
   ///
   /// An optional [audioPlayerFactory] can be provided for testing.
   CountdownSoundService({AudioPlayerFactory? audioPlayerFactory})
-    : _audioPlayerFactory = audioPlayerFactory ?? AudioPlayer.new;
+    : _audioPlayerFactory = audioPlayerFactory ?? JustAudioSimplePlayer.new;
 
   /// Duration of the short countdown tick beep.
   static const shortBeepDuration = Duration(milliseconds: 15);
@@ -45,8 +47,9 @@ class CountdownSoundService {
 
   /// Buffer added after long beep playback to ensure audio fully completes.
   ///
-  /// On iOS, [AudioPlayer.play] may return slightly before the audio hardware
-  /// finishes output, which can cause the beep to bleed into recorded video.
+  /// On iOS, [SimpleAudioPlayer.play] may return slightly before the audio
+  /// hardware finishes output, which can cause the beep to bleed into recorded
+  /// video.
   static const postPlaybackBuffer = Duration(milliseconds: 150);
 
   /// Default asset path for the short countdown beep.
@@ -58,8 +61,8 @@ class CountdownSoundService {
   static const longBeepAsset = 'assets/sounds/countdown_beep_long.wav';
 
   final AudioPlayerFactory _audioPlayerFactory;
-  AudioPlayer? _shortBeepPlayer;
-  AudioPlayer? _longBeepPlayer;
+  SimpleAudioPlayer? _shortBeepPlayer;
+  SimpleAudioPlayer? _longBeepPlayer;
   bool _isDisposed = false;
 
   /// Pre-loads both countdown sound assets for instant playback.
