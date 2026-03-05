@@ -9,7 +9,6 @@ void main() {
       bool error = false,
       String? actionLabel,
       VoidCallback? onActionPressed,
-      VoidCallback? onClose,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
@@ -19,7 +18,6 @@ void main() {
             error: error,
             actionLabel: actionLabel,
             onActionPressed: onActionPressed,
-            onClose: onClose,
           ),
         ),
       );
@@ -80,7 +78,7 @@ void main() {
     ) async {
       await tester.pumpWidget(buildTestWidget(label: 'Test message'));
 
-      expect(find.byType(TextButton), findsNothing);
+      expect(find.text('Retry'), findsNothing);
     });
 
     testWidgets('does not render action button when onActionPressed is null', (
@@ -90,25 +88,21 @@ void main() {
         buildTestWidget(label: 'Test message', actionLabel: 'Retry'),
       );
 
-      expect(find.byType(TextButton), findsNothing);
+      expect(find.text('Retry'), findsNothing);
     });
 
-    testWidgets(
-      'renders action button when both actionLabel and '
-      'onActionPressed are provided',
-      (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            label: 'Test message',
-            actionLabel: 'Retry',
-            onActionPressed: () {},
-          ),
-        );
+    testWidgets('renders action button when both actionLabel and '
+        'onActionPressed are provided', (tester) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          label: 'Test message',
+          actionLabel: 'Retry',
+          onActionPressed: () {},
+        ),
+      );
 
-        expect(find.byType(TextButton), findsOneWidget);
-        expect(find.text('Retry'), findsOneWidget);
-      },
-    );
+      expect(find.text('Retry'), findsOneWidget);
+    });
 
     testWidgets('calls onActionPressed when action button is tapped', (
       tester,
@@ -122,7 +116,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(TextButton));
+      await tester.tap(find.text('Retry'));
       expect(actionPressed, isTrue);
     });
 
@@ -137,9 +131,8 @@ void main() {
         ),
       );
 
-      final textButton = tester.widget<TextButton>(find.byType(TextButton));
-      final textWidget = textButton.child as Text?;
-      expect(textWidget?.style?.color, VineTheme.vineGreen);
+      final actionText = tester.widget<Text>(find.text('Retry'));
+      expect(actionText.style?.color, VineTheme.vineGreen);
     });
 
     testWidgets('action button has red color in error state', (tester) async {
@@ -152,9 +145,8 @@ void main() {
         ),
       );
 
-      final textButton = tester.widget<TextButton>(find.byType(TextButton));
-      final textWidget = textButton.child as Text?;
-      expect(textWidget?.style?.color, VineTheme.likeRed);
+      final actionText = tester.widget<Text>(find.text('Retry'));
+      expect(actionText.style?.color, VineTheme.likeRed);
     });
 
     testWidgets('has correct padding', (tester) async {
@@ -172,87 +164,6 @@ void main() {
 
       final row = tester.widget<Row>(find.byType(Row));
       expect(row.mainAxisAlignment, MainAxisAlignment.spaceBetween);
-    });
-
-    group('close button', () {
-      testWidgets('does not render when onClose is null', (tester) async {
-        await tester.pumpWidget(buildTestWidget(label: 'Test message'));
-
-        expect(find.byType(DivineIcon), findsNothing);
-      });
-
-      testWidgets('renders when onClose is provided', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(label: 'Test message', onClose: () {}),
-        );
-
-        expect(find.byType(DivineIcon), findsOneWidget);
-      });
-
-      testWidgets('calls onClose when tapped', (tester) async {
-        var closeTapped = false;
-        await tester.pumpWidget(
-          buildTestWidget(
-            label: 'Test message',
-            onClose: () => closeTapped = true,
-          ),
-        );
-
-        await tester.tap(find.byType(GestureDetector).last);
-        expect(closeTapped, isTrue);
-      });
-
-      testWidgets('renders with white color in non-error state', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildTestWidget(label: 'Test message', onClose: () {}),
-        );
-
-        final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
-        expect(icon.color, VineTheme.whiteText);
-      });
-
-      testWidgets('renders with red color in error state', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            label: 'Error',
-            error: true,
-            onClose: () {},
-          ),
-        );
-
-        final icon = tester.widget<DivineIcon>(find.byType(DivineIcon));
-        expect(icon.color, VineTheme.likeRed);
-      });
-
-      testWidgets('has close semantic label', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(label: 'Test message', onClose: () {}),
-        );
-
-        final semantics = tester.widget<Semantics>(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics && widget.properties.label == 'Close',
-          ),
-        );
-        expect(semantics.properties.button, isTrue);
-      });
-
-      testWidgets('renders alongside action button', (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            label: 'Test message',
-            actionLabel: 'Retry',
-            onActionPressed: () {},
-            onClose: () {},
-          ),
-        );
-
-        expect(find.byType(TextButton), findsOneWidget);
-        expect(find.byType(DivineIcon), findsOneWidget);
-      });
     });
   });
 }
