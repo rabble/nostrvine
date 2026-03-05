@@ -137,7 +137,7 @@ final class VideoEventsProvider
   VideoEvents create() => VideoEvents();
 }
 
-String _$videoEventsHash() => r'4b34c2274dcb85f3707e9fd94f0c34fcc8ef9a99';
+String _$videoEventsHash() => r'e746f5256ff7a0115b1d83d241935df00ad29bbd';
 
 /// Stream provider for video events from Nostr
 
