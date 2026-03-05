@@ -1161,7 +1161,7 @@ class VideoEventService extends ChangeNotifier {
       // Use NIP-50 search or VideoFilterBuilder for server-side sorting
       Filter videoFilter = baseVideoFilter;
 
-      // NIP-50 search takes priority over divine extensions
+      // NIP-50 search takes priority over Divine extensions
       if (nip50Sort != null && _videoFilterBuilder != null) {
         videoFilter = _videoFilterBuilder.buildNIP50Filter(
           baseFilter: baseVideoFilter,
@@ -4943,7 +4943,7 @@ class VideoEventService extends ChangeNotifier {
         foundAny = true;
 
         // Update replaceable tracking map
-        // Use NIP71VideoKinds.addressableShortVideo since that's what diVine uses
+        // Use NIP71VideoKinds.addressableShortVideo since that's what Divine uses
         final replaceKey =
             '$subscriptionType:${NIP71VideoKinds.addressableShortVideo}:${mergedVideo.pubkey}:${mergedVideo.stableId}';
         _replaceableVideoEvents[replaceKey] = (

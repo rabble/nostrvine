@@ -590,7 +590,7 @@ class BookmarkService with NostrListServiceMixin {
 
       // Create NIP-51 kind 10003 tags
       final tags = <List<String>>[
-        ['client', 'diVine'],
+        ['client', 'Divine'],
       ];
 
       // Add bookmark items as tags
@@ -600,7 +600,7 @@ class BookmarkService with NostrListServiceMixin {
 
       final event = await _authService.createAndSignEvent(
         kind: 10003, // NIP-51 global bookmarks
-        content: 'divine global bookmarks',
+        content: 'Divine global bookmarks',
         tags: tags,
       );
 
@@ -639,7 +639,7 @@ class BookmarkService with NostrListServiceMixin {
       final tags = <List<String>>[
         ['d', set.id], // Identifier for replaceable event
         ['title', set.name],
-        ['client', 'diVine'],
+        ['client', 'Divine'],
       ];
 
       // Add description if present

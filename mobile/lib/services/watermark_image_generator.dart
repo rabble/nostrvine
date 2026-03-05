@@ -1,5 +1,5 @@
 // ABOUTME: Generates transparent PNG watermark overlays for video exports
-// ABOUTME: Draws the diVine wordmark + @username.divine.video at bottom-right
+// ABOUTME: Draws the Divine wordmark + @username.divine.video at bottom-right
 
 import 'dart:ui' as ui;
 
@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 
 /// Generates a transparent PNG watermark overlay for video exports.
 ///
-/// The watermark includes the diVine wordmark and `@username.divine.video`
+/// The watermark includes the Divine wordmark and `@username.divine.video`
 /// positioned in the bottom-right corner at 60% opacity.
 class WatermarkImageGenerator {
   WatermarkImageGenerator._();
@@ -19,7 +19,7 @@ class WatermarkImageGenerator {
   /// Generates a transparent PNG watermark image at the given resolution.
   ///
   /// The watermark includes:
-  /// - diVine wordmark (from assets) in bottom-right corner
+  /// - Divine wordmark (from assets) in bottom-right corner
   /// - `@username.divine.video` text below the wordmark
   /// All at ~60% opacity, sized to ~15% of video width.
   ///
@@ -113,7 +113,7 @@ class WatermarkImageGenerator {
     }
   }
 
-  /// Loads the diVine wordmark from app assets.
+  /// Loads the Divine wordmark from app assets.
   static Future<ui.Image> _loadWordmarkImage() async {
     try {
       final data = await rootBundle.load(_wordmarkAssetPath);

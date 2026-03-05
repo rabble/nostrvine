@@ -5,5 +5,5 @@ appId: co.openvine.app
 - assertVisible: Password
 - assertVisible: Sign In
 - assertVisible: Forgot password?
-- assertVisible: "New to diVine? "
+- assertVisible: "New to Divine? "
 - assertVisible: Create account

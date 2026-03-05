@@ -210,7 +210,7 @@ class _SimpleShareMenuState extends ConsumerState<_SimpleShareMenu> {
     final profileService = ref.read(userProfileServiceProvider);
     final profile = profileService.getCachedProfile(widget.video.pubkey);
     final username =
-        profile?.bestDisplayName ?? widget.video.authorName ?? 'diVine';
+        profile?.bestDisplayName ?? widget.video.authorName ?? 'Divine';
 
     if (!context.mounted) return;
     await showWatermarkDownloadSheet(

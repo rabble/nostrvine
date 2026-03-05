@@ -99,7 +99,7 @@ class ContentReportingService {
   final AuthService _authService;
   final SharedPreferences _prefs;
 
-  // divine moderation relay for reports
+  // Divine moderation relay for reports
   static const String moderationRelayUrl =
       'wss://relay.divine.video'; // Divine moderation relay
   static const String reportsStorageKey = 'content_reports_history';
@@ -357,7 +357,7 @@ class ContentReportingService {
         ['e', eventId], // Event being reported
         ['p', authorPubkey], // Author of reported content
         ['report', reason.name], // Report reason as per NIP-56
-        ['client', 'diVine'], // Reporting client
+        ['client', 'Divine'], // Reporting client
       ];
 
       // Add hashtags as 't' tags
@@ -436,7 +436,7 @@ class ContentReportingService {
     }
 
     buffer.writeln(
-      'Reported via divine for community safety and Apple App Store compliance',
+      'Reported via Divine for community safety and Apple App Store compliance',
     );
     return buffer.toString();
   }
@@ -484,7 +484,7 @@ class ContentReportingService {
 
       description.writeln();
       description.writeln('---');
-      description.writeln('Reported via diVine mobile app');
+      description.writeln('Reported via Divine mobile app');
       description.writeln('NIP-56 Nostr event created: $eventId');
 
       // Create Zendesk ticket silently

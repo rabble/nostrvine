@@ -1,4 +1,4 @@
-// ABOUTME: HTTP API service for communicating with the divine backend
+// ABOUTME: HTTP API service for communicating with the Divine backend
 import 'dart:async';
 import 'dart:convert';
 

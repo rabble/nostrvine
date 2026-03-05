@@ -271,7 +271,7 @@ class ContentDeletionService {
           'k',
           originalEventKind.toString(),
         ], // Kind of event being deleted (NIP-09)
-        ['client', 'diVine'], // Deleting client
+        ['client', 'Divine'], // Deleting client
       ];
 
       // Add additional context as tags if provided
@@ -334,7 +334,7 @@ class ContentDeletionService {
     }
 
     buffer.writeln(
-      'Content deleted by author via divine for Apple App Store compliance',
+      'Content deleted by author via Divine for Apple App Store compliance',
     );
     return buffer.toString();
   }

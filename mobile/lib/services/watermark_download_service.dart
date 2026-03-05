@@ -63,7 +63,7 @@ class WatermarkDownloadPermissionDenied extends WatermarkDownloadResult {
   const WatermarkDownloadPermissionDenied();
 }
 
-/// Service that downloads a video, applies a diVine watermark, and saves
+/// Service that downloads a video, applies a Divine watermark, and saves
 /// the result to the device gallery.
 class WatermarkDownloadService {
   /// Creates a [WatermarkDownloadService] with required dependencies.

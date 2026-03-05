@@ -343,12 +343,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
       // Create share text with divine.video URL format
       final shareText =
-          'Check out $displayName on divine!\n\n'
+          'Check out $displayName on Divine!\n\n'
           'https://divine.video/profile/$npub';
 
       // Use share_plus to show native share sheet
       final result = await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: '$displayName on divine'),
+        ShareParams(text: shareText, subject: '$displayName on Divine'),
       );
 
       if (result.status == ShareResultStatus.success) {
@@ -481,11 +481,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Row(
               children: [
-                const Icon(
-                  Icons.code,
-                  size: 24,
-                  color: VineTheme.whiteText,
-                ),
+                const Icon(Icons.code, size: 24, color: VineTheme.whiteText),
                 const SizedBox(width: 16),
                 Text('Get embed code', style: VineTheme.titleMediumFont()),
               ],

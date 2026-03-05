@@ -1,13 +1,13 @@
 # App Encryption Export Compliance Documentation
 
-**App Name**: diVine (OpenVine)
+**App Name**: Divine (OpenVine)
 **Bundle Identifier**: com.openvine.divine
 **Date**: November 12, 2025
 **Document Purpose**: Apple App Store encryption export compliance declaration
 
 ## Executive Summary
 
-**diVine uses encryption: YES**
+**Divine uses encryption: YES**
 **Uses non-exempt encryption: NO**
 **ITSAppUsesNonExemptEncryption value: `false`**
 
@@ -326,7 +326,7 @@ France may require notification to ANSSI for:
 
 ## Conclusion
 
-**diVine (OpenVine)** uses encryption exclusively for:
+**Divine (OpenVine)** uses encryption exclusively for:
 1. Secure network communications (HTTPS/TLS)
 2. User authentication and event signing (secp256k1)
 3. Optional end-to-end encrypted messaging (NIP-44, NIP-59)

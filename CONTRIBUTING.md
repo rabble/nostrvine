@@ -1,6 +1,6 @@
-# Contributing to diVine
+# Contributing to Divine
 
-Thank you for your interest in contributing to diVine! This guide will help you get set up and building the app.
+Thank you for your interest in contributing to Divine! This guide will help you get set up and building the app.
 
 ## Table of Contents
 
@@ -50,7 +50,7 @@ flutter pub get
 
 ### Development Builds
 
-diVine supports multiple platforms. **macOS desktop is the primary development platform** for fast iteration.
+Divine supports multiple platforms. **macOS desktop is the primary development platform** for fast iteration.
 
 #### macOS Desktop (Primary Development Platform)
 ```bash
@@ -132,7 +132,7 @@ flutter build apk --release         # For direct distribution
 
 ### Using the Embedded Relay
 
-The embedded relay architecture is a key part of diVine's design:
+The embedded relay architecture is a key part of Divine's design:
 
 ```dart
 // Import the embedded relay package
@@ -185,7 +185,7 @@ dart format lib/ test/                    # Format code
 
 ## Testing
 
-diVine follows **strict Test-Driven Development (TDD)** principles:
+Divine follows **strict Test-Driven Development (TDD)** principles:
 
 ### Testing Requirements
 
@@ -384,4 +384,4 @@ flutter build --help        # Show all build options
 
 ## License
 
-By contributing to diVine, you agree that your contributions will be licensed under the Mozilla Public License 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
+By contributing to Divine, you agree that your contributions will be licensed under the Mozilla Public License 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.

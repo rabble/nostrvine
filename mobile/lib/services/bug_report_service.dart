@@ -393,7 +393,7 @@ class BugReportService {
         recipientPubkey: recipientPubkey,
         content: messageContent,
         additionalTags: [
-          ['client', 'diVine_bug_report'],
+          ['client', 'Divine_bug_report'],
           ['report_id', data.reportId],
           ['app_version', data.appVersion],
           if (bugReportUrl != null) ['bug_report_url', bugReportUrl],

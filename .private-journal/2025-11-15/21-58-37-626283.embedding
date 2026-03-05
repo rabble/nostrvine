@@ -385,7 +385,7 @@
     0.06558036804199219,
     0.09235385060310364
   ],
-  "text": "Created build_dmg.sh script for macOS distribution builds:\n- Automatically builds Flutter macOS release app\n- Signs with Developer ID Application certificate\n- Creates compressed DMG with Applications symlink\n- Signs final DMG for distribution\n- Outputs ~77MB DMG file for direct download distribution\n\nScript location: mobile/build_dmg.sh\nOutput: mobile/build/diVine-macOS-YYYYMMDD-HHMMSS.dmg\n\nNext steps for distribution:\n1. Notarize DMG with Apple: xcrun notarytool submit\n2. Staple notarization: xcrun stapler staple\n3. Verify: spctl --assess\n4. Distribute to users\n\nDocumented in .claude/CLAUDE.md under Build/Test Commands and Native Build Scripts sections.",
+  "text": "Created build_dmg.sh script for macOS distribution builds:\n- Automatically builds Flutter macOS release app\n- Signs with Developer ID Application certificate\n- Creates compressed DMG with Applications symlink\n- Signs final DMG for distribution\n- Outputs ~77MB DMG file for direct download distribution\n\nScript location: mobile/build_dmg.sh\nOutput: mobile/build/Divine-macOS-YYYYMMDD-HHMMSS.dmg\n\nNext steps for distribution:\n1. Notarize DMG with Apple: xcrun notarytool submit\n2. Staple notarization: xcrun stapler staple\n3. Verify: spctl --assess\n4. Distribute to users\n\nDocumented in .claude/CLAUDE.md under Build/Test Commands and Native Build Scripts sections.",
   "sections": [
     "Project Notes"
   ],

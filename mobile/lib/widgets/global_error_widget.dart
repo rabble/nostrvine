@@ -1,5 +1,5 @@
 // ABOUTME: Global error widget shown when a widget throws during build
-// ABOUTME: The diVine "tangled vine" - our version of Twitter's fail whale
+// ABOUTME: The Divine "tangled vine" - our version of Twitter's fail whale
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -226,7 +226,7 @@ class _GlobalErrorWidget extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// The tangled vine illustration - diVine's "fail whale"
+// The tangled vine illustration - Divine's "fail whale"
 // ---------------------------------------------------------------------------
 
 /// Paints a cute tangled vine with drooping leaves.

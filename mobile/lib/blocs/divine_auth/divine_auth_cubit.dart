@@ -1,4 +1,4 @@
-// ABOUTME: Cubit for managing diVine authentication flow
+// ABOUTME: Cubit for managing Divine authentication flow
 // ABOUTME: Handles sign in, sign up, and email verification states
 
 import 'package:equatable/equatable.dart';
@@ -11,7 +11,7 @@ import 'package:openvine/utils/validators.dart';
 
 part 'divine_auth_state.dart';
 
-/// Cubit for managing diVine authentication flow.
+/// Cubit for managing Divine authentication flow.
 ///
 /// Handles:
 /// - Switching between sign in and sign up modes

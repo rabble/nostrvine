@@ -146,7 +146,7 @@ PendingActionService? pendingActionService(Ref ref) {
   return service;
 }
 
-/// Relay capability service for detecting NIP-11 divine extensions
+/// Relay capability service for detecting NIP-11 Divine extensions
 @Riverpod(keepAlive: true)
 RelayCapabilityService relayCapabilityService(Ref ref) {
   final service = RelayCapabilityService();

@@ -389,7 +389,7 @@ void main() {
             id: 'notif-to-read',
             type: NotificationType.system,
             actorPubkey: pubkeyAlice,
-            message: 'Welcome to diVine!',
+            message: 'Welcome to Divine!',
             timestamp: now.subtract(const Duration(minutes: 1)),
           ),
         ];

@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Add Clip Manager, Sound Picker, and Text Overlay features to diVine's video creation flow.
+**Goal:** Add Clip Manager, Sound Picker, and Text Overlay features to Divine's video creation flow.
 
 **Architecture:** Two-screen editing flow (Clip Manager → Editor) inserted between recording and metadata entry. Uses existing Riverpod patterns, FFmpeg for audio mixing/concat, pro_video_editor for text overlay rendering.
 

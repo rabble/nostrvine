@@ -219,7 +219,7 @@ class _WatermarkDownloadProgressSheetState
   String get _stageDescription => switch (_stage) {
     WatermarkDownloadStage.downloading =>
       'Fetching the video from the network...',
-    WatermarkDownloadStage.watermarking => 'Applying the diVine watermark...',
+    WatermarkDownloadStage.watermarking => 'Applying the Divine watermark...',
     WatermarkDownloadStage.saving =>
       'Saving the watermarked video to your camera roll...',
   };

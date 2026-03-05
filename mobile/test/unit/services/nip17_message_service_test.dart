@@ -216,7 +216,7 @@ void main() {
         recipientPubkey: recipientPubkey,
         content: 'Test message',
         additionalTags: [
-          ['client', 'diVine_bug_report'],
+          ['client', 'Divine_bug_report'],
           ['report_id', 'test-123'],
         ],
       );

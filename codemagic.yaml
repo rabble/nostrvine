@@ -1,4 +1,4 @@
-# ABOUTME: Codemagic CI/CD configuration for diVine mobile app builds.
+# ABOUTME: Codemagic CI/CD configuration for Divine mobile app builds.
 # ABOUTME: Configured for iOS and Android builds with manual triggering only.
 
 # Steps to setup:
@@ -84,9 +84,9 @@ definitions:
       script: |
         APP_PATH="build/macos/Build/Products/Release"
         APP_NAME=$(ls "$APP_PATH" | grep '\.app$' | head -1)
-        DMG_NAME="diVine-macOS.dmg"
+        DMG_NAME="Divine-macOS.dmg"
         echo "Packaging $APP_NAME as $DMG_NAME"
-        hdiutil create -volname "diVine" -srcfolder "$APP_PATH/$APP_NAME" \
+        hdiutil create -volname "Divine" -srcfolder "$APP_PATH/$APP_NAME" \
           -ov -format UDZO "$APP_PATH/$DMG_NAME"
     - &publish_github_release
       name: Publish to GitHub Release

@@ -2,7 +2,7 @@
 
 ## Document Purpose
 
-This document outlines the design for a ClickHouse-backed Nostr relay for the diVine video sharing application. It is intended for review by engineering teams and AI assistants to validate the approach, identify gaps, and refine the schema before implementation.
+This document outlines the design for a ClickHouse-backed Nostr relay for the Divine video sharing application. It is intended for review by engineering teams and AI assistants to validate the approach, identify gaps, and refine the schema before implementation.
 
 ---
 
@@ -10,7 +10,7 @@ This document outlines the design for a ClickHouse-backed Nostr relay for the di
 
 1. [Project Context](#project-context)
 2. [Nostr Protocol Overview](#nostr-protocol-overview)
-3. [diVine Application Data Requirements](#divine-application-data-requirements)
+3. [Divine Application Data Requirements](#divine-application-data-requirements)
 4. [Query Patterns Analysis](#query-patterns-analysis)
 5. [ClickHouse Schema Design](#clickhouse-schema-design)
 6. [Open Questions](#open-questions)
@@ -22,9 +22,9 @@ This document outlines the design for a ClickHouse-backed Nostr relay for the di
 
 ## 1. Project Context
 
-### What is diVine?
+### What is Divine?
 
-diVine (OpenVine) is a decentralized Vine-like video sharing application built on the Nostr protocol. Users can:
+Divine (OpenVine) is a decentralized Vine-like video sharing application built on the Nostr protocol. Users can:
 
 - Capture and share short looping videos (6 seconds typical)
 - Follow other users and see their content in a personalized feed
@@ -102,7 +102,7 @@ Every Nostr event is a JSON object with this structure:
 | `content` | string | variable | Event payload |
 | `sig` | hex string | 128 chars | Schnorr signature |
 
-### Event Kinds Used by diVine
+### Event Kinds Used by Divine
 
 | Kind | Name | Description | Replaceability |
 |------|------|-------------|----------------|
@@ -164,7 +164,7 @@ Clients query relays using filters:
 
 ---
 
-## 3. diVine Application Data Requirements
+## 3. Divine Application Data Requirements
 
 ### Subscription Types
 

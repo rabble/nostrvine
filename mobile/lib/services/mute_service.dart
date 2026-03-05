@@ -512,7 +512,7 @@ class MuteService {
 
       // Create NIP-51 kind 10000 tags
       final tags = <List<String>>[
-        ['client', 'diVine'],
+        ['client', 'Divine'],
       ];
 
       // Add muted items as tags (only non-expired, permanent mutes for Nostr)
@@ -522,7 +522,7 @@ class MuteService {
 
       final event = await _authService.createAndSignEvent(
         kind: 10000, // NIP-51 mute list
-        content: 'divine mute list',
+        content: 'Divine mute list',
         tags: tags,
       );
 

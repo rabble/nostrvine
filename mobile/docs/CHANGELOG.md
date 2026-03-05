@@ -546,7 +546,7 @@ Completed the VGV model migration by eliminating 6 duplicate model classes that 
   - Handles NIP-62 kind 62 event creation with ALL_RELAYS tag
   - Broadcasts deletion request to all configured relays
   - Manages deletion result state (success/failure)
-  - Custom reason support (defaults to "User requested account deletion via diVine app")
+  - Custom reason support (defaults to "User requested account deletion via Divine app")
 - Created `lib/widgets/delete_account_dialog.dart`:
   - Warning dialog with clear consequences explanation
   - Completion dialog with new account creation option

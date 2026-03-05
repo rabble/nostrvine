@@ -226,7 +226,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
                                 ),
                                 const SizedBox(height: 24),
                                 Text(
-                                  'Connect to divine',
+                                  'Connect to Divine',
                                   style: VineTheme.headlineLargeFont(),
                                 ),
                                 const SizedBox(height: 8),

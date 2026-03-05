@@ -1,4 +1,4 @@
-// ABOUTME: Feature flag enum defining available feature flags for divine
+// ABOUTME: Feature flag enum defining available feature flags for Divine
 // ABOUTME: Provides type-safe flag definitions with display names and descriptions
 
 enum FeatureFlag {

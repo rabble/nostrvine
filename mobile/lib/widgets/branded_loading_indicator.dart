@@ -4,7 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
-/// A branded loading indicator that displays the animated divine logo.
+/// A branded loading indicator that displays the animated Divine logo.
 ///
 /// Uses a sprite sheet for efficient GPU rendering. The sprite sheet contains
 /// 27 frames arranged vertically, each 500x500 pixels. Animation cycles through

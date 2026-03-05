@@ -86,7 +86,7 @@ class ShareService {
     try {
       final shareText = generateShareText(video);
       await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: 'Check out this video on divine'),
+        ShareParams(text: shareText, subject: 'Check out this video on Divine'),
       );
     } catch (e) {
       Log.error(
