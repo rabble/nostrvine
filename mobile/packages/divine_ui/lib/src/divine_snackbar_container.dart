@@ -78,15 +78,19 @@ class DivineSnackbarContainer extends StatelessWidget {
                 ),
               ),
             if (onClose != null)
-              GestureDetector(
-                onTap: onClose,
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: EdgeInsets.only(left: hasAction ? 8 : 0),
-                  child: DivineIcon(
-                    icon: DivineIconName.x,
-                    size: 20,
-                    color: error ? VineTheme.likeRed : VineTheme.whiteText,
+              Semantics(
+                label: 'Close',
+                button: true,
+                child: GestureDetector(
+                  onTap: onClose,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: hasAction ? 8 : 0),
+                    child: DivineIcon(
+                      icon: DivineIconName.x,
+                      size: 20,
+                      color: error ? VineTheme.likeRed : VineTheme.whiteText,
+                    ),
                   ),
                 ),
               ),

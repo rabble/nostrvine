@@ -226,6 +226,20 @@ void main() {
         expect(icon.color, VineTheme.likeRed);
       });
 
+      testWidgets('has close semantic label', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Test message', onClose: () {}),
+        );
+
+        final semantics = tester.widget<Semantics>(
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics && widget.properties.label == 'Close',
+          ),
+        );
+        expect(semantics.properties.button, isTrue);
+      });
+
       testWidgets('renders alongside action button', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
