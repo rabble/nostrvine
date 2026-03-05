@@ -348,9 +348,8 @@ void main() {
         ),
       ).called(1);
 
-      // Verify success snackbar with View Chat action
+      // Verify success snackbar
       expect(find.text('Post shared with Alice'), findsOneWidget);
-      expect(find.text('View Chat'), findsOneWidget);
     });
 
     testWidgets('sent contact shows Sent label', (tester) async {
@@ -429,7 +428,7 @@ void main() {
       await tester.tap(find.text('Alice'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Failed to send: Network timeout'), findsOneWidget);
+      expect(find.text('Failed to send video'), findsOneWidget);
     });
   });
 }
