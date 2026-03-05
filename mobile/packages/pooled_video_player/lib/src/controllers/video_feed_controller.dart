@@ -442,6 +442,8 @@ class VideoFeedController extends ChangeNotifier {
   /// with "A `ValueNotifier<int?>` was used after being disposed."
   void _onPlayerEvicted(int index, PooledPlayer evictedPlayer) {
     if (_isDisposed) return;
+    // Ignore stale callbacks: after release or reload, this index may
+    // hold a different player (or none at all).
     if (_loadedPlayers[index] != evictedPlayer) return;
 
     _stopPositionTimer(index);

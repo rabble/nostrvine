@@ -2155,6 +2155,37 @@ void main() {
         verify(setup.player.play).called(greaterThanOrEqualTo(1));
       });
 
+      test('rebuffer recovery resumes playback after network hiccup '
+          'on already-ready current video', () async {
+        final videos = createTestVideos(count: 1);
+        final controller = VideoFeedController(videos: videos, pool: pool);
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final setup = playerSetups[videos[0].url]!;
+
+        // Initial buffer ready — video starts playing
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+
+        clearInteractions(setup.player);
+
+        // Network hiccup: buffering starts then resolves without any
+        // seek or user action. Player.state.playing may still be true
+        // because mpv doesn't always toggle it on transient stalls.
+        when(() => setup.state.playing).thenReturn(true);
+        setup.bufferingController.add(true);
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        setup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // play() must be called to nudge the decoder out of the stall.
+        verify(setup.player.play).called(greaterThanOrEqualTo(1));
+      });
+
       test('rebuffer is ignored for non-current video', () async {
         final videos = createTestVideos(count: 3);
         final controller = VideoFeedController(videos: videos, pool: pool);
