@@ -65,8 +65,9 @@ void main() {
         expect(find.byType(DraftsTab), findsOneWidget);
       });
 
-      testWidgets('$ClipsTab initially when initialTabIndex is 1',
-          (tester) async {
+      testWidgets('$ClipsTab initially when initialTabIndex is 1', (
+        tester,
+      ) async {
         await tester.pumpWidget(buildWidget(initialTabIndex: 1));
         await tester.pumpAndSettle();
 
