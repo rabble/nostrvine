@@ -9,7 +9,7 @@ extension CuratedListExt on CuratedList {
     final tags = <List<String>>[
       ['d', id], // Identifier for replaceable event
       ['title', name],
-      ['client', 'diVine'],
+      ['client', 'Divine'],
     ];
 
     // Add description if present

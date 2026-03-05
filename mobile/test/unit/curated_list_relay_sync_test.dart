@@ -126,7 +126,7 @@ void main() {
           ['t', 'demo'],
           ['e', 'video1'],
           ['e', 'video2'],
-          ['client', 'diVine'],
+          ['client', 'Divine'],
           [
             'expiration',
             '${(DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600}',

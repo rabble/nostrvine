@@ -1645,7 +1645,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       }
 
       // Add client tag
-      tags.add(['client', 'diVine']);
+      tags.add(['client', 'Divine']);
 
       // Build content with optional NIP-27 inspired-by person reference
       var content = _descriptionController.text.trim();

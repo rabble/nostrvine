@@ -271,7 +271,7 @@ class ContentDeletionService {
           'k',
           originalEventKind.toString(),
         ], // Kind of event being deleted (NIP-09)
-        ['client', 'diVine'], // Deleting client
+        ['client', 'Divine'], // Deleting client
       ];
 
       // Add additional context as tags if provided

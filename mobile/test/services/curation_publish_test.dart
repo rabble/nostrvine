@@ -182,7 +182,7 @@ void main() {
         );
 
         expect(event, isNotNull);
-        expect(_containsTag(event!.tags, ['client', 'diVine']), isTrue);
+        expect(_containsTag(event!.tags, ['client', 'Divine']), isTrue);
       });
     });
 

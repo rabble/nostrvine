@@ -295,7 +295,7 @@ void main() {
 
         final tags = CuratedListConverter.toEventTags(list);
 
-        expect(tags, contains(equals(['client', 'diVine'])));
+        expect(tags, contains(equals(['client', 'Divine'])));
       });
 
       test('includes description when present', () {
