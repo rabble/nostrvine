@@ -50,6 +50,7 @@ void main() {
         videoUrl: 'https://example.com/video_$i.mp4',
         thumbnailUrl: 'https://example.com/thumb_$i.jpg',
         originalLoops: 1000 - i * 100,
+        rawTags: const {'platform': 'vine'},
       ),
     );
 

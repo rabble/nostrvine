@@ -2,12 +2,23 @@
 // ABOUTME: Verifies badge shows for original content (non-reposts) but not for reposts or vintage vines
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/moderation_label_service.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
+
+class _MockModerationLabelService extends Mock
+    implements ModerationLabelService {}
+
+class _MockVideoModerationStatusService extends Mock
+    implements VideoModerationStatusService {}
 
 void main() {
   group('Original Content Badge Tests (TDD)', () {
@@ -110,7 +121,8 @@ void main() {
           'content': 'Vintage vine',
           'tags': [
             ['url', 'https://example.com/video.mp4'],
-            ['loops', '10000'], // Has loop count = vintage vine
+            ['loops', '10000'],
+            ['platform', 'vine'],
           ],
           'sig': 'sig1234567890abcdef',
         });
@@ -180,10 +192,28 @@ void main() {
           repostedAt: DateTime.now(),
         );
 
+        final mockLabelService = _MockModerationLabelService();
+        when(
+          () => mockLabelService.getAIDetectionResult(any()),
+        ).thenReturn(null);
+        when(
+          () => mockLabelService.getAIDetectionByHash(any()),
+        ).thenReturn(null);
+
         // Act
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(body: ProofModeBadgeRow(video: videoEvent)),
+          ProviderScope(
+            overrides: [
+              moderationLabelServiceProvider.overrideWithValue(
+                mockLabelService,
+              ),
+              videoModerationStatusServiceProvider.overrideWithValue(
+                _MockVideoModerationStatusService(),
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(body: ProofModeBadgeRow(video: videoEvent)),
+            ),
           ),
         );
 

@@ -110,6 +110,7 @@ void main() {
         'tags': [
           ['url', 'https://example.com/video.mp4'],
           ['loops', '10000'],
+          ['platform', 'vine'],
         ],
         'sig':
             'cccc1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
