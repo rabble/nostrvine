@@ -10,27 +10,36 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Full-screen bottom sheet for finding and selecting a user to share with.
 ///
-/// Shows the user's contacts initially, with search functionality to find
-/// any Nostr user. Returns a [ShareableUser] when a user is selected.
+/// Shows [contacts] (pre-loaded by the calling BLoC) initially, with search
+/// functionality to find any Nostr user by name or npub.
+/// Returns a [ShareableUser] when a user is selected.
 class FindPeopleSheet extends ConsumerStatefulWidget {
-  const FindPeopleSheet({super.key});
+  const FindPeopleSheet({required this.contacts, super.key});
+
+  /// Pre-loaded contacts from the parent share sheet BLoC.
+  final List<ShareableUser> contacts;
 
   @override
   ConsumerState<FindPeopleSheet> createState() => _FindPeopleSheetState();
 
   /// Show the find people sheet and return the selected user.
-  static Future<ShareableUser?> show(BuildContext context) {
+  ///
+  /// [contacts] are passed from the calling BLoC so this sheet does not
+  /// need to load them independently.
+  static Future<ShareableUser?> show(
+    BuildContext context, {
+    List<ShareableUser> contacts = const [],
+  }) {
     return showModalBottomSheet<ShareableUser>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const FindPeopleSheet(),
+      builder: (context) => FindPeopleSheet(contacts: contacts),
     );
   }
 }
@@ -38,8 +47,6 @@ class FindPeopleSheet extends ConsumerStatefulWidget {
 class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
   final TextEditingController _searchController = TextEditingController();
   UserSearchBloc? _searchBloc;
-  List<ShareableUser> _contacts = [];
-  bool _contactsLoaded = false;
 
   @override
   void initState() {
@@ -51,7 +58,6 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
         hasVideos: false,
       );
     }
-    _loadContacts();
   }
 
   @override
@@ -95,10 +101,9 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
             ),
             Expanded(
               child: _ResultsList(
-                contactsLoaded: _contactsLoaded,
                 searchQuery: _searchController.text,
                 searchBloc: _searchBloc,
-                contacts: _contacts,
+                contacts: widget.contacts,
                 userProfileService: ref.read(userProfileServiceProvider),
                 onSelectUser: _selectUser,
               ),
@@ -120,62 +125,6 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
 
   void _selectUser(ShareableUser user) {
     Navigator.of(context).pop(user);
-  }
-
-  Future<void> _loadContacts() async {
-    try {
-      final followRepository = ref.read(followRepositoryProvider);
-      final userProfileService = ref.read(userProfileServiceProvider);
-
-      final followList = followRepository?.followingPubkeys ?? [];
-      final contacts = <ShareableUser>[];
-
-      final uncachedPubkeys = followList
-          .where((pk) => !userProfileService.hasProfile(pk))
-          .toList();
-      if (uncachedPubkeys.isNotEmpty) {
-        await Future.wait(uncachedPubkeys.map(userProfileService.fetchProfile));
-      }
-
-      for (final pubkey in followList) {
-        try {
-          final profile = userProfileService.getCachedProfile(pubkey);
-          contacts.add(
-            ShareableUser(
-              pubkey: pubkey,
-              displayName: profile?.bestDisplayName,
-              picture: profile?.picture,
-            ),
-          );
-        } catch (e) {
-          Log.error(
-            'Error loading contact profile $pubkey: $e',
-            name: 'FindPeopleSheet',
-            category: LogCategory.ui,
-          );
-          contacts.add(ShareableUser(pubkey: pubkey));
-        }
-      }
-
-      if (mounted) {
-        setState(() {
-          _contacts = contacts;
-          _contactsLoaded = true;
-        });
-      }
-    } catch (e) {
-      Log.error(
-        'Error loading contacts: $e',
-        name: 'FindPeopleSheet',
-        category: LogCategory.ui,
-      );
-      if (mounted) {
-        setState(() {
-          _contacts = [];
-          _contactsLoaded = true;
-        });
-      }
-    }
   }
 
   @override
@@ -207,7 +156,6 @@ class _DragIndicator extends StatelessWidget {
 
 class _ResultsList extends StatelessWidget {
   const _ResultsList({
-    required this.contactsLoaded,
     required this.searchQuery,
     required this.searchBloc,
     required this.contacts,
@@ -215,7 +163,6 @@ class _ResultsList extends StatelessWidget {
     required this.onSelectUser,
   });
 
-  final bool contactsLoaded;
   final String searchQuery;
   final UserSearchBloc? searchBloc;
   final List<ShareableUser> contacts;
@@ -224,12 +171,6 @@ class _ResultsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!contactsLoaded) {
-      return const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      );
-    }
-
     if (searchQuery.isNotEmpty && searchBloc != null) {
       return BlocBuilder<UserSearchBloc, UserSearchState>(
         bloc: searchBloc,

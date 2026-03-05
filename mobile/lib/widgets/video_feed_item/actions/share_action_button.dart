@@ -109,14 +109,12 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   @override
   void initState() {
     super.initState();
-    final bookmarkService = ref.read(bookmarkServiceProvider).value;
-
     _bloc = ShareSheetBloc(
       video: widget.video,
       videoSharingService: ref.read(videoSharingServiceProvider),
       userProfileService: ref.read(userProfileServiceProvider),
       followRepository: ref.read(followRepositoryProvider),
-      bookmarkService: bookmarkService,
+      bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
     )..add(const ShareSheetContactsLoadRequested());
   }
 
@@ -169,28 +167,32 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     switch (result) {
       case ShareSheetSendSuccess(:final recipientName, :final shouldDismiss):
         if (shouldDismiss) _safePop(context);
-        messenger.showSnackBar(_shareSuccessSnackBar(messenger, recipientName));
-      case ShareSheetSendFailure(:final error):
-        messenger.showSnackBar(_styledSnackBar(error));
-      case ShareSheetSaveSuccess():
+        messenger.showSnackBar(_shareSuccessSnackBar(recipientName));
+      case ShareSheetSendFailure():
+        messenger.showSnackBar(_styledSnackBar('Failed to send video'));
+      case ShareSheetSaveResult(:final succeeded):
         _safePop(context);
-        messenger.showSnackBar(_styledSnackBar('Added to bookmarks'));
-      case ShareSheetSaveFailure():
-        _safePop(context);
-        messenger.showSnackBar(_styledSnackBar('Failed to add bookmark'));
+        messenger.showSnackBar(
+          _styledSnackBar(
+            succeeded ? 'Added to bookmarks' : 'Failed to add bookmark',
+          ),
+        );
       case ShareSheetCopiedToClipboard(:final label, :final text):
         Clipboard.setData(ClipboardData(text: text));
         _safePop(context);
         messenger.showSnackBar(_styledSnackBar(label));
       case ShareSheetShareViaTriggered(:final shareText):
         SharePlus.instance.share(ShareParams(text: shareText));
-      case ShareSheetActionFailure(:final message):
-        messenger.showSnackBar(_styledSnackBar(message));
+      case ShareSheetActionFailure():
+        messenger.showSnackBar(_styledSnackBar('Action failed'));
     }
   }
 
   Future<void> _handleFindPeople() async {
-    final selectedUser = await FindPeopleSheet.show(context);
+    final selectedUser = await FindPeopleSheet.show(
+      context,
+      contacts: _bloc.state.contacts,
+    );
     if (selectedUser != null && mounted) {
       _bloc.add(ShareSheetRecipientSelected(selectedUser));
     }
@@ -224,36 +226,16 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     duration: const Duration(seconds: 2),
   );
 
-  SnackBar _shareSuccessSnackBar(
-    ScaffoldMessengerState messenger,
-    String recipientName,
-  ) => SnackBar(
-    content: Row(
-      children: [
-        Expanded(
-          child: Text(
-            'Post shared with $recipientName',
-            style: const TextStyle(color: VineTheme.whiteText),
-          ),
-        ),
-        GestureDetector(
-          onTap: () {
-            messenger.hideCurrentSnackBar();
-            // TODO: navigate to chat screen when implemented
-          },
-          child: Text(
-            'View Chat',
-            style: VineTheme.bodyMediumFont(
-              color: VineTheme.vineGreen,
-            ).copyWith(fontWeight: FontWeight.w700),
-          ),
-        ),
-      ],
+  SnackBar _shareSuccessSnackBar(String recipientName) => SnackBar(
+    content: Text(
+      'Post shared with $recipientName',
+      style: const TextStyle(color: VineTheme.whiteText),
     ),
     backgroundColor: VineTheme.containerLow,
     behavior: SnackBarBehavior.floating,
     margin: _snackBarMargin,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    duration: const Duration(seconds: 2),
   );
 }
 
@@ -484,10 +466,17 @@ class _ShareWithSection extends StatelessWidget {
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemCount: contactsLoaded ? contacts.length + 1 : 1,
+              // +1 for Find People; when loading, +1 more for the spinner
+              itemCount: contactsLoaded
+                  ? contacts.length + 1
+                  : 2, // Find People + spinner
               itemBuilder: (context, index) {
                 if (index == 0) {
                   return _FindPeopleItem(onTap: onFindPeople);
+                }
+
+                if (!contactsLoaded) {
+                  return const _ContactsLoadingItem();
                 }
 
                 final contact = contacts[index - 1];
@@ -548,6 +537,28 @@ class _FindPeopleItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown in the contacts row while contacts are still loading.
+class _ContactsLoadingItem extends StatelessWidget {
+  const _ContactsLoadingItem();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: _ShareWithSection._itemWidth,
+      child: const Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: VineTheme.vineGreen,
+          ),
         ),
       ),
     );
