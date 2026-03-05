@@ -582,8 +582,6 @@ class _LoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: VineTheme.vineGreen),
-    );
+    return const Center(child: BrandedLoadingIndicator(size: 60));
   }
 }
