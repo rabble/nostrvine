@@ -90,8 +90,10 @@ void main() {
     ShareSheetBloc createBloc({
       FollowRepository? followRepository,
       Future<BookmarkService?>? bookmarkServiceFuture,
+      String relayUrl = 'wss://relay.test.example',
     }) => ShareSheetBloc(
       video: testVideo,
+      relayUrl: relayUrl,
       videoSharingService: mockSharingService,
       userProfileService: mockProfileService,
       followRepository: followRepository ?? mockFollowRepository,
@@ -642,7 +644,7 @@ void main() {
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'consecutive saves produce distinct actionId values',
+        'consecutive saves emit distinct states via identity equality',
         setUp: () {
           when(
             () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
@@ -654,17 +656,18 @@ void main() {
           await Future<void>.delayed(Duration.zero);
           bloc.add(const ShareSheetSaveRequested());
         },
-        verify: (bloc) {
-          // Collect all emitted action results by inspecting the final bloc
-          // state — the BLoC counter only advances, so each save gets a
-          // distinct actionId. We can only verify the last emission here,
-          // but the blocTest framework verifies two states were emitted.
-          expect(bloc.state.actionResult, isA<ShareSheetSaveResult>());
-          expect(
-            (bloc.state.actionResult! as ShareSheetSaveResult).succeeded,
-            isTrue,
-          );
-        },
+        expect: () => [
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetSaveResult>(),
+          ),
+          isA<ShareSheetState>().having(
+            (s) => s.actionResult,
+            'actionResult',
+            isA<ShareSheetSaveResult>(),
+          ),
+        ],
       );
     });
 
@@ -798,6 +801,7 @@ void main() {
         'emits $ShareSheetActionFailure when toJson throws',
         build: () => ShareSheetBloc(
           video: _ThrowingJsonVideoEvent(),
+          relayUrl: 'wss://relay.test.example',
           videoSharingService: mockSharingService,
           userProfileService: mockProfileService,
         ),
@@ -844,6 +848,7 @@ void main() {
         'emits $ShareSheetActionFailure when encoding throws',
         build: () => ShareSheetBloc(
           video: _InvalidIdVideoEvent(),
+          relayUrl: 'wss://relay.test.example',
           videoSharingService: mockSharingService,
           userProfileService: mockProfileService,
         ),

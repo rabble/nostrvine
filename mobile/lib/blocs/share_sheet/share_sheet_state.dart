@@ -18,21 +18,16 @@ enum ShareSheetStatus {
 /// One-shot action result communicated via [ShareSheetState.actionResult].
 ///
 /// Consumed by BlocListener to show snackbars or dismiss the sheet.
-/// Each emission carries a monotonically increasing [actionId] so that
+/// Does **not** extend [Equatable] — identity equality ensures that
 /// consecutive identical results are always treated as distinct by
 /// [BlocListener.listenWhen].
-sealed class ShareSheetActionResult extends Equatable {
-  const ShareSheetActionResult({required this.actionId});
-
-  /// Monotonically increasing counter — ensures two back-to-back identical
-  /// results are never equal, so [BlocListener.listenWhen] always fires.
-  final int actionId;
+sealed class ShareSheetActionResult {
+  const ShareSheetActionResult();
 }
 
 class ShareSheetSendSuccess extends ShareSheetActionResult {
   const ShareSheetSendSuccess(
     this.recipientName, {
-    required super.actionId,
     this.shouldDismiss = false,
   });
 
@@ -41,44 +36,28 @@ class ShareSheetSendSuccess extends ShareSheetActionResult {
   /// Whether the UI should dismiss the sheet after this success.
   /// True for send-with-message, false for quick-send.
   final bool shouldDismiss;
-
-  @override
-  List<Object?> get props => [actionId, recipientName, shouldDismiss];
 }
 
 class ShareSheetSendFailure extends ShareSheetActionResult {
-  const ShareSheetSendFailure({required super.actionId});
-
-  @override
-  List<Object?> get props => [actionId];
+  const ShareSheetSendFailure();
 }
 
 /// Consolidates the former ShareSheetSaveSuccess and ShareSheetSaveFailure
 /// into a single class, using [succeeded] to distinguish the outcome.
 class ShareSheetSaveResult extends ShareSheetActionResult {
-  const ShareSheetSaveResult({
-    required super.actionId,
-    required this.succeeded,
-  });
+  const ShareSheetSaveResult({required this.succeeded});
 
   final bool succeeded;
-
-  @override
-  List<Object?> get props => [actionId, succeeded];
 }
 
 /// Generic failure for utility actions (copy link, share via, etc.).
 /// Error details are logged by the BLoC; the UI shows a generic message.
 class ShareSheetActionFailure extends ShareSheetActionResult {
-  const ShareSheetActionFailure({required super.actionId});
-
-  @override
-  List<Object?> get props => [actionId];
+  const ShareSheetActionFailure();
 }
 
 class ShareSheetCopiedToClipboard extends ShareSheetActionResult {
   const ShareSheetCopiedToClipboard({
-    required super.actionId,
     required this.label,
     required this.text,
   });
@@ -88,19 +67,13 @@ class ShareSheetCopiedToClipboard extends ShareSheetActionResult {
 
   /// Text to copy to clipboard.
   final String text;
-
-  @override
-  List<Object?> get props => [actionId, label, text];
 }
 
 class ShareSheetShareViaTriggered extends ShareSheetActionResult {
-  const ShareSheetShareViaTriggered(this.shareText, {required super.actionId});
+  const ShareSheetShareViaTriggered(this.shareText);
 
   /// Text to pass to the platform share sheet.
   final String shareText;
-
-  @override
-  List<Object?> get props => [actionId, shareText];
 }
 
 /// State for the share sheet.
