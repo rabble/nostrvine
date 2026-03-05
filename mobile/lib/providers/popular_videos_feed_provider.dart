@@ -36,6 +36,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
 
+    // Watch blocklist version — rebuilds when block/unblock actions occur.
+    ref.watch(blocklistVersionProvider);
+
     // Watch appReady gate
     final isAppReady = ref.watch(appReadyProvider);
 
@@ -208,11 +211,18 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     ref.invalidateSelf();
   }
 
-  /// Applies platform compatibility and content preference filters.
+  /// Applies platform compatibility, content preference,
+  /// and blocked user filters.
   List<VideoEvent> _filterVideos(List<VideoEvent> videos) {
     final videoEventService = ref.read(videoEventServiceProvider);
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
     return videoEventService.filterVideoList(
-      videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+      videos
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .where(
+            (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+          )
+          .toList(),
     );
   }
 

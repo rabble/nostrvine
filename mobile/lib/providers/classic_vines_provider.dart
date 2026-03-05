@@ -41,6 +41,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
 
+    // Watch blocklist version — rebuilds when block/unblock actions occur.
+    ref.watch(blocklistVersionProvider);
+
     // Watch appReady gate
     final isAppReady = ref.watch(appReadyProvider);
 
@@ -63,6 +66,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
     final analyticsService = ref.read(analyticsApiServiceProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
@@ -78,9 +82,15 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
           offset: _randomOffset,
         );
 
-        // Filter for platform compatibility, content preferences, and shuffle
+        // Filter for platform compatibility, content preferences,
+        // blocked users, and shuffle
         final filteredVideos = videoEventService.filterVideoList(
-          videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+          videos
+              .where((v) => v.isSupportedOnCurrentPlatform)
+              .where(
+                (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+              )
+              .toList(),
         )..shuffle(_random);
 
         Log.info(
@@ -118,6 +128,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       allVideos
           .where((v) => v.originalLoops != null && v.originalLoops! > 0)
           .where((v) => v.isSupportedOnCurrentPlatform)
+          .where(
+            (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+          )
           .toList(),
     )..sort((a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0));
 
@@ -163,8 +176,14 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       );
 
       final videoEventService = ref.read(videoEventServiceProvider);
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
       final filteredVideos = videoEventService.filterVideoList(
-        videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+        videos
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .where(
+              (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+            )
+            .toList(),
       )..shuffle(_random);
 
       final nextOffset = _randomOffset + _pageSize;
@@ -209,8 +228,14 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       );
 
       final videoEventService = ref.read(videoEventServiceProvider);
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
       final filteredVideos = videoEventService.filterVideoList(
-        videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+        videos
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .where(
+              (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+            )
+            .toList(),
       );
 
       final allVideos = [...currentState.videos, ...filteredVideos];
