@@ -31,11 +31,13 @@ part 'share_sheet_state.dart';
 class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   ShareSheetBloc({
     required VideoEvent video,
+    required String relayUrl,
     required VideoSharingService videoSharingService,
     required UserProfileService userProfileService,
     FollowRepository? followRepository,
     Future<BookmarkService?>? bookmarkServiceFuture,
   }) : _video = video,
+       _relayUrl = relayUrl,
        _videoSharingService = videoSharingService,
        _userProfileService = userProfileService,
        _followRepository = followRepository,
@@ -57,14 +59,11 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   }
 
   final VideoEvent _video;
+  final String _relayUrl;
   final VideoSharingService _videoSharingService;
   final UserProfileService _userProfileService;
   final FollowRepository? _followRepository;
   final Future<BookmarkService?>? _bookmarkServiceFuture;
-
-  /// Monotonically increasing counter passed to every [ShareSheetActionResult]
-  /// so that consecutive identical results are never equatable.
-  int _nextActionId = 0;
 
   // --------------------------------------------------------------------------
   // Contact loading
@@ -192,17 +191,14 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
           state.copyWith(
             isSending: false,
             sentPubkeys: {...state.sentPubkeys, user.pubkey},
-            actionResult: ShareSheetSendSuccess(
-              recipientName,
-              actionId: _nextActionId++,
-            ),
+            actionResult: ShareSheetSendSuccess(recipientName),
           ),
         );
       } else {
         emit(
           state.copyWith(
             isSending: false,
-            actionResult: ShareSheetSendFailure(actionId: _nextActionId++),
+            actionResult: const ShareSheetSendFailure(),
           ),
         );
       }
@@ -215,7 +211,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           isSending: false,
-          actionResult: ShareSheetSendFailure(actionId: _nextActionId++),
+          actionResult: const ShareSheetSendFailure(),
         ),
       );
     }
@@ -250,7 +246,6 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
             isSending: false,
             actionResult: ShareSheetSendSuccess(
               recipientName,
-              actionId: _nextActionId++,
               shouldDismiss: true,
             ),
           ),
@@ -259,7 +254,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         emit(
           state.copyWith(
             isSending: false,
-            actionResult: ShareSheetSendFailure(actionId: _nextActionId++),
+            actionResult: const ShareSheetSendFailure(),
           ),
         );
       }
@@ -272,7 +267,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           isSending: false,
-          actionResult: ShareSheetSendFailure(actionId: _nextActionId++),
+          actionResult: const ShareSheetSendFailure(),
         ),
       );
     }
@@ -295,10 +290,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetSaveResult(
-            actionId: _nextActionId++,
-            succeeded: false,
-          ),
+          actionResult: const ShareSheetSaveResult(succeeded: false),
         ),
       );
       return;
@@ -310,10 +302,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetSaveResult(
-            actionId: _nextActionId++,
-            succeeded: succeeded,
-          ),
+          actionResult: ShareSheetSaveResult(succeeded: succeeded),
         ),
       );
     } catch (e) {
@@ -324,10 +313,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetSaveResult(
-            actionId: _nextActionId++,
-            succeeded: false,
-          ),
+          actionResult: const ShareSheetSaveResult(succeeded: false),
         ),
       );
     }
@@ -346,7 +332,6 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           actionResult: ShareSheetCopiedToClipboard(
-            actionId: _nextActionId++,
             label: 'Link to post copied to clipboard',
             text: url,
           ),
@@ -360,7 +345,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetActionFailure(actionId: _nextActionId++),
+          actionResult: const ShareSheetActionFailure(),
         ),
       );
     }
@@ -374,10 +359,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       final shareText = _videoSharingService.generateShareText(_video);
       emit(
         state.copyWith(
-          actionResult: ShareSheetShareViaTriggered(
-            shareText,
-            actionId: _nextActionId++,
-          ),
+          actionResult: ShareSheetShareViaTriggered(shareText),
         ),
       );
     } catch (e) {
@@ -388,7 +370,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetActionFailure(actionId: _nextActionId++),
+          actionResult: const ShareSheetActionFailure(),
         ),
       );
     }
@@ -403,7 +385,6 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       emit(
         state.copyWith(
           actionResult: ShareSheetCopiedToClipboard(
-            actionId: _nextActionId++,
             label: 'Nostr event JSON copied to clipboard',
             text: json,
           ),
@@ -417,7 +398,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetActionFailure(actionId: _nextActionId++),
+          actionResult: const ShareSheetActionFailure(),
         ),
       );
     }
@@ -432,13 +413,12 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         Nevent(
           id: _video.id,
           author: _video.pubkey,
-          relays: ['wss://relay.divine.video'],
+          relays: [_relayUrl],
         ),
       );
       emit(
         state.copyWith(
           actionResult: ShareSheetCopiedToClipboard(
-            actionId: _nextActionId++,
             label: 'Nostr event ID copied to clipboard',
             text: nevent,
           ),
@@ -452,7 +432,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
       );
       emit(
         state.copyWith(
-          actionResult: ShareSheetActionFailure(actionId: _nextActionId++),
+          actionResult: const ShareSheetActionFailure(),
         ),
       );
     }

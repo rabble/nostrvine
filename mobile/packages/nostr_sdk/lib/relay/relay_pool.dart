@@ -445,8 +445,8 @@ class RelayPool {
       throw ArgumentError("No filters given", "filters");
     }
 
-    tempRelays = handleAddrList(tempRelays);
-    targetRelays = handleAddrList(targetRelays);
+    handleAddrList(tempRelays);
+    handleAddrList(targetRelays);
 
     final Subscription subscription = Subscription(
       filters,
@@ -619,9 +619,14 @@ class RelayPool {
     return id;
   }
 
-  List<String>? handleAddrList(List<String>? addrList) {
-    if (addrList == null) return null;
-    return [for (final relayAddr in addrList) RelayAddrUtil.handle(relayAddr)];
+  void handleAddrList(List<String>? addrList) {
+    if (addrList != null) {
+      var length = addrList.length;
+      for (var i = 0; i < length; i++) {
+        var relayAddr = addrList[i];
+        addrList[i] = RelayAddrUtil.handle(relayAddr);
+      }
+    }
   }
 
   /// query should be a one time filter search.
@@ -644,8 +649,8 @@ class RelayPool {
       throw ArgumentError("No filters given", "filters");
     }
 
-    tempRelays = handleAddrList(tempRelays);
-    targetRelays = handleAddrList(targetRelays);
+    handleAddrList(tempRelays);
+    handleAddrList(targetRelays);
 
     Subscription subscription = Subscription(filters, onEvent, id: id);
     if (onComplete != null) {
@@ -967,7 +972,7 @@ class RelayPool {
       throw ArgumentError('No filters given', 'filters');
     }
 
-    tempRelays = handleAddrList(tempRelays);
+    handleAddrList(tempRelays);
 
     final subscriptionId = id ?? StringUtil.rndNameStr(16);
     final message = ['COUNT', subscriptionId, ...filters];

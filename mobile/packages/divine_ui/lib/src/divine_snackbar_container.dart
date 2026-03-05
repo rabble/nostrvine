@@ -14,6 +14,25 @@ class DivineSnackbarContainer extends StatelessWidget {
     super.key,
   });
 
+  /// Returns a fully styled [SnackBar] wrapping a [DivineSnackbarContainer].
+  static SnackBar snackBar(
+    String message, {
+    bool error = false,
+    String? actionLabel,
+    VoidCallback? onActionPressed,
+  }) => SnackBar(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    padding: EdgeInsets.zero,
+    behavior: SnackBarBehavior.floating,
+    content: DivineSnackbarContainer(
+      label: message,
+      error: error,
+      actionLabel: actionLabel,
+      onActionPressed: onActionPressed,
+    ),
+  );
+
   /// The label of the snackbar.
   final String label;
 

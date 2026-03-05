@@ -13,6 +13,7 @@ import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
@@ -125,6 +126,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     super.initState();
     _bloc = ShareSheetBloc(
       video: widget.video,
+      relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
       videoSharingService: ref.read(videoSharingServiceProvider),
       userProfileService: ref.read(userProfileServiceProvider),
       followRepository: ref.read(followRepositoryProvider),
@@ -182,22 +184,16 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       case ShareSheetSendSuccess(:final recipientName, :final shouldDismiss):
         if (shouldDismiss) _safePop(context);
         messenger.showSnackBar(
-          _styledSnackBar(
-            'Post shared with $recipientName',
-            actionLabel: 'View Chat',
-            onActionPressed: () {
-              // TODO: Navigate to chat screen when available.
-            },
-          ),
+          DivineSnackbarContainer.snackBar('Post shared with $recipientName'),
         );
       case ShareSheetSendFailure():
         messenger.showSnackBar(
-          _styledSnackBar('Failed to send video', error: true),
+          DivineSnackbarContainer.snackBar('Failed to send video', error: true),
         );
       case ShareSheetSaveResult(:final succeeded):
         _safePop(context);
         messenger.showSnackBar(
-          _styledSnackBar(
+          DivineSnackbarContainer.snackBar(
             succeeded ? 'Added to bookmarks' : 'Failed to add bookmark',
             error: !succeeded,
           ),
@@ -205,11 +201,13 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       case ShareSheetCopiedToClipboard(:final label, :final text):
         Clipboard.setData(ClipboardData(text: text));
         _safePop(context);
-        messenger.showSnackBar(_styledSnackBar(label));
+        messenger.showSnackBar(DivineSnackbarContainer.snackBar(label));
       case ShareSheetShareViaTriggered(:final shareText):
         SharePlus.instance.share(ShareParams(text: shareText));
       case ShareSheetActionFailure():
-        messenger.showSnackBar(_styledSnackBar('Action failed', error: true));
+        messenger.showSnackBar(
+          DivineSnackbarContainer.snackBar('Action failed', error: true),
+        );
     }
   }
 
@@ -238,23 +236,6 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       builder: (context) => ReportContentDialog(video: widget.video),
     );
   }
-
-  SnackBar _styledSnackBar(
-    String message, {
-    bool error = false,
-    String? actionLabel,
-    VoidCallback? onActionPressed,
-  }) => SnackBar(
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    behavior: SnackBarBehavior.floating,
-    content: DivineSnackbarContainer(
-      label: message,
-      error: error,
-      actionLabel: actionLabel,
-      onActionPressed: onActionPressed,
-    ),
-  );
 }
 
 // ---------------------------------------------------------------------------
