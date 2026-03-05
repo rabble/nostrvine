@@ -255,7 +255,7 @@ class VideoFeedController extends ChangeNotifier {
   /// Pause the current video (user-initiated).
   ///
   /// Actually pauses the player (not just mute). Distinct from [_pauseVideo]
-  /// which only mutes for smooth swipe transitions.
+  /// which mutes and pauses for swipe transitions.
   void pause() {
     _isPaused = true;
     final player = _loadedPlayers[_currentIndex]?.player;
@@ -389,12 +389,25 @@ class VideoFeedController extends ChangeNotifier {
       // Guard: index may have been released during open/setPlaylistMode.
       if (_isDisposed || !_loadingIndices.contains(index)) return;
 
-      // Set up buffer subscription
+      // Set up buffer subscription — stays alive for the entire player
+      // lifetime to handle both initial buffering and post-seek rebuffering.
       unawaited(_bufferSubscriptions[index]?.cancel());
       _bufferSubscriptions[index] = pooledPlayer.player.stream.buffering.listen(
         (isBuffering) {
-          if (!isBuffering && _loadStates[index] == LoadState.loading) {
-            _onBufferReady(index);
+          if (!isBuffering) {
+            if (_loadStates[index] == LoadState.loading) {
+              _onBufferReady(index);
+            } else if (_loadStates[index] == LoadState.ready &&
+                index == _currentIndex &&
+                _isActive &&
+                !_isPaused) {
+              // Rebuffer completed — ensure playback resumes as a safety
+              // net after seek or any transient stall.
+              final player = _loadedPlayers[index]?.player;
+              if (player != null) {
+                unawaited(player.play());
+              }
+            }
           }
         },
       );
@@ -429,9 +442,8 @@ class VideoFeedController extends ChangeNotifier {
   /// with "A `ValueNotifier<int?>` was used after being disposed."
   void _onPlayerEvicted(int index, PooledPlayer evictedPlayer) {
     if (_isDisposed) return;
-    // Only act if the evicted player is still the one tracked at this index.
-    // After _releasePlayer or a subsequent _loadPlayer, _loadedPlayers[index]
-    // will either be null or a different player, making this callback stale.
+    // Ignore stale callbacks: after release or reload, this index may
+    // hold a different player (or none at all).
     if (_loadedPlayers[index] != evictedPlayer) return;
 
     _stopPositionTimer(index);
@@ -462,13 +474,18 @@ class VideoFeedController extends ChangeNotifier {
       // Start position callback timer for current video
       _startPositionTimer(index);
     } else {
-      // Keep playing muted — avoids expensive pause→resume rebuffer stall
-      // in mpv. Volume is already 0 from _loadPlayer, so no audio leak.
-      // When this video becomes current, _playVideo will unmute and seek.
+      // Preloaded video — pause and rewind to the beginning.
+      // The video played muted just long enough to fill the buffer.
+      // Pausing prevents it from advancing to a random position.
+      // Seeking to zero while paused ensures frame 0 is displayed
+      // when the user scrolls to this video.
+      unawaited(player.pause());
+      unawaited(player.seek(Duration.zero));
     }
 
-    unawaited(_bufferSubscriptions[index]?.cancel());
-    _bufferSubscriptions.remove(index);
+    // Keep buffer subscription alive to handle post-seek rebuffering.
+    // Subscriptions are cleaned up in _releasePlayer, _onPlayerEvicted,
+    // and dispose.
 
     _notifyIndex(index);
   }
@@ -477,25 +494,46 @@ class VideoFeedController extends ChangeNotifier {
     final player = _loadedPlayers[index]?.player;
     if (player == null) return;
 
-    // Seek to start — also serves as a frame refresh trigger for media_kit's
-    // Video widget. Without it, the widget may not receive a fresh frame
-    // when first mounted, causing the video to appear frozen.
-    unawaited(player.seek(Duration.zero));
-    // Unmute — video may already be playing (muted preload) or paused.
-    unawaited(player.setVolume(100));
-    // Ensure playing regardless of current state.
-    if (!player.state.playing) {
-      unawaited(player.play());
-    }
+    // The player is paused (from _onBufferReady or _pauseVideo).
+    // Seek to the beginning while paused (safe — no renderer stall),
+    // then unmute and play.
+    unawaited(_resumeFromStart(index, player));
     _startPositionTimer(index);
+  }
+
+  /// Seek to the beginning, unmute, and play.
+  ///
+  /// The player is expected to be paused (from [_onBufferReady] for preloaded
+  /// videos, or from [_pauseVideo] for swiped-away videos). Seeking while
+  /// paused avoids the mpv renderer stall that occurs when seeking a playing
+  /// HLS stream.
+  Future<void> _resumeFromStart(int index, Player player) async {
+    try {
+      await player.seek(Duration.zero);
+
+      // Guard: user may have scrolled away during the seek.
+      if (_isDisposed || _currentIndex != index || !_isActive || _isPaused) {
+        return;
+      }
+      if (_loadedPlayers[index]?.player != player) return;
+
+      await player.setVolume(100);
+      await player.play();
+    } on Exception catch (e, stack) {
+      debugPrint(
+        'VideoFeedController: Failed to resume index $index: $e\n$stack',
+      );
+    }
   }
 
   void _pauseVideo(int index) {
     final player = _loadedPlayers[index]?.player;
     if (player != null) {
-      // Mute instead of pausing — keeps the video playing silently so
-      // resuming (via _playVideo) avoids the expensive mpv rebuffer stall.
+      // Mute and pause. The player stays in the pool for reuse.
+      // _resumeFromStart will seek to 0, unmute, and play when this
+      // video becomes current again.
       unawaited(player.setVolume(0));
+      unawaited(player.pause());
     }
     _stopPositionTimer(index);
   }
@@ -504,15 +542,12 @@ class VideoFeedController extends ChangeNotifier {
     if (positionCallback == null) return;
 
     _positionTimers[index]?.cancel();
-    _positionTimers[index] = Timer.periodic(
-      positionCallbackInterval,
-      (_) {
-        final player = _loadedPlayers[index]?.player;
-        if (player != null && player.state.playing) {
-          positionCallback?.call(index, player.state.position);
-        }
-      },
-    );
+    _positionTimers[index] = Timer.periodic(positionCallbackInterval, (_) {
+      final player = _loadedPlayers[index]?.player;
+      if (player != null && player.state.playing) {
+        positionCallback?.call(index, player.state.position);
+      }
+    });
   }
 
   void _stopPositionTimer(int index) {

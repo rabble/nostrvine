@@ -196,6 +196,10 @@ class PlayerPool {
   /// Whether the pool has been disposed.
   bool _isDisposed = false;
 
+  /// Lock to serialize concurrent [getPlayer] calls and prevent
+  /// over-eviction when multiple callers see the pool at capacity.
+  Completer<void>? _operationLock;
+
   /// Number of players currently in the pool.
   int get playerCount => _players.length;
 
@@ -204,7 +208,25 @@ class PlayerPool {
   /// If a player already exists for this URL, it is returned and marked
   /// as recently used. Otherwise, a new player is created. If the pool
   /// is at capacity, the least recently used player is evicted first.
+  ///
+  /// Concurrent calls are serialized to prevent multiple callers from
+  /// seeing the pool at capacity and each triggering independent evictions.
   Future<PooledPlayer> getPlayer(String url) async {
+    // Wait for any in-flight operation to complete.
+    while (_operationLock != null) {
+      await _operationLock!.future;
+    }
+    _operationLock = Completer<void>();
+    try {
+      return await _getPlayerInternal(url);
+    } finally {
+      final lock = _operationLock;
+      _operationLock = null;
+      lock?.complete();
+    }
+  }
+
+  Future<PooledPlayer> _getPlayerInternal(String url) async {
     if (_isDisposed) {
       throw StateError('PlayerPool has been disposed');
     }
@@ -227,7 +249,7 @@ class PlayerPool {
     }
 
     // Create new player
-    final player = await _createPlayer();
+    final player = await createPlayer();
     _players[url] = player;
     _lruOrder.add(url);
 
@@ -306,7 +328,13 @@ class PlayerPool {
     }
   }
 
-  Future<PooledPlayer> _createPlayer() async {
+  /// Creates a new [PooledPlayer] with native media resources.
+  ///
+  /// Override in tests to return mock players without creating native
+  /// resources.
+  @visibleForTesting
+  @visibleForOverriding
+  Future<PooledPlayer> createPlayer() async {
     final player = Player();
 
     // Suppress FFmpeg codec warnings (e.g. smpte170m color transfer) that
