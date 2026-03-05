@@ -43,6 +43,9 @@ class PopularNowFeed extends _$PopularNowFeed {
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
 
+    // Watch blocklist version — rebuilds when block/unblock actions occur.
+    ref.watch(blocklistVersionProvider);
+
     // Watch appReady gate - provider rebuilds when this changes
     final isAppReady = ref.watch(appReadyProvider);
 
@@ -75,6 +78,9 @@ class PopularNowFeed extends _$PopularNowFeed {
       return const VideoFeedState(videos: [], hasMoreContent: true);
     }
 
+    // Read blocklist service for filtering blocked users
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+
     // Try REST API first if available (use centralized availability check)
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
@@ -98,9 +104,15 @@ class PopularNowFeed extends _$PopularNowFeed {
             category: LogCategory.video,
           );
 
-          // Filter for platform compatibility and content preferences
+          // Filter for platform compatibility, content preferences,
+          // and blocked users
           final filteredVideos = videoEventService.filterVideoList(
-            apiVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+            apiVideos
+                .where((v) => v.isSupportedOnCurrentPlatform)
+                .where(
+                  (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+                )
+                .toList(),
           );
 
           // Enrich REST API videos with Nostr tags for ProofMode badge
@@ -147,10 +159,15 @@ class PopularNowFeed extends _$PopularNowFeed {
       },
       getVideos: (service) => service.popularNowVideos,
       filterVideos: (videos) {
-        // Filter out WebM videos on iOS/macOS (not supported by AVPlayer)
-        // and filter by user content preferences
+        // Filter out WebM videos on iOS/macOS (not supported by AVPlayer),
+        // filter by user content preferences, and remove blocked users
         return videoEventService.filterVideoList(
-          videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+          videos
+              .where((v) => v.isSupportedOnCurrentPlatform)
+              .where(
+                (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+              )
+              .toList(),
         );
       },
       sortVideos: (videos) {
@@ -246,6 +263,9 @@ class PopularNowFeed extends _$PopularNowFeed {
 
         if (apiVideos.isNotEmpty) {
           // Deduplicate and merge (case-insensitive for Nostr IDs)
+          final blocklistService = ref.read(
+            contentBlocklistServiceProvider,
+          );
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
@@ -253,6 +273,9 @@ class PopularNowFeed extends _$PopularNowFeed {
             apiVideos
                 .where((v) => !existingIds.contains(v.id.toLowerCase()))
                 .where((v) => v.isSupportedOnCurrentPlatform)
+                .where(
+                  (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+                )
                 .toList(),
           );
 
@@ -367,8 +390,14 @@ class PopularNowFeed extends _$PopularNowFeed {
     var updatedVideos = videoEventService.popularNowVideos.toList();
 
     // Apply same filtering as build()
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
     updatedVideos = videoEventService.filterVideoList(
-      updatedVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+      updatedVideos
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .where(
+            (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+          )
+          .toList(),
     );
 
     // Sort by timestamp (newest first)
@@ -414,8 +443,16 @@ class PopularNowFeed extends _$PopularNowFeed {
           // Reset cursor for pagination
           _nextCursor = _getOldestTimestamp(apiVideos);
 
+          final blocklistService = ref.read(
+            contentBlocklistServiceProvider,
+          );
           final filteredVideos = videoEventService.filterVideoList(
-            apiVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+            apiVideos
+                .where((v) => v.isSupportedOnCurrentPlatform)
+                .where(
+                  (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+                )
+                .toList(),
           );
 
           // Enrich REST API videos with Nostr tags for ProofMode badge
