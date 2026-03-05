@@ -10,12 +10,16 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/services/analytics_api_service.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:riverpod/riverpod.dart';
 
 class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
 /// Test override for FunnelcakeAvailable that always returns false
 /// (forces Nostr fallback path for simpler mocking)
@@ -33,6 +37,7 @@ void main() {
   group('Feed background state preservation', () {
     late _MockAnalyticsApiService mockAnalyticsService;
     late _MockVideoEventService mockVideoEventService;
+    late _MockContentBlocklistService mockBlocklistService;
 
     // Test videos with originalLoops for ClassicVines Nostr fallback
     final testVideos = List.generate(
@@ -56,8 +61,12 @@ void main() {
     setUp(() {
       mockAnalyticsService = _MockAnalyticsApiService();
       mockVideoEventService = _MockVideoEventService();
+      mockBlocklistService = _MockContentBlocklistService();
 
       when(() => mockAnalyticsService.isAvailable).thenReturn(false);
+      when(
+        () => mockBlocklistService.shouldFilterFromFeeds(any()),
+      ).thenReturn(false);
 
       // Nostr fallback data: discoveryVideos for ClassicVines
       when(() => mockVideoEventService.discoveryVideos).thenReturn(testVideos);
@@ -86,6 +95,9 @@ void main() {
           appReadyProvider.overrideWithValue(appReady),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistServiceProvider.overrideWithValue(
+            mockBlocklistService,
+          ),
           funnelcakeAvailableProvider.overrideWith(
             _TestFunnelcakeUnavailable.new,
           ),
@@ -128,6 +140,9 @@ void main() {
           appReadyProvider.overrideWithValue(false),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistServiceProvider.overrideWithValue(
+            mockBlocklistService,
+          ),
           funnelcakeAvailableProvider.overrideWith(
             _TestFunnelcakeUnavailable.new,
           ),
@@ -165,6 +180,9 @@ void main() {
           appReadyProvider.overrideWithValue(false),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistServiceProvider.overrideWithValue(
+            mockBlocklistService,
+          ),
           funnelcakeAvailableProvider.overrideWith(
             _TestFunnelcakeUnavailable.new,
           ),
@@ -188,6 +206,9 @@ void main() {
           appReadyProvider.overrideWithValue(true),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistServiceProvider.overrideWithValue(
+            mockBlocklistService,
+          ),
           funnelcakeAvailableProvider.overrideWith(
             _TestFunnelcakeUnavailable.new,
           ),
@@ -242,6 +263,9 @@ void main() {
           appReadyProvider.overrideWithValue(false),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
+          contentBlocklistServiceProvider.overrideWithValue(
+            mockBlocklistService,
+          ),
           funnelcakeAvailableProvider.overrideWith(
             _TestFunnelcakeUnavailable.new,
           ),
