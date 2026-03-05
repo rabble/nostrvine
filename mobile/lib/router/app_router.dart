@@ -606,7 +606,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: LibraryScreen.clipsPath,
         name: LibraryScreen.clipsRouteName,
-        builder: (_, _) => const LibraryScreen(),
+        builder: (_, _) => const LibraryScreen(initialTabIndex: 1),
       ),
       // Followers screen - routes to My or Others based on pubkey
       GoRoute(

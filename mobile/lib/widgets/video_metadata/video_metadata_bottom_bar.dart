@@ -78,7 +78,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
           actionLabel: 'Go to Library',
           onActionPressed: () {
             scaffoldMessenger.hideCurrentSnackBar();
-            router.push(LibraryScreen.clipsPath);
+            router.push(LibraryScreen.draftsPath);
           },
         ),
       ),

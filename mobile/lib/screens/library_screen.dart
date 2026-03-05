@@ -35,8 +35,14 @@ class LibraryScreen extends ConsumerStatefulWidget {
 
   const LibraryScreen({
     super.key,
+    this.initialTabIndex = 0,
     this.selectionMode = false,
   });
+
+  /// Index of the tab to show when the screen opens.
+  ///
+  /// `0` = Drafts, `1` = Clips.
+  final int initialTabIndex;
 
   /// When true, enables multi-select mode for adding clips to the editor.
   ///
@@ -58,7 +64,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      initialIndex: widget.initialTabIndex,
+      vsync: this,
+    );
 
     Log.info(
       '📚 ClipLibrary opened (selectionMode: ${widget.selectionMode})',
