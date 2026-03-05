@@ -36,6 +36,7 @@ class OthersFollowingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -45,14 +46,17 @@ class OthersFollowingScreen extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) =>
-              OthersFollowingBloc(nostrClient: nostrClient)
-                ..add(OthersFollowingListLoadRequested(pubkey)),
+          create: (_) => OthersFollowingBloc(
+            nostrClient: nostrClient,
+            contentBlocklistService: blocklistService,
+            currentUserPubkey: nostrClient.publicKey,
+          )..add(OthersFollowingListLoadRequested(pubkey)),
         ),
         BlocProvider(
-          create: (_) =>
-              MyFollowingBloc(followRepository: followRepository)
-                ..add(const MyFollowingListLoadRequested()),
+          create: (_) => MyFollowingBloc(
+            followRepository: followRepository,
+            contentBlocklistService: blocklistService,
+          )..add(const MyFollowingListLoadRequested()),
         ),
       ],
       child: _OthersFollowingView(pubkey: pubkey, displayName: displayName),
@@ -68,15 +72,11 @@ class _OthersFollowingView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(blocklistVersionProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
-
-    // Hide ourselves from target's following list if we blocked them
-    // (currently or previously via severed follow).
-    final hideCurrentUser =
-        blocklistService.isBlocked(pubkey) ||
-        blocklistService.isFollowSevered(pubkey);
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<OthersFollowingBloc>().add(
+        const OthersFollowingBlocklistChanged(),
+      );
+    });
 
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Following"
@@ -119,46 +119,48 @@ class _OthersFollowingView extends ConsumerWidget {
         title: FollowerCountTitle<OthersFollowingBloc, OthersFollowingState>(
           title: appBarTitle,
           selector: (state) => state.status == OthersFollowingStatus.success
-              ? state.followingPubkeys
-                    .where(
-                      (pk) =>
-                          !blocklistService.isBlocked(pk) &&
-                          !(hideCurrentUser && pk == currentUserPubkey),
-                    )
-                    .length
+              ? state.followingPubkeys.length
               : 0,
         ),
       ),
-      body: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
-        builder: (context, state) {
-          return switch (state.status) {
-            OthersFollowingStatus.initial || OthersFollowingStatus.loading =>
-              const Center(child: CircularProgressIndicator()),
-            OthersFollowingStatus.success => _FollowingListBody(
-              following: state.followingPubkeys
-                  .where(
-                    (pk) =>
-                        !blocklistService.isBlocked(pk) &&
-                        !(hideCurrentUser && pk == currentUserPubkey),
-                  )
-                  .toList(),
-              targetPubkey: pubkey,
-            ),
-            OthersFollowingStatus.failure => _FollowingErrorBody(
-              onRetry: () {
-                final targetPubkey = context
-                    .read<OthersFollowingBloc>()
-                    .state
-                    .targetPubkey;
-                if (targetPubkey != null) {
-                  context.read<OthersFollowingBloc>().add(
-                    OthersFollowingListLoadRequested(targetPubkey),
-                  );
-                }
-              },
-            ),
-          };
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MyFollowingBloc, MyFollowingState>(
+            listenWhen: (previous, current) =>
+                current.toggleError != null &&
+                current.toggleError != previous.toggleError,
+            listener: (context, state) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.toggleError!)),
+              );
+            },
+          ),
+        ],
+        child: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
+          builder: (context, state) {
+            return switch (state.status) {
+              OthersFollowingStatus.initial || OthersFollowingStatus.loading =>
+                const Center(child: CircularProgressIndicator()),
+              OthersFollowingStatus.success => _FollowingListBody(
+                following: state.followingPubkeys,
+                targetPubkey: pubkey,
+              ),
+              OthersFollowingStatus.failure => _FollowingErrorBody(
+                onRetry: () {
+                  final targetPubkey = context
+                      .read<OthersFollowingBloc>()
+                      .state
+                      .targetPubkey;
+                  if (targetPubkey != null) {
+                    context.read<OthersFollowingBloc>().add(
+                      OthersFollowingListLoadRequested(targetPubkey),
+                    );
+                  }
+                },
+              ),
+            };
+          },
+        ),
       ),
     );
   }

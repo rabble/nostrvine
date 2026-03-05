@@ -75,10 +75,20 @@ class OtherProfileScreen extends ConsumerWidget {
       );
     }
 
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final followRepository = ref.watch(followRepositoryProvider);
+
     return BlocProvider(
-      create: (context) =>
-          OtherProfileBloc(pubkey: pubkey, profileRepository: profileRepository)
-            ..add(const OtherProfileLoadRequested()),
+      create: (context) => OtherProfileBloc(
+        pubkey: pubkey,
+        profileRepository: profileRepository,
+        contentBlocklistService: blocklistService,
+        currentUserPubkey: nostrClient.publicKey,
+        followRepository: followRepository,
+        onBlocklistChanged: () =>
+            ref.read(blocklistVersionProvider.notifier).increment(),
+      )..add(const OtherProfileLoadRequested()),
       child: OtherProfileView(
         pubkey: pubkey,
         displayNameHint: displayNameHint,
@@ -217,20 +227,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
       case MoreSheetResult.unfollow:
         await _unfollowUser();
       case MoreSheetResult.blockConfirmed:
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-        final nostrClient = ref.read(nostrServiceProvider);
-        blocklistService.blockUser(
-          widget.pubkey,
-          ourPubkey: nostrClient.publicKey,
+        context.read<OtherProfileBloc>().add(
+          const OtherProfileBlockRequested(),
         );
-
-        final followRepository = ref.read(followRepositoryProvider);
-        if (followRepository != null &&
-            followRepository.isFollowing(widget.pubkey)) {
-          await followRepository.toggleFollow(widget.pubkey);
-        }
-
-        ref.read(blocklistVersionProvider.notifier).increment();
         if (mounted) {
           final profile = ref
               .read(userProfileReactiveProvider(widget.pubkey))
@@ -244,9 +243,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           context.pop();
         }
       case MoreSheetResult.unblockConfirmed:
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-        blocklistService.unblockUser(widget.pubkey);
-        ref.read(blocklistVersionProvider.notifier).increment();
+        context.read<OtherProfileBloc>().add(
+          const OtherProfileUnblockRequested(),
+        );
         if (mounted) {
           final profile = ref
               .read(userProfileReactiveProvider(widget.pubkey))
@@ -299,9 +298,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     if (!mounted) return;
 
     if (result == MoreSheetResult.unblockConfirmed) {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(widget.pubkey);
-      ref.read(blocklistVersionProvider.notifier).increment();
+      if (!mounted) return;
+      context.read<OtherProfileBloc>().add(
+        const OtherProfileUnblockRequested(),
+      );
     }
   }
 

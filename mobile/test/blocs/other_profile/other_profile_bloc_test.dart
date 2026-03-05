@@ -6,17 +6,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
+import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
+
 void main() {
   group('OtherProfileBloc', () {
     late _MockProfileRepository mockProfileRepository;
+    late _MockContentBlocklistService mockBlocklistService;
+    late _MockFollowRepository mockFollowRepository;
+    late int blocklistChangedCallCount;
 
     // Test data constants - using full 64-character hex pubkey as required
     const testPubkey =
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+    const testCurrentUserPubkey =
+        'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b200';
     const testDisplayName = 'Test User';
     const testAbout = 'Test bio';
     const testPicture = 'https://example.com/avatar.png';
@@ -41,12 +53,24 @@ void main() {
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
+      mockBlocklistService = _MockContentBlocklistService();
+      mockFollowRepository = _MockFollowRepository();
+      blocklistChangedCallCount = 0;
+
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+      when(
+        () => mockFollowRepository.toggleFollow(any()),
+      ).thenAnswer((_) async {});
     });
 
     OtherProfileBloc createBloc({String pubkey = testPubkey}) =>
         OtherProfileBloc(
           profileRepository: mockProfileRepository,
           pubkey: pubkey,
+          contentBlocklistService: mockBlocklistService,
+          currentUserPubkey: testCurrentUserPubkey,
+          followRepository: mockFollowRepository,
+          onBlocklistChanged: () => blocklistChangedCallCount++,
         );
 
     test('initial state is OtherProfileInitial', () {
@@ -500,6 +524,116 @@ void main() {
       });
     });
 
+    group('OtherProfileBlockRequested', () {
+      setUp(() {
+        when(
+          () => mockBlocklistService.blockUser(
+            any(),
+            ourPubkey: any(named: 'ourPubkey'),
+          ),
+        ).thenReturn(null);
+      });
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'calls blockUser with correct arguments',
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
+        verify: (_) {
+          verify(
+            () => mockBlocklistService.blockUser(
+              testPubkey,
+              ourPubkey: testCurrentUserPubkey,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'calls toggleFollow when currently following the user',
+        setUp: () {
+          when(
+            () => mockFollowRepository.isFollowing(testPubkey),
+          ).thenReturn(true);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
+        verify: (_) {
+          verify(
+            () => mockFollowRepository.toggleFollow(testPubkey),
+          ).called(1);
+        },
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'does not call toggleFollow when not following the user',
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
+        verify: (_) {
+          verifyNever(
+            () => mockFollowRepository.toggleFollow(any()),
+          );
+        },
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'invokes onBlocklistChanged callback',
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
+        verify: (_) {
+          expect(blocklistChangedCallCount, equals(1));
+        },
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'still blocks user when toggleFollow throws',
+        setUp: () {
+          when(
+            () => mockFollowRepository.isFollowing(testPubkey),
+          ).thenReturn(true);
+          when(
+            () => mockFollowRepository.toggleFollow(testPubkey),
+          ).thenThrow(Exception('network error'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileBlockRequested()),
+        verify: (_) {
+          verify(
+            () => mockBlocklistService.blockUser(
+              testPubkey,
+              ourPubkey: testCurrentUserPubkey,
+            ),
+          ).called(1);
+          expect(blocklistChangedCallCount, equals(1));
+        },
+      );
+    });
+
+    group('OtherProfileUnblockRequested', () {
+      setUp(() {
+        when(() => mockBlocklistService.unblockUser(any())).thenReturn(null);
+      });
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'calls unblockUser with correct pubkey',
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileUnblockRequested()),
+        verify: (_) {
+          verify(
+            () => mockBlocklistService.unblockUser(testPubkey),
+          ).called(1);
+        },
+      );
+
+      blocTest<OtherProfileBloc, OtherProfileState>(
+        'invokes onBlocklistChanged callback',
+        build: createBloc,
+        act: (bloc) => bloc.add(const OtherProfileUnblockRequested()),
+        verify: (_) {
+          expect(blocklistChangedCallCount, equals(1));
+        },
+      );
+    });
+
     group('OtherProfileState', () {
       test('OtherProfileInitial instances are equal', () {
         const state1 = OtherProfileInitial();
@@ -576,6 +710,18 @@ void main() {
       test('OtherProfileRefreshRequested instances are equal', () {
         const event1 = OtherProfileRefreshRequested();
         const event2 = OtherProfileRefreshRequested();
+        expect(event1, equals(event2));
+      });
+
+      test('OtherProfileBlockRequested instances are equal', () {
+        const event1 = OtherProfileBlockRequested();
+        const event2 = OtherProfileBlockRequested();
+        expect(event1, equals(event2));
+      });
+
+      test('OtherProfileUnblockRequested instances are equal', () {
+        const event1 = OtherProfileUnblockRequested();
+        const event2 = OtherProfileUnblockRequested();
         expect(event1, equals(event2));
       });
     });

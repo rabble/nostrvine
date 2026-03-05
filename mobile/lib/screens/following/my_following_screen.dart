@@ -28,6 +28,7 @@ class MyFollowingScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -35,9 +36,10 @@ class MyFollowingScreen extends ConsumerWidget {
     }
 
     return BlocProvider(
-      create: (_) =>
-          MyFollowingBloc(followRepository: followRepository)
-            ..add(const MyFollowingListLoadRequested()),
+      create: (_) => MyFollowingBloc(
+        followRepository: followRepository,
+        contentBlocklistService: blocklistService,
+      )..add(const MyFollowingListLoadRequested()),
       child: _MyFollowingView(displayName: displayName),
     );
   }
@@ -50,8 +52,11 @@ class _MyFollowingView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(blocklistVersionProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<MyFollowingBloc>().add(
+        const MyFollowingBlocklistChanged(),
+      );
+    });
 
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Following"
@@ -94,9 +99,7 @@ class _MyFollowingView extends ConsumerWidget {
         title: FollowerCountTitle<MyFollowingBloc, MyFollowingState>(
           title: appBarTitle,
           selector: (state) => state.status == MyFollowingStatus.success
-              ? state.followingPubkeys
-                    .where((pk) => !blocklistService.isBlocked(pk))
-                    .length
+              ? state.followingPubkeys.length
               : 0,
         ),
       ),
@@ -128,9 +131,7 @@ class _MyFollowingView extends ConsumerWidget {
               following: state.followingPubkeys,
             ),
             MyFollowingStatus.success => _FollowingListBody(
-              following: state.followingPubkeys
-                  .where((pk) => !blocklistService.isBlocked(pk))
-                  .toList(),
+              following: state.followingPubkeys,
             ),
             MyFollowingStatus.failure => _FollowingErrorBody(
               onRetry: () {

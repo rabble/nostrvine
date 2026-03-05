@@ -8,12 +8,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
 void main() {
   group('MyFollowingBloc', () {
     late _MockFollowRepository mockFollowRepository;
+    late _MockContentBlocklistService mockBlocklistService;
     late StreamController<List<String>> followingStreamController;
 
     // Helper to create valid hex pubkeys (64 hex characters)
@@ -26,20 +31,26 @@ void main() {
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
+      mockBlocklistService = _MockContentBlocklistService();
       followingStreamController = StreamController<List<String>>.broadcast();
 
       when(
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => followingStreamController.stream);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+
+      // Default: nothing is blocked
+      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
     });
 
     tearDown(() {
       followingStreamController.close();
     });
 
-    MyFollowingBloc createBloc() =>
-        MyFollowingBloc(followRepository: mockFollowRepository);
+    MyFollowingBloc createBloc() => MyFollowingBloc(
+      followRepository: mockFollowRepository,
+      contentBlocklistService: mockBlocklistService,
+    );
 
     test('initial state is success with cached data', () {
       when(

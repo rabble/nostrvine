@@ -51,9 +51,10 @@ class FollowFromProfileButton extends ConsumerWidget {
     final isBlockedByThem = blocklistService.hasBlockedUs(pubkey);
 
     return BlocProvider(
-      create: (_) =>
-          MyFollowingBloc(followRepository: followRepository)
-            ..add(const MyFollowingListLoadRequested()),
+      create: (_) => MyFollowingBloc(
+        followRepository: followRepository,
+        contentBlocklistService: blocklistService,
+      )..add(const MyFollowingListLoadRequested()),
       child: FollowFromProfileButtonView(
         pubkey: pubkey,
         displayName: displayName,

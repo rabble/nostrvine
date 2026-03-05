@@ -35,6 +35,7 @@ class OthersFollowersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -44,14 +45,16 @@ class OthersFollowersScreen extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) =>
-              OthersFollowersBloc(followRepository: followRepository)
-                ..add(OthersFollowersListLoadRequested(pubkey)),
+          create: (_) => OthersFollowersBloc(
+            followRepository: followRepository,
+            contentBlocklistService: blocklistService,
+          )..add(OthersFollowersListLoadRequested(pubkey)),
         ),
         BlocProvider(
-          create: (_) =>
-              MyFollowingBloc(followRepository: followRepository)
-                ..add(const MyFollowingListLoadRequested()),
+          create: (_) => MyFollowingBloc(
+            followRepository: followRepository,
+            contentBlocklistService: blocklistService,
+          )..add(const MyFollowingListLoadRequested()),
         ),
       ],
       child: _OthersFollowersView(pubkey: pubkey, displayName: displayName),
@@ -67,8 +70,12 @@ class _OthersFollowersView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(blocklistVersionProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<OthersFollowersBloc>().add(
+        const OthersFollowersBlocklistChanged(),
+      );
+    });
+
     final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
     final followRepository = ref.watch(followRepositoryProvider);
 
@@ -117,44 +124,54 @@ class _OthersFollowersView extends ConsumerWidget {
           selector: (state) => state.status == OthersFollowersStatus.success
               ? state.followersPubkeys
                     .where(
-                      (pk) =>
-                          !blocklistService.isBlocked(pk) &&
-                          !(pk == currentUserPubkey && !isFollowingTarget),
+                      (pk) => !(pk == currentUserPubkey && !isFollowingTarget),
                     )
                     .length
               : 0,
         ),
       ),
-      body: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
-        builder: (context, state) {
-          return switch (state.status) {
-            OthersFollowersStatus.initial || OthersFollowersStatus.loading =>
-              const Center(child: CircularProgressIndicator()),
-            OthersFollowersStatus.success => _FollowersListBody(
-              followers: state.followersPubkeys
-                  .where(
-                    (pk) =>
-                        !blocklistService.isBlocked(pk) &&
-                        !(pk == currentUserPubkey && !isFollowingTarget),
-                  )
-                  .toList(),
-              targetPubkey: pubkey,
-            ),
-            OthersFollowersStatus.failure => _FollowersErrorBody(
-              onRetry: () {
-                final targetPubkey = context
-                    .read<OthersFollowersBloc>()
-                    .state
-                    .targetPubkey;
-                if (targetPubkey != null) {
-                  context.read<OthersFollowersBloc>().add(
-                    OthersFollowersListLoadRequested(targetPubkey),
-                  );
-                }
-              },
-            ),
-          };
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MyFollowingBloc, MyFollowingState>(
+            listenWhen: (previous, current) =>
+                current.toggleError != null &&
+                current.toggleError != previous.toggleError,
+            listener: (context, state) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.toggleError!)),
+              );
+            },
+          ),
+        ],
+        child: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
+          builder: (context, state) {
+            return switch (state.status) {
+              OthersFollowersStatus.initial || OthersFollowersStatus.loading =>
+                const Center(child: CircularProgressIndicator()),
+              OthersFollowersStatus.success => _FollowersListBody(
+                followers: state.followersPubkeys
+                    .where(
+                      (pk) => !(pk == currentUserPubkey && !isFollowingTarget),
+                    )
+                    .toList(),
+                targetPubkey: pubkey,
+              ),
+              OthersFollowersStatus.failure => _FollowersErrorBody(
+                onRetry: () {
+                  final targetPubkey = context
+                      .read<OthersFollowersBloc>()
+                      .state
+                      .targetPubkey;
+                  if (targetPubkey != null) {
+                    context.read<OthersFollowersBloc>().add(
+                      OthersFollowersListLoadRequested(targetPubkey),
+                    );
+                  }
+                },
+              ),
+            };
+          },
+        ),
       ),
     );
   }

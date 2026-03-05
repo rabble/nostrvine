@@ -30,6 +30,7 @@ class ProfileFollowingStat extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final isCurrentUser = pubkey == nostrClient.publicKey;
 
     // Don't show stats until NostrClient has keys
@@ -43,16 +44,19 @@ class ProfileFollowingStat extends ConsumerWidget {
 
     if (isCurrentUser) {
       return BlocProvider(
-        create: (_) =>
-            MyFollowingBloc(followRepository: followRepository)
-              ..add(const MyFollowingListLoadRequested()),
+        create: (_) => MyFollowingBloc(
+          followRepository: followRepository,
+          contentBlocklistService: blocklistService,
+        )..add(const MyFollowingListLoadRequested()),
         child: _MyFollowingStatView(pubkey: pubkey, displayName: displayName),
       );
     } else {
       return BlocProvider(
-        create: (_) =>
-            OthersFollowingBloc(nostrClient: nostrClient)
-              ..add(OthersFollowingListLoadRequested(pubkey)),
+        create: (_) => OthersFollowingBloc(
+          nostrClient: nostrClient,
+          contentBlocklistService: blocklistService,
+          currentUserPubkey: nostrClient.publicKey,
+        )..add(OthersFollowingListLoadRequested(pubkey)),
         child: _OthersFollowingStatView(
           pubkey: pubkey,
           displayName: displayName,
@@ -71,21 +75,19 @@ class _MyFollowingStatView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(blocklistVersionProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<MyFollowingBloc>().add(
+        const MyFollowingBlocklistChanged(),
+      );
+    });
 
     return BlocBuilder<MyFollowingBloc, MyFollowingState>(
       builder: (context, state) {
         // MyFollowingBloc starts with success status (cached data)
         final isLoading = state.status == MyFollowingStatus.initial;
-        final filteredCount = isLoading
-            ? null
-            : state.followingPubkeys
-                  .where((pk) => !blocklistService.isBlocked(pk))
-                  .length;
 
         return ProfileStatColumn(
-          count: filteredCount,
+          count: isLoading ? null : state.followingPubkeys.length,
           label: 'Following',
           isLoading: isLoading,
           onTap: () => context.push(
@@ -110,32 +112,20 @@ class _OthersFollowingStatView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(blocklistVersionProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
-
-    // Hide ourselves from target's following count if we blocked them
-    final hideCurrentUser =
-        blocklistService.isBlocked(pubkey) ||
-        blocklistService.isFollowSevered(pubkey);
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<OthersFollowingBloc>().add(
+        const OthersFollowingBlocklistChanged(),
+      );
+    });
 
     return BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
       builder: (context, state) {
         final isLoading =
             state.status == OthersFollowingStatus.initial ||
             state.status == OthersFollowingStatus.loading;
-        final filteredCount = isLoading
-            ? null
-            : state.followingPubkeys
-                  .where(
-                    (pk) =>
-                        !blocklistService.isBlocked(pk) &&
-                        !(hideCurrentUser && pk == currentUserPubkey),
-                  )
-                  .length;
 
         return ProfileStatColumn(
-          count: filteredCount,
+          count: isLoading ? null : state.followingPubkeys.length,
           label: 'Following',
           isLoading: isLoading,
           onTap: () => context.push(

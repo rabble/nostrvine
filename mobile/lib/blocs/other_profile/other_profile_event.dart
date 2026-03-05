@@ -1,5 +1,5 @@
 // ABOUTME: Events for OtherProfileBloc - viewing another user's profile
-// ABOUTME: Handles screen open and pull-to-refresh actions
+// ABOUTME: Handles screen open, pull-to-refresh, and block/unblock actions
 
 part of 'other_profile_bloc.dart';
 
@@ -26,4 +26,23 @@ final class OtherProfileLoadRequested extends OtherProfileEvent {
 /// Re-fetches the profile from relay and updates the UI.
 final class OtherProfileRefreshRequested extends OtherProfileEvent {
   const OtherProfileRefreshRequested();
+}
+
+/// Event triggered when the user confirms blocking this profile.
+///
+/// The BLoC will:
+/// 1. Add user to blocklist
+/// 2. Unfollow them if currently following
+/// 3. Increment blocklist version to notify other BLoCs
+final class OtherProfileBlockRequested extends OtherProfileEvent {
+  const OtherProfileBlockRequested();
+}
+
+/// Event triggered when the user confirms unblocking this profile.
+///
+/// The BLoC will:
+/// 1. Remove user from blocklist
+/// 2. Increment blocklist version to notify other BLoCs
+final class OtherProfileUnblockRequested extends OtherProfileEvent {
+  const OtherProfileUnblockRequested();
 }

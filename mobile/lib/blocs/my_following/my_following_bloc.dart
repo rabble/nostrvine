@@ -5,6 +5,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 part 'my_following_event.dart';
@@ -15,23 +16,41 @@ part 'my_following_state.dart';
 /// Uses [FollowRepository] for reactive updates via emit.forEach.
 /// Initial state is set optimistically with cached repository data
 /// to prevent UI flash.
+///
+/// Filters out blocked users before emitting state.
 class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
-  MyFollowingBloc({required FollowRepository followRepository})
-    : _followRepository = followRepository,
-      super(
-        MyFollowingState(
-          status: MyFollowingStatus.success,
-          followingPubkeys: followRepository.followingPubkeys,
-        ),
-      ) {
+  MyFollowingBloc({
+    required FollowRepository followRepository,
+    required ContentBlocklistService contentBlocklistService,
+  }) : _followRepository = followRepository,
+       _blocklistService = contentBlocklistService,
+       super(
+         MyFollowingState(
+           status: MyFollowingStatus.success,
+           followingPubkeys: followRepository.followingPubkeys
+               .where(
+                 (pk) => !contentBlocklistService.isBlocked(pk),
+               )
+               .toList(),
+         ),
+       ) {
     on<MyFollowingListLoadRequested>(_onLoadRequested);
     on<MyFollowingToggleRequested>(
       _onToggleRequested,
       transformer: droppable(),
     );
+    on<MyFollowingBlocklistChanged>(_onBlocklistChanged);
   }
 
   final FollowRepository _followRepository;
+  final ContentBlocklistService _blocklistService;
+
+  /// Raw unfiltered following pubkeys for re-filtering on blocklist changes.
+  List<String> _rawFollowingPubkeys = [];
+
+  /// Filter pubkeys by removing blocked users.
+  List<String> _filterPubkeys(List<String> pubkeys) =>
+      pubkeys.where((pk) => !_blocklistService.isBlocked(pk)).toList();
 
   /// Listen to repository stream for reactive updates
   Future<void> _onLoadRequested(
@@ -41,10 +60,13 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
     try {
       await emit.forEach<List<String>>(
         _followRepository.followingStream,
-        onData: (followingPubkeys) => state.copyWith(
-          status: MyFollowingStatus.success,
-          followingPubkeys: followingPubkeys,
-        ),
+        onData: (followingPubkeys) {
+          _rawFollowingPubkeys = followingPubkeys;
+          return state.copyWith(
+            status: MyFollowingStatus.success,
+            followingPubkeys: _filterPubkeys(followingPubkeys),
+          );
+        },
         onError: (error, stackTrace) {
           Log.error(
             'Error in following stream: $error',
@@ -89,5 +111,19 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
       );
       emit(state.copyWith(status: MyFollowingStatus.toggleFailure));
     }
+  }
+
+  /// Re-filter following when blocklist changes.
+  void _onBlocklistChanged(
+    MyFollowingBlocklistChanged event,
+    Emitter<MyFollowingState> emit,
+  ) {
+    if (state.status != MyFollowingStatus.success) return;
+
+    emit(
+      state.copyWith(
+        followingPubkeys: _filterPubkeys(_rawFollowingPubkeys),
+      ),
+    );
   }
 }

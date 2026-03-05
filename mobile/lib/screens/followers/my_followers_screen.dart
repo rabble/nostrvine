@@ -30,6 +30,7 @@ class MyFollowersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -39,14 +40,16 @@ class MyFollowersScreen extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) =>
-              MyFollowersBloc(followRepository: followRepository)
-                ..add(const MyFollowersListLoadRequested()),
+          create: (_) => MyFollowersBloc(
+            followRepository: followRepository,
+            contentBlocklistService: blocklistService,
+          )..add(const MyFollowersListLoadRequested()),
         ),
         BlocProvider(
-          create: (_) =>
-              MyFollowingBloc(followRepository: followRepository)
-                ..add(const MyFollowingListLoadRequested()),
+          create: (_) => MyFollowingBloc(
+            followRepository: followRepository,
+            contentBlocklistService: blocklistService,
+          )..add(const MyFollowingListLoadRequested()),
         ),
       ],
       child: _MyFollowersView(displayName: displayName),
@@ -61,8 +64,11 @@ class _MyFollowersView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(blocklistVersionProvider);
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<MyFollowersBloc>().add(
+        const MyFollowersBlocklistChanged(),
+      );
+    });
 
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Followers"
@@ -105,13 +111,7 @@ class _MyFollowersView extends ConsumerWidget {
         title: FollowerCountTitle<MyFollowersBloc, MyFollowersState>(
           title: appBarTitle,
           selector: (state) => state.status == MyFollowersStatus.success
-              ? state.followersPubkeys
-                    .where(
-                      (pk) =>
-                          !blocklistService.isBlocked(pk) &&
-                          !blocklistService.isFollowSevered(pk),
-                    )
-                    .length
+              ? state.followersPubkeys.length
               : 0,
         ),
       ),
