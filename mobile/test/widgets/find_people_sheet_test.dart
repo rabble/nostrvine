@@ -9,7 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -18,24 +17,17 @@ import '../helpers/test_provider_overrides.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
-class _MockFollowRepository extends Mock implements FollowRepository {}
-
 void main() {
   group(FindPeopleSheet, () {
     late _MockProfileRepository mockProfileRepo;
-    late _MockFollowRepository mockFollowRepo;
     late MockUserProfileService mockUserProfileService;
 
     setUp(() {
       mockProfileRepo = _MockProfileRepository();
-      mockFollowRepo = _MockFollowRepository();
       mockUserProfileService = createMockUserProfileService();
-
-      // Default stubs
-      when(() => mockFollowRepo.followingPubkeys).thenReturn([]);
     });
 
-    Widget createTestWidget() {
+    Widget createTestWidget({List<ShareableUser> contacts = const []}) {
       return testMaterialApp(
         home: Builder(
           builder: (context) {
@@ -47,7 +39,7 @@ void main() {
                     isScrollControlled: true,
                     useSafeArea: true,
                     backgroundColor: Colors.transparent,
-                    builder: (context) => const FindPeopleSheet(),
+                    builder: (context) => FindPeopleSheet(contacts: contacts),
                   );
                 },
                 child: const Text('Open Sheet'),
@@ -58,7 +50,6 @@ void main() {
         mockUserProfileService: mockUserProfileService,
         additionalOverrides: [
           profileRepositoryProvider.overrideWithValue(mockProfileRepo),
-          followRepositoryProvider.overrideWithValue(mockFollowRepo),
         ],
       );
     }
@@ -98,23 +89,13 @@ void main() {
         tester,
       ) async {
         final pubkey = 'a' * 64;
-        when(() => mockFollowRepo.followingPubkeys).thenReturn([pubkey]);
-        when(
-          () => mockUserProfileService.hasProfile(pubkey),
-        ).thenReturn(true);
-        when(
-          () => mockUserProfileService.getCachedProfile(pubkey),
-        ).thenReturn(
-          UserProfile(
-            pubkey: pubkey,
-            displayName: 'Alice',
-            createdAt: DateTime.now(),
-            eventId: 'event-$pubkey',
-            rawData: const {'display_name': 'Alice'},
-          ),
-        );
+        final contacts = [
+          ShareableUser(pubkey: pubkey, displayName: 'Alice'),
+        ];
 
-        await openSheet(tester);
+        await tester.pumpWidget(createTestWidget(contacts: contacts));
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
 
         expect(find.text('Alice'), findsOneWidget);
         expect(find.byType(ListTile), findsOneWidget);
@@ -273,21 +254,7 @@ void main() {
         'tapping a contact pops the sheet with the selected $ShareableUser',
         (tester) async {
           final pubkey = 'c' * 64;
-          when(() => mockFollowRepo.followingPubkeys).thenReturn([pubkey]);
-          when(
-            () => mockUserProfileService.hasProfile(pubkey),
-          ).thenReturn(true);
-          when(
-            () => mockUserProfileService.getCachedProfile(pubkey),
-          ).thenReturn(
-            UserProfile(
-              pubkey: pubkey,
-              displayName: 'Charlie',
-              createdAt: DateTime.now(),
-              eventId: 'event-$pubkey',
-              rawData: const {'display_name': 'Charlie'},
-            ),
-          );
+          final contact = ShareableUser(pubkey: pubkey, displayName: 'Charlie');
 
           ShareableUser? result;
           await tester.pumpWidget(
@@ -302,7 +269,8 @@ void main() {
                           isScrollControlled: true,
                           useSafeArea: true,
                           backgroundColor: Colors.transparent,
-                          builder: (context) => const FindPeopleSheet(),
+                          builder: (context) =>
+                              FindPeopleSheet(contacts: [contact]),
                         );
                       },
                       child: const Text('Open Sheet'),
@@ -313,7 +281,6 @@ void main() {
               mockUserProfileService: mockUserProfileService,
               additionalOverrides: [
                 profileRepositoryProvider.overrideWithValue(mockProfileRepo),
-                followRepositoryProvider.overrideWithValue(mockFollowRepo),
               ],
             ),
           );
