@@ -361,7 +361,7 @@ void main() {
           when(() => mockCubit.state).thenReturn(initialState);
           whenListen(
             mockCubit,
-            Stream<EmailVerificationState>.empty(),
+            const Stream<EmailVerificationState>.empty(),
             initialState: initialState,
           );
 
