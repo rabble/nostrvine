@@ -107,7 +107,7 @@ void main() {
           appReadyProvider.overrideWith((ref) => true),
           isDiscoveryTabActiveProvider.overrideWith((ref) => true),
           isExploreTabActiveProvider.overrideWith((ref) => false),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
 
@@ -149,14 +149,14 @@ void main() {
           appReadyProvider.overrideWith((ref) => true),
           isDiscoveryTabActiveProvider.overrideWith((ref) => true),
           isExploreTabActiveProvider.overrideWith((ref) => false),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
 
       // Listen to the stream for emissions
       final emissions = <List<VideoEvent>>[];
       container.listen(videoEventsProvider, (prev, next) {
-        next.whenData((videos) => emissions.add(videos));
+        next.whenData(emissions.add);
       });
 
       // Wait for initial build
@@ -227,14 +227,14 @@ void main() {
           appReadyProvider.overrideWith((ref) => true),
           isDiscoveryTabActiveProvider.overrideWith((ref) => true),
           isExploreTabActiveProvider.overrideWith((ref) => false),
-          seenVideosProvider.overrideWith(() => SeenVideosNotifier()),
+          seenVideosProvider.overrideWith(SeenVideosNotifier.new),
         ],
       );
 
       // Listen to the stream
       final emissions = <List<VideoEvent>>[];
       container.listen(videoEventsProvider, (prev, next) {
-        next.whenData((videos) => emissions.add(videos));
+        next.whenData(emissions.add);
       });
 
       // Wait for initial build

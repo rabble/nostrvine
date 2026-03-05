@@ -33,31 +33,31 @@ class BlockConfirmationView extends StatelessWidget {
         key: const ValueKey('confirmation'),
         mainAxisSize: MainAxisSize.min,
         children: [
-          DivineSticker(sticker: DivineStickerName.blocked, size: 132),
-          SizedBox(height: 32),
+          const DivineSticker(sticker: DivineStickerName.blocked),
+          const SizedBox(height: 32),
           // Title
           Text(
             'Block $displayName?',
             style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           // Explanation content
           Text(
             'When you block a user:',
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
           const SizedBox(height: 8),
-          Padding(
+          const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Column(
               spacing: 14,
-              children: const [
-                const BulletPoint('Their posts will not appear in your feeds.'),
-                const BulletPoint(
+              children: [
+                BulletPoint('Their posts will not appear in your feeds.'),
+                BulletPoint(
                   'They will be unable to view your profile, follow you, or view your posts.',
                 ),
-                const BulletPoint('They will not be notified of this change.'),
-                const BulletPoint(
+                BulletPoint('They will not be notified of this change.'),
+                BulletPoint(
                   'You will still be able to view their profile.',
                 ),
               ],

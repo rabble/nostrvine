@@ -39,22 +39,22 @@ class UnblockConfirmationView extends StatelessWidget {
             'Unblock $displayName?',
             style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           // Explanation content
           Text(
             'When you unblock this user:',
             style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
-          SizedBox(height: 8),
-          Column(
+          const SizedBox(height: 8),
+          const Column(
             spacing: 14,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const BulletPoint('Their posts will appear in your feeds.'),
-              const BulletPoint(
+              BulletPoint('Their posts will appear in your feeds.'),
+              BulletPoint(
                 'They will be able to view your profile, follow you, and view your posts.',
               ),
-              const BulletPoint('They will not be notified of this change.'),
+              BulletPoint('They will not be notified of this change.'),
             ],
           ),
           const SizedBox(height: 16),
@@ -80,7 +80,7 @@ class UnblockConfirmationView extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           // Button row
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -98,7 +98,6 @@ class UnblockConfirmationView extends StatelessWidget {
                   child: DivineButton(
                     label: 'Unblock',
                     onPressed: onConfirm,
-                    type: DivineButtonType.primary,
                   ),
                 ),
               ],

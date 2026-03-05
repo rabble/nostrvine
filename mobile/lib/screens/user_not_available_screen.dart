@@ -5,7 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 // TODO(SofiaRey): revisit when designs are ready
 /// Screen shown when the target user has blocked us.
 class UserNotAvailableScreen extends StatelessWidget {
-  const UserNotAvailableScreen({required this.onBack});
+  const UserNotAvailableScreen({required this.onBack, super.key});
 
   final VoidCallback onBack;
 
@@ -69,7 +69,7 @@ class UserNotAvailableScreen extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 'Account not available',
-                style: VineTheme.titleFont(color: VineTheme.primaryText),
+                style: VineTheme.titleFont(),
               ),
               const SizedBox(height: 8),
               Text(
