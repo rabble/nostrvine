@@ -549,9 +549,9 @@ class _ContactsLoadingItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return const SizedBox(
       width: _ShareWithSection._itemWidth,
-      child: const Center(
+      child: Center(
         child: SizedBox(
           width: 24,
           height: 24,
