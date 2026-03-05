@@ -1269,17 +1269,17 @@ final class SecureKeyStorageProvider
 
 String _$secureKeyStorageHash() => r'853547d439994307884d2f47f3d9769daa0a1e96';
 
-/// OAuth configuration for our login.divine.video server
+/// OAuth configuration — uses local keycast when running in local environment
 
 @ProviderFor(oauthConfig)
 const oauthConfigProvider = OauthConfigProvider._();
 
-/// OAuth configuration for our login.divine.video server
+/// OAuth configuration — uses local keycast when running in local environment
 
 final class OauthConfigProvider
     extends $FunctionalProvider<OAuthConfig, OAuthConfig, OAuthConfig>
     with $Provider<OAuthConfig> {
-  /// OAuth configuration for our login.divine.video server
+  /// OAuth configuration — uses local keycast when running in local environment
   const OauthConfigProvider._()
     : super(
         from: null,
@@ -1313,7 +1313,7 @@ final class OauthConfigProvider
   }
 }
 
-String _$oauthConfigHash() => r'2d26760b0a845d9e0c2dd0362a4c26363be1786f';
+String _$oauthConfigHash() => r'dff26778d76d10a89d836aa97cef2bb1eb8e6ba1';
 
 @ProviderFor(flutterSecureStorage)
 const flutterSecureStorageProvider = FlutterSecureStorageProvider._();

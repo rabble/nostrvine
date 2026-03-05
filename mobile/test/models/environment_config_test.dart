@@ -6,12 +6,13 @@ import 'package:openvine/models/environment_config.dart';
 
 void main() {
   group('AppEnvironment', () {
-    test('has four values', () {
-      expect(AppEnvironment.values.length, 4);
+    test('has five values', () {
+      expect(AppEnvironment.values.length, 5);
       expect(AppEnvironment.values, contains(AppEnvironment.poc));
       expect(AppEnvironment.values, contains(AppEnvironment.staging));
       expect(AppEnvironment.values, contains(AppEnvironment.test));
       expect(AppEnvironment.values, contains(AppEnvironment.production));
+      expect(AppEnvironment.values, contains(AppEnvironment.local));
     });
   });
 
@@ -30,6 +31,11 @@ void main() {
       test('test returns test relay', () {
         const config = EnvironmentConfig(environment: AppEnvironment.test);
         expect(config.relayUrl, 'wss://relay.test.dvines.org');
+      });
+
+      test('local returns emulator relay', () {
+        const config = EnvironmentConfig(environment: AppEnvironment.local);
+        expect(config.relayUrl, 'ws://10.0.2.2:47777');
       });
 
       test('production returns divine.video relay', () {
@@ -56,6 +62,11 @@ void main() {
       test('test derives from relay URL', () {
         const config = EnvironmentConfig(environment: AppEnvironment.test);
         expect(config.apiBaseUrl, 'https://relay.test.dvines.org');
+      });
+
+      test('local returns local API URL', () {
+        const config = EnvironmentConfig(environment: AppEnvironment.local);
+        expect(config.apiBaseUrl, 'http://10.0.2.2:43001');
       });
 
       test('production derives from relay URL', () {
@@ -94,6 +105,10 @@ void main() {
         false,
       );
       expect(
+        const EnvironmentConfig(environment: AppEnvironment.local).isProduction,
+        false,
+      );
+      expect(
         const EnvironmentConfig(
           environment: AppEnvironment.production,
         ).isProduction,
@@ -115,6 +130,10 @@ void main() {
       expect(
         const EnvironmentConfig(environment: AppEnvironment.test).displayName,
         'Test',
+      );
+      expect(
+        const EnvironmentConfig(environment: AppEnvironment.local).displayName,
+        'Local',
       );
       expect(
         const EnvironmentConfig(
@@ -142,6 +161,12 @@ void main() {
           environment: AppEnvironment.test,
         ).indicatorColorValue,
         0xFF34BBF1, // accentBlue
+      );
+      expect(
+        const EnvironmentConfig(
+          environment: AppEnvironment.local,
+        ).indicatorColorValue,
+        0xFFE040FB, // accentPurple
       );
       expect(
         const EnvironmentConfig(

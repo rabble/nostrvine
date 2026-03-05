@@ -1,4 +1,4 @@
-// ABOUTME: Environment configuration model for poc/staging/test/production
+// ABOUTME: Environment configuration model for poc/staging/test/production/local
 // ABOUTME: Each environment maps to exactly one relay URL and API base URL
 
 /// Build-time default environment
@@ -17,6 +17,8 @@ AppEnvironment get buildTimeDefaultEnvironment {
       return AppEnvironment.staging;
     case 'TEST':
       return AppEnvironment.test;
+    case 'LOCAL':
+      return AppEnvironment.local;
     case 'PRODUCTION':
     default:
       return AppEnvironment.production;
@@ -24,7 +26,7 @@ AppEnvironment get buildTimeDefaultEnvironment {
 }
 
 /// Available app environments
-enum AppEnvironment { poc, staging, test, production }
+enum AppEnvironment { poc, staging, test, production, local }
 
 /// Configuration for the current app environment
 class EnvironmentConfig {
@@ -46,14 +48,21 @@ class EnvironmentConfig {
         return 'wss://relay.staging.dvines.org';
       case AppEnvironment.test:
         return 'wss://relay.test.dvines.org';
+      case AppEnvironment.local:
+        return 'ws://10.0.2.2:47777';
       case AppEnvironment.production:
         return 'wss://relay.divine.video';
     }
   }
 
-  /// Get REST API base URL (FunnelCake REST API is served from the relay)
-  /// Derives from relayUrl to ensure they stay in sync
+  /// Get REST API base URL (FunnelCake REST API)
+  ///
+  /// For local environment, the API runs on a separate port from the relay.
+  /// For all other environments, derives from relayUrl to stay in sync.
   String get apiBaseUrl {
+    if (environment == AppEnvironment.local) {
+      return 'http://10.0.2.2:43001';
+    }
     final url = relayUrl;
     if (url.startsWith('wss://')) {
       return url.replaceFirst('wss://', 'https://');
@@ -63,8 +72,28 @@ class EnvironmentConfig {
     return url;
   }
 
-  /// Get blossom media server URL (same for all environments currently)
-  String get blossomUrl => 'https://media.divine.video';
+  /// Get blossom media server URL
+  String get blossomUrl {
+    if (environment == AppEnvironment.local) {
+      return 'http://10.0.2.2:43003';
+    }
+    return 'https://media.divine.video';
+  }
+
+  /// Indexer relay URLs for the current environment.
+  ///
+  /// In LOCAL mode, queries go to the local funnelcake relay to avoid
+  /// wasting time querying external indexers for test-created users.
+  List<String> get indexerRelays {
+    if (environment == AppEnvironment.local) {
+      return const ['ws://10.0.2.2:47777'];
+    }
+    return const [
+      'wss://purplepag.es',
+      'wss://user.kindpag.es',
+      'wss://relay.damus.io',
+    ];
+  }
 
   /// Whether this is production environment
   bool get isProduction => environment == AppEnvironment.production;
@@ -78,6 +107,8 @@ class EnvironmentConfig {
         return 'Staging';
       case AppEnvironment.test:
         return 'Test';
+      case AppEnvironment.local:
+        return 'Local';
       case AppEnvironment.production:
         return 'Production';
     }
@@ -92,6 +123,8 @@ class EnvironmentConfig {
         return 0xFFFFF140; // accentYellow
       case AppEnvironment.test:
         return 0xFF34BBF1; // accentBlue
+      case AppEnvironment.local:
+        return 0xFFE040FB; // accentPurple
       case AppEnvironment.production:
         return 0xFF27C58B; // primaryGreen
     }

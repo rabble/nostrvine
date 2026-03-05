@@ -21,7 +21,8 @@ import 'package:openvine/utils/unified_logger.dart';
 class UserProfileService extends ChangeNotifier {
   /// Well-known indexer relays that maintain broad coverage of kind 0 events
   /// These are specialized relays that aggregate profile metadata from many sources
-  static const List<String> _profileIndexerRelays = [
+  /// Default well-known indexer relays for kind 0 profile lookups
+  static const List<String> _defaultProfileIndexerRelays = [
     'wss://purplepag.es', // Purple Pages - primary metadata indexer
     'wss://user.kindpag.es', // Kind Pages - specialized user metadata indexer
   ];
@@ -30,6 +31,7 @@ class UserProfileService extends ChangeNotifier {
     required SubscriptionManager subscriptionManager,
     AnalyticsApiService? analyticsApiService,
     bool funnelcakeAvailable = false,
+    List<String>? profileIndexerRelays,
 
     /// When true, skips indexer fallback (avoids real WebSocket connections).
     /// Use in tests that mock NostrClient.
@@ -37,11 +39,17 @@ class UserProfileService extends ChangeNotifier {
   }) : _subscriptionManager = subscriptionManager,
        _analyticsApiService = analyticsApiService,
        _funnelcakeAvailable = funnelcakeAvailable,
+       _configuredIndexerRelays = profileIndexerRelays,
        _skipIndexerFallback = skipIndexerFallback;
   final NostrClient _nostrService;
   final AnalyticsApiService? _analyticsApiService;
   bool _funnelcakeAvailable;
+  final List<String>? _configuredIndexerRelays;
   final bool _skipIndexerFallback;
+
+  /// Indexer relays used for profile lookups — configured or default
+  List<String> get _profileIndexerRelays =>
+      _configuredIndexerRelays ?? _defaultProfileIndexerRelays;
 
   /// Update funnelcake availability status (called from provider when it changes)
   void setFunnelcakeAvailable(bool available) {

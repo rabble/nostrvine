@@ -89,14 +89,18 @@ class SocialService {
     this._authService, {
     PersonalEventCacheService? personalEventCache,
     AnalyticsApiService? analyticsApiService,
+    List<String>? indexerRelayUrls,
   }) : _personalEventCache = personalEventCache,
-       _analyticsApiService = analyticsApiService {
+       _analyticsApiService = analyticsApiService,
+       _indexerRelayUrls =
+           indexerRelayUrls ?? IndexerRelayConfig.defaultIndexers {
     _initialize();
   }
   final NostrClient _nostrService;
   final AuthService _authService;
   final PersonalEventCacheService? _personalEventCache;
   final AnalyticsApiService? _analyticsApiService;
+  final List<String> _indexerRelayUrls;
 
   // Cache for follower/following counts
   final Map<String, Map<String, int>> _followerStats =
@@ -338,7 +342,7 @@ class SocialService {
   /// giving accurate follower counts.
   Future<int> _fetchFollowersCountViaIndexers(String pubkey) async {
     final results = await Future.wait(
-      IndexerRelayConfig.defaultIndexers.map(
+      _indexerRelayUrls.map(
         (url) => _queryIndexerForFollowers(url, pubkey).catchError((e) {
           // Return 0 on error so other indexers still contribute to the max.
           Log.warning(

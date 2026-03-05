@@ -201,6 +201,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
+  buffer:
+    dependency: transitive
+    description:
+      name: buffer
+      sha256: "389da2ec2c16283c8787e0adaede82b1842102f8c8aae2f49003a766c5c6b3d1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.3"
   build:
     dependency: transitive
     description:
@@ -1672,6 +1680,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.3"
+  postgres:
+    dependency: "direct dev"
+    description:
+      name: postgres
+      sha256: fefbbfe749c6130e5096588b9c4459173684c695952cd7636ab19be76f255469
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.5.9"
   pretty_dio_logger:
     dependency: transitive
     description:
