@@ -307,9 +307,7 @@ class PlayerPool {
   }
 
   Future<PooledPlayer> _createPlayer() async {
-    final player = Player(
-      configuration: const PlayerConfiguration(logLevel: MPVLogLevel.error),
-    );
+    final player = Player();
 
     // Suppress FFmpeg codec warnings (e.g. smpte170m color transfer) that
     // bypass MPV's API log callback and go directly to stderr.
