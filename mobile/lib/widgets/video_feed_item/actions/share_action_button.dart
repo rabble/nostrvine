@@ -223,6 +223,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
   void _handleAddToList() {
     _safePop(context);
+
+    if (!context.mounted) return;
     showDialog<void>(
       context: context,
       builder: (context) => SelectListDialog(video: widget.video),
