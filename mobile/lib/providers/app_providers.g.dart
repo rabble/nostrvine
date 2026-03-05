@@ -117,12 +117,12 @@ final class PendingActionServiceProvider
 String _$pendingActionServiceHash() =>
     r'67a3a30b8cc1072263ce47f4e2bb3c34fa876fa1';
 
-/// Relay capability service for detecting NIP-11 divine extensions
+/// Relay capability service for detecting NIP-11 Divine extensions
 
 @ProviderFor(relayCapabilityService)
 const relayCapabilityServiceProvider = RelayCapabilityServiceProvider._();
 
-/// Relay capability service for detecting NIP-11 divine extensions
+/// Relay capability service for detecting NIP-11 Divine extensions
 
 final class RelayCapabilityServiceProvider
     extends
@@ -132,7 +132,7 @@ final class RelayCapabilityServiceProvider
           RelayCapabilityService
         >
     with $Provider<RelayCapabilityService> {
-  /// Relay capability service for detecting NIP-11 divine extensions
+  /// Relay capability service for detecting NIP-11 Divine extensions
   const RelayCapabilityServiceProvider._()
     : super(
         from: null,
