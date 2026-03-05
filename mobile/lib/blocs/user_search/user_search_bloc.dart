@@ -61,6 +61,8 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       return;
     }
 
+    if (query == state.query) return;
+
     emit(state.copyWith(status: UserSearchStatus.loading, query: query));
 
     _feedTracker?.startFeedLoad('user_search');

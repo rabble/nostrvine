@@ -43,6 +43,7 @@ class VideoEditorProviderState {
     this.inspiredByNpub,
     this.selectedAudioEventId,
     this.selectedAudioRelay,
+    this.proofManifestJson,
     GlobalKey? deleteButtonKey,
   }) : deleteButtonKey = deleteButtonKey ?? GlobalKey();
 
@@ -131,6 +132,9 @@ class VideoEditorProviderState {
   /// Relay hint for the selected audio event.
   final String? selectedAudioRelay;
 
+  /// ProofMode attestation manifest JSON for the final rendered clip.
+  final String? proofManifestJson;
+
   /// Whether the video is valid and ready to be posted.
   ///
   /// Returns true if:
@@ -150,6 +154,8 @@ class VideoEditorProviderState {
   /// [inspiredByVideo] to null.
   /// Use [clearInspiredByNpub] = true to explicitly set
   /// [inspiredByNpub] to null.
+  /// Use [clearProofManifestJson] = true to explicitly set
+  /// [proofManifestJson] to null independently of [clearFinalRenderedClip].
   VideoEditorProviderState copyWith({
     int? currentClipIndex,
     Duration? currentPosition,
@@ -172,6 +178,8 @@ class VideoEditorProviderState {
     bool? metadataLimitReached,
     DivineVideoClip? finalRenderedClip,
     bool clearFinalRenderedClip = false,
+    String? proofManifestJson,
+    bool clearProofManifestJson = false,
     Map<String, dynamic>? editorStateHistory,
     CompleteParameters? editorEditingParameters,
     List<String>? collaboratorPubkeys,
@@ -221,6 +229,9 @@ class VideoEditorProviderState {
       selectedAudioRelay: selectedAudioRelay == _sentinel
           ? this.selectedAudioRelay
           : selectedAudioRelay as String?,
+      proofManifestJson: clearProofManifestJson || clearFinalRenderedClip
+          ? null
+          : proofManifestJson ?? this.proofManifestJson,
     );
   }
 

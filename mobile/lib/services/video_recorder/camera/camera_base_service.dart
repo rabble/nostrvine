@@ -51,10 +51,14 @@ abstract class CameraService {
   /// Initializes the camera and prepares it for use.
   ///
   /// [videoQuality] specifies the video recording quality (default: FHD/1080p).
-  /// [initialLens] specifies which camera lens to initialize with (default: front).
+  /// [initialLens] specifies which camera lens to initialize with
+  /// (default: front).
+  /// [enableAutoLensSwitch] enables automatic lens switching based on zoom
+  /// level (default: true).
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
+    bool enableAutoLensSwitch = false,
   });
 
   /// Releases camera resources and cleans up.

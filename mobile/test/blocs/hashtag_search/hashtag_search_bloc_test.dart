@@ -167,6 +167,27 @@ void main() {
       );
 
       blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'does not re-search when query has not changed',
+        build: createBloc,
+        seed: () => const HashtagSearchState(
+          status: HashtagSearchStatus.success,
+          query: 'flutter',
+          results: ['flutter', 'flutterdev'],
+        ),
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('flutter')),
+        wait: const Duration(milliseconds: 400),
+        expect: () => <HashtagSearchState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockHashtagRepository.searchHashtags(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
         'normalizes query by trimming and lowercasing',
         setUp: () {
           when(

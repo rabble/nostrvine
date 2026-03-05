@@ -28,10 +28,7 @@ typedef UserBlockFilter = bool Function(String pubkey);
 /// Callback to filter and sort profiles by search relevance.
 /// Takes a query and list of profiles, returns filtered/sorted profiles.
 typedef ProfileSearchFilter =
-    List<UserProfile> Function(
-      String query,
-      List<UserProfile> profiles,
-    );
+    List<UserProfile> Function(String query, List<UserProfile> profiles);
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
@@ -155,13 +152,9 @@ class ProfileRepository {
   /// server.
   ///
   /// Returns a [UsernameClaimResult] indicating success or the type of failure.
-  Future<UsernameClaimResult> claimUsername({
-    required String username,
-  }) async {
+  Future<UsernameClaimResult> claimUsername({required String username}) async {
     final normalizedUsername = username.toLowerCase();
-    final payload = jsonEncode({
-      'name': normalizedUsername,
-    });
+    final payload = jsonEncode({'name': normalizedUsername});
     final authHeader = await _nostrClient.createNip98AuthHeader(
       url: _usernameClaimUrl,
       method: 'POST',
@@ -196,9 +189,7 @@ class ProfileRepository {
 
       return switch (response.statusCode) {
         200 || 201 => const UsernameClaimSuccess(),
-        400 => UsernameClaimError(
-          serverError ?? 'Invalid username format',
-        ),
+        400 => UsernameClaimError(serverError ?? 'Invalid username format'),
         403 => const UsernameClaimReserved(),
         409 => const UsernameClaimTaken(),
         _ => UsernameClaimError(
@@ -233,9 +224,7 @@ class ProfileRepository {
       return const UsernameInvalidFormat('Username is required');
     }
     if (normalizedUsername.length > 63) {
-      return const UsernameInvalidFormat(
-        'Usernames must be 1–63 characters',
-      );
+      return const UsernameInvalidFormat('Usernames must be 1–63 characters');
     }
     if (normalizedUsername.startsWith('-') ||
         normalizedUsername.endsWith('-')) {
@@ -254,9 +243,7 @@ class ProfileRepository {
     // and checks availability in one call.
     try {
       final response = await _httpClient.get(
-        Uri.parse(
-          '$_usernameCheckUrl/$normalizedUsername',
-        ),
+        Uri.parse('$_usernameCheckUrl/$normalizedUsername'),
       );
 
       if (response.statusCode == 200) {
@@ -269,9 +256,7 @@ class ProfileRepository {
           // available on both the name server and the login server.
           try {
             final keycastResponse = await _httpClient.get(
-              Uri.parse(
-                '$_keycastNip05Url?name=$normalizedUsername',
-              ),
+              Uri.parse('$_keycastNip05Url?name=$normalizedUsername'),
             );
             if (keycastResponse.statusCode == 200) {
               final keycastData =
@@ -374,19 +359,26 @@ class ProfileRepository {
     // Phase 2: NIP-50 WebSocket search (comprehensive, first page only)
     // Skip on paginated requests since NIP-50 doesn't support offset.
     if (offset == 0) {
-      final events = await _nostrClient.queryUsers(query, limit: limit);
-      for (final event in events) {
-        final profile = UserProfile.fromNostrEvent(event);
-        // Don't overwrite REST results - they may have more complete data
-        resultMap.putIfAbsent(profile.pubkey, () => profile);
+      try {
+        final events = await _nostrClient.queryUsers(query, limit: limit);
+        for (final event in events) {
+          final profile = UserProfile.fromNostrEvent(event);
+          // Don't overwrite REST results - they may have more complete data
+          resultMap.putIfAbsent(profile.pubkey, () => profile);
+        }
+        final wsProfiles = resultMap.values.toList();
+        final wsWithPic = wsProfiles.where((p) => p.picture != null).length;
+        developer.log(
+          'Phase 2 (WS): ${events.length} events, '
+          'merged total: ${wsProfiles.length}, $wsWithPic with picture',
+          name: 'ProfileRepository.searchUsers',
+        );
+      } on Object catch (e) {
+        developer.log(
+          'Phase 2 (WebSocket NIP-50) failed: $e',
+          name: 'ProfileRepository.searchUsers',
+        );
       }
-      final wsProfiles = resultMap.values.toList();
-      final wsWithPic = wsProfiles.where((p) => p.picture != null).length;
-      developer.log(
-        'Phase 2 (WS): ${events.length} events, '
-        'merged total: ${wsProfiles.length}, $wsWithPic with picture',
-        name: 'ProfileRepository.searchUsers',
-      );
     }
 
     final profiles = resultMap.values.toList();
@@ -450,9 +442,7 @@ class ProfileRepository {
   ///
   /// For each profile, fills in null fields (picture, about, etc.) from
   /// the cached version without overwriting data from search results.
-  Future<List<UserProfile>> _enrichFromCache(
-    List<UserProfile> profiles,
-  ) async {
+  Future<List<UserProfile>> _enrichFromCache(List<UserProfile> profiles) async {
     final enriched = <UserProfile>[];
     var cacheHits = 0;
     var pictureEnriched = 0;

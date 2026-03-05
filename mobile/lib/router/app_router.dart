@@ -18,7 +18,6 @@ import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -31,6 +30,7 @@ import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/notifications_screen.dart';
@@ -599,14 +599,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: ClipLibraryScreen.draftsPath,
-        name: ClipLibraryScreen.draftsRouteName,
-        builder: (_, _) => const ClipLibraryScreen(),
+        path: LibraryScreen.draftsPath,
+        name: LibraryScreen.draftsRouteName,
+        builder: (_, _) => const LibraryScreen(),
       ),
       GoRoute(
-        path: ClipLibraryScreen.clipsPath,
-        name: ClipLibraryScreen.clipsRouteName,
-        builder: (_, _) => const ClipLibraryScreen(),
+        path: LibraryScreen.clipsPath,
+        name: LibraryScreen.clipsRouteName,
+        builder: (_, _) => const LibraryScreen(),
       ),
       // Followers screen - routes to My or Others based on pubkey
       GoRoute(

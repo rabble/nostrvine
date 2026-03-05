@@ -144,6 +144,9 @@ dependencies:
   # Logging
   logging: ^1.2.0
 
+  # Date formatting
+  intl: ^0.19.0
+
   # Missing dependencies required by nostr_sdk
   equatable: ^2.0.5
 

@@ -108,6 +108,19 @@ abstract class VideoLocalStorage {
   /// Used when logging out or resetting local data.
   Future<void> clearAll();
 
+  /// Searches video events by content text (case-insensitive).
+  ///
+  /// Uses SQL LIKE matching on the content column.
+  /// More efficient than loading all events and filtering in Dart.
+  ///
+  /// Parameters:
+  /// - [query]: The search text to match against content
+  /// - [limit]: Maximum number of events to return (default 100)
+  Future<List<Event>> searchEvents({
+    required String query,
+    int limit = 100,
+  });
+
   /// Gets the count of cached video events.
   Future<int> getEventCount();
 }

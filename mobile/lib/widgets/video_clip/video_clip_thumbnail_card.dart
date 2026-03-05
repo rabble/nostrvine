@@ -21,6 +21,7 @@ class VideoClipThumbnailCard extends StatefulWidget {
     required this.onLongPress,
     this.isSelected = false,
     this.disabled = false,
+    this.showDurationBadge = false,
     super.key,
   });
 
@@ -37,6 +38,9 @@ class VideoClipThumbnailCard extends StatefulWidget {
   /// Whether this clip is currently selected, showing green border and
   /// check icon.
   final bool isSelected;
+
+  /// Whether to show the duration badge at the bottom-left corner.
+  final bool showDurationBadge;
 
   /// Whether this clip is disabled and cannot be interacted with.
   /// When disabled, the card is shown with reduced opacity and tap handlers
@@ -90,7 +94,8 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                     _Thumbnail(clip: widget.clip),
 
                     /// Duration badge - bottom left
-                    _DurationBadge(clip: widget.clip),
+                    if (widget.showDurationBadge)
+                      _DurationBadge(clip: widget.clip),
 
                     /// Selection check circle - top right
                     AnimatedSwitcher(

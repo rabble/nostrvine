@@ -19,7 +19,6 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
-import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -60,6 +59,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   final _draftService = DraftStorageService();
 
+  bool get isAutosavedDraft => draftId == VideoEditorConstants.autoSaveId;
+
   // === LIFECYCLE ===
 
   @override
@@ -93,7 +94,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       cancelRenderVideo();
     }
 
-    state = state.copyWith(clearFinalRenderedClip: true);
+    state = state.copyWith(
+      clearFinalRenderedClip: true,
+    );
 
     // Delete the old rendered file from disk to free up space
     unawaited(FileCleanupService.deleteRecordingClipFiles(clip));
@@ -631,6 +634,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       selectedAudioEventId: selectedSound?.id,
       selectedAudioRelay: selectedSound?.sourceVideoRelay,
       finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
+      proofManifestJson: state.proofManifestJson,
     );
   }
 
@@ -929,8 +933,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Render all clips into final video and prepare for publishing.
   ///
-  /// Combines all clips, applies audio settings, generates proofmode
-  /// attestation, and creates the final rendered clip for publishing.
+  /// Combines all clips, applies audio settings, and creates the final
+  /// rendered clip for publishing.
   Future<void> startRenderVideo() async {
     if (state.isProcessing || state.finalRenderedClip != null) return;
 
@@ -941,48 +945,35 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
     setProcessing(true);
 
-    // Render video and get proofmode data
-    final (outputPath, proofManifestJson) = await _renderVideo();
+    final result = await VideoEditorRenderService.renderVideoToClip(
+      clips: _clips,
+      enableAudio: !state.isMuted,
+      parameters: state.editorEditingParameters,
+    );
 
-    final validToPublish = outputPath != null;
-
-    // Extract metadata from rendered video
-    final metaData = validToPublish
-        ? await ProVideoEditor.instance.getMetadata(
-            EditorVideo.file(outputPath),
-          )
-        : null;
-
-    if (!validToPublish) {
+    if (result == null) {
       Log.warning(
         '⚠️ Video render cancelled or failed',
         name: 'VideoEditorNotifier',
         category: .video,
       );
+      state = state.copyWith(isProcessing: false);
       return;
     }
 
+    final (finalRenderedClip, proofManifestJson) = result;
+
     Log.info(
       '✅ Video rendered successfully - duration: '
-      '${metaData!.duration.inSeconds}s',
+      '${finalRenderedClip.duration.inSeconds}s',
       name: 'VideoEditorNotifier',
       category: .video,
-    );
-
-    // Create final clip for publishing
-    final finalRenderedClip = DivineVideoClip(
-      id: 'clip-${DateTime.now()}',
-      video: EditorVideo.file(outputPath),
-      duration: metaData.duration,
-      recordedAt: .now(),
-      originalAspectRatio: _clips.first.originalAspectRatio,
-      targetAspectRatio: _clips.first.targetAspectRatio,
-      thumbnailPath: _clips.first.thumbnailPath,
     );
 
     state = state.copyWith(
       isProcessing: false,
       finalRenderedClip: finalRenderedClip,
+      proofManifestJson: proofManifestJson,
     );
     autosaveChanges();
   }
@@ -1045,80 +1036,5 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     await ref
         .read(videoPublishProvider.notifier)
         .publishVideo(context, getActiveDraft());
-  }
-
-  /// Render all clips into a single video file with aspect ratio cropping.
-  ///
-  /// Applies center cropping based on target aspect ratio (square or vertical).
-  Future<(String? filePath, String? proof)> _renderVideo() async {
-    Log.info(
-      '🎥 Rendering ${_clips.length} clip(s) into final video',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-
-    try {
-      // Render clips into single video file
-      final outputPath = await VideoEditorRenderService.renderVideo(
-        clips: _clips,
-        aspectRatio: _clips.first.targetAspectRatio,
-        enableAudio: !state.isMuted,
-        usePersistentStorage: true,
-        parameters: state.editorEditingParameters,
-      );
-      String? proofManifestJson;
-
-      // Generate proofmode attestation if render successful
-      if (outputPath != null) {
-        Log.info(
-          '✅ Video rendered to: $outputPath',
-          name: 'VideoEditorNotifier',
-          category: .video,
-        );
-
-        Log.debug(
-          '🔐 Generating proofmode attestation for video',
-          name: 'VideoEditorNotifier',
-          category: .video,
-        );
-        final proofData = await NativeProofModeService.proofFile(
-          File(outputPath),
-        );
-
-        if (proofData != null) {
-          proofManifestJson = jsonEncode(proofData);
-          Log.info(
-            '✅ Proofmode attestation generated',
-            name: 'VideoEditorNotifier',
-            category: .video,
-          );
-        } else {
-          Log.warning(
-            '⚠️ No proofmode data available',
-            name: 'VideoEditorNotifier',
-            category: .video,
-          );
-        }
-      } else {
-        Log.error(
-          '❌ Video rendering failed',
-          name: 'VideoEditorNotifier',
-          category: .video,
-        );
-      }
-
-      state = state.copyWith(isProcessing: false);
-      return (outputPath, proofManifestJson);
-    } catch (e, stackTrace) {
-      Log.error(
-        '❌ Video rendering error: $e',
-        name: 'VideoEditorNotifier',
-        category: .video,
-        error: e,
-        stackTrace: stackTrace,
-      );
-      state = state.copyWith(isProcessing: false);
-      return (null, null);
-    }
   }
 }

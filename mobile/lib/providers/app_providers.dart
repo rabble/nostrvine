@@ -638,7 +638,7 @@ class BlocklistVersion extends _$BlocklistVersion {
 
 /// Draft storage service for persisting vine drafts
 @riverpod
-Future<DraftStorageService> draftStorageService(Ref ref) async {
+DraftStorageService draftStorageService(Ref ref) {
   return DraftStorageService();
 }
 

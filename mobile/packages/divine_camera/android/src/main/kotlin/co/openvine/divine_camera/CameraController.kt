@@ -38,6 +38,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 private const val TAG = "DivineCameraController"
+private const val LENS_SWITCH_HYSTERESIS = 0.03f
 
 /**
  * Controller for CameraX-based camera operations.
@@ -114,6 +115,31 @@ class CameraController(
     private var minZoom: Float = 1.0f
     private var maxZoom: Float = 1.0f
     private var currentZoom: Float = 1.0f
+
+    // Auto lens switching: unified virtual zoom across back lenses
+    private var autoLensSwitchRequested: Boolean = true
+    private var autoLensSwitchEnabled: Boolean = false
+    private var isAutoSwitching: Boolean = false
+
+    // Focal lengths from Camera2 (mm)
+    private var mainCameraFocalLength: Float = 0f
+    private var ultraWideCameraFocalLength: Float = 0f
+    private var telephotoCameraFocalLength: Float = 0f
+
+    // Zoom ratios relative to main (main = 1.0)
+    private var ultraWideZoomRatio: Float = 0.5f
+    private var telephotoZoomRatio: Float = 2.0f
+
+    // Virtual zoom (1.0 = main at native 1x)
+    private var virtualMinZoom: Float = 1.0f
+    private var virtualMaxZoom: Float = 1.0f
+    private var virtualCurrentZoom: Float = 1.0f
+
+    // Native max zoom estimates (Camera2 SCALER_AVAILABLE_MAX_DIGITAL_ZOOM)
+    private var ultraWideNativeMaxZoom: Float = 8.0f
+    private var mainNativeMaxZoom: Float = 10.0f
+    private var telephotoNativeMaxZoom: Float = 10.0f
+
     // Portrait-Modus: 9:16, 1080x1920
     private var aspectRatio: Float = 9f / 16f
     private var videoWidth: Int = 1080
@@ -153,12 +179,14 @@ class CameraController(
         quality: String,
         enableScreenFlash: Boolean = true,
         mirrorFrontCameraOutput: Boolean = true,
+        enableAutoLensSwitch: Boolean = true,
         callback: (Map<String, Any?>?, String?) -> Unit
     ) {
-        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash, mirrorFrontCameraOutput: $mirrorFrontCameraOutput (portrait mode 1080x1920)")
+        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash, mirrorFrontCameraOutput: $mirrorFrontCameraOutput, autoLensSwitch: $enableAutoLensSwitch (portrait mode 1080x1920)")
 
         screenFlashFeatureEnabled = enableScreenFlash
         this.mirrorFrontCameraOutput = mirrorFrontCameraOutput
+        this.autoLensSwitchRequested = enableAutoLensSwitch
 
         // Map lens string to lens type and facing
         currentLensType = lens
@@ -276,24 +304,60 @@ class CameraController(
                 if (normalCamera != null) {
                     hasBackCamera = true
                     backCameraId = normalCamera.key
+                    mainCameraFocalLength = normalCamera.value
+
+                    // Read main camera's max digital zoom
+                    try {
+                        val mainChars = cameraManager
+                            .getCameraCharacteristics(normalCamera.key)
+                        mainNativeMaxZoom = mainChars.get(
+                            CameraCharacteristics
+                                .SCALER_AVAILABLE_MAX_DIGITAL_ZOOM
+                        ) ?: 10.0f
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Could not read main camera max zoom", e)
+                    }
                     
                     // Cameras with shorter focal length are ultra-wide
                     sorted.filter { it.value < normalCamera.value - 0.5f && it.key != normalCamera.key }
                         .maxByOrNull { it.value }?.let {
                             ultraWideCameraId = it.key
-                            Log.d(TAG, "Ultra-wide camera detected: ${it.key}")
+                            ultraWideCameraFocalLength = it.value
+                            Log.d(TAG, "Ultra-wide camera detected: ${it.key} (focal=${it.value}mm)")
+                            try {
+                                val uwChars = cameraManager
+                                    .getCameraCharacteristics(it.key)
+                                ultraWideNativeMaxZoom = uwChars.get(
+                                    CameraCharacteristics
+                                        .SCALER_AVAILABLE_MAX_DIGITAL_ZOOM
+                                ) ?: 8.0f
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Could not read ultra-wide max zoom", e)
+                            }
                         }
                     
                     // Cameras with longer focal length are telephoto
                     sorted.filter { it.value > normalCamera.value + 1.0f && it.key != normalCamera.key }
                         .minByOrNull { it.value }?.let {
                             telephotoCameraId = it.key
-                            Log.d(TAG, "Telephoto camera detected: ${it.key}")
+                            telephotoCameraFocalLength = it.value
+                            Log.d(TAG, "Telephoto camera detected: ${it.key} (focal=${it.value}mm)")
+                            try {
+                                val teleChars = cameraManager
+                                    .getCameraCharacteristics(it.key)
+                                telephotoNativeMaxZoom = teleChars.get(
+                                    CameraCharacteristics
+                                        .SCALER_AVAILABLE_MAX_DIGITAL_ZOOM
+                                ) ?: 10.0f
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Could not read telephoto max zoom", e)
+                            }
                         }
                 } else if (sorted.isNotEmpty()) {
                     // Fallback: use the first back camera as main
                     hasBackCamera = true
                     backCameraId = sorted.first().key
+                    mainCameraFocalLength = sorted.first().value
                 }
                 
                 // Check for macro capability (often detected by very short minimum focus distance)
@@ -669,6 +733,9 @@ class CameraController(
                 Log.d(TAG, "Camera info: zoom=$minZoom-$maxZoom, flash=$hasFlash")
             }
 
+            // Compute virtual zoom ranges for auto lens switching
+            computeVirtualZoomRanges()
+
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start camera", e)
             mainHandler.post {
@@ -809,6 +876,9 @@ class CameraController(
                 isFocusPointSupported = true
                 isExposurePointSupported = true
             }
+
+            // Compute virtual zoom ranges for auto lens switching
+            computeVirtualZoomRanges()
 
             Log.d(TAG, "Camera switched successfully")
 
@@ -1111,16 +1181,342 @@ class CameraController(
     }
 
     /**
-     * Sets the zoom level.
+     * Computes the virtual zoom range across all available back-facing lenses.
+     * Virtual zoom 1.0 = main camera at native 1x.
+     * Below 1.0 = ultra-wide territory.
+     * Above telephotoRatio = telephoto territory.
+     *
+     * Call after camera binds to ensure accurate zoom ranges.
+     */
+    private fun computeVirtualZoomRanges() {
+        // Only for back-facing cameras with multiple lenses
+        if (currentLens == CameraSelector.LENS_FACING_FRONT
+            || mainCameraFocalLength <= 0f
+        ) {
+            autoLensSwitchEnabled = false
+            virtualMinZoom = minZoom
+            virtualMaxZoom = maxZoom
+            virtualCurrentZoom = currentZoom
+            return
+        }
+
+        // If the bound camera already supports zooming below 1.0x,
+        // it is a logical multi-camera whose HAL handles smooth
+        // cross-fade transitions between physical sensors internally.
+        // Skip manual auto-switching for a much smoother experience.
+        if (minZoom < 1.0f) {
+            autoLensSwitchEnabled = false
+            virtualMinZoom = minZoom
+            virtualMaxZoom = maxZoom
+            virtualCurrentZoom = currentZoom
+            Log.d(
+                TAG,
+                "Logical multi-camera detected " +
+                    "(native minZoom=$minZoom, maxZoom=$maxZoom), " +
+                    "using native zoom for smooth transitions"
+            )
+            return
+        }
+
+        // Refine max zoom estimates with actual CameraX values
+        when (currentLensType) {
+            "back" -> mainNativeMaxZoom = maxZoom
+            "ultraWide" -> ultraWideNativeMaxZoom = maxZoom
+            "telephoto" -> telephotoNativeMaxZoom = maxZoom
+        }
+
+        // Focal length ratios relative to main camera
+        if (ultraWideCameraFocalLength > 0f
+            && ultraWideCameraId != null
+        ) {
+            ultraWideZoomRatio =
+                ultraWideCameraFocalLength / mainCameraFocalLength
+        }
+        if (telephotoCameraFocalLength > 0f
+            && telephotoCameraId != null
+        ) {
+            telephotoZoomRatio =
+                telephotoCameraFocalLength / mainCameraFocalLength
+        }
+
+        // Virtual min: ultra-wide at native 1x, or main camera's min
+        virtualMinZoom = if (
+            ultraWideCameraId != null && ultraWideZoomRatio > 0f
+        ) {
+            ultraWideZoomRatio
+        } else {
+            minZoom
+        }
+
+        // Virtual max: telephoto at max zoom, or main camera's max
+        virtualMaxZoom = if (
+            telephotoCameraId != null && telephotoZoomRatio > 0f
+        ) {
+            telephotoZoomRatio * telephotoNativeMaxZoom
+        } else {
+            mainNativeMaxZoom
+        }
+
+        // Current virtual zoom derived from active lens
+        virtualCurrentZoom = when (currentLensType) {
+            "ultraWide" -> currentZoom * ultraWideZoomRatio
+            "telephoto" -> currentZoom * telephotoZoomRatio
+            else -> currentZoom
+        }
+
+        autoLensSwitchEnabled = autoLensSwitchRequested &&
+            (ultraWideCameraId != null || telephotoCameraId != null)
+
+        Log.d(
+            TAG,
+            "Virtual zoom: min=$virtualMinZoom, max=$virtualMaxZoom, " +
+                "current=$virtualCurrentZoom, uwRatio=$ultraWideZoomRatio, " +
+                "teleRatio=$telephotoZoomRatio, enabled=$autoLensSwitchEnabled"
+        )
+    }
+
+    /**
+     * Converts a virtual zoom level to the target lens type and native zoom.
+     * Uses hysteresis to prevent oscillation at transition points.
+     */
+    private fun virtualToNativeZoom(
+        virtualZoom: Float
+    ): Pair<String, Float> {
+        // Ultra-wide range: below 1.0x (with hysteresis)
+        if (ultraWideCameraId != null) {
+            val useUltraWide = if (currentLensType == "ultraWide") {
+                // Stay on ultra-wide until clearly above 1.0
+                virtualZoom < 1.0f + LENS_SWITCH_HYSTERESIS
+            } else {
+                virtualZoom < 1.0f
+            }
+            if (useUltraWide) {
+                return Pair(
+                    "ultraWide",
+                    virtualZoom / ultraWideZoomRatio
+                )
+            }
+        }
+
+        // Telephoto range (with hysteresis)
+        if (telephotoCameraId != null && telephotoZoomRatio > 1.0f) {
+            val useTelephoto = if (currentLensType == "telephoto") {
+                // Stay on telephoto until clearly below ratio
+                virtualZoom >= telephotoZoomRatio - LENS_SWITCH_HYSTERESIS
+            } else {
+                virtualZoom >= telephotoZoomRatio
+            }
+            if (useTelephoto) {
+                return Pair(
+                    "telephoto",
+                    virtualZoom / telephotoZoomRatio
+                )
+            }
+        }
+
+        return Pair("back", virtualZoom)
+    }
+
+    /**
+     * Internally switches the camera lens for zoom-based auto-switching.
+     * Reuses the existing Flutter texture for minimal visual disruption.
+     * Does NOT switch during recording to avoid interruption.
+     */
+    private fun autoSwitchToLens(
+        targetLensType: String,
+        targetNativeZoom: Float
+    ) {
+        if (isAutoSwitching || isRecording) return
+
+        val provider = cameraProvider ?: return
+        if (activity !is LifecycleOwner) return
+
+        isAutoSwitching = true
+        Log.d(
+            TAG,
+            "Auto-switching $currentLensType -> $targetLensType " +
+                "(nativeZoom=$targetNativeZoom)"
+        )
+
+        try {
+            currentLensType = targetLensType
+            currentLens = getLensFacingForType(targetLensType)
+
+            provider.unbindAll()
+
+            val cameraSelector =
+                buildCameraSelectorForLens(targetLensType, provider)
+            val targetAspectRatio = AspectRatio.RATIO_16_9
+
+            preview = buildPreviewWithExposureMonitoring(targetAspectRatio)
+            // Delay surface provision so the zoom is fully applied
+            // before the first frame renders. The Flutter texture keeps
+            // the last frame from the previous camera (natural freeze)
+            // during the brief delay, preventing a visible zoom jump.
+            preview?.setSurfaceProvider(
+                ContextCompat.getMainExecutor(context)
+            ) { request ->
+                val resolution = request.resolution
+                videoWidth = resolution.width
+                videoHeight = resolution.height
+                aspectRatio =
+                    videoHeight.toFloat() / videoWidth.toFloat()
+                flutterSurfaceTexture?.setDefaultBufferSize(
+                    videoWidth,
+                    videoHeight
+                )
+
+                // Post surface provision to let setZoomRatio settle
+                // in the camera pipeline before any frames flow.
+                mainHandler.postDelayed({
+                    val surface = if (
+                        previewSurface != null &&
+                        previewSurface!!.isValid
+                    ) {
+                        previewSurface!!
+                    } else {
+                        previewSurface =
+                            Surface(flutterSurfaceTexture)
+                        previewSurface!!
+                    }
+
+                    if (surface.isValid) {
+                        request.provideSurface(
+                            surface,
+                            ContextCompat.getMainExecutor(
+                                context
+                            )
+                        ) { result ->
+                            Log.d(
+                                TAG,
+                                "AutoSwitch surface: " +
+                                    "${result.resultCode}"
+                            )
+                        }
+                    }
+                    isAutoSwitching = false
+                    Log.d(
+                        TAG,
+                        "AutoSwitch surface provided " +
+                            "(delayed)"
+                    )
+                }, 100)
+            }
+
+            val recorder = Recorder.Builder()
+                .setQualitySelector(
+                    QualitySelector.from(
+                        videoQuality,
+                        FallbackStrategy.lowerQualityOrHigherThan(
+                            Quality.SD
+                        )
+                    )
+                )
+                .setAspectRatio(targetAspectRatio)
+                .setExecutor(cameraExecutor)
+                .build()
+
+            videoCapture = VideoCapture.Builder(recorder)
+                .setMirrorMode(
+                    if (mirrorFrontCameraOutput &&
+                        currentLens ==
+                        CameraSelector.LENS_FACING_FRONT
+                    ) {
+                        MirrorMode.MIRROR_MODE_ON_FRONT_ONLY
+                    } else {
+                        MirrorMode.MIRROR_MODE_OFF
+                    }
+                )
+                .build()
+
+            camera = provider.bindToLifecycle(
+                activity as LifecycleOwner,
+                cameraSelector,
+                preview,
+                videoCapture
+            )
+
+            camera?.let { cam ->
+                val zoomState =
+                    cam.cameraInfo.zoomState.value
+                minZoom = zoomState?.minZoomRatio ?: 1.0f
+                maxZoom = zoomState?.maxZoomRatio ?: 1.0f
+                hasFlash = cam.cameraInfo.hasFlashUnit() ||
+                    (screenFlashFeatureEnabled &&
+                        currentLens ==
+                        CameraSelector.LENS_FACING_FRONT)
+
+                val clampedZoom =
+                    targetNativeZoom.coerceIn(minZoom, maxZoom)
+                cam.cameraControl.setZoomRatio(clampedZoom)
+                currentZoom = clampedZoom
+            }
+
+            computeVirtualZoomRanges()
+
+            Log.d(
+                TAG,
+                "Auto-switch done: $targetLensType " +
+                    "native=$currentZoom virtual=$virtualCurrentZoom"
+            )
+        } catch (e: Exception) {
+            Log.e(
+                TAG,
+                "Failed to auto-switch to $targetLensType",
+                e
+            )
+            isAutoSwitching = false
+        }
+    }
+
+    /**
+     * Sets the zoom level. When auto lens switching is enabled,
+     * accepts a virtual zoom level spanning all available back lenses.
+     * 1.0 = main at native 1x. Below 1.0 = ultra-wide. Above
+     * telephoto ratio = telephoto.
      */
     fun setZoomLevel(level: Float): Boolean {
-        val cam = camera ?: return false
+        // Without auto lens switching, use direct camera zoom
+        if (!autoLensSwitchEnabled) {
+            val cam = camera ?: return false
+            return try {
+                // When auto lens switch is disabled, clamp to 1.0 minimum
+                // to prevent native HAL from switching to ultra-wide on
+                // logical multi-cameras.
+                val effectiveMin = if (!autoLensSwitchRequested && minZoom < 1.0f) 1.0f else minZoom
+                val clampedLevel =
+                    level.coerceIn(effectiveMin, maxZoom)
+                cam.cameraControl.setZoomRatio(clampedLevel)
+                currentZoom = clampedLevel
+                Log.d(TAG, "Zoom level set: $clampedLevel")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to set zoom level", e)
+                false
+            }
+        }
 
+        // Virtual zoom: map across all back lenses
+        val clampedVirtual =
+            level.coerceIn(virtualMinZoom, virtualMaxZoom)
+        virtualCurrentZoom = clampedVirtual
+
+        val (targetLens, nativeZoom) =
+            virtualToNativeZoom(clampedVirtual)
+
+        // Switch lens if needed (skip during recording)
+        if (targetLens != currentLensType && !isRecording) {
+            autoSwitchToLens(targetLens, nativeZoom)
+            return true
+        }
+
+        // Same lens: adjust native zoom directly
+        val cam = camera ?: return false
         return try {
-            val clampedLevel = level.coerceIn(minZoom, maxZoom)
-            cam.cameraControl.setZoomRatio(clampedLevel)
-            currentZoom = clampedLevel
-            Log.d(TAG, "Zoom level set: $clampedLevel")
+            val clampedNative =
+                nativeZoom.coerceIn(minZoom, maxZoom)
+            cam.cameraControl.setZoomRatio(clampedNative)
+            currentZoom = clampedNative
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set zoom level", e)
@@ -1403,9 +1799,11 @@ class CameraController(
             "isRecording" to isRecording,
             "flashMode" to getFlashModeString(),
             "lens" to currentLensType,
-            "zoomLevel" to currentZoom.toDouble(),
-            "minZoomLevel" to minZoom.toDouble(),
-            "maxZoomLevel" to maxZoom.toDouble(),
+            "zoomLevel" to (if (autoLensSwitchEnabled) virtualCurrentZoom else currentZoom).toDouble(),
+            "minZoomLevel" to (if (autoLensSwitchEnabled) virtualMinZoom
+                else if (!autoLensSwitchRequested && minZoom < 1.0f) 1.0f
+                else minZoom).toDouble(),
+            "maxZoomLevel" to (if (autoLensSwitchEnabled) virtualMaxZoom else maxZoom).toDouble(),
             "aspectRatio" to aspectRatio.toDouble(),
             "hasFlash" to hasFlash,
             "hasFrontCamera" to hasFrontCamera,

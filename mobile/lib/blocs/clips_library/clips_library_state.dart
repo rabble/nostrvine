@@ -1,0 +1,152 @@
+// ABOUTME: States for ClipsLibraryBloc - managing saved video clips
+// ABOUTME: Tracks clips list, selection state, and async operation status
+
+part of 'clips_library_bloc.dart';
+
+/// Operation status for clips library actions.
+enum ClipsLibraryStatus {
+  /// Initial state, no operation in progress.
+  initial,
+
+  /// Loading clips from storage.
+  loading,
+
+  /// Clips loaded successfully.
+  loaded,
+
+  /// Deleting selected clips.
+  deleting,
+
+  /// Saving to gallery.
+  savingToGallery,
+
+  /// An error occurred.
+  error,
+}
+
+/// Result of a gallery save operation.
+sealed class GallerySaveResult extends Equatable {
+  const GallerySaveResult();
+
+  @override
+  List<Object?> get props => [];
+}
+
+/// Gallery save completed successfully.
+final class GallerySaveResultSuccess extends GallerySaveResult {
+  const GallerySaveResultSuccess({
+    required this.successCount,
+    required this.failureCount,
+  });
+
+  /// Number of clips saved successfully.
+  final int successCount;
+
+  /// Number of clips that failed to save.
+  final int failureCount;
+
+  @override
+  List<Object?> get props => [successCount, failureCount];
+}
+
+/// Gallery save failed due to permission denial.
+final class GallerySaveResultPermissionDenied extends GallerySaveResult {
+  const GallerySaveResultPermissionDenied();
+}
+
+/// Gallery save failed with an error.
+final class GallerySaveResultError extends GallerySaveResult {
+  const GallerySaveResultError(this.message);
+
+  /// Error message.
+  final String message;
+
+  @override
+  List<Object?> get props => [message];
+}
+
+/// State for the clips library.
+final class ClipsLibraryState extends Equatable {
+  const ClipsLibraryState({
+    this.status = ClipsLibraryStatus.initial,
+    this.clips = const [],
+    this.selectedClipIds = const {},
+    this.selectedDuration = Duration.zero,
+    this.errorMessage,
+    this.lastGallerySaveResult,
+    this.lastDeletedCount,
+  });
+
+  /// Current operation status.
+  final ClipsLibraryStatus status;
+
+  /// All available clips.
+  final List<DivineVideoClip> clips;
+
+  /// IDs of currently selected clips.
+  final Set<String> selectedClipIds;
+
+  /// Total duration of selected clips.
+  final Duration selectedDuration;
+
+  /// Error message if status is error.
+  final String? errorMessage;
+
+  /// Result of the last gallery save operation (for UI feedback).
+  final GallerySaveResult? lastGallerySaveResult;
+
+  /// Number of clips deleted in the last delete operation (for UI feedback).
+  final int? lastDeletedCount;
+
+  /// Whether clips are currently loading.
+  bool get isLoading => status == ClipsLibraryStatus.loading;
+
+  /// Whether a delete operation is in progress.
+  bool get isDeleting => status == ClipsLibraryStatus.deleting;
+
+  /// Whether a gallery save is in progress.
+  bool get isSavingToGallery => status == ClipsLibraryStatus.savingToGallery;
+
+  /// Returns the currently selected clips.
+  List<DivineVideoClip> get selectedClips =>
+      clips.where((c) => selectedClipIds.contains(c.id)).toList();
+
+  /// Creates a copy of this state with the given fields replaced.
+  ClipsLibraryState copyWith({
+    ClipsLibraryStatus? status,
+    List<DivineVideoClip>? clips,
+    Set<String>? selectedClipIds,
+    Duration? selectedDuration,
+    String? errorMessage,
+    GallerySaveResult? lastGallerySaveResult,
+    int? lastDeletedCount,
+    bool clearGallerySaveResult = false,
+    bool clearDeletedCount = false,
+    bool clearError = false,
+  }) {
+    return ClipsLibraryState(
+      status: status ?? this.status,
+      clips: clips ?? this.clips,
+      selectedClipIds: selectedClipIds ?? this.selectedClipIds,
+      selectedDuration: selectedDuration ?? this.selectedDuration,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      lastGallerySaveResult: clearGallerySaveResult
+          ? null
+          : (lastGallerySaveResult ?? this.lastGallerySaveResult),
+      lastDeletedCount: clearDeletedCount
+          ? null
+          : (lastDeletedCount ?? this.lastDeletedCount),
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    status,
+    clips,
+    selectedClipIds,
+    selectedDuration,
+    errorMessage,
+    lastGallerySaveResult,
+    lastDeletedCount,
+  ];
+}
