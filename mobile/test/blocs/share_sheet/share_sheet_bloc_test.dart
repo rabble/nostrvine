@@ -625,7 +625,8 @@ void main() {
 
       blocTest<ShareSheetBloc, ShareSheetState>(
         'emits $ShareSheetSaveResult with succeeded=false when no bookmark service',
-        build: () => createBloc(bookmarkServiceFuture: Future.value(null)),
+        build: () =>
+            createBloc(bookmarkServiceFuture: Future<BookmarkService?>.value()),
         act: (bloc) => bloc.add(const ShareSheetSaveRequested()),
         expect: () => [
           isA<ShareSheetState>().having(
