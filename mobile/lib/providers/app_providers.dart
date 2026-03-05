@@ -30,7 +30,6 @@ import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
@@ -93,6 +92,7 @@ import 'package:permissions_service/permissions_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sound_service/sound_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';

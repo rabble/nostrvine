@@ -14,9 +14,9 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:sound_service/sound_service.dart';
 
 import '../helpers/go_router.dart';
 
