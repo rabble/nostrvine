@@ -46,7 +46,8 @@ class OthersFollowingBloc
   /// from the target's following list when we've blocked the target.
   List<String> _filterPubkeys(List<String> pubkeys) {
     final targetPubkey = state.targetPubkey;
-    final hideCurrentUser = targetPubkey != null &&
+    final hideCurrentUser =
+        targetPubkey != null &&
         (_blocklistService.isBlocked(targetPubkey) ||
             _blocklistService.isFollowSevered(targetPubkey));
 

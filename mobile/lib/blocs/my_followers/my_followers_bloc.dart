@@ -36,14 +36,13 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
   List<String> _rawFollowersPubkeys = [];
 
   /// Filter pubkeys by removing blocked and follow-severed users.
-  List<String> _filterPubkeys(List<String> pubkeys) =>
-      pubkeys
-          .where(
-            (pk) =>
-                !_blocklistService.isBlocked(pk) &&
-                !_blocklistService.isFollowSevered(pk),
-          )
-          .toList();
+  List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
+      .where(
+        (pk) =>
+            !_blocklistService.isBlocked(pk) &&
+            !_blocklistService.isFollowSevered(pk),
+      )
+      .toList();
 
   /// Handle request to load current user's followers list
   Future<void> _onLoadRequested(
