@@ -224,13 +224,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   void _handleAddToList() {
     _safePop(context);
 
-    final profileService = ref.read(userProfileServiceProvider);
-    final profile = profileService.getCachedProfile(widget.video.pubkey);
-    final username =
-        profile?.bestDisplayName ?? widget.video.authorName ?? 'Divine';
-
     if (!context.mounted) return;
-    await showWatermarkDownloadSheet(
+    showDialog<void>(
       context: context,
       builder: (context) => SelectListDialog(video: widget.video),
     );
