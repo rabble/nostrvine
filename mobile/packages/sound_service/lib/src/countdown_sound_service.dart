@@ -37,6 +37,18 @@ class CountdownSoundService {
   CountdownSoundService({AudioPlayerFactory? audioPlayerFactory})
     : _audioPlayerFactory = audioPlayerFactory ?? AudioPlayer.new;
 
+  /// Duration of the short countdown tick beep.
+  static const shortBeepDuration = Duration(milliseconds: 15);
+
+  /// Duration of the long "go" beep played after countdown reaches zero.
+  static const longBeepDuration = Duration(milliseconds: 60);
+
+  /// Buffer added after long beep playback to ensure audio fully completes.
+  ///
+  /// On iOS, [AudioPlayer.play] may return slightly before the audio hardware
+  /// finishes output, which can cause the beep to bleed into recorded video.
+  static const postPlaybackBuffer = Duration(milliseconds: 150);
+
   /// Default asset path for the short countdown beep.
   @visibleForTesting
   static const shortBeepAsset = 'assets/sounds/countdown_beep_short.wav';
@@ -111,6 +123,10 @@ class CountdownSoundService {
     try {
       await _longBeepPlayer!.seek(Duration.zero);
       await _longBeepPlayer!.play();
+      // Extra buffer to ensure audio fully completes before recording starts.
+      // On iOS, play() may return slightly before audio hardware finishes,
+      // which can cause the beep to bleed into the recorded video audio.
+      await Future<void>.delayed(postPlaybackBuffer);
     } on Exception catch (e) {
       log(
         'Failed to play long countdown beep: $e',

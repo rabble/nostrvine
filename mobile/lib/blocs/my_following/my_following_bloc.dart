@@ -1,6 +1,7 @@
 // ABOUTME: BLoC for managing current user's following list with reactive updates
 // ABOUTME: Listens to FollowRepository stream for real-time following changes
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -24,7 +25,10 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
         ),
       ) {
     on<MyFollowingListLoadRequested>(_onLoadRequested);
-    on<MyFollowingToggleRequested>(_onToggleRequested);
+    on<MyFollowingToggleRequested>(
+      _onToggleRequested,
+      transformer: droppable(),
+    );
   }
 
   final FollowRepository _followRepository;
@@ -63,10 +67,16 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
   /// Handle follow toggle request.
   /// Delegates to repository which handles the toggle logic internally.
   /// UI updates reactively via the repository's stream.
+  ///
+  /// Uses [droppable] transformer to prevent concurrent toggles from
+  /// racing each other (e.g. rapid taps toggling follow/unfollow/follow).
   Future<void> _onToggleRequested(
     MyFollowingToggleRequested event,
     Emitter<MyFollowingState> emit,
   ) async {
+    // Clear any previous error
+    emit(state.copyWith(toggleError: () => null));
+
     try {
       await _followRepository.toggleFollow(event.pubkey);
     } catch (e) {
@@ -74,6 +84,12 @@ class MyFollowingBloc extends Bloc<MyFollowingEvent, MyFollowingState> {
         'Failed to toggle follow for user: $e',
         name: 'MyFollowingBloc',
         category: LogCategory.system,
+      );
+      emit(
+        state.copyWith(
+          toggleError: () =>
+              'Failed to update follow status. Please try again.',
+        ),
       );
     }
   }

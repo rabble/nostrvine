@@ -618,9 +618,14 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         state = state.copyWith(countdownValue: i);
 
         unawaited(_countdownSoundService!.playShortBeep());
-        // 940ms to compensate for following ~60ms long beep playback duration,
-        // keeping each tick at ~1 second total
-        await Future<void>.delayed(Duration(milliseconds: i > 0 ? 1000 : 940));
+        // Last tick is shorter to compensate for the long beep duration
+        // and post-playback buffer that follow.
+        final delay = i > 1
+            ? const Duration(seconds: 1)
+            : const Duration(seconds: 1) -
+                  CountdownSoundService.longBeepDuration -
+                  CountdownSoundService.postPlaybackBuffer;
+        await Future<void>.delayed(delay);
       }
 
       if (_isDestroyed) {
