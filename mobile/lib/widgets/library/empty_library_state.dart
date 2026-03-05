@@ -3,7 +3,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 
