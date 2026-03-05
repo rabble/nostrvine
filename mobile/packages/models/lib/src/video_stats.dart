@@ -248,6 +248,14 @@ class VideoStats {
         json['embedded_reposts'] ??
         0;
 
+    // Parse platform from Funnelcake (server-controlled, not user-settable).
+    // "vine" indicates a genuine Vine archive import.
+    final platform =
+        json['platform']?.toString() ?? eventData['platform']?.toString();
+    if (platform != null && platform.isNotEmpty) {
+      rawTags['platform'] = platform;
+    }
+
     return VideoStats(
       id: id,
       pubkey: pubkey,
@@ -394,7 +402,10 @@ class VideoStats {
       textTrackContent: textTrackContent,
       rawTags: {
         ...rawTags,
-        if (loops != null) 'loops': loops.toString(),
+        // Note: Do NOT inject engagement `loops` here — rawTags['loops']
+        // must only exist when the original Nostr event contains a
+        // ['loops', ...] tag (i.e., genuine Vine archive imports).
+        // The engagement loop count is stored in `originalLoops` instead.
         if (views != null) 'views': views.toString(),
       },
     );
