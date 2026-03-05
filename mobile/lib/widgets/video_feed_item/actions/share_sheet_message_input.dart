@@ -28,13 +28,13 @@ class _MessageInput extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(
+              spacing: 8,
               children: [
                 UserAvatar(
                   imageUrl: recipient.picture,
                   name: recipient.displayName,
                   size: 24,
                 ),
-                const SizedBox(width: 8),
                 Text(
                   'Sending to ${recipient.displayName ?? 'user'}',
                   style: const TextStyle(
@@ -46,6 +46,7 @@ class _MessageInput extends StatelessWidget {
             ),
           ),
           Row(
+            spacing: 8,
             children: [
               Expanded(
                 child: TextField(
@@ -80,7 +81,6 @@ class _MessageInput extends StatelessWidget {
                       }) => null,
                 ),
               ),
-              const SizedBox(width: 8),
               _SendButton(isSending: isSending, onTap: onSend),
             ],
           ),

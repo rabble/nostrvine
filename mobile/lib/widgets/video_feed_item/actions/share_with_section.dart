@@ -23,6 +23,7 @@ class _ShareWithSection extends StatelessWidget {
 
   static const double _itemWidth = 72;
   static const double _avatarSize = 48;
+  static const double _avatarRadius = _avatarSize * 0.286;
   static const double _rowHeight = 90;
 
   @override
@@ -32,6 +33,7 @@ class _ShareWithSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
+        spacing: 12,
         children: [
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
@@ -44,7 +46,6 @@ class _ShareWithSection extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
           SizedBox(
             height: _rowHeight,
             child: ListView.builder(
@@ -89,38 +90,45 @@ class _FindPeopleItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: _ShareWithSection._itemWidth,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: _ShareWithSection._avatarSize,
-              height: _ShareWithSection._avatarSize,
-              decoration: BoxDecoration(
-                color: VineTheme.vineGreen.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(
-                  _ShareWithSection._avatarSize * 0.286,
+    return Semantics(
+      button: true,
+      label: 'Find people',
+      child: GestureDetector(
+        onTap: onTap,
+        child: SizedBox(
+          width: _ShareWithSection._itemWidth,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 6,
+            children: [
+              Container(
+                width: _ShareWithSection._avatarSize,
+                height: _ShareWithSection._avatarSize,
+                decoration: BoxDecoration(
+                  color: VineTheme.vineGreen.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(
+                    _ShareWithSection._avatarRadius,
+                  ),
+                ),
+                child: const Center(
+                  child: DivineIcon(
+                    icon: DivineIconName.search,
+                    color: VineTheme.vineGreen,
+                  ),
                 ),
               ),
-              child: const Center(
-                child: DivineIcon(
-                  icon: DivineIconName.search,
-                  color: VineTheme.vineGreen,
+              const Text(
+                'Find\npeople',
+                style: TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 11,
                 ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Find\npeople',
-              style: TextStyle(color: VineTheme.secondaryText, fontSize: 11),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -164,57 +172,61 @@ class _ContactItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isSent ? null : onTap,
-      child: SizedBox(
-        width: _ShareWithSection._itemWidth,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Stack(
-              children: [
-                Opacity(
-                  opacity: isSent ? 0.5 : 1.0,
-                  child: UserAvatar(
-                    imageUrl: user.picture,
-                    name: user.displayName,
-                    size: _ShareWithSection._avatarSize,
-                  ),
-                ),
-                if (isSelected || isSent)
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: Container(
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        color: VineTheme.vineGreen,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        size: 14,
-                        color: VineTheme.onPrimary,
-                      ),
+    return Semantics(
+      button: true,
+      label: user.displayName ?? 'Contact',
+      child: GestureDetector(
+        onTap: isSent ? null : onTap,
+        child: SizedBox(
+          width: _ShareWithSection._itemWidth,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 6,
+            children: [
+              Stack(
+                children: [
+                  Opacity(
+                    opacity: isSent ? 0.5 : 1.0,
+                    child: UserAvatar(
+                      imageUrl: user.picture,
+                      name: user.displayName,
+                      size: _ShareWithSection._avatarSize,
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              isSent ? 'Sent' : (user.displayName ?? 'User'),
-              style: TextStyle(
-                color: (isSelected || isSent)
-                    ? VineTheme.vineGreen
-                    : VineTheme.secondaryText,
-                fontSize: 11,
+                  if (isSelected || isSent)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: const BoxDecoration(
+                          color: VineTheme.vineGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          size: 14,
+                          color: VineTheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                ],
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              Text(
+                isSent ? 'Sent' : (user.displayName ?? 'User'),
+                style: TextStyle(
+                  color: (isSelected || isSent)
+                      ? VineTheme.vineGreen
+                      : VineTheme.secondaryText,
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );

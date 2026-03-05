@@ -54,13 +54,17 @@ class DivineSnackbarContainer extends StatelessWidget {
           children: [
             Expanded(child: bannerText),
             if (actionLabel != null && onActionPressed != null)
-              GestureDetector(
-                onTap: onActionPressed,
-                child: Text(
-                  actionLabel!,
-                  style: textStyle.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: error ? VineTheme.likeRed : VineTheme.vineGreen,
+              Semantics(
+                button: true,
+                label: actionLabel,
+                child: GestureDetector(
+                  onTap: onActionPressed,
+                  child: Text(
+                    actionLabel!,
+                    style: textStyle.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: error ? VineTheme.likeRed : VineTheme.vineGreen,
+                    ),
                   ),
                 ),
               ),

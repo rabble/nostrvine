@@ -81,6 +81,7 @@ class _MoreActionsSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
+        spacing: 12,
         children: [
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16),
@@ -93,7 +94,6 @@ class _MoreActionsSection extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(height: 12),
           SizedBox(
             height: 86,
             child: ListView.separated(
@@ -154,38 +154,42 @@ class _ActionCircle extends StatelessWidget {
         : VineTheme.vineGreen.withValues(alpha: 0.15);
     final iconColor = isDestructive ? VineTheme.error : VineTheme.vineGreen;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 68,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: _circleSize,
-              height: _circleSize,
-              decoration: BoxDecoration(
-                color: bgColor,
-                shape: BoxShape.circle,
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: SizedBox(
+          width: 68,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            spacing: 6,
+            children: [
+              Container(
+                width: _circleSize,
+                height: _circleSize,
+                decoration: BoxDecoration(
+                  color: bgColor,
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: DivineIcon(icon: icon, size: 22, color: iconColor),
+                ),
               ),
-              child: Center(
-                child: DivineIcon(icon: icon, size: 22, color: iconColor),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isDestructive
+                      ? VineTheme.error
+                      : VineTheme.secondaryText,
+                  fontSize: 11,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: isDestructive
-                    ? VineTheme.error
-                    : VineTheme.secondaryText,
-                fontSize: 11,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

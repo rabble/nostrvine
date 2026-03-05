@@ -39,6 +39,7 @@ class _ShareSheetHeader extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Row(
+        spacing: 12,
         children: [
           profileAsync.when(
             data: (profile) => UserAvatar(
@@ -49,7 +50,6 @@ class _ShareSheetHeader extends ConsumerWidget {
             loading: () => const UserAvatar(size: 40),
             error: (_, _) => const UserAvatar(size: 40),
           ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +77,6 @@ class _ShareSheetHeader extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
           SizedBox(
             width: 40,
             height: 56,
