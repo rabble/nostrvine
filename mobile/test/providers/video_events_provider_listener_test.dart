@@ -15,11 +15,15 @@ import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/state/seen_videos_state.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
 class _FakeAppForeground extends AppForeground {
   _FakeAppForeground(this._isForeground);
@@ -43,15 +47,29 @@ class _FakeSeenVideosNotifier extends SeenVideosNotifier {
 /// the [videoEventsProvider].
 ProviderContainer _createContainer({
   required _MockVideoEventService mockVideoEventService,
+  ContentBlocklistService? blocklistService,
   bool appReady = true,
   bool tabActive = true,
   SeenVideosState seenState = SeenVideosState.initial,
 }) {
+  final effectiveBlocklistService =
+      blocklistService ?? _MockContentBlocklistService();
+  if (effectiveBlocklistService is _MockContentBlocklistService) {
+    when(
+      () => effectiveBlocklistService.shouldFilterFromFeeds(any()),
+    ).thenReturn(false);
+  }
+
   return ProviderContainer(
     overrides: [
       // Override the gate providers directly to avoid complex dependency chains
       appReadyProvider.overrideWith((ref) => appReady),
       isDiscoveryTabActiveProvider.overrideWith((ref) => tabActive),
+
+      // Override blocklist service to avoid SharedPreferences dependency
+      contentBlocklistServiceProvider.overrideWithValue(
+        effectiveBlocklistService,
+      ),
 
       // Override foreground provider (used by gate listeners)
       appForegroundProvider.overrideWith(() => _FakeAppForeground(appReady)),
