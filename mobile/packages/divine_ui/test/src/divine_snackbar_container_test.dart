@@ -78,7 +78,7 @@ void main() {
     ) async {
       await tester.pumpWidget(buildTestWidget(label: 'Test message'));
 
-      expect(find.byType(TextButton), findsNothing);
+      expect(find.text('Retry'), findsNothing);
     });
 
     testWidgets('does not render action button when onActionPressed is null', (
@@ -88,7 +88,7 @@ void main() {
         buildTestWidget(label: 'Test message', actionLabel: 'Retry'),
       );
 
-      expect(find.byType(TextButton), findsNothing);
+      expect(find.text('Retry'), findsNothing);
     });
 
     testWidgets('renders action button when both actionLabel and '
@@ -101,7 +101,6 @@ void main() {
         ),
       );
 
-      expect(find.byType(TextButton), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
     });
 
@@ -117,7 +116,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(TextButton));
+      await tester.tap(find.text('Retry'));
       expect(actionPressed, isTrue);
     });
 
@@ -132,9 +131,8 @@ void main() {
         ),
       );
 
-      final textButton = tester.widget<TextButton>(find.byType(TextButton));
-      final textWidget = textButton.child as Text?;
-      expect(textWidget?.style?.color, VineTheme.vineGreen);
+      final actionText = tester.widget<Text>(find.text('Retry'));
+      expect(actionText.style?.color, VineTheme.vineGreen);
     });
 
     testWidgets('action button has red color in error state', (tester) async {
@@ -147,9 +145,8 @@ void main() {
         ),
       );
 
-      final textButton = tester.widget<TextButton>(find.byType(TextButton));
-      final textWidget = textButton.child as Text?;
-      expect(textWidget?.style?.color, VineTheme.likeRed);
+      final actionText = tester.widget<Text>(find.text('Retry'));
+      expect(actionText.style?.color, VineTheme.likeRed);
     });
 
     testWidgets('has correct padding', (tester) async {

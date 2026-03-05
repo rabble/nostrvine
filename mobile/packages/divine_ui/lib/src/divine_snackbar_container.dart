@@ -54,8 +54,8 @@ class DivineSnackbarContainer extends StatelessWidget {
           children: [
             Expanded(child: bannerText),
             if (actionLabel != null && onActionPressed != null)
-              TextButton(
-                onPressed: onActionPressed,
+              GestureDetector(
+                onTap: onActionPressed,
                 child: Text(
                   actionLabel!,
                   style: textStyle.copyWith(
