@@ -5,7 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,8 +18,9 @@ class IndexerRelayConfig {
     'wss://purplepag.es', // Purple Pages - primary NIP-65 indexer
     'wss://user.kindpag.es', // Kind Pages - specialized user metadata indexer
     // NOTE: relay.damus.io was here but returns 503 sporadically, slowing
-    // discovery. relay.nos.social is under our control and a good fallback.
-    'wss://relay.nos.social', // Nos relay - general relay fallback we control
+    // discovery. relay.nos.social actively crawls kind 10002 via
+    // nos-event-service, giving it broad NIP-65 coverage.
+    'wss://relay.nos.social',
   ];
 }
 
@@ -178,6 +179,10 @@ class RelayDiscoveryService {
   /// Uses a [Completer] to resolve as soon as any indexer returns relays,
   /// rather than waiting for all indexers to finish. If all indexers return
   /// empty or fail, returns null.
+  ///
+  // TODO: cancel remaining WebSocket connections on first success. Currently
+  // losing queries complete naturally (EOSE or 10s timeout) which is harmless
+  // but wastes resources.
   Future<(List<DiscoveredRelay>, String)?> _queryFirstSuccess(
     String pubkeyHex,
   ) async {
