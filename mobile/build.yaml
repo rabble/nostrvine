@@ -5,3 +5,11 @@ targets:
         options:
           # Generate providers in .g.dart files
           generate_riverpod_annotation: true
+      hive_ce_generator:hive_registrar_intermediate_generator:
+        generate_for:
+          include:
+            - lib/**
+      hive_ce_generator:hive_registrar_generator:
+        generate_for:
+          include:
+            - lib/**
