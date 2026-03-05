@@ -16,30 +16,25 @@ class MoreActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Semantics(
-          identifier: 'more_button',
-          container: true,
-          explicitChildNodes: true,
-          button: true,
-          label: 'More options',
-          child: Container(
-            width: 40,
-            height: 40,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.scrim30,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const DivineIcon(
-              icon: DivineIconName.dotsThree,
-              color: VineTheme.whiteText,
-            ),
-          ),
+    return Semantics(
+      identifier: 'more_button',
+      container: true,
+      explicitChildNodes: true,
+      button: true,
+      label: 'More options',
+      child: Container(
+        width: 40,
+        height: 40,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: VineTheme.scrim30,
+          borderRadius: BorderRadius.circular(16),
         ),
-      ],
+        child: const DivineIcon(
+          icon: DivineIconName.dotsThree,
+          color: VineTheme.whiteText,
+        ),
+      ),
     );
   }
 }
