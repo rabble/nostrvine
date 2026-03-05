@@ -26,7 +26,10 @@ void main() {
       mockGallerySaveService = _MockGallerySaveService();
     });
 
-    Widget buildWidget({bool selectionMode = false}) {
+    Widget buildWidget({
+      bool selectionMode = false,
+      int initialTabIndex = 0,
+    }) {
       return ProviderScope(
         overrides: [
           gallerySaveServiceProvider.overrideWith(
@@ -36,7 +39,10 @@ void main() {
         ],
         child: MaterialApp(
           theme: VineTheme.theme,
-          home: LibraryScreen(selectionMode: selectionMode),
+          home: LibraryScreen(
+            selectionMode: selectionMode,
+            initialTabIndex: initialTabIndex,
+          ),
         ),
       );
     }
@@ -57,6 +63,15 @@ void main() {
 
         // Drafts tab is default selected (first in order)
         expect(find.byType(DraftsTab), findsOneWidget);
+      });
+
+      testWidgets('$ClipsTab initially when initialTabIndex is 1', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(initialTabIndex: 1));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ClipsTab), findsOneWidget);
       });
 
       testWidgets('$ClipSelectionHeader in selection mode', (tester) async {

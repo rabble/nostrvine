@@ -37,7 +37,6 @@ import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
-import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -1058,7 +1057,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         authService: ref.read(authServiceProvider),
         videoEventPublisher: ref.read(videoEventPublisherProvider),
         blossomService: ref.read(blossomUploadServiceProvider),
-        draftService: DraftStorageService(),
+        draftService: ref.read(draftStorageServiceProvider),
         onProgressChanged:
             ({required String draftId, required double progress}) {
               onProgress(draftId: draftId, progress: progress);

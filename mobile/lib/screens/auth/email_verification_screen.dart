@@ -220,17 +220,28 @@ class _EmailVerificationScreenState
   void didUpdateWidget(EmailVerificationScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    // If we receive a token via deep link while polling, verify it
-    // This marks the email as verified on the server, allowing the poll to
-    // complete
-    if (widget.isTokenMode && !oldWidget.isTokenMode) {
+    // Re-verify when token changes (polling->token OR token->token update).
+    // This marks the email as verified on the server, allowing in-progress
+    // polling to complete.
+    final tokenChanged = widget.token != oldWidget.token;
+    if (widget.isTokenMode && tokenChanged) {
       Log.info(
         'Token received via deep link, calling verifyEmail',
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
       final oauth = ref.read(oauthClientProvider);
-      oauth.verifyEmail(token: widget.token!);
+      unawaited(() async {
+        try {
+          await oauth.verifyEmail(token: widget.token!);
+        } catch (e) {
+          Log.error(
+            'verifyEmail failed from token update: $e',
+            name: 'EmailVerificationScreen',
+            category: LogCategory.auth,
+          );
+        }
+      }());
     }
   }
 

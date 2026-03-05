@@ -2,6 +2,7 @@
 // ABOUTME: Includes video file path, metadata, publish status, and timestamps
 
 import 'dart:convert';
+import 'package:db_client/db_client.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:models/models.dart' show NativeProofData;
@@ -172,6 +173,23 @@ class DivineVideoDraft {
     );
   }
 
+  factory DivineVideoDraft.fromDriftRow({
+    required DraftRow row,
+    required List<ClipRow> clipRows,
+    required String documentsPath,
+  }) {
+    final draftJson = json.decode(row.data) as Map<String, dynamic>;
+
+    // Reconstruct clips from clip rows
+    final clips = clipRows.map((clipRow) {
+      final clipJson = json.decode(clipRow.data) as Map<String, dynamic>;
+      return DivineVideoClip.fromJson(clipJson, documentsPath);
+    }).toList();
+
+    final draft = DivineVideoDraft.fromJson(draftJson, documentsPath);
+    return draft.copyWith(clips: clips, skipUpdateLastModified: true);
+  }
+
   final List<DivineVideoClip> clips;
   final String id;
   final String title;
@@ -253,6 +271,7 @@ class DivineVideoDraft {
     String? inspiredByNpub,
     Object? selectedAudioEventId = _sentinel,
     Object? selectedAudioRelay = _sentinel,
+    bool skipUpdateLastModified = false,
   }) => DivineVideoDraft(
     id: id ?? this.id,
     clips: clips ?? this.clips,
@@ -261,7 +280,7 @@ class DivineVideoDraft {
     hashtags: hashtags ?? this.hashtags,
     selectedApproach: selectedApproach,
     createdAt: createdAt,
-    lastModified: DateTime.now(),
+    lastModified: skipUpdateLastModified ? lastModified : DateTime.now(),
     expireTime: expireTime ?? this.expireTime,
     allowAudioReuse: allowAudioReuse ?? this.allowAudioReuse,
     publishStatus: publishStatus ?? this.publishStatus,

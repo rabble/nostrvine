@@ -1,20 +1,29 @@
 // ABOUTME: Tests for ClipLibraryService - persistent storage for video clips
 // ABOUTME: Covers save, load, delete, and thumbnail generation for clips
 
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as models show AspectRatio;
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('ClipLibraryService', () {
+    late AppDatabase database;
     late ClipLibraryService service;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      service = ClipLibraryService();
+      database = AppDatabase.test(NativeDatabase.memory());
+      service = ClipLibraryService(
+        clipsDao: database.clipsDao,
+        draftsDao: database.draftsDao,
+      );
+    });
+
+    tearDown(() async {
+      await database.close();
     });
 
     group('saveClip', () {

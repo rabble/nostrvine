@@ -93,11 +93,21 @@ class _MyFollowingView extends StatelessWidget {
         ),
       ),
       body: BlocConsumer<MyFollowingBloc, MyFollowingState>(
+        listenWhen: (previous, current) =>
+            (current.status == MyFollowingStatus.success &&
+                previous.status != MyFollowingStatus.success) ||
+            (current.toggleError != null &&
+                current.toggleError != previous.toggleError),
         listener: (context, state) {
           if (state.status == MyFollowingStatus.success) {
             ScreenAnalyticsService().markDataLoaded(
               'following',
               dataMetrics: {'following_count': state.followingPubkeys.length},
+            );
+          }
+          if (state.toggleError != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.toggleError!)),
             );
           }
         },

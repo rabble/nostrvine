@@ -41,6 +41,12 @@ class ClipReorderController extends ChangeNotifier {
   /// Notifier for visual drag offset (used for rotation effect).
   final dragOffsetNotifier = ValueNotifier<double>(0);
 
+  /// Notifier for vertical drag offset (used for follow-finger effect).
+  final dragYOffsetNotifier = ValueNotifier<double>(0);
+
+  /// The Y offset value when reset animation started.
+  double _dragYResetStartValue = 0;
+
   /// Initializes the controller for a new reorder operation.
   ///
   /// Call this when the user starts dragging a clip (long press).
@@ -50,6 +56,8 @@ class ClipReorderController extends ChangeNotifier {
     _updatedIndex = clipIndex;
     _accumulatedDragOffset = 0;
     _enableTweenOffset = true;
+    dragOffsetNotifier.value = 0;
+    dragYOffsetNotifier.value = 0;
     notifyListeners();
   }
 
@@ -71,19 +79,39 @@ class ClipReorderController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Prepares for drag reset animation.
+  /// Prepares for drag reset animation (X only).
+  ///
+  /// Used when entering the delete zone — only X resets,
+  /// the clip stays at its current Y position.
   void prepareForDragReset() {
     _dragResetStartValue = dragOffsetNotifier.value;
+    _dragYResetStartValue = 0;
+  }
+
+  /// Prepares for a full drag reset animation (both X and Y).
+  ///
+  /// Used when the user releases the drag without deleting.
+  void prepareForFullDragReset() {
+    _dragResetStartValue = dragOffsetNotifier.value;
+    _dragYResetStartValue = dragYOffsetNotifier.value;
   }
 
   /// Updates the visual drag offset during animation reset.
+  ///
+  /// Resets Y only when [prepareForFullDragReset] was called — i.e., when
+  /// [_dragYResetStartValue] is non-zero.
   void updateDragOffsetFromAnimation(double progress) {
     dragOffsetNotifier.value = _dragResetStartValue * (1 - progress);
+    if (_dragYResetStartValue != 0) {
+      dragYOffsetNotifier.value = _dragYResetStartValue * (1 - progress);
+    }
   }
 
   /// Completes the reorder operation and resets state.
   void completeReorder() {
     dragOffsetNotifier.value = 0;
+    dragYOffsetNotifier.value = 0;
+    _dragYResetStartValue = 0;
     _accumulatedDragOffset = 0;
   }
 
@@ -93,8 +121,13 @@ class ClipReorderController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Whether the X drag offset should trigger a reset animation.
+  bool get shouldAnimateXReset => dragOffsetNotifier.value.abs() > 0.1;
+
   /// Whether the drag offset should trigger a reset animation.
-  bool get shouldAnimateReset => dragOffsetNotifier.value.abs() > 0.1;
+  bool get shouldAnimateReset =>
+      dragOffsetNotifier.value.abs() > 0.1 ||
+      dragYOffsetNotifier.value.abs() > 0.1;
 
   // ─────────────────────────────────────────────────────────────────────────
   // Threshold and Delete Zone Logic
@@ -106,13 +139,40 @@ class ClipReorderController extends ChangeNotifier {
   }
 
   /// Updates the visual drag offset (for rotation effect), clamped to bounds.
-  void updateVisualDragOffset(double deltaX, double maxWidth) {
+  ///
+  /// [contentScale] compensates for the outer `AnimatedScale` so the clip
+  /// follows the finger 1:1 in screen space.
+  void updateVisualDragOffset(
+    double deltaX,
+    double maxWidth, {
+    double contentScale = 1.0,
+  }) {
     final maxDragOffset =
-        maxWidth * VideoEditorGalleryConstants.dragClampFactor;
-    dragOffsetNotifier.value = (dragOffsetNotifier.value + deltaX).clamp(
-      -maxDragOffset,
-      maxDragOffset,
-    );
+        maxWidth * VideoEditorGalleryConstants.dragClampFactor / contentScale;
+    dragOffsetNotifier.value =
+        (dragOffsetNotifier.value + deltaX / contentScale).clamp(
+          -maxDragOffset,
+          maxDragOffset,
+        );
+  }
+
+  /// Updates the vertical drag offset so the clip follows the finger downward.
+  ///
+  /// Clamps upward movement to prevent the clip from leaving upward,
+  /// but allows free downward movement toward the delete zone.
+  ///
+  /// [contentScale] compensates for the outer `AnimatedScale` so the clip
+  /// follows the finger 1:1 in screen space.
+  void updateVisualDragY(double deltaY, {double contentScale = 1.0}) {
+    final compensatedClampUp =
+        VideoEditorGalleryConstants.dragYClampUp / contentScale;
+    final compensatedClampDown =
+        VideoEditorGalleryConstants.dragYClampDown / contentScale;
+    dragYOffsetNotifier.value =
+        (dragYOffsetNotifier.value + deltaY / contentScale).clamp(
+          -compensatedClampUp,
+          compensatedClampDown,
+        );
   }
 
   /// Calculates the reorder threshold based on viewport and clip count.
@@ -141,9 +201,11 @@ class ClipReorderController extends ChangeNotifier {
 
   /// Resets drag offset if needed when entering delete zone.
   ///
+  /// Only resets the X offset — the clip stays at its current Y position
+  /// so it remains visually near the delete zone.
   /// Returns true if a reset animation should be started.
   bool handleEnterDeleteZone() {
-    final shouldAnimate = shouldAnimateReset;
+    final shouldAnimate = shouldAnimateXReset;
     if (shouldAnimate) {
       prepareForDragReset();
     }
@@ -161,6 +223,7 @@ class ClipReorderController extends ChangeNotifier {
   @override
   void dispose() {
     dragOffsetNotifier.dispose();
+    dragYOffsetNotifier.dispose();
     super.dispose();
   }
 }

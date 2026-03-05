@@ -351,6 +351,62 @@ void main() {
 
         verify(() => mockCubit.stopPolling()).called(greaterThan(0));
       });
+
+      testWidgets(
+        're-verifies when token changes while already in token mode',
+        (tester) async {
+          final tokenNotifier = ValueNotifier<String>('token-1');
+          const initialState = EmailVerificationState();
+
+          when(() => mockCubit.state).thenReturn(initialState);
+          whenListen(
+            mockCubit,
+            const Stream<EmailVerificationState>.empty(),
+            initialState: initialState,
+          );
+
+          when(
+            () => mockOAuth.verifyEmail(token: any(named: 'token')),
+          ).thenAnswer(
+            (_) async =>
+                VerifyEmailResult(success: false, error: 'Invalid token'),
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                ...getStandardTestOverrides(mockAuthService: mockAuthService),
+                oauthClientProvider.overrideWithValue(mockOAuth),
+                pendingVerificationServiceProvider.overrideWithValue(
+                  mockPendingVerification,
+                ),
+                forceExploreTabNameProvider.overrideWith((ref) => null),
+              ],
+              child: MaterialApp(
+                theme: VineTheme.theme,
+                home: BlocProvider<EmailVerificationCubit>.value(
+                  value: mockCubit,
+                  child: ValueListenableBuilder<String>(
+                    valueListenable: tokenNotifier,
+                    builder: (context, token, _) =>
+                        EmailVerificationScreen(token: token),
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 10));
+
+          verify(() => mockOAuth.verifyEmail(token: 'token-1')).called(1);
+
+          tokenNotifier.value = 'token-2';
+          await tester.pump();
+
+          verify(() => mockOAuth.verifyEmail(token: 'token-2')).called(1);
+        },
+      );
     });
   });
 }

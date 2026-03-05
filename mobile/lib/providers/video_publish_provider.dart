@@ -34,7 +34,9 @@ final videoPublishProvider =
 
 /// Manages video publish screen state including playback and position.
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
-  final _draftService = DraftStorageService();
+  late final DraftStorageService _draftService = ref.read(
+    draftStorageServiceProvider,
+  );
 
   @override
   VideoPublishProviderState build() {
@@ -93,7 +95,17 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// Called on app startup to check for drafts with [VideoEditorConstants.publishPrefixId]
   /// prefix and restart their upload process.
   Future<void> resumePendingPublishes(BuildContext context) async {
-    final drafts = await _draftService.getAllDrafts();
+    final List<DivineVideoDraft> drafts;
+    try {
+      drafts = await _draftService.getAllDrafts();
+    } catch (e) {
+      Log.error(
+        '❌ Failed to load drafts for pending publish resume: $e',
+        name: 'VideoPublishNotifier',
+        category: LogCategory.video,
+      );
+      return;
+    }
     if (!context.mounted) return;
 
     final pendingDrafts = drafts.where(

@@ -375,7 +375,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   void _openClips() {
     // Navigate to clips route (defined outside ShellRoute)
-    context.push(LibraryScreen.clipsPath);
+    context.push(LibraryScreen.draftsPath);
   }
 
   void _openAnalytics() {

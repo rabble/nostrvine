@@ -639,13 +639,18 @@ class BlocklistVersion extends _$BlocklistVersion {
 /// Draft storage service for persisting vine drafts
 @riverpod
 DraftStorageService draftStorageService(Ref ref) {
-  return DraftStorageService();
+  final db = ref.watch(databaseProvider);
+  return DraftStorageService(
+    draftsDao: db.draftsDao,
+    clipsDao: db.clipsDao,
+  );
 }
 
 /// Clip library service for persisting individual video clips
 @riverpod
 ClipLibraryService clipLibraryService(Ref ref) {
-  return ClipLibraryService();
+  final db = ref.watch(databaseProvider);
+  return ClipLibraryService(clipsDao: db.clipsDao, draftsDao: db.draftsDao);
 }
 
 // (Removed duplicate legacy provider for StreamUploadService)

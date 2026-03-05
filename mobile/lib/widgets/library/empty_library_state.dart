@@ -3,8 +3,8 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 
 /// Empty state widget for library tabs (clips, drafts).
 class EmptyLibraryState extends StatelessWidget {
@@ -65,7 +65,8 @@ class EmptyLibraryState extends StatelessWidget {
           if (showRecordButton) ...[
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () => context.push(VideoRecorderScreen.path),
+              onPressed: () =>
+                  context.pushWithVideoPause(VideoRecorderScreen.path),
               icon: const DivineIcon(
                 icon: DivineIconName.videoCamera,
                 size: 18,

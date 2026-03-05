@@ -98,21 +98,26 @@ void main() {
     });
 
     group('Clip routes parse to RouteType.clips', () {
-      const clipRoutes = [
-        LibraryScreen.clipsPath,
-        LibraryScreen.draftsPath, // Legacy route should also work
-      ];
+      test('${LibraryScreen.clipsPath} parses to RouteType.clips', () {
+        final context = parseRoute(LibraryScreen.clipsPath);
+        expect(
+          context.type,
+          RouteType.clips,
+          reason: '${LibraryScreen.clipsPath} should parse to RouteType.clips',
+        );
+      });
+    });
 
-      for (final route in clipRoutes) {
-        test('$route parses to RouteType.clips', () {
-          final context = parseRoute(route);
-          expect(
-            context.type,
-            RouteType.clips,
-            reason: '$route should parse to RouteType.clips',
-          );
-        });
-      }
+    group('Draft routes parse to RouteType.drafts', () {
+      test('${LibraryScreen.draftsPath} parses to RouteType.drafts', () {
+        final context = parseRoute(LibraryScreen.draftsPath);
+        expect(
+          context.type,
+          RouteType.drafts,
+          reason:
+              '${LibraryScreen.draftsPath} should parse to RouteType.drafts',
+        );
+      });
     });
 
     group('Tab routes parse correctly', () {
@@ -383,6 +388,7 @@ void main() {
         RouteType.safetySettings: SafetySettingsScreen.path,
         RouteType.editProfile: ProfileSetupScreen.editPath,
         RouteType.clips: LibraryScreen.clipsPath,
+        RouteType.drafts: LibraryScreen.draftsPath,
         RouteType.welcome: WelcomeScreen.path,
         RouteType.videoDetail: VideoDetailScreen.pathForId('test_id'),
       };
