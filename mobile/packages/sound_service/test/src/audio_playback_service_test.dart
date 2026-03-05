@@ -132,21 +132,46 @@ void main() {
       expect(duration, const Duration(seconds: 15));
     });
 
-    test('setAudioSource sets audio source directly', () async {
-      final source = _FakeAudioSource();
+    test('setAudioSource sets audio source from URI', () async {
       when(
-        () => mockPlayer.setAudioSource(source),
+        () => mockPlayer.setAudioSource(any()),
       ).thenAnswer((_) async => const Duration(seconds: 20));
 
       service = AudioPlaybackService(
         audioPlayer: mockPlayer,
         audioSessionWrapper: mockSessionWrapper,
       );
-      final duration = await service.setAudioSource(source);
+      final duration = await service.setAudioSource(
+        const AudioSourceConfig.network('https://example.com/audio.mp3'),
+      );
 
-      verify(() => mockPlayer.setAudioSource(source)).called(1);
+      verify(() => mockPlayer.setAudioSource(any())).called(1);
       expect(duration, const Duration(seconds: 20));
     });
+
+    test(
+      'setAudioSource creates clipped source when boundaries given',
+      () async {
+        when(
+          () => mockPlayer.setAudioSource(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 5));
+
+        service = AudioPlaybackService(
+          audioPlayer: mockPlayer,
+          audioSessionWrapper: mockSessionWrapper,
+        );
+        final duration = await service.setAudioSource(
+          const AudioSourceConfig.asset(
+            'assets/sounds/clip.mp3',
+            start: Duration(seconds: 2),
+            end: Duration(seconds: 7),
+          ),
+        );
+
+        verify(() => mockPlayer.setAudioSource(any())).called(1);
+        expect(duration, const Duration(seconds: 5));
+      },
+    );
 
     test('play starts playback', () async {
       when(() => mockPlayer.play()).thenAnswer((_) async {});
@@ -412,7 +437,9 @@ void main() {
       );
 
       expect(
-        () => service.setAudioSource(_FakeAudioSource()),
+        () => service.setAudioSource(
+          const AudioSourceConfig.network('https://example.com/bad.mp3'),
+        ),
         throwsException,
       );
     });
@@ -1000,7 +1027,9 @@ void main() {
       );
       await service.dispose();
 
-      final result = await service.setAudioSource(_FakeAudioSource());
+      final result = await service.setAudioSource(
+        const AudioSourceConfig.network('https://example.com/audio.mp3'),
+      );
 
       expect(result, isNull);
       verifyNever(() => mockPlayer.setAudioSource(any()));

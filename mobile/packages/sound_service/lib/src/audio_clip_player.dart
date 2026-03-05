@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:just_audio/just_audio.dart';
+import 'package:sound_service/src/audio_source_config.dart';
 
 /// A player that plays a clipped portion of an audio source.
 ///
@@ -13,14 +14,15 @@ import 'package:just_audio/just_audio.dart';
 /// focused API so that consumers do not depend on `just_audio` types
 /// directly. If the underlying audio library is replaced, only this class
 /// needs to change.
-// coverage:ignore-start
 class AudioClipPlayer {
   /// Creates an [AudioClipPlayer].
   ///
   /// An optional [audioPlayer] can be injected for testing within the
   /// `sound_service` package.
+  // coverage:ignore-start
   AudioClipPlayer({AudioPlayer? audioPlayer})
     : _audioPlayer = audioPlayer ?? AudioPlayer();
+  // coverage:ignore-end
 
   final AudioPlayer _audioPlayer;
 
@@ -37,25 +39,24 @@ class AudioClipPlayer {
   /// Whether audio is currently playing.
   bool get isPlaying => _audioPlayer.playing;
 
-  /// Sets a clipped audio source.
+  /// Sets a clipped audio source from an [AudioSourceConfig].
   ///
-  /// [uri] is the audio location — either a network URL or a local
-  /// asset path (when [isAsset] is `true`).
-  /// [start] and [end] define the clip boundaries within the full track.
-  Future<void> setClip({
-    required String uri,
-    required bool isAsset,
-    required Duration start,
-    required Duration end,
-  }) async {
-    final child = isAsset
-        ? AudioSource.asset(uri)
-        : AudioSource.uri(Uri.parse(uri));
+  /// The config's [AudioSourceConfig.start] and [AudioSourceConfig.end]
+  /// define the clip boundaries within the full track.
+  Future<void> setClip(AudioSourceConfig config) async {
+    final UriAudioSource child;
+    if (config.isAsset) {
+      child = AudioSource.asset(config.uri);
+    } else if (config.isFile) {
+      child = AudioSource.file(config.uri);
+    } else {
+      child = AudioSource.uri(Uri.parse(config.uri));
+    }
 
     final source = ClippingAudioSource(
       child: child,
-      start: start,
-      end: end,
+      start: config.start,
+      end: config.end,
     );
 
     await _audioPlayer.setAudioSource(source);
@@ -94,5 +95,3 @@ class AudioClipPlayer {
     }
   }
 }
-
-// coverage:ignore-end

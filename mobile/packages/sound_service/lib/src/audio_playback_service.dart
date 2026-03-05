@@ -13,6 +13,7 @@ import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sound_service/src/audio_session_wrapper.dart';
+import 'package:sound_service/src/audio_source_config.dart';
 
 /// Service for managing audio playback during lip sync recording mode.
 ///
@@ -82,9 +83,8 @@ class AudioPlaybackService {
       // Check initial headphone state
       final devices = await _audioSessionWrapper.getDevices();
       final hasHeadphones = _checkForHeadphones(devices);
-      if (!_isDisposed) {
-        _headphonesConnectedSubject.add(hasHeadphones);
-      }
+      if (_isDisposed) return;
+      _headphonesConnectedSubject.add(hasHeadphones);
 
       // Listen for device changes
       _deviceChangeSubscription = _audioSessionWrapper.devicesChangedEventStream
@@ -217,15 +217,38 @@ class AudioPlaybackService {
     }
   }
 
-  /// Sets an audio source directly.
+  /// Resolves an [AudioSourceConfig] into a `just_audio` [AudioSource].
+  AudioSource _resolveSource(AudioSourceConfig config) {
+    final UriAudioSource child;
+    if (config.isAsset) {
+      child = AudioSource.asset(config.uri);
+    } else if (config.isFile) {
+      child = AudioSource.file(config.uri);
+    } else {
+      child = AudioSource.uri(Uri.parse(config.uri));
+    }
+
+    if (config.isClipped) {
+      return ClippingAudioSource(
+        child: child,
+        start: config.start,
+        end: config.end,
+      );
+    }
+    return child;
+  }
+
+  /// Sets an audio source described by [config].
   ///
-  /// This allows using advanced audio sources like [ClippingAudioSource].
-  Future<Duration?> setAudioSource(AudioSource source) async {
+  /// See [AudioSourceConfig] for the available factory constructors.
+  Future<Duration?> setAudioSource(AudioSourceConfig config) async {
     if (_isDisposed) return null;
     try {
+      final source = _resolveSource(config);
       final loadedDuration = await _audioPlayer.setAudioSource(source);
       log(
-        'Set audio source: ${source.runtimeType}',
+        'Set audio source: ${config.uri} '
+        '(asset=${config.isAsset}, file=${config.isFile})',
         name: 'AudioPlaybackService',
       );
       return loadedDuration;

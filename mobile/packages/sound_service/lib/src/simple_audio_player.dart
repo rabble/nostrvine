@@ -3,7 +3,7 @@
 // ABOUTME: consumers (e.g. CountdownSoundService) don't depend on just_audio.
 
 import 'package:just_audio/just_audio.dart';
-import 'package:sound_service/sound_service.dart';
+import 'package:sound_service/src/countdown_sound_service.dart';
 
 /// Minimal audio player contract for fire-and-forget sound playback.
 ///
