@@ -16,6 +16,7 @@ class TestDivineCameraPlatform extends DivineCameraPlatform
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
+    bool enableAutoLensSwitch = false,
   }) async => const CameraState(isInitialized: true);
 
   @override

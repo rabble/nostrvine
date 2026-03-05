@@ -209,9 +209,9 @@ class _FollowButton extends StatelessWidget {
         child: GestureDetector(
           onTap: () => _confirmUnfollow(context),
           child: Container(
-            width: 40,
-            height: 40,
-            padding: const EdgeInsets.all(8),
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: VineTheme.surfaceContainer,
               borderRadius: BorderRadius.circular(16),

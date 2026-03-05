@@ -308,6 +308,18 @@ class PlayerPool {
 
   Future<PooledPlayer> _createPlayer() async {
     final player = Player();
+
+    // Suppress FFmpeg codec warnings (e.g. smpte170m color transfer) that
+    // bypass MPV's API log callback and go directly to stderr.
+    try {
+      final nativePlayer = player.platform;
+      if (nativePlayer is NativePlayer) {
+        await nativePlayer.setProperty('msg-level', 'all=error');
+      }
+    } on Exception {
+      // Ignore — non-native platforms don't support setProperty.
+    }
+
     final videoController = VideoController(player);
     return PooledPlayer(player: player, videoController: videoController);
   }

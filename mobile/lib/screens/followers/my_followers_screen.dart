@@ -103,31 +103,49 @@ class _MyFollowersView extends StatelessWidget {
               : 0,
         ),
       ),
-      body: BlocConsumer<MyFollowersBloc, MyFollowersState>(
-        listener: (context, state) {
-          if (state.status == MyFollowersStatus.success) {
-            ScreenAnalyticsService().markDataLoaded(
-              'followers',
-              dataMetrics: {'followers_count': state.followersPubkeys.length},
-            );
-          }
-        },
-        builder: (context, state) {
-          return switch (state.status) {
-            MyFollowersStatus.initial || MyFollowersStatus.loading =>
-              const Center(child: CircularProgressIndicator()),
-            MyFollowersStatus.success => _FollowersListBody(
-              followers: state.followersPubkeys,
-            ),
-            MyFollowersStatus.failure => _FollowersErrorBody(
-              onRetry: () {
-                context.read<MyFollowersBloc>().add(
-                  const MyFollowersListLoadRequested(),
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MyFollowersBloc, MyFollowersState>(
+            listener: (context, state) {
+              if (state.status == MyFollowersStatus.success) {
+                ScreenAnalyticsService().markDataLoaded(
+                  'followers',
+                  dataMetrics: {
+                    'followers_count': state.followersPubkeys.length,
+                  },
                 );
-              },
-            ),
-          };
-        },
+              }
+            },
+          ),
+          BlocListener<MyFollowingBloc, MyFollowingState>(
+            listenWhen: (previous, current) =>
+                current.toggleError != null &&
+                current.toggleError != previous.toggleError,
+            listener: (context, state) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.toggleError!)),
+              );
+            },
+          ),
+        ],
+        child: BlocBuilder<MyFollowersBloc, MyFollowersState>(
+          builder: (context, state) {
+            return switch (state.status) {
+              MyFollowersStatus.initial || MyFollowersStatus.loading =>
+                const Center(child: CircularProgressIndicator()),
+              MyFollowersStatus.success => _FollowersListBody(
+                followers: state.followersPubkeys,
+              ),
+              MyFollowersStatus.failure => _FollowersErrorBody(
+                onRetry: () {
+                  context.read<MyFollowersBloc>().add(
+                    const MyFollowersListLoadRequested(),
+                  );
+                },
+              ),
+            };
+          },
+        ),
       ),
     );
   }

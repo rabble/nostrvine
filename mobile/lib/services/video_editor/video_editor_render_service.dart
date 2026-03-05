@@ -2,6 +2,7 @@
 // ABOUTME: Handles aspect ratio cropping, clip concatenation, and export transformation
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -10,6 +11,7 @@ import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
@@ -173,6 +175,78 @@ class VideoEditorRenderService {
   // ─────────────────────────────────────────────────────────────────────────
   // Public API
   // ─────────────────────────────────────────────────────────────────────────
+
+  /// Renders multiple clips into a [DivineVideoClip] ready for publishing.
+  ///
+  /// This is a convenience wrapper around [renderVideo] that also extracts
+  /// metadata, generates ProofMode attestation, and creates a [DivineVideoClip].
+  ///
+  /// Returns a record containing:
+  /// - The rendered [DivineVideoClip]
+  /// - The proofManifestJson (or null if ProofMode unavailable)
+  ///
+  /// Returns null if rendering failed/cancelled.
+  static Future<(DivineVideoClip, String? proofManifestJson)?>
+  renderVideoToClip({
+    required List<DivineVideoClip> clips,
+    bool enableAudio = true,
+    CompleteParameters? parameters,
+  }) async {
+    if (clips.isEmpty) return null;
+
+    final outputPath = await renderVideo(
+      clips: clips,
+      aspectRatio: clips.first.targetAspectRatio,
+      enableAudio: enableAudio,
+      usePersistentStorage: true,
+      parameters: parameters,
+    );
+
+    if (outputPath == null) return null;
+
+    final metaData = await ProVideoEditor.instance.getMetadata(
+      EditorVideo.file(outputPath),
+    );
+
+    // Generate ProofMode attestation
+    Log.debug(
+      '🔐 Generating proofmode attestation for video',
+      name: _logName,
+      category: LogCategory.video,
+    );
+    final proofData = await NativeProofModeService.proofFile(
+      File(outputPath),
+    );
+    final String? proofManifestJson = proofData != null
+        ? jsonEncode(proofData)
+        : null;
+
+    if (proofManifestJson != null) {
+      Log.info(
+        '✅ Proofmode attestation generated',
+        name: _logName,
+        category: LogCategory.video,
+      );
+    } else {
+      Log.warning(
+        '⚠️ No proofmode data available',
+        name: _logName,
+        category: LogCategory.video,
+      );
+    }
+
+    final clip = DivineVideoClip(
+      id: 'clip-${DateTime.now()}',
+      video: EditorVideo.file(outputPath),
+      duration: metaData.duration,
+      recordedAt: DateTime.now(),
+      originalAspectRatio: clips.first.originalAspectRatio,
+      targetAspectRatio: clips.first.targetAspectRatio,
+      thumbnailPath: clips.first.thumbnailPath,
+    );
+
+    return (clip, proofManifestJson);
+  }
 
   /// Renders multiple clips into a single video file with aspect ratio cropping.
   ///

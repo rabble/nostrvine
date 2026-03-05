@@ -14,9 +14,12 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/audio_playback_service.dart';
@@ -53,6 +56,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   double _baseZoomLevel = 1;
   bool _isDestroyed = false;
+
+  // Snap-to-1x detent: lock zoom at 1.0 briefly when crossing
+  bool _snappedTo1x = false;
+  double _lastRawZoom = 1;
+  DateTime? _snapTime;
 
   // Flag to track if startRecording is in progress (waiting for first keyframe)
   bool _isStartingRecording = false;
@@ -610,9 +618,14 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         state = state.copyWith(countdownValue: i);
 
         unawaited(_countdownSoundService!.playShortBeep());
-        // 940ms to compensate for following ~60ms long beep playback duration,
-        // keeping each tick at ~1 second total
-        await Future<void>.delayed(Duration(milliseconds: i > 0 ? 1000 : 940));
+        // Last tick is shorter to compensate for the long beep duration
+        // and post-playback buffer that follow.
+        final delay = i > 1
+            ? const Duration(seconds: 1)
+            : const Duration(seconds: 1) -
+                  CountdownSoundService.longBeepDuration -
+                  CountdownSoundService.postPlaybackBuffer;
+        await Future<void>.delayed(delay);
       }
 
       if (_isDestroyed) {
@@ -767,6 +780,17 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
+    // Save clip to device gallery (fire-and-forget)
+    unawaited(
+      ref
+          .read(gallerySaveServiceProvider)
+          .saveVideoToGallery(
+            videoResult,
+            aspectRatio: state.aspectRatio,
+            metadata: metadata,
+          ),
+    );
+
     // Generate and attach thumbnail.
     // Take the smaller of remaining duration or actual video duration.
     final effectiveDuration = remainingDuration < metadata.duration
@@ -822,11 +846,16 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Captures base zoom level for relative zoom calculations.
   void handleScaleStart(ScaleStartDetails details) {
     _baseZoomLevel = state.zoomLevel;
+    _snappedTo1x = false;
+    _lastRawZoom = state.zoomLevel;
+    _snapTime = null;
   }
 
   /// Handle pinch-to-zoom gesture update.
   ///
   /// Calculates zoom level based on pinch scale relative to base level.
+  /// Includes a snap-to-1.0x detent: when zooming crosses 1.0x, the zoom
+  /// locks there briefly until the gesture moves past a threshold.
   Future<void> handleScaleUpdate(ScaleUpdateDetails details) async {
     // Linear zoom: map scale gesture to zoom range
     // scale < 1.0 = zoom out, scale > 1.0 = zoom in
@@ -841,10 +870,59 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         ? _baseZoomLevel + (normalizedChange / 2.0) * zoomRangeUp
         : _baseZoomLevel + normalizedChange * zoomRangeDown;
 
-    final clampedZoom = newZoom.clamp(
+    var clampedZoom = newZoom.clamp(
       _cameraService.minZoomLevel,
       _cameraService.maxZoomLevel,
     );
+
+    final hasUltraWideRange =
+        _cameraService.minZoomLevel < 1.0 && _cameraService.maxZoomLevel > 1.0;
+
+    // Magnetic damping near 1.0x: zoom changes decelerate in a
+    // "gravity well" around 1.0x, making it feel sticky.
+    // Uses quadratic easing so it feels natural – fast at the edge,
+    // very slow near 1.0x.
+    if (hasUltraWideRange && !_snappedTo1x) {
+      const gravityRadius = 0.15;
+      final distFrom1 = (clampedZoom - 1.0).abs();
+      if (distFrom1 < gravityRadius) {
+        final t = distFrom1 / gravityRadius; // 0 at 1.0, 1 at edge
+        final damped = t * t; // Quadratic: slow near center
+        final direction = clampedZoom >= 1.0 ? 1.0 : -1.0;
+        clampedZoom = 1.0 + direction * gravityRadius * damped;
+      }
+    }
+
+    // Snap-to-1.0x detent: when the zoom enters the 1.0x zone, lock
+    // there for a fixed duration so the user feels the anchor point.
+    // Zone-based detection (not exact crossing) ensures reliability.
+    const snapHoldMs = 350;
+    final crossedFrom = _lastRawZoom;
+    _lastRawZoom = clampedZoom;
+
+    if (hasUltraWideRange) {
+      // Detect zoom entering the 1.0x zone from outside.
+      // "Outside" = previous raw zoom was clearly above or below 1.0.
+      // "Near" = current damped zoom is very close to 1.0.
+      if (!_snappedTo1x &&
+          (crossedFrom > 1.02 || crossedFrom < 0.98) &&
+          (clampedZoom - 1.0).abs() <= 0.02) {
+        _snappedTo1x = true;
+        _snapTime = DateTime.now();
+        clampedZoom = 1.0;
+      }
+
+      if (_snappedTo1x) {
+        final elapsed = DateTime.now().difference(_snapTime!).inMilliseconds;
+        if (elapsed < snapHoldMs) {
+          // Hold period active – stay at 1.0x
+          clampedZoom = 1.0;
+        } else {
+          // Hold expired – release detent and continue zooming
+          _snappedTo1x = false;
+        }
+      }
+    }
 
     // Only update if change is significant to avoid excessive updates
     if ((state.zoomLevel - clampedZoom).abs() > 0.01) {
@@ -861,6 +939,10 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
+
+    if (!ref.read(videoEditorProvider.notifier).isAutosavedDraft) {
+      ref.read(videoPublishProvider.notifier).clearAll();
+    }
     // Try to pop if possible, otherwise go home.
     if (context.canPop()) {
       context.pop();

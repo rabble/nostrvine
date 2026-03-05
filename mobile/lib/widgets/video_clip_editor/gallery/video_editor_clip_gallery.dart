@@ -186,17 +186,32 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     PointerMoveEvent event,
     BoxConstraints constraints,
   ) async {
-    // Check delete zone and exit early if needed
-    if (_updateDeleteZoneState(event, constraints)) {
-      _resetDragOffsetIfNeeded();
-      return;
-    }
+    // Compensate deltas for the AnimatedScale(reorderScale) wrapper so the
+    // clip center follows the finger 1:1 in screen space.
+    final contentScale = VideoEditorGalleryConstants.reorderScale;
 
-    // Update visual drag offset (for rotation effect)
+    // Always track Y — clip follows finger vertically toward delete zone.
+    _reorderController.updateVisualDragY(
+      event.delta.dy,
+      contentScale: contentScale,
+    );
+
+    // Always track X — clip follows finger horizontally even in delete zone.
     _reorderController.updateVisualDragOffset(
       event.delta.dx,
       constraints.maxWidth,
+      contentScale: contentScale,
     );
+
+    // Check delete zone — block only page-switching reorder logic.
+    if (_updateDeleteZoneState(event, constraints)) {
+      // Only reset X offset when directly over the delete button,
+      // not when simply dragging below the clip area.
+      if (_isPointerOverDeleteButton(event.position)) {
+        _resetDragOffsetIfNeeded();
+      }
+      return;
+    }
 
     // Accumulate drag offset for page switching
     _reorderController.addDragOffset(event.delta.dx);
@@ -269,7 +284,7 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     }
 
     // Animate drag offset back to 0 and wait for completion
-    _reorderController.prepareForDragReset();
+    _reorderController.prepareForFullDragReset();
     if (_reorderController.shouldAnimateReset) {
       await _dragResetController.forward(from: 0).orCancel;
     }
@@ -541,6 +556,7 @@ class _GalleryStackState extends ConsumerState<_GalleryStack> {
               pageWidth: pageWidth,
               isReordering: widget.isReordering,
               dragOffsetNotifier: widget.reorderController.dragOffsetNotifier,
+              dragYOffsetNotifier: widget.reorderController.dragYOffsetNotifier,
               scale: _calculator.calculateScale(widget.activeClipIndex),
               xOffset: _calculator.calculateXOffset(widget.activeClipIndex),
             ),

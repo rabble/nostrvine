@@ -5,12 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -99,8 +99,8 @@ void main() {
 
     group('Clip routes parse to RouteType.clips', () {
       const clipRoutes = [
-        ClipLibraryScreen.clipsPath,
-        ClipLibraryScreen.draftsPath, // Legacy route should also work
+        LibraryScreen.clipsPath,
+        LibraryScreen.draftsPath, // Legacy route should also work
       ];
 
       for (final route in clipRoutes) {
@@ -382,7 +382,7 @@ void main() {
         RouteType.keyManagement: KeyManagementScreen.path,
         RouteType.safetySettings: SafetySettingsScreen.path,
         RouteType.editProfile: ProfileSetupScreen.editPath,
-        RouteType.clips: ClipLibraryScreen.clipsPath,
+        RouteType.clips: LibraryScreen.clipsPath,
         RouteType.welcome: WelcomeScreen.path,
         RouteType.videoDetail: VideoDetailScreen.pathForId('test_id'),
       };

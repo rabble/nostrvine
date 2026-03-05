@@ -13,6 +13,7 @@ import 'package:openvine/widgets/notification_list_item.dart';
 class _MockRelayNotifications extends RelayNotifications {
   final List<NotificationModel> _notifications;
   final List<String> markedAsReadIds = [];
+  bool markAllAsReadCalled = false;
 
   _MockRelayNotifications(this._notifications);
 
@@ -31,7 +32,9 @@ class _MockRelayNotifications extends RelayNotifications {
   }
 
   @override
-  Future<void> markAllAsRead() async {}
+  Future<void> markAllAsRead() async {
+    markAllAsReadCalled = true;
+  }
 
   @override
   Future<void> loadMore() async {}
@@ -42,6 +45,8 @@ class _MockRelayNotifications extends RelayNotifications {
 
 /// Mock notifier that returns empty list
 class _MockEmptyRelayNotifications extends RelayNotifications {
+  bool markAllAsReadCalled = false;
+
   @override
   Future<NotificationFeedState> build() async {
     return NotificationFeedState(
@@ -55,7 +60,9 @@ class _MockEmptyRelayNotifications extends RelayNotifications {
   Future<void> markAsRead(String notificationId) async {}
 
   @override
-  Future<void> markAllAsRead() async {}
+  Future<void> markAllAsRead() async {
+    markAllAsReadCalled = true;
+  }
 
   @override
   Future<void> loadMore() async {}
@@ -350,6 +357,28 @@ void main() {
     });
 
     group('mark as read', () {
+      testWidgets('calls markAllAsRead when screen is opened', (
+        WidgetTester tester,
+      ) async {
+        final now = DateTime.now();
+        final notifications = [
+          NotificationModel(
+            id: 'notif-unread',
+            type: NotificationType.like,
+            actorPubkey: pubkeyAlice,
+            actorName: 'Alice',
+            message: 'Alice liked your video',
+            timestamp: now.subtract(const Duration(minutes: 1)),
+          ),
+        ];
+
+        final mockNotifier = _MockRelayNotifications(notifications);
+        await tester.pumpWidget(buildScreenWidget(() => mockNotifier));
+        await tester.pumpAndSettle();
+
+        expect(mockNotifier.markAllAsReadCalled, isTrue);
+      });
+
       testWidgets('calls markAsRead on notifier when notification tapped', (
         WidgetTester tester,
       ) async {
