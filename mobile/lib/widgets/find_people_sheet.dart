@@ -47,6 +47,7 @@ class FindPeopleSheet extends ConsumerStatefulWidget {
 class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
   final TextEditingController _searchController = TextEditingController();
   UserSearchBloc? _searchBloc;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -101,7 +102,7 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
             ),
             Expanded(
               child: _ResultsList(
-                searchQuery: _searchController.text,
+                searchQuery: _searchQuery,
                 searchBloc: _searchBloc,
                 contacts: widget.contacts,
                 userProfileService: ref.read(userProfileServiceProvider),
@@ -115,12 +116,13 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
   }
 
   void _onSearchChanged(String value) {
-    if (value.trim().isEmpty) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
       _searchBloc?.add(const UserSearchCleared());
     } else {
       _searchBloc?.add(UserSearchQueryChanged(value));
     }
-    setState(() {});
+    setState(() => _searchQuery = trimmed);
   }
 
   void _selectUser(ShareableUser user) {

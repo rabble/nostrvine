@@ -366,13 +366,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         _handlePlaybackChange(next);
       });
 
-      // Pause/resume when modals open/close (provider-mode path)
-      ref.listenManual(hasVisibleOverlayProvider, (prev, next) {
-        if (!mounted) return;
-        final isActive = ref.read(isVideoActiveProvider(_stableVideoId));
-        final effectivelyActive = isActive && !next;
-        _handlePlaybackChange(effectivelyActive);
-      });
+      // Note: Modal/overlay pause is already handled by activeVideoProvider
+      // (returns null when hasVisibleOverlayProvider is true) and by the
+      // feed-level listener in video_feed_page.dart (PR #1939).
 
       // Also listen for controller recreation (e.g., after cache corruption retry)
       // When controller is recreated while video is active, re-trigger play setup
