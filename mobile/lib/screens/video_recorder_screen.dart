@@ -11,7 +11,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -51,6 +53,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _pauseBackgroundPlayback();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _initializeCamera();
@@ -144,6 +147,26 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     }
   }
 
+  /// Force all background video playback to pause while camera is open.
+  void _pauseBackgroundPlayback() {
+    try {
+      ref.read(overlayVisibilityProvider.notifier).setModalOpen(true);
+      ref.read(videoVisibilityManagerProvider).pauseAllVideos();
+      _disposeVideoControllers();
+      Log.info(
+        '⏸️ Paused background playback for camera',
+        name: 'VideoRecorderScreen',
+        category: .video,
+      );
+    } catch (e) {
+      Log.warning(
+        '📹 Failed to pause background playback: $e',
+        name: 'VideoRecorderScreen',
+        category: .video,
+      );
+    }
+  }
+
   /// Listens to sound selection changes and extracts waveform data.
   void _setupSoundWaveformListener(SoundWaveformBloc bloc) {
     Log.info(
@@ -224,6 +247,15 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
   @override
   Future<void> dispose() async {
+    try {
+      ref.read(overlayVisibilityProvider.notifier).setModalOpen(false);
+    } catch (e) {
+      Log.warning(
+        '📹 Failed to clear overlay visibility on dispose: $e',
+        name: 'VideoRecorderScreen',
+        category: .video,
+      );
+    }
     unawaited(_notifier?.destroy());
     _soundSubscription?.close();
 
