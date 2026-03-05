@@ -18,6 +18,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/audio_playback_service.dart';
@@ -616,9 +618,14 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         state = state.copyWith(countdownValue: i);
 
         unawaited(_countdownSoundService!.playShortBeep());
-        // 940ms to compensate for following ~60ms long beep playback duration,
-        // keeping each tick at ~1 second total
-        await Future<void>.delayed(Duration(milliseconds: i > 0 ? 1000 : 940));
+        // Last tick is shorter to compensate for the long beep duration
+        // and post-playback buffer that follow.
+        final delay = i > 1
+            ? const Duration(seconds: 1)
+            : const Duration(seconds: 1) -
+                  CountdownSoundService.longBeepDuration -
+                  CountdownSoundService.postPlaybackBuffer;
+        await Future<void>.delayed(delay);
       }
 
       if (_isDestroyed) {
@@ -932,6 +939,10 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
+
+    if (!ref.read(videoEditorProvider.notifier).isAutosavedDraft) {
+      ref.read(videoPublishProvider.notifier).clearAll();
+    }
     // Try to pop if possible, otherwise go home.
     if (context.canPop()) {
       context.pop();

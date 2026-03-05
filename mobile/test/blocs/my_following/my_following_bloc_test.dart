@@ -143,7 +143,7 @@ void main() {
       );
 
       blocTest<MyFollowingBloc, MyFollowingState>(
-        'handles toggleFollow error gracefully',
+        'handles toggleFollow error by emitting toggleError',
         setUp: () {
           when(
             () => mockFollowRepository.toggleFollow(any()),
@@ -152,8 +152,65 @@ void main() {
         build: createBloc,
         act: (bloc) =>
             bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
-        // Should not throw or emit error state - just logs
-        expect: () => <MyFollowingState>[],
+        expect: () => [
+          // First emission: clear previous error
+          const MyFollowingState(status: MyFollowingStatus.success),
+          // Second emission: set the error
+          const MyFollowingState(
+            status: MyFollowingStatus.success,
+            toggleError: 'Failed to update follow status. Please try again.',
+          ),
+        ],
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        'clears toggleError before new toggle attempt',
+        setUp: () {
+          when(
+            () => mockFollowRepository.toggleFollow(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: createBloc,
+        seed: () => const MyFollowingState(
+          status: MyFollowingStatus.success,
+          toggleError: 'previous error',
+        ),
+        act: (bloc) =>
+            bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
+        expect: () => [
+          // Clears previous error
+          const MyFollowingState(status: MyFollowingStatus.success),
+        ],
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        'uses droppable transformer to prevent concurrent toggles',
+        setUp: () {
+          // First call takes time, second should be dropped
+          var callCount = 0;
+          when(
+            () => mockFollowRepository.toggleFollow(any()),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              await Future<void>.delayed(const Duration(milliseconds: 50));
+            }
+          });
+        },
+        build: createBloc,
+        act: (bloc) async {
+          // Fire two events rapidly
+          bloc
+            ..add(MyFollowingToggleRequested(validPubkey('user')))
+            ..add(MyFollowingToggleRequested(validPubkey('user')));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        verify: (_) {
+          // With droppable, second event is dropped while first processes
+          verify(
+            () => mockFollowRepository.toggleFollow(validPubkey('user')),
+          ).called(1);
+        },
       );
     });
   });
@@ -189,33 +246,50 @@ void main() {
       final updated = state.copyWith(
         status: MyFollowingStatus.success,
         followingPubkeys: ['pubkey1'],
+        toggleError: () => 'error',
       );
 
       expect(updated.status, MyFollowingStatus.success);
       expect(updated.followingPubkeys, ['pubkey1']);
+      expect(updated.toggleError, 'error');
     });
 
     test('copyWith preserves values when not specified', () {
       const state = MyFollowingState(
         status: MyFollowingStatus.success,
         followingPubkeys: ['pubkey1'],
+        toggleError: 'error',
       );
 
       final updated = state.copyWith();
 
       expect(updated.status, MyFollowingStatus.success);
       expect(updated.followingPubkeys, ['pubkey1']);
+      expect(updated.toggleError, 'error');
+    });
+
+    test('copyWith can clear toggleError with null', () {
+      const state = MyFollowingState(
+        status: MyFollowingStatus.success,
+        toggleError: 'error',
+      );
+
+      final updated = state.copyWith(toggleError: () => null);
+
+      expect(updated.toggleError, isNull);
     });
 
     test('props includes all fields', () {
       const state = MyFollowingState(
         status: MyFollowingStatus.success,
         followingPubkeys: ['pubkey1'],
+        toggleError: 'error',
       );
 
       expect(state.props, [
         MyFollowingStatus.success,
         ['pubkey1'],
+        'error',
       ]);
     });
   });

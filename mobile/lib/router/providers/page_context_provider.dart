@@ -5,7 +5,6 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -18,6 +17,7 @@ import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/notifications_screen.dart';
@@ -61,7 +61,8 @@ enum RouteType {
   safetySettings, // Safety and privacy settings
   contentFilters, // Content filter preferences (Show/Warn/Hide)
   editProfile, // Profile editing screen
-  clips, // Clip library screen (formerly drafts)
+  clips, // Clip library screen
+  drafts, // Draft library screen
   welcome, // Welcome/onboarding screen
   developerOptions, // Developer options (hidden, unlock by tapping version 7x)
   loginOptions, // Login options screen (choose login method)
@@ -253,9 +254,12 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.editProfile);
 
     case 'clips':
-    case 'drafts': // Legacy route, redirects to clips
       // Clip library screen - standalone route outside ShellRoute
       return const RouteContext(type: RouteType.clips);
+
+    case 'drafts':
+      // Draft library screen - standalone route outside ShellRoute
+      return const RouteContext(type: RouteType.drafts);
 
     case 'import-key':
       return const RouteContext(type: RouteType.importKey);
@@ -435,7 +439,10 @@ String buildRoute(RouteContext context) {
       return KeyImportScreen.path;
 
     case RouteType.clips:
-      return ClipLibraryScreen.clipsPath;
+      return LibraryScreen.clipsPath;
+
+    case RouteType.drafts:
+      return LibraryScreen.draftsPath;
 
     case RouteType.welcome:
       return WelcomeScreen.path;

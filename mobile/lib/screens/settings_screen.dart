@@ -26,7 +26,6 @@ import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -646,9 +645,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _handleSwitchAccount() async {
     // Check for existing drafts before showing switch account confirmation
-    final draftService = DraftStorageService();
-    final drafts = await draftService.getAllDrafts();
-    final draftCount = drafts.length;
+    final draftService = ref.read(draftStorageServiceProvider);
+    final draftCount = await draftService.getDraftCount();
 
     if (!mounted) return;
 

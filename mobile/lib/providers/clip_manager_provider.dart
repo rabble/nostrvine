@@ -10,8 +10,8 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -300,8 +300,16 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // Force immediate autosave so draft references are updated before cleanup
     await _forceAutosave();
 
+    // Guard against provider disposal during the async gap above.
+    if (!ref.mounted) return true;
+
     // Delete files only if not referenced by drafts or clip library
-    await FileCleanupService.deleteRecordingClipFiles(clip);
+    final db = ref.read(databaseProvider);
+    await FileCleanupService.deleteRecordingClipFiles(
+      clip,
+      draftsDao: db.draftsDao,
+      clipsDao: db.clipsDao,
+    );
 
     return true;
   }
@@ -535,7 +543,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     state = ClipManagerState();
 
     // Delete autosave draft and its associated files
-    final draftService = DraftStorageService();
+    final draftService = ref.read(draftStorageServiceProvider);
     await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
   }
 

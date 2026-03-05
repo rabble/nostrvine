@@ -110,30 +110,44 @@ class _OthersFollowingView extends StatelessWidget {
               : 0,
         ),
       ),
-      body: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
-        builder: (context, state) {
-          return switch (state.status) {
-            OthersFollowingStatus.initial || OthersFollowingStatus.loading =>
-              const Center(child: CircularProgressIndicator()),
-            OthersFollowingStatus.success => _FollowingListBody(
-              following: state.followingPubkeys,
-              targetPubkey: pubkey,
-            ),
-            OthersFollowingStatus.failure => _FollowingErrorBody(
-              onRetry: () {
-                final targetPubkey = context
-                    .read<OthersFollowingBloc>()
-                    .state
-                    .targetPubkey;
-                if (targetPubkey != null) {
-                  context.read<OthersFollowingBloc>().add(
-                    OthersFollowingListLoadRequested(targetPubkey),
-                  );
-                }
-              },
-            ),
-          };
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MyFollowingBloc, MyFollowingState>(
+            listenWhen: (previous, current) =>
+                current.toggleError != null &&
+                current.toggleError != previous.toggleError,
+            listener: (context, state) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.toggleError!)),
+              );
+            },
+          ),
+        ],
+        child: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
+          builder: (context, state) {
+            return switch (state.status) {
+              OthersFollowingStatus.initial || OthersFollowingStatus.loading =>
+                const Center(child: CircularProgressIndicator()),
+              OthersFollowingStatus.success => _FollowingListBody(
+                following: state.followingPubkeys,
+                targetPubkey: pubkey,
+              ),
+              OthersFollowingStatus.failure => _FollowingErrorBody(
+                onRetry: () {
+                  final targetPubkey = context
+                      .read<OthersFollowingBloc>()
+                      .state
+                      .targetPubkey;
+                  if (targetPubkey != null) {
+                    context.read<OthersFollowingBloc>().add(
+                      OthersFollowingListLoadRequested(targetPubkey),
+                    );
+                  }
+                },
+              ),
+            };
+          },
+        ),
       ),
     );
   }

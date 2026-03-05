@@ -46,6 +46,10 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 5, vsync: this);
+    // Mark all notifications as read when the screen is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(relayNotificationsProvider.notifier).markAllAsRead();
+    });
   }
 
   @override
