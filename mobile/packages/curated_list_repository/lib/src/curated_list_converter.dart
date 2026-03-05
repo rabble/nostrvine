@@ -110,7 +110,7 @@ abstract final class CuratedListConverter {
     final tags = <List<String>>[
       ['d', list.id],
       ['title', list.name],
-      ['client', 'Divine'],
+      ['client', 'diVine'],
     ];
 
     if (list.description != null && list.description!.isNotEmpty) {
