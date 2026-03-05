@@ -914,7 +914,7 @@ class CurationService {
     final tags = <List<String>>[
       ['d', id], // Replaceable event identifier
       ['title', title],
-      ['client', 'Divine'], // Attribution
+      ['client', 'diVine'], // Attribution
     ];
 
     if (description != null) {
