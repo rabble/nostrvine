@@ -43,6 +43,17 @@ class ShareActionButton extends StatelessWidget {
 
   final VideoEvent video;
 
+  /// Opens the unified share sheet for the given [video].
+  ///
+  /// This is exposed as a static method so that other widgets (e.g.
+  /// [MoreActionButton]) can open the same share sheet without duplicating
+  /// the bottom-sheet wiring.
+  static void showShareSheet(BuildContext context, VideoEvent video) {
+    context.showVideoPausingVineBottomSheet<void>(
+      builder: (context) => _UnifiedShareSheet(video: video),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -67,9 +78,7 @@ class ShareActionButton extends StatelessWidget {
                 name: 'ShareActionButton',
                 category: LogCategory.ui,
               );
-              context.showVideoPausingVineBottomSheet<void>(
-                builder: (context) => _UnifiedShareSheet(video: video),
-              );
+              ShareActionButton.showShareSheet(context, video);
             },
             icon: DecoratedBox(
               decoration: BoxDecoration(
