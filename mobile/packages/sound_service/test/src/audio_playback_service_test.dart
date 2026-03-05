@@ -173,6 +173,23 @@ void main() {
       },
     );
 
+    test('setAudioSource sets audio source from file path', () async {
+      when(
+        () => mockPlayer.setAudioSource(any()),
+      ).thenAnswer((_) async => const Duration(seconds: 12));
+
+      service = AudioPlaybackService(
+        audioPlayer: mockPlayer,
+        audioSessionWrapper: mockSessionWrapper,
+      );
+      final duration = await service.setAudioSource(
+        const AudioSourceConfig.file('/path/to/local.mp3'),
+      );
+
+      verify(() => mockPlayer.setAudioSource(any())).called(1);
+      expect(duration, const Duration(seconds: 12));
+    });
+
     test('play starts playback', () async {
       when(() => mockPlayer.play()).thenAnswer((_) async {});
 
