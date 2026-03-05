@@ -148,13 +148,12 @@ void main() {
       // Should display 'V' text
       expect(find.text('V'), findsOneWidget);
 
-      // Should display 'Original Vine' text
-      expect(find.text('Original Vine'), findsOneWidget);
+      // Should display 'Original' text
+      expect(find.text('Original'), findsOneWidget);
 
       // Check the badge container exists
       expect(find.byType(Container), findsWidgets);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('renders different Vine badge sizes correctly', (tester) async {
       // Test small size
