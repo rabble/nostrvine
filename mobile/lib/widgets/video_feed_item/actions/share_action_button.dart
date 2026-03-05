@@ -173,7 +173,13 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       case ShareSheetSendSuccess(:final recipientName, :final shouldDismiss):
         if (shouldDismiss) _safePop(context);
         messenger.showSnackBar(
-          _styledSnackBar('Post shared with $recipientName'),
+          _styledSnackBar(
+            'Post shared with $recipientName',
+            actionLabel: 'View Chat',
+            onActionPressed: () {
+              // TODO: Navigate to chat screen when available.
+            },
+          ),
         );
       case ShareSheetSendFailure():
         messenger.showSnackBar(
@@ -224,11 +230,21 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
     );
   }
 
-  SnackBar _styledSnackBar(String message, {bool error = false}) => SnackBar(
+  SnackBar _styledSnackBar(
+    String message, {
+    bool error = false,
+    String? actionLabel,
+    VoidCallback? onActionPressed,
+  }) => SnackBar(
     backgroundColor: Colors.transparent,
     elevation: 0,
     behavior: SnackBarBehavior.floating,
-    content: DivineSnackbarContainer(label: message, error: error),
+    content: DivineSnackbarContainer(
+      label: message,
+      error: error,
+      actionLabel: actionLabel,
+      onActionPressed: onActionPressed,
+    ),
   );
 }
 
