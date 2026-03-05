@@ -51,7 +51,7 @@ final class ClassicVinesFeedProvider
   ClassicVinesFeed create() => ClassicVinesFeed();
 }
 
-String _$classicVinesFeedHash() => r'995948cbf1c26ec7bf7fabc6fa101a0978b13f75';
+String _$classicVinesFeedHash() => r'f2dab024b8f0a930dd8b155356246c4df8901bab';
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
