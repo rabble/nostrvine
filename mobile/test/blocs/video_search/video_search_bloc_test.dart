@@ -47,6 +47,11 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockVideosRepository.countVideosLocally(
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer((_) async => 0);
     });
 
     VideoSearchBloc createBloc() =>
@@ -57,6 +62,7 @@ void main() {
       expect(bloc.state.status, VideoSearchStatus.initial);
       expect(bloc.state.query, isEmpty);
       expect(bloc.state.videos, isEmpty);
+      expect(bloc.state.resultCount, isNull);
       bloc.close();
     });
 
@@ -80,6 +86,19 @@ void main() {
         'emits initial state when query is whitespace only',
         build: createBloc,
         act: (bloc) => bloc.add(const VideoSearchQueryChanged('   ')),
+        wait: debounceDuration,
+        expect: () => [const VideoSearchState()],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.searchVideos(query: any(named: 'query')),
+          );
+        },
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        'emits initial state when query is a single character',
+        build: createBloc,
+        act: (bloc) => bloc.add(const VideoSearchQueryChanged('a')),
         wait: debounceDuration,
         expect: () => [const VideoSearchState()],
         verify: (_) {
@@ -176,7 +195,11 @@ void main() {
               .having((s) => s.status, 'status', VideoSearchStatus.searching)
               .having((s) => s.query, 'query', 'flutter')
               .having((s) => s.videos, 'videos', isEmpty),
-          // local cache yields [] — deduped by Equatable (same state)
+          isA<VideoSearchState>()
+              .having((s) => s.status, 'status', VideoSearchStatus.searching)
+              .having((s) => s.videos, 'videos', isEmpty)
+              .having((s) => s.resultCount, 'resultCount', 0),
+          // local cache yields [] with an explicit zero count
           // API yields results — still searching
           isA<VideoSearchState>()
               .having((s) => s.status, 'status', VideoSearchStatus.searching)
@@ -206,8 +229,13 @@ void main() {
             VideoSearchStatus.searching,
           ),
           isA<VideoSearchState>()
-              .having((s) => s.status, 'status', VideoSearchStatus.success)
+              .having((s) => s.status, 'status', VideoSearchStatus.searching)
+              .having((s) => s.resultCount, 'resultCount', 0)
               .having((s) => s.videos, 'videos', isEmpty),
+          isA<VideoSearchState>()
+              .having((s) => s.status, 'status', VideoSearchStatus.success)
+              .having((s) => s.videos, 'videos', isEmpty)
+              .having((s) => s.resultCount, 'resultCount', 0),
         ],
       );
 
@@ -283,6 +311,76 @@ void main() {
       );
 
       blocTest<VideoSearchBloc, VideoSearchState>(
+        'emits local count only when full results are not requested',
+        setUp: () {
+          when(
+            () => mockVideosRepository.countVideosLocally(query: 'flutter'),
+          ).thenAnswer((_) async => 5);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const VideoSearchQueryChanged('flutter', fetchResults: false),
+        ),
+        wait: debounceDuration,
+        expect: () => const [
+          VideoSearchState(
+            query: 'flutter',
+            resultCount: 5,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.countVideosLocally(query: 'flutter'),
+          ).called(1);
+          verifyNever(
+            () => mockVideosRepository.searchVideos(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        'runs full search after a count-only update for the same query',
+        setUp: () {
+          final video = createVideo(id: 'v1', title: 'Flutter Tutorial');
+          when(
+            () => mockVideosRepository.countVideosLocally(query: 'flutter'),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => mockVideosRepository.searchVideos(query: 'flutter'),
+          ).thenAnswer((_) => Stream.value([video]));
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(
+            const VideoSearchQueryChanged('flutter', fetchResults: false),
+          );
+          await Future<void>.delayed(debounceDuration);
+          bloc.add(const VideoSearchQueryChanged('flutter'));
+        },
+        wait: debounceDuration,
+        expect: () => [
+          const VideoSearchState(
+            query: 'flutter',
+            resultCount: 1,
+          ),
+          isA<VideoSearchState>()
+              .having((s) => s.status, 'status', VideoSearchStatus.searching)
+              .having((s) => s.query, 'query', 'flutter'),
+          isA<VideoSearchState>()
+              .having((s) => s.status, 'status', VideoSearchStatus.searching)
+              .having((s) => s.videos.length, 'videos.length', 1)
+              .having((s) => s.resultCount, 'resultCount', 1),
+          isA<VideoSearchState>()
+              .having((s) => s.status, 'status', VideoSearchStatus.success)
+              .having((s) => s.videos.length, 'videos.length', 1)
+              .having((s) => s.resultCount, 'resultCount', 1),
+        ],
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
         'passes query to repository trimmed',
         build: createBloc,
         act: (bloc) => bloc.add(const VideoSearchQueryChanged('  flutter  ')),
@@ -336,6 +434,7 @@ void main() {
         expect(updated.status, VideoSearchStatus.searching);
         expect(updated.query, 'flutter');
         expect(updated.videos, hasLength(1));
+        expect(updated.resultCount, isNull);
       });
 
       test('props includes all fields', () {
@@ -346,7 +445,7 @@ void main() {
           videos: videos,
         );
 
-        expect(state.props, [VideoSearchStatus.success, 'test', videos]);
+        expect(state.props, [VideoSearchStatus.success, 'test', videos, -1]);
       });
 
       test('two states with same values are equal', () {

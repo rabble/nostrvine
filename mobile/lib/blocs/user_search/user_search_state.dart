@@ -24,6 +24,7 @@ final class UserSearchState extends Equatable {
     this.status = UserSearchStatus.initial,
     this.query = '',
     this.results = const [],
+    this.resultCount,
     this.offset = 0,
     this.hasMore = false,
     this.isLoadingMore = false,
@@ -37,6 +38,9 @@ final class UserSearchState extends Equatable {
 
   /// The list of user profiles matching the search
   final List<UserProfile> results;
+
+  /// Lightweight count for tab badges when full results were not fetched.
+  final int? resultCount;
 
   /// Current pagination offset
   final int offset;
@@ -52,6 +56,7 @@ final class UserSearchState extends Equatable {
     UserSearchStatus? status,
     String? query,
     List<UserProfile>? results,
+    Object? resultCount = _unset,
     int? offset,
     bool? hasMore,
     bool? isLoadingMore,
@@ -60,6 +65,9 @@ final class UserSearchState extends Equatable {
       status: status ?? this.status,
       query: query ?? this.query,
       results: results ?? this.results,
+      resultCount: identical(resultCount, _unset)
+          ? this.resultCount
+          : resultCount as int?,
       offset: offset ?? this.offset,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
@@ -71,8 +79,11 @@ final class UserSearchState extends Equatable {
     status,
     query,
     results,
+    resultCount ?? -1,
     offset,
     hasMore,
     isLoadingMore,
   ];
+
+  static const Object _unset = Object();
 }

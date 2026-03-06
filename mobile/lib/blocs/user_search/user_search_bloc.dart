@@ -6,6 +6,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/search_constants.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
@@ -13,16 +14,16 @@ import 'package:stream_transform/stream_transform.dart';
 part 'user_search_event.dart';
 part 'user_search_state.dart';
 
-/// Debounce duration for search queries
-const _debounceDuration = Duration(milliseconds: 300);
-
 /// Number of results per page
 const _pageSize = 50;
 
 /// Event transformer that debounces and restarts on new events
 EventTransformer<E> _debounceRestartable<E>() {
   return (events, mapper) {
-    return restartable<E>().call(events.debounce(_debounceDuration), mapper);
+    return restartable<E>().call(
+      events.debounce(searchDebounceDuration),
+      mapper,
+    );
   };
 }
 
@@ -56,14 +57,34 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     final query = event.query.trim();
 
     // Empty query resets to initial state
-    if (query.isEmpty) {
+    if (query.isEmpty || query.length < minSearchQueryLength) {
       emit(const UserSearchState());
       return;
     }
 
-    if (query == state.query) return;
+    if (!event.fetchResults) {
+      final count = await _profileRepository.countUsersLocally(query: query);
+      emit(
+        UserSearchState(
+          query: query,
+          resultCount: count,
+        ),
+      );
+      return;
+    }
 
-    emit(state.copyWith(status: UserSearchStatus.loading, query: query));
+    if (query == state.query && state.status != UserSearchStatus.initial) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: UserSearchStatus.loading,
+        query: query,
+        resultCount: null,
+        isLoadingMore: false,
+      ),
+    );
 
     _feedTracker?.startFeedLoad('user_search');
 
@@ -91,6 +112,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         state.copyWith(
           status: UserSearchStatus.success,
           results: results,
+          resultCount: results.length,
           offset: results.length,
           hasMore: results.length == _pageSize,
           isLoadingMore: false,

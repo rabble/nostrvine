@@ -48,6 +48,42 @@ class ProfileRepository {
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
 
+  /// Searches cached profiles from local storage only.
+  ///
+  /// This avoids remote work and is suitable for lightweight tab counts
+  /// or instant local-first suggestions.
+  Future<List<UserProfile>> searchUsersLocally({
+    required String query,
+    int? limit,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    final cachedProfiles = await _userProfilesDao.getAllProfiles();
+
+    final filtered = _profileSearchFilter != null
+        ? _profileSearchFilter(trimmed, cachedProfiles)
+        : cachedProfiles.where((profile) {
+            final queryLower = trimmed.toLowerCase();
+            return profile.bestDisplayName.toLowerCase().contains(
+                  queryLower,
+                ) ||
+                (profile.about?.toLowerCase().contains(queryLower) ?? false);
+          }).toList();
+
+    if (limit != null && filtered.length > limit) {
+      return filtered.sublist(0, limit);
+    }
+
+    return filtered;
+  }
+
+  /// Counts cached profiles matching [query] without performing remote search.
+  Future<int> countUsersLocally({required String query}) async {
+    final matches = await searchUsersLocally(query: query);
+    return matches.length;
+  }
+
   /// Returns the cached profile from local storage (SQLite) only.
   ///
   /// Does NOT fetch from Nostr relays. Use this for immediate UI display

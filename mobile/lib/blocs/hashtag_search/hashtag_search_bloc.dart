@@ -5,6 +5,7 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
+import 'package:openvine/constants/search_constants.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:stream_transform/stream_transform.dart';
 
@@ -14,13 +15,13 @@ part 'hashtag_search_state.dart';
 typedef LocalHashtagSearch =
     Future<List<String>> Function(String query, {int limit});
 
-/// Debounce duration for search queries
-const _debounceDuration = Duration(milliseconds: 300);
-
 /// Event transformer that debounces and restarts on new events
 EventTransformer<E> _debounceRestartable<E>() {
   return (events, mapper) {
-    return restartable<E>().call(events.debounce(_debounceDuration), mapper);
+    return restartable<E>().call(
+      events.debounce(searchDebounceDuration),
+      mapper,
+    );
   };
 }
 
@@ -56,14 +57,32 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     final query = event.query.trim().toLowerCase();
 
     // Empty query resets to initial state
-    if (query.isEmpty) {
+    if (query.isEmpty || query.length < minSearchQueryLength) {
       emit(const HashtagSearchState());
       return;
     }
 
-    if (query == state.query) return;
+    if (!event.fetchResults) {
+      emit(
+        HashtagSearchState(
+          query: query,
+          resultCount: _hashtagRepository.countHashtagsLocally(query: query),
+        ),
+      );
+      return;
+    }
 
-    emit(state.copyWith(status: HashtagSearchStatus.loading, query: query));
+    if (query == state.query && state.status != HashtagSearchStatus.initial) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: HashtagSearchStatus.loading,
+        query: query,
+        resultCount: null,
+      ),
+    );
 
     _feedTracker?.startFeedLoad('hashtag_search');
 
@@ -79,7 +98,11 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
       );
 
       emit(
-        state.copyWith(status: HashtagSearchStatus.success, results: results),
+        state.copyWith(
+          status: HashtagSearchStatus.success,
+          results: results,
+          resultCount: results.length,
+        ),
       );
 
       _feedTracker?.markFeedDisplayed('hashtag_search', results.length);
@@ -94,6 +117,7 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
           state.copyWith(
             status: HashtagSearchStatus.success,
             results: fallbackResults,
+            resultCount: fallbackResults.length,
           ),
         );
         _feedTracker?.markFeedDisplayed(

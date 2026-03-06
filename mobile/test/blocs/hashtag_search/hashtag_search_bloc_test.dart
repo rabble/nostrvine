@@ -28,6 +28,11 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => []);
+      when(
+        () => mockHashtagRepository.countHashtagsLocally(
+          query: any(named: 'query'),
+        ),
+      ).thenReturn(0);
     });
 
     HashtagSearchBloc createBloc() =>
@@ -45,6 +50,7 @@ void main() {
       expect(bloc.state.status, HashtagSearchStatus.initial);
       expect(bloc.state.query, isEmpty);
       expect(bloc.state.results, isEmpty);
+      expect(bloc.state.resultCount, isNull);
       bloc.close();
     });
 
@@ -71,6 +77,7 @@ void main() {
             status: HashtagSearchStatus.success,
             query: 'music',
             results: ['music', 'musician', 'musicvideo'],
+            resultCount: 3,
           ),
         ],
         verify: (_) {
@@ -93,6 +100,7 @@ void main() {
           const HashtagSearchState(
             status: HashtagSearchStatus.success,
             query: 'zzzzz',
+            resultCount: 0,
           ),
         ],
       );
@@ -219,6 +227,22 @@ void main() {
       );
 
       blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'emits initial state when query is a single character',
+        build: createBloc,
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('a')),
+        wait: debounceDuration,
+        expect: () => [const HashtagSearchState()],
+        verify: (_) {
+          verifyNever(
+            () => mockHashtagRepository.searchHashtags(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
         'does not re-search when query has not changed',
         build: createBloc,
         seed: () => const HashtagSearchState(
@@ -258,6 +282,7 @@ void main() {
             status: HashtagSearchStatus.success,
             query: 'cats',
             results: ['cats'],
+            resultCount: 1,
           ),
         ],
         verify: (_) {
@@ -293,6 +318,7 @@ void main() {
             status: HashtagSearchStatus.success,
             query: 'final',
             results: ['finalize'],
+            resultCount: 1,
           ),
         ],
         verify: (_) {
@@ -325,6 +351,74 @@ void main() {
             ),
           );
         },
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'emits local count only when full results are not requested',
+        setUp: () {
+          when(
+            () => mockHashtagRepository.countHashtagsLocally(query: 'music'),
+          ).thenReturn(4);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const HashtagSearchQueryChanged('music', fetchResults: false),
+        ),
+        wait: debounceDuration,
+        expect: () => const [
+          HashtagSearchState(
+            query: 'music',
+            resultCount: 4,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockHashtagRepository.countHashtagsLocally(query: 'music'),
+          ).called(1);
+          verifyNever(
+            () => mockHashtagRepository.searchHashtags(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'runs full search after a count-only update for the same query',
+        setUp: () {
+          when(
+            () => mockHashtagRepository.countHashtagsLocally(query: 'music'),
+          ).thenReturn(2);
+          when(
+            () => mockHashtagRepository.searchHashtags(query: 'music'),
+          ).thenAnswer((_) async => ['music', 'musician']);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(
+            const HashtagSearchQueryChanged('music', fetchResults: false),
+          );
+          await Future<void>.delayed(debounceDuration);
+          bloc.add(const HashtagSearchQueryChanged('music'));
+        },
+        wait: debounceDuration,
+        expect: () => const [
+          HashtagSearchState(
+            query: 'music',
+            resultCount: 2,
+          ),
+          HashtagSearchState(
+            status: HashtagSearchStatus.loading,
+            query: 'music',
+          ),
+          HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'music',
+            results: ['music', 'musician'],
+            resultCount: 2,
+          ),
+        ],
       );
     });
 
@@ -369,6 +463,7 @@ void main() {
         expect(updated.status, HashtagSearchStatus.loading);
         expect(updated.query, 'music');
         expect(updated.results, ['music']);
+        expect(updated.resultCount, isNull);
       });
 
       test('props includes all fields', () {
@@ -382,6 +477,7 @@ void main() {
           HashtagSearchStatus.success,
           'music',
           ['music', 'musician'],
+          -1,
         ]);
       });
     });

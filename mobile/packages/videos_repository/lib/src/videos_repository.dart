@@ -893,6 +893,17 @@ class VideosRepository {
         .toList();
   }
 
+  /// Counts local video matches without remote search.
+  ///
+  /// This still relies on local cache search, but avoids the remote API and
+  /// relay phases when a tab only needs a badge count.
+  Future<int> countVideosLocally({
+    required String query,
+  }) async {
+    final matches = await searchVideosLocally(query: query);
+    return matches.length;
+  }
+
   /// Searches NIP-50 relays for videos matching [query].
   ///
   /// Full-text search via [NostrClient.searchVideos] with a 5-second

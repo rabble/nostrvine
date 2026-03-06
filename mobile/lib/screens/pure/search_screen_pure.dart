@@ -72,6 +72,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _userSearchBloc = UserSearchBloc(
       profileRepository: ref.read(profileRepositoryProvider)!,
     );
@@ -93,9 +94,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
               ctx.searchTerm != null &&
               ctx.searchTerm!.isNotEmpty) {
             _searchController.text = ctx.searchTerm!;
-            _userSearchBloc.add(UserSearchQueryChanged(ctx.searchTerm!));
-            _hashtagSearchBloc.add(HashtagSearchQueryChanged(ctx.searchTerm!));
-            _videoSearchBloc.add(VideoSearchQueryChanged(ctx.searchTerm!));
+            _dispatchSearch(ctx.searchTerm!);
             Log.info(
               'SearchScreenPure: Initialized with search term: '
               '${ctx.searchTerm}',
@@ -114,6 +113,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
+    _tabController.removeListener(_onTabChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
     _tabController.dispose();
@@ -126,11 +126,51 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.trim();
+    _dispatchSearch(_searchController.text.trim());
+  }
 
-    _userSearchBloc.add(UserSearchQueryChanged(query));
-    _hashtagSearchBloc.add(HashtagSearchQueryChanged(query));
-    _videoSearchBloc.add(VideoSearchQueryChanged(query));
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging || !mounted) return;
+    setState(() {});
+    _dispatchSearch(_searchController.text.trim());
+  }
+
+  void _dispatchSearch(String query) {
+    final activeIndex = _tabController.index;
+    _videoSearchBloc.add(
+      VideoSearchQueryChanged(query, fetchResults: activeIndex == 0),
+    );
+    _userSearchBloc.add(
+      UserSearchQueryChanged(query, fetchResults: activeIndex == 1),
+    );
+    _hashtagSearchBloc.add(
+      HashtagSearchQueryChanged(query, fetchResults: activeIndex == 2),
+    );
+  }
+
+  int _videoCount(VideoSearchState state) {
+    return state.resultCount ?? state.videos.length;
+  }
+
+  int _userCount(UserSearchState state) {
+    return state.resultCount ?? state.results.length;
+  }
+
+  int _hashtagCount(HashtagSearchState state) {
+    return state.resultCount ?? state.results.length;
+  }
+
+  bool _isActiveTabSearching({
+    required VideoSearchState videoState,
+    required UserSearchState userState,
+    required HashtagSearchState hashtagState,
+  }) {
+    return switch (_tabController.index) {
+      0 => videoState.status == VideoSearchStatus.searching,
+      1 => userState.status == UserSearchStatus.loading,
+      2 => hashtagState.status == HashtagSearchStatus.loading,
+      _ => false,
+    };
   }
 
   Future<List<String>> _searchLocalHashtags(
@@ -207,59 +247,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       );
     }
 
-    final searchBar = _SearchBar(
-      controller: _searchController,
-      focusNode: _searchFocusNode,
-      videoSearchBloc: _videoSearchBloc,
-      onClear: () {
-        _searchController.clear();
-        _userSearchBloc.add(const UserSearchCleared());
-        _hashtagSearchBloc.add(const HashtagSearchCleared());
-        _videoSearchBloc.add(const VideoSearchCleared());
-      },
-    );
-
-    final tabBar = BlocBuilder<VideoSearchBloc, VideoSearchState>(
-      bloc: _videoSearchBloc,
-      builder: (context, videoState) {
-        final videoCount = videoState.videos.length;
-        return BlocBuilder<UserSearchBloc, UserSearchState>(
-          bloc: _userSearchBloc,
-          builder: (context, userSearchState) {
-            final userCount = userSearchState.results.length;
-            return BlocBuilder<HashtagSearchBloc, HashtagSearchState>(
-              bloc: _hashtagSearchBloc,
-              builder: (context, hashtagSearchState) {
-                final hashtagCount = hashtagSearchState.results.length;
-                return TabBar(
-                  controller: _tabController,
-                  isScrollable: true,
-                  tabAlignment: TabAlignment.start,
-                  padding: const EdgeInsets.only(left: 16),
-                  indicatorColor: VineTheme.tabIndicatorGreen,
-                  indicatorWeight: 4,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  labelColor: VineTheme.whiteText,
-                  unselectedLabelColor: VineTheme.tabIconInactive,
-                  labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-                  labelStyle: VineTheme.tabTextStyle(),
-                  unselectedLabelStyle: VineTheme.tabTextStyle(
-                    color: VineTheme.tabIconInactive,
-                  ),
-                  tabs: [
-                    Tab(text: 'Videos ($videoCount)'),
-                    Tab(text: 'Users ($userCount)'),
-                    Tab(text: 'Hashtags ($hashtagCount)'),
-                  ],
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-
     final tabContent = TabBarView(
       controller: _tabController,
       children: const [
@@ -269,61 +256,123 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       ],
     );
 
-    final body = BlocListener<VideoSearchBloc, VideoSearchState>(
-      bloc: _videoSearchBloc,
-      listener: (context, state) {
-        ref.read(searchScreenVideosProvider.notifier).state = state.videos;
-        if (state.videos.isNotEmpty) {
-          prefetchGridVideos(state.videos);
-        }
-      },
-      child: widget.embedded
-          ? Material(
-              color: VineTheme.backgroundColor,
-              child: Column(
-                children: [
-                  Container(
-                    color: VineTheme.navGreen,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: searchBar,
-                  ),
-                  ColoredBox(color: VineTheme.navGreen, child: tabBar),
-                  Expanded(child: tabContent),
-                ],
-              ),
-            )
-          : Scaffold(
-              backgroundColor: VineTheme.backgroundColor,
-              appBar: AppBar(
-                backgroundColor: VineTheme.cardBackground,
-                leading: Semantics(
-                  identifier: 'search_back_button',
-                  button: true,
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: VineTheme.whiteText,
-                    ),
-                    onPressed: context.pop,
-                  ),
-                ),
-                title: searchBar,
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(48),
-                  child: tabBar,
-                ),
-              ),
-              body: tabContent,
-            ),
-    );
-
     return MultiBlocProvider(
       providers: [
         BlocProvider.value(value: _userSearchBloc),
         BlocProvider.value(value: _hashtagSearchBloc),
         BlocProvider.value(value: _videoSearchBloc),
       ],
-      child: body,
+      child: BlocBuilder<VideoSearchBloc, VideoSearchState>(
+        bloc: _videoSearchBloc,
+        builder: (context, videoState) {
+          return BlocBuilder<UserSearchBloc, UserSearchState>(
+            bloc: _userSearchBloc,
+            builder: (context, userSearchState) {
+              return BlocBuilder<HashtagSearchBloc, HashtagSearchState>(
+                bloc: _hashtagSearchBloc,
+                builder: (context, hashtagSearchState) {
+                  final searchBar = _SearchBar(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    isSearching: _isActiveTabSearching(
+                      videoState: videoState,
+                      userState: userSearchState,
+                      hashtagState: hashtagSearchState,
+                    ),
+                    onClear: () {
+                      _searchController.clear();
+                      _userSearchBloc.add(const UserSearchCleared());
+                      _hashtagSearchBloc.add(const HashtagSearchCleared());
+                      _videoSearchBloc.add(const VideoSearchCleared());
+                    },
+                  );
+
+                  final tabBar = TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    padding: const EdgeInsets.only(left: 16),
+                    indicatorColor: VineTheme.tabIndicatorGreen,
+                    indicatorWeight: 4,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    labelColor: VineTheme.whiteText,
+                    unselectedLabelColor: VineTheme.tabIconInactive,
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                    labelStyle: VineTheme.tabTextStyle(),
+                    unselectedLabelStyle: VineTheme.tabTextStyle(
+                      color: VineTheme.tabIconInactive,
+                    ),
+                    tabs: [
+                      Tab(text: 'Videos (${_videoCount(videoState)})'),
+                      Tab(text: 'Users (${_userCount(userSearchState)})'),
+                      Tab(
+                        text: 'Hashtags (${_hashtagCount(hashtagSearchState)})',
+                      ),
+                    ],
+                  );
+
+                  final body = BlocListener<VideoSearchBloc, VideoSearchState>(
+                    bloc: _videoSearchBloc,
+                    listener: (context, state) {
+                      ref.read(searchScreenVideosProvider.notifier).state =
+                          state.videos;
+                      if (state.videos.isNotEmpty) {
+                        prefetchGridVideos(state.videos);
+                      }
+                    },
+                    child: widget.embedded
+                        ? Material(
+                            color: VineTheme.backgroundColor,
+                            child: Column(
+                              children: [
+                                Container(
+                                  color: VineTheme.navGreen,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: searchBar,
+                                ),
+                                ColoredBox(
+                                  color: VineTheme.navGreen,
+                                  child: tabBar,
+                                ),
+                                Expanded(child: tabContent),
+                              ],
+                            ),
+                          )
+                        : Scaffold(
+                            backgroundColor: VineTheme.backgroundColor,
+                            appBar: AppBar(
+                              backgroundColor: VineTheme.cardBackground,
+                              leading: Semantics(
+                                identifier: 'search_back_button',
+                                button: true,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.arrow_back,
+                                    color: VineTheme.whiteText,
+                                  ),
+                                  onPressed: context.pop,
+                                ),
+                              ),
+                              title: searchBar,
+                              bottom: PreferredSize(
+                                preferredSize: const Size.fromHeight(48),
+                                child: tabBar,
+                              ),
+                            ),
+                            body: tabContent,
+                          ),
+                  );
+
+                  return body;
+                },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -332,74 +381,67 @@ class _SearchBar extends StatelessWidget {
   const _SearchBar({
     required this.controller,
     required this.focusNode,
-    required this.videoSearchBloc,
+    required this.isSearching,
     required this.onClear,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
-  final VideoSearchBloc videoSearchBloc;
+  final bool isSearching;
   final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 48,
-      child: BlocBuilder<VideoSearchBloc, VideoSearchState>(
-        bloc: videoSearchBloc,
-        buildWhen: (prev, curr) => prev.status != curr.status,
-        builder: (context, state) {
-          final isSearching = state.status == VideoSearchStatus.searching;
-          return TextField(
-            controller: controller,
-            focusNode: focusNode,
-            style: const TextStyle(color: VineTheme.whiteText),
-            decoration: InputDecoration(
-              hintText: 'Find something cool...',
-              hintStyle: TextStyle(
-                color: VineTheme.whiteText.withValues(alpha: 0.6),
-              ),
-              filled: true,
-              fillColor: VineTheme.iconButtonBackground,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(20),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              prefixIconConstraints: const BoxConstraints(),
-              prefixIcon: Padding(
-                padding: const EdgeInsets.only(left: 12, right: 8),
-                child: isSearching
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Padding(
-                          padding: EdgeInsets.all(2),
-                          child: CircularProgressIndicator(
-                            color: VineTheme.vineGreen,
-                            strokeWidth: 2,
-                          ),
-                        ),
-                      )
-                    : SvgPicture.asset(
-                        'assets/icon/search.svg',
-                        width: 24,
-                        height: 24,
-                        colorFilter: const ColorFilter.mode(
-                          VineTheme.lightText,
-                          BlendMode.srcIn,
-                        ),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        style: const TextStyle(color: VineTheme.whiteText),
+        decoration: InputDecoration(
+          hintText: 'Find something cool...',
+          hintStyle: TextStyle(
+            color: VineTheme.whiteText.withValues(alpha: 0.6),
+          ),
+          filled: true,
+          fillColor: VineTheme.iconButtonBackground,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          prefixIconConstraints: const BoxConstraints(),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.only(left: 12, right: 8),
+            child: isSearching
+                ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Padding(
+                      padding: EdgeInsets.all(2),
+                      child: CircularProgressIndicator(
+                        color: VineTheme.vineGreen,
+                        strokeWidth: 2,
                       ),
-              ),
-              suffixIcon: controller.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, color: VineTheme.whiteText),
-                      onPressed: onClear,
-                    )
-                  : null,
-            ),
-          );
-        },
+                    ),
+                  )
+                : SvgPicture.asset(
+                    'assets/icon/search.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      VineTheme.lightText,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+          ),
+          suffixIcon: controller.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, color: VineTheme.whiteText),
+                  onPressed: onClear,
+                )
+              : null,
+        ),
       ),
     );
   }
