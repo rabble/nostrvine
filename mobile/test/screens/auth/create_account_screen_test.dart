@@ -4,13 +4,14 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/invite_guard_providers.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/invite_api_service.dart';
@@ -59,11 +60,17 @@ void main() {
         pendingVerificationServiceProvider.overrideWithValue(
           mockPendingVerification,
         ),
-        inviteApiServiceProvider.overrideWithValue(mockInviteApiService),
       ],
-      child: MaterialApp(
-        theme: VineTheme.theme,
-        home: const CreateAccountScreen(),
+      child: RepositoryProvider<InviteApiService>.value(
+        value: mockInviteApiService,
+        child: BlocProvider(
+          create: (_) =>
+              InviteGateCubit(inviteApiService: mockInviteApiService),
+          child: MaterialApp(
+            theme: VineTheme.theme,
+            home: const CreateAccountScreen(),
+          ),
+        ),
       ),
     );
   }

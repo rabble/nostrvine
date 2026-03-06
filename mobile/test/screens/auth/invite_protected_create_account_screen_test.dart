@@ -1,13 +1,14 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/invite_guard_providers.dart';
 import 'package:openvine/screens/auth/invite_protected_create_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -47,48 +48,56 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         ...getStandardTestOverrides(mockAuthService: mockAuthService),
-        inviteApiServiceProvider.overrideWithValue(mockInviteApiService),
         oauthClientProvider.overrideWithValue(mockOAuth),
         pendingVerificationServiceProvider.overrideWithValue(
           mockPendingVerificationService,
         ),
       ],
     );
+    final inviteGateCubit = InviteGateCubit(
+      inviteApiService: mockInviteApiService,
+    );
 
     if (hasAccessGrant) {
-      container
-          .read(inviteAccessGrantProvider.notifier)
-          .state = InviteAccessGrant(
-        code: 'AB12-EF34',
-        validatedAt: DateTime(2026, 3, 6),
+      inviteGateCubit.grantAccess(
+        InviteAccessGrant(
+          code: 'AB12-EF34',
+          validatedAt: DateTime(2026, 3, 6),
+        ),
       );
     }
 
     return UncontrolledProviderScope(
       container: container,
-      child: MaterialApp.router(
-        theme: VineTheme.theme,
-        routerConfig: GoRouter(
-          initialLocation: WelcomeScreen.createAccountPath,
-          routes: [
-            GoRoute(
-              path: WelcomeScreen.path,
-              builder: (context, state) =>
-                  const Scaffold(body: Text('Welcome')),
+      child: RepositoryProvider<InviteApiService>.value(
+        value: mockInviteApiService,
+        child: BlocProvider.value(
+          value: inviteGateCubit,
+          child: MaterialApp.router(
+            theme: VineTheme.theme,
+            routerConfig: GoRouter(
+              initialLocation: WelcomeScreen.createAccountPath,
               routes: [
                 GoRoute(
-                  path: 'invite',
+                  path: WelcomeScreen.path,
                   builder: (context, state) =>
-                      const Scaffold(body: Text('Invite Gate')),
-                ),
-                GoRoute(
-                  path: 'create-account',
-                  builder: (context, state) =>
-                      const InviteProtectedCreateAccountScreen(),
+                      const Scaffold(body: Text('Welcome')),
+                  routes: [
+                    GoRoute(
+                      path: 'invite',
+                      builder: (context, state) =>
+                          const Scaffold(body: Text('Invite Gate')),
+                    ),
+                    GoRoute(
+                      path: 'create-account',
+                      builder: (context, state) =>
+                          const InviteProtectedCreateAccountScreen(),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -85,15 +85,22 @@ class InviteApiService {
           )
           .timeout(_defaultTimeout);
 
-      if (response.statusCode != 200) {
-        throw _requestFailed(
-          message: 'Failed to validate invite code',
-          response: response,
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        return InviteValidationResult.fromJson(json);
+      }
+
+      if (_isValidationRejection(response.statusCode)) {
+        return _parseValidationRejection(
+          body: response.body,
+          fallbackCode: normalizedCode,
         );
       }
 
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return InviteValidationResult.fromJson(json);
+      throw _requestFailed(
+        message: 'Failed to validate invite code',
+        response: response,
+      );
     } on TimeoutException {
       throw const ApiException('Invite code validation timed out');
     } catch (error) {
@@ -309,6 +316,37 @@ class InviteApiService {
       _extractErrorMessage(response.body) ?? message,
       statusCode: response.statusCode,
       responseBody: response.body,
+    );
+  }
+
+  bool _isValidationRejection(int statusCode) {
+    return statusCode == 400 ||
+        statusCode == 403 ||
+        statusCode == 404 ||
+        statusCode == 409;
+  }
+
+  InviteValidationResult _parseValidationRejection({
+    required String body,
+    required String fallbackCode,
+  }) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        return InviteValidationResult.fromJson({
+          'valid': decoded['valid'] ?? false,
+          'used': decoded['used'] ?? false,
+          'code': decoded['code'] ?? fallbackCode,
+        });
+      }
+    } catch (_) {
+      // Fall back to a generic invalid result if the server body is malformed.
+    }
+
+    return InviteValidationResult(
+      valid: false,
+      used: false,
+      code: fallbackCode,
     );
   }
 

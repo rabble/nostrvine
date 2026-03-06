@@ -33,11 +33,16 @@ void main() {
     test('normalizes invite codes', () {
       expect(InviteApiService.normalizeCode('ab12ef34'), 'AB12-EF34');
       expect(InviteApiService.normalizeCode('ab12-ef34'), 'AB12-EF34');
+      expect(InviteApiService.normalizeCode('ab-cd-12-34'), 'ABCD-1234');
+      expect(InviteApiService.normalizeCode('abc'), 'ABC');
+      expect(InviteApiService.normalizeCode('ABCDEFGHIJ'), 'ABCD-EFGH');
     });
 
     test('recognizes full invite code format', () {
       expect(InviteApiService.looksLikeInviteCode('AB12-EF34'), isTrue);
+      expect(InviteApiService.looksLikeInviteCode('abcd1234'), isTrue);
       expect(InviteApiService.looksLikeInviteCode('AB12'), isFalse);
+      expect(InviteApiService.looksLikeInviteCode(''), isFalse);
     });
 
     test('loads client config', () async {
@@ -85,6 +90,49 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('maps used invite responses to an invalid result', () async {
+      final response = _MockResponse();
+      when(() => response.statusCode).thenReturn(404);
+      when(() => response.body).thenReturn(
+        jsonEncode({'message': 'Code used', 'used': true}),
+      );
+      when(
+        () => mockClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer((_) async => response);
+
+      final result = await inviteApiService.validateCode('used0003');
+
+      expect(result.canContinue, isFalse);
+      expect(result.used, isTrue);
+      expect(result.code, 'USED-0003');
+    });
+
+    test(
+      'maps malformed validation rejections to a generic invalid result',
+      () async {
+        final response = _MockResponse();
+        when(() => response.statusCode).thenReturn(404);
+        when(() => response.body).thenReturn('Not found');
+        when(
+          () => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => response);
+
+        final result = await inviteApiService.validateCode('badcode1');
+
+        expect(result.canContinue, isFalse);
+        expect(result.used, isFalse);
+        expect(result.code, 'BADC-ODE1');
+      },
+    );
 
     test('joins waitlist', () async {
       final response = _MockResponse();
@@ -160,6 +208,27 @@ void main() {
             (error) => error.message,
             'message',
             'Invite service unavailable',
+          ),
+        ),
+      );
+    });
+
+    test('throws on validation transport failures', () async {
+      when(
+        () => mockClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        ),
+      ).thenThrow(Exception('Connection refused'));
+
+      await expectLater(
+        inviteApiService.validateCode('TEST-0001'),
+        throwsA(
+          isA<ApiException>().having(
+            (error) => error.message,
+            'message',
+            contains('Failed to validate invite code'),
           ),
         ),
       );

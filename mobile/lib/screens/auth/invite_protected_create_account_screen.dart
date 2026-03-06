@@ -2,17 +2,32 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/invite_guard_providers.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 
-class InviteProtectedCreateAccountScreen extends ConsumerWidget {
+class InviteProtectedCreateAccountScreen extends ConsumerStatefulWidget {
   const InviteProtectedCreateAccountScreen({super.key});
+
+  @override
+  ConsumerState<InviteProtectedCreateAccountScreen> createState() =>
+      _InviteProtectedCreateAccountScreenState();
+}
+
+class _InviteProtectedCreateAccountScreenState
+    extends ConsumerState<InviteProtectedCreateAccountScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<InviteGateCubit>().ensureConfigLoaded();
+  }
 
   void _redirectToInvite(BuildContext context) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -23,35 +38,36 @@ class InviteProtectedCreateAccountScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final configAsync = ref.watch(inviteClientConfigProvider);
-    final inviteAccessGrant = ref.watch(inviteAccessGrantProvider);
+  Widget build(BuildContext context) {
     final authState = ref.watch(currentAuthStateProvider);
-
-    if (authState == AuthState.authenticated && inviteAccessGrant != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(inviteAccessGrantProvider.notifier).clear();
-      });
-    }
-
-    return configAsync.when(
-      loading: () => const _InviteGuardLoadingPage(),
-      error: (_, _) {
-        if (inviteAccessGrant != null) {
-          return const CreateAccountScreen();
+    return BlocBuilder<InviteGateCubit, InviteGateState>(
+      builder: (context, state) {
+        if (authState == AuthState.authenticated && state.hasAccessGrant) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            context.read<InviteGateCubit>().clearAccessGrant();
+          });
         }
 
-        _redirectToInvite(context);
-        return const _InviteGuardLoadingPage();
-      },
-      data: (config) {
-        final mode = config.mode;
-        if (mode == OnboardingMode.open || inviteAccessGrant != null) {
-          return const CreateAccountScreen();
-        }
+        switch (state.configStatus) {
+          case InviteGateConfigStatus.initial:
+          case InviteGateConfigStatus.loading:
+            return const _InviteGuardLoadingPage();
+          case InviteGateConfigStatus.failure:
+            if (state.hasAccessGrant) {
+              return const CreateAccountScreen();
+            }
 
-        _redirectToInvite(context);
-        return const _InviteGuardLoadingPage();
+            _redirectToInvite(context);
+            return const _InviteGuardLoadingPage();
+          case InviteGateConfigStatus.success:
+            final mode = state.config?.mode;
+            if (mode == OnboardingMode.open || state.hasAccessGrant) {
+              return const CreateAccountScreen();
+            }
+
+            _redirectToInvite(context);
+            return const _InviteGuardLoadingPage();
+        }
       },
     );
   }

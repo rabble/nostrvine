@@ -8,10 +8,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/invite_guard_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
+import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
 import 'package:openvine/widgets/divine_primary_button.dart';
@@ -34,8 +35,8 @@ class CreateAccountScreen extends ConsumerWidget {
     final pendingVerificationService = ref.watch(
       pendingVerificationServiceProvider,
     );
-    final inviteApiService = ref.read(inviteApiServiceProvider);
-    final inviteAccessGrant = ref.read(inviteAccessGrantProvider);
+    final inviteApiService = context.read<InviteApiService>();
+    final inviteAccessGrant = context.read<InviteGateCubit>().state.accessGrant;
 
     return BlocProvider(
       create: (_) => DivineAuthCubit(
@@ -88,16 +89,16 @@ class _CreateAccountView extends StatelessWidget {
 }
 
 /// Body of the create account form with email and password.
-class _CreateAccountBody extends ConsumerStatefulWidget {
+class _CreateAccountBody extends StatefulWidget {
   const _CreateAccountBody({required this.state});
 
   final DivineAuthFormState state;
 
   @override
-  ConsumerState<_CreateAccountBody> createState() => _CreateAccountBodyState();
+  State<_CreateAccountBody> createState() => _CreateAccountBodyState();
 }
 
-class _CreateAccountBodyState extends ConsumerState<_CreateAccountBody> {
+class _CreateAccountBodyState extends State<_CreateAccountBody> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
 
@@ -152,7 +153,7 @@ class _CreateAccountBodyState extends ConsumerState<_CreateAccountBody> {
       return;
     }
 
-    ref.read(inviteAccessGrantProvider.notifier).clear();
+    context.read<InviteGateCubit>().clearAccessGrant();
     context.go(
       WelcomeScreen.inviteGatePathWithCode(
         inviteCode,

@@ -1,11 +1,11 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
 import 'package:openvine/models/invite_models.dart';
-import 'package:openvine/providers/invite_guard_providers.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/invite_api_service.dart';
@@ -20,35 +20,36 @@ void main() {
   });
 
   Widget createTestWidget() {
-    return ProviderScope(
-      overrides: [
-        inviteApiServiceProvider.overrideWithValue(mockInviteApiService),
-      ],
-      child: MaterialApp.router(
-        theme: VineTheme.theme,
-        routerConfig: GoRouter(
-          initialLocation: WelcomeScreen.inviteGatePath,
-          routes: [
-            GoRoute(
-              path: WelcomeScreen.path,
-              builder: (context, state) =>
-                  const Scaffold(body: Text('Welcome')),
-              routes: [
-                GoRoute(
-                  path: 'invite',
-                  builder: (context, state) => InviteGateScreen(
-                    initialCode: state.uri.queryParameters['code'],
-                    initialError: state.uri.queryParameters['error'],
+    return RepositoryProvider<InviteApiService>.value(
+      value: mockInviteApiService,
+      child: BlocProvider(
+        create: (_) => InviteGateCubit(inviteApiService: mockInviteApiService),
+        child: MaterialApp.router(
+          theme: VineTheme.theme,
+          routerConfig: GoRouter(
+            initialLocation: WelcomeScreen.inviteGatePath,
+            routes: [
+              GoRoute(
+                path: WelcomeScreen.path,
+                builder: (context, state) =>
+                    const Scaffold(body: Text('Welcome')),
+                routes: [
+                  GoRoute(
+                    path: 'invite',
+                    builder: (context, state) => InviteGateScreen(
+                      initialCode: state.uri.queryParameters['code'],
+                      initialError: state.uri.queryParameters['error'],
+                    ),
                   ),
-                ),
-                GoRoute(
-                  path: 'create-account',
-                  builder: (context, state) =>
-                      const Scaffold(body: Text('Create Account')),
-                ),
-              ],
-            ),
-          ],
+                  GoRoute(
+                    path: 'create-account',
+                    builder: (context, state) =>
+                        const Scaffold(body: Text('Create Account')),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -121,32 +122,34 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            inviteApiServiceProvider.overrideWithValue(mockInviteApiService),
-          ],
-          child: MaterialApp.router(
-            theme: VineTheme.theme,
-            routerConfig: GoRouter(
-              initialLocation:
-                  '${WelcomeScreen.inviteGatePath}?code=AB12-EF34'
-                  '&error=Invite%20problem',
-              routes: [
-                GoRoute(
-                  path: WelcomeScreen.path,
-                  builder: (context, state) =>
-                      const Scaffold(body: Text('Welcome')),
-                  routes: [
-                    GoRoute(
-                      path: 'invite',
-                      builder: (context, state) => InviteGateScreen(
-                        initialCode: state.uri.queryParameters['code'],
-                        initialError: state.uri.queryParameters['error'],
+        RepositoryProvider<InviteApiService>.value(
+          value: mockInviteApiService,
+          child: BlocProvider(
+            create: (_) =>
+                InviteGateCubit(inviteApiService: mockInviteApiService),
+            child: MaterialApp.router(
+              theme: VineTheme.theme,
+              routerConfig: GoRouter(
+                initialLocation:
+                    '${WelcomeScreen.inviteGatePath}?code=AB12-EF34'
+                    '&error=Invite%20problem',
+                routes: [
+                  GoRoute(
+                    path: WelcomeScreen.path,
+                    builder: (context, state) =>
+                        const Scaffold(body: Text('Welcome')),
+                    routes: [
+                      GoRoute(
+                        path: 'invite',
+                        builder: (context, state) => InviteGateScreen(
+                          initialCode: state.uri.queryParameters['code'],
+                          initialError: state.uri.queryParameters['error'],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),

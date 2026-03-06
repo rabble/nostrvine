@@ -4,10 +4,11 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/models/invite_models.dart';
-import 'package:openvine/providers/invite_guard_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/invite_api_service.dart';
@@ -18,7 +19,7 @@ import 'package:openvine/widgets/divine_primary_button.dart';
 import 'package:openvine/widgets/divine_secondary_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class InviteGateScreen extends ConsumerStatefulWidget {
+class InviteGateScreen extends StatefulWidget {
   const InviteGateScreen({super.key, this.initialCode, this.initialError});
 
   static const String routeName = 'invite-gate';
@@ -28,15 +29,12 @@ class InviteGateScreen extends ConsumerStatefulWidget {
   final String? initialError;
 
   @override
-  ConsumerState<InviteGateScreen> createState() => _InviteGateScreenState();
+  State<InviteGateScreen> createState() => _InviteGateScreenState();
 }
 
-class _InviteGateScreenState extends ConsumerState<InviteGateScreen> {
+class _InviteGateScreenState extends State<InviteGateScreen> {
   late TextEditingController _inviteCodeController;
-  String? _inviteCodeError;
-  String? _generalError;
   String? _waitlistEmail;
-  bool _isValidatingCode = false;
 
   @override
   void initState() {
@@ -46,7 +44,12 @@ class _InviteGateScreenState extends ConsumerState<InviteGateScreen> {
           ? ''
           : InviteApiService.normalizeCode(widget.initialCode!),
     );
-    _generalError = widget.initialError;
+    final inviteGateCubit = context.read<InviteGateCubit>();
+    inviteGateCubit.clearTransientState();
+    inviteGateCubit.ensureConfigLoaded();
+    if (widget.initialError != null && widget.initialError!.isNotEmpty) {
+      inviteGateCubit.setGeneralError(widget.initialError);
+    }
   }
 
   @override
@@ -56,63 +59,14 @@ class _InviteGateScreenState extends ConsumerState<InviteGateScreen> {
   }
 
   Future<void> _validateInviteCode() async {
-    final rawCode = _inviteCodeController.text;
-    final normalizedCode = InviteApiService.normalizeCode(rawCode);
-
-    if (!InviteApiService.looksLikeInviteCode(normalizedCode)) {
-      setState(() {
-        _inviteCodeError = 'Enter an invite code like ABCD-EFGH.';
-        _generalError = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _isValidatingCode = true;
-      _inviteCodeError = null;
-      _generalError = null;
-      _inviteCodeController.value = TextEditingValue(
-        text: normalizedCode,
-        selection: TextSelection.collapsed(offset: normalizedCode.length),
-      );
-    });
-
-    final service = ref.read(inviteApiServiceProvider);
-
-    try {
-      final result = await service.validateCode(normalizedCode);
-      if (!mounted) return;
-
-      if (result.canContinue) {
-        ref
-            .read(inviteAccessGrantProvider.notifier)
-            .grant(
-              InviteAccessGrant(
-                code: result.code ?? normalizedCode,
-                validatedAt: DateTime.now(),
-              ),
-            );
-        context.go(WelcomeScreen.createAccountPath);
-        return;
-      }
-
-      setState(() {
-        _inviteCodeError = result.used
-            ? 'That invite code has already been used or revoked.'
-            : 'That invite code does not look valid.';
-      });
-    } on ApiException catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _generalError = error.message;
-      });
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isValidatingCode = false;
-        });
-      }
-    }
+    final normalizedCode = InviteApiService.normalizeCode(
+      _inviteCodeController.text,
+    );
+    _inviteCodeController.value = TextEditingValue(
+      text: normalizedCode,
+      selection: TextSelection.collapsed(offset: normalizedCode.length),
+    );
+    await context.read<InviteGateCubit>().validateCode(normalizedCode);
   }
 
   Future<void> _showWaitlistSheet(InviteClientConfig config) async {
@@ -121,7 +75,7 @@ class _InviteGateScreenState extends ConsumerState<InviteGateScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _WaitlistEntrySheet(
-        inviteApiService: ref.read(inviteApiServiceProvider),
+        inviteApiService: context.read<InviteApiService>(),
         supportEmail: config.supportEmail,
       ),
     );
@@ -158,7 +112,7 @@ class _InviteGateScreenState extends ConsumerState<InviteGateScreen> {
   }
 
   void _retryConfigLoad() {
-    ref.invalidate(inviteClientConfigProvider);
+    context.read<InviteGateCubit>().ensureConfigLoaded(force: true);
   }
 
   void _redirectToCreateAccount() {
@@ -212,34 +166,48 @@ class _InviteGateScreenState extends ConsumerState<InviteGateScreen> {
       );
     }
 
-    final configAsync = ref.watch(inviteClientConfigProvider);
+    return BlocConsumer<InviteGateCubit, InviteGateState>(
+      listenWhen: (previous, current) =>
+          previous.accessGrant != current.accessGrant &&
+          current.accessGrant != null,
+      listener: (context, state) {
+        context.go(WelcomeScreen.createAccountPath);
+      },
+      builder: (context, state) {
+        if (state.configStatus == InviteGateConfigStatus.initial ||
+            state.configStatus == InviteGateConfigStatus.loading) {
+          return const _InviteLoadingPage();
+        }
 
-    return configAsync.when(
-      loading: () => const _InviteLoadingPage(),
-      error: (_, _) => _InviteSheetPage(
-        illustrationAsset: 'assets/stickers/alert.png',
-        title: 'Invite access is temporarily unavailable.',
-        body: const Text(
-          'Try again in a moment, or contact support if you need help getting in.',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 16,
-            height: 1.5,
-            letterSpacing: 0.15,
-            color: VineTheme.lightText,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        primaryButton: DivinePrimaryButton(
-          label: 'Try again',
-          onPressed: _retryConfigLoad,
-        ),
-        secondaryButton: DivineSecondaryButton(
-          label: 'Contact support',
-          onPressed: () => _contactSupport('support@divine.video'),
-        ),
-      ),
-      data: (config) {
+        if (state.configStatus == InviteGateConfigStatus.failure ||
+            state.config == null) {
+          return _InviteSheetPage(
+            illustrationAsset: 'assets/stickers/alert.png',
+            title: 'Invite access is temporarily unavailable.',
+            body: const Text(
+              'Try again in a moment, or contact support if you need help getting in.',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                height: 1.5,
+                letterSpacing: 0.15,
+                color: VineTheme.lightText,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            primaryButton: DivinePrimaryButton(
+              label: 'Try again',
+              onPressed: _retryConfigLoad,
+            ),
+            secondaryButton: DivineSecondaryButton(
+              label: 'Contact support',
+              onPressed: () => _contactSupport('support@divine.video'),
+            ),
+          );
+        }
+
+        final config = state.config!;
+
         switch (config.mode) {
           case OnboardingMode.open:
             _redirectToCreateAccount();
@@ -308,10 +276,10 @@ class _InviteGateScreenState extends ConsumerState<InviteGateScreen> {
                             DivineAuthTextField(
                               label: 'Invite code',
                               controller: _inviteCodeController,
-                              enabled: !_isValidatingCode,
+                              enabled: !state.isValidatingCode,
                               textCapitalization: TextCapitalization.characters,
                               textInputAction: TextInputAction.done,
-                              errorText: _inviteCodeError,
+                              errorText: state.inviteCodeError,
                               maxLength: 9,
                               inputFormatters: [
                                 FilteringTextInputFormatter.allow(
@@ -320,19 +288,15 @@ class _InviteGateScreenState extends ConsumerState<InviteGateScreen> {
                                 _InviteCodeTextInputFormatter(),
                               ],
                               onChanged: (_) {
-                                if (_inviteCodeError != null ||
-                                    _generalError != null) {
-                                  setState(() {
-                                    _inviteCodeError = null;
-                                    _generalError = null;
-                                  });
-                                }
+                                context
+                                    .read<InviteGateCubit>()
+                                    .clearTransientState();
                               },
                               onSubmitted: (_) => _validateInviteCode(),
                             ),
                             const SizedBox(height: 16),
-                            if (_generalError != null) ...[
-                              AuthErrorBox(message: _generalError!),
+                            if (state.generalError != null) ...[
+                              AuthErrorBox(message: state.generalError!),
                               const SizedBox(height: 16),
                             ],
                             Align(
@@ -349,22 +313,22 @@ class _InviteGateScreenState extends ConsumerState<InviteGateScreen> {
                             const Spacer(),
                             DivinePrimaryButton(
                               label: 'Continue',
-                              isLoading: _isValidatingCode,
-                              onPressed: _isValidatingCode
+                              isLoading: state.isValidatingCode,
+                              onPressed: state.isValidatingCode
                                   ? null
                                   : _validateInviteCode,
                             ),
                             const SizedBox(height: 12),
                             DivineSecondaryButton(
                               label: 'Join waitlist',
-                              onPressed: _isValidatingCode
+                              onPressed: state.isValidatingCode
                                   ? null
                                   : () => _showWaitlistSheet(config),
                             ),
                             const SizedBox(height: 12),
                             Center(
                               child: TextButton(
-                                onPressed: _isValidatingCode
+                                onPressed: state.isValidatingCode
                                     ? null
                                     : () =>
                                           _contactSupport(config.supportEmail),
