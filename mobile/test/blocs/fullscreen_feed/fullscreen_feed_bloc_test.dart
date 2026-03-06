@@ -124,6 +124,29 @@ void main() {
         expect(state.hasVideos, isFalse);
       });
 
+      test('pooledVideos uses platform-aware playback URLs', () {
+        final now = DateTime.now();
+        const url =
+            'https://media.divine.video/'
+            '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.mp4';
+        final video = VideoEvent(
+          id: 'video1',
+          pubkey: '0' * 64,
+          createdAt: now.millisecondsSinceEpoch ~/ 1000,
+          content: '',
+          timestamp: now,
+          videoUrl: url,
+        );
+
+        final state = FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [video],
+        );
+
+        expect(state.pooledVideos, hasLength(1));
+        expect(state.pooledVideos.single.url, url);
+      });
+
       test('copyWith creates copy with updated values', () {
         const state = FullscreenFeedState();
         final video = createTestVideo('video1');

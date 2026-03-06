@@ -97,25 +97,21 @@ class PooledVideoPlayer extends StatelessWidget {
                 () => feedController.onPageChanged(feedController.currentIndex),
               ) ??
               const _DefaultErrorState();
-        } else if (videoController != null &&
-            player != null &&
-            loadState == LoadState.ready) {
+        } else if (videoController != null && player != null) {
           final loadingPlaceholder =
               loadingBuilder?.call(context) ??
               _DefaultLoadingState(thumbnailUrl: thumbnailUrl);
-          content = Stack(
-            fit: StackFit.expand,
-            children: [
-              // Keep placeholder visible until the first frame is rendered.
-              loadingPlaceholder,
+          final children = <Widget>[
+            loadingPlaceholder,
+            if (loadState == LoadState.ready)
               _RevealVideoAfterFirstFrame(
                 videoController: videoController,
                 child: videoBuilder(context, videoController, player),
               ),
-              if (overlayBuilder != null)
-                overlayBuilder!(context, videoController, player),
-            ],
-          );
+            if (overlayBuilder != null)
+              overlayBuilder!(context, videoController, player),
+          ];
+          content = Stack(fit: StackFit.expand, children: children);
         } else {
           content =
               loadingBuilder?.call(context) ??

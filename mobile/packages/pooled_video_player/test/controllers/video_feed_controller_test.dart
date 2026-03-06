@@ -1022,6 +1022,46 @@ void main() {
         controller.dispose();
         await errorPool.dispose();
       });
+
+      test('notifies index notifier with controller and player while '
+          'buffering', () async {
+        final bufferingSetups = <String, MockPlayerSetup>{};
+        final bufferingPool = TestablePlayerPool(
+          maxPlayers: 10,
+          mockPlayerFactory: (url) {
+            final setup = createMockPlayerSetup(isBuffering: true);
+            bufferingSetups[url] = setup;
+
+            final mockPooledPlayer = _MockPooledPlayer();
+            when(() => mockPooledPlayer.player).thenReturn(setup.player);
+            when(
+              () => mockPooledPlayer.videoController,
+            ).thenReturn(createMockVideoController());
+            when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+            return mockPooledPlayer;
+          },
+        );
+
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 1),
+          pool: bufferingPool,
+        );
+
+        final notifier = controller.getIndexNotifier(0);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(notifier.value.loadState, LoadState.loading);
+        expect(notifier.value.videoController, isNotNull);
+        expect(notifier.value.player, isNotNull);
+
+        controller.dispose();
+        for (final setup in bufferingSetups.values) {
+          await setup.dispose();
+        }
+        await bufferingPool.dispose();
+      });
     });
 
     group('hooks', () {

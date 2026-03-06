@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -18,12 +19,6 @@ import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-
-extension on List<VideoEvent> {
-  List<VideoItem> get toVideoItems {
-    return map((e) => VideoItem(id: e.id, url: e.videoUrl!)).toList();
-  }
-}
 
 class VideoFeedPage extends ConsumerWidget {
   /// Route name for this screen.
@@ -149,7 +144,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     final effectiveState = state ?? context.read<VideoFeedBloc>().state;
     if (!effectiveState.isLoaded || effectiveState.videos.isEmpty) return;
 
-    final pooledVideos = effectiveState.videos.toVideoItems;
+    final pooledVideos = effectiveState.videos.toPooledVideoItems();
 
     controller = VideoFeedController(
       videos: pooledVideos,
@@ -169,7 +164,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   void handleVideosChanged(VideoFeedState state) {
     if (controller == null || lastPooledVideos == null) return;
 
-    final pooledVideos = state.videos.toVideoItems;
+    final pooledVideos = state.videos.toPooledVideoItems();
 
     final newVideos = pooledVideos
         .where((v) => !lastPooledVideos!.any((old) => old.id == v.id))
@@ -288,7 +283,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
             }
 
             // Wrap videos for pool compatibility
-            final pooledVideos = state.videos.toVideoItems;
+            final pooledVideos = state.videos.toPooledVideoItems();
             final eventsById = {
               for (final event in state.videos) event.id: event,
             };

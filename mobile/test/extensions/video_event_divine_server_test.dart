@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
 VideoEvent _createVideoWithUrl(String url) {
   final event = Event.fromJson({
@@ -124,6 +125,36 @@ void main() {
       final video = _createVideoWithUrl(url);
 
       expect(video.getOptimalVideoUrlForPlatform(), url);
+    });
+  });
+
+  group('toPooledVideoItems', () {
+    test('uses the platform-aware URL for pooled playback', () {
+      const url =
+          'https://media.divine.video/'
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.mp4';
+      final video = _createVideoWithUrl(url);
+
+      final items = <VideoEvent>[video].toPooledVideoItems();
+
+      expect(items, hasLength(1));
+      expect(items.single, isA<VideoItem>());
+      expect(items.single.id, video.id);
+      expect(items.single.url, url);
+    });
+
+    test('filters out videos with null URLs', () {
+      final now = DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000);
+      final videoWithoutUrl = VideoEvent(
+        id: 'deadbeef',
+        pubkey:
+            'bbbb1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
+        createdAt: 1704067200,
+        content: '',
+        timestamp: now,
+      );
+
+      expect(<VideoEvent>[videoWithoutUrl].toPooledVideoItems(), isEmpty);
     });
   });
 }

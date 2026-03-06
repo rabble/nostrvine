@@ -357,6 +357,7 @@ class VideoFeedController extends ChangeNotifier {
       if (_isDisposed || !_loadingIndices.contains(index)) return;
 
       _loadedPlayers[index] = pooledPlayer;
+      _notifyIndex(index);
 
       // Register a callback so we learn when the pool evicts this player.
       // The identity check in _onPlayerEvicted ensures stale callbacks

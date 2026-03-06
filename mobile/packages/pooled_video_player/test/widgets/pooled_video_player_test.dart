@@ -207,6 +207,31 @@ void main() {
         expect(find.byType(Image), findsOneWidget);
       });
 
+      testWidgets(
+        'shows overlay while player is still loading when controller exists',
+        (tester) async {
+          indexNotifiers[0] = ValueNotifier(
+            VideoIndexState(
+              loadState: LoadState.loading,
+              videoController: mockVideoController,
+              player: mockPlayer,
+            ),
+          );
+
+          await tester.pumpWidget(
+            buildWidget(
+              overlayBuilder: (context, controller, player) {
+                return Container(key: const Key('overlay_widget'));
+              },
+            ),
+          );
+
+          expect(find.byKey(const Key('overlay_widget')), findsOneWidget);
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.byKey(const Key('video_widget')), findsNothing);
+        },
+      );
+
       testWidgets('thumbnail errorBuilder returns SizedBox.shrink', (
         tester,
       ) async {
