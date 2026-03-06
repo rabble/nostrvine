@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -98,9 +99,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       cancelRenderVideo();
     }
 
-    state = state.copyWith(
-      clearFinalRenderedClip: true,
-    );
+    state = state.copyWith(clearFinalRenderedClip: true);
 
     // Delete the old rendered file from disk to free up space
     final db = ref.read(databaseProvider);
@@ -140,6 +139,18 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: .video,
       );
+      final accountLabelService = ref.read(accountLabelServiceProvider);
+      await accountLabelService.initialized;
+      final accountLabels = accountLabelService.defaultVideoLabels;
+      if (accountLabels.isNotEmpty) {
+        state = state.copyWith(contentWarnings: accountLabels);
+        Log.info(
+          '⚠️ Auto-selected content warnings from account labels: '
+          '${accountLabels.map((label) => label.value).join(", ")}',
+          name: 'VideoEditorNotifier',
+          category: LogCategory.video,
+        );
+      }
     }
     this.draftId = draftId ?? 'Draft_${DateTime.now().microsecondsSinceEpoch}';
   }
@@ -552,6 +563,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  /// Set NIP-32 content warning labels for the current video.
+  void setContentWarnings(Set<ContentLabel> labels) {
+    state = state.copyWith(contentWarnings: Set<ContentLabel>.of(labels));
+    triggerAutosave();
+  }
+
   // === COLLABORATORS & INSPIRED BY ===
 
   /// Maximum number of collaborators allowed per video.
@@ -676,6 +693,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: state.inspiredByNpub,
       selectedSound: selectedSound,
+      contentWarning: ContentLabel.toCsv(state.contentWarnings),
       finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
       proofManifestJson: state.proofManifestJson,
     );
@@ -925,6 +943,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       inspiredByVideo: draft.inspiredByVideo,
       inspiredByNpub: draft.inspiredByNpub,
       selectedSound: draft.selectedSound,
+      contentWarnings: draft.contentWarnings,
       finalRenderedClip: validFinalRenderedClip,
       clearFinalRenderedClip: validFinalRenderedClip == null,
     );
