@@ -5,8 +5,12 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
+import 'package:openvine/models/invite_models.dart';
+import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
@@ -16,17 +20,30 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockPendingVerificationService extends Mock
     implements PendingVerificationService {}
 
+class _MockInviteApiService extends Mock implements InviteApiService {}
+
 class _FakeKeycastSession extends Fake implements KeycastSession {}
+
+class _FakeSecureKeyContainer extends Fake implements SecureKeyContainer {}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeKeycastSession());
+    registerFallbackValue(_FakeSecureKeyContainer());
+    registerFallbackValue(
+      const OAuthConfig(
+        serverUrl: 'https://login.divine.video',
+        clientId: 'client-id',
+        redirectUri: 'divine://auth',
+      ),
+    );
   });
 
   group(DivineAuthCubit, () {
     late _MockKeycastOAuth mockOAuth;
     late _MockAuthService mockAuthService;
     late _MockPendingVerificationService mockPendingVerification;
+    late _MockInviteApiService mockInviteApiService;
 
     const testEmail = 'test@example.com';
     const testPassword = 'password123';
@@ -38,13 +55,23 @@ void main() {
       mockOAuth = _MockKeycastOAuth();
       mockAuthService = _MockAuthService();
       mockPendingVerification = _MockPendingVerificationService();
+      mockInviteApiService = _MockInviteApiService();
+      when(() => mockOAuth.config).thenReturn(
+        const OAuthConfig(
+          serverUrl: 'https://login.divine.video',
+          clientId: 'client-id',
+          redirectUri: 'divine://auth',
+        ),
+      );
     });
 
-    DivineAuthCubit buildCubit() {
+    DivineAuthCubit buildCubit({String? inviteCode}) {
       return DivineAuthCubit(
         oauthClient: mockOAuth,
         authService: mockAuthService,
         pendingVerificationService: mockPendingVerification,
+        inviteApiService: mockInviteApiService,
+        inviteCode: inviteCode,
       );
     }
 
@@ -306,6 +333,140 @@ void main() {
         );
 
         blocTest<DivineAuthCubit, DivineAuthState>(
+          'consumes invite with exchanged session before completing sign in',
+          setUp: () {
+            when(
+              () => mockOAuth.headlessLogin(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessLoginResult(success: true, code: testCode),
+                testVerifier,
+              ),
+            );
+            when(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            ).thenAnswer(
+              (_) async => const TokenResponse(bunkerUrl: 'bunker://test'),
+            );
+            when(
+              () => mockInviteApiService.consumeInviteWithSession(
+                code: any(named: 'code'),
+                oauthConfig: any(named: 'oauthConfig'),
+                session: any(named: 'session'),
+              ),
+            ).thenAnswer(
+              (_) async => const InviteConsumeResult(
+                message: 'Welcome',
+                codesAllocated: 5,
+              ),
+            );
+            when(
+              () => mockAuthService.signInWithDivineOAuth(any()),
+            ).thenAnswer((_) async {});
+          },
+          build: () => buildCubit(inviteCode: 'ab12ef34'),
+          seed: () => const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            isSignIn: true,
+          ),
+          act: (cubit) => cubit.submit(),
+          expect: () => [
+            const DivineAuthFormState(
+              email: testEmail,
+              password: testPassword,
+              isSignIn: true,
+              isSubmitting: true,
+            ),
+            isA<DivineAuthSuccess>(),
+          ],
+          verify: (_) {
+            verifyInOrder([
+              () => mockOAuth.exchangeCode(
+                code: testCode,
+                verifier: testVerifier,
+              ),
+              () => mockInviteApiService.consumeInviteWithSession(
+                code: 'AB12-EF34',
+                oauthConfig: any(named: 'oauthConfig'),
+                session: any(named: 'session'),
+              ),
+              () => mockAuthService.signInWithDivineOAuth(any()),
+            ]);
+          },
+        );
+
+        blocTest<DivineAuthCubit, DivineAuthState>(
+          'emits invite recovery error when invite activation fails during sign in',
+          setUp: () {
+            when(
+              () => mockOAuth.headlessLogin(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessLoginResult(success: true, code: testCode),
+                testVerifier,
+              ),
+            );
+            when(
+              () => mockOAuth.exchangeCode(
+                code: any(named: 'code'),
+                verifier: any(named: 'verifier'),
+              ),
+            ).thenAnswer(
+              (_) async => const TokenResponse(bunkerUrl: 'bunker://test'),
+            );
+            when(
+              () => mockInviteApiService.consumeInviteWithSession(
+                code: any(named: 'code'),
+                oauthConfig: any(named: 'oauthConfig'),
+                session: any(named: 'session'),
+              ),
+            ).thenThrow(
+              const ApiException(
+                'Invite already been used',
+                statusCode: 409,
+              ),
+            );
+          },
+          build: () => buildCubit(inviteCode: 'ab12ef34'),
+          seed: () => const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            isSignIn: true,
+          ),
+          act: (cubit) => cubit.submit(),
+          expect: () => [
+            const DivineAuthFormState(
+              email: testEmail,
+              password: testPassword,
+              isSignIn: true,
+              isSubmitting: true,
+            ),
+            const DivineAuthFormState(
+              email: testEmail,
+              password: testPassword,
+              isSignIn: true,
+              generalError:
+                  'That invite code is no longer available. '
+                  'Go back to your invite code, join the waitlist, or contact support.',
+              showInviteGateRecovery: true,
+              inviteRecoveryCode: 'AB12-EF34',
+            ),
+          ],
+        );
+
+        blocTest<DivineAuthCubit, DivineAuthState>(
           'emits general error when login returns unsuccessful result',
           setUp: () {
             when(
@@ -543,6 +704,7 @@ void main() {
                 deviceCode: any(named: 'deviceCode'),
                 verifier: any(named: 'verifier'),
                 email: any(named: 'email'),
+                inviteCode: any(named: 'inviteCode'),
               ),
             ).thenAnswer((_) async {});
           },
@@ -570,6 +732,55 @@ void main() {
                 deviceCode: testDeviceCode,
                 verifier: testVerifier,
                 email: testEmail,
+                inviteCode: any(named: 'inviteCode'),
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<DivineAuthCubit, DivineAuthState>(
+          'persists invite code with pending verification data',
+          setUp: () {
+            when(
+              () => mockOAuth.headlessRegister(
+                email: any(named: 'email'),
+                password: any(named: 'password'),
+                scope: any(named: 'scope'),
+              ),
+            ).thenAnswer(
+              (_) async => (
+                HeadlessRegisterResult(
+                  success: true,
+                  pubkey: 'test-pubkey',
+                  verificationRequired: true,
+                  deviceCode: testDeviceCode,
+                  email: testEmail,
+                ),
+                testVerifier,
+              ),
+            );
+            when(
+              () => mockPendingVerification.save(
+                deviceCode: any(named: 'deviceCode'),
+                verifier: any(named: 'verifier'),
+                email: any(named: 'email'),
+                inviteCode: any(named: 'inviteCode'),
+              ),
+            ).thenAnswer((_) async {});
+          },
+          build: () => buildCubit(inviteCode: 'ab12ef34'),
+          seed: () => const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+          ),
+          act: (cubit) => cubit.submit(),
+          verify: (_) {
+            verify(
+              () => mockPendingVerification.save(
+                deviceCode: testDeviceCode,
+                verifier: testVerifier,
+                email: testEmail,
+                inviteCode: 'AB12-EF34',
               ),
             ).called(1);
           },
@@ -1108,6 +1319,88 @@ void main() {
       );
 
       blocTest<DivineAuthCubit, DivineAuthState>(
+        'consumes invite before creating anonymous account when invite code exists',
+        setUp: () {
+          when(
+            () => mockInviteApiService.consumeInviteWithKeyContainer(
+              code: any(named: 'code'),
+              keyContainer: any(named: 'keyContainer'),
+            ),
+          ).thenAnswer(
+            (_) async => const InviteConsumeResult(
+              message: 'Welcome',
+              codesAllocated: 5,
+            ),
+          );
+          when(
+            () => mockAuthService.createAnonymousAccountFromKeyContainer(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: () => buildCubit(inviteCode: 'ab12ef34'),
+        seed: () =>
+            const DivineAuthFormState(email: testEmail, password: testPassword),
+        act: (cubit) => cubit.skipWithAnonymousAccount(),
+        expect: () => [
+          const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            isSkipping: true,
+          ),
+          isA<DivineAuthSuccess>(),
+        ],
+        verify: (_) {
+          verifyNever(() => mockAuthService.createAnonymousAccount());
+          verifyInOrder([
+            () => mockInviteApiService.consumeInviteWithKeyContainer(
+              code: 'AB12-EF34',
+              keyContainer: any(named: 'keyContainer'),
+            ),
+            () => mockAuthService.createAnonymousAccountFromKeyContainer(any()),
+          ]);
+        },
+      );
+
+      blocTest<DivineAuthCubit, DivineAuthState>(
+        'emits invite recovery error when anonymous invite activation fails',
+        setUp: () {
+          when(
+            () => mockInviteApiService.consumeInviteWithKeyContainer(
+              code: any(named: 'code'),
+              keyContainer: any(named: 'keyContainer'),
+            ),
+          ).thenThrow(
+            const ApiException('Invite revoked', statusCode: 403),
+          );
+        },
+        build: () => buildCubit(inviteCode: 'ab12ef34'),
+        seed: () =>
+            const DivineAuthFormState(email: testEmail, password: testPassword),
+        act: (cubit) => cubit.skipWithAnonymousAccount(),
+        expect: () => [
+          const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            isSkipping: true,
+          ),
+          const DivineAuthFormState(
+            email: testEmail,
+            password: testPassword,
+            generalError:
+                'That invite code cannot be used right now. '
+                'Go back to your invite code, join the waitlist, or contact support.',
+            showInviteGateRecovery: true,
+            inviteRecoveryCode: 'AB12-EF34',
+          ),
+        ],
+        verify: (_) {
+          verifyNever(() => mockAuthService.createAnonymousAccount());
+          verifyNever(
+            () => mockAuthService.createAnonymousAccountFromKeyContainer(any()),
+          );
+        },
+      );
+
+      blocTest<DivineAuthCubit, DivineAuthState>(
         'emits isSkipping then generalError on failure',
         setUp: () {
           when(
@@ -1240,6 +1533,8 @@ void main() {
           emailError: 'err',
           passwordError: 'perr',
           generalError: 'gerr',
+          showInviteGateRecovery: true,
+          inviteRecoveryCode: 'AB12-EF34',
           obscurePassword: false,
           isSubmitting: true,
         );
@@ -1258,10 +1553,13 @@ void main() {
           clearEmailError: true,
           clearPasswordError: true,
           clearGeneralError: true,
+          clearInviteGateRecovery: true,
         );
         expect(cleared.emailError, isNull);
         expect(cleared.passwordError, isNull);
         expect(cleared.generalError, isNull);
+        expect(cleared.showInviteGateRecovery, isFalse);
+        expect(cleared.inviteRecoveryCode, isNull);
       });
 
       test('props contains all fields', () {
@@ -1272,10 +1570,12 @@ void main() {
           emailError: 'e',
           passwordError: 'p',
           generalError: 'g',
+          showInviteGateRecovery: true,
+          inviteRecoveryCode: 'AB12-EF34',
           obscurePassword: false,
           isSubmitting: true,
         );
-        expect(state.props, hasLength(9));
+        expect(state.props, hasLength(11));
       });
     });
 

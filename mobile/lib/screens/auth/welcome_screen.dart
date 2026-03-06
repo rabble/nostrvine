@@ -36,8 +36,27 @@ class WelcomeScreen extends ConsumerWidget {
   /// Path for create account route.
   static const createAccountPath = '/welcome/create-account';
 
+  /// Path for invite gate route.
+  static const inviteGatePath = '/welcome/invite';
+
   /// Path for reset password route.
   static const resetPasswordPath = '/welcome/login-options/reset-password';
+
+  /// Build invite gate path with optional recovery context prefilled.
+  static String inviteGatePathWithCode(String code, {String? error}) {
+    final queryParameters = <String, String>{
+      'code': code,
+    };
+
+    if (error != null && error.isNotEmpty) {
+      queryParameters['error'] = error;
+    }
+
+    return Uri(
+      path: inviteGatePath,
+      queryParameters: queryParameters,
+    ).toString();
+  }
 
   const WelcomeScreen({super.key});
 
@@ -84,7 +103,7 @@ class _WelcomeView extends StatelessWidget {
       listener: (context, state) {
         switch (state.status) {
           case WelcomeStatus.navigatingToCreateAccount:
-            context.push(WelcomeScreen.createAccountPath);
+            context.push(WelcomeScreen.inviteGatePath);
           case WelcomeStatus.navigatingToLoginOptions:
             context.push(WelcomeScreen.loginOptionsPath);
           case WelcomeStatus.error when state.error != null:

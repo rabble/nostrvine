@@ -9,7 +9,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/invite_guard_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth/auth_form_scaffold.dart';
 import 'package:openvine/widgets/divine_primary_button.dart';
@@ -32,12 +34,16 @@ class CreateAccountScreen extends ConsumerWidget {
     final pendingVerificationService = ref.watch(
       pendingVerificationServiceProvider,
     );
+    final inviteApiService = ref.read(inviteApiServiceProvider);
+    final inviteAccessGrant = ref.read(inviteAccessGrantProvider);
 
     return BlocProvider(
       create: (_) => DivineAuthCubit(
         oauthClient: oauthClient,
         authService: authService,
         pendingVerificationService: pendingVerificationService,
+        inviteApiService: inviteApiService,
+        inviteCode: inviteAccessGrant?.code,
       )..initialize(),
       child: const _CreateAccountView(),
     );
@@ -82,16 +88,16 @@ class _CreateAccountView extends StatelessWidget {
 }
 
 /// Body of the create account form with email and password.
-class _CreateAccountBody extends StatefulWidget {
+class _CreateAccountBody extends ConsumerStatefulWidget {
   const _CreateAccountBody({required this.state});
 
   final DivineAuthFormState state;
 
   @override
-  State<_CreateAccountBody> createState() => _CreateAccountBodyState();
+  ConsumerState<_CreateAccountBody> createState() => _CreateAccountBodyState();
 }
 
-class _CreateAccountBodyState extends State<_CreateAccountBody> {
+class _CreateAccountBodyState extends ConsumerState<_CreateAccountBody> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
 
@@ -140,6 +146,21 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
     context.read<DivineAuthCubit>().skipWithAnonymousAccount();
   }
 
+  void _returnToInviteGate() {
+    final inviteCode = widget.state.inviteRecoveryCode;
+    if (inviteCode == null) {
+      return;
+    }
+
+    ref.read(inviteAccessGrantProvider.notifier).clear();
+    context.go(
+      WelcomeScreen.inviteGatePathWithCode(
+        inviteCode,
+        error: widget.state.generalError,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSubmitting = widget.state.isSubmitting;
@@ -159,7 +180,23 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
       onPasswordChanged: (value) =>
           context.read<DivineAuthCubit>().updatePassword(value),
       errorWidget: widget.state.generalError != null
-          ? AuthErrorBox(message: widget.state.generalError!)
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AuthErrorBox(message: widget.state.generalError!),
+                if (widget.state.showInviteGateRecovery &&
+                    widget.state.inviteRecoveryCode != null) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: isDisabled ? null : _returnToInviteGate,
+                      child: const Text('Back to invite code'),
+                    ),
+                  ),
+                ],
+              ],
+            )
           : null,
       primaryButton: DivinePrimaryButton(
         label: 'Create account',

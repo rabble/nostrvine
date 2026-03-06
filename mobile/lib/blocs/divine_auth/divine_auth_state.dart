@@ -25,6 +25,8 @@ class DivineAuthFormState extends DivineAuthState {
     this.emailError,
     this.passwordError,
     this.generalError,
+    this.showInviteGateRecovery = false,
+    this.inviteRecoveryCode,
     this.obscurePassword = true,
     this.isSubmitting = false,
     this.isSkipping = false,
@@ -47,6 +49,12 @@ class DivineAuthFormState extends DivineAuthState {
 
   /// General error message (e.g., network error, auth failure)
   final String? generalError;
+
+  /// Whether the user should be sent back through the invite gate.
+  final bool showInviteGateRecovery;
+
+  /// Invite code to prefill if recovery should return to the invite gate.
+  final String? inviteRecoveryCode;
 
   /// Whether password is obscured in the UI
   final bool obscurePassword;
@@ -73,12 +81,15 @@ class DivineAuthFormState extends DivineAuthState {
     String? emailError,
     String? passwordError,
     String? generalError,
+    bool? showInviteGateRecovery,
+    String? inviteRecoveryCode,
     bool? obscurePassword,
     bool? isSubmitting,
     bool? isSkipping,
     bool clearEmailError = false,
     bool clearPasswordError = false,
     bool clearGeneralError = false,
+    bool clearInviteGateRecovery = false,
   }) {
     return DivineAuthFormState(
       email: email ?? this.email,
@@ -91,6 +102,12 @@ class DivineAuthFormState extends DivineAuthState {
       generalError: clearGeneralError
           ? null
           : (generalError ?? this.generalError),
+      showInviteGateRecovery:
+          !clearInviteGateRecovery &&
+          (showInviteGateRecovery ?? this.showInviteGateRecovery),
+      inviteRecoveryCode: clearInviteGateRecovery
+          ? null
+          : (inviteRecoveryCode ?? this.inviteRecoveryCode),
       obscurePassword: obscurePassword ?? this.obscurePassword,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isSkipping: isSkipping ?? this.isSkipping,
@@ -105,6 +122,8 @@ class DivineAuthFormState extends DivineAuthState {
     emailError,
     passwordError,
     generalError,
+    showInviteGateRecovery,
+    inviteRecoveryCode,
     obscurePassword,
     isSubmitting,
     isSkipping,

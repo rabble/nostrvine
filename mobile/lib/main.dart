@@ -23,9 +23,11 @@ import 'package:openvine/network/vine_cdn_http_overrides.dart'
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/invite_guard_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -857,6 +859,32 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
+            case DeepLinkType.invite:
+              if (deepLink.inviteCode != null) {
+                final targetPath = WelcomeScreen.inviteGatePathWithCode(
+                  deepLink.inviteCode!,
+                );
+                Log.info(
+                  '📱 Navigating to invite gate: $targetPath',
+                  name: 'DeepLinkHandler',
+                  category: LogCategory.ui,
+                );
+                try {
+                  router.go(targetPath);
+                } catch (e) {
+                  Log.error(
+                    '❌ Invite navigation failed: $e',
+                    name: 'DeepLinkHandler',
+                    category: LogCategory.ui,
+                  );
+                }
+              } else {
+                Log.warning(
+                  '⚠️ Invite deep link missing code',
+                  name: 'DeepLinkHandler',
+                  category: LogCategory.ui,
+                );
+              }
             case DeepLinkType.signerCallback:
               Log.info(
                 '📱 Signer callback - triggering relay reconnection',
@@ -1094,6 +1122,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           create: (_) => EmailVerificationCubit(
             oauthClient: ref.read(oauthClientProvider),
             authService: ref.read(authServiceProvider),
+            inviteApiService: ref.read(inviteApiServiceProvider),
           ),
         ),
       ],

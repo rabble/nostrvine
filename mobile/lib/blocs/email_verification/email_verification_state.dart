@@ -24,6 +24,8 @@ final class EmailVerificationState extends Equatable {
     this.status = EmailVerificationStatus.initial,
     this.pendingEmail,
     this.error,
+    this.showInviteGateRecovery = false,
+    this.inviteRecoveryCode,
   });
 
   /// Current polling status
@@ -35,6 +37,12 @@ final class EmailVerificationState extends Equatable {
   /// Error message (if failed)
   final String? error;
 
+  /// Whether the failure should send the user back through the invite gate.
+  final bool showInviteGateRecovery;
+
+  /// Invite code to prefill when recovering through the invite gate.
+  final String? inviteRecoveryCode;
+
   /// Whether currently polling
   bool get isPolling => status == EmailVerificationStatus.polling;
 
@@ -42,14 +50,25 @@ final class EmailVerificationState extends Equatable {
     EmailVerificationStatus? status,
     String? pendingEmail,
     String? error,
+    bool? showInviteGateRecovery,
+    String? inviteRecoveryCode,
   }) {
     return EmailVerificationState(
       status: status ?? this.status,
       pendingEmail: pendingEmail ?? this.pendingEmail,
       error: error,
+      showInviteGateRecovery:
+          showInviteGateRecovery ?? this.showInviteGateRecovery,
+      inviteRecoveryCode: inviteRecoveryCode ?? this.inviteRecoveryCode,
     );
   }
 
   @override
-  List<Object?> get props => [status, pendingEmail, error];
+  List<Object?> get props => [
+    status,
+    pendingEmail,
+    error,
+    showInviteGateRecovery,
+    inviteRecoveryCode,
+  ];
 }

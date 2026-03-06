@@ -321,8 +321,28 @@ void main() {
         );
         await tester.pump();
 
+        expect(find.text('Verification failed'), findsOneWidget);
+      });
+
+      testWidgets('renders invite recovery button when available', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.failure,
+              error: 'Invite problem',
+              showInviteGateRecovery: true,
+              inviteRecoveryCode: 'AB12-EF34',
+            ),
+          ),
+        );
+        await tester.pump();
+
         expect(
-          find.textContaining('We failed to verify your email'),
+          find.widgetWithText(DivinePrimaryButton, 'Back to invite code'),
           findsOneWidget,
         );
       });
