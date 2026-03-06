@@ -148,16 +148,16 @@ void main() {
         await tester.tap(forgotPasswordLink);
         await tester.pumpAndSettle(const Duration(seconds: 1));
 
-        // Assert: forgot password dialog is showing
+        // Assert: forgot password bottom sheet is showing
         expect(
           find.text('Reset Password'),
           findsOneWidget,
-          reason: 'Forgot password dialog should show "Reset Password"',
+          reason: 'Forgot password sheet should show "Reset Password"',
         );
 
-        // Enter email in the dialog's TextFormField
+        // Enter email in the bottom sheet's TextFormField
         final dialogEmailField = find.descendant(
-          of: find.byType(AlertDialog),
+          of: find.byType(BottomSheet),
           matching: find.byType(TextFormField),
         );
         expect(dialogEmailField, findsOneWidget);
@@ -183,7 +183,7 @@ void main() {
           reason: 'Should show reset email confirmation',
         );
 
-        // Dialog auto-dismisses after sending. Wait for it to settle.
+        // Sheet auto-dismisses after sending. Wait for it to settle.
         await pumpUntilSettled(tester, maxSeconds: 3);
 
         // Extract password reset token from DB
