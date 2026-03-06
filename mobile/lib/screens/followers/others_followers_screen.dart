@@ -36,6 +36,7 @@ class OthersFollowersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -48,6 +49,7 @@ class OthersFollowersScreen extends ConsumerWidget {
           create: (_) => OthersFollowersBloc(
             followRepository: followRepository,
             contentBlocklistService: blocklistService,
+            currentUserPubkey: nostrClient.publicKey,
           )..add(OthersFollowersListLoadRequested(pubkey)),
         ),
         BlocProvider(
@@ -75,11 +77,6 @@ class _OthersFollowersView extends ConsumerWidget {
         const OthersFollowersBlocklistChanged(),
       );
     });
-
-    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
-    final followRepository = ref.watch(followRepositoryProvider);
-
-    final isFollowingTarget = followRepository?.isFollowing(pubkey) ?? false;
 
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Followers"
@@ -122,11 +119,7 @@ class _OthersFollowersView extends ConsumerWidget {
         title: FollowerCountTitle<OthersFollowersBloc, OthersFollowersState>(
           title: appBarTitle,
           selector: (state) => state.status == OthersFollowersStatus.success
-              ? state.followersPubkeys
-                    .where(
-                      (pk) => !(pk == currentUserPubkey && !isFollowingTarget),
-                    )
-                    .length
+              ? state.followersPubkeys.length
               : 0,
         ),
       ),
@@ -149,11 +142,7 @@ class _OthersFollowersView extends ConsumerWidget {
               OthersFollowersStatus.initial || OthersFollowersStatus.loading =>
                 const Center(child: CircularProgressIndicator()),
               OthersFollowersStatus.success => _FollowersListBody(
-                followers: state.followersPubkeys
-                    .where(
-                      (pk) => !(pk == currentUserPubkey && !isFollowingTarget),
-                    )
-                    .toList(),
+                followers: state.followersPubkeys,
                 targetPubkey: pubkey,
               ),
               OthersFollowersStatus.failure => _FollowersErrorBody(

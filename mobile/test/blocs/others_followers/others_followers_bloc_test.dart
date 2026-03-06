@@ -17,6 +17,8 @@ void main() {
   group('OthersFollowersBloc', () {
     late _MockFollowRepository mockFollowRepository;
     late _MockContentBlocklistService mockBlocklistService;
+    const testCurrentUserPubkey =
+        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
 
     // Helper to create valid hex pubkeys (64 hex characters)
     String validPubkey(String suffix) {
@@ -32,11 +34,13 @@ void main() {
 
       // Default: nothing is blocked
       when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
     });
 
     OthersFollowersBloc createBloc() => OthersFollowersBloc(
       followRepository: mockFollowRepository,
       contentBlocklistService: mockBlocklistService,
+      currentUserPubkey: testCurrentUserPubkey,
     );
 
     test('initial state is initial with empty list', () {
@@ -87,6 +91,53 @@ void main() {
         verify: (bloc) {
           expect(bloc.state.followersPubkeys, hasLength(1));
           expect(bloc.state.followerCount, 500);
+        },
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'filters out current user when viewer is not following target',
+        setUp: () {
+          when(() => mockFollowRepository.getFollowers(any())).thenAnswer(
+            (_) async => [testCurrentUserPubkey, validPubkey('follower1')],
+          );
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 2);
+          when(
+            () => mockFollowRepository.isFollowing(validPubkey('target')),
+          ).thenReturn(false);
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.followersPubkeys, [validPubkey('follower1')]);
+          expect(bloc.state.followerCount, 2);
+        },
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'keeps current user in list when viewer is following target',
+        setUp: () {
+          when(() => mockFollowRepository.getFollowers(any())).thenAnswer(
+            (_) async => [testCurrentUserPubkey, validPubkey('follower1')],
+          );
+          when(
+            () => mockFollowRepository.getFollowerCount(any()),
+          ).thenAnswer((_) async => 2);
+          when(
+            () => mockFollowRepository.isFollowing(validPubkey('target')),
+          ).thenReturn(true);
+        },
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
+        verify: (bloc) {
+          expect(bloc.state.followersPubkeys, [
+            testCurrentUserPubkey,
+            validPubkey('follower1'),
+          ]);
+          expect(bloc.state.followerCount, 2);
         },
       );
 

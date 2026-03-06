@@ -427,6 +427,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         create: (_) => OthersFollowersBloc(
           followRepository: followRepository,
           contentBlocklistService: contentBlocklistService,
+          currentUserPubkey: currentUserPubkey,
         )..add(OthersFollowersListLoadRequested(widget.userIdHex)),
         child: content,
       );

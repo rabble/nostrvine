@@ -190,12 +190,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   }
 
   Future<void> _more() async {
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final isBlocked = blocklistService.isBlocked(widget.pubkey);
-
-    final followRepository = ref.read(followRepositoryProvider);
-    // If NostrClient doesn't have keys yet, treat as not following
-    final isFollowing = followRepository?.isFollowing(widget.pubkey) ?? false;
+    final otherProfileBloc = context.read<OtherProfileBloc>();
+    final isBlocked = otherProfileBloc.isBlocked;
+    final isFollowing = otherProfileBloc.isFollowing;
 
     // Get display name for actions (match pattern from build())
     final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;

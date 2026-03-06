@@ -23,8 +23,10 @@ class OthersFollowersBloc
   OthersFollowersBloc({
     required FollowRepository followRepository,
     required ContentBlocklistService contentBlocklistService,
+    required String currentUserPubkey,
   }) : _followRepository = followRepository,
        _blocklistService = contentBlocklistService,
+       _currentUserPubkey = currentUserPubkey,
        super(const OthersFollowersState()) {
     on<OthersFollowersListLoadRequested>(_onLoadRequested);
     on<OthersFollowersIncrementRequested>(_onIncrementRequested);
@@ -34,13 +36,22 @@ class OthersFollowersBloc
 
   final FollowRepository _followRepository;
   final ContentBlocklistService _blocklistService;
+  final String _currentUserPubkey;
 
   /// Raw unfiltered follower pubkeys for re-filtering on blocklist changes.
   List<String> _rawFollowersPubkeys = [];
+  bool _isFollowingTarget = false;
 
   /// Filter pubkeys by removing blocked users.
-  List<String> _filterPubkeys(List<String> pubkeys) =>
-      pubkeys.where((pk) => !_blocklistService.isBlocked(pk)).toList();
+  List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
+      .where(
+        (pk) =>
+            !_blocklistService.isBlocked(pk) &&
+            !(_shouldHideCurrentUser() && pk == _currentUserPubkey),
+      )
+      .toList();
+
+  bool _shouldHideCurrentUser() => !_isFollowingTarget;
 
   /// Handle request to load another user's followers list
   Future<void> _onLoadRequested(
@@ -80,6 +91,7 @@ class OthersFollowersBloc
       final countFromService = results[1] as int;
       final followerCount = max(followers.length, countFromService);
 
+      _isFollowingTarget = _followRepository.isFollowing(event.targetPubkey);
       _rawFollowersPubkeys = followers;
       final filtered = _filterPubkeys(followers);
 
@@ -106,12 +118,16 @@ class OthersFollowersBloc
     OthersFollowersIncrementRequested event,
     Emitter<OthersFollowersState> emit,
   ) {
+    if (_rawFollowersPubkeys.isEmpty && state.followersPubkeys.isNotEmpty) {
+      _rawFollowersPubkeys = [...state.followersPubkeys];
+    }
+
     // Only increment if not already in the list
-    if (!state.followersPubkeys.contains(event.followerPubkey)) {
+    if (!_rawFollowersPubkeys.contains(event.followerPubkey)) {
       _rawFollowersPubkeys = [..._rawFollowersPubkeys, event.followerPubkey];
       emit(
         state.copyWith(
-          followersPubkeys: [...state.followersPubkeys, event.followerPubkey],
+          followersPubkeys: _filterPubkeys(_rawFollowersPubkeys),
           followerCount: state.followerCount + 1,
         ),
       );
@@ -128,16 +144,18 @@ class OthersFollowersBloc
     OthersFollowersDecrementRequested event,
     Emitter<OthersFollowersState> emit,
   ) {
+    if (_rawFollowersPubkeys.isEmpty && state.followersPubkeys.isNotEmpty) {
+      _rawFollowersPubkeys = [...state.followersPubkeys];
+    }
+
     // Only decrement if in the list
-    if (state.followersPubkeys.contains(event.followerPubkey)) {
+    if (_rawFollowersPubkeys.contains(event.followerPubkey)) {
       _rawFollowersPubkeys = _rawFollowersPubkeys
           .where((pubkey) => pubkey != event.followerPubkey)
           .toList();
       emit(
         state.copyWith(
-          followersPubkeys: state.followersPubkeys
-              .where((pubkey) => pubkey != event.followerPubkey)
-              .toList(),
+          followersPubkeys: _filterPubkeys(_rawFollowersPubkeys),
           followerCount: max(0, state.followerCount - 1),
         ),
       );

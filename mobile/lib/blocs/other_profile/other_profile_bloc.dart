@@ -57,6 +57,12 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   /// The pubkey of the profile being viewed.
   final String pubkey;
 
+  /// Current block status for the viewed profile.
+  bool get isBlocked => _blocklistService.isBlocked(pubkey);
+
+  /// Whether the current user is following the viewed profile.
+  bool get isFollowing => _followRepository?.isFollowing(pubkey) ?? false;
+
   Future<void> _onLoadRequested(
     OtherProfileLoadRequested event,
     Emitter<OtherProfileState> emit,
