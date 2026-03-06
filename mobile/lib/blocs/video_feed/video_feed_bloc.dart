@@ -115,7 +115,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     // is already initialized — .skip(1) would skip the only replay.
     if (mode == FeedMode.home || mode == FeedMode.forYou) {
       final currentFollowing = _followRepository.followingPubkeys;
-      if (currentFollowing.isEmpty) {
+      if (currentFollowing.isEmpty && state.videos.isEmpty) {
         emit(
           state.copyWith(
             status: VideoFeedStatus.success,
