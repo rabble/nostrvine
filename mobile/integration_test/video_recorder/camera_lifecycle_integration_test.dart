@@ -1,27 +1,34 @@
 // ABOUTME: Integration tests for app lifecycle handling
 // ABOUTME: Tests camera behavior during app pause/resume and other lifecycle changes
 
-// NOTE: On Android, camera/microphone permissions must be granted before running.
-// Either grant via ADB: adb shell pm grant co.openvine.app android.permission.CAMERA
-// Or the first test run will show permission dialogs that must be accepted.
+import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
+import 'package:patrol/patrol.dart';
 import 'package:permissions_service/permissions_service.dart';
 
-void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+/// Grant camera and microphone permissions via Patrol native automation.
+Future<void> _grantPermissions(PatrolIntegrationTester $) async {
+  const service = PermissionHandlerPermissionsService();
+  unawaited(service.requestCameraPermission());
+  if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+    timeout: const Duration(seconds: 5),
+  )) {
+    await $.platformAutomator.mobile.grantPermissionWhenInUse();
+  }
+  unawaited(service.requestMicrophonePermission());
+  if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+    timeout: const Duration(seconds: 5),
+  )) {
+    await $.platformAutomator.mobile.grantPermissionWhenInUse();
+  }
+}
 
+void main() {
   group('Camera Lifecycle Integration Tests', () {
     late CameraService cameraService;
-
-    setUpAll(() async {
-      const service = PermissionHandlerPermissionsService();
-      await service.requestCameraPermission();
-      await service.requestMicrophonePermission();
-    });
 
     setUp(() async {
       cameraService = CameraService.create(
@@ -35,14 +42,18 @@ void main() {
       await cameraService.dispose();
     });
 
-    testWidgets('handles app pause', (tester) async {
+    patrolTest('handles app pause', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       await cameraService.handleAppLifecycleState(.paused);
       await tester.pump(const Duration(milliseconds: 100));
 
       // Should complete without error
     });
 
-    testWidgets('handles app resume', (tester) async {
+    patrolTest('handles app resume', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       await cameraService.handleAppLifecycleState(.resumed);
       await tester.pump(const Duration(milliseconds: 100));
 
@@ -50,7 +61,9 @@ void main() {
       expect(cameraService.isInitialized, isTrue);
     });
 
-    testWidgets('handles pause-resume cycle', (tester) async {
+    patrolTest('handles pause-resume cycle', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       await cameraService.handleAppLifecycleState(.paused);
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -62,7 +75,9 @@ void main() {
       expect(cameraService.canRecord, isTrue);
     });
 
-    testWidgets('handles multiple lifecycle changes', (tester) async {
+    patrolTest('handles multiple lifecycle changes', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       final List<AppLifecycleState> states = [
         .paused,
         .resumed,
@@ -81,7 +96,9 @@ void main() {
       expect(cameraService.isInitialized, isTrue);
     });
 
-    testWidgets('can record after lifecycle changes', (tester) async {
+    patrolTest('can record after lifecycle changes', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       // Simulate app going to background and back
       await cameraService.handleAppLifecycleState(.paused);
       await tester.pump(const Duration(milliseconds: 200));
@@ -99,7 +116,9 @@ void main() {
       expect(video, anyOf(isNull, isA<Object>()));
     });
 
-    testWidgets('handles detached state', (tester) async {
+    patrolTest('handles detached state', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       await cameraService.handleAppLifecycleState(.detached);
       await tester.pump(const Duration(milliseconds: 100));
 

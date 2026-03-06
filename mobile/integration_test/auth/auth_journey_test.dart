@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -18,17 +18,16 @@ import '../helpers/relay_helpers.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('Auth Journey', () {
     final testEmail =
         'journey-${DateTime.now().millisecondsSinceEpoch}@test.divine.video';
     const initialPassword = 'TestPass123!';
     const newPassword = 'NewPass456!';
 
-    testWidgets(
+    patrolTest(
       'register, verify, forgot password, reset, login, verify feedback',
-      (tester) async {
+      ($) async {
+        final tester = $.tester;
         // ── Setup: suppress non-critical errors ──
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();

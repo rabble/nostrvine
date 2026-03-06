@@ -6,7 +6,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
@@ -14,12 +14,11 @@ import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('Thumbnail Integration Tests', () {
-    testWidgets(
+    patrolTest(
       'Record video and generate thumbnail end-to-end',
-      (tester) async {
+      ($) async {
+        final tester = $.tester;
         // Save ErrorWidget.builder to restore at end of test
         final originalErrorWidgetBuilder = ErrorWidget.builder;
 
@@ -154,7 +153,7 @@ void main() {
       timeout: const Timeout(Duration(minutes: 2)),
     );
 
-    testWidgets('Test upload manager thumbnail integration', (tester) async {
+    patrolTest('Test upload manager thumbnail integration', ($) async {
       // Save ErrorWidget.builder to restore at end of test
       final originalErrorWidgetBuilder = ErrorWidget.builder;
 

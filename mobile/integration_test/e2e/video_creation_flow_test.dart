@@ -3,16 +3,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:openvine/main.dart' as app;
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('Complete Video Creation Flow E2E Tests', () {
-    testWidgets(
+    patrolTest(
       'Full flow: App start → Video Recorder → Editor → Publish',
-      (tester) async {
+      ($) async {
+        final tester = $.tester;
         // Start the app
         app.main();
 

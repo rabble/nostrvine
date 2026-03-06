@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
@@ -12,12 +12,11 @@ import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('Content Reporting Flow Integration Tests', () {
-    testWidgets('Complete reporting flow from share menu works end-to-end', (
-      tester,
+    patrolTest('Complete reporting flow from share menu works end-to-end', (
+      $,
     ) async {
+      final tester = $.tester;
       // Create test Nostr event (kind 34236 - addressable short video)
       final testNostrEvent = nostr.Event(
         'test_author_pubkey_67890',
@@ -165,7 +164,8 @@ void main() {
       expect(alreadyReportedTile.onTap, isNull);
     });
 
-    testWidgets('Quick AI report flow works end-to-end', (tester) async {
+    patrolTest('Quick AI report flow works end-to-end', ($) async {
+      final tester = $.tester;
       // Create test Nostr event for AI-generated video (no original content marker)
       final testAiNostrEvent = nostr.Event(
         'different_author_pubkey_11111',

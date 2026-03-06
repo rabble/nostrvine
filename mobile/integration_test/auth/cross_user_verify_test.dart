@@ -6,7 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
 
@@ -15,16 +15,15 @@ import '../helpers/navigation_helpers.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('Cross-user email verification', () {
     final userAEmail =
         'usera-${DateTime.now().millisecondsSinceEpoch}@test.divine.video';
     const password = 'TestPass123!';
 
-    testWidgets(
+    patrolTest(
       'authenticated user can reach verify-email screen via deep link',
-      (tester) async {
+      ($) async {
+        final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
         addTearDown(() => restoreErrorHandler(originalOnError));
         final originalErrorBuilder = saveErrorWidgetBuilder();

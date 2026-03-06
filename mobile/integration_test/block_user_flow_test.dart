@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -13,8 +13,6 @@ import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('Block User Flow Integration Tests', () {
     late ProviderContainer container;
     late GoRouter router;
@@ -32,7 +30,8 @@ void main() {
       blocklistService = container.read(contentBlocklistServiceProvider);
     });
 
-    testWidgets('Block and unblock user from profile screen', (tester) async {
+    patrolTest('Block and unblock user from profile screen', ($) async {
+      final tester = $.tester;
       // Setup: Create test app with router
       await tester.pumpWidget(
         UncontrolledProviderScope(
@@ -171,7 +170,8 @@ void main() {
       );
     });
 
-    testWidgets('Cancel block action keeps user unblocked', (tester) async {
+    patrolTest('Cancel block action keeps user unblocked', ($) async {
+      final tester = $.tester;
       // Setup: Create test app with router
       await tester.pumpWidget(
         UncontrolledProviderScope(

@@ -1,26 +1,33 @@
 // ABOUTME: Integration tests for camera switching functionality
 // ABOUTME: Tests switching between front and back cameras
 
-// NOTE: On Android, camera/microphone permissions must be granted before running.
-// Either grant via ADB: adb shell pm grant co.openvine.app android.permission.CAMERA
-// Or the first test run will show permission dialogs that must be accepted.
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
+import 'package:patrol/patrol.dart';
 import 'package:permissions_service/permissions_service.dart';
 
-void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+/// Grant camera and microphone permissions via Patrol native automation.
+Future<void> _grantPermissions(PatrolIntegrationTester $) async {
+  const service = PermissionHandlerPermissionsService();
+  unawaited(service.requestCameraPermission());
+  if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+    timeout: const Duration(seconds: 5),
+  )) {
+    await $.platformAutomator.mobile.grantPermissionWhenInUse();
+  }
+  unawaited(service.requestMicrophonePermission());
+  if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+    timeout: const Duration(seconds: 5),
+  )) {
+    await $.platformAutomator.mobile.grantPermissionWhenInUse();
+  }
+}
 
+void main() {
   group('Camera Switching Integration Tests', () {
     late CameraService cameraService;
-
-    setUpAll(() async {
-      const service = PermissionHandlerPermissionsService();
-      await service.requestCameraPermission();
-      await service.requestMicrophonePermission();
-    });
 
     setUp(() async {
       cameraService = CameraService.create(
@@ -34,14 +41,14 @@ void main() {
       await cameraService.dispose();
     });
 
-    testWidgets('reports camera switch capability', (tester) async {
+    patrolTest('reports camera switch capability', ($) async {
+      await _grantPermissions($);
       final canSwitch = cameraService.canSwitchCamera;
       expect(canSwitch, isA<bool>());
     });
 
-    testWidgets('can switch camera if multiple cameras available', (
-      tester,
-    ) async {
+    patrolTest('can switch camera if multiple cameras available', ($) async {
+      await _grantPermissions($);
       if (!cameraService.canSwitchCamera) {
         // Skip if device only has one camera
         return;
@@ -53,7 +60,9 @@ void main() {
       expect(cameraService.isInitialized, isTrue);
     });
 
-    testWidgets('camera remains initialized after switching', (tester) async {
+    patrolTest('camera remains initialized after switching', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       if (!cameraService.canSwitchCamera) {
         return;
       }
@@ -65,7 +74,9 @@ void main() {
       expect(cameraService.canRecord, isTrue);
     });
 
-    testWidgets('can switch camera multiple times', (tester) async {
+    patrolTest('can switch camera multiple times', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       if (!cameraService.canSwitchCamera) {
         return;
       }
@@ -80,7 +91,9 @@ void main() {
       expect(cameraService.isInitialized, isTrue);
     });
 
-    testWidgets('switching camera updates aspect ratio', (tester) async {
+    patrolTest('switching camera updates aspect ratio', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       if (!cameraService.canSwitchCamera) {
         return;
       }

@@ -199,6 +199,7 @@ dev_dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
+  patrol: ^4.2.0
   flutter_launcher_icons: ^0.14.4
 
   very_good_analysis: ^10.2.0
@@ -310,6 +311,14 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   adaptive_icon_background: "#00B488"
   adaptive_icon_foreground: "assets/icon/app_icon.png"
+
+patrol:
+  app_name: divine
+  test_directory: integration_test
+  android:
+    package_name: co.openvine.app
+  ios:
+    bundle_id: co.openvine.app
 
 melos:
   useRootAsPackage: true

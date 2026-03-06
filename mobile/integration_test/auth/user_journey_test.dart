@@ -4,7 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:openvine/main.dart' as app;
 
 import '../helpers/db_helpers.dart';
@@ -14,16 +14,15 @@ import '../helpers/relay_helpers.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('User Journey: Register → Upload → Discover → Navigate', () {
     final testEmail =
         'e2e-${DateTime.now().millisecondsSinceEpoch}@test.divine.video';
     const testPassword = 'TestPass123!';
 
-    testWidgets(
+    patrolTest(
       'register, publish video, discover in feed, navigate tabs',
-      (tester) async {
+      ($) async {
+        final tester = $.tester;
         // Suppress non-critical relay/WebSocket errors from external relays.
         final originalOnError = suppressSetStateErrors();
 
