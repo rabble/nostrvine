@@ -34,7 +34,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     required String relayUrl,
     required VideoSharingService videoSharingService,
     required UserProfileService userProfileService,
-    FollowRepository? followRepository,
+    required FollowRepository followRepository,
     Future<BookmarkService?>? bookmarkServiceFuture,
   }) : _video = video,
        _relayUrl = relayUrl,
@@ -62,7 +62,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final String _relayUrl;
   final VideoSharingService _videoSharingService;
   final UserProfileService _userProfileService;
-  final FollowRepository? _followRepository;
+  final FollowRepository _followRepository;
   final Future<BookmarkService?>? _bookmarkServiceFuture;
 
   // --------------------------------------------------------------------------
@@ -79,7 +79,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
 
     try {
       final recentUsers = _videoSharingService.recentlySharedWith;
-      final followList = _followRepository?.followingPubkeys ?? [];
+      final followList = _followRepository.followingPubkeys;
       final recentPubkeys = recentUsers.map((u) => u.pubkey).toSet();
 
       final remainingFollows = followList

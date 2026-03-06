@@ -261,8 +261,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
         profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
 
     final followRepository = ref.read(followRepositoryProvider);
-    // Can't unfollow if NostrClient doesn't have keys yet
-    if (followRepository == null) return;
     await followRepository.toggleFollow(widget.pubkey);
 
     if (mounted) {

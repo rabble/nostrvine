@@ -11,7 +11,6 @@ import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
@@ -31,11 +30,6 @@ class MyFollowersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
-
-    // Show loading until NostrClient has keys
-    if (followRepository == null) {
-      return const BrandedLoadingScaffold();
-    }
 
     return MultiBlocProvider(
       providers: [

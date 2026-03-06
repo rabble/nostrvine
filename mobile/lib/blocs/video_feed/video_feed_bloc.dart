@@ -79,10 +79,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// attempted first (fast path).
   ///
   /// After the initial load, subscribes to [FollowRepository.followingStream]
-  /// (without skipping) so the BehaviorSubject replays the current follow
-  /// list. [_onFollowingListChanged] handles the "no follows" CTA and
-  /// silently refreshes the feed (no loading state) so the initial replay
-  /// is harmless and runtime changes are seamless.
+  /// (skipping the first replay) so only runtime follow/unfollow changes
+  /// trigger a refresh — avoiding a redundant second API call on startup.
+  /// The "no follows" CTA is handled by [_onFollowingListChanged] when the
+  /// follow repo's force-emit for empty lists arrives as emission #2.
   ///
   /// Also subscribes to [CuratedListRepository.subscribedListsStream]
   /// (skipping the first replay) so curated list changes refresh the feed.
@@ -110,14 +110,31 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
     await _loadVideos(mode, emit);
 
-    // Subscribe to following list changes (no skip — receive the
-    // BehaviorSubject replay so _onFollowingListChanged can handle
-    // initial follow-list arrival and "no follows" CTA).
-    // unawaited because emit.onEach never completes for BehaviorSubjects,
-    // which would block the curated list subscription below.
+    // After the initial load, check for the "no follows" CTA. Needed for
+    // BLoC re-creation (e.g. navigating back to home) when the follow repo
+    // is already initialized — .skip(1) would skip the only replay.
+    if (mode == FeedMode.home || mode == FeedMode.forYou) {
+      final currentFollowing = _followRepository.followingPubkeys;
+      if (currentFollowing.isEmpty) {
+        emit(
+          state.copyWith(
+            status: VideoFeedStatus.success,
+            videos: [],
+            hasMore: false,
+            error: VideoFeedError.noFollowedUsers,
+            videoListSources: const {},
+            listOnlyVideoIds: const {},
+          ),
+        );
+      }
+    }
+
+    // Subscribe to following list changes (skip first replay — the initial
+    // load already handled the current state, and the follow repo's
+    // force-emit for empty lists will arrive as emission #2).
     unawaited(
       emit.onEach<List<String>>(
-        _followRepository.followingStream,
+        _followRepository.followingStream.skip(1),
         onData: (pubkeys) => add(VideoFeedFollowingListChanged(pubkeys)),
       ),
     );
@@ -285,16 +302,14 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
   /// Handle following list changes from [FollowRepository].
   ///
-  /// Receives every emission from the BehaviorSubject (no skip), so the
-  /// first call after startup is the replayed current value. Performs a
-  /// silent refresh — keeps current videos visible and replaces when done.
+  /// Only receives runtime changes (the initial BehaviorSubject replay is
+  /// skipped). Performs a silent refresh — keeps current videos visible and
+  /// replaces when done.
   ///
   /// - **Empty list** → show `noFollowedUsers` CTA immediately.
-  /// - **Non-empty list** → silent refresh via [_loadVideos]. For the
-  ///   initial BehaviorSubject replay, Funnelcake content stays visible
-  ///   and the fetch returns same/similar videos (no visible change).
-  ///   For runtime follow/unfollow, old content stays visible briefly,
-  ///   then replaced with updated feed (no loading flash).
+  /// - **Non-empty list** → silent refresh via [_loadVideos]. Old content
+  ///   stays visible briefly, then replaced with updated feed (no loading
+  ///   flash).
   Future<void> _onFollowingListChanged(
     VideoFeedFollowingListChanged event,
     Emitter<VideoFeedState> emit,
@@ -408,26 +423,20 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   Future<HomeFeedResult> _fetchVideosForMode(
     FeedMode mode, {
     int? until,
-  }) async {
-    switch (mode) {
-      case FeedMode.forYou:
-      case FeedMode.home:
-        final authors = _followRepository.followingPubkeys;
-        final videoRefs = _curatedListRepository.getSubscribedListVideoRefs();
-        return _videosRepository.getHomeFeedVideos(
-          authors: authors,
-          videoRefs: videoRefs,
-          userPubkey: _userPubkey,
-          until: until,
-        );
-
-      case FeedMode.latest:
-        final videos = await _videosRepository.getNewVideos(until: until);
-        return HomeFeedResult(videos: videos);
-
-      case FeedMode.popular:
-        final videos = await _videosRepository.getPopularVideos(until: until);
-        return HomeFeedResult(videos: videos);
-    }
-  }
+  }) => switch (mode) {
+    FeedMode.forYou || FeedMode.home => _videosRepository.getHomeFeedVideos(
+      authors: _followRepository.followingPubkeys,
+      videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),
+      userPubkey: _userPubkey,
+      until: until,
+    ),
+    FeedMode.latest =>
+      _videosRepository
+          .getNewVideos(until: until)
+          .then((videos) => HomeFeedResult(videos: videos)),
+    FeedMode.popular =>
+      _videosRepository
+          .getPopularVideos(until: until)
+          .then((videos) => HomeFeedResult(videos: videos)),
+  };
 }

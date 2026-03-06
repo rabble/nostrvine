@@ -205,11 +205,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final contentBlocklistService = ref.watch(contentBlocklistServiceProvider);
     final currentUserPubkey = nostrService.publicKey;
 
-    // Show loading state until NostrClient has keys
-    if (followRepository == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     // Create BLoCs if not already created, or recreate if userIdHex changed
     // Store references for refresh capability
     if (_blocsUserIdHex != widget.userIdHex) {

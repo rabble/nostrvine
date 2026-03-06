@@ -16,7 +16,6 @@ import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 extension on List<VideoEvent> {
@@ -50,19 +49,16 @@ class VideoFeedPage extends ConsumerWidget {
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
 
-    // Show loading until NostrClient has keys
-    if (followRepository == null) {
-      return const BrandedLoadingScaffold();
-    }
-
     return BlocProvider(
-      create: (_) => VideoFeedBloc(
-        videosRepository: videosRepository,
-        followRepository: followRepository,
-        curatedListRepository: curatedListRepository,
-        userPubkey: authService.currentPublicKeyHex,
-        feedTracker: FeedPerformanceTracker(),
-      )..add(VideoFeedStarted(mode: initialMode)),
+      create: (_) {
+        return VideoFeedBloc(
+          videosRepository: videosRepository,
+          followRepository: followRepository,
+          curatedListRepository: curatedListRepository,
+          userPubkey: authService.currentPublicKeyHex,
+          feedTracker: FeedPerformanceTracker(),
+        )..add(VideoFeedStarted(mode: initialMode));
+      },
       child: const VideoFeedView(),
     );
   }
@@ -305,9 +301,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   itemBuilder: (context, video, index, {required isActive}) {
                     final originalEvent = eventsById[video.id];
                     if (originalEvent == null) {
-                      return const ColoredBox(
-                        color: VineTheme.backgroundColor,
-                      );
+                      return const ColoredBox(color: VineTheme.backgroundColor);
                     }
                     final listSources =
                         state.listOnlyVideoIds.contains(originalEvent.id)

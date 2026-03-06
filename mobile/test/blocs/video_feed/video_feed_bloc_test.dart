@@ -288,8 +288,7 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'emits noFollowedUsers when followingStream emits empty '
-        'list after startup',
+        'emits noFollowedUsers when following list is empty on startup',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
           when(
@@ -303,13 +302,7 @@ void main() {
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
-        act: (bloc) async {
-          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
-          // Wait for _loadVideos to complete (emits success with empty)
-          await Future<void>.delayed(Duration.zero);
-          // followingStream replay of [] triggers _onFollowingListChanged
-          followingController.add([]);
-        },
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         expect: () => [
           const VideoFeedState(),
           // _loadVideos emits success with empty videos
@@ -317,7 +310,7 @@ void main() {
             status: VideoFeedStatus.success,
             hasMore: false,
           ),
-          // _onFollowingListChanged receives [] → noFollowedUsers CTA
+          // _onStarted detects empty follows → noFollowedUsers CTA
           const VideoFeedState(
             status: VideoFeedStatus.success,
             hasMore: false,
@@ -1149,8 +1142,7 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'silently refreshes when follow list replays after Funnelcake '
-        'already loaded content',
+        'skips initial follow list replay to avoid redundant API call',
         setUp: () {
           final videos = createTestVideos(pageSize);
 
@@ -1172,14 +1164,13 @@ void main() {
           bloc.add(const VideoFeedStarted(mode: FeedMode.home));
           // Wait for initial load to complete (Funnelcake loaded content)
           await Future<void>.delayed(Duration.zero);
-          // Stream replays follow list — silently refreshes (no loading)
+          // First stream emission is skipped (BehaviorSubject replay)
           followingController.add(['author']);
         },
         skip: 2, // Skip loading + success from VideoFeedStarted
-        // No state change — same videos re-fetched, Equatable deduplicates
         expect: () => <VideoFeedState>[],
         verify: (_) {
-          // Called twice: initial load + silent refresh from replay
+          // Called only once — the replay is skipped, no redundant call
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
@@ -1188,13 +1179,13 @@ void main() {
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).called(2);
+          ).called(1);
         },
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'silently refreshes when follow list arrives and feed is empty '
-        '(Funnelcake failed)',
+        'silently refreshes on second follow list emission after feed '
+        'is empty (Funnelcake failed)',
         setUp: () {
           final videos = createTestVideos(pageSize);
           var callCount = 0;
@@ -1223,8 +1214,11 @@ void main() {
           bloc.add(const VideoFeedStarted(mode: FeedMode.home));
           // Wait for initial load to complete (Funnelcake returned empty)
           await Future<void>.delayed(Duration.zero);
-          // Stream replays follow list — feed empty, silently refreshes
+          // First emission is skipped (BehaviorSubject replay)
           followingController.add(['author']);
+          await Future<void>.delayed(Duration.zero);
+          // Second emission triggers recovery
+          followingController.add(['author', 'new-follow']);
         },
         skip: 2, // Skip loading + success(empty) from VideoFeedStarted
         expect: () => [
@@ -1234,7 +1228,7 @@ void main() {
               .having((s) => s.videos.length, 'videos count', pageSize),
         ],
         verify: (_) {
-          // Called twice: initial (empty), then recovery
+          // Called twice: initial (empty), then recovery on 2nd emission
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
@@ -1248,7 +1242,8 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'silently refreshes on each follow list emission',
+        'silently refreshes on runtime follow list changes '
+        '(skips initial replay)',
         setUp: () {
           final videos = createTestVideos(pageSize);
 
@@ -1269,17 +1264,17 @@ void main() {
         act: (bloc) async {
           bloc.add(const VideoFeedStarted(mode: FeedMode.home));
           await Future<void>.delayed(Duration.zero);
-          // Initial replay — silently refreshes (no loading)
+          // First emission is skipped (BehaviorSubject replay)
           followingController.add(['author']);
           await Future<void>.delayed(Duration.zero);
-          // Runtime follow — silently refreshes again (no loading)
+          // Runtime follow — triggers silent refresh
           followingController.add(['author', 'new-author']);
         },
         skip: 2, // Skip loading + success from VideoFeedStarted
         // No state changes — same videos returned, Equatable deduplicates
         expect: () => <VideoFeedState>[],
         verify: (_) {
-          // Called 3 times: initial + replay + runtime
+          // Called 2 times: initial + runtime (replay is skipped)
           verify(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
@@ -1288,7 +1283,7 @@ void main() {
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).called(3);
+          ).called(2);
         },
       );
     });

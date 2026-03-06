@@ -33,15 +33,6 @@ class ProfileFollowersStat extends ConsumerWidget {
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final isCurrentUser = pubkey == nostrClient.publicKey;
 
-    // Don't show stats until NostrClient has keys
-    if (followRepository == null) {
-      return const ProfileStatColumn(
-        count: null,
-        label: 'Followers',
-        isLoading: true,
-      );
-    }
-
     if (isCurrentUser) {
       return BlocProvider(
         create: (_) => MyFollowersBloc(
@@ -115,7 +106,7 @@ class _OthersFollowersStatView extends ConsumerWidget {
     final followRepository = ref.watch(followRepositoryProvider);
     // Hide ourselves from the target's followers if we're not actually
     // following them (e.g. follow severed by block→unblock flow).
-    final isFollowingTarget = followRepository?.isFollowing(pubkey) ?? false;
+    final isFollowingTarget = followRepository.isFollowing(pubkey);
 
     return BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
       builder: (context, state) {

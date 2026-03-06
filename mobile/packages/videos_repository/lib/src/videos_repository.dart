@@ -149,7 +149,9 @@ class VideosRepository {
         );
 
         final videos = _transformVideoStats(response.videos);
-        if (videos.isNotEmpty) return videos;
+        if (videos.isNotEmpty) {
+          return videos;
+        }
       } on FunnelcakeException {
         // Fall through to Nostr
       }
@@ -157,7 +159,9 @@ class VideosRepository {
 
     // Nostr fallback — skip when authors list is empty (fast-path startup
     // before follow list is ready).
-    if (authors.isEmpty) return [];
+    if (authors.isEmpty) {
+      return [];
+    }
 
     final filter = Filter(
       kinds: [_videoKind],

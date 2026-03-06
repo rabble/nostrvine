@@ -515,12 +515,6 @@ class FollowRepository {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    Log.debug(
-      'Initializing FollowRepository',
-      name: 'FollowRepository',
-      category: LogCategory.system,
-    );
-
     try {
       // 1. Load from local storage first for immediate UI display
       await _loadFromLocalStorage();
@@ -555,12 +549,6 @@ class FollowRepository {
       if (_followingPubkeys.isEmpty && !_followingSubject.isClosed) {
         _followingSubject.add(const []);
       }
-
-      Log.info(
-        'FollowRepository initialized: ${_followingPubkeys.length} following',
-        name: 'FollowRepository',
-        category: LogCategory.system,
-      );
     } catch (e) {
       Log.error(
         'FollowRepository initialization error: $e',
