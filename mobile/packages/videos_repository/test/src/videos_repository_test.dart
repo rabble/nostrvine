@@ -3990,6 +3990,46 @@ void main() {
           expect(ids, contains('shared-match'));
         },
       );
+
+      test(
+        'countVideosLocally returns deduplicated local match count',
+        () async {
+          final mockLocalStorage = MockVideoLocalStorage();
+          final matchingEvent = _createVideoEvent(
+            id: 'shared-match',
+            pubkey: 'pubkey-1',
+            videoUrl: 'https://example.com/shared.mp4',
+            createdAt: 1704067200,
+            content: 'flutter tutorial',
+            hashtags: ['flutter'],
+          );
+
+          when(
+            () => mockLocalStorage.searchEvents(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [matchingEvent]);
+
+          when(
+            () => mockLocalStorage.getEventsByHashtags(
+              hashtags: any(named: 'hashtags'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [matchingEvent]);
+
+          final repoWithStorage = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          final count = await repoWithStorage.countVideosLocally(
+            query: 'flutter',
+          );
+
+          expect(count, equals(1));
+        },
+      );
     });
 
     group('searchVideosOnRelays', () {

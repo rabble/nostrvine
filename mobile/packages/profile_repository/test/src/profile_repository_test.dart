@@ -719,6 +719,125 @@ void main() {
       });
     });
 
+    group('searchUsersLocally', () {
+      test('returns empty list when query is blank', () async {
+        final result = await profileRepository.searchUsersLocally(
+          query: '   ',
+        );
+
+        expect(result, isEmpty);
+        verifyNever(() => mockUserProfilesDao.getAllProfiles());
+      });
+
+      test('filters cached profiles and applies limit', () async {
+        final cachedProfiles = [
+          UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Alice Example',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          ),
+          UserProfile(
+            pubkey: otherPubkey,
+            about: 'Talks about ALPHA builds',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'z' * 64,
+          ),
+          UserProfile(
+            pubkey: 'c' * 64,
+            displayName: 'Charlie',
+            about: 'No match here',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'd' * 64,
+          ),
+        ];
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => cachedProfiles);
+
+        final result = await profileRepository.searchUsersLocally(
+          query: '  al  ',
+          limit: 1,
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Alice Example'));
+        verify(() => mockUserProfilesDao.getAllProfiles()).called(1);
+      });
+
+      test('uses custom profileSearchFilter when provided', () async {
+        final cachedProfiles = [
+          UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Alice Example',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          ),
+          UserProfile(
+            pubkey: otherPubkey,
+            displayName: 'Bob Example',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'e' * 64,
+          ),
+        ];
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => cachedProfiles);
+
+        var filterCalled = false;
+        final repoWithFilter = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          profileSearchFilter: (query, profiles) {
+            filterCalled = true;
+            expect(query, equals('alice'));
+            expect(profiles, same(cachedProfiles));
+            return [profiles.last];
+          },
+        );
+
+        final result = await repoWithFilter.searchUsersLocally(query: 'alice');
+
+        expect(filterCalled, isTrue);
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Bob Example'));
+      });
+
+      test('countUsersLocally returns number of cached matches', () async {
+        final cachedProfiles = [
+          UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Alice Example',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          ),
+          UserProfile(
+            pubkey: otherPubkey,
+            about: 'Alice in bio only',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'f' * 64,
+          ),
+        ];
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => cachedProfiles);
+
+        final count = await profileRepository.countUsersLocally(
+          query: 'alice',
+        );
+
+        expect(count, equals(2));
+      });
+    });
+
     group('searchUsers with FunnelcakeApiClient', () {
       late MockFunnelcakeApiClient mockFunnelcakeClient;
 

@@ -2923,7 +2923,7 @@ final class HashtagRepositoryProvider
   }
 }
 
-String _$hashtagRepositoryHash() => r'7d61e9d5f99412e7f62cbb1456aeca1c12ab5b34';
+String _$hashtagRepositoryHash() => r'aacff5fc9d7d369a80b68ffa4595628b18ab1f99';
 
 /// Provider for ProfileRepository instance
 ///
