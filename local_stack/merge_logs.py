@@ -26,6 +26,16 @@ APP_TS_TIME_RE = re.compile(
     r'^\[(\d{2}:\d{2}:\d{2}(?:\.\d+)?)\]\s*(.*)'
 )
 
+# Logcat line with UTC timestamps (-v UTC -v year):
+# "2026-03-06 16:21:10.496  1234  5678 I flutter : message"
+LOGCAT_RE = re.compile(
+    r'^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)'  # timestamp
+    r'\s+\d+\s+\d+'                                       # pid tid
+    r'\s+\w\s+'                                            # level
+    r'(\S+)\s*:\s*'                                        # tag
+    r'(.*)'                                                # message
+)
+
 
 def parse_ts(ts_str: str) -> str:
     """Parse various timestamp formats and return ISO 8601 string with Z suffix."""
@@ -118,6 +128,29 @@ def _parse_iso(ts_str: str) -> datetime:
     ).replace(tzinfo=timezone.utc)
 
 
+def parse_logcat_logs(path: Path) -> list[dict]:
+    """Parse Android logcat output (captured with -v UTC -v year)."""
+    entries = []
+    for line in path.read_text().splitlines():
+        if not line.strip():
+            continue
+        m = LOGCAT_RE.match(line)
+        if m:
+            ts_raw = m.group(1).replace(' ', 'T')
+            try:
+                ts = parse_ts(ts_raw)
+            except ValueError:
+                continue
+            tag = m.group(2)
+            msg = m.group(3).strip()
+            entries.append({
+                'ts': ts,
+                'source': f'app:{tag}' if tag != 'flutter' else 'app',
+                'line': msg,
+            })
+    return entries
+
+
 def normalize_app_utc_offset(
     docker_entries: list[dict],
     app_entries: list[dict],
@@ -161,21 +194,27 @@ def apply_offset(entries: list[dict], offset: timedelta) -> None:
 
 
 def main():
-    if len(sys.argv) < 3:
-        print(f'Usage: {sys.argv[0]} <docker_log> <app_log> [output]',
-              file=sys.stderr)
+    if len(sys.argv) < 4:
+        print(
+            f'Usage: {sys.argv[0]} <docker_log> <logcat_log> <patrol_log> <output>',
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     docker_path = Path(sys.argv[1])
-    app_path = Path(sys.argv[2])
-    output_path = Path(sys.argv[3]) if len(sys.argv) > 3 else None
+    logcat_path = Path(sys.argv[2])
+    patrol_path = Path(sys.argv[3])
+    output_path = Path(sys.argv[4]) if len(sys.argv) > 4 else None
 
     docker_entries, date_prefix = parse_docker_logs(docker_path)
     if not date_prefix:
         date_prefix = datetime.now(tz=timezone.utc).strftime('%Y-%m-%d')
-    app_entries = parse_app_logs(app_path, date_prefix)
+
+    logcat_entries = parse_logcat_logs(logcat_path)
+    patrol_entries = parse_app_logs(patrol_path, date_prefix)
 
     # Normalize app timestamps from local time to UTC
+    app_entries = logcat_entries + patrol_entries
     offset = normalize_app_utc_offset(docker_entries, app_entries)
     if offset != timedelta(0):
         hours = offset.total_seconds() / 3600

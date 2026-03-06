@@ -26,11 +26,16 @@ REPORT_FILE="${REPORT_DIR}/${TIMESTAMP}.jsonl"
 TMPDIR="$(mktemp -d)"
 DOCKER_LOG="${TMPDIR}/docker.log"
 APP_LOG="${TMPDIR}/app.log"
+LOGCAT_LOG="${TMPDIR}/logcat.log"
 
 cleanup() {
     if [[ -n "${DOCKER_PID:-}" ]] && kill -0 "$DOCKER_PID" 2>/dev/null; then
         kill "$DOCKER_PID" 2>/dev/null || true
         wait "$DOCKER_PID" 2>/dev/null || true
+    fi
+    if [[ -n "${LOGCAT_PID:-}" ]] && kill -0 "$LOGCAT_PID" 2>/dev/null; then
+        kill "$LOGCAT_PID" 2>/dev/null || true
+        wait "$LOGCAT_PID" 2>/dev/null || true
     fi
     rm -rf "$TMPDIR"
 }
@@ -62,6 +67,12 @@ if [[ -z "$DEVICE" ]]; then
 fi
 echo "Device:     ${DEVICE}" >&2
 
+# --- Start logcat capture (background, flutter/app logs with timestamps) ---
+echo "Starting logcat capture..." >&2
+adb -s "$DEVICE" logcat -c 2>/dev/null || true
+adb -s "$DEVICE" logcat -v UTC -v year flutter:I '*:S' > "$LOGCAT_LOG" 2>&1 &
+LOGCAT_PID=$!
+
 # --- Run E2E test ---
 # Disable errexit so we can capture the exit code through the pipe.
 echo "Running: patrol test ${TEST_PATH} ..." >&2
@@ -74,15 +85,18 @@ PATH="$HOME/.pub-cache/bin:$PATH" patrol test \
 TEST_EXIT="${PIPESTATUS[0]}"
 set -e
 
-# --- Stop docker log capture ---
+# --- Stop docker log and logcat capture ---
 kill "$DOCKER_PID" 2>/dev/null || true
 wait "$DOCKER_PID" 2>/dev/null || true
 unset DOCKER_PID
+kill "$LOGCAT_PID" 2>/dev/null || true
+wait "$LOGCAT_PID" 2>/dev/null || true
+unset LOGCAT_PID
 
 # --- Merge logs ---
 echo "" >&2
 echo "Merging logs..." >&2
-python3 "$MERGE_SCRIPT" "$DOCKER_LOG" "$APP_LOG" "$REPORT_FILE"
+python3 "$MERGE_SCRIPT" "$DOCKER_LOG" "$LOGCAT_LOG" "$APP_LOG" "$REPORT_FILE"
 
 ENTRY_COUNT="$(wc -l < "$REPORT_FILE" 2>/dev/null || echo 0)"
 
