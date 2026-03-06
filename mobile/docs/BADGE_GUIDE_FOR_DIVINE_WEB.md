@@ -166,7 +166,11 @@ Mobile checks AI results in this order:
 Where `resolvedSha256` means:
 
 - `normalize(video.sha256)` if present
-- otherwise extract the 64-char hash from the Divine media URL path
+- otherwise extract the 64-char hash from any Divine media URL path segment
+  - this must work for:
+    - `https://media.divine.video/{hash}.mp4`
+    - `https://media.divine.video/{hash}/720p`
+    - `https://media.divine.video/{hash}/hls/master.m3u8`
 
 Notes:
 

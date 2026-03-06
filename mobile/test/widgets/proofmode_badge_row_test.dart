@@ -138,6 +138,41 @@ void main() {
       },
     );
 
+    testWidgets(
+      'resolves moderation AI lookup from Divine HLS URL when sha256 is missing',
+      (tester) async {
+        const sha256 =
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+        when(
+          () => mockVideoModerationStatusService.fetchStatus(sha256),
+        ).thenAnswer(
+          (_) async => const VideoModerationStatus(
+            moderated: false,
+            blocked: false,
+            quarantined: false,
+            ageRestricted: false,
+            needsReview: false,
+            aiGenerated: false,
+            aiScore: 0.09,
+          ),
+        );
+
+        final video = VideoEvent(
+          id: 'divine_hls_hash_only',
+          pubkey: 'pubkey4',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          content: 'divine-hosted HLS video without explicit sha',
+          timestamp: DateTime.now(),
+          videoUrl: 'https://media.divine.video/$sha256/hls/master.m3u8',
+        );
+
+        await tester.pumpWidget(buildSubject(video));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Human Made'), findsOneWidget);
+      },
+    );
+
     testWidgets('still shows Human Made for proof-backed videos', (
       tester,
     ) async {

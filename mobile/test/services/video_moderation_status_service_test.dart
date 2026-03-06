@@ -64,6 +64,24 @@ void main() {
       expect(parsed, hash);
     });
 
+    test('extracts sha256 from Divine variant and HLS URLs', () {
+      const hash =
+          'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+
+      expect(
+        VideoModerationStatusService.extractSha256FromVideoUrl(
+          'https://media.divine.video/$hash/720p',
+        ),
+        hash,
+      );
+      expect(
+        VideoModerationStatusService.extractSha256FromVideoUrl(
+          'https://media.divine.video/$hash/hls/master.m3u8',
+        ),
+        hash,
+      );
+    });
+
     test('checks moderation only for known hosts', () {
       expect(
         VideoModerationStatusService.shouldCheckModeration(

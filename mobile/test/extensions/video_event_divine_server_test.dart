@@ -115,4 +115,15 @@ void main() {
       expect(video.shouldShowNotDivineBadge, isFalse);
     });
   });
+
+  group('getOptimalVideoUrlForPlatform', () {
+    test('returns original MP4 for Divine-hosted videos on desktop hosts', () {
+      const url =
+          'https://media.divine.video/'
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.mp4';
+      final video = _createVideoWithUrl(url);
+
+      expect(video.getOptimalVideoUrlForPlatform(), url);
+    });
+  });
 }

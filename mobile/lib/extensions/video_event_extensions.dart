@@ -196,15 +196,14 @@ extension VideoEventAppExtensions on VideoEvent {
 
   /// Get the optimal video URL for initial playback.
   ///
-  /// **Strategy**: Use bandwidth-based quality selection for Divine videos.
-  /// The [BandwidthTrackerService] tracks TTFF across videos and picks
-  /// the right quality for the NEXT video:
-  /// - `> 4 Mbps` → original MP4 (full quality)
-  /// - `2-4 Mbps` → 720p variant (2.5 Mbps)
-  /// - `< 2 Mbps` → 480p variant (1 Mbps)
+  /// **Strategy**:
+  /// - Android uses bandwidth-based Divine quality variants for startup speed.
+  /// - iOS/macOS/desktop stay on the original MP4 to avoid visible 404/fallback
+  ///   churn when variant URLs are not available yet.
   ///
   /// Non-Divine videos always use original (no transcoded variants exist).
-  /// On first launch (no samples), defaults to 720p (safe middle ground).
+  /// On first Android launch (no samples), defaults to 720p (safe middle
+  /// ground).
   ///
   /// For HLS fallback on Android codec errors, see [getHlsFallbackUrl].
   String? getOptimalVideoUrlForPlatform() {
@@ -213,6 +212,11 @@ extension VideoEventAppExtensions on VideoEvent {
 
     final hash = _extractVideoHash(videoUrl);
     if (hash == null) return videoUrl;
+
+    // Desktop and Apple platforms are more stable using the original MP4.
+    if (!Platform.isAndroid) {
+      return videoUrl;
+    }
 
     final quality = bandwidthTracker.recommendedQuality;
     switch (quality) {

@@ -256,12 +256,17 @@ class VideoModerationStatusService {
       final pathSegments = uri.pathSegments;
       if (pathSegments.isEmpty) return null;
 
-      final lastSegment = pathSegments.last;
-      final base = lastSegment.split('.').first;
-      return normalizeSha256(base);
+      for (final segment in pathSegments) {
+        final base = segment.split('.').first;
+        final normalized = normalizeSha256(base);
+        if (normalized != null) {
+          return normalized;
+        }
+      }
     } catch (_) {
       return null;
     }
+    return null;
   }
 
   static String? resolveSha256({
