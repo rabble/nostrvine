@@ -64,12 +64,12 @@ echo "Device:     ${DEVICE}" >&2
 
 # --- Run E2E test ---
 # Disable errexit so we can capture the exit code through the pipe.
-echo "Running: flutter test ${TEST_PATH} ..." >&2
+echo "Running: patrol test ${TEST_PATH} ..." >&2
 cd "$MOBILE_DIR"
 set +e
-flutter test "$TEST_PATH" \
+PATH="$HOME/.pub-cache/bin:$PATH" patrol test \
+    --target "$TEST_PATH" \
     --dart-define=DEFAULT_ENV=LOCAL \
-    -d "$DEVICE" \
     2>&1 | tee "$APP_LOG"
 TEST_EXIT="${PIPESTATUS[0]}"
 set -e
@@ -84,11 +84,16 @@ echo "" >&2
 echo "Merging logs..." >&2
 python3 "$MERGE_SCRIPT" "$DOCKER_LOG" "$APP_LOG" "$REPORT_FILE"
 
+ENTRY_COUNT="$(wc -l < "$REPORT_FILE" 2>/dev/null || echo 0)"
+
 echo "" >&2
 if [[ $TEST_EXIT -eq 0 ]]; then
-    echo "Tests PASSED. Report: ${REPORT_FILE}" >&2
+    echo "Tests PASSED." >&2
 else
-    echo "Tests FAILED (exit ${TEST_EXIT}). Report: ${REPORT_FILE}" >&2
+    echo "Tests FAILED (exit ${TEST_EXIT})." >&2
 fi
+echo "" >&2
+echo "Report: ${REPORT_FILE} (${ENTRY_COUNT} entries)" >&2
+echo "Analyze: cat ${REPORT_FILE} | claude 'summarize this E2E test run: errors, slow requests, timeline issues'" >&2
 
 exit "$TEST_EXIT"

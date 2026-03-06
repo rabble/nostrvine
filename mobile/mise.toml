@@ -42,17 +42,6 @@ description = "Show keycast container logs (useful after refresh token tests)"
 run = "docker compose -f ../e2e/docker-compose.yml logs keycast --tail=200"
 
 [tasks.e2e_test]
-description = "Run auth integration tests on connected Android device"
-run = "patrol test --target integration_test/auth/ --dart-define=DEFAULT_ENV=LOCAL"
-
-[tasks.e2e_test_all]
-description = "Run all integration tests on connected Android device"
-run = "patrol test --target integration_test/ --dart-define=DEFAULT_ENV=LOCAL"
-
-[tasks.e2e_develop]
-description = "Run Patrol in develop mode (hot restart) for a specific test"
-run = "patrol develop --target {{ arg(i=0, name='test_path', default='integration_test/auth/auth_journey_test.dart') }} --dart-define=DEFAULT_ENV=LOCAL"
-
-[tasks.e2e_profile]
-description = "Run E2E tests with performance profiling (merged log report)"
+description = "Run E2E tests with log profiling (starts Docker stack, captures merged timeline)"
+depends = ["local_up"]
 run = "bash ../local_stack/profile.sh {{ arg(i=0, name='test_path', default='integration_test/auth/') }}"
