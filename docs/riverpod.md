@@ -1,5 +1,14 @@
 # Divine Riverpod Migration Plan
 
+> [!WARNING]
+> Historical document. This file describes prior Riverpod migration work and is no longer the primary direction for new UI state-management decisions.
+>
+> Current direction is incremental migration of UI flows to BLoC/Cubit. See:
+> - `docs/BLOC_UI_MIGRATION_PRD.md`
+> - https://github.com/divinevideo/divine-mobile/pull/1908
+> - https://github.com/divinevideo/divine-mobile/pull/1894
+> - https://github.com/divinevideo/divine-mobile/pull/1903
+
 ## 🎯 Current Status: Phase 2 - VideoEventBridge Migration Complete ✅
 
 **Last Updated**: 2025-07-01  
