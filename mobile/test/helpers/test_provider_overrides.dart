@@ -123,6 +123,7 @@ MockNostrClient createMockNostrService() {
 
   // Stub common properties
   when(() => mockNostr.isInitialized).thenReturn(true);
+  when(() => mockNostr.hasKeys).thenReturn(false);
   when(() => mockNostr.connectedRelayCount).thenReturn(1);
   when(() => mockNostr.configuredRelays).thenReturn(<String>[]);
 

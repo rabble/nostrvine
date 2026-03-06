@@ -1,13 +1,27 @@
-// ABOUTME: Tests for MoreActionButton widget
-// ABOUTME: Verifies the button renders correctly with proper semantics
+// ABOUTME: Tests for MoreActionButton widget and _VideoMoreMenu
+// ABOUTME: Verifies moderation actions (report, mute, block) and debug tools
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/features/feature_flags/models/feature_flag.dart';
+import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/mute_service.dart';
+import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/video_feed_item/actions/more_action_button.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
+
+class _MockMuteService extends Mock implements MuteService {}
 
 void main() {
   late VideoEvent testVideo;
@@ -55,5 +69,314 @@ void main() {
       final semanticsFinder = find.bySemanticsLabel('More options');
       expect(semanticsFinder, findsOneWidget);
     });
+
+    testWidgets('opens moderation menu instead of share sheet', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildMenuWidget(testVideo: testVideo));
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Report content'), findsOneWidget);
+      expect(find.text('Share with'), findsNothing);
+    });
   });
+
+  group('VideoMoreMenu', () {
+    late _MockContentBlocklistService mockBlocklistService;
+    late _MockMuteService mockMuteService;
+    late MockNostrClient mockNostrClient;
+
+    setUp(() {
+      mockBlocklistService = _MockContentBlocklistService();
+      mockMuteService = _MockMuteService();
+      mockNostrClient = createMockNostrService();
+      when(() => mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
+    });
+
+    testWidgets('renders moderation menu items', (tester) async {
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Report content'), findsOneWidget);
+      expect(find.textContaining('Mute'), findsOneWidget);
+      expect(find.textContaining('Block'), findsOneWidget);
+    });
+
+    testWidgets('hides debug tools when feature flag is disabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('View Nostr event JSON'), findsNothing);
+      expect(find.text('Copy Nostr event ID'), findsNothing);
+    });
+
+    testWidgets('shows debug tools when feature flag is enabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          debugToolsEnabled: true,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('View Nostr event JSON'), findsOneWidget);
+      expect(find.text('Copy Nostr event ID'), findsOneWidget);
+    });
+
+    testWidgets('tapping Report opens $ReportContentDialog', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Report content'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Report Content'), findsOneWidget);
+      expect(find.text('Why are you reporting this content?'), findsOneWidget);
+    });
+
+    testWidgets('tapping Mute shows success snackbar on success', (
+      tester,
+    ) async {
+      when(
+        () => mockMuteService.muteUser(
+          any(),
+          reason: any(named: 'reason'),
+          duration: any(named: 'duration'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Mute'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('User muted'), findsOneWidget);
+    });
+
+    testWidgets('tapping Mute shows error snackbar on failure', (tester) async {
+      when(
+        () => mockMuteService.muteUser(
+          any(),
+          reason: any(named: 'reason'),
+          duration: any(named: 'duration'),
+        ),
+      ).thenThrow(Exception('Network error'));
+
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Mute'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Failed to mute user'), findsOneWidget);
+    });
+
+    testWidgets('tapping Block shows confirmation dialog', (tester) async {
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Block'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Block User?'), findsOneWidget);
+      expect(
+        find.text(
+          "You won't see their content in feeds. "
+          "They won't be notified.",
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Block'), findsOneWidget);
+    });
+
+    testWidgets('confirming Block calls blockUser and shows snackbar', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Block'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Block'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockBlocklistService.blockUser(
+          testVideo.pubkey,
+          ourPubkey: any(named: 'ourPubkey'),
+        ),
+      ).called(1);
+
+      expect(find.text('User blocked'), findsOneWidget);
+    });
+
+    testWidgets('cancelling Block dismisses dialog without blocking', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.textContaining('Block'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      verifyNever(
+        () => mockBlocklistService.blockUser(
+          any(),
+          ourPubkey: any(named: 'ourPubkey'),
+        ),
+      );
+    });
+
+    testWidgets('tapping Copy Nostr event ID copies to clipboard', (
+      tester,
+    ) async {
+      String? clipboardContent;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (MethodCall methodCall) async {
+          if (methodCall.method == 'Clipboard.setData') {
+            final args = methodCall.arguments as Map<String, dynamic>;
+            clipboardContent = args['text'] as String?;
+          }
+          return null;
+        },
+      );
+
+      await tester.pumpWidget(
+        buildMenuWidget(
+          testVideo: testVideo,
+          debugToolsEnabled: true,
+          mockBlocklistService: mockBlocklistService,
+          mockMuteService: mockMuteService,
+          mockNostrClient: mockNostrClient,
+        ),
+      );
+      await tester.tap(find.byType(MoreActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Copy Nostr event ID'));
+      await tester.pumpAndSettle();
+
+      expect(clipboardContent, isNotNull);
+      expect(clipboardContent, startsWith('nevent1'));
+      expect(find.text('Event ID copied to clipboard'), findsOneWidget);
+    });
+  });
+}
+
+Widget buildMenuWidget({
+  required VideoEvent testVideo,
+  bool debugToolsEnabled = false,
+  ContentBlocklistService? mockBlocklistService,
+  MuteService? mockMuteService,
+  MockNostrClient? mockNostrClient,
+}) {
+  final router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) =>
+            Scaffold(body: MoreActionButton(video: testVideo)),
+      ),
+    ],
+  );
+
+  return testProviderScope(
+    mockUserProfileService: createMockUserProfileService(),
+    mockNostrService: mockNostrClient ?? createMockNostrService(),
+    additionalOverrides: [
+      if (mockBlocklistService != null)
+        contentBlocklistServiceProvider.overrideWith(
+          (ref) => mockBlocklistService,
+        ),
+      if (mockMuteService != null)
+        muteServiceProvider.overrideWith((ref) async => mockMuteService),
+      isFeatureEnabledProvider(
+        FeatureFlag.debugTools,
+      ).overrideWithValue(debugToolsEnabled),
+    ],
+    child: MaterialApp.router(routerConfig: router),
+  );
 }
