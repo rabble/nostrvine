@@ -191,19 +191,16 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
         await context.read<DivineAuthCubit>().sendPasswordResetEmail(email);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            const SnackBar(
               padding: EdgeInsets.zero,
               backgroundColor: Colors.transparent,
               elevation: 0,
               behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 3),
+              duration: Duration(seconds: 3),
               content: DivineSnackbarContainer(
                 label:
                     'If an account exists with that email, '
                     'a password reset link has been sent.',
-                onClose: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                },
               ),
             ),
           );
