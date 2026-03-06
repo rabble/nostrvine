@@ -217,7 +217,7 @@ class _SimpleShareMenuState extends ConsumerState<_SimpleShareMenu> {
       context: context,
       ref: ref,
       video: widget.video,
-      username: username,
+      watermarkText: username,
     );
   }
 
