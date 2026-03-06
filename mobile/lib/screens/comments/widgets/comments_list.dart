@@ -9,12 +9,12 @@ import 'package:openvine/screens/comments/widgets/widgets.dart';
 
 class CommentsList extends StatefulWidget {
   const CommentsList({
-    required this.isOriginalVine,
+    required this.showClassicVineNotice,
     required this.scrollController,
     super.key,
   });
 
-  final bool isOriginalVine;
+  final bool showClassicVineNotice;
   final ScrollController scrollController;
 
   @override
@@ -58,7 +58,9 @@ class _CommentsListState extends State<CommentsList> {
         final threaded = state.threadedComments;
 
         if (threaded.isEmpty) {
-          return CommentsEmptyState(isClassicVine: widget.isOriginalVine);
+          return CommentsEmptyState(
+            isClassicVine: widget.showClassicVineNotice,
+          );
         }
 
         return ListView.builder(

@@ -381,6 +381,65 @@ void main() {
         expect(find.text('No comments yet'), findsOneWidget);
         expect(find.text('Get the party started!'), findsOneWidget);
       });
+
+      testWidgets(
+        'does not show archive notice for recent videos with loop stats',
+        (tester) async {
+          const state = CommentsState(
+            rootEventId: testVideoEventId,
+            rootAuthorPubkey: testVideoAuthorPubkey,
+            status: CommentsStatus.success,
+          );
+
+          final recentVideoWithLoops = VideoEvent(
+            id: testVideoEventId,
+            pubkey: testVideoAuthorPubkey,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            content: 'recent video',
+            timestamp: DateTime.now(),
+            originalLoops: 13565,
+          );
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              commentsState: state,
+              videoEvent: recentVideoWithLoops,
+            ),
+          );
+          await tester.pump();
+
+          expect(find.text('Classic Vine'), findsNothing);
+        },
+      );
+
+      testWidgets('shows archive notice for vintage recovered vines', (
+        tester,
+      ) async {
+        const state = CommentsState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+        );
+
+        final vintageRecoveredVine = VideoEvent(
+          id: testVideoEventId,
+          pubkey: testVideoAuthorPubkey,
+          createdAt: 1473050841,
+          content: 'classic vine',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
+          originalLoops: 3169386,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            commentsState: state,
+            videoEvent: vintageRecoveredVine,
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Classic Vine'), findsOneWidget);
+      });
     });
 
     group('error handling', () {
@@ -432,7 +491,7 @@ class _CommentsScreenTestContent extends StatelessWidget {
           const Divider(color: Colors.white24, height: 1),
           Expanded(
             child: CommentsList(
-              isOriginalVine: videoEvent.isOriginalVine,
+              showClassicVineNotice: videoEvent.isVintageRecoveredVine,
               scrollController: sheetScrollController,
             ),
           ),
