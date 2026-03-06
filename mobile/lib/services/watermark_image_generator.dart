@@ -1,5 +1,5 @@
 // ABOUTME: Generates transparent PNG watermark overlays for video exports
-// ABOUTME: Draws the Divine wordmark + @username.divine.video at bottom-right
+// ABOUTME: Draws the Divine wordmark + creator identity text at bottom-right
 
 import 'dart:ui' as ui;
 
@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 
 /// Generates a transparent PNG watermark overlay for video exports.
 ///
-/// The watermark includes the Divine wordmark and `@username.divine.video`
+/// The watermark includes the Divine wordmark and creator identity text
 /// positioned in the bottom-right corner at 60% opacity.
 class WatermarkImageGenerator {
   WatermarkImageGenerator._();
@@ -20,7 +20,7 @@ class WatermarkImageGenerator {
   ///
   /// The watermark includes:
   /// - Divine wordmark (from assets) in bottom-right corner
-  /// - `@username.divine.video` text below the wordmark
+  /// - Creator identity text below the wordmark
   /// All at ~60% opacity, sized to ~15% of video width.
   ///
   /// Returns PNG bytes ([Uint8List]) suitable for use as an image overlay.
@@ -30,7 +30,7 @@ class WatermarkImageGenerator {
   static Future<Uint8List> generateWatermark({
     required int videoWidth,
     required int videoHeight,
-    required String username,
+    required String watermarkText,
   }) async {
     final wordmarkImage = await _loadWordmarkImage();
 
@@ -41,11 +41,11 @@ class WatermarkImageGenerator {
       final wordmarkWidth = videoWidth * 0.15;
       final fontSize = wordmarkWidth * 0.14;
 
-      // Build the single-line text: @username.divine.video
+      // Build the single-line watermark text using the resolved identity.
       // Available width = from left margin to right margin
       final maxTextWidth = videoWidth - 2 * _margin;
       final textParagraph = _buildParagraph(
-        '@$username.divine.video',
+        watermarkText,
         fontSize,
         maxTextWidth,
       );
@@ -89,7 +89,7 @@ class WatermarkImageGenerator {
         wordmarkPaint,
       );
 
-      // Draw @username.divine.video - right-aligned below wordmark
+      // Draw creator identity - right-aligned below wordmark
       // Position paragraph box so its right edge aligns with blockRight.
       // Text is right-aligned within the box, so it stays flush right.
       final textTop = wordmarkTop + wordmarkDrawHeight + gap;
