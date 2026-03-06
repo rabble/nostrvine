@@ -294,14 +294,13 @@ class UploadManager {
       );
     }
 
-    // Use single clip (already processed) directly, or merge multiple clips
-    // with 6.3s max duration.
-    String videoFilePath;
-    if (draft.clips.length == 1) {
-      videoFilePath = await draft.clips.first.video.safeFilePath();
-    } else {
+    Future<String> prepareUploadFromSourceClips() async {
+      if (draft.clips.length == 1) {
+        return draft.clips.first.video.safeFilePath();
+      }
+
       final tempDir = await getTemporaryDirectory();
-      videoFilePath = path.join(
+      final mergedPath = path.join(
         tempDir.path,
         'merged_${DateTime.now().microsecondsSinceEpoch}.mp4',
       );
@@ -312,7 +311,7 @@ class UploadManager {
         category: .video,
       );
       await ProVideoEditor.instance.renderVideoToFile(
-        videoFilePath,
+        mergedPath,
         VideoRenderData(
           videoSegments: draft.clips
               .map((clip) => VideoSegment(video: clip.video))
@@ -322,10 +321,37 @@ class UploadManager {
         ),
       );
       Log.info(
-        '✅ Video merge completed: $videoFilePath',
+        '✅ Video merge completed: $mergedPath',
         name: 'UploadManager',
         category: .video,
       );
+      return mergedPath;
+    }
+
+    // Prefer the persisted final render when available. It preserves editor
+    // overlays and gives retries/background uploads a stable file path.
+    String videoFilePath;
+    final renderedClip = draft.finalRenderedClip;
+    if (renderedClip != null) {
+      final renderedPath = await renderedClip.video.safeFilePath();
+      if (File(renderedPath).existsSync()) {
+        videoFilePath = renderedPath;
+        videoDuration ??= renderedClip.duration;
+        Log.info(
+          '🎬 Using final rendered clip for upload: $videoFilePath',
+          name: 'UploadManager',
+          category: .video,
+        );
+      } else {
+        Log.warning(
+          '⚠️ Final rendered clip missing at $renderedPath - falling back to source clips',
+          name: 'UploadManager',
+          category: .video,
+        );
+        videoFilePath = await prepareUploadFromSourceClips();
+      }
+    } else {
+      videoFilePath = await prepareUploadFromSourceClips();
     }
 
     int? videoWidth;
