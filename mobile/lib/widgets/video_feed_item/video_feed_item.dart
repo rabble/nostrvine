@@ -1368,7 +1368,7 @@ class VideoOverlayActions extends ConsumerWidget {
               : 54.0) // Fallback for Dynamic Island iPhones
         : viewPaddingTop;
 
-    const bottomOffset = 14.0;
+    final bottomOffset = 14.0 + MediaQuery.viewPaddingOf(context).bottom;
 
     return Stack(
       children: [
@@ -1715,55 +1715,53 @@ class VideoOverlayActions extends ConsumerWidget {
         Positioned(
           bottom: bottomOffset - 6,
           right: 16,
-          child: SafeArea(
-            child: AnimatedOpacity(
-              opacity: isActive ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: IgnorePointer(
-                ignoring: false, // Action buttons SHOULD receive taps
-                child: Column(
-                  children: [
-                    // Edit button (only show for owned videos when feature
-                    // is enabled)
-                    // Hide in fullscreen mode since it's shown in AppBar
-                    if (!isFullscreen && !isPreviewMode)
-                      _VideoEditButton(video: video),
+          child: AnimatedOpacity(
+            opacity: isActive ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: IgnorePointer(
+              ignoring: false, // Action buttons SHOULD receive taps
+              child: Column(
+                children: [
+                  // Edit button (only show for owned videos when feature
+                  // is enabled)
+                  // Hide in fullscreen mode since it's shown in AppBar
+                  if (!isFullscreen && !isPreviewMode)
+                    _VideoEditButton(video: video),
 
-                    // CC (subtitles) button
-                    CcActionButton(video: video),
+                  // CC (subtitles) button
+                  CcActionButton(video: video),
 
-                    const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                    // Like button
-                    LikeActionButton(
-                      video: video,
-                      isPreviewMode: isPreviewMode,
-                    ),
+                  // Like button
+                  LikeActionButton(
+                    video: video,
+                    isPreviewMode: isPreviewMode,
+                  ),
 
-                    const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                    // Comment button with count
-                    _CommentActionButton(video: video, ref: ref),
+                  // Comment button with count
+                  _CommentActionButton(video: video, ref: ref),
 
-                    const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                    // Repost button
-                    RepostActionButton(
-                      video: video,
-                      isPreviewMode: isPreviewMode,
-                    ),
+                  // Repost button
+                  RepostActionButton(
+                    video: video,
+                    isPreviewMode: isPreviewMode,
+                  ),
 
-                    const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                    // Share button
-                    ShareActionButton(video: video),
+                  // Share button
+                  ShareActionButton(video: video),
 
-                    const SizedBox(height: 4),
+                  const SizedBox(height: 4),
 
-                    // More button (report, mute, block, etc.)
-                    MoreActionButton(video: video),
-                  ],
-                ),
+                  // More button (report, mute, block, etc.)
+                  MoreActionButton(video: video),
+                ],
               ),
             ),
           ),
