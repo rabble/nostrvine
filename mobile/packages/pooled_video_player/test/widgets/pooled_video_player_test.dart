@@ -363,6 +363,35 @@ void main() {
           equals(1),
         );
       });
+
+      testWidgets('reveals video after timeout when first frame callback '
+          'never resolves', (tester) async {
+        final firstFrameCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => firstFrameCompleter.future);
+
+        await tester.pumpWidget(buildWidget());
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        expect(opacityFinder, findsOneWidget);
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
     });
 
     group('error state', () {

@@ -6,6 +6,8 @@ import 'package:pooled_video_player/src/controllers/video_feed_controller.dart';
 import 'package:pooled_video_player/src/models/video_index_state.dart';
 import 'package:pooled_video_player/src/widgets/video_pool_provider.dart';
 
+const _firstFrameRevealTimeout = Duration(seconds: 2);
+
 /// Builder for the video layer.
 typedef VideoBuilder =
     Widget Function(
@@ -152,17 +154,24 @@ class _RevealVideoAfterFirstFrameState
     extends State<_RevealVideoAfterFirstFrame> {
   late Future<void> _firstFrameFuture;
 
+  Future<void> _createFirstFrameFuture() {
+    return widget.videoController.waitUntilFirstFrameRendered.timeout(
+      _firstFrameRevealTimeout,
+      onTimeout: () {},
+    );
+  }
+
   @override
   void initState() {
     super.initState();
-    _firstFrameFuture = widget.videoController.waitUntilFirstFrameRendered;
+    _firstFrameFuture = _createFirstFrameFuture();
   }
 
   @override
   void didUpdateWidget(covariant _RevealVideoAfterFirstFrame oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.videoController, widget.videoController)) {
-      _firstFrameFuture = widget.videoController.waitUntilFirstFrameRendered;
+      _firstFrameFuture = _createFirstFrameFuture();
     }
   }
 
