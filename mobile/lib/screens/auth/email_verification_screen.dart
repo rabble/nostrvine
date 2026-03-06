@@ -15,7 +15,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -99,7 +100,7 @@ class _EmailVerificationScreenState
         );
         _cubit.stopPolling();
         ref.read(pendingVerificationServiceProvider).clear();
-        context.read<InviteGateCubit>().clearAccessGrant();
+        context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
         ref.read(forceExploreTabNameProvider.notifier).state = 'popular';
         context.go(ExploreScreen.path);
       }
@@ -118,7 +119,7 @@ class _EmailVerificationScreenState
         deviceCode: widget.deviceCode!,
         verifier: widget.verifier!,
         email: widget.email ?? '',
-        inviteCode: context.read<InviteGateCubit>().state.accessGrant?.code,
+        inviteCode: context.read<InviteGateBloc>().state.accessGrant?.code,
       );
     } else if (widget.isTokenMode) {
       // Token mode - check for persisted verification data for auto-login
@@ -315,7 +316,7 @@ class _EmailVerificationScreenState
   void _handleInviteRecovery(String inviteCode, String? error) {
     _cubit.stopPolling();
     ref.read(pendingVerificationServiceProvider).clear();
-    context.read<InviteGateCubit>().clearAccessGrant();
+    context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
     context.go(
       WelcomeScreen.inviteGatePathWithCode(inviteCode, error: error),
     );

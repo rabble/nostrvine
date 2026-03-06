@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -26,7 +27,7 @@ class _InviteProtectedCreateAccountScreenState
   @override
   void initState() {
     super.initState();
-    context.read<InviteGateCubit>().ensureConfigLoaded();
+    context.read<InviteGateBloc>().add(const InviteGateConfigRequested());
   }
 
   void _redirectToInvite(BuildContext context) {
@@ -40,11 +41,11 @@ class _InviteProtectedCreateAccountScreenState
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(currentAuthStateProvider);
-    return BlocBuilder<InviteGateCubit, InviteGateState>(
+    return BlocBuilder<InviteGateBloc, InviteGateState>(
       builder: (context, state) {
         if (authState == AuthState.authenticated && state.hasAccessGrant) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.read<InviteGateCubit>().clearAccessGrant();
+            context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
           });
         }
 

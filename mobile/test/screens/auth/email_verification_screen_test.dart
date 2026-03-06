@@ -13,7 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
@@ -94,8 +94,7 @@ void main() {
       child: RepositoryProvider<InviteApiService>.value(
         value: mockInviteApiService,
         child: BlocProvider(
-          create: (_) =>
-              InviteGateCubit(inviteApiService: mockInviteApiService),
+          create: (_) => InviteGateBloc(inviteApiService: mockInviteApiService),
           child: MaterialApp.router(
             theme: VineTheme.theme,
             routerConfig: GoRouter(

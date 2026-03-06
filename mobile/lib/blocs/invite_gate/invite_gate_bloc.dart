@@ -1,22 +1,40 @@
-// ABOUTME: Cubit for server-driven invite gating before account creation
+// ABOUTME: Bloc for server-driven invite gating before account creation
 // ABOUTME: Loads onboarding mode, validates invite codes, and stores invite access grants
 
 import 'package:bloc/bloc.dart';
+import 'package:bloc_concurrency/bloc_concurrency.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-class InviteGateCubit extends Cubit<InviteGateState> {
-  InviteGateCubit({required InviteApiService inviteApiService})
+class InviteGateBloc extends Bloc<InviteGateEvent, InviteGateState> {
+  InviteGateBloc({required InviteApiService inviteApiService})
     : _inviteApiService = inviteApiService,
-      super(const InviteGateState());
+      super(const InviteGateState()) {
+    on<InviteGateConfigRequested>(
+      _onConfigRequested,
+      transformer: droppable(),
+    );
+    on<InviteGateCodeSubmitted>(
+      _onCodeSubmitted,
+      transformer: droppable(),
+    );
+    on<InviteGateGeneralErrorSet>(_onGeneralErrorSet);
+    on<InviteGateTransientCleared>(_onTransientCleared);
+    on<InviteGateAccessGranted>(_onAccessGranted);
+    on<InviteGateAccessCleared>(_onAccessCleared);
+  }
 
   final InviteApiService _inviteApiService;
 
-  Future<void> ensureConfigLoaded({bool force = false}) async {
-    if (!force) {
+  Future<void> _onConfigRequested(
+    InviteGateConfigRequested event,
+    Emitter<InviteGateState> emit,
+  ) async {
+    if (!event.force) {
       if (state.configStatus == InviteGateConfigStatus.loading) {
         return;
       }
@@ -44,7 +62,7 @@ class InviteGateCubit extends Cubit<InviteGateState> {
     } on ApiException catch (error) {
       Log.error(
         'Failed to load invite config: ${error.message}',
-        name: 'InviteGateCubit',
+        name: 'InviteGateBloc',
         category: LogCategory.auth,
       );
       emit(
@@ -56,7 +74,7 @@ class InviteGateCubit extends Cubit<InviteGateState> {
     } catch (error) {
       Log.error(
         'Unexpected invite config error: $error',
-        name: 'InviteGateCubit',
+        name: 'InviteGateBloc',
         category: LogCategory.auth,
       );
       emit(
@@ -68,49 +86,11 @@ class InviteGateCubit extends Cubit<InviteGateState> {
     }
   }
 
-  void setGeneralError(String? error) {
-    emit(
-      state.copyWith(
-        generalError: error,
-        clearGeneralError: error == null || error.isEmpty,
-      ),
-    );
-  }
-
-  void clearTransientState() {
-    if (state.inviteCodeError == null && state.generalError == null) {
-      return;
-    }
-
-    emit(
-      state.copyWith(clearInviteCodeError: true, clearGeneralError: true),
-    );
-  }
-
-  void grantAccess(InviteAccessGrant grant) {
-    emit(
-      state.copyWith(
-        accessGrant: grant,
-        clearInviteCodeError: true,
-        clearGeneralError: true,
-      ),
-    );
-  }
-
-  void clearAccessGrant() {
-    if (!state.hasAccessGrant) {
-      return;
-    }
-
-    emit(state.copyWith(clearAccessGrant: true));
-  }
-
-  Future<void> validateCode(String rawCode) async {
-    if (state.isValidatingCode) {
-      return;
-    }
-
-    final normalizedCode = InviteApiService.normalizeCode(rawCode);
+  Future<void> _onCodeSubmitted(
+    InviteGateCodeSubmitted event,
+    Emitter<InviteGateState> emit,
+  ) async {
+    final normalizedCode = InviteApiService.normalizeCode(event.rawCode);
 
     if (!InviteApiService.looksLikeInviteCode(normalizedCode)) {
       emit(
@@ -174,5 +154,54 @@ class InviteGateCubit extends Cubit<InviteGateState> {
         ),
       );
     }
+  }
+
+  void _onGeneralErrorSet(
+    InviteGateGeneralErrorSet event,
+    Emitter<InviteGateState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        generalError: event.error,
+        clearGeneralError: event.error == null || event.error!.isEmpty,
+      ),
+    );
+  }
+
+  void _onTransientCleared(
+    InviteGateTransientCleared event,
+    Emitter<InviteGateState> emit,
+  ) {
+    if (state.inviteCodeError == null && state.generalError == null) {
+      return;
+    }
+
+    emit(
+      state.copyWith(clearInviteCodeError: true, clearGeneralError: true),
+    );
+  }
+
+  void _onAccessGranted(
+    InviteGateAccessGranted event,
+    Emitter<InviteGateState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        accessGrant: event.grant,
+        clearInviteCodeError: true,
+        clearGeneralError: true,
+      ),
+    );
+  }
+
+  void _onAccessCleared(
+    InviteGateAccessCleared event,
+    Emitter<InviteGateState> emit,
+  ) {
+    if (!state.hasAccessGrant) {
+      return;
+    }
+
+    emit(state.copyWith(clearAccessGrant: true));
   }
 }

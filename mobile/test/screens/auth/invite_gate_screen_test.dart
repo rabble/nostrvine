@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/screens/auth/invite_gate_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -23,7 +23,7 @@ void main() {
     return RepositoryProvider<InviteApiService>.value(
       value: mockInviteApiService,
       child: BlocProvider(
-        create: (_) => InviteGateCubit(inviteApiService: mockInviteApiService),
+        create: (_) => InviteGateBloc(inviteApiService: mockInviteApiService),
         child: MaterialApp.router(
           theme: VineTheme.theme,
           routerConfig: GoRouter(
@@ -124,7 +124,7 @@ void main() {
           value: mockInviteApiService,
           child: BlocProvider(
             create: (_) =>
-                InviteGateCubit(inviteApiService: mockInviteApiService),
+                InviteGateBloc(inviteApiService: mockInviteApiService),
             child: MaterialApp.router(
               theme: VineTheme.theme,
               routerConfig: GoRouter(

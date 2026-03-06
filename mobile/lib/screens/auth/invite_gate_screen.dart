@@ -6,7 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -45,11 +46,11 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
           ? ''
           : InviteApiService.normalizeCode(widget.initialCode!),
     );
-    final inviteGateCubit = context.read<InviteGateCubit>();
-    inviteGateCubit.clearTransientState();
-    inviteGateCubit.ensureConfigLoaded();
+    final inviteGateBloc = context.read<InviteGateBloc>();
+    inviteGateBloc.add(const InviteGateTransientCleared());
+    inviteGateBloc.add(const InviteGateConfigRequested());
     if (widget.initialError != null && widget.initialError!.isNotEmpty) {
-      inviteGateCubit.setGeneralError(widget.initialError);
+      inviteGateBloc.add(InviteGateGeneralErrorSet(widget.initialError));
     }
   }
 
@@ -59,7 +60,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
     super.dispose();
   }
 
-  Future<void> _validateInviteCode() async {
+  void _validateInviteCode() {
     final normalizedCode = InviteApiService.normalizeCode(
       _inviteCodeController.text,
     );
@@ -67,7 +68,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
       text: normalizedCode,
       selection: TextSelection.collapsed(offset: normalizedCode.length),
     );
-    await context.read<InviteGateCubit>().validateCode(normalizedCode);
+    context.read<InviteGateBloc>().add(InviteGateCodeSubmitted(normalizedCode));
   }
 
   Future<void> _showWaitlistSheet(InviteClientConfig config) async {
@@ -113,7 +114,9 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
   }
 
   void _retryConfigLoad() {
-    context.read<InviteGateCubit>().ensureConfigLoaded(force: true);
+    context.read<InviteGateBloc>().add(
+      const InviteGateConfigRequested(force: true),
+    );
   }
 
   void _redirectToCreateAccount() {
@@ -167,7 +170,7 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
       );
     }
 
-    return BlocConsumer<InviteGateCubit, InviteGateState>(
+    return BlocConsumer<InviteGateBloc, InviteGateState>(
       listenWhen: (previous, current) =>
           previous.accessGrant != current.accessGrant &&
           current.accessGrant != null,
@@ -241,8 +244,9 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
             return _InviteCodeEntryPage(
               controller: _inviteCodeController,
               state: state,
-              onChanged: () =>
-                  context.read<InviteGateCubit>().clearTransientState(),
+              onChanged: () => context.read<InviteGateBloc>().add(
+                const InviteGateTransientCleared(),
+              ),
               onBack: () => context.pop(),
               onSubmit: _validateInviteCode,
               onShowWaitlist: () => _showWaitlistSheet(config),

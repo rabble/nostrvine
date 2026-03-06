@@ -10,7 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -64,8 +64,7 @@ void main() {
       child: RepositoryProvider<InviteApiService>.value(
         value: mockInviteApiService,
         child: BlocProvider(
-          create: (_) =>
-              InviteGateCubit(inviteApiService: mockInviteApiService),
+          create: (_) => InviteGateBloc(inviteApiService: mockInviteApiService),
           child: MaterialApp(
             theme: VineTheme.theme,
             home: const CreateAccountScreen(),

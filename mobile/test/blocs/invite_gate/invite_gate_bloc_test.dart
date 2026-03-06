@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/blocs/invite_gate/invite_gate_state.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/services/api_service.dart';
@@ -12,18 +13,18 @@ import 'package:openvine/services/invite_api_service.dart';
 class _MockInviteApiService extends Mock implements InviteApiService {}
 
 void main() {
-  group('InviteGateCubit', () {
+  group('InviteGateBloc', () {
     late _MockInviteApiService mockInviteApiService;
 
     setUp(() {
       mockInviteApiService = _MockInviteApiService();
     });
 
-    InviteGateCubit buildCubit() {
-      return InviteGateCubit(inviteApiService: mockInviteApiService);
+    InviteGateBloc buildBloc() {
+      return InviteGateBloc(inviteApiService: mockInviteApiService);
     }
 
-    blocTest<InviteGateCubit, InviteGateState>(
+    blocTest<InviteGateBloc, InviteGateState>(
       'loads invite client config successfully',
       setUp: () {
         when(() => mockInviteApiService.getClientConfig()).thenAnswer(
@@ -33,8 +34,8 @@ void main() {
           ),
         );
       },
-      build: buildCubit,
-      act: (cubit) => cubit.ensureConfigLoaded(),
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateConfigRequested()),
       expect: () => [
         const InviteGateState(configStatus: InviteGateConfigStatus.loading),
         const InviteGateState(
@@ -47,10 +48,10 @@ void main() {
       ],
     );
 
-    blocTest<InviteGateCubit, InviteGateState>(
+    blocTest<InviteGateBloc, InviteGateState>(
       'surfaces malformed invite codes immediately',
-      build: buildCubit,
-      act: (cubit) => cubit.validateCode('abc'),
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('abc')),
       expect: () => [
         const InviteGateState(
           inviteCodeError: 'Enter an invite code like ABCD-EFGH.',
@@ -58,7 +59,7 @@ void main() {
       ],
     );
 
-    blocTest<InviteGateCubit, InviteGateState>(
+    blocTest<InviteGateBloc, InviteGateState>(
       'grants access after a valid invite validation',
       setUp: () {
         when(
@@ -71,8 +72,8 @@ void main() {
           ),
         );
       },
-      build: buildCubit,
-      act: (cubit) => cubit.validateCode('ab12ef34'),
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('ab12ef34')),
       expect: () => [
         const InviteGateState(isValidatingCode: true),
         isA<InviteGateState>()
@@ -92,7 +93,7 @@ void main() {
       ],
     );
 
-    blocTest<InviteGateCubit, InviteGateState>(
+    blocTest<InviteGateBloc, InviteGateState>(
       'maps used invite validations to invite code error state',
       setUp: () {
         when(
@@ -105,8 +106,8 @@ void main() {
           ),
         );
       },
-      build: buildCubit,
-      act: (cubit) => cubit.validateCode('used0003'),
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('used0003')),
       expect: () => [
         const InviteGateState(isValidatingCode: true),
         const InviteGateState(
@@ -115,15 +116,15 @@ void main() {
       ],
     );
 
-    blocTest<InviteGateCubit, InviteGateState>(
+    blocTest<InviteGateBloc, InviteGateState>(
       'surfaces validation transport errors as general errors',
       setUp: () {
         when(
           () => mockInviteApiService.validateCode('AB12-EF34'),
         ).thenThrow(const ApiException('Invite service unavailable'));
       },
-      build: buildCubit,
-      act: (cubit) => cubit.validateCode('ab12ef34'),
+      build: buildBloc,
+      act: (bloc) => bloc.add(const InviteGateCodeSubmitted('ab12ef34')),
       expect: () => [
         const InviteGateState(isValidatingCode: true),
         const InviteGateState(generalError: 'Invite service unavailable'),
@@ -138,9 +139,11 @@ void main() {
           () => mockInviteApiService.validateCode('AB12-EF34'),
         ).thenAnswer((_) => completer.future);
 
-        final cubit = buildCubit();
-        final first = cubit.validateCode('ab12ef34');
-        final second = cubit.validateCode('ab12ef34');
+        final bloc = buildBloc();
+        bloc.add(const InviteGateCodeSubmitted('ab12ef34'));
+        bloc.add(const InviteGateCodeSubmitted('ab12ef34'));
+
+        await Future<void>.delayed(Duration.zero);
 
         verify(() => mockInviteApiService.validateCode('AB12-EF34')).called(1);
 
@@ -152,12 +155,12 @@ void main() {
           ),
         );
 
-        await Future.wait([first, second]);
+        await Future<void>.delayed(Duration.zero);
 
-        expect(cubit.state.hasAccessGrant, isTrue);
-        expect(cubit.state.accessGrant?.code, 'AB12-EF34');
+        expect(bloc.state.hasAccessGrant, isTrue);
+        expect(bloc.state.accessGrant?.code, 'AB12-EF34');
 
-        await cubit.close();
+        await bloc.close();
       },
     );
   });

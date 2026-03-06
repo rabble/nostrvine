@@ -6,7 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/models/invite_models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/invite_protected_create_account_screen.dart';
@@ -54,15 +55,17 @@ void main() {
         ),
       ],
     );
-    final inviteGateCubit = InviteGateCubit(
+    final inviteGateBloc = InviteGateBloc(
       inviteApiService: mockInviteApiService,
     );
 
     if (hasAccessGrant) {
-      inviteGateCubit.grantAccess(
-        InviteAccessGrant(
-          code: 'AB12-EF34',
-          validatedAt: DateTime(2026, 3, 6),
+      inviteGateBloc.add(
+        InviteGateAccessGranted(
+          InviteAccessGrant(
+            code: 'AB12-EF34',
+            validatedAt: DateTime(2026, 3, 6),
+          ),
         ),
       );
     }
@@ -72,7 +75,7 @@ void main() {
       child: RepositoryProvider<InviteApiService>.value(
         value: mockInviteApiService,
         child: BlocProvider.value(
-          value: inviteGateCubit,
+          value: inviteGateBloc,
           child: MaterialApp.router(
             theme: VineTheme.theme,
             routerConfig: GoRouter(

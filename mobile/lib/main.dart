@@ -17,7 +17,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
@@ -1129,7 +1129,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             )..add(const CameraPermissionRefresh()),
           ),
           BlocProvider(
-            create: (context) => InviteGateCubit(
+            create: (context) => InviteGateBloc(
               inviteApiService: context.read<InviteApiService>(),
             ),
           ),

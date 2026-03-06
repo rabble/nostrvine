@@ -8,7 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/divine_auth/divine_auth_cubit.dart';
-import 'package:openvine/blocs/invite_gate/invite_gate_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -36,7 +37,7 @@ class CreateAccountScreen extends ConsumerWidget {
       pendingVerificationServiceProvider,
     );
     final inviteApiService = context.read<InviteApiService>();
-    final inviteAccessGrant = context.read<InviteGateCubit>().state.accessGrant;
+    final inviteAccessGrant = context.read<InviteGateBloc>().state.accessGrant;
 
     return BlocProvider(
       create: (_) => DivineAuthCubit(
@@ -153,7 +154,7 @@ class _CreateAccountBodyState extends State<_CreateAccountBody> {
       return;
     }
 
-    context.read<InviteGateCubit>().clearAccessGrant();
+    context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
     context.go(
       WelcomeScreen.inviteGatePathWithCode(
         inviteCode,
