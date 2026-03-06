@@ -115,32 +115,16 @@ class _MyFollowersView extends ConsumerWidget {
               : 0,
         ),
       ),
-      body: BlocConsumer<MyFollowersBloc, MyFollowersState>(
-        listener: (context, state) {
-          if (state.status == MyFollowersStatus.success) {
-            ScreenAnalyticsService().markDataLoaded(
-              'followers',
-              dataMetrics: {'followers_count': state.followersPubkeys.length},
-            );
-          }
-        },
-        builder: (context, state) {
-          return switch (state.status) {
-            MyFollowersStatus.initial || MyFollowersStatus.loading =>
-              const Center(child: CircularProgressIndicator()),
-            MyFollowersStatus.success => _FollowersListBody(
-              followers: state.followersPubkeys
-                  .where(
-                    (pk) =>
-                        !blocklistService.isBlocked(pk) &&
-                        !blocklistService.isFollowSevered(pk),
-                  )
-                  .toList(),
-            ),
-            MyFollowersStatus.failure => _FollowersErrorBody(
-              onRetry: () {
-                context.read<MyFollowersBloc>().add(
-                  const MyFollowersListLoadRequested(),
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MyFollowersBloc, MyFollowersState>(
+            listener: (context, state) {
+              if (state.status == MyFollowersStatus.success) {
+                ScreenAnalyticsService().markDataLoaded(
+                  'followers',
+                  dataMetrics: {
+                    'followers_count': state.followersPubkeys.length,
+                  },
                 );
               }
             },

@@ -127,11 +127,11 @@ class _OthersFollowingView extends ConsumerWidget {
         listeners: [
           BlocListener<MyFollowingBloc, MyFollowingState>(
             listenWhen: (previous, current) =>
-                current.toggleError != null &&
-                current.toggleError != previous.toggleError,
+                current.status == MyFollowingStatus.toggleFailure &&
+                previous.status != MyFollowingStatus.toggleFailure,
             listener: (context, state) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.toggleError!)),
+                const SnackBar(content: Text(_toggleFollowErrorMessage)),
               );
             },
           ),

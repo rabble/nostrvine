@@ -515,17 +515,15 @@ void main() {
         },
       );
 
-      test(
-        'enriches profiles missing picture from local cache',
-        () async {
-          // Arrange - search result has no picture
-          final mockSearchEvent = MockEvent();
-          const searchPubkey =
-              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-              'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const searchEventId =
-              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-              'd3c4b5a6f1e2d3c4b5a6f1e2';
+      test('enriches profiles missing picture from local cache', () async {
+        // Arrange - search result has no picture
+        final mockSearchEvent = MockEvent();
+        const searchPubkey =
+            'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+            'c3d4e5f6a1b2c3d4e5f6a1b2';
+        const searchEventId =
+            'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+            'd3c4b5a6f1e2d3c4b5a6f1e2';
 
         when(() => mockSearchEvent.kind).thenReturn(0);
         when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
