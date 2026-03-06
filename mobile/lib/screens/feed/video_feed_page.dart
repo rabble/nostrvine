@@ -287,6 +287,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
             // Wrap videos for pool compatibility
             final pooledVideos = state.videos.toVideoItems;
+            final eventsById = {
+              for (final event in state.videos) event.id: event,
+            };
 
             // Note: RefreshIndicator removed - it conflicts with PageView
             // scrolling and adds memory overhead. Use the refresh button
@@ -298,7 +301,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   videos: pooledVideos,
                   controller: controller,
                   itemBuilder: (context, video, index, {required isActive}) {
-                    final originalEvent = state.videos[index];
+                    final originalEvent = eventsById[video.id];
+                    if (originalEvent == null) {
+                      return const ColoredBox(
+                        color: VineTheme.backgroundColor,
+                      );
+                    }
                     final listSources =
                         state.listOnlyVideoIds.contains(originalEvent.id)
                         ? state.videoListSources[originalEvent.id]
@@ -313,7 +321,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   },
                   onActiveVideoChanged: (video, index) {
                     FeedPerformanceTracker().startVideoSwipeTracking(video.id);
-                    prefetchProfiles(state.videos, index);
+                    final sourceIndex = state.videos.indexWhere(
+                      (event) => event.id == video.id,
+                    );
+                    if (sourceIndex != -1) {
+                      prefetchProfiles(state.videos, sourceIndex);
+                    }
                   },
                   onNearEnd: (index) {
                     // PooledVideoFeed fires this when the user is within
