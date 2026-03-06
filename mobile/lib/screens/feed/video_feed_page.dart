@@ -532,6 +532,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           video: video,
           isActive: isActive,
           player: player,
+          firstFrameFuture: videoController.waitUntilFirstFrameRendered,
           listSources: listSources,
         ),
       ),
