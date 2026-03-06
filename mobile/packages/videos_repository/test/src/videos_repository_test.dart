@@ -76,6 +76,7 @@ void main() {
 
     setUp(() {
       mockNostrClient = MockNostrClient();
+      when(() => mockNostrClient.publicKey).thenReturn('');
       repository = VideosRepository(nostrClient: mockNostrClient);
     });
 
@@ -638,6 +639,48 @@ void main() {
             ),
           );
           verify(() => mockNostrClient.queryEvents(any())).called(1);
+        });
+
+        test('uses NostrClient public key when userPubkey is null', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockNostrClient.publicKey).thenReturn('my-pubkey');
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                ),
+              ],
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: ['followed-user'],
+          );
+
+          expect(result.videos, hasLength(1));
+          verify(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: 'my-pubkey',
+              limit: 5,
+              before: null,
+            ),
+          ).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
         test('skips API when Funnelcake is not available', () async {

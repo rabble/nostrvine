@@ -129,13 +129,17 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
   }) async {
+    final effectiveUserPubkey =
+        userPubkey ??
+        (_nostrClient.publicKey.isNotEmpty ? _nostrClient.publicKey : null);
+
     // Try Funnelcake API first (if user pubkey provided)
-    if (userPubkey != null &&
+    if (effectiveUserPubkey != null &&
         _funnelcakeApiClient != null &&
         _funnelcakeApiClient.isAvailable) {
       try {
         final response = await _funnelcakeApiClient.getHomeFeed(
-          pubkey: userPubkey,
+          pubkey: effectiveUserPubkey,
           limit: limit,
           before: until,
         );
