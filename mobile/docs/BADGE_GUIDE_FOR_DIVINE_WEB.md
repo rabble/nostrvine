@@ -160,13 +160,19 @@ Important:
 Mobile checks AI results in this order:
 
 1. `ModerationLabelService.getAIDetectionResult(video.id)`
-2. `ModerationLabelService.getAIDetectionByHash(video.sha256 ?? video.vineId)`
-3. For Divine-hosted videos only: `videoModerationStatusProvider(video.sha256)`
+2. `ModerationLabelService.getAIDetectionByHash(resolvedSha256 ?? video.vineId)`
+3. For Divine-hosted videos only: `videoModerationStatusProvider(resolvedSha256)`
+
+Where `resolvedSha256` means:
+
+- `normalize(video.sha256)` if present
+- otherwise extract the 64-char hash from the Divine media URL path
 
 Notes:
 
 - Kind `1985` labels are the first-class source when present
 - Hash lookup is the fallback if event-ID lookup misses
+- do not require the `sha256` field to be populated if the hash is recoverable from the media URL
 - Divine-hosted videos get an extra fallback to the moderation-service check-result endpoint
 - the badge row uses the raw `aiScore` threshold, not `VideoModerationStatus.aiGenerated`
 

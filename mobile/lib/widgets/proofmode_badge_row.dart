@@ -35,13 +35,17 @@ class ProofModeBadgeRow extends ConsumerWidget {
     final moderationStatusService = ref.read(
       videoModerationStatusServiceProvider,
     );
-    var aiResult = _lookupAIDetection(labelService);
+    final resolvedSha256 = VideoModerationStatusService.resolveSha256(
+      explicitSha256: video.sha256,
+      videoUrl: video.videoUrl,
+    );
+    var aiResult = _lookupAIDetection(labelService, resolvedSha256);
 
     // For Divine-hosted videos without Kind 1985 AI labels,
     // fall back to the moderation status service (auto-scans all uploads)
     if (aiResult == null && video.isFromDivineServer) {
       final statusAsync = ref.watch(
-        videoModerationStatusProvider(video.sha256),
+        videoModerationStatusProvider(resolvedSha256),
       );
       aiResult = statusAsync.whenOrNull(
         data: (status) {
@@ -134,11 +138,12 @@ class ProofModeBadgeRow extends ConsumerWidget {
   /// Look up AI detection results from the moderation label service.
   AIDetectionResult? _lookupAIDetection(
     ModerationLabelService labelService,
+    String? resolvedSha256,
   ) {
     final byEventId = labelService.getAIDetectionResult(video.id);
     if (byEventId != null) return byEventId;
 
-    final hash = video.sha256 ?? video.vineId;
+    final hash = resolvedSha256 ?? video.vineId;
     if (hash != null) {
       return labelService.getAIDetectionByHash(hash);
     }

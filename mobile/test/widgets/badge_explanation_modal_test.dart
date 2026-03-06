@@ -208,11 +208,13 @@ void main() {
       testWidgets('falls back to hash lookup for AI detection', (
         tester,
       ) async {
+        const sha256 =
+            'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
         when(
           () => mockLabelService.getAIDetectionResult('hash_fallback_id'),
         ).thenReturn(null);
         when(
-          () => mockLabelService.getAIDetectionByHash('content_sha256'),
+          () => mockLabelService.getAIDetectionByHash(sha256),
         ).thenReturn(
           const AIDetectionResult(score: 0.05, source: 'hiveai'),
         );
@@ -223,7 +225,7 @@ void main() {
           createdAt: DateTime.now().millisecondsSinceEpoch,
           content: 'video with hash',
           timestamp: DateTime.now(),
-          sha256: 'content_sha256',
+          sha256: sha256,
           rawTags: const {'verification': 'basic_proof'},
         );
 
@@ -300,6 +302,51 @@ void main() {
           () => mockVideoModerationStatusService.fetchStatus(sha256),
         ).called(greaterThanOrEqualTo(2));
       });
+
+      testWidgets(
+        'automatically resolves moderation AI status from Divine video URL when sha256 is missing',
+        (tester) async {
+          const sha256 =
+              'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+          when(
+            () => mockVideoModerationStatusService.fetchStatus(sha256),
+          ).thenAnswer(
+            (_) async => const VideoModerationStatus(
+              moderated: false,
+              blocked: false,
+              quarantined: false,
+              ageRestricted: false,
+              needsReview: false,
+              aiGenerated: false,
+              aiScore: 0.09,
+            ),
+          );
+
+          final video = VideoEvent(
+            id: 'modal_url_hash_only',
+            pubkey: 'pubkey9',
+            createdAt: DateTime.now().millisecondsSinceEpoch,
+            content: 'divine hosted modal video',
+            timestamp: DateTime.now(),
+            videoUrl: 'https://media.divine.video/$sha256.mp4',
+          );
+
+          await tester.pumpWidget(buildSubject(video));
+          await tester.tap(find.text('Show'));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.text('9% likelihood of being AI-generated'),
+            findsOneWidget,
+          );
+          expect(
+            find.textContaining(
+              'AI detection indicates it is likely human-made',
+            ),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('close button', () {
