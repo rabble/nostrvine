@@ -167,9 +167,10 @@ Future<({String videoHash, String thumbHash})> _ensureTestBlobs() async {
 Future<Uint8List> _generateTestThumbnail() async {
   const width = 360;
   const height = 640;
+  const rect = Rect.fromLTWH(0, 0, 360, 640);
 
   final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, width, height));
+  final canvas = Canvas(recorder, rect);
 
   // Dark gradient background (matches app aesthetic)
   final bgPaint = Paint()
@@ -177,12 +178,16 @@ Future<Uint8List> _generateTestThumbnail() async {
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
       colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
-    ).createShader(const Rect.fromLTWH(0, 0, width, height));
-  canvas.drawRect(const Rect.fromLTWH(0, 0, width, height), bgPaint);
+    ).createShader(rect);
+  canvas.drawRect(rect, bgPaint);
 
   // Accent circle
   final circlePaint = Paint()..color = const Color(0xFF0f3460);
-  canvas.drawCircle(const Offset(width / 2, height / 2), 80, circlePaint);
+  canvas.drawCircle(
+    const Offset(width / 2, height / 2),
+    80,
+    circlePaint,
+  );
 
   // Encode to PNG
   final picture = recorder.endRecording();
