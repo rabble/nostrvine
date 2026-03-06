@@ -133,6 +133,29 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Divine media server base URL for HLS streaming.
   static const String _divineMediaBase = 'https://media.divine.video';
 
+  /// Whether this URL is the bare Blossom blob form:
+  /// `https://media.divine.video/{sha256}`.
+  ///
+  /// Some uploads publish this canonical blob URL even when the directly
+  /// fetchable MP4 object is unavailable. The HLS playlist is the more stable
+  /// playback path for this shape.
+  static bool _isCanonicalDivineBlobUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+
+    try {
+      final uri = Uri.parse(url);
+      if (uri.host.toLowerCase() != 'media.divine.video') return false;
+
+      final segments = uri.pathSegments;
+      if (segments.length != 1) return false;
+
+      final hash = segments.first;
+      return hash.length == 64 && RegExp(r'^[a-fA-F0-9]+$').hasMatch(hash);
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Extract video hash from a Divine server URL.
   ///
   /// Handles URLs like:
@@ -213,6 +236,12 @@ extension VideoEventAppExtensions on VideoEvent {
 
     final hash = _extractVideoHash(videoUrl);
     if (hash == null) return videoUrl;
+
+    // Bare Blossom blob URLs are more reliably playable through the HLS
+    // manifest than through the raw object path.
+    if (_isCanonicalDivineBlobUrl(videoUrl)) {
+      return getHlsUrl() ?? videoUrl;
+    }
 
     // Desktop and Apple platforms are more stable using the original MP4.
     if (!Platform.isAndroid) {

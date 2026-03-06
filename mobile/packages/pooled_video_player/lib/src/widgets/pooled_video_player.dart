@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -20,8 +22,8 @@ typedef VideoBuilder =
 typedef OverlayBuilder =
     Widget Function(
       BuildContext context,
-      VideoController videoController,
-      Player player,
+      VideoController? videoController,
+      Player? player,
     );
 
 /// Builder for the error state.
@@ -89,16 +91,24 @@ class PooledVideoPlayer extends StatelessWidget {
         final videoController = state.videoController;
         final player = state.player;
         final loadState = state.loadState;
+        final overlay = overlayBuilder?.call(context, videoController, player);
 
         Widget content;
 
         if (loadState == LoadState.error) {
-          content =
+          content = Stack(
+            fit: StackFit.expand,
+            children: [
               errorBuilder?.call(
-                context,
-                () => feedController.onPageChanged(feedController.currentIndex),
-              ) ??
-              const _DefaultErrorState();
+                    context,
+                    () => feedController.onPageChanged(
+                      feedController.currentIndex,
+                    ),
+                  ) ??
+                  const _DefaultErrorState(),
+              ?overlay,
+            ],
+          );
         } else if (videoController != null && player != null) {
           final loadingPlaceholder =
               loadingBuilder?.call(context) ??
@@ -110,14 +120,18 @@ class PooledVideoPlayer extends StatelessWidget {
                 videoController: videoController,
                 child: videoBuilder(context, videoController, player),
               ),
-            if (overlayBuilder != null)
-              overlayBuilder!(context, videoController, player),
+            ?overlay,
           ];
           content = Stack(fit: StackFit.expand, children: children);
         } else {
-          content =
+          content = Stack(
+            fit: StackFit.expand,
+            children: [
               loadingBuilder?.call(context) ??
-              _DefaultLoadingState(thumbnailUrl: thumbnailUrl);
+                  _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
+              ?overlay,
+            ],
+          );
         }
 
         if ((enableTapToPause || onTap != null) &&
@@ -153,26 +167,56 @@ class _RevealVideoAfterFirstFrame extends StatefulWidget {
 class _RevealVideoAfterFirstFrameState
     extends State<_RevealVideoAfterFirstFrame> {
   late Future<void> _firstFrameFuture;
-
-  Future<void> _createFirstFrameFuture() {
-    return widget.videoController.waitUntilFirstFrameRendered.timeout(
-      _firstFrameRevealTimeout,
-      onTimeout: () {},
-    );
-  }
+  Timer? _firstFrameTimeout;
 
   @override
   void initState() {
     super.initState();
-    _firstFrameFuture = _createFirstFrameFuture();
+    _firstFrameFuture = _buildFirstFrameFuture();
   }
 
   @override
   void didUpdateWidget(covariant _RevealVideoAfterFirstFrame oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.videoController, widget.videoController)) {
-      _firstFrameFuture = _createFirstFrameFuture();
+      _firstFrameFuture = _buildFirstFrameFuture();
     }
+  }
+
+  Future<void> _buildFirstFrameFuture() {
+    _firstFrameTimeout?.cancel();
+
+    final completer = Completer<void>();
+
+    unawaited(
+      widget.videoController.waitUntilFirstFrameRendered
+          .then((_) {
+            if (!completer.isCompleted) {
+              _firstFrameTimeout?.cancel();
+              completer.complete();
+            }
+          })
+          .catchError((_) {
+            if (!completer.isCompleted) {
+              _firstFrameTimeout?.cancel();
+              completer.complete();
+            }
+          }),
+    );
+
+    _firstFrameTimeout = Timer(_firstFrameRevealTimeout, () {
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    });
+
+    return completer.future;
+  }
+
+  @override
+  void dispose() {
+    _firstFrameTimeout?.cancel();
+    super.dispose();
   }
 
   @override

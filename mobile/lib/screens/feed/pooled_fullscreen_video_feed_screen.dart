@@ -598,13 +598,15 @@ class _PooledFullscreenItemContentState
             data: MediaQueryData.fromView(View.of(context)),
             child: Stack(
               children: [
-                PausedVideoPlayOverlay(
-                  player: player,
-                  firstFrameFuture: videoController.waitUntilFirstFrameRendered,
-                  isVisible: widget.isActive,
-                ),
+                if (player != null)
+                  PausedVideoPlayOverlay(
+                    player: player,
+                    firstFrameFuture:
+                        videoController?.waitUntilFirstFrameRendered,
+                    isVisible: widget.isActive,
+                  ),
                 // Subtitle overlay — needs player position stream
-                if (video.hasSubtitles)
+                if (video.hasSubtitles && player != null)
                   Positioned.fill(
                     child: _SubtitleLayer(video: video, player: player),
                   ),

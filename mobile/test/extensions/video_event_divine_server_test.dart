@@ -126,6 +126,28 @@ void main() {
 
       expect(video.getOptimalVideoUrlForPlatform(), url);
     });
+
+    test('prefers HLS for bare media.divine.video blob URLs', () {
+      const hash =
+          '191679cbbeea3e4e3539d46b558e66fbadb673733af1ada0161a6e8b1cf61bea';
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
+
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash/hls/master.m3u8'),
+      );
+    });
+
+    test('keeps explicit MP4 URLs unchanged on Divine hosts', () {
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/test/video.mp4',
+      );
+
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/test/video.mp4'),
+      );
+    });
   });
 
   group('toPooledVideoItems', () {

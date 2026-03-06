@@ -16,6 +16,7 @@ import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -322,6 +323,15 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       (event) => event.id == video.id,
                     );
                     if (sourceIndex != -1) {
+                      final event = state.videos[sourceIndex];
+                      Log.info(
+                        '📺 Feed active video: mode=${state.mode.name}, '
+                        'index=$index, eventId=${event.id}, pubkey=${event.pubkey}, '
+                        'playbackUrl=${video.url}, originalUrl=${event.videoUrl}, '
+                        'thumbnailUrl=${event.thumbnailUrl}',
+                        name: 'VideoFeedPage',
+                        category: LogCategory.video,
+                      );
                       prefetchProfiles(state.videos, sourceIndex);
                     }
                   },
@@ -529,7 +539,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           video: video,
           isActive: isActive,
           player: player,
-          firstFrameFuture: videoController.waitUntilFirstFrameRendered,
+          firstFrameFuture: videoController?.waitUntilFirstFrameRendered,
           listSources: listSources,
         ),
       ),

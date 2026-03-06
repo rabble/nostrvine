@@ -406,6 +406,47 @@ void main() {
       });
     });
 
+    group('index notifier loading state', () {
+      test(
+        'exposes player and controller while a video is still loading',
+        () async {
+          final videos = createTestVideos(count: 1);
+          final loadingSetup = createMockPlayerSetup(isBuffering: true);
+
+          pool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              playerSetups[url] = loadingSetup;
+
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(
+                () => mockPooledPlayer.player,
+              ).thenReturn(loadingSetup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+
+              createdPlayers.add(mockPooledPlayer);
+              return mockPooledPlayer;
+            },
+          );
+
+          final controller = VideoFeedController(videos: videos, pool: pool);
+          addTearDown(controller.dispose);
+
+          final notifier = controller.getIndexNotifier(0);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(notifier.value.loadState, equals(LoadState.loading));
+          expect(notifier.value.videoController, isNotNull);
+          expect(notifier.value.player, isNotNull);
+        },
+      );
+    });
+
     group('video access', () {
       group('getVideoController', () {
         test('returns null for unloaded index', () {

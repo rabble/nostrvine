@@ -48,7 +48,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   const FeedVideoOverlay({
     required this.video,
     required this.isActive,
-    required this.player,
+    this.player,
     this.firstFrameFuture,
     this.listSources,
     super.key,
@@ -56,7 +56,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
 
   final VideoEvent video;
   final bool isActive;
-  final Player player;
+  final Player? player;
   final Future<void>? firstFrameFuture;
   final Set<String>? listSources;
 
@@ -69,8 +69,6 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isActive) return const SizedBox();
-
     final video = widget.video;
 
     // Content warning blur overlay takes priority over normal overlay
@@ -112,16 +110,17 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
             ),
           ),
         ),
-        PausedVideoPlayOverlay(
-          player: widget.player,
-          firstFrameFuture: widget.firstFrameFuture,
-          isVisible: widget.isActive,
-        ),
+        if (widget.player != null)
+          PausedVideoPlayOverlay(
+            player: widget.player!,
+            firstFrameFuture: widget.firstFrameFuture,
+            isVisible: widget.isActive,
+          ),
         // Subtitle overlay — Positioned.fill gives the inner Stack a size
         // so SubtitleOverlay's Positioned can resolve correctly.
-        if (video.hasSubtitles)
+        if (video.hasSubtitles && widget.player != null)
           Positioned.fill(
-            child: _SubtitleLayer(video: video, player: widget.player),
+            child: _SubtitleLayer(video: video, player: widget.player!),
           ),
         // ProofMode and Vine badges (top-right)
         Positioned(

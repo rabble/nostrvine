@@ -185,12 +185,29 @@ class VideoFeedController extends ChangeNotifier {
     _updatePreloadWindow(_currentIndex);
   }
 
+  String _videoDebugDetails(int index) {
+    if (index < 0 || index >= _videos.length) {
+      return 'index=$index video=out_of_bounds videoCount=${_videos.length}';
+    }
+    final video = _videos[index];
+    return 'index=$index videoId=${video.id} url=${video.url}';
+  }
+
+  void _logDebug(String message) {
+    debugPrint('[POOLED] $message');
+  }
+
   /// Called when the visible page changes.
   void onPageChanged(int index) {
     if (_isDisposed || index == _currentIndex) return;
 
     final oldIndex = _currentIndex;
     _currentIndex = index;
+
+    _logDebug(
+      'swipe old=${_videoDebugDetails(oldIndex)} '
+      'new=${_videoDebugDetails(index)}',
+    );
 
     // Pause old video
     _pauseVideo(oldIndex);
@@ -350,6 +367,7 @@ class VideoFeedController extends ChangeNotifier {
 
     try {
       final video = _videos[index];
+      _logDebug('load_start ${_videoDebugDetails(index)}');
       final pooledPlayer = await pool.getPlayer(video.url);
 
       // Guard: index may have been released during the await (e.g., the
@@ -374,14 +392,23 @@ class VideoFeedController extends ChangeNotifier {
       // fires as a no-op (identity check fails because _loadedPlayers[0]
       // was still null), so we must catch it here.
       if (pooledPlayer.isDisposed) {
+        _logDebug('player_disposed_before_open ${_videoDebugDetails(index)}');
         _loadedPlayers.remove(index);
         _loadStates.remove(index);
         _notifyIndex(index);
         return;
       }
 
+      // Expose the allocated player/controller immediately so overlays can
+      // render while the media is still buffering.
+      _notifyIndex(index);
+
       // Resolve media source via hook (for caching)
       final resolvedSource = mediaSourceResolver?.call(video) ?? video.url;
+      _logDebug(
+        'open_start ${_videoDebugDetails(index)} '
+        'resolvedSource=$resolvedSource',
+      );
 
       // Open media with resolved source
       await pooledPlayer.player.open(Media(resolvedSource), play: false);
@@ -416,6 +443,7 @@ class VideoFeedController extends ChangeNotifier {
       // Start buffering (muted)
       await pooledPlayer.player.setVolume(0);
       await pooledPlayer.player.play();
+      _logDebug('buffering_start ${_videoDebugDetails(index)}');
 
       // Check if already buffered
       if (!pooledPlayer.player.state.buffering) {
@@ -423,8 +451,8 @@ class VideoFeedController extends ChangeNotifier {
       }
     } on Exception catch (e, stack) {
       debugPrint(
-        'VideoFeedController: Failed to load index $index '
-        '(videoCount=${_videos.length}): $e\n$stack',
+        '[POOLED] load_failed ${_videoDebugDetails(index)} '
+        'videoCount=${_videos.length} error=$e\n$stack',
       );
       if (!_isDisposed) {
         _loadStates[index] = LoadState.error;
@@ -447,6 +475,8 @@ class VideoFeedController extends ChangeNotifier {
     // hold a different player (or none at all).
     if (_loadedPlayers[index] != evictedPlayer) return;
 
+    _logDebug('player_evicted ${_videoDebugDetails(index)}');
+
     _stopPositionTimer(index);
     unawaited(_bufferSubscriptions[index]?.cancel());
     _bufferSubscriptions.remove(index);
@@ -464,6 +494,10 @@ class VideoFeedController extends ChangeNotifier {
     if (player == null) return;
 
     _loadStates[index] = LoadState.ready;
+    _logDebug(
+      'ready ${_videoDebugDetails(index)} '
+      'current=${index == _currentIndex} active=$_isActive paused=$_isPaused',
+    );
 
     // Call onVideoReady hook
     onVideoReady?.call(index, player);
@@ -514,15 +548,24 @@ class VideoFeedController extends ChangeNotifier {
 
       // Guard: user may have scrolled away during the seek.
       if (_isDisposed || _currentIndex != index || !_isActive || _isPaused) {
+        _logDebug(
+          'play_aborted ${_videoDebugDetails(index)} '
+          'current=$_currentIndex active=$_isActive '
+          'paused=$_isPaused disposed=$_isDisposed',
+        );
         return;
       }
       if (_loadedPlayers[index]?.player != player) return;
 
       await player.setVolume(100);
       await player.play();
+      _logDebug(
+        'play_started ${_videoDebugDetails(index)} '
+        'playing=${player.state.playing}',
+      );
     } on Exception catch (e, stack) {
       debugPrint(
-        'VideoFeedController: Failed to resume index $index: $e\n$stack',
+        '[POOLED] play_failed ${_videoDebugDetails(index)} error=$e\n$stack',
       );
     }
   }

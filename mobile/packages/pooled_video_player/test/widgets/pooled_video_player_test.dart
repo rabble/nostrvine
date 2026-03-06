@@ -207,30 +207,45 @@ void main() {
         expect(find.byType(Image), findsOneWidget);
       });
 
-      testWidgets(
-        'shows overlay while player is still loading when controller exists',
-        (tester) async {
-          indexNotifiers[0] = ValueNotifier(
-            VideoIndexState(
-              loadState: LoadState.loading,
-              videoController: mockVideoController,
-              player: mockPlayer,
-            ),
-          );
+      testWidgets('shows overlay while loading when player already exists', (
+        tester,
+      ) async {
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.loading,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
 
-          await tester.pumpWidget(
-            buildWidget(
-              overlayBuilder: (context, controller, player) {
-                return Container(key: const Key('overlay_widget'));
-              },
-            ),
-          );
+        await tester.pumpWidget(
+          buildWidget(
+            overlayBuilder: (context, controller, player) =>
+                const Text('Overlay'),
+          ),
+        );
 
-          expect(find.byKey(const Key('overlay_widget')), findsOneWidget);
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-          expect(find.byKey(const Key('video_widget')), findsNothing);
-        },
-      );
+        expect(find.text('Overlay'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets('shows overlay while loading before player exists', (
+        tester,
+      ) async {
+        indexNotifiers[0] = ValueNotifier(
+          const VideoIndexState(loadState: LoadState.loading),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            overlayBuilder: (context, controller, player) =>
+                const Text('Overlay'),
+          ),
+        );
+
+        expect(find.text('Overlay'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
       testWidgets('thumbnail errorBuilder returns SizedBox.shrink', (
         tester,
@@ -364,8 +379,9 @@ void main() {
         );
       });
 
-      testWidgets('reveals video after timeout when first frame callback '
-          'never resolves', (tester) async {
+      testWidgets('reveals video after timeout when first frame stalls', (
+        tester,
+      ) async {
         final firstFrameCompleter = Completer<void>();
         when(
           () => mockVideoController.waitUntilFirstFrameRendered,
