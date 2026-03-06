@@ -25,6 +25,13 @@ run = "adb install -r build/app/outputs/flutter-apk/app-debug.apk"
 description = "Check status of local services"
 run = "docker compose -f ../local_stack/docker-compose.yml ps"
 
+[tasks.local_reset]
+description = "Wipe all local data (relay, DB, blossom) and restart fresh"
+run = """
+docker compose -f ../local_stack/docker-compose.yml down -v
+docker compose -f ../local_stack/docker-compose.yml up -d --wait
+"""
+
 [tasks.local_setup]
 description = "First-time setup for local E2E"
 run = "bash ../local_stack/setup.sh"

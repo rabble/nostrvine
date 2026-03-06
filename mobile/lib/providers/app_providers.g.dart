@@ -2182,7 +2182,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'f02dd0b46777ee8df7d43b2adec9e16462611ac2';
+String _$authServiceHash() => r'3cd3cf995f094aed8b0b8c88a3219b482319c766';
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly
@@ -2619,7 +2619,7 @@ final class UserProfileServiceProvider
 }
 
 String _$userProfileServiceHash() =>
-    r'60bd624ece0ff6bae18d1ed282de26c6bbb90f98';
+    r'696503297dba9448097faf7932bd5090580c1406';
 
 /// Social service depends on Nostr service, Auth service, and Analytics API
 
@@ -2665,7 +2665,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'f3e43d187c9560fd9db5fe9925238eeb18048fff';
+String _$socialServiceHash() => r'6bcd6a86c6f0d5b42f84dc8cac32c9de51a3b950';
 
 /// Cached following list loaded directly from SharedPreferences.
 ///
@@ -2797,7 +2797,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'5a9ff80dec0621bc321f78694cd2ae0c448bb2a2';
+String _$followRepositoryHash() => r'17bafcf05abcb8edd40ce2e2ce054ae43ed9e136';
 
 /// Provider for [CuratedListRepository] instance.
 ///

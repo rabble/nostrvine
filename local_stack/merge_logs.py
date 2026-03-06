@@ -27,9 +27,10 @@ APP_TS_TIME_RE = re.compile(
 )
 
 # Logcat line with UTC timestamps (-v UTC -v year):
-# "2026-03-06 16:21:10.496  1234  5678 I flutter : message"
+# "2026-03-06 16:21:10.496 +0000  1234  5678 I flutter : message"
 LOGCAT_RE = re.compile(
     r'^(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\.\d+)'  # timestamp
+    r'(?:\s+[+-]\d{4})?'                                  # optional tz offset
     r'\s+\d+\s+\d+'                                       # pid tid
     r'\s+\w\s+'                                            # level
     r'(\S+)\s*:\s*'                                        # tag

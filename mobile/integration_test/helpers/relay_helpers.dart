@@ -3,6 +3,8 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
@@ -34,11 +36,9 @@ Future<PublishedVideo> publishTestVideoEvent({
   final pubKey = getPublicKey(privKey);
   final dTag = 'e2e-${DateTime.now().millisecondsSinceEpoch}';
 
-  // Dummy blossom-style URL -- relay validates imeta has url + image fields
-  // but doesn't check if the file actually exists.
+  // Upload real blobs to blossom so the app can fetch valid URLs
   const blossomBase = 'http://$emulatorHost:$blossomPort';
-  const dummyHash =
-      '0000000000000000000000000000000000000000000000000000000000000000';
+  final blobs = await _ensureTestBlobs();
 
   final event = Event(
     pubKey,
@@ -48,9 +48,10 @@ Future<PublishedVideo> publishTestVideoEvent({
       ['title', title],
       [
         'imeta',
-        'url $blossomBase/$dummyHash.mp4',
+        'url $blossomBase/${blobs.videoHash}',
         'm video/mp4',
-        'image $blossomBase/$dummyHash.jpg',
+        'image $blossomBase/${blobs.thumbHash}',
+        'x ${blobs.videoHash}',
       ],
       ['duration', '6'],
       ['alt', 'E2E test video: $title'],
@@ -94,6 +95,69 @@ Future<PublishedProfile> publishTestProfileEvent({
   final eventId = await _publishEvent(event);
   debugPrint('Published test profile event: $eventId (pubkey: $pubKey)');
   return (pubkey: pubKey, privateKey: privKey);
+}
+
+/// Upload a small test blob to the local blossom server.
+///
+/// Returns the sha256 hash of the uploaded file. Blossom serves the file
+/// at `http://{host}:{port}/{sha256}`.
+Future<String> _uploadTestBlob({
+  required Uint8List data,
+  String contentType = 'video/mp4',
+}) async {
+  final client = HttpClient();
+  try {
+    final uri = Uri.parse('http://$emulatorHost:$blossomPort/upload');
+    final request = await client.openUrl('PUT', uri);
+    request.headers.set('Content-Type', contentType);
+    request.add(data);
+    final response = await request.close().timeout(
+      const Duration(seconds: 10),
+    );
+    final body = await response.transform(utf8.decoder).join();
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw HttpException(
+        'Blossom upload failed (${response.statusCode}): $body',
+      );
+    }
+    final json = jsonDecode(body) as Map<String, dynamic>;
+    return json['sha256'] as String;
+  } finally {
+    client.close();
+  }
+}
+
+/// Cached sha256 hashes for test blobs so we only upload once per test run.
+String? _cachedVideoHash;
+String? _cachedThumbHash;
+
+/// Get or create a test video blob on the local blossom server.
+///
+/// Uploads a minimal MP4-like blob on first call, then reuses the hash.
+Future<({String videoHash, String thumbHash})> _ensureTestBlobs() async {
+  if (_cachedVideoHash != null && _cachedThumbHash != null) {
+    return (videoHash: _cachedVideoHash!, thumbHash: _cachedThumbHash!);
+  }
+
+  // Minimal unique blobs (not valid MP4/JPEG, but blossom stores any bytes)
+  final videoData = Uint8List.fromList(
+    utf8.encode('e2e-test-video-${DateTime.now().millisecondsSinceEpoch}'),
+  );
+  final thumbData = Uint8List.fromList(
+    utf8.encode('e2e-test-thumb-${DateTime.now().millisecondsSinceEpoch}'),
+  );
+
+  _cachedVideoHash = await _uploadTestBlob(data: videoData);
+  _cachedThumbHash = await _uploadTestBlob(
+    data: thumbData,
+    contentType: 'image/jpeg',
+  );
+
+  debugPrint(
+    'Uploaded test blobs: video=$_cachedVideoHash, '
+    'thumb=$_cachedThumbHash',
+  );
+  return (videoHash: _cachedVideoHash!, thumbHash: _cachedThumbHash!);
 }
 
 /// Send an event to the local relay and wait for OK confirmation.
