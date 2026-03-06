@@ -1,7 +1,8 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
-import 'dart:async';
 
 /// Large centered play affordance shown when a pooled video is paused.
 class PausedVideoPlayOverlay extends StatefulWidget {
