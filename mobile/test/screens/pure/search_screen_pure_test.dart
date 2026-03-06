@@ -59,6 +59,18 @@ void main() {
         ),
       ).thenAnswer((_) async => []);
 
+      when(
+        () => mockHashtagRepository.countHashtagsLocally(
+          query: any(named: 'query'),
+        ),
+      ).thenReturn(0);
+
+      when(
+        () => mockProfileRepository.countUsersLocally(
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer((_) async => 0);
+
       // Single stream stub for searchVideos
       when(
         () => mockVideosRepository.searchVideos(
@@ -193,6 +205,10 @@ void main() {
         when(
           () => mockHashtagRepository.searchHashtags(query: 'flutter'),
         ).thenAnswer((_) async => ['flutter']);
+
+        when(
+          () => mockHashtagRepository.countHashtagsLocally(query: 'flutter'),
+        ).thenReturn(1);
 
         await tester.pumpWidget(createTestWidget(searchResults: testVideos));
 
