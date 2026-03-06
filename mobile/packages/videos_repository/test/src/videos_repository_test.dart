@@ -677,7 +677,6 @@ void main() {
             () => mockFunnelcakeClient.getHomeFeed(
               pubkey: 'my-pubkey',
               limit: 5,
-              before: null,
             ),
           ).called(1);
           verifyNever(() => mockNostrClient.queryEvents(any()));
