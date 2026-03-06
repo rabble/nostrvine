@@ -93,60 +93,42 @@ class C2PAIdentityManager(private val context: Context) {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE)
         keyStore.load(null)
 
-        var certChain : String = ""
+        var certChain = ""
 
         if (!keyStore.containsAlias(keyAlias)) {
-          //  Timber.d( "Creating new hardware-backed key with StrongBox if available")
-
-            // Create StrongBox config
+            // Try StrongBox first, fall back to software-backed key
             val config = StrongBoxSigner.Config(keyTag = keyAlias, requireUserAuthentication = false)
-
-            // Create key using StrongBoxSigner (will use StrongBox if available, TEE otherwise)
             try {
                 StrongBoxSigner.createKey(config)
             } catch (e: Exception) {
-             //   Timber.d( "StrongBox key creation failed, falling back to software-backed key")
+                Log.d(TAG, "StrongBox key creation failed, falling back to software-backed key", e)
                 createKeystoreKey(keyAlias, false)
             }
-            // Get certificate chain from signing server
+
             certChain = enrollHardwareKeyCertificate(keyAlias)
-
-            var fileCert = File(certPath)
-            fileCert.writeText(certChain)
-        }
-
-        else{
-            // Get certificate chain from signing server
-
+            File(certPath).writeText(certChain)
+        } else {
             val fileCert = File(certPath)
-            if (fileCert.exists())
-                certChain = fileCert.readText()
-            else {
-                // Get certificate chain from signing server
-                certChain = enrollHardwareKeyCertificate(keyAlias)
-                var fileCert = File(certPath)
-                fileCert.writeText(certChain)
+            certChain = if (fileCert.exists()) {
+                fileCert.readText()
+            } else {
+                enrollHardwareKeyCertificate(keyAlias).also { fileCert.writeText(it) }
             }
-
         }
 
+        if (certChain.isEmpty()) return null
 
-        if (certChain.isNotEmpty()) {
-         //   Timber.d("Creating StrongBoxSigner")
+        val hwBacked = try { KeyStoreSigner.isKeyHardwareBacked(keyAlias) } catch (_: Exception) { false }
+        Log.d(TAG, "C2PA signer for $keyAlias: hardware-backed=$hwBacked")
 
-            // Create StrongBox config
-            val config = StrongBoxSigner.Config(keyTag = keyAlias, requireUserAuthentication = false)
-
-            // Use the new StrongBoxSigner class
-            return StrongBoxSigner.createSigner(
-                algorithm = SigningAlgorithm.ES256,
-                certificateChainPEM = certChain,
-                config = config,
-                tsaURL = tsaUrl
-            )
-        }
-        else
-            return null
+        // KeyStoreSigner works with any AndroidKeyStore key (StrongBox, TEE, or software).
+        // Android routes signing ops to the correct hardware automatically.
+        return KeyStoreSigner.createSigner(
+            algorithm = SigningAlgorithm.ES256,
+            certificateChainPEM = certChain,
+            keyAlias = keyAlias,
+            tsaURL = tsaUrl
+        )
     }
 
 
