@@ -26,6 +26,7 @@ class OtherProfileScreenRouter extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(blocklistVersionProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
     final targetHex = npubToHexOrNull(npub);
     final currentUserHex = nostrClient.publicKey;

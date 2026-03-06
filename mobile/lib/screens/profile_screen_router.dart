@@ -589,8 +589,10 @@ class _ProfileContentView extends ConsumerWidget {
     // Check if this user has muted us (mutual mute blocking)
     // Note: We only block profile viewing for users who muted US, not users WE blocked.
     // Users can still view profiles of people they blocked (to unblock them).
+    ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    if (blocklistService.hasMutedUs(userIdHex)) {
+    if (blocklistService.hasMutedUs(userIdHex) ||
+        blocklistService.hasBlockedUs(userIdHex)) {
       return BlockedUserScreen(onBack: context.pop);
     }
 

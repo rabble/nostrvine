@@ -33,6 +33,13 @@ void main() {
     HashtagSearchBloc createBloc() =>
         HashtagSearchBloc(hashtagRepository: mockHashtagRepository);
 
+    HashtagSearchBloc createBlocWithLocalFallback(
+      List<String> Function(String query) fallback,
+    ) => HashtagSearchBloc(
+      hashtagRepository: mockHashtagRepository,
+      localHashtagSearch: (query, {limit = 20}) async => fallback(query),
+    );
+
     test('initial state is correct', () {
       final bloc = createBloc();
       expect(bloc.state.status, HashtagSearchStatus.initial);
@@ -91,6 +98,26 @@ void main() {
       );
 
       blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'falls back to local hashtag search when remote returns no matches',
+        build: () => createBlocWithLocalFallback(
+          (query) => query == 'cdmx' ? ['cdmx'] : const [],
+        ),
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('cdmx')),
+        wait: debounceDuration,
+        expect: () => [
+          const HashtagSearchState(
+            status: HashtagSearchStatus.loading,
+            query: 'cdmx',
+          ),
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'cdmx',
+            results: ['cdmx'],
+          ),
+        ],
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
         'emits [loading, failure] when repository throws',
         setUp: () {
           when(
@@ -108,6 +135,31 @@ void main() {
           const HashtagSearchState(
             status: HashtagSearchStatus.failure,
             query: 'error',
+          ),
+        ],
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'falls back to local hashtag search when repository throws',
+        setUp: () {
+          when(
+            () => mockHashtagRepository.searchHashtags(query: 'error'),
+          ).thenThrow(const FunnelcakeException('search failed'));
+        },
+        build: () => createBlocWithLocalFallback(
+          (query) => query == 'error' ? ['errortag'] : const [],
+        ),
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('error')),
+        wait: debounceDuration,
+        expect: () => [
+          const HashtagSearchState(
+            status: HashtagSearchStatus.loading,
+            query: 'error',
+          ),
+          const HashtagSearchState(
+            status: HashtagSearchStatus.success,
+            query: 'error',
+            results: ['errortag'],
           ),
         ],
       );

@@ -628,7 +628,13 @@ SeenVideosService seenVideosService(Ref ref) {
 @riverpod
 ContentBlocklistService contentBlocklistService(Ref ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
-  return ContentBlocklistService(prefs: prefs);
+  return ContentBlocklistService(
+    prefs: prefs,
+    onChanged: () {
+      if (!ref.mounted) return;
+      ref.read(blocklistVersionProvider.notifier).increment();
+    },
+  );
 }
 
 /// Version counter to trigger rebuilds when blocklist changes.

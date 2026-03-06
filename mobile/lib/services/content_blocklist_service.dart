@@ -26,7 +26,11 @@ const _severedFollowersPrefsKey = 'severed_followers_list';
 /// Blocks are persisted to SharedPreferences for survival across restarts,
 /// and published to Nostr as kind 30000 events (d=block) for cross-device sync.
 class ContentBlocklistService {
-  ContentBlocklistService({SharedPreferences? prefs}) : _prefs = prefs {
+  ContentBlocklistService({
+    SharedPreferences? prefs,
+    void Function()? onChanged,
+  }) : _prefs = prefs,
+       _onChanged = onChanged {
     // Initialize with the specific npub requested
     _addInitialBlockedContent();
     _loadBlockedUsers();
@@ -39,6 +43,7 @@ class ContentBlocklistService {
   }
 
   final SharedPreferences? _prefs;
+  final void Function()? _onChanged;
 
   // Internal blocklist of public keys (hex format) - kept empty for now
   static const Set<String> _internalBlocklist = {
@@ -70,6 +75,10 @@ class ContentBlocklistService {
   // Services for Nostr publishing (injected via sync methods)
   AuthService? _authService;
   NostrClient? _nostrClient;
+
+  void _notifyChanged() {
+    _onChanged?.call();
+  }
 
   void _addInitialBlockedContent() {
     // No hardcoded blocks - moderation should happen at relay level
@@ -302,6 +311,7 @@ class ContentBlocklistService {
       _runtimeBlocklist.add(pubkey);
       _saveBlockedUsers();
       _publishBlockListToNostr();
+      _notifyChanged();
 
       Log.debug(
         'Added user to blocklist: $pubkey',
@@ -327,6 +337,7 @@ class ContentBlocklistService {
       _runtimeBlocklist.remove(pubkey);
       _saveBlockedUsers();
       _publishBlockListToNostr();
+      _notifyChanged();
 
       Log.info(
         'Removed user from blocklist: $pubkey',
@@ -517,6 +528,7 @@ class ContentBlocklistService {
       // They muted us - add to blocklist
       if (!_mutualMuteBlocklist.contains(muterPubkey)) {
         _mutualMuteBlocklist.add(muterPubkey);
+        _notifyChanged();
         Log.info(
           'Added mutual mute: $muterPubkey',
           name: 'ContentBlocklistService',
@@ -527,6 +539,7 @@ class ContentBlocklistService {
       // They removed us from mute list - remove from blocklist
       if (_mutualMuteBlocklist.contains(muterPubkey)) {
         _mutualMuteBlocklist.remove(muterPubkey);
+        _notifyChanged();
         Log.info(
           'Removed mutual mute (unmuted): $muterPubkey',
           name: 'ContentBlocklistService',
@@ -567,6 +580,7 @@ class ContentBlocklistService {
     if (stillBlocked) {
       if (!_blockedByOthers.contains(blockerPubkey)) {
         _blockedByOthers.add(blockerPubkey);
+        _notifyChanged();
         Log.info(
           'Detected block from user: $blockerPubkey',
           name: 'ContentBlocklistService',
@@ -576,6 +590,7 @@ class ContentBlocklistService {
     } else {
       if (_blockedByOthers.contains(blockerPubkey)) {
         _blockedByOthers.remove(blockerPubkey);
+        _notifyChanged();
         Log.info(
           'Detected unblock from user: $blockerPubkey',
           name: 'ContentBlocklistService',

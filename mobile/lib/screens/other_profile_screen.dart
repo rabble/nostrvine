@@ -86,8 +86,6 @@ class OtherProfileScreen extends ConsumerWidget {
         contentBlocklistService: blocklistService,
         currentUserPubkey: nostrClient.publicKey,
         followRepository: followRepository,
-        onBlocklistChanged: () =>
-            ref.read(blocklistVersionProvider.notifier).increment(),
       )..add(const OtherProfileLoadRequested()),
       child: OtherProfileView(
         pubkey: pubkey,

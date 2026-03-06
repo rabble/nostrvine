@@ -110,6 +110,7 @@ class VideoEvents extends _$VideoEvents {
 
     // Get services and gate states
     final videoEventService = ref.watch(videoEventServiceProvider);
+    ref.watch(blocklistVersionProvider);
     final isAppReady = ref.watch(appReadyProvider);
     final isTabActive = ref.watch(isDiscoveryTabActiveProvider);
     final seenVideosState = ref.watch(seenVideosProvider);
