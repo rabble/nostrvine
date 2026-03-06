@@ -247,7 +247,7 @@ class _CommentsScreenBody extends StatelessWidget {
       },
       child: SizedBox(
         child: CommentsList(
-          isOriginalVine: videoEvent.isOriginalVine,
+          showClassicVineNotice: videoEvent.isVintageRecoveredVine,
           scrollController: sheetScrollController,
         ),
       ),

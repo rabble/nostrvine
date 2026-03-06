@@ -213,6 +213,37 @@ void main() {
       expect(video.isOriginalVine, isTrue);
       expect(video.shouldShowVineBadge, isTrue);
     });
+
+    test(
+      'detects vintage recovered vine when looped video predates shutdown',
+      () {
+        final video = VideoEvent(
+          id: 'vine5',
+          pubkey: 'pubkey5',
+          createdAt: 1473050841,
+          content: 'archived vine',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
+          originalLoops: 3169386,
+        );
+
+        expect(video.isOriginalVine, isTrue);
+        expect(video.isVintageRecoveredVine, isTrue);
+      },
+    );
+
+    test('does not detect recent looped video as vintage recovered vine', () {
+      final video = VideoEvent(
+        id: 'vine6',
+        pubkey: 'pubkey6',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        content: 'new video with loops',
+        timestamp: DateTime.now(),
+        originalLoops: 13565,
+      );
+
+      expect(video.isOriginalVine, isTrue);
+      expect(video.isVintageRecoveredVine, isFalse);
+    });
   });
 
   group('Combined Badge Display Logic', () {
