@@ -70,15 +70,6 @@ class ProofModeBadgeRow extends ConsumerWidget {
     final isPossiblyAI =
         aiResult != null && aiResult.score >= 0.5 && !video.isOriginalVine;
 
-    // Divine-hosted videos without proof show the hosting badge until an AI
-    // assessment promotes them or warns on them.
-    final showDivineBadge =
-        video.isFromDivineServer &&
-        !video.shouldShowProofModeBadge &&
-        !video.shouldShowVineBadge &&
-        !hasAIScanBadge &&
-        !isPossiblyAI;
-
     final badges = <Widget>[];
 
     // Add ProofMode badge for proof-backed content or a clean AI scan.
@@ -103,11 +94,6 @@ class ProofModeBadgeRow extends ConsumerWidget {
           child: NotDivineBadge(size: size),
         ),
       );
-    }
-
-    // Add "Hosted on Divine" badge for Divine videos without other badges
-    if (showDivineBadge) {
-      badges.add(DivineBadge(size: size));
     }
 
     // Add Original Vine badge for vintage recovered vines
