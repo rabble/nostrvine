@@ -108,13 +108,6 @@ class FollowRepository {
   Event? _currentUserContactListEvent;
   bool _isInitialized = false;
 
-  final Completer<void> _initCompleter = Completer<void>();
-
-  /// A future that completes when [initialize] has finished (successfully or
-  /// with an error). Await this before reading [followingPubkeys] to avoid a
-  /// race condition where the list appears empty.
-  Future<void> get initialized => _initCompleter.future;
-
   // Real-time sync subscription for cross-device synchronization
   StreamSubscription<Event>? _contactListSubscription;
   String? _contactListSubscriptionId;
@@ -148,9 +141,6 @@ class FollowRepository {
 
   /// Dispose resources (idempotent — safe to call multiple times).
   Future<void> dispose() async {
-    if (!_initCompleter.isCompleted) {
-      _initCompleter.complete();
-    }
     _contactListSubscription?.cancel();
     if (_contactListSubscriptionId != null) {
       await _nostrClient.unsubscribe(_contactListSubscriptionId!);
@@ -273,7 +263,7 @@ class FollowRepository {
   ///
   /// Runs REST API, connected relay, and indexer relay queries in parallel
   /// and merges results (union of pubkeys). The REST API (Funnelcake) only
-  /// indexes kind 3 events seen on the divine relay, so follower lists are
+  /// indexes kind 3 events seen on the Divine relay, so follower lists are
   /// often incomplete. Connected relays may timeout. Indexer relays
   /// (relay.damus.io, purplepag.es) maintain broad kind 3 indexes and
   /// provide the most complete follower lists.
@@ -558,6 +548,14 @@ class FollowRepository {
 
       _isInitialized = true;
 
+      // Guarantee at least one post-seed emission for "no follows" users.
+      // When the user follows nobody, _emitFollowingList() never fires
+      // (list stays [] = same as seed). Force-emit so subscribers can
+      // distinguish "init not done" from "genuinely empty."
+      if (_followingPubkeys.isEmpty && !_followingSubject.isClosed) {
+        _followingSubject.add(const []);
+      }
+
       Log.info(
         'FollowRepository initialized: ${_followingPubkeys.length} following',
         name: 'FollowRepository',
@@ -569,10 +567,6 @@ class FollowRepository {
         name: 'FollowRepository',
         category: LogCategory.system,
       );
-    } finally {
-      if (!_initCompleter.isCompleted) {
-        _initCompleter.complete();
-      }
     }
   }
 

@@ -48,6 +48,7 @@ class VideoFeedPage extends ConsumerWidget {
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
+    final authService = ref.watch(authServiceProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -59,6 +60,7 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
+        userPubkey: authService.currentPublicKeyHex,
         feedTracker: FeedPerformanceTracker(),
       )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),
@@ -287,6 +289,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
             // Wrap videos for pool compatibility
             final pooledVideos = state.videos.toVideoItems;
+            final eventsById = {
+              for (final event in state.videos) event.id: event,
+            };
 
             // Note: RefreshIndicator removed - it conflicts with PageView
             // scrolling and adds memory overhead. Use the refresh button
@@ -298,7 +303,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   videos: pooledVideos,
                   controller: controller,
                   itemBuilder: (context, video, index, {required isActive}) {
-                    final originalEvent = state.videos[index];
+                    final originalEvent = eventsById[video.id];
+                    if (originalEvent == null) {
+                      return const ColoredBox(
+                        color: VineTheme.backgroundColor,
+                      );
+                    }
                     final listSources =
                         state.listOnlyVideoIds.contains(originalEvent.id)
                         ? state.videoListSources[originalEvent.id]
@@ -313,7 +323,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   },
                   onActiveVideoChanged: (video, index) {
                     FeedPerformanceTracker().startVideoSwipeTracking(video.id);
-                    prefetchProfiles(state.videos, index);
+                    final sourceIndex = state.videos.indexWhere(
+                      (event) => event.id == video.id,
+                    );
+                    if (sourceIndex != -1) {
+                      prefetchProfiles(state.videos, sourceIndex);
+                    }
                   },
                   onNearEnd: (index) {
                     // PooledVideoFeed fires this when the user is within
@@ -519,6 +534,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           video: video,
           isActive: isActive,
           player: player,
+          firstFrameFuture: videoController.waitUntilFirstFrameRendered,
           listSources: listSources,
         ),
       ),
@@ -580,8 +596,6 @@ class _LoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: VineTheme.vineGreen),
-    );
+    return const Center(child: BrandedLoadingIndicator(size: 60));
   }
 }

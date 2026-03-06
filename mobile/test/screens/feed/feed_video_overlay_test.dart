@@ -26,6 +26,8 @@ class _MockPlayer extends Mock implements Player {}
 
 class _MockPlayerStream extends Mock implements PlayerStream {}
 
+class _MockPlayerState extends Mock implements PlayerState {}
+
 class _MockCuratedListRepository extends Mock
     implements CuratedListRepository {}
 
@@ -40,8 +42,11 @@ void main() {
     late VideoInteractionsBloc mockInteractionsBloc;
     late Player mockPlayer;
     late PlayerStream mockStream;
+    late PlayerState mockPlayerState;
     late CuratedListRepository mockCuratedListRepository;
     late VideoEvent testVideo;
+    late StreamController<bool> playingController;
+    late StreamController<bool> bufferingController;
 
     setUpAll(() {
       registerFallbackValue(const VideoInteractionsSubscriptionRequested());
@@ -51,13 +56,25 @@ void main() {
       mockInteractionsBloc = _MockVideoInteractionsBloc();
       mockPlayer = _MockPlayer();
       mockStream = _MockPlayerStream();
+      mockPlayerState = _MockPlayerState();
       mockCuratedListRepository = _MockCuratedListRepository();
+      playingController = StreamController<bool>.broadcast();
+      bufferingController = StreamController<bool>.broadcast();
 
-      // Stub Player.stream for subtitle layer
+      // Stub Player.stream for subtitle layer and paused-play overlay.
       when(() => mockPlayer.stream).thenReturn(mockStream);
+      when(() => mockPlayer.state).thenReturn(mockPlayerState);
       when(
         () => mockStream.position,
       ).thenAnswer((_) => const Stream<Duration>.empty());
+      when(
+        () => mockStream.playing,
+      ).thenAnswer((_) => playingController.stream);
+      when(
+        () => mockStream.buffering,
+      ).thenAnswer((_) => bufferingController.stream);
+      when(() => mockPlayerState.playing).thenReturn(false);
+      when(() => mockPlayerState.buffering).thenReturn(false);
 
       // Stub interactions bloc state
       when(
@@ -74,7 +91,15 @@ void main() {
       );
     });
 
-    Widget buildSubject({Set<String>? listSources}) {
+    tearDown(() async {
+      await playingController.close();
+      await bufferingController.close();
+    });
+
+    Widget buildSubject({
+      Set<String>? listSources,
+      Future<void>? firstFrameFuture,
+    }) {
       return testMaterialApp(
         additionalOverrides: [
           curatedListRepositoryProvider.overrideWithValue(
@@ -91,6 +116,7 @@ void main() {
               video: testVideo,
               isActive: true,
               player: mockPlayer,
+              firstFrameFuture: firstFrameFuture,
               listSources: listSources,
             ),
           ),
@@ -99,6 +125,58 @@ void main() {
     }
 
     group('list attribution', () {
+      testWidgets('renders a centered play affordance when paused', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        playingController.add(true);
+        await tester.pump();
+        playingController.add(false);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 220));
+
+        expect(find.bySemanticsLabel('Play video'), findsOneWidget);
+      });
+
+      testWidgets('hides the centered play affordance while playing', (
+        tester,
+      ) async {
+        when(() => mockPlayerState.playing).thenReturn(true);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        expect(find.bySemanticsLabel('Play video'), findsNothing);
+      });
+
+      testWidgets(
+        'waits for the first frame before showing play after playback starts',
+        (tester) async {
+          final firstFrameCompleter = Completer<void>();
+
+          await tester.pumpWidget(
+            buildSubject(firstFrameFuture: firstFrameCompleter.future),
+          );
+          await tester.pump();
+
+          expect(find.bySemanticsLabel('Play video'), findsNothing);
+
+          firstFrameCompleter.complete();
+          await tester.pump();
+          expect(find.bySemanticsLabel('Play video'), findsNothing);
+
+          playingController.add(true);
+          await tester.pump();
+          playingController.add(false);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 220));
+
+          expect(find.bySemanticsLabel('Play video'), findsOneWidget);
+        },
+      );
+
       testWidgets('renders $ListAttributionChip when listSources is provided', (
         tester,
       ) async {

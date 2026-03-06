@@ -27,132 +27,84 @@ class UnblockConfirmationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      key: const ValueKey('unblock_confirmation'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Title
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Unblock $displayName?',
-              style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
-            ),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        key: const ValueKey('unblock_confirmation'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Title
+          Text(
+            'Unblock $displayName?',
+            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
           ),
-        ),
-        // Explanation content
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
+          const SizedBox(height: 16),
+          // Explanation content
+          Text(
+            'When you unblock this user:',
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 8),
+          const Column(
+            spacing: 14,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'When you unblock this user:',
+              BulletPoint('Their posts will appear in your feeds.'),
+              BulletPoint(
+                'They will be able to view your profile, follow you, and view your posts.',
+              ),
+              BulletPoint('They will not be notified of this change.'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: () => launchUrl(Uri.parse('https://divine.video/safety')),
+            child: Text.rich(
+              TextSpan(
+                text: 'Learn more at ',
                 style: VineTheme.bodyLargeFont(
                   color: VineTheme.onSurfaceVariant,
                 ),
-              ),
-              const SizedBox(height: 8),
-              const BulletPoint('Their posts will appear in your feeds.'),
-              const BulletPoint(
-                'They will be able to view your profile, follow you, and view your posts.',
-              ),
-              const BulletPoint('They will not be notified of this change.'),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () =>
-                    launchUrl(Uri.parse('https://divine.video/safety')),
-                child: Text.rich(
+                children: [
                   TextSpan(
-                    text: 'Learn more at ',
-                    style: VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurfaceVariant,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: 'divine.video/safety',
-                        style:
-                            VineTheme.bodyLargeFont(
-                              color: VineTheme.onSurface,
-                            ).copyWith(
-                              decoration: TextDecoration.underline,
-                              decorationColor: VineTheme.vineGreen,
-                              decorationThickness: 2,
-                            ),
-                      ),
-                    ],
+                    text: 'divine.video/safety',
+                    style: VineTheme.bodyLargeFont(color: VineTheme.onSurface)
+                        .copyWith(
+                          decoration: TextDecoration.underline,
+                          decorationColor: VineTheme.vineGreen,
+                          decorationThickness: 2,
+                        ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-        // Button row
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Row(
-            children: [
-              // Cancel button
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onCancel,
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: VineTheme.surfaceContainer,
-                    foregroundColor: VineTheme.vineGreen,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                    side: const BorderSide(
-                      color: VineTheme.outlineMuted,
-                      width: 2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    'Cancel',
-                    style: VineTheme.titleMediumFont(
-                      color: VineTheme.vineGreen,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 16),
+          // Button row
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              spacing: 16,
+              children: [
+                Expanded(
+                  child: DivineButton(
+                    label: 'Cancel',
+                    onPressed: onCancel,
+                    type: DivineButtonType.secondary,
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              // Unblock button
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onConfirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: VineTheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    'Unblock',
-                    style: VineTheme.titleMediumFont(
-                      color: VineTheme.onPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                Expanded(
+                  child: DivineButton(
+                    label: 'Unblock',
+                    onPressed: onConfirm,
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

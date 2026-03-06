@@ -80,7 +80,7 @@ class _VideoEditor extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorState extends ConsumerState<_VideoEditor> {
-  static const _renderTaskId = 'diVine_Editor_Merger';
+  static const _renderTaskId = 'Divine_Editor_Merger';
 
   late final ProVideoController _proVideoController;
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);

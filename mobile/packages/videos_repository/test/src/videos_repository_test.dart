@@ -76,6 +76,7 @@ void main() {
 
     setUp(() {
       mockNostrClient = MockNostrClient();
+      when(() => mockNostrClient.publicKey).thenReturn('');
       repository = VideosRepository(nostrClient: mockNostrClient);
     });
 
@@ -640,6 +641,47 @@ void main() {
           verify(() => mockNostrClient.queryEvents(any())).called(1);
         });
 
+        test('uses NostrClient public key when userPubkey is null', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockNostrClient.publicKey).thenReturn('my-pubkey');
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                ),
+              ],
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: ['followed-user'],
+          );
+
+          expect(result.videos, hasLength(1));
+          verify(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: 'my-pubkey',
+              limit: 5,
+            ),
+          ).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
         test('skips API when Funnelcake is not available', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
           when(() => mockNostrClient.queryEvents(any())).thenAnswer(
@@ -715,12 +757,96 @@ void main() {
         });
       });
 
-      test('returns empty list when authors is empty', () async {
-        final result = await repository.getHomeFeedVideos(authors: []);
+      test(
+        'returns empty list when authors is empty '
+        'and userPubkey is null',
+        () async {
+          final result = await repository.getHomeFeedVideos(authors: []);
 
-        expect(result.videos, isEmpty);
-        verifyNever(() => mockNostrClient.queryEvents(any()));
-      });
+          expect(result.videos, isEmpty);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
+        'hits Funnelcake API when authors is empty '
+        'but userPubkey is provided',
+        () async {
+          final mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                ),
+              ],
+              hasMore: true,
+              nextCursor: 1704067100,
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: [],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, hasLength(1));
+          verify(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: 'my-pubkey',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
+        'skips Nostr fallback when authors is empty '
+        'and Funnelcake returns empty',
+        () async {
+          final mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => const HomeFeedResponse(videos: []),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: [],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, isEmpty);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
 
       test('returns empty list when no events found', () async {
         when(() => mockNostrClient.queryEvents(any())).thenAnswer(
@@ -3988,6 +4114,46 @@ void main() {
           expect(ids, contains('content-match'));
           expect(ids, contains('hashtag-match'));
           expect(ids, contains('shared-match'));
+        },
+      );
+
+      test(
+        'countVideosLocally returns deduplicated local match count',
+        () async {
+          final mockLocalStorage = MockVideoLocalStorage();
+          final matchingEvent = _createVideoEvent(
+            id: 'shared-match',
+            pubkey: 'pubkey-1',
+            videoUrl: 'https://example.com/shared.mp4',
+            createdAt: 1704067200,
+            content: 'flutter tutorial',
+            hashtags: ['flutter'],
+          );
+
+          when(
+            () => mockLocalStorage.searchEvents(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [matchingEvent]);
+
+          when(
+            () => mockLocalStorage.getEventsByHashtags(
+              hashtags: any(named: 'hashtags'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => [matchingEvent]);
+
+          final repoWithStorage = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          final count = await repoWithStorage.countVideosLocally(
+            query: 'flutter',
+          );
+
+          expect(count, equals(1));
         },
       );
     });

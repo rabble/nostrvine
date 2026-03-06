@@ -35,7 +35,7 @@ class BulkThumbnailGenerator {
   /// Main entry point for the script
   static Future<void> main(List<String> args) async {
     Log.info(
-      '🚀 divine Bulk Thumbnail Generator',
+      '🚀 Divine Bulk Thumbnail Generator',
       name: 'BulkThumbnailGenerator',
     );
     Log.info(

@@ -6,12 +6,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
 void main() {
   group('MyFollowersBloc', () {
     late _MockFollowRepository mockFollowRepository;
+    late _MockContentBlocklistService mockBlocklistService;
 
     // Helper to create valid hex pubkeys (64 hex characters)
     String validPubkey(String suffix) {
@@ -23,10 +28,19 @@ void main() {
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
+      mockBlocklistService = _MockContentBlocklistService();
+
+      // Default: nothing is blocked
+      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(
+        () => mockBlocklistService.isFollowSevered(any()),
+      ).thenReturn(false);
     });
 
-    MyFollowersBloc createBloc() =>
-        MyFollowersBloc(followRepository: mockFollowRepository);
+    MyFollowersBloc createBloc() => MyFollowersBloc(
+      followRepository: mockFollowRepository,
+      contentBlocklistService: mockBlocklistService,
+    );
 
     test('initial state is initial with empty list', () {
       final bloc = createBloc();

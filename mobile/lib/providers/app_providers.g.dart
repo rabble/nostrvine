@@ -117,12 +117,12 @@ final class PendingActionServiceProvider
 String _$pendingActionServiceHash() =>
     r'67a3a30b8cc1072263ce47f4e2bb3c34fa876fa1';
 
-/// Relay capability service for detecting NIP-11 divine extensions
+/// Relay capability service for detecting NIP-11 Divine extensions
 
 @ProviderFor(relayCapabilityService)
 const relayCapabilityServiceProvider = RelayCapabilityServiceProvider._();
 
-/// Relay capability service for detecting NIP-11 divine extensions
+/// Relay capability service for detecting NIP-11 Divine extensions
 
 final class RelayCapabilityServiceProvider
     extends
@@ -132,7 +132,7 @@ final class RelayCapabilityServiceProvider
           RelayCapabilityService
         >
     with $Provider<RelayCapabilityService> {
-  /// Relay capability service for detecting NIP-11 divine extensions
+  /// Relay capability service for detecting NIP-11 Divine extensions
   const RelayCapabilityServiceProvider._()
     : super(
         from: null,
@@ -1905,11 +1905,19 @@ final class SeenVideosServiceProvider
 String _$seenVideosServiceHash() => r'74099bd4d859b446a3fc0cf1a7f416756a104e43';
 
 /// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 
 @ProviderFor(contentBlocklistService)
 const contentBlocklistServiceProvider = ContentBlocklistServiceProvider._();
 
 /// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 
 final class ContentBlocklistServiceProvider
     extends
@@ -1920,6 +1928,10 @@ final class ContentBlocklistServiceProvider
         >
     with $Provider<ContentBlocklistService> {
   /// Content blocklist service for filtering unwanted content from feeds
+  ///
+  /// Injects SharedPreferences for local block persistence across restarts.
+  /// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+  /// during app startup in main.dart.
   const ContentBlocklistServiceProvider._()
     : super(
         from: null,
@@ -1955,7 +1967,7 @@ final class ContentBlocklistServiceProvider
 }
 
 String _$contentBlocklistServiceHash() =>
-    r'a05020e10b4402686d4630f99b020c4f0e58eab3';
+    r'e9f2a94864c583c91619dffc906067ba6c907bb0';
 
 /// Version counter to trigger rebuilds when blocklist changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.
@@ -2911,7 +2923,7 @@ final class HashtagRepositoryProvider
   }
 }
 
-String _$hashtagRepositoryHash() => r'7d61e9d5f99412e7f62cbb1456aeca1c12ab5b34';
+String _$hashtagRepositoryHash() => r'aacff5fc9d7d369a80b68ffa4595628b18ab1f99';
 
 /// Provider for ProfileRepository instance
 ///
@@ -2984,7 +2996,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'e5b7a06106aa8a6c00fae914129748ea80a02018';
+String _$profileRepositoryHash() => r'9d24b8b90fed2a2d47dc16a0f90472cd541b6eac';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 

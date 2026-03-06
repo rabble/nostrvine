@@ -38,7 +38,7 @@ class AppConfig {
   static String get readyEventsUrl => '$backendBaseUrl/v1/media/ready-events';
 
   // App configuration
-  static const String appName = 'divine';
+  static const String appName = 'Divine';
   static const String appVersion = '1.0.0';
 
   // Relay configuration handled by NostrClient

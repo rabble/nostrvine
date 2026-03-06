@@ -74,6 +74,7 @@ import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_list_service.dart';
@@ -147,7 +148,7 @@ PendingActionService? pendingActionService(Ref ref) {
   return service;
 }
 
-/// Relay capability service for detecting NIP-11 divine extensions
+/// Relay capability service for detecting NIP-11 Divine extensions
 @Riverpod(keepAlive: true)
 RelayCapabilityService relayCapabilityService(Ref ref) {
   final service = RelayCapabilityService();
@@ -630,9 +631,20 @@ SeenVideosService seenVideosService(Ref ref) {
 }
 
 /// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 @riverpod
 ContentBlocklistService contentBlocklistService(Ref ref) {
-  return ContentBlocklistService();
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return ContentBlocklistService(
+    prefs: prefs,
+    onChanged: () {
+      if (!ref.mounted) return;
+      ref.read(blocklistVersionProvider.notifier).increment();
+    },
+  );
 }
 
 /// Version counter to trigger rebuilds when blocklist changes.
@@ -1096,7 +1108,33 @@ CuratedListRepository curatedListRepository(Ref ref) {
 @riverpod
 HashtagRepository hashtagRepository(Ref ref) {
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
-  return HashtagRepository(funnelcakeApiClient: funnelcakeClient);
+  final hashtagService = ref.watch(hashtagServiceProvider);
+  return HashtagRepository(
+    funnelcakeApiClient: funnelcakeClient,
+    localSearch: (query, limit) {
+      final results = <String>[];
+
+      void addMatches(Iterable<String> matches) {
+        for (final hashtag in matches) {
+          if (results.contains(hashtag)) continue;
+          results.add(hashtag);
+          if (results.length >= limit) break;
+        }
+      }
+
+      addMatches(hashtagService.searchHashtags(query));
+      if (results.length < limit) {
+        addMatches(
+          TopHashtagsService.instance.searchHashtags(
+            query,
+            limit: limit,
+          ),
+        );
+      }
+
+      return results;
+    },
+  );
 }
 
 /// Provider for ProfileRepository instance
@@ -1119,7 +1157,6 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return ProfileRepository(
@@ -1127,7 +1164,6 @@ ProfileRepository? profileRepository(Ref ref) {
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
     funnelcakeApiClient: funnelcakeClient,
-    userBlockFilter: blocklistService.shouldFilterFromFeeds,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
   );

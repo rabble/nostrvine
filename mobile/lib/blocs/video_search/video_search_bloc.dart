@@ -6,19 +6,20 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/constants/search_constants.dart';
 import 'package:stream_transform/stream_transform.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'video_search_event.dart';
 part 'video_search_state.dart';
 
-/// Debounce duration for search queries
-const _debounceDuration = Duration(milliseconds: 300);
-
 /// Event transformer that debounces and restarts on new events
 EventTransformer<E> _debounceRestartable<E>() {
   return (events, mapper) {
-    return restartable<E>().call(events.debounce(_debounceDuration), mapper);
+    return restartable<E>().call(
+      events.debounce(searchDebounceDuration),
+      mapper,
+    );
   };
 }
 
@@ -51,14 +52,32 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
   ) async {
     final query = event.query.trim();
 
-    if (query.isEmpty) {
+    if (query.isEmpty || query.length < minSearchQueryLength) {
       emit(const VideoSearchState());
       return;
     }
 
-    if (query == state.query) return;
+    if (!event.fetchResults) {
+      emit(
+        VideoSearchState(
+          query: query,
+          resultCount: await _videosRepository.countVideosLocally(query: query),
+        ),
+      );
+      return;
+    }
 
-    emit(state.copyWith(status: VideoSearchStatus.searching, query: query));
+    if (query == state.query && state.status != VideoSearchStatus.initial) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: VideoSearchStatus.searching,
+        query: query,
+        resultCount: null,
+      ),
+    );
 
     try {
       await emit.forEach<List<VideoEvent>>(
@@ -66,6 +85,7 @@ class VideoSearchBloc extends Bloc<VideoSearchEvent, VideoSearchState> {
         onData: (videos) => state.copyWith(
           status: VideoSearchStatus.searching,
           videos: videos,
+          resultCount: videos.length,
         ),
       );
       emit(state.copyWith(status: VideoSearchStatus.success));

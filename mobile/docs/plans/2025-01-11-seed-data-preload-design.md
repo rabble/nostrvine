@@ -342,7 +342,7 @@ try {
 StartupPerformanceService.instance.completePhase('seed_data_preload');
 
 // Continue with app launch
-Log.info('divine starting...', name: 'Main');
+Log.info('Divine starting...', name: 'Main');
 ```
 
 **Performance Impact:**

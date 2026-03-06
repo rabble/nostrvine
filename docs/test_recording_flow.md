@@ -1,4 +1,4 @@
-# diVine Recording and Publishing Flow Test
+# Divine Recording and Publishing Flow Test
 
 ## Test Date: 2025-01-18
 
@@ -12,7 +12,7 @@
 ### Test Steps:
 
 1. **Record Video**:
-   - Open diVine app on macOS
+   - Open Divine app on macOS
    - Click camera tab (center button)
    - Grant camera permission if prompted
    - Hold record button for 3-6 seconds

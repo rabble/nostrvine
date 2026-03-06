@@ -30,6 +30,7 @@ class ProfileFollowersStat extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final isCurrentUser = pubkey == nostrClient.publicKey;
 
     // Don't show stats until NostrClient has keys
@@ -43,9 +44,10 @@ class ProfileFollowersStat extends ConsumerWidget {
 
     if (isCurrentUser) {
       return BlocProvider(
-        create: (_) =>
-            MyFollowersBloc(followRepository: followRepository)
-              ..add(const MyFollowersListLoadRequested()),
+        create: (_) => MyFollowersBloc(
+          followRepository: followRepository,
+          contentBlocklistService: blocklistService,
+        )..add(const MyFollowersListLoadRequested()),
         child: _MyFollowersStatView(pubkey: pubkey, displayName: displayName),
       );
     } else {
@@ -57,14 +59,20 @@ class ProfileFollowersStat extends ConsumerWidget {
 }
 
 /// View widget for current user's followers stat.
-class _MyFollowersStatView extends StatelessWidget {
+class _MyFollowersStatView extends ConsumerWidget {
   const _MyFollowersStatView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<MyFollowersBloc>().add(
+        const MyFollowersBlocklistChanged(),
+      );
+    });
+
     return BlocBuilder<MyFollowersBloc, MyFollowersState>(
       builder: (context, state) {
         final isLoading =
@@ -72,7 +80,7 @@ class _MyFollowersStatView extends StatelessWidget {
             state.status == MyFollowersStatus.loading;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followerCount,
+          count: isLoading ? null : state.followersPubkeys.length,
           label: 'Followers',
           isLoading: isLoading,
           onTap: () => context.push(
@@ -86,7 +94,7 @@ class _MyFollowersStatView extends StatelessWidget {
 }
 
 /// View widget for other user's followers stat.
-class _OthersFollowersStatView extends StatelessWidget {
+class _OthersFollowersStatView extends ConsumerWidget {
   const _OthersFollowersStatView({
     required this.pubkey,
     required this.displayName,
@@ -96,15 +104,34 @@ class _OthersFollowersStatView extends StatelessWidget {
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<OthersFollowersBloc>().add(
+        const OthersFollowersBlocklistChanged(),
+      );
+    });
+
+    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
+    final followRepository = ref.watch(followRepositoryProvider);
+    // Hide ourselves from the target's followers if we're not actually
+    // following them (e.g. follow severed by block→unblock flow).
+    final isFollowingTarget = followRepository?.isFollowing(pubkey) ?? false;
+
     return BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
       builder: (context, state) {
         final isLoading =
             state.status == OthersFollowersStatus.initial ||
             state.status == OthersFollowersStatus.loading;
+        final filteredCount = isLoading
+            ? null
+            : state.followersPubkeys
+                  .where(
+                    (pk) => !(pk == currentUserPubkey && !isFollowingTarget),
+                  )
+                  .length;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followerCount,
+          count: filteredCount,
           label: 'Followers',
           isLoading: isLoading,
           onTap: () => context.push(

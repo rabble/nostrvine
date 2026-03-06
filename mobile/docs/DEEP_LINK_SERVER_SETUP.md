@@ -122,7 +122,7 @@ location /.well-known/assetlinks.json {
 
 1. Build and install the app on a physical device (simulator won't work for universal links)
 2. Send yourself an email or message with the link: `https://divine.video/video/abc123`
-3. Long-press the link - you should see "Open in divine" option
+3. Long-press the link - you should see "Open in Divine" option
 4. Or simply tap the link and it should open in the app
 
 **Verification Tool**:

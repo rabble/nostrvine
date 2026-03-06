@@ -63,7 +63,7 @@ class WatermarkDownloadPermissionDenied extends WatermarkDownloadResult {
   const WatermarkDownloadPermissionDenied();
 }
 
-/// Service that downloads a video, applies a diVine watermark, and saves
+/// Service that downloads a video, applies a Divine watermark, and saves
 /// the result to the device gallery.
 class WatermarkDownloadService {
   /// Creates a [WatermarkDownloadService] with required dependencies.
@@ -81,13 +81,13 @@ class WatermarkDownloadService {
   /// Downloads the video, applies a watermark, and saves to gallery.
   ///
   /// [video] is the video event to download and watermark.
-  /// [username] is the display name to show in the watermark.
+  /// [watermarkText] is the identity text to show in the watermark.
   /// [onProgress] is called as the operation moves through stages.
   ///
   /// Returns a [WatermarkDownloadResult] indicating success or failure.
   Future<WatermarkDownloadResult> downloadWithWatermark({
     required VideoEvent video,
-    required String username,
+    required String watermarkText,
     required ValueChanged<WatermarkDownloadStage> onProgress,
   }) async {
     String? tempOutputPath;
@@ -122,7 +122,7 @@ class WatermarkDownloadService {
       final watermarkBytes = await WatermarkImageGenerator.generateWatermark(
         videoWidth: videoWidth,
         videoHeight: videoHeight,
-        username: username,
+        watermarkText: watermarkText,
       );
 
       tempOutputPath = await _renderWithWatermark(

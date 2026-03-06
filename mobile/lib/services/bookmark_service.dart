@@ -600,7 +600,7 @@ class BookmarkService with NostrListServiceMixin {
 
       final event = await _authService.createAndSignEvent(
         kind: 10003, // NIP-51 global bookmarks
-        content: 'divine global bookmarks',
+        content: 'Divine global bookmarks',
         tags: tags,
       );
 

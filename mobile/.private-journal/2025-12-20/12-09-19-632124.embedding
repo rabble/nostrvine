@@ -385,7 +385,7 @@
     0.03261684626340866,
     0.05012565106153488
   ],
-  "text": "diVine navigation fix: ClipManager to VideoEditor now uses raw Navigator.push instead of GoRouter context.push. This works around a GoRouter bug on macOS where redirect returns null but route builder never fires.",
+  "text": "Divine navigation fix: ClipManager to VideoEditor now uses raw Navigator.push instead of GoRouter context.push. This works around a GoRouter bug on macOS where redirect returns null but route builder never fires.",
   "sections": [
     "Project Notes"
   ],

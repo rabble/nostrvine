@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the design for three video editing features in diVine:
+This document describes the design for three video editing features in Divine:
 
 1. **Clip Manager** - Review, delete, and reorder recorded segments before posting
 2. **Text Overlay** - Add text/captions to videos

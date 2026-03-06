@@ -1,13 +1,20 @@
 // ABOUTME: BLoC for viewing another user's profile
-// ABOUTME: Implements cache+fresh pattern - shows cached immediately, then fetches fresh
+// ABOUTME: Implements cache+fresh pattern and block/unblock actions
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
+import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 part 'other_profile_event.dart';
 part 'other_profile_state.dart';
+
+/// Callback to increment the blocklist version provider,
+/// notifying other BLoCs that the blocklist has changed.
+typedef BlocklistVersionIncrementer = void Function();
 
 /// BLoC for managing the state of viewing another user's profile.
 ///
@@ -16,22 +23,45 @@ part 'other_profile_state.dart';
 /// 2. Fetch fresh profile from relay
 /// 3. Emit fresh profile when received
 ///
+/// Also handles block/unblock actions via [OtherProfileBlockRequested]
+/// and [OtherProfileUnblockRequested].
+///
 /// The [pubkey] is provided at construction time since this BLoC is scoped
 /// to a single profile screen instance.
 class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   OtherProfileBloc({
     required ProfileRepository profileRepository,
     required this.pubkey,
+    required ContentBlocklistService contentBlocklistService,
+    required String currentUserPubkey,
+    FollowRepository? followRepository,
+    BlocklistVersionIncrementer? onBlocklistChanged,
   }) : _profileRepository = profileRepository,
+       _blocklistService = contentBlocklistService,
+       _currentUserPubkey = currentUserPubkey,
+       _followRepository = followRepository,
+       _onBlocklistChanged = onBlocklistChanged,
        super(const OtherProfileInitial()) {
     on<OtherProfileLoadRequested>(_onLoadRequested);
     on<OtherProfileRefreshRequested>(_onRefreshRequested);
+    on<OtherProfileBlockRequested>(_onBlockRequested);
+    on<OtherProfileUnblockRequested>(_onUnblockRequested);
   }
 
   final ProfileRepository _profileRepository;
+  final ContentBlocklistService _blocklistService;
+  final String _currentUserPubkey;
+  final FollowRepository? _followRepository;
+  final BlocklistVersionIncrementer? _onBlocklistChanged;
 
   /// The pubkey of the profile being viewed.
   final String pubkey;
+
+  /// Current block status for the viewed profile.
+  bool get isBlocked => _blocklistService.isBlocked(pubkey);
+
+  /// Whether the current user is following the viewed profile.
+  bool get isFollowing => _followRepository?.isFollowing(pubkey) ?? false;
 
   Future<void> _onLoadRequested(
     OtherProfileLoadRequested event,
@@ -106,5 +136,37 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
         );
       }
     }
+  }
+
+  Future<void> _onBlockRequested(
+    OtherProfileBlockRequested event,
+    Emitter<OtherProfileState> emit,
+  ) async {
+    _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
+
+    // Unfollow the user if we're currently following them
+    final followRepo = _followRepository;
+    if (followRepo != null && followRepo.isFollowing(pubkey)) {
+      try {
+        await followRepo.toggleFollow(pubkey);
+      } catch (e, s) {
+        Log.error(
+          'Failed to unfollow blocked user $pubkey',
+          name: 'OtherProfileBloc',
+          error: e,
+          stackTrace: s,
+        );
+      }
+    }
+
+    _onBlocklistChanged?.call();
+  }
+
+  Future<void> _onUnblockRequested(
+    OtherProfileUnblockRequested event,
+    Emitter<OtherProfileState> emit,
+  ) async {
+    _blocklistService.unblockUser(pubkey);
+    _onBlocklistChanged?.call();
   }
 }

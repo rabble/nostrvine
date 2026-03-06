@@ -1043,7 +1043,7 @@
 
 ### `test/widget_test.dart`
 
-- [ ] divine app UI validation test
+- [ ] Divine app UI validation test
 
 ## Providers (29 failures)
 

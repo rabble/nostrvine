@@ -85,7 +85,7 @@ class BlossomUploadService {
   ///
   /// Priority order:
   /// 1. Custom configured server (if enabled in settings)
-  /// 2. Default diVine media server
+  /// 2. Default Divine media server
   Future<List<String>> _getServerUrlsForUpload() async {
     final servers = <String>[];
 
@@ -103,7 +103,7 @@ class BlossomUploadService {
       }
     }
 
-    // 2. Always add default diVine server as fallback
+    // 2. Always add default Divine server as fallback
     if (!servers.contains(defaultBlossomServer)) {
       servers.add(defaultBlossomServer);
     }
@@ -132,12 +132,12 @@ class BlossomUploadService {
   }
 
   /// Check if custom Blossom server is enabled
-  /// When false (default), uploads go to diVine's Blossom server
+  /// When false (default), uploads go to Divine's Blossom server
   /// When true, uploads go to the user's custom configured server
   Future<bool> isBlossomEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_useBlossomKey) ??
-        false; // Default to false (use diVine's server)
+        false; // Default to false (use Divine's server)
   }
 
   /// Enable or disable Blossom upload

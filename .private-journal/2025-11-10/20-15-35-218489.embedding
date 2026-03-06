@@ -385,7 +385,7 @@
     0.05470697581768036,
     0.05898180976510048
   ],
-  "text": "Session initialized. Key context:\n- App is called \"diVine\" (trademark concern - avoid \"vine\" terminology)\n- Must refer to content as \"videos\" not \"vines\" \n- 6-second looping video app\n- Development platform: macOS desktop (not Chrome)\n- Release targets: iOS/Android primarily, some Windows/macOS\n- Strict TDD required - tests before implementation\n- No Future.delayed() or arbitrary timers\n- Dark mode only UI\n- Embedded Nostr relay architecture (never connect NostrService directly to external relays)\n- Never truncate Nostr IDs\n- Blossom upload architecture for decentralized media hosting",
+  "text": "Session initialized. Key context:\n- App is called \"Divine\" (trademark concern - avoid \"vine\" terminology)\n- Must refer to content as \"videos\" not \"vines\" \n- 6-second looping video app\n- Development platform: macOS desktop (not Chrome)\n- Release targets: iOS/Android primarily, some Windows/macOS\n- Strict TDD required - tests before implementation\n- No Future.delayed() or arbitrary timers\n- Dark mode only UI\n- Embedded Nostr relay architecture (never connect NostrService directly to external relays)\n- Never truncate Nostr IDs\n- Blossom upload architecture for decentralized media hosting",
   "sections": [
     "Project Notes"
   ],

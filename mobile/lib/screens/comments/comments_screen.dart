@@ -164,8 +164,6 @@ class CommentsScreen extends ConsumerWidget {
     final contentReportingServiceFuture = ref.read(
       contentReportingServiceProvider.future,
     );
-    final muteServiceFuture = ref.read(muteServiceProvider.future);
-
     // Mention search dependencies
     final userProfileService = ref.watch(userProfileServiceProvider);
     final followRepository = ref.watch(followRepositoryProvider);
@@ -180,7 +178,6 @@ class CommentsScreen extends ConsumerWidget {
         authService: authService,
         likesRepository: likesRepository,
         contentReportingServiceFuture: contentReportingServiceFuture,
-        muteServiceFuture: muteServiceFuture,
         contentBlocklistService: contentBlocklistService,
         rootEventId: videoEvent.id,
         rootEventKind: NIP71VideoKinds.addressableShortVideo,
@@ -250,7 +247,7 @@ class _CommentsScreenBody extends StatelessWidget {
       },
       child: SizedBox(
         child: CommentsList(
-          isOriginalVine: videoEvent.isOriginalVine,
+          showClassicVineNotice: videoEvent.isVintageRecoveredVine,
           scrollController: sheetScrollController,
         ),
       ),

@@ -1,8 +1,8 @@
-# diVine
+# Divine
 
-<img src="https://devine.video/og.png" alt="diVine logo and screenshot"/>
+<img src="https://devine.video/og.png" alt="Divine logo and screenshot"/>
 
-### diVine is a decentralized, short-form video sharing mobile application built on the Nostr protocol, inspired by the simplicity and creativity of Vine.
+### Divine is a decentralized, short-form video sharing mobile application built on the Nostr protocol, inspired by the simplicity and creativity of Vine.
 
 **Try it:** https://divine.video/discovery
 
@@ -34,11 +34,11 @@ _Feed navigation • Hashtag filtering • Video interactions • Social sharing
 
 ## Build It Yourself
 
-Want to build diVine and install it on your phone? This guide will walk you through everything, even if you've never built an app before.
+Want to build Divine and install it on your phone? This guide will walk you through everything, even if you've never built an app before.
 
 ### Step 1: Install Flutter
 
-Flutter is the framework diVine is built with. You need to install it first.
+Flutter is the framework Divine is built with. You need to install it first.
 
 **macOS:**
 ```bash
@@ -95,7 +95,7 @@ flutter doctor
    - Tap "Build Number" 7 times to enable Developer Options
    - Go to Settings → Developer Options → Enable USB Debugging
 
-### Step 3: Clone and Build diVine
+### Step 3: Clone and Build Divine
 
 ```bash
 # Clone the repository
@@ -248,7 +248,7 @@ dart format lib/ test/         # Format code
 
 ## Bug Reporting
 
-diVine includes an encrypted bug reporting system. Navigate to **Settings → Support → Report a Bug** to send diagnostic information directly to developers via NIP-17 encrypted messages.
+Divine includes an encrypted bug reporting system. Navigate to **Settings → Support → Report a Bug** to send diagnostic information directly to developers via NIP-17 encrypted messages.
 
 All sensitive data (private keys, tokens, credentials) is automatically removed before sending.
 

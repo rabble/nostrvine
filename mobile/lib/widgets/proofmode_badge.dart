@@ -1,12 +1,25 @@
 // ABOUTME: ProofMode verification badge widget for displaying video authenticity levels
-// ABOUTME: Shows tiered verification badges (Verified Mobile, Verified Web, Basic Proof, Unverified) plus original Vine badge
+// ABOUTME: Shows tiered "Human Made" badges (Gold, Silver, Bronze) plus original Vine badge
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Verification level enum matching ProofMode implementation
-enum VerificationLevel { verifiedMobile, verifiedWeb, basicProof, unverified }
+/// Verification tier for "Human Made" badge display.
+///
+/// Tiers reflect the strength of evidence that a video is authentic:
+/// - [platinum]: Device proof + AI scan confirms human
+/// - [gold]: Device attestation + ProofMode + C2PA (hardware proof)
+/// - [silver]: Web crypto proof, or AI scan confirms likely human
+/// - [bronze]: Basic proof data present
+/// - [unverified]: No proof data available
+enum VerificationLevel {
+  platinum,
+  verifiedMobile,
+  verifiedWeb,
+  basicProof,
+  unverified,
+}
 
 /// ProofMode verification badge widget
 class ProofModeBadge extends StatelessWidget {
@@ -54,41 +67,54 @@ class ProofModeBadge extends StatelessWidget {
 
   _BadgeConfig _getBadgeConfig(VerificationLevel level) {
     switch (level) {
-      case VerificationLevel.verifiedMobile:
+      case VerificationLevel.platinum:
+        // Platinum — device proof + AI scan confirms human
         return const _BadgeConfig(
           label: 'Human Made',
           icon: Icons.verified,
-          backgroundColor: Color(0xFFD4EDDA), // Light green
-          borderColor: Color(0xFF28A745), // Green
-          iconColor: Color(0xFF28A745),
-          textColor: Color(0xFF155724), // Dark green
+          backgroundColor: Color(0xFF1A2A3A), // Dark platinum bg
+          borderColor: Color(0xFFE5E4E2), // Platinum
+          iconColor: Color(0xFFE5E4E2),
+          textColor: Color(0xFFE5E4E2),
+        );
+      case VerificationLevel.verifiedMobile:
+        // Gold — device attestation + ProofMode + C2PA
+        return const _BadgeConfig(
+          label: 'Human Made',
+          icon: Icons.verified,
+          backgroundColor: Color(0xFF3D2E00), // Dark gold bg
+          borderColor: Color(0xFFFFD700), // Gold
+          iconColor: Color(0xFFFFD700),
+          textColor: Color(0xFFFFD700),
         );
       case VerificationLevel.verifiedWeb:
+        // Silver — cryptographic proof without hardware attestation
         return const _BadgeConfig(
-          label: 'Verified',
-          icon: Icons.shield_outlined,
-          backgroundColor: Color(0xFFD1ECF1), // Light blue
-          borderColor: Color(0xFF17A2B8), // Blue
-          iconColor: Color(0xFF17A2B8),
-          textColor: Color(0xFF0C5460), // Dark blue
+          label: 'Human Made',
+          icon: Icons.verified_outlined,
+          backgroundColor: Color(0xFF2A2A2A), // Dark silver bg
+          borderColor: Color(0xFFC0C0C0), // Silver
+          iconColor: Color(0xFFC0C0C0),
+          textColor: Color(0xFFC0C0C0),
         );
       case VerificationLevel.basicProof:
+        // Bronze — basic proof data
         return const _BadgeConfig(
-          label: 'Basic Proof',
-          icon: Icons.info_outline,
-          backgroundColor: Color(0xFFFFF3CD), // Light yellow
-          borderColor: Color(0xFFFFC107), // Yellow
-          iconColor: Color(0xFFFFC107),
-          textColor: Color(0xFF856404), // Dark yellow
+          label: 'Human Made',
+          icon: Icons.verified_outlined,
+          backgroundColor: Color(0xFF2E1F0F), // Dark bronze bg
+          borderColor: Color(0xFFCD7F32), // Bronze
+          iconColor: Color(0xFFCD7F32),
+          textColor: Color(0xFFCD7F32),
         );
       case VerificationLevel.unverified:
         return const _BadgeConfig(
           label: 'Unverified',
           icon: Icons.shield_outlined,
-          backgroundColor: Color(0xFFF8D7DA), // Light red
-          borderColor: Color(0xFFF5C6CB), // Red
-          iconColor: Color(0xFF721C24), // Dark red
-          textColor: Color(0xFF721C24),
+          backgroundColor: Color(0xFF1A1A1A), // Dark bg
+          borderColor: Color(0xFF555555), // Muted grey
+          iconColor: Color(0xFF888888),
+          textColor: Color(0xFF888888),
         );
     }
   }
@@ -312,11 +338,161 @@ class NotDivineBadge extends StatelessWidget {
           ),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
-            'Not Divine',
+            'Not Divine Hosted',
             style: TextStyle(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w500,
               color: VineTheme.secondaryText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _BadgeDimensions _getDimensions(BadgeSize size) {
+    switch (size) {
+      case BadgeSize.small:
+        return const _BadgeDimensions(
+          horizontalPadding: 6,
+          verticalPadding: 2,
+          borderRadius: 4,
+          iconSize: 10,
+          fontSize: 10,
+          iconTextSpacing: 3,
+        );
+      case BadgeSize.medium:
+        return const _BadgeDimensions(
+          horizontalPadding: 8,
+          verticalPadding: 4,
+          borderRadius: 6,
+          iconSize: 12,
+          fontSize: 11,
+          iconTextSpacing: 4,
+        );
+      case BadgeSize.large:
+        return const _BadgeDimensions(
+          horizontalPadding: 10,
+          verticalPadding: 5,
+          borderRadius: 8,
+          iconSize: 14,
+          fontSize: 12,
+          iconTextSpacing: 5,
+        );
+    }
+  }
+}
+
+/// "Hosted on Divine" badge for Divine-hosted content without proof data
+class DivineBadge extends StatelessWidget {
+  const DivineBadge({super.key, this.size = BadgeSize.small});
+
+  final BadgeSize size;
+
+  @override
+  Widget build(BuildContext context) {
+    final dimensions = _getDimensions(size);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: dimensions.horizontalPadding,
+        vertical: dimensions.verticalPadding,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D2818), // Dark green bg
+        borderRadius: BorderRadius.circular(dimensions.borderRadius),
+        border: Border.all(color: VineTheme.vineGreen.withAlpha(128)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.cloud_done_outlined,
+            size: dimensions.iconSize,
+            color: VineTheme.vineGreen,
+          ),
+          SizedBox(width: dimensions.iconTextSpacing),
+          Text(
+            'Hosted on Divine',
+            style: TextStyle(
+              fontSize: dimensions.fontSize,
+              fontWeight: FontWeight.w500,
+              color: VineTheme.vineGreen,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _BadgeDimensions _getDimensions(BadgeSize size) {
+    switch (size) {
+      case BadgeSize.small:
+        return const _BadgeDimensions(
+          horizontalPadding: 6,
+          verticalPadding: 2,
+          borderRadius: 4,
+          iconSize: 10,
+          fontSize: 10,
+          iconTextSpacing: 3,
+        );
+      case BadgeSize.medium:
+        return const _BadgeDimensions(
+          horizontalPadding: 8,
+          verticalPadding: 4,
+          borderRadius: 6,
+          iconSize: 12,
+          fontSize: 11,
+          iconTextSpacing: 4,
+        );
+      case BadgeSize.large:
+        return const _BadgeDimensions(
+          horizontalPadding: 10,
+          verticalPadding: 5,
+          borderRadius: 8,
+          iconSize: 14,
+          fontSize: 12,
+          iconTextSpacing: 5,
+        );
+    }
+  }
+}
+
+/// "Possibly AI-Generated" warning badge
+class PossiblyAIBadge extends StatelessWidget {
+  const PossiblyAIBadge({super.key, this.size = BadgeSize.small});
+
+  final BadgeSize size;
+
+  @override
+  Widget build(BuildContext context) {
+    final dimensions = _getDimensions(size);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: dimensions.horizontalPadding,
+        vertical: dimensions.verticalPadding,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2E1F00), // Dark amber bg
+        borderRadius: BorderRadius.circular(dimensions.borderRadius),
+        border: Border.all(color: VineTheme.warning),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.warning_amber,
+            size: dimensions.iconSize,
+            color: VineTheme.warning,
+          ),
+          SizedBox(width: dimensions.iconTextSpacing),
+          Text(
+            'Possibly AI-Generated',
+            style: TextStyle(
+              fontSize: dimensions.fontSize,
+              fontWeight: FontWeight.w500,
+              color: VineTheme.warning,
             ),
           ),
         ],

@@ -75,10 +75,18 @@ class OtherProfileScreen extends ConsumerWidget {
       );
     }
 
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final followRepository = ref.watch(followRepositoryProvider);
+
     return BlocProvider(
-      create: (context) =>
-          OtherProfileBloc(pubkey: pubkey, profileRepository: profileRepository)
-            ..add(const OtherProfileLoadRequested()),
+      create: (context) => OtherProfileBloc(
+        pubkey: pubkey,
+        profileRepository: profileRepository,
+        contentBlocklistService: blocklistService,
+        currentUserPubkey: nostrClient.publicKey,
+        followRepository: followRepository,
+      )..add(const OtherProfileLoadRequested()),
       child: OtherProfileView(
         pubkey: pubkey,
         displayNameHint: displayNameHint,
@@ -180,12 +188,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   }
 
   Future<void> _more() async {
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final isBlocked = blocklistService.isBlocked(widget.pubkey);
-
-    final followRepository = ref.read(followRepositoryProvider);
-    // If NostrClient doesn't have keys yet, treat as not following
-    final isFollowing = followRepository?.isFollowing(widget.pubkey) ?? false;
+    final otherProfileBloc = context.read<OtherProfileBloc>();
+    final isBlocked = otherProfileBloc.isBlocked;
+    final isFollowing = otherProfileBloc.isFollowing;
 
     // Get display name for actions (match pattern from build())
     final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
@@ -217,20 +222,36 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
       case MoreSheetResult.unfollow:
         await _unfollowUser();
       case MoreSheetResult.blockConfirmed:
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-        final nostrClient = ref.read(nostrServiceProvider);
-        blocklistService.blockUser(
-          widget.pubkey,
-          ourPubkey: nostrClient.publicKey,
+        context.read<OtherProfileBloc>().add(
+          const OtherProfileBlockRequested(),
         );
-        ref.read(blocklistVersionProvider.notifier).increment();
         if (mounted) {
+          final profile = ref
+              .read(userProfileReactiveProvider(widget.pubkey))
+              .value;
+          final name =
+              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+          // TODO(SofiaRey): revisit when designs are ready
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Blocked $name')));
           context.pop();
         }
       case MoreSheetResult.unblockConfirmed:
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-        blocklistService.unblockUser(widget.pubkey);
-        ref.read(blocklistVersionProvider.notifier).increment();
+        context.read<OtherProfileBloc>().add(
+          const OtherProfileUnblockRequested(),
+        );
+        if (mounted) {
+          final profile = ref
+              .read(userProfileReactiveProvider(widget.pubkey))
+              .value;
+          final name =
+              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+          // TODO(SofiaRey): revisit when designs are ready
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Unblocked $name')));
+        }
     }
   }
 
@@ -272,9 +293,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     if (!mounted) return;
 
     if (result == MoreSheetResult.unblockConfirmed) {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(widget.pubkey);
-      ref.read(blocklistVersionProvider.notifier).increment();
+      if (!mounted) return;
+      context.read<OtherProfileBloc>().add(
+        const OtherProfileUnblockRequested(),
+      );
     }
   }
 

@@ -1,5 +1,6 @@
-// ABOUTME: Tests for the MVP simplified share menu (_SimpleShareMenu)
-// ABOUTME: Covers menu rendering, share actions, feature flags, and error handling
+// ABOUTME: Tests for the unified share sheet (_UnifiedShareSheet)
+// ABOUTME: Covers share sheet rendering, contact row, more actions, feature
+// ABOUTME: flags, save/bookmark, copy link, share via, and error handling
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,8 @@ class _MockBookmarkService extends Mock implements BookmarkService {}
 
 class _MockVideoSharingService extends Mock implements VideoSharingService {}
 
+class _FakeVideoEvent extends Fake implements VideoEvent {}
+
 /// Fake notifier that provides test data for curatedListsStateProvider
 List<CuratedList> _fakeLists = [];
 
@@ -37,15 +40,7 @@ void main() {
   late _MockVideoSharingService mockVideoSharingService;
 
   setUpAll(() {
-    registerFallbackValue(
-      VideoEvent(
-        id: 'fallback',
-        pubkey: 'fallback',
-        createdAt: 0,
-        content: '',
-        timestamp: DateTime.now(),
-      ),
-    );
+    registerFallbackValue(_FakeVideoEvent());
   });
 
   setUp(() {
@@ -69,16 +64,21 @@ void main() {
     ).thenAnswer((_) async => true);
     when(
       () => mockVideoSharingService.generateShareText(any()),
-    ).thenReturn('Check out this video https://divine.video/video/test');
+    ).thenReturn('https://divine.video/video/test');
+    when(
+      () => mockVideoSharingService.generateShareUrl(any()),
+    ).thenReturn('https://divine.video/video/test');
+    when(() => mockVideoSharingService.recentlySharedWith).thenReturn([]);
   });
 
-  group('ShareActionButton opens _SimpleShareMenu', () {
-    Widget buildSubject({bool curatedListsEnabled = true}) => testProviderScope(
+  group('Unified share sheet', () {
+    Widget buildSubject({
+      bool curatedListsEnabled = true,
+      bool debugToolsEnabled = true,
+    }) => testProviderScope(
       mockUserProfileService: createMockUserProfileService(),
       additionalOverrides: [
-        bookmarkServiceProvider.overrideWith(
-          (ref) async => mockBookmarkService,
-        ),
+        bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
         videoSharingServiceProvider.overrideWith(
           (ref) => mockVideoSharingService,
         ),
@@ -86,26 +86,28 @@ void main() {
         isFeatureEnabledProvider(
           FeatureFlag.curatedLists,
         ).overrideWithValue(curatedListsEnabled),
+        isFeatureEnabledProvider(
+          FeatureFlag.debugTools,
+        ).overrideWithValue(debugToolsEnabled),
       ],
       child: MaterialApp(
         home: Scaffold(body: ShareActionButton(video: testVideo)),
       ),
     );
 
-    testWidgets('tapping share button opens bottom sheet with 4 menu items', (
+    testWidgets('tapping share button opens unified share sheet', (
       tester,
     ) async {
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
 
-      expect(find.text('Share with user'), findsOneWidget);
-      expect(find.text('Add to list'), findsOneWidget);
-      expect(find.text('Add to bookmarks'), findsOneWidget);
-      expect(find.text('More options'), findsOneWidget);
+      // Verify section headers
+      expect(find.text('Share with'), findsOneWidget);
+      expect(find.text('More actions'), findsOneWidget);
     });
 
-    testWidgets('share menu header shows video title', (tester) async {
+    testWidgets('share sheet header shows video title', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
@@ -113,18 +115,47 @@ void main() {
       expect(find.text('Test Video Title'), findsOneWidget);
     });
 
-    testWidgets('share menu shows drag indicator', (tester) async {
+    testWidgets('share sheet shows Find people item', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
 
-      // Just verify the bottom sheet opened with content
-      expect(find.text('Share with user'), findsOneWidget);
+      expect(find.text('Find\npeople'), findsOneWidget);
     });
 
-    testWidgets('tapping Add to bookmarks shows success snackbar', (
-      tester,
-    ) async {
+    testWidgets('More actions row shows Save action', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Save'), findsOneWidget);
+    });
+
+    testWidgets('More actions row shows Copy action', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Copy'), findsOneWidget);
+    });
+
+    testWidgets('More actions row shows Share via action', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Share via'), findsOneWidget);
+    });
+
+    testWidgets('More actions row shows Report action', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Report'), findsOneWidget);
+    });
+
+    testWidgets('tapping Save shows success snackbar', (tester) async {
       when(
         () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
       ).thenAnswer((_) async => true);
@@ -133,18 +164,16 @@ void main() {
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Add to bookmarks'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Added to bookmarks!'), findsOneWidget);
+      expect(find.text('Added to bookmarks'), findsOneWidget);
       verify(
         () => mockBookmarkService.addVideoToGlobalBookmarks(testVideo.id),
       ).called(1);
     });
 
-    testWidgets('tapping Add to bookmarks shows failure snackbar on error', (
-      tester,
-    ) async {
+    testWidgets('tapping Save shows failure snackbar on error', (tester) async {
       when(
         () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
       ).thenAnswer((_) async => false);
@@ -153,31 +182,30 @@ void main() {
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Add to bookmarks'));
+      await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
 
       expect(find.text('Failed to add bookmark'), findsOneWidget);
     });
 
-    testWidgets(
-      'tapping Add to bookmarks shows failure snackbar on exception',
-      (tester) async {
-        when(
-          () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
-        ).thenThrow(Exception('Network error'));
+    testWidgets('tapping Save shows failure snackbar on exception', (
+      tester,
+    ) async {
+      when(
+        () => mockBookmarkService.addVideoToGlobalBookmarks(any()),
+      ).thenThrow(Exception('Network error'));
 
-        await tester.pumpWidget(buildSubject());
-        await tester.tap(find.byType(ShareActionButton));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildSubject());
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Add to bookmarks'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
 
-        expect(find.text('Failed to add bookmark'), findsOneWidget);
-      },
-    );
+      expect(find.text('Failed to add bookmark'), findsOneWidget);
+    });
 
-    testWidgets('menu items have correct DivineIcons', (tester) async {
+    testWidgets('share sheet has correct DivineIcons', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
@@ -187,10 +215,13 @@ void main() {
           .toList();
       final iconNames = divineIcons.map((i) => i.icon).toList();
 
-      expect(iconNames, contains(DivineIconName.chats));
-      expect(iconNames, contains(DivineIconName.listPlus));
+      // Share with section
+      expect(iconNames, contains(DivineIconName.search));
+      // More actions section
       expect(iconNames, contains(DivineIconName.bookmarkSimple));
-      // shareFat appears both in the button and in the menu
+      expect(iconNames, contains(DivineIconName.linkSimple));
+      expect(iconNames, contains(DivineIconName.flag));
+      // shareFat appears in button and Share via action
       expect(
         iconNames.where((n) => n == DivineIconName.shareFat).length,
         greaterThanOrEqualTo(1),
@@ -206,53 +237,204 @@ void main() {
       expect(find.text('Send to Viner'), findsNothing);
       expect(find.text('Safety Actions'), findsNothing);
       expect(find.text('Public Lists'), findsNothing);
-      expect(find.text('Report Content'), findsNothing);
     });
 
     testWidgets(
-      'hides Add to list when curatedLists feature flag is disabled',
+      'hides Add to List when curatedLists feature flag is disabled',
       (tester) async {
         await tester.pumpWidget(buildSubject(curatedListsEnabled: false));
         await tester.tap(find.byType(ShareActionButton));
         await tester.pumpAndSettle();
 
-        expect(find.text('Share with user'), findsOneWidget);
-        expect(find.text('Add to list'), findsNothing);
-        expect(find.text('Add to bookmarks'), findsOneWidget);
-        expect(find.text('More options'), findsOneWidget);
+        expect(find.text('Share with'), findsOneWidget);
+        expect(find.text('Add to List'), findsNothing);
+        expect(find.text('Save'), findsOneWidget);
       },
     );
 
-    testWidgets('tapping More options calls generateShareText on service', (
+    testWidgets('shows Add to List when curatedLists feature flag is enabled', (
       tester,
     ) async {
       await tester.pumpWidget(buildSubject());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('More options'));
+      expect(find.text('Add to List'), findsOneWidget);
+    });
+
+    testWidgets(
+      'shows Event JSON and Event ID when debugTools flag is enabled',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Event JSON'), findsOneWidget);
+        expect(find.text('Event ID'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'hides Event JSON and Event ID when debugTools flag is disabled',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(debugToolsEnabled: false));
+        await tester.tap(find.byType(ShareActionButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Event JSON'), findsNothing);
+        expect(find.text('Event ID'), findsNothing);
+      },
+    );
+  });
+
+  group('Quick-send behavior', () {
+    const testContact = ShareableUser(
+      pubkey:
+          '1111111111111111111111111111111111111111111111111111111111111111',
+      displayName: 'Alice',
+    );
+
+    Widget buildSubjectWithContacts() {
+      when(
+        () => mockVideoSharingService.recentlySharedWith,
+      ).thenReturn([testContact]);
+
+      return testProviderScope(
+        mockUserProfileService: createMockUserProfileService(),
+        additionalOverrides: [
+          followRepositoryProvider.overrideWithValue(null),
+          bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
+          videoSharingServiceProvider.overrideWith(
+            (ref) => mockVideoSharingService,
+          ),
+          curatedListsStateProvider.overrideWith(_FakeCuratedListsState.new),
+          isFeatureEnabledProvider(
+            FeatureFlag.curatedLists,
+          ).overrideWithValue(true),
+          isFeatureEnabledProvider(
+            FeatureFlag.debugTools,
+          ).overrideWithValue(true),
+        ],
+        child: MaterialApp(
+          home: Scaffold(body: ShareActionButton(video: testVideo)),
+        ),
+      );
+    }
+
+    testWidgets('tapping contact quick-sends video', (tester) async {
+      when(
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
+        ),
+      ).thenAnswer(
+        (_) async => ShareResult.createSuccess(
+          '2222222222222222222222222222222222222222222222222222222222222222',
+        ),
+      );
+
+      await tester.pumpWidget(buildSubjectWithContacts());
+      await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
 
+      // Verify contact appears in horizontal row
+      expect(find.text('Alice'), findsOneWidget);
+
+      // Tap contact — should quick-send immediately
+      await tester.tap(find.text('Alice'));
+      await tester.pumpAndSettle();
+
+      // Verify shareVideoWithUser was called
       verify(
-        () => mockVideoSharingService.generateShareText(testVideo),
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
+        ),
+      ).called(1);
+
+      // Verify success snackbar
+      expect(find.text('Post shared with Alice'), findsOneWidget);
+    });
+
+    testWidgets('sent contact shows Sent label', (tester) async {
+      when(
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
+        ),
+      ).thenAnswer(
+        (_) async => ShareResult.createSuccess(
+          '2222222222222222222222222222222222222222222222222222222222222222',
+        ),
+      );
+
+      await tester.pumpWidget(buildSubjectWithContacts());
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Alice'));
+      await tester.pumpAndSettle();
+
+      // Contact label replaced with 'Sent'
+      expect(find.text('Sent'), findsOneWidget);
+      expect(find.text('Alice'), findsNothing);
+    });
+
+    testWidgets('sent contact ignores subsequent taps', (tester) async {
+      when(
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
+        ),
+      ).thenAnswer(
+        (_) async => ShareResult.createSuccess(
+          '2222222222222222222222222222222222222222222222222222222222222222',
+        ),
+      );
+
+      await tester.pumpWidget(buildSubjectWithContacts());
+      await tester.tap(find.byType(ShareActionButton));
+      await tester.pumpAndSettle();
+
+      // First tap — sends
+      await tester.tap(find.text('Alice'));
+      await tester.pumpAndSettle();
+
+      // Second tap on 'Sent' — should be ignored
+      await tester.tap(find.text('Sent'));
+      await tester.pumpAndSettle();
+
+      // shareVideoWithUser only called once
+      verify(
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
+        ),
       ).called(1);
     });
 
-    testWidgets('tapping More options shows failure snackbar on exception', (
-      tester,
-    ) async {
+    testWidgets('quick-send shows failure snackbar on error', (tester) async {
       when(
-        () => mockVideoSharingService.generateShareText(any()),
-      ).thenThrow(Exception('Share failed'));
+        () => mockVideoSharingService.shareVideoWithUser(
+          video: any(named: 'video'),
+          recipientPubkey: any(named: 'recipientPubkey'),
+          personalMessage: any(named: 'personalMessage'),
+        ),
+      ).thenAnswer((_) async => ShareResult.failure('Network timeout'));
 
-      await tester.pumpWidget(buildSubject());
+      await tester.pumpWidget(buildSubjectWithContacts());
       await tester.tap(find.byType(ShareActionButton));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('More options'));
+      await tester.tap(find.text('Alice'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Failed to share video'), findsOneWidget);
+      expect(find.text('Failed to send video'), findsOneWidget);
     });
   });
 }

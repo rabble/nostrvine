@@ -50,6 +50,7 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
     // Use read() to get values once, not watch() which causes rebuilds
     final followRepository = ref.read(followRepositoryProvider);
     final nostrClient = ref.read(nostrServiceProvider);
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
 
     // Check if this is the user's own video (read once, never changes)
     _isOwnVideo = nostrClient.publicKey == widget.pubkey;
@@ -59,8 +60,10 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
       // Check if already following and should hide
       final isFollowing = followRepository.isFollowing(widget.pubkey);
       if (!(widget.hideIfFollowing && isFollowing)) {
-        _bloc = MyFollowingBloc(followRepository: followRepository)
-          ..add(const MyFollowingListLoadRequested());
+        _bloc = MyFollowingBloc(
+          followRepository: followRepository,
+          contentBlocklistService: blocklistService,
+        )..add(const MyFollowingListLoadRequested());
       }
     }
 
@@ -137,7 +140,9 @@ class VideoFollowButtonView extends StatelessWidget {
     >(
       selector: (state) => (
         isFollowing: state.isFollowing(pubkey),
-        isReady: state.status == MyFollowingStatus.success,
+        isReady:
+            state.status == MyFollowingStatus.success ||
+            state.status == MyFollowingStatus.toggleFailure,
       ),
       builder: (context, data) {
         // Don't show button until status is success to prevent flash on Home feed

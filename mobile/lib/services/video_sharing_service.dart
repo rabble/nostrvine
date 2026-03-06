@@ -278,7 +278,7 @@ class VideoSharingService {
     }
 
     buffer.writeln();
-    buffer.writeln('Shared via divine 🍇');
+    buffer.writeln('Shared via Divine 🍇');
 
     return buffer.toString();
   }

@@ -32,6 +32,7 @@ import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
@@ -48,6 +49,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
     required this.video,
     required this.isActive,
     required this.player,
+    this.firstFrameFuture,
     this.listSources,
     super.key,
   });
@@ -55,6 +57,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   final VideoEvent video;
   final bool isActive;
   final Player player;
+  final Future<void>? firstFrameFuture;
   final Set<String>? listSources;
 
   @override
@@ -108,6 +111,11 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
               ),
             ),
           ),
+        ),
+        PausedVideoPlayOverlay(
+          player: widget.player,
+          firstFrameFuture: widget.firstFrameFuture,
+          isVisible: widget.isActive,
         ),
         // Subtitle overlay — Positioned.fill gives the inner Stack a size
         // so SubtitleOverlay's Positioned can resolve correctly.

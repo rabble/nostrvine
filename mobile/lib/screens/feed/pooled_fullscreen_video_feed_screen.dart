@@ -22,6 +22,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
+import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -428,11 +429,7 @@ class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
     return SafeArea(
       bottom: false,
       child: Padding(
-        padding: const EdgeInsets.only(
-          top: 8,
-          left: 16,
-          right: 16,
-        ),
+        padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
         child: Row(
           mainAxisAlignment: .spaceBetween,
           crossAxisAlignment: .start,
@@ -455,10 +452,7 @@ class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 
   // TODO(any) : update to use bloc instead of riverpod
-  Widget? _buildEditAction(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  Widget? _buildEditAction(BuildContext context, WidgetRef ref) {
     final video = currentVideo;
     if (video == null) return null;
 
@@ -604,13 +598,15 @@ class _PooledFullscreenItemContentState
             data: MediaQueryData.fromView(View.of(context)),
             child: Stack(
               children: [
+                PausedVideoPlayOverlay(
+                  player: player,
+                  firstFrameFuture: videoController.waitUntilFirstFrameRendered,
+                  isVisible: widget.isActive,
+                ),
                 // Subtitle overlay — needs player position stream
                 if (video.hasSubtitles)
                   Positioned.fill(
-                    child: _SubtitleLayer(
-                      video: video,
-                      player: player,
-                    ),
+                    child: _SubtitleLayer(video: video, player: player),
                   ),
                 VideoOverlayActions(
                   video: video,

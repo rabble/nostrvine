@@ -30,6 +30,7 @@ class ProfileFollowingStat extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final isCurrentUser = pubkey == nostrClient.publicKey;
 
     // Don't show stats until NostrClient has keys
@@ -43,16 +44,19 @@ class ProfileFollowingStat extends ConsumerWidget {
 
     if (isCurrentUser) {
       return BlocProvider(
-        create: (_) =>
-            MyFollowingBloc(followRepository: followRepository)
-              ..add(const MyFollowingListLoadRequested()),
+        create: (_) => MyFollowingBloc(
+          followRepository: followRepository,
+          contentBlocklistService: blocklistService,
+        )..add(const MyFollowingListLoadRequested()),
         child: _MyFollowingStatView(pubkey: pubkey, displayName: displayName),
       );
     } else {
       return BlocProvider(
-        create: (_) =>
-            OthersFollowingBloc(nostrClient: nostrClient)
-              ..add(OthersFollowingListLoadRequested(pubkey)),
+        create: (_) => OthersFollowingBloc(
+          nostrClient: nostrClient,
+          contentBlocklistService: blocklistService,
+          currentUserPubkey: nostrClient.publicKey,
+        )..add(OthersFollowingListLoadRequested(pubkey)),
         child: _OthersFollowingStatView(
           pubkey: pubkey,
           displayName: displayName,
@@ -63,14 +67,20 @@ class ProfileFollowingStat extends ConsumerWidget {
 }
 
 /// View widget for current user's following stat.
-class _MyFollowingStatView extends StatelessWidget {
+class _MyFollowingStatView extends ConsumerWidget {
   const _MyFollowingStatView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<MyFollowingBloc>().add(
+        const MyFollowingBlocklistChanged(),
+      );
+    });
+
     return BlocBuilder<MyFollowingBloc, MyFollowingState>(
       builder: (context, state) {
         // MyFollowingBloc starts with success status (cached data)
@@ -91,7 +101,7 @@ class _MyFollowingStatView extends StatelessWidget {
 }
 
 /// View widget for other user's following stat.
-class _OthersFollowingStatView extends StatelessWidget {
+class _OthersFollowingStatView extends ConsumerWidget {
   const _OthersFollowingStatView({
     required this.pubkey,
     required this.displayName,
@@ -101,7 +111,13 @@ class _OthersFollowingStatView extends StatelessWidget {
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<OthersFollowingBloc>().add(
+        const OthersFollowingBlocklistChanged(),
+      );
+    });
+
     return BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
       builder: (context, state) {
         final isLoading =

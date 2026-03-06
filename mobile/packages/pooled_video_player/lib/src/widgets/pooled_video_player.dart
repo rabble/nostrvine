@@ -24,10 +24,7 @@ typedef OverlayBuilder =
 
 /// Builder for the error state.
 typedef ErrorBuilder =
-    Widget Function(
-      BuildContext context,
-      VoidCallback onRetry,
-    );
+    Widget Function(BuildContext context, VoidCallback onRetry);
 
 /// Video player widget that displays a video from [VideoFeedController].
 class PooledVideoPlayer extends StatelessWidget {
@@ -103,15 +100,18 @@ class PooledVideoPlayer extends StatelessWidget {
         } else if (videoController != null &&
             player != null &&
             loadState == LoadState.ready) {
+          final loadingPlaceholder =
+              loadingBuilder?.call(context) ??
+              _DefaultLoadingState(thumbnailUrl: thumbnailUrl);
           content = Stack(
             fit: StackFit.expand,
             children: [
-              // Keep the loading placeholder behind the video so the
-              // thumbnail stays visible while the Video widget renders
-              // its first frame, preventing a black flash on transition.
-              loadingBuilder?.call(context) ??
-                  _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
-              videoBuilder(context, videoController, player),
+              // Keep placeholder visible until the first frame is rendered.
+              loadingPlaceholder,
+              _RevealVideoAfterFirstFrame(
+                videoController: videoController,
+                child: videoBuilder(context, videoController, player),
+              ),
               if (overlayBuilder != null)
                 overlayBuilder!(context, videoController, player),
             ],
@@ -138,6 +138,56 @@ class PooledVideoPlayer extends StatelessWidget {
   }
 }
 
+class _RevealVideoAfterFirstFrame extends StatefulWidget {
+  const _RevealVideoAfterFirstFrame({
+    required this.videoController,
+    required this.child,
+  });
+
+  final VideoController videoController;
+  final Widget child;
+
+  @override
+  State<_RevealVideoAfterFirstFrame> createState() =>
+      _RevealVideoAfterFirstFrameState();
+}
+
+class _RevealVideoAfterFirstFrameState
+    extends State<_RevealVideoAfterFirstFrame> {
+  late Future<void> _firstFrameFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _firstFrameFuture = widget.videoController.waitUntilFirstFrameRendered;
+  }
+
+  @override
+  void didUpdateWidget(covariant _RevealVideoAfterFirstFrame oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.videoController, widget.videoController)) {
+      _firstFrameFuture = widget.videoController.waitUntilFirstFrameRendered;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _firstFrameFuture,
+      builder: (context, snapshot) {
+        final hasRenderedFirstFrame =
+            snapshot.connectionState == ConnectionState.done;
+        return AnimatedOpacity(
+          duration: const Duration(milliseconds: 120),
+          curve: Curves.easeOut,
+          opacity: hasRenderedFirstFrame ? 1 : 0,
+          child: widget.child,
+        );
+      },
+    );
+  }
+}
+
 /// Default loading state.
 class _DefaultLoadingState extends StatelessWidget {
   const _DefaultLoadingState({this.thumbnailUrl});
@@ -158,9 +208,7 @@ class _DefaultLoadingState extends StatelessWidget {
               errorBuilder: (context, error, stackTrace) =>
                   const SizedBox.shrink(),
             ),
-          const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
         ],
       ),
     );

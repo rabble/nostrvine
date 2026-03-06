@@ -303,13 +303,6 @@ class _DivineButtonContent extends StatelessWidget {
       ),
     );
 
-    if (expanded) {
-      return SizedBox(
-        width: double.infinity,
-        child: button,
-      );
-    }
-
     return button;
   }
 }

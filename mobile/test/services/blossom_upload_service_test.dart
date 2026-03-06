@@ -73,7 +73,7 @@ void main() {
       });
 
       test('should save and retrieve Blossom enabled state', () async {
-        // Act & Assert - Initially disabled by default (uses diVine's server)
+        // Act & Assert - Initially disabled by default (uses Divine's server)
         expect(await service.isBlossomEnabled(), isFalse);
 
         // Enable custom Blossom server
@@ -87,7 +87,7 @@ void main() {
     });
 
     group('Upload Validation', () {
-      // Note: When Blossom is disabled, uploads succeed using the default diVine
+      // Note: When Blossom is disabled, uploads succeed using the default Divine
       // server (blossom.divine.video), so there's no "not enabled" error case.
 
       test('should fail upload if no server is configured', () async {
@@ -550,7 +550,7 @@ void main() {
       });
 
       // Note: When Blossom is disabled, bug report uploads succeed using the
-      // default diVine server (blossom.divine.video), so there's no failure case.
+      // default Divine server (blossom.divine.video), so there's no failure case.
     });
 
     group('Image Upload - File Extension Correction', () {

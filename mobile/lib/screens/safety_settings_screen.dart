@@ -441,7 +441,6 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Future<void> _unblockUser(String pubkey) async {
     final blocklistService = ref.read(contentBlocklistServiceProvider);
     blocklistService.unblockUser(pubkey);
-    ref.read(blocklistVersionProvider.notifier).increment();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

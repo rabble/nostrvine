@@ -4,11 +4,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
+import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/widgets/video_explore_tile.dart';
+
+class _MockModerationLabelService extends Mock
+    implements ModerationLabelService {}
+
+class _MockVideoModerationStatusService extends Mock
+    implements VideoModerationStatusService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +48,10 @@ void main() {
     required Nip05VerificationStatus verificationStatus,
     String? nip05,
   }) {
+    final mockLabelService = _MockModerationLabelService();
+    when(() => mockLabelService.getAIDetectionResult(any())).thenReturn(null);
+    when(() => mockLabelService.getAIDetectionByHash(any())).thenReturn(null);
+
     return ProviderScope(
       overrides: [
         userProfileReactiveProvider.overrideWith(
@@ -52,6 +66,12 @@ void main() {
         ),
         nip05VerificationProvider.overrideWith(
           (ref, pubkey) async => verificationStatus,
+        ),
+        moderationLabelServiceProvider.overrideWithValue(
+          mockLabelService,
+        ),
+        videoModerationStatusServiceProvider.overrideWithValue(
+          _MockVideoModerationStatusService(),
         ),
       ],
       child: MaterialApp(

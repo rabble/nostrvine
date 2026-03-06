@@ -92,7 +92,9 @@ class VideosRepository {
   ///
   /// Returns a [HomeFeedResult] containing videos sorted by creation time
   /// (newest first) plus attribution metadata mapping videos to their
-  /// source curated lists. Returns empty result if [authors] is empty.
+  /// source curated lists. Returns empty result if both [authors] is empty
+  /// and [userPubkey] is null. When [userPubkey] is provided, the Funnelcake
+  /// API is attempted even with an empty [authors] list (fast-path startup).
   Future<HomeFeedResult> getHomeFeedVideos({
     required List<String> authors,
     Map<String, List<String>> videoRefs = const {},
@@ -100,7 +102,9 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
   }) async {
-    if (authors.isEmpty) return const HomeFeedResult(videos: []);
+    if (authors.isEmpty && userPubkey == null) {
+      return const HomeFeedResult(videos: []);
+    }
 
     // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
     final followingVideos = await _fetchFollowingVideos(
@@ -129,13 +133,17 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
   }) async {
+    final effectiveUserPubkey =
+        userPubkey ??
+        (_nostrClient.publicKey.isNotEmpty ? _nostrClient.publicKey : null);
+
     // Try Funnelcake API first (if user pubkey provided)
-    if (userPubkey != null &&
+    if (effectiveUserPubkey != null &&
         _funnelcakeApiClient != null &&
         _funnelcakeApiClient.isAvailable) {
       try {
         final response = await _funnelcakeApiClient.getHomeFeed(
-          pubkey: userPubkey,
+          pubkey: effectiveUserPubkey,
           limit: limit,
           before: until,
         );
@@ -147,7 +155,10 @@ class VideosRepository {
       }
     }
 
-    // Nostr fallback
+    // Nostr fallback — skip when authors list is empty (fast-path startup
+    // before follow list is ready).
+    if (authors.isEmpty) return [];
+
     final filter = Filter(
       kinds: [_videoKind],
       authors: authors,
@@ -891,6 +902,17 @@ class VideosRepository {
               v.hashtags.any((h) => h.toLowerCase().contains(queryLower)),
         )
         .toList();
+  }
+
+  /// Counts local video matches without remote search.
+  ///
+  /// This still relies on local cache search, but avoids the remote API and
+  /// relay phases when a tab only needs a badge count.
+  Future<int> countVideosLocally({
+    required String query,
+  }) async {
+    final matches = await searchVideosLocally(query: query);
+    return matches.length;
   }
 
   /// Searches NIP-50 relays for videos matching [query].

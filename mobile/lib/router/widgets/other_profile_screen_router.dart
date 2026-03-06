@@ -1,9 +1,11 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/user_not_available_screen.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 
@@ -24,6 +26,7 @@ class OtherProfileScreenRouter extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(blocklistVersionProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
     final targetHex = npubToHexOrNull(npub);
     final currentUserHex = nostrClient.publicKey;
@@ -39,6 +42,14 @@ class OtherProfileScreenRouter extends ConsumerWidget {
         context.go(ProfileScreenRouter.pathForNpub(npub));
       });
       return const BrandedLoadingScaffold();
+    }
+
+    // If this user has blocked us, show unavailable
+    if (targetHex != null) {
+      final blocklistService = ref.watch(contentBlocklistServiceProvider);
+      if (blocklistService.hasBlockedUs(targetHex)) {
+        return UserNotAvailableScreen(onBack: context.pop);
+      }
     }
 
     return OtherProfileScreen(

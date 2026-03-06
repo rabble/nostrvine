@@ -522,7 +522,7 @@ class MuteService {
 
       final event = await _authService.createAndSignEvent(
         kind: 10000, // NIP-51 mute list
-        content: 'divine mute list',
+        content: 'Divine mute list',
         tags: tags,
       );
 

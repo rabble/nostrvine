@@ -15,6 +15,9 @@ import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
+const _toggleFollowErrorMessage =
+    'Failed to update follow status. Please try again.';
+
 /// Page widget for displaying current user's followers list.
 ///
 /// Creates both [MyFollowersBloc] (for the list) and [MyFollowingBloc]
@@ -27,6 +30,7 @@ class MyFollowersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -36,14 +40,16 @@ class MyFollowersScreen extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) =>
-              MyFollowersBloc(followRepository: followRepository)
-                ..add(const MyFollowersListLoadRequested()),
+          create: (_) => MyFollowersBloc(
+            followRepository: followRepository,
+            contentBlocklistService: blocklistService,
+          )..add(const MyFollowersListLoadRequested()),
         ),
         BlocProvider(
-          create: (_) =>
-              MyFollowingBloc(followRepository: followRepository)
-                ..add(const MyFollowingListLoadRequested()),
+          create: (_) => MyFollowingBloc(
+            followRepository: followRepository,
+            contentBlocklistService: blocklistService,
+          )..add(const MyFollowingListLoadRequested()),
         ),
       ],
       child: _MyFollowersView(displayName: displayName),
@@ -51,13 +57,19 @@ class MyFollowersScreen extends ConsumerWidget {
   }
 }
 
-class _MyFollowersView extends StatelessWidget {
+class _MyFollowersView extends ConsumerWidget {
   const _MyFollowersView({required this.displayName});
 
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<MyFollowersBloc>().add(
+        const MyFollowersBlocklistChanged(),
+      );
+    });
+
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Followers"
         : 'Followers';
@@ -119,11 +131,11 @@ class _MyFollowersView extends StatelessWidget {
           ),
           BlocListener<MyFollowingBloc, MyFollowingState>(
             listenWhen: (previous, current) =>
-                current.toggleError != null &&
-                current.toggleError != previous.toggleError,
+                current.status == MyFollowingStatus.toggleFailure &&
+                previous.status != MyFollowingStatus.toggleFailure,
             listener: (context, state) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.toggleError!)),
+                const SnackBar(content: Text(_toggleFollowErrorMessage)),
               );
             },
           ),

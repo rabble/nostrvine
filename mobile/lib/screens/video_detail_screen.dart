@@ -131,6 +131,8 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(blocklistVersionProvider);
+
     if (_isLoading) {
       return const Scaffold(
         backgroundColor: VineTheme.backgroundColor,

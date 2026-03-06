@@ -837,9 +837,26 @@ class VideoEvent {
     return proofModeVerificationLevel == 'basic_proof';
   }
 
-  /// Original Vine: Check if this is a recovered original vine
+  /// Original Vine: Check if this is a recovered original vine from the
+  /// Internet Archive.  Uses the server-controlled `platform` field from
+  /// Funnelcake (set to "vine" for genuine archive imports).  This cannot
+  /// be spoofed by publishing a crafted Nostr event because `platform` is
+  /// relay metadata, not a user-settable tag.
   bool get isOriginalVine {
-    return originalLoops != null && originalLoops! > 0;
+    return rawTags['platform'] == 'vine';
+  }
+
+  /// Vintage recovered Vine: original Vine metrics plus a pre-shutdown date.
+  ///
+  /// New Divine videos can also carry loop stats, so loop count alone is not
+  /// sufficient when the UI needs to know whether this is genuinely old archive
+  /// content.
+  bool get isVintageRecoveredVine {
+    if (!isOriginalVine) return false;
+
+    final effectiveCreatedAt = int.tryParse(publishedAt ?? '') ?? createdAt;
+    return effectiveCreatedAt > 0 &&
+        effectiveCreatedAt < _vineShutdownAtUtcSeconds;
   }
 
   /// Check if this is original content (not a repost)
@@ -917,6 +934,8 @@ class VideoEvent {
 
     return score;
   }
+
+  static const int _vineShutdownAtUtcSeconds = 1484611200;
 
   /// Parse imeta tag which contains space-separated key-value pairs
   /// NIP-71 format: ["imeta", "key1 value1", "key2 value2", ...]

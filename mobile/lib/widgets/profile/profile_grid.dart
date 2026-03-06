@@ -202,6 +202,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final videosRepository = ref.watch(videosRepositoryProvider);
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final nostrService = ref.watch(nostrServiceProvider);
+    final contentBlocklistService = ref.watch(contentBlocklistServiceProvider);
     final currentUserPubkey = nostrService.publicKey;
 
     // Show loading state until NostrClient has keys
@@ -423,9 +424,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // This allows the follow button to update the followers count optimistically
     if (!widget.isOwnProfile) {
       return BlocProvider<OthersFollowersBloc>(
-        create: (_) =>
-            OthersFollowersBloc(followRepository: followRepository)
-              ..add(OthersFollowersListLoadRequested(widget.userIdHex)),
+        create: (_) => OthersFollowersBloc(
+          followRepository: followRepository,
+          contentBlocklistService: contentBlocklistService,
+          currentUserPubkey: currentUserPubkey,
+        )..add(OthersFollowersListLoadRequested(widget.userIdHex)),
         child: content,
       );
     }

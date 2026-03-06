@@ -14,6 +14,25 @@ class DivineSnackbarContainer extends StatelessWidget {
     super.key,
   });
 
+  /// Returns a fully styled [SnackBar] wrapping a [DivineSnackbarContainer].
+  static SnackBar snackBar(
+    String message, {
+    bool error = false,
+    String? actionLabel,
+    VoidCallback? onActionPressed,
+  }) => SnackBar(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    padding: EdgeInsets.zero,
+    behavior: SnackBarBehavior.floating,
+    content: DivineSnackbarContainer(
+      label: message,
+      error: error,
+      actionLabel: actionLabel,
+      onActionPressed: onActionPressed,
+    ),
+  );
+
   /// The label of the snackbar.
   final String label;
 
@@ -56,6 +75,11 @@ class DivineSnackbarContainer extends StatelessWidget {
             if (actionLabel != null && onActionPressed != null)
               TextButton(
                 onPressed: onActionPressed,
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  minimumSize: const Size(48, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
                 child: Text(
                   actionLabel!,
                   style: textStyle.copyWith(

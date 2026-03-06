@@ -20,6 +20,10 @@ void main() {
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
+      when(
+        () =>
+            mockProfileRepository.countUsersLocally(query: any(named: 'query')),
+      ).thenAnswer((_) async => 0);
     });
 
     UserSearchBloc createBloc() =>
@@ -50,6 +54,7 @@ void main() {
       expect(bloc.state.status, UserSearchStatus.initial);
       expect(bloc.state.query, isEmpty);
       expect(bloc.state.results, isEmpty);
+      expect(bloc.state.resultCount, isNull);
       expect(bloc.state.offset, 0);
       expect(bloc.state.hasMore, isFalse);
       expect(bloc.state.isLoadingMore, isFalse);
@@ -186,6 +191,19 @@ void main() {
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
+        'emits initial state when query is a single character',
+        build: createBloc,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('a')),
+        wait: debounceDuration,
+        expect: () => [const UserSearchState()],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.searchUsers(query: any(named: 'query')),
+          );
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
         'does not re-search when query has not changed',
         build: createBloc,
         seed: () => UserSearchState(
@@ -207,6 +225,77 @@ void main() {
             ),
           );
         },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'emits local count only when full results are not requested',
+        setUp: () {
+          when(
+            () => mockProfileRepository.countUsersLocally(query: 'alice'),
+          ).thenAnswer((_) async => 7);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const UserSearchQueryChanged('alice', fetchResults: false),
+        ),
+        wait: debounceDuration,
+        expect: () => const [
+          UserSearchState(
+            query: 'alice',
+            resultCount: 7,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.countUsersLocally(query: 'alice'),
+          ).called(1);
+          verifyNever(
+            () => mockProfileRepository.searchUsers(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          );
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'runs full search after a count-only update for the same query',
+        setUp: () {
+          when(
+            () => mockProfileRepository.countUsersLocally(query: 'alice'),
+          ).thenAnswer((_) async => 2);
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const UserSearchQueryChanged('alice', fetchResults: false));
+          await Future<void>.delayed(debounceDuration);
+          bloc.add(const UserSearchQueryChanged('alice'));
+        },
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            query: 'alice',
+            resultCount: 2,
+          ),
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'alice',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.results.length, 'results.length', 1)
+              .having((s) => s.resultCount, 'resultCount', 1),
+        ],
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
@@ -606,6 +695,164 @@ void main() {
       );
     });
 
+    group('results preservation on failure', () {
+      const debounceDuration = Duration(milliseconds: 400);
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'preserves previous results when a subsequent query fails',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [createTestProfile('a' * 64, 'Alice')],
+          );
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'error',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const UserSearchQueryChanged('alice'));
+          await Future<void>.delayed(debounceDuration);
+          bloc.add(const UserSearchQueryChanged('error'));
+        },
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'alice',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.results.length, 'results.length', 1),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.query, 'query', 'error')
+              .having(
+                (s) => s.results.length,
+                'results preserved',
+                1,
+              ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.failure)
+              .having(
+                (s) => s.results.length,
+                'results still preserved',
+                1,
+              ),
+        ],
+      );
+    });
+
+    group('multiple sequential results', () {
+      const debounceDuration = Duration(milliseconds: 400);
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'replaces previous results when a new query succeeds',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [createTestProfile('a' * 64, 'Alice')],
+          );
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'bob',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              createTestProfile('b' * 64, 'Bob'),
+              createTestProfile('c' * 64, 'Bobby'),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const UserSearchQueryChanged('alice'));
+          await Future<void>.delayed(debounceDuration);
+          bloc.add(const UserSearchQueryChanged('bob'));
+        },
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'alice',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.results.length, 'results.length', 1)
+              .having(
+                (s) => s.results.first.displayName,
+                'first result',
+                'Alice',
+              ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.loading)
+              .having((s) => s.query, 'query', 'bob'),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.results.length, 'results.length', 2)
+              .having(
+                (s) => s.results.first.displayName,
+                'first result',
+                'Bob',
+              ),
+        ],
+      );
+    });
+
+    group('null feed tracker', () {
+      const debounceDuration = Duration(milliseconds: 400);
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'succeeds without errors when feedTracker is null',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [createTestProfile('a' * 64, 'Alice')],
+          );
+        },
+        build: () => UserSearchBloc(
+          profileRepository: mockProfileRepository,
+        ),
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
+        wait: debounceDuration,
+        expect: () => [
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'alice',
+          ),
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having((s) => s.results.length, 'results.length', 1),
+        ],
+      );
+    });
+
     group('UserSearchState', () {
       test('copyWith creates copy with updated values', () {
         const state = UserSearchState();
@@ -641,6 +888,7 @@ void main() {
         expect(updated.status, UserSearchStatus.loading);
         expect(updated.query, 'test');
         expect(updated.results, hasLength(1));
+        expect(updated.resultCount, isNull);
         expect(updated.offset, 10);
         expect(updated.hasMore, isTrue);
         expect(updated.isLoadingMore, isTrue);
@@ -660,6 +908,7 @@ void main() {
           UserSearchStatus.success,
           'alice',
           [profile],
+          -1,
           1,
           true,
           false,

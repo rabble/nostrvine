@@ -1,7 +1,7 @@
 {
   "name": "openvine-website",
   "version": "1.0.0",
-  "description": "diVine landing page - A decentralized vine-like video platform",
+  "description": "Divine landing page - A decentralized vine-like video platform",
   "main": "index.html",
   "scripts": {
     "dev": "npx live-server --port=8080",
@@ -14,7 +14,7 @@
     "video",
     "vine"
   ],
-  "author": "diVine Team",
+  "author": "Divine Team",
   "license": "MPL-2.0",
   "devDependencies": {
     "http-server": "^14.1.1",

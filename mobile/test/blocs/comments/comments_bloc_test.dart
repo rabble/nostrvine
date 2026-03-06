@@ -15,7 +15,6 @@ import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
@@ -26,8 +25,6 @@ class _MockLikesRepository extends Mock implements LikesRepository {}
 
 class _MockContentReportingService extends Mock
     implements ContentReportingService {}
-
-class _MockMuteService extends Mock implements MuteService {}
 
 class _MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}
@@ -47,7 +44,6 @@ void main() {
     late _MockAuthService mockAuthService;
     late _MockLikesRepository mockLikesRepository;
     late _MockContentReportingService mockContentReportingService;
-    late _MockMuteService mockMuteService;
     late _MockContentBlocklistService mockContentBlocklistService;
     late _MockUserProfileService mockUserProfileService;
     late _MockFollowRepository mockFollowRepository;
@@ -65,7 +61,6 @@ void main() {
       mockAuthService = _MockAuthService();
       mockLikesRepository = _MockLikesRepository();
       mockContentReportingService = _MockContentReportingService();
-      mockMuteService = _MockMuteService();
       mockContentBlocklistService = _MockContentBlocklistService();
       mockUserProfileService = _MockUserProfileService();
       mockFollowRepository = _MockFollowRepository();
@@ -127,7 +122,6 @@ void main() {
       authService: mockAuthService,
       likesRepository: mockLikesRepository,
       contentReportingServiceFuture: Future.value(mockContentReportingService),
-      muteServiceFuture: Future.value(mockMuteService),
       contentBlocklistService: mockContentBlocklistService,
       rootEventId: rootEventId ?? validId('root'),
       rootEventKind: testRootEventKind,
@@ -2030,11 +2024,9 @@ void main() {
         'blocks user and removes their comments',
         setUp: () {
           when(
-            () => mockMuteService.muteUser(any()),
-          ).thenAnswer((_) async => true);
-          when(
             () => mockContentBlocklistService.blockUser(any()),
           ).thenReturn(null);
+          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
         },
         build: createBloc,
         seed: () {
@@ -2108,7 +2100,6 @@ void main() {
               }),
         ],
         verify: (_) {
-          verify(() => mockMuteService.muteUser(validId('baduser'))).called(1);
           verify(
             () => mockContentBlocklistService.blockUser(validId('baduser')),
           ).called(1);
@@ -2119,7 +2110,7 @@ void main() {
         'emits error when blocking fails',
         setUp: () {
           when(
-            () => mockMuteService.muteUser(any()),
+            () => mockContentBlocklistService.blockUser(any()),
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
