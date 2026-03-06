@@ -18,6 +18,7 @@ import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
@@ -834,11 +835,13 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     // Close the share menu first
     _safePop(ctx);
 
-    // Resolve the creator's display name from their profile
+    // Resolve the creator's displayed NIP-05 or fallback handle.
     final profileService = ref.read(userProfileServiceProvider);
     final profile = profileService.getCachedProfile(widget.video.pubkey);
-    final username =
-        profile?.bestDisplayName ?? widget.video.authorName ?? 'Divine';
+    final watermarkText = resolveWatermarkText(
+      profile: profile,
+      fallbackAuthorName: widget.video.authorName,
+    );
 
     if (!ctx.mounted) return;
 
@@ -846,7 +849,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       context: ctx,
       ref: ref,
       video: widget.video,
-      username: username,
+      watermarkText: watermarkText,
     );
   }
 

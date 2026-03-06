@@ -72,7 +72,7 @@ extension VideoEventAppExtensions on VideoEvent {
   /// - AND does NOT have ProofMode verification (those show ProofMode badge)
   /// - AND is NOT a vintage recovered vine (those show V Original badge)
   bool get shouldShowNotDivineBadge {
-    return !isFromDivineServer && !hasProofMode && !isOriginalVine;
+    return !isFromDivineServer && !hasProofMode && !isVintageRecoveredVine;
   }
 
   // ---------------------------------------------------------------------------

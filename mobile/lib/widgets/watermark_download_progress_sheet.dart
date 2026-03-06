@@ -18,7 +18,7 @@ Future<void> showWatermarkDownloadSheet({
   required BuildContext context,
   required WidgetRef ref,
   required VideoEvent video,
-  required String username,
+  required String watermarkText,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -30,7 +30,7 @@ Future<void> showWatermarkDownloadSheet({
     ),
     builder: (sheetContext) => _WatermarkDownloadProgressSheet(
       video: video,
-      username: username,
+      watermarkText: watermarkText,
       ref: ref,
     ),
   );
@@ -39,12 +39,12 @@ Future<void> showWatermarkDownloadSheet({
 class _WatermarkDownloadProgressSheet extends StatefulWidget {
   const _WatermarkDownloadProgressSheet({
     required this.video,
-    required this.username,
+    required this.watermarkText,
     required this.ref,
   });
 
   final VideoEvent video;
-  final String username;
+  final String watermarkText;
   final WidgetRef ref;
 
   @override
@@ -69,7 +69,7 @@ class _WatermarkDownloadProgressSheetState
 
     final result = await service.downloadWithWatermark(
       video: widget.video,
-      username: widget.username,
+      watermarkText: widget.watermarkText,
       onProgress: (stage) {
         if (mounted) {
           setState(() => _stage = stage);

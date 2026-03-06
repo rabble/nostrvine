@@ -842,6 +842,19 @@ class VideoEvent {
     return originalLoops != null && originalLoops! > 0;
   }
 
+  /// Vintage recovered Vine: original Vine metrics plus a pre-shutdown date.
+  ///
+  /// New Divine videos can also carry loop stats, so loop count alone is not
+  /// sufficient when the UI needs to know whether this is genuinely old archive
+  /// content.
+  bool get isVintageRecoveredVine {
+    if (!isOriginalVine) return false;
+
+    final effectiveCreatedAt = int.tryParse(publishedAt ?? '') ?? createdAt;
+    return effectiveCreatedAt > 0 &&
+        effectiveCreatedAt < _vineShutdownAtUtcSeconds;
+  }
+
   /// Check if this is original content (not a repost)
   bool get isOriginalContent {
     return !isRepost;
@@ -917,6 +930,8 @@ class VideoEvent {
 
     return score;
   }
+
+  static const int _vineShutdownAtUtcSeconds = 1484611200;
 
   /// Parse imeta tag which contains space-separated key-value pairs
   /// NIP-71 format: ["imeta", "key1 value1", "key2 value2", ...]

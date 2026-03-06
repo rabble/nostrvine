@@ -4,10 +4,13 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -150,16 +153,24 @@ class _UserSearchResultsListState extends State<_UserSearchResultsList> {
 
 /// Tile widget for displaying a user from search results.
 /// Uses UserProfile from package:models directly.
-class _SearchUserTile extends StatelessWidget {
+class _SearchUserTile extends ConsumerWidget {
   const _SearchUserTile({required this.profile, this.onTap});
 
   final UserProfile profile;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final followerCount = profile.rawData['follower_count'] as int?;
     final videoCount = profile.rawData['video_count'] as int?;
+    final claimedNip05 = profile.displayNip05;
+    final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
+        ? ref
+              .watch(nip05VerificationProvider(profile.pubkey))
+              .whenOrNull(data: (status) => status)
+        : null;
+    final showVerifiedNip05 =
+        verificationStatus == Nip05VerificationStatus.verified;
 
     return Semantics(
       identifier: 'search_user_tile_${profile.pubkey}',
@@ -190,6 +201,19 @@ class _SearchUserTile extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (showVerifiedNip05 && claimedNip05 != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          claimedNip05,
+                          style: const TextStyle(
+                            color: VineTheme.vineGreen,
+                            fontSize: 13,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     if (followerCount != null || videoCount != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
@@ -273,10 +297,7 @@ class _UserSearchErrorState extends StatelessWidget {
         children: [
           Icon(Icons.error_outline, size: 64, color: VineTheme.error),
           SizedBox(height: 16),
-          Text(
-            'Search failed',
-            style: TextStyle(color: VineTheme.lightText),
-          ),
+          Text('Search failed', style: TextStyle(color: VineTheme.lightText)),
         ],
       ),
     );

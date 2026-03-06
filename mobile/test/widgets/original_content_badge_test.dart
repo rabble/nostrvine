@@ -105,7 +105,7 @@ void main() {
         final event = Event.fromJson({
           'id': 'vintage1234567890abcdef',
           'pubkey': 'pubkey1234567890abcdef',
-          'created_at': 1234567890,
+          'created_at': 1473050841,
           'kind': 34236,
           'content': 'Vintage vine',
           'tags': [

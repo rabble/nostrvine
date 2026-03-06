@@ -15,7 +15,7 @@ class BadgeExplanationModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isVineArchive = video.isOriginalVine;
+    final isVineArchive = video.isVintageRecoveredVine;
 
     return AlertDialog(
       backgroundColor: VineTheme.cardBackground,
