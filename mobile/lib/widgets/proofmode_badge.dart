@@ -72,40 +72,40 @@ class ProofModeBadge extends StatelessWidget {
         return const _BadgeConfig(
           label: 'Human Made',
           icon: Icons.verified,
-          backgroundColor: Color(0xFF1A2A3A), // Dark platinum bg
-          borderColor: Color(0xFFE5E4E2), // Platinum
+          backgroundColor: Color(0xFF161A1D), // Neutral shell for readability
+          borderColor: Color(0xFF434A52), // Neutral shell border
           iconColor: Color(0xFFE5E4E2),
-          textColor: Color(0xFFE5E4E2),
+          textColor: Color(0xFFF5F7FA),
         );
       case VerificationLevel.verifiedMobile:
         // Gold — device attestation + ProofMode + C2PA
         return const _BadgeConfig(
           label: 'Human Made',
           icon: Icons.verified,
-          backgroundColor: Color(0xFF3D2E00), // Dark gold bg
-          borderColor: Color(0xFFFFD700), // Gold
+          backgroundColor: Color(0xFF161A1D), // Neutral shell for readability
+          borderColor: Color(0xFF434A52), // Neutral shell border
           iconColor: Color(0xFFFFD700),
-          textColor: Color(0xFFFFD700),
+          textColor: Color(0xFFF5F7FA),
         );
       case VerificationLevel.verifiedWeb:
         // Silver — cryptographic proof without hardware attestation
         return const _BadgeConfig(
           label: 'Human Made',
           icon: Icons.verified_outlined,
-          backgroundColor: Color(0xFF2A2A2A), // Dark silver bg
-          borderColor: Color(0xFFC0C0C0), // Silver
+          backgroundColor: Color(0xFF161A1D), // Neutral shell for readability
+          borderColor: Color(0xFF434A52), // Neutral shell border
           iconColor: Color(0xFFC0C0C0),
-          textColor: Color(0xFFC0C0C0),
+          textColor: Color(0xFFF5F7FA),
         );
       case VerificationLevel.basicProof:
         // Bronze — basic proof data
         return const _BadgeConfig(
           label: 'Human Made',
           icon: Icons.verified_outlined,
-          backgroundColor: Color(0xFF2E1F0F), // Dark bronze bg
-          borderColor: Color(0xFFCD7F32), // Bronze
+          backgroundColor: Color(0xFF161A1D), // Neutral shell for readability
+          borderColor: Color(0xFF434A52), // Neutral shell border
           iconColor: Color(0xFFCD7F32),
-          textColor: Color(0xFFCD7F32),
+          textColor: Color(0xFFF5F7FA),
         );
       case VerificationLevel.unverified:
         return const _BadgeConfig(
