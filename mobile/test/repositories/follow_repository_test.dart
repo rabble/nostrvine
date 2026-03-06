@@ -1188,39 +1188,74 @@ void main() {
       });
     });
 
-    group('initialized completer', () {
-      test('completes after successful initialize()', () async {
-        await repository.initialize();
+    group('followingStream force-emit on initialize', () {
+      test(
+        'emits on followingStream after initialize '
+        'when user has no follows',
+        () async {
+          // No cached follows, no PersonalEventCache, no relay data
+          SharedPreferences.setMockInitialValues({});
 
-        // initialized should complete immediately since initialize() finished
-        await expectLater(repository.initialized, completes);
-      });
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            personalEventCache: mockPersonalEventCache,
+            indexerRelayUrls: const [],
+          );
 
-      test('completes even when initialization fails', () async {
-        // Force SharedPreferences to throw during load
-        SharedPreferences.setMockInitialValues({
-          'following_list_$testCurrentUserPubkey': 'invalid json{{{',
-        });
+          final emissions = <List<String>>[];
+          final subscription = repository.followingStream.listen(
+            emissions.add,
+          );
 
-        repository = FollowRepository(
-          nostrClient: mockNostrClient,
-          personalEventCache: mockPersonalEventCache,
-          indexerRelayUrls: const [],
-        );
+          // Seed value is [] — capture it
+          await Future<void>.delayed(Duration.zero);
+          final preInitCount = emissions.length;
 
-        await repository.initialize();
+          await repository.initialize();
+          await Future<void>.delayed(Duration.zero);
 
-        // initialized should still complete despite the error
-        await expectLater(repository.initialized, completes);
-      });
+          // Force-emit should add one more [] emission
+          expect(emissions.length, greaterThan(preInitCount));
+          expect(emissions.last, isEmpty);
 
-      test('completes when dispose() called before initialize()', () async {
-        // dispose without ever calling initialize
-        await repository.dispose();
+          await subscription.cancel();
+        },
+      );
 
-        // initialized should complete because dispose completes the Completer
-        await expectLater(repository.initialized, completes);
-      });
+      test(
+        'does not double-emit after initialize '
+        'when user has follows',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+          });
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            personalEventCache: mockPersonalEventCache,
+            indexerRelayUrls: const [],
+          );
+
+          final emissions = <List<String>>[];
+          final subscription = repository.followingStream.listen(
+            emissions.add,
+          );
+
+          await repository.initialize();
+          await Future<void>.delayed(Duration.zero);
+
+          // Should emit exactly once with the follow list (from
+          // _emitFollowingList during _loadFromLocalStorage), no
+          // extra force-emit because _followingPubkeys is non-empty.
+          final nonSeedEmissions = emissions
+              .where((e) => e.isNotEmpty)
+              .toList();
+          expect(nonSeedEmissions, hasLength(1));
+          expect(nonSeedEmissions.first, contains(testTargetPubkey));
+
+          await subscription.cancel();
+        },
+      );
     });
 
     group('getSocialCounts', () {

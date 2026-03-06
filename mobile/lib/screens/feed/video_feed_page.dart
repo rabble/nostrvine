@@ -48,6 +48,7 @@ class VideoFeedPage extends ConsumerWidget {
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
+    final authService = ref.watch(authServiceProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -59,6 +60,7 @@ class VideoFeedPage extends ConsumerWidget {
         videosRepository: videosRepository,
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
+        userPubkey: authService.currentPublicKeyHex,
         feedTracker: FeedPerformanceTracker(),
       )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),

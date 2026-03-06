@@ -1,24 +1,27 @@
 // ABOUTME: Tests for CountdownSoundService - countdown beep playback.
 // ABOUTME: Covers preload, playShortBeep, playLongBeepAndWait, dispose,
-// ABOUTME: and error/edge-case handling using mocktail AudioPlayer mocks.
+// ABOUTME: and error/edge-case handling using mocktail SimpleAudioPlayer mocks.
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sound_service/sound_service.dart';
 
-class _MockAudioPlayer extends Mock implements AudioPlayer {}
+class _MockSimpleAudioPlayer extends Mock implements SimpleAudioPlayer {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(Duration.zero);
+  });
+
   group(CountdownSoundService, () {
-    late _MockAudioPlayer mockShortPlayer;
-    late _MockAudioPlayer mockLongPlayer;
+    late _MockSimpleAudioPlayer mockShortPlayer;
+    late _MockSimpleAudioPlayer mockLongPlayer;
     late int factoryCallCount;
     late CountdownSoundService service;
 
     setUp(() {
-      mockShortPlayer = _MockAudioPlayer();
-      mockLongPlayer = _MockAudioPlayer();
+      mockShortPlayer = _MockSimpleAudioPlayer();
+      mockLongPlayer = _MockSimpleAudioPlayer();
       factoryCallCount = 0;
 
       service = CountdownSoundService(
@@ -78,7 +81,7 @@ void main() {
       ),
     }.entries) {
       group(entry.key, () {
-        late _MockAudioPlayer player;
+        late _MockSimpleAudioPlayer player;
 
         setUp(() {
           player = entry.value.player();

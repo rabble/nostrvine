@@ -757,12 +757,96 @@ void main() {
         });
       });
 
-      test('returns empty list when authors is empty', () async {
-        final result = await repository.getHomeFeedVideos(authors: []);
+      test(
+        'returns empty list when authors is empty '
+        'and userPubkey is null',
+        () async {
+          final result = await repository.getHomeFeedVideos(authors: []);
 
-        expect(result.videos, isEmpty);
-        verifyNever(() => mockNostrClient.queryEvents(any()));
-      });
+          expect(result.videos, isEmpty);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
+        'hits Funnelcake API when authors is empty '
+        'but userPubkey is provided',
+        () async {
+          final mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                ),
+              ],
+              hasMore: true,
+              nextCursor: 1704067100,
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: [],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, hasLength(1));
+          verify(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: 'my-pubkey',
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
+        'skips Nostr fallback when authors is empty '
+        'and Funnelcake returns empty',
+        () async {
+          final mockFunnelcakeClient = MockFunnelcakeApiClient();
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => const HomeFeedResponse(videos: []),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: [],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, isEmpty);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
 
       test('returns empty list when no events found', () async {
         when(() => mockNostrClient.queryEvents(any())).thenAnswer(

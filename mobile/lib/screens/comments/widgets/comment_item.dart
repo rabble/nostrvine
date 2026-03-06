@@ -256,7 +256,7 @@ class _CommentHeader extends ConsumerWidget {
                   Text(
                     relativeTime,
                     style: VineTheme.bodyFont(
-                      color: VineTheme.onSurfaceMuted,
+                      color: Colors.white54,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),

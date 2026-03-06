@@ -28,6 +28,9 @@ import 'package:url_launcher/url_launcher.dart';
 // Key for persisted authentication source
 const _kAuthSourceKey = 'authentication_source';
 
+// Key for the last-used account npub (used to restore the correct identity on restart)
+const _kLastUsedNpubKey = 'last_used_npub';
+
 // Keys for bunker connection persistence
 const _kBunkerInfoKey = 'bunker_info';
 
@@ -433,62 +436,14 @@ class AuthService implements BackgroundAwareService {
           return;
 
         case AuthenticationSource.importedKeys:
-          // Only restore if secure keys exist
-          Log.info(
-            'initialize: restoring imported keys...',
-            name: 'AuthService',
-            category: LogCategory.auth,
+          await _restoreLastUsedAccountOrFallback(
+            AuthenticationSource.importedKeys,
           );
-          try {
-            final hasKeys = await _keyStorage.hasKeys();
-            if (hasKeys) {
-              final keyContainer = await _keyStorage.getKeyContainer();
-              if (keyContainer != null) {
-                Log.info(
-                  'initialize: imported keys found — '
-                  'pubkey=${keyContainer.publicKeyHex}',
-                  name: 'AuthService',
-                  category: LogCategory.auth,
-                );
-                await _setupUserSession(
-                  keyContainer,
-                  AuthenticationSource.importedKeys,
-                );
-                return;
-              }
-              Log.error(
-                'Imported keys: hasKeys() true but getKeyContainer() '
-                'returned null — possible storage corruption',
-                name: 'AuthService',
-                category: LogCategory.auth,
-              );
-              _reportStorageError(
-                StateError(
-                  'hasKeys() true but getKeyContainer() returned null',
-                ),
-                StackTrace.current,
-                'importedKeys storage inconsistency',
-              );
-            }
-          } catch (e, stack) {
-            Log.error(
-              'Secure storage error loading imported keys: $e. '
-              'User will need to re-import their key.',
-              name: 'AuthService',
-              category: LogCategory.auth,
-            );
-            _reportStorageError(e, stack, 'importedKeys load');
-            _lastError =
-                "Couldn't load your saved identity from this device. "
-                'Sign in with your existing account, or continue '
-                'to create a new one.';
-          }
-          _setAuthState(AuthState.unauthenticated);
-          return;
 
         case AuthenticationSource.automatic:
-          // Default behavior: check for keys and auto-create if needed
-          await _checkExistingAuth();
+          await _restoreLastUsedAccountOrFallback(
+            AuthenticationSource.automatic,
+          );
 
         case AuthenticationSource.bunker:
           // Try to restore bunker connection from secure storage
@@ -2385,6 +2340,7 @@ class AuthService implements BackgroundAwareService {
       // returns.
       if (deleteKeys) {
         await prefs.remove(_kAuthSourceKey);
+        await prefs.remove(_kLastUsedNpubKey);
       }
       await prefs.remove('age_verified_16_plus');
       await prefs.remove('terms_accepted_at');
@@ -2717,6 +2673,61 @@ class AuthService implements BackgroundAwareService {
     }
   }
 
+  /// Restores the last-used account's per-identity key, falling back to
+  /// [_checkExistingAuth] when the pref is absent or the key is missing.
+  Future<void> _restoreLastUsedAccountOrFallback(
+    AuthenticationSource source,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastNpub = prefs.getString(_kLastUsedNpubKey);
+
+      if (lastNpub != null && lastNpub.isNotEmpty) {
+        Log.info(
+          '_restoreLastUsedAccountOrFallback: '
+          'found last-used npub, loading identity key...',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        final container = await _keyStorage.getIdentityKeyContainer(lastNpub);
+        if (container != null) {
+          Log.info(
+            '_restoreLastUsedAccountOrFallback: '
+            'identity key found — pubkey=${container.publicKeyHex}',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          await _setupUserSession(container, source);
+          return;
+        }
+        Log.warning(
+          '_restoreLastUsedAccountOrFallback: '
+          'identity key absent for last-used npub — falling back',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      } else {
+        Log.info(
+          '_restoreLastUsedAccountOrFallback: '
+          'no last-used npub stored — falling back to _checkExistingAuth',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+    } catch (e, stack) {
+      Log.warning(
+        '_restoreLastUsedAccountOrFallback: error reading last-used npub: $e '
+        '— falling back to _checkExistingAuth',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _reportStorageError(e, stack, '_restoreLastUsedAccountOrFallback');
+    }
+
+    // Fall back to the original behaviour (load primary key, or create new).
+    await _checkExistingAuth();
+  }
+
   /// Check for existing authentication
   Future<void> _checkExistingAuth() async {
     // If storage already failed once, the user saw the error and chose to
@@ -2967,6 +2978,8 @@ class AuthService implements BackgroundAwareService {
       );
 
       await prefs.setString(_kAuthSourceKey, source.code);
+
+      await prefs.setString(_kLastUsedNpubKey, keyContainer.npub);
 
       // Pre-fetch following list from REST API BEFORE setting auth state.
       // The router redirect fires synchronously on auth state change and reads

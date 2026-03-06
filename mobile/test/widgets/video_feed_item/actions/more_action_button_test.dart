@@ -69,17 +69,6 @@ void main() {
       final semanticsFinder = find.bySemanticsLabel('More options');
       expect(semanticsFinder, findsOneWidget);
     });
-
-    testWidgets('opens moderation menu instead of share sheet', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildMenuWidget(testVideo: testVideo));
-      await tester.tap(find.byType(MoreActionButton));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Report content'), findsOneWidget);
-      expect(find.text('Share with'), findsNothing);
-    });
   });
 
   group('VideoMoreMenu', () {
@@ -91,19 +80,41 @@ void main() {
       mockBlocklistService = _MockContentBlocklistService();
       mockMuteService = _MockMuteService();
       mockNostrClient = createMockNostrService();
+      // Stub publicKey so _handleBlock can access it
       when(() => mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
     });
 
-    testWidgets('renders moderation menu items', (tester) async {
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
+    Widget buildMenuWidget({bool debugToolsEnabled = false}) {
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) =>
+                Scaffold(body: MoreActionButton(video: testVideo)),
+          ),
+        ],
       );
 
+      return testProviderScope(
+        mockUserProfileService: createMockUserProfileService(),
+        mockNostrService: mockNostrClient,
+        additionalOverrides: [
+          contentBlocklistServiceProvider.overrideWith(
+            (ref) => mockBlocklistService,
+          ),
+          muteServiceProvider.overrideWith((ref) async => mockMuteService),
+          isFeatureEnabledProvider(
+            FeatureFlag.debugTools,
+          ).overrideWithValue(debugToolsEnabled),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      );
+    }
+
+    testWidgets('renders moderation menu items', (tester) async {
+      await tester.pumpWidget(buildMenuWidget());
+
+      // Tap the MoreActionButton to open its bottom sheet
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
@@ -115,14 +126,7 @@ void main() {
     testWidgets('hides debug tools when feature flag is disabled', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
-      );
+      await tester.pumpWidget(buildMenuWidget());
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
@@ -133,15 +137,7 @@ void main() {
     testWidgets('shows debug tools when feature flag is enabled', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          debugToolsEnabled: true,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
-      );
+      await tester.pumpWidget(buildMenuWidget(debugToolsEnabled: true));
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
@@ -152,14 +148,7 @@ void main() {
     testWidgets('tapping Report opens $ReportContentDialog', (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1200));
 
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
-      );
+      await tester.pumpWidget(buildMenuWidget());
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
@@ -181,14 +170,7 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
-      );
+      await tester.pumpWidget(buildMenuWidget());
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
@@ -207,14 +189,7 @@ void main() {
         ),
       ).thenThrow(Exception('Network error'));
 
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
-      );
+      await tester.pumpWidget(buildMenuWidget());
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
@@ -225,14 +200,7 @@ void main() {
     });
 
     testWidgets('tapping Block shows confirmation dialog', (tester) async {
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
-      );
+      await tester.pumpWidget(buildMenuWidget());
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
@@ -254,20 +222,14 @@ void main() {
     testWidgets('confirming Block calls blockUser and shows snackbar', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
-      );
+      await tester.pumpWidget(buildMenuWidget());
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
       await tester.tap(find.textContaining('Block'));
       await tester.pumpAndSettle();
 
+      // Tap the "Block" confirm button in the dialog
       await tester.tap(find.widgetWithText(TextButton, 'Block'));
       await tester.pumpAndSettle();
 
@@ -284,14 +246,7 @@ void main() {
     testWidgets('cancelling Block dismisses dialog without blocking', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
-      );
+      await tester.pumpWidget(buildMenuWidget());
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
@@ -312,6 +267,7 @@ void main() {
     testWidgets('tapping Copy Nostr event ID copies to clipboard', (
       tester,
     ) async {
+      // Mock clipboard
       String? clipboardContent;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
@@ -324,15 +280,7 @@ void main() {
         },
       );
 
-      await tester.pumpWidget(
-        buildMenuWidget(
-          testVideo: testVideo,
-          debugToolsEnabled: true,
-          mockBlocklistService: mockBlocklistService,
-          mockMuteService: mockMuteService,
-          mockNostrClient: mockNostrClient,
-        ),
-      );
+      await tester.pumpWidget(buildMenuWidget(debugToolsEnabled: true));
       await tester.tap(find.byType(MoreActionButton));
       await tester.pumpAndSettle();
 
@@ -344,39 +292,4 @@ void main() {
       expect(find.text('Event ID copied to clipboard'), findsOneWidget);
     });
   });
-}
-
-Widget buildMenuWidget({
-  required VideoEvent testVideo,
-  bool debugToolsEnabled = false,
-  ContentBlocklistService? mockBlocklistService,
-  MuteService? mockMuteService,
-  MockNostrClient? mockNostrClient,
-}) {
-  final router = GoRouter(
-    routes: [
-      GoRoute(
-        path: '/',
-        builder: (context, state) =>
-            Scaffold(body: MoreActionButton(video: testVideo)),
-      ),
-    ],
-  );
-
-  return testProviderScope(
-    mockUserProfileService: createMockUserProfileService(),
-    mockNostrService: mockNostrClient ?? createMockNostrService(),
-    additionalOverrides: [
-      if (mockBlocklistService != null)
-        contentBlocklistServiceProvider.overrideWith(
-          (ref) => mockBlocklistService,
-        ),
-      if (mockMuteService != null)
-        muteServiceProvider.overrideWith((ref) async => mockMuteService),
-      isFeatureEnabledProvider(
-        FeatureFlag.debugTools,
-      ).overrideWithValue(debugToolsEnabled),
-    ],
-    child: MaterialApp.router(routerConfig: router),
-  );
 }

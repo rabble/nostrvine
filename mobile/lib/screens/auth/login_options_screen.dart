@@ -191,12 +191,20 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
         await context.read<DivineAuthCubit>().sendPasswordResetEmail(email);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'If an account exists with that email, '
-                'a password reset link has been sent.',
+            SnackBar(
+              padding: EdgeInsets.zero,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+              content: DivineSnackbarContainer(
+                label:
+                    'If an account exists with that email, '
+                    'a password reset link has been sent.',
+                onClose: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
               ),
-              backgroundColor: VineTheme.vineGreen,
             ),
           );
         }
@@ -373,85 +381,45 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
 }
 
 void _showInfoSheet(BuildContext context) {
-  showModalBottomSheet<void>(
+  VineBottomSheet.show<void>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: VineTheme.surfaceContainer,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (_) => const _InfoSheet(),
-  );
-}
-
-/// Bottom sheet explaining the available sign-in options.
-class _InfoSheet extends StatelessWidget {
-  const _InfoSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: VineTheme.outlineMuted,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          const Text(
-            'Sign-in options',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: VineTheme.whiteText,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          const _InfoItem(
-            title: 'Email & Password',
-            description:
-                'Sign in with your Divine account. If you registered '
-                'with an email and password, use them here.',
-          ),
+    title: const Text('Sign-in options'),
+    buildScrollBody: (scrollController) => ListView(
+      controller: scrollController,
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      children: [
+        const _InfoItem(
+          title: 'Email & Password',
+          description:
+              'Sign in with your Divine account. If you registered '
+              'with an email and password, use them here.',
+        ),
+        const SizedBox(height: 16),
+        const _InfoItem(
+          title: 'Import Nostr key',
+          description:
+              'Already have a Nostr identity? Import your nsec '
+              'private key from another client.',
+        ),
+        const SizedBox(height: 16),
+        const _InfoItem(
+          title: 'Signer App',
+          description:
+              'Connect using a NIP-46 compatible remote signer '
+              'like nsecBunker for enhanced key security.',
+        ),
+        if (Platform.isAndroid) ...[
           const SizedBox(height: 16),
           const _InfoItem(
-            title: 'Import Nostr key',
+            title: 'Amber',
             description:
-                'Already have a Nostr identity? Import your nsec '
-                'private key from another client.',
+                'Use the Amber signer app on Android to manage '
+                'your Nostr keys securely.',
           ),
-          const SizedBox(height: 16),
-          const _InfoItem(
-            title: 'Signer App',
-            description:
-                'Connect using a NIP-46 compatible remote signer '
-                'like nsecBunker for enhanced key security.',
-          ),
-          if (Platform.isAndroid) ...[
-            const SizedBox(height: 16),
-            const _InfoItem(
-              title: 'Amber',
-              description:
-                  'Use the Amber signer app on Android to manage '
-                  'your Nostr keys securely.',
-            ),
-          ],
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
 }
 
 /// Single info item in the info sheet.

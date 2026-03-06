@@ -80,13 +80,6 @@ MockAuthService createMockAuthService() {
   when(() => mockAuth.isAuthenticated).thenReturn(false);
   when(() => mockAuth.currentPublicKeyHex).thenReturn(null);
 
-  // Stub authState and authStateStream so currentAuthStateProvider does not
-  // crash with type 'Null' is not a subtype of type 'Stream<AuthState>'
-  when(() => mockAuth.authState).thenReturn(AuthState.unauthenticated);
-  when(() => mockAuth.authStateStream).thenAnswer(
-    (_) => const Stream<AuthState>.empty(),
-  );
-
   return mockAuth;
 }
 

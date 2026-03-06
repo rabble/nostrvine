@@ -1,14 +1,12 @@
 // ABOUTME: Tests for ShareActionButton widget
-// ABOUTME: Verifies share icon renders, share sheet opens with correct sections,
-// ABOUTME: and ownership-specific download actions display correctly.
+// ABOUTME: Verifies share icon renders, menu items display, and save/download
+// ABOUTME: options appear correctly based on content ownership.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
@@ -70,32 +68,12 @@ void main() {
         ),
       );
 
-      expect(find.bySemanticsLabel('Share video'), findsOneWidget);
+      // Find Semantics widget with share button label
+      final semanticsFinder = find.bySemanticsLabel('Share video');
+      expect(semanticsFinder, findsOneWidget);
     });
 
     group('share menu', () {
-      Widget buildShareButton({
-        MockAuthService? mockAuth,
-        MockUserProfileService? mockProfile,
-      }) {
-        final mockNostr = createMockNostrService();
-
-        return testMaterialApp(
-          home: Scaffold(body: ShareActionButton(video: testVideo)),
-          mockAuthService: mockAuth,
-          mockUserProfileService: mockProfile,
-          mockNostrService: mockNostr,
-          additionalOverrides: [
-            followRepositoryProvider.overrideWith(
-              (ref) => FollowRepository(
-                nostrClient: mockNostr,
-                indexerRelayUrls: [],
-              ),
-            ),
-          ],
-        );
-      }
-
       MockAuthService createAuthenticatedMock(String pubkey) {
         final mockAuth = createMockAuthService();
         when(() => mockAuth.isAuthenticated).thenReturn(true);
@@ -103,111 +81,91 @@ void main() {
         return mockAuth;
       }
 
-      testWidgets('shows Share with section', (tester) async {
-        final mockAuth = createMockAuthService();
-        final mockProfile = createMockUserProfileService();
-
-        await tester.pumpWidget(
-          buildShareButton(mockAuth: mockAuth, mockProfile: mockProfile),
-        );
-
-        await tester.tap(find.byType(IconButton));
-        await tester.pump();
-
-        expect(find.text('Share with'), findsOneWidget);
-      });
-
-      testWidgets('shows Find people button', (tester) async {
-        final mockAuth = createMockAuthService();
-        final mockProfile = createMockUserProfileService();
-
-        await tester.pumpWidget(
-          buildShareButton(mockAuth: mockAuth, mockProfile: mockProfile),
-        );
-
-        await tester.tap(find.byType(IconButton));
-        await tester.pump();
-
-        expect(find.text('Find\npeople'), findsOneWidget);
-      });
-
-      testWidgets('shows More actions section', (tester) async {
-        final mockAuth = createMockAuthService();
-        final mockProfile = createMockUserProfileService();
-
-        await tester.pumpWidget(
-          buildShareButton(mockAuth: mockAuth, mockProfile: mockProfile),
-        );
-
-        await tester.tap(find.byType(IconButton));
-        await tester.pump();
-
-        expect(find.text('More actions'), findsOneWidget);
-      });
-
       testWidgets('shows save options for own content', (tester) async {
         final mockAuth = createAuthenticatedMock(ownPubkey);
         final mockProfile = createMockUserProfileService();
 
         await tester.pumpWidget(
-          buildShareButton(mockAuth: mockAuth, mockProfile: mockProfile),
+          testMaterialApp(
+            home: Scaffold(body: ShareActionButton(video: testVideo)),
+            mockAuthService: mockAuth,
+            mockUserProfileService: mockProfile,
+          ),
         );
 
+        // Tap the share button to open the menu
         await tester.tap(find.byType(IconButton));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
+        // Own content should see both save options
         expect(find.text('Save to Gallery'), findsOneWidget);
         expect(find.text('Save with Watermark'), findsOneWidget);
-        expect(find.text('Save Video'), findsNothing);
       });
 
-      testWidgets('shows Save Video for other user content', (tester) async {
-        final mockAuth = createAuthenticatedMock(otherPubkey);
+      testWidgets(
+        'shows Save Video for other user content',
+        (tester) async {
+          final mockAuth = createAuthenticatedMock(otherPubkey);
+          final mockProfile = createMockUserProfileService();
+
+          // Video pubkey is ownPubkey, but logged in as otherPubkey
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: Scaffold(body: ShareActionButton(video: testVideo)),
+              mockAuthService: mockAuth,
+              mockUserProfileService: mockProfile,
+            ),
+          );
+
+          await tester.tap(find.byType(IconButton));
+          await tester.pumpAndSettle();
+
+          // Other user's content should not show Save to Gallery
+          expect(find.text('Save to Gallery'), findsNothing);
+          // Should show "Save Video" instead of "Save with Watermark"
+          expect(find.text('Save Video'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'shows Save Video when not authenticated',
+        (tester) async {
+          final mockAuth = createMockAuthService();
+          final mockProfile = createMockUserProfileService();
+
+          await tester.pumpWidget(
+            testMaterialApp(
+              home: Scaffold(body: ShareActionButton(video: testVideo)),
+              mockAuthService: mockAuth,
+              mockUserProfileService: mockProfile,
+            ),
+          );
+
+          await tester.tap(find.byType(IconButton));
+          await tester.pumpAndSettle();
+
+          // Unauthenticated should not see Save to Gallery
+          expect(find.text('Save to Gallery'), findsNothing);
+          expect(find.text('Save Video'), findsOneWidget);
+        },
+      );
+
+      testWidgets('shows standard menu items', (tester) async {
         final mockProfile = createMockUserProfileService();
 
         await tester.pumpWidget(
-          buildShareButton(mockAuth: mockAuth, mockProfile: mockProfile),
+          testMaterialApp(
+            home: Scaffold(body: ShareActionButton(video: testVideo)),
+            mockUserProfileService: mockProfile,
+          ),
         );
 
         await tester.tap(find.byType(IconButton));
-        await tester.pump();
+        await tester.pumpAndSettle();
 
-        expect(find.text('Save to Gallery'), findsNothing);
-        expect(find.text('Save with Watermark'), findsNothing);
-        expect(find.text('Save Video'), findsOneWidget);
-      });
-
-      testWidgets('shows Save Video when not authenticated', (tester) async {
-        final mockAuth = createMockAuthService();
-        final mockProfile = createMockUserProfileService();
-
-        await tester.pumpWidget(
-          buildShareButton(mockAuth: mockAuth, mockProfile: mockProfile),
-        );
-
-        await tester.tap(find.byType(IconButton));
-        await tester.pump();
-
-        expect(find.text('Save to Gallery'), findsNothing);
-        expect(find.text('Save with Watermark'), findsNothing);
-        expect(find.text('Save Video'), findsOneWidget);
-      });
-
-      testWidgets('shows standard action items', (tester) async {
-        final mockAuth = createMockAuthService();
-        final mockProfile = createMockUserProfileService();
-
-        await tester.pumpWidget(
-          buildShareButton(mockAuth: mockAuth, mockProfile: mockProfile),
-        );
-
-        await tester.tap(find.byType(IconButton));
-        await tester.pump();
-
-        expect(find.text('Save'), findsOneWidget);
-        expect(find.text('Copy'), findsOneWidget);
-        expect(find.text('Share via'), findsOneWidget);
-        expect(find.text('Report'), findsOneWidget);
+        expect(find.text('Share with user'), findsOneWidget);
+        expect(find.text('Add to bookmarks'), findsOneWidget);
+        expect(find.text('More options'), findsOneWidget);
       });
     });
   });

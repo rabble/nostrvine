@@ -1157,4 +1157,148 @@ void main() {
       expect(restored['access_token'], equals('my_token'));
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // _restoreLastUsedAccountOrFallback (via initialize)
+  // ---------------------------------------------------------------------------
+
+  group('initialize: restores last-used account (not primary key)', () {
+    late SecureKeyContainer accountBContainer;
+
+    setUp(() {
+      accountBContainer = SecureKeyContainer.fromNsec(
+        'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+      );
+    });
+
+    test(
+      'restores per-identity key when last_used_npub is present',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': accountBContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        when(
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => testKeyContainer);
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            accountBContainer.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => accountBContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(
+          authService.currentPublicKeyHex,
+          equals(accountBContainer.publicKeyHex),
+        );
+        verifyNever(() => mockKeyStorage.getKeyContainer());
+      },
+    );
+
+    test(
+      'falls back to _checkExistingAuth when last_used_npub is absent',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          kKnownAccountsKey: '[]',
+        });
+
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => testKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(
+          authService.currentPublicKeyHex,
+          equals(testKeyContainer.publicKeyHex),
+        );
+      },
+    );
+
+    test(
+      'falls back to _checkExistingAuth when identity key container is absent',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': accountBContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            accountBContainer.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => testKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(
+          authService.currentPublicKeyHex,
+          equals(testKeyContainer.publicKeyHex),
+        );
+      },
+    );
+
+    test(
+      'destructive sign-out clears last_used_npub',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        await authService.signOut(deleteKeys: true);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('last_used_npub'), isNull);
+      },
+    );
+
+    test(
+      'non-destructive sign-out preserves last_used_npub',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        await authService.signOut();
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('last_used_npub'), isNotNull);
+      },
+    );
+
+    test(
+      '_setupUserSession persists last_used_npub',
+      () async {
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString('last_used_npub'),
+          equals(testKeyContainer.npub),
+        );
+      },
+    );
+  });
 }

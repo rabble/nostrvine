@@ -45,9 +45,6 @@ void main() {
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => followingController.stream);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
-      when(
-        () => mockFollowRepository.initialized,
-      ).thenAnswer((_) async {});
 
       when(
         () => mockCuratedListRepository.subscribedListsStream,
@@ -184,6 +181,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: authors,
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -234,6 +232,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: authors,
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -252,6 +251,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: ['author1', 'author2'],
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -288,22 +288,36 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'emits [loading, success] with noFollowedUsers error when home feed empty due to no follows',
+        'emits noFollowedUsers when followingStream emits empty '
+        'list after startup',
         setUp: () {
           when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
           when(
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
           ).thenAnswer((_) async => const HomeFeedResult(videos: []));
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          // Wait for _loadVideos to complete (emits success with empty)
+          await Future<void>.delayed(Duration.zero);
+          // followingStream replay of [] triggers _onFollowingListChanged
+          followingController.add([]);
+        },
         expect: () => [
           const VideoFeedState(),
+          // _loadVideos emits success with empty videos
+          const VideoFeedState(
+            status: VideoFeedStatus.success,
+            hasMore: false,
+          ),
+          // _onFollowingListChanged receives [] → noFollowedUsers CTA
           const VideoFeedState(
             status: VideoFeedStatus.success,
             hasMore: false,
@@ -320,6 +334,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -346,6 +361,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -370,6 +386,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -384,6 +401,47 @@ void main() {
               .having((s) => s.videos, 'videos', isEmpty)
               .having((s) => s.hasMore, 'hasMore', false),
         ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does not await initialized before calling repository',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResult(videos: videos),
+          );
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          userPubkey: 'user-pubkey',
+        ),
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        verify: (_) {
+          // Repository is called with empty authors (follow list
+          // not yet initialized) — the fast path relies on
+          // userPubkey to hit Funnelcake directly.
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: [],
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: 'user-pubkey',
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).called(1);
+        },
       );
     });
 
@@ -452,6 +510,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -479,6 +538,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -543,6 +603,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -575,6 +636,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -613,6 +675,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -641,6 +704,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -667,6 +731,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -704,6 +769,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -739,6 +805,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -764,6 +831,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
             ),
           ).called(1);
@@ -780,6 +848,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -811,6 +880,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -882,6 +952,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -920,6 +991,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -963,6 +1035,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -985,7 +1058,7 @@ void main() {
 
     group('VideoFeedFollowingListChanged', () {
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'refreshes home feed when following list changes',
+        'silently refreshes home feed on follow list change',
         setUp: () {
           final videos = createTestVideos(pageSize);
 
@@ -996,6 +1069,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1009,7 +1083,7 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
         expect: () => [
-          const VideoFeedState(),
+          // No loading state — silent refresh replaces in-place
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
@@ -1051,6 +1125,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1065,7 +1140,7 @@ void main() {
         act: (bloc) =>
             bloc.add(const VideoFeedFollowingListChanged(['first-follow'])),
         expect: () => [
-          const VideoFeedState(),
+          // No loading state — silent refresh replaces in-place
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize)
@@ -1074,7 +1149,8 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'subscribes to followingStream via emit.onEach on startup',
+        'silently refreshes when follow list replays after Funnelcake '
+        'already loaded content',
         setUp: () {
           final videos = createTestVideos(pageSize);
 
@@ -1085,6 +1161,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1093,21 +1170,126 @@ void main() {
         build: createBloc,
         act: (bloc) async {
           bloc.add(const VideoFeedStarted(mode: FeedMode.home));
-          // Wait for initial load to complete
+          // Wait for initial load to complete (Funnelcake loaded content)
           await Future<void>.delayed(Duration.zero);
-          // First stream emission is skipped (BehaviorSubject replay)
-          followingController.add([]);
-          await Future<void>.delayed(Duration.zero);
-          // Second emission triggers the handler
-          followingController.add(['new-author']);
+          // Stream replays follow list — silently refreshes (no loading)
+          followingController.add(['author']);
         },
         skip: 2, // Skip loading + success from VideoFeedStarted
+        // No state change — same videos re-fetched, Equatable deduplicates
+        expect: () => <VideoFeedState>[],
+        verify: (_) {
+          // Called twice: initial load + silent refresh from replay
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).called(2);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'silently refreshes when follow list arrives and feed is empty '
+        '(Funnelcake failed)',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+          var callCount = 0;
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return const HomeFeedResult(videos: []);
+            }
+            return HomeFeedResult(videos: videos);
+          });
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          // Wait for initial load to complete (Funnelcake returned empty)
+          await Future<void>.delayed(Duration.zero);
+          // Stream replays follow list — feed empty, silently refreshes
+          followingController.add(['author']);
+        },
+        skip: 2, // Skip loading + success(empty) from VideoFeedStarted
         expect: () => [
-          const VideoFeedState(),
+          // No loading state — silent refresh replaces in-place
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', pageSize),
         ],
+        verify: (_) {
+          // Called twice: initial (empty), then recovery
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).called(2);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'silently refreshes on each follow list emission',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          await Future<void>.delayed(Duration.zero);
+          // Initial replay — silently refreshes (no loading)
+          followingController.add(['author']);
+          await Future<void>.delayed(Duration.zero);
+          // Runtime follow — silently refreshes again (no loading)
+          followingController.add(['author', 'new-author']);
+        },
+        skip: 2, // Skip loading + success from VideoFeedStarted
+        // No state changes — same videos returned, Equatable deduplicates
+        expect: () => <VideoFeedState>[],
+        verify: (_) {
+          // Called 3 times: initial + replay + runtime
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).called(3);
+        },
       );
     });
 
@@ -1124,6 +1306,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1176,6 +1359,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1214,6 +1398,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1260,6 +1445,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1337,6 +1523,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1358,6 +1545,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1369,9 +1557,7 @@ void main() {
           verify(
             () => mockTracker.markFirstVideosReceived('home', 3),
           ).called(1);
-          verify(
-            () => mockTracker.markFeedDisplayed('home', 3),
-          ).called(1);
+          verify(() => mockTracker.markFeedDisplayed('home', 3)).called(1);
         },
       );
 
@@ -1383,6 +1569,7 @@ void main() {
             () => mockVideosRepository.getHomeFeedVideos(
               authors: any(named: 'authors'),
               videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
@@ -1398,15 +1585,8 @@ void main() {
               errorMessage: any(named: 'errorMessage'),
             ),
           ).called(1);
-          verifyNever(
-            () => mockTracker.markFirstVideosReceived(
-              any(),
-              any(),
-            ),
-          );
-          verifyNever(
-            () => mockTracker.markFeedDisplayed(any(), any()),
-          );
+          verifyNever(() => mockTracker.markFirstVideosReceived(any(), any()));
+          verifyNever(() => mockTracker.markFeedDisplayed(any(), any()));
         },
       );
 
@@ -1428,9 +1608,7 @@ void main() {
           verify(
             () => mockTracker.markFirstVideosReceived('latest', 3),
           ).called(1);
-          verify(
-            () => mockTracker.markFeedDisplayed('latest', 3),
-          ).called(1);
+          verify(() => mockTracker.markFeedDisplayed('latest', 3)).called(1);
         },
       );
 
@@ -1452,9 +1630,7 @@ void main() {
           verify(
             () => mockTracker.markFirstVideosReceived('popular', 3),
           ).called(1);
-          verify(
-            () => mockTracker.markFeedDisplayed('popular', 3),
-          ).called(1);
+          verify(() => mockTracker.markFeedDisplayed('popular', 3)).called(1);
         },
       );
     });

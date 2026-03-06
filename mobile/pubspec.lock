@@ -1248,7 +1248,7 @@ packages:
     source: hosted
     version: "6.11.2"
   just_audio:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: just_audio
       sha256: "9694e4734f515f2a052493d1d7e0d6de219ee0427c7c29492e246ff32a219908"

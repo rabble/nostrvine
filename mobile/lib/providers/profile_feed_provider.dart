@@ -2,16 +2,14 @@
 // ABOUTME: Manages video lists for individual user profiles with loadMore() capability
 // ABOUTME: Tries REST API first for better performance, falls back to Nostr subscription
 
-import 'dart:async';
-
 import 'package:models/models.dart' hide LogCategory;
-import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'profile_feed_provider.g.dart';
@@ -82,15 +80,32 @@ class ProfileFeed extends _$ProfileFeed {
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
           // Filter out reposts and store cursor
-          authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+          final tempAuthorVideos = apiVideos.where((v) => !v.isRepost).toList();
           _nextCursor = _getOldestTimestamp(apiVideos);
 
           // Cache metadata for later merging with Nostr data
-          _cacheVideoMetadata(authorVideos);
+          _cacheVideoMetadata(tempAuthorVideos);
 
-          // Fire enrichment in the background so we don't block the initial
-          // render. ProofMode/C2PA badges will appear once enrichment completes.
-          _enrichInBackground(authorVideos);
+          // Enrich with full Nostr event data in the background so we
+          // don't block the initial render waiting on relay round-trips
+          // (up to 5s timeout). Badges appear once enrichment completes.
+          authorVideos = enrichVideosInBackground(
+            tempAuthorVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            onEnriched: (enriched) {
+              if (!ref.mounted) return;
+              final currentState = state.asData?.value;
+              if (currentState == null) return;
+              final enrichedMap = <String, VideoEvent>{
+                for (final v in enriched) v.id: v,
+              };
+              final updated = currentState.videos
+                  .map((v) => enrichedMap[v.id] ?? v)
+                  .toList();
+              state = AsyncData(currentState.copyWith(videos: updated));
+            },
+            callerName: 'ProfileFeedProvider',
+          );
 
           Log.info(
             '✅ ProfileFeed: Got ${authorVideos.length} videos from REST API for user=$userId, cursor: $_nextCursor',
@@ -396,8 +411,12 @@ class ProfileFeed extends _$ProfileFeed {
         // Update metadata cache with fresh data
         _cacheVideoMetadata(authorVideos);
 
-        // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
-        authorVideos = await _enrichWithNostrTags(authorVideos);
+        // Enrich with full Nostr event data (rawTags, dimensions, etc.)
+        authorVideos = await enrichVideosWithNostrTags(
+          authorVideos,
+          nostrService: ref.read(nostrServiceProvider),
+          callerName: 'ProfileFeedProvider',
+        );
 
         // Apply content filter preferences
         final videoEventService = ref.read(videoEventServiceProvider);
@@ -506,8 +525,12 @@ class ProfileFeed extends _$ProfileFeed {
           // Cache metadata from new videos
           _cacheVideoMetadata(newVideos);
 
-          // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
-          newVideos = await _enrichWithNostrTags(newVideos);
+          // Enrich with full Nostr event data (rawTags, dimensions, etc.)
+          newVideos = await enrichVideosWithNostrTags(
+            newVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            callerName: 'ProfileFeedProvider',
+          );
 
           // Apply content filter preferences
           final videoEventService = ref.read(videoEventServiceProvider);
@@ -655,8 +678,12 @@ class ProfileFeed extends _$ProfileFeed {
           // Cache metadata for future Nostr fallbacks
           _cacheVideoMetadata(authorVideos);
 
-          // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
-          authorVideos = await _enrichWithNostrTags(authorVideos);
+          // Enrich with full Nostr event data (rawTags, dimensions, etc.)
+          authorVideos = await enrichVideosWithNostrTags(
+            authorVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            callerName: 'ProfileFeedProvider',
+          );
 
           // Apply content filter preferences
           final videoEventService = ref.read(videoEventServiceProvider);
@@ -732,108 +759,6 @@ class ProfileFeed extends _$ProfileFeed {
       }
       return video;
     }).toList();
-  }
-
-  /// Enrich REST API videos with rawTags from Nostr relay events.
-  ///
-  /// The Funnelcake REST API does not return the raw Nostr event tags array,
-  /// so ProofMode/C2PA/verification tags are missing. This method fetches
-  /// the full events from Nostr relays by ID and merges their rawTags.
-  Future<List<VideoEvent>> _enrichWithNostrTags(List<VideoEvent> videos) async {
-    if (videos.isEmpty) return videos;
-
-    // Collect IDs of videos that have empty rawTags
-    final idsToEnrich = videos
-        .where((v) => v.rawTags.isEmpty)
-        .map((v) => v.id)
-        .toList();
-
-    if (idsToEnrich.isEmpty) return videos;
-
-    try {
-      final nostrService = ref.read(nostrServiceProvider);
-
-      // Batch query Nostr relays for the full events
-      final filter = Filter(
-        ids: idsToEnrich,
-        kinds: [34236],
-        limit: idsToEnrich.length,
-      );
-      final nostrEvents = await nostrService
-          .queryEvents([filter])
-          .timeout(const Duration(seconds: 5));
-
-      if (nostrEvents.isEmpty) return videos;
-
-      // Build a lookup map: event ID -> parsed VideoEvent from Nostr
-      final nostrVideoMap = <String, VideoEvent>{};
-      for (final event in nostrEvents) {
-        try {
-          final parsed = VideoEvent.fromNostrEvent(event, permissive: true);
-          if (parsed.rawTags.isNotEmpty) {
-            nostrVideoMap[parsed.id] = parsed;
-          }
-        } catch (_) {
-          // Skip events that fail to parse
-        }
-      }
-
-      if (nostrVideoMap.isEmpty) return videos;
-
-      // Merge rawTags and engagement stats into REST API videos
-      // The REST API profile endpoint doesn't return embedded engagement
-      // stats (loops, likes, comments, reposts) but Nostr events have
-      // them in tags. Copy both rawTags and engagement fields.
-      return videos.map((video) {
-        final parsed = nostrVideoMap[video.id];
-        if (parsed != null) {
-          return video.copyWith(
-            rawTags: parsed.rawTags,
-            originalLoops: parsed.originalLoops,
-            originalLikes: parsed.originalLikes,
-            originalComments: parsed.originalComments,
-            originalReposts: parsed.originalReposts,
-          );
-        }
-        return video;
-      }).toList();
-    } catch (e) {
-      // Non-fatal: return original videos if enrichment fails
-      Log.warning(
-        'ProfileFeed: Failed to enrich with Nostr tags: $e',
-        name: 'ProfileFeedProvider',
-        category: LogCategory.video,
-      );
-      return videos;
-    }
-  }
-
-  /// Fire enrichment in the background and update state when complete.
-  ///
-  /// This avoids blocking the initial render while waiting for Nostr relay
-  /// responses. ProofMode/C2PA badges appear slightly delayed.
-  void _enrichInBackground(List<VideoEvent> videos) {
-    unawaited(
-      _enrichWithNostrTags(videos).then((enriched) {
-        if (!ref.mounted) return;
-        if (enriched == videos) return; // No changes
-
-        // Replace the current state's videos with enriched versions
-        final currentState = state.asData?.value;
-        if (currentState == null) return;
-
-        // Merge enriched data into current videos (which may have been
-        // updated by progressive listeners since the build started)
-        final enrichedMap = <String, VideoEvent>{
-          for (final v in enriched) v.id: v,
-        };
-        final updatedVideos = currentState.videos.map((v) {
-          return enrichedMap[v.id] ?? v;
-        }).toList();
-
-        state = AsyncData(currentState.copyWith(videos: updatedVideos));
-      }),
-    );
   }
 }
 

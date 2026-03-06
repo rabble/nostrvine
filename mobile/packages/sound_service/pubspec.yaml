@@ -1,7 +1,7 @@
 name: sound_service
 description: >
-  Services for playing sound effects in the app.
-  Includes countdown beep sounds for recording timer.
+  Services for audio playback and sound effects in the app.
+  Includes countdown beep sounds and audio playback with headphone detection.
 version: 0.0.1
 publish_to: none
 resolution: workspace
@@ -11,9 +11,11 @@ environment:
   flutter: ^3.41.1
 
 dependencies:
+  audio_session: ^0.2.1
   flutter:
     sdk: flutter
   just_audio: ^0.10.5
+  rxdart: ^0.28.0
 
 dev_dependencies:
   flutter_test:

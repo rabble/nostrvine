@@ -2,7 +2,15 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// {@template divine_snackbar_container}
-/// A container widget for displaying snackbars in Divine UI.
+/// A styled snackbar content widget from the Divine design system.
+///
+/// Supports the following variants:
+/// - Text only
+/// - Text with close button
+/// - Text with action button
+/// - Text with action and close button
+///
+/// Each variant has a default (dark) and error (red) color scheme.
 /// {@endtemplate}
 class DivineSnackbarContainer extends StatelessWidget {
   /// {@macro divine_snackbar_container}
@@ -11,27 +19,9 @@ class DivineSnackbarContainer extends StatelessWidget {
     this.error = false,
     this.actionLabel,
     this.onActionPressed,
+    this.onClose,
     super.key,
   });
-
-  /// Returns a fully styled [SnackBar] wrapping a [DivineSnackbarContainer].
-  static SnackBar snackBar(
-    String message, {
-    bool error = false,
-    String? actionLabel,
-    VoidCallback? onActionPressed,
-  }) => SnackBar(
-    backgroundColor: Colors.transparent,
-    elevation: 0,
-    padding: EdgeInsets.zero,
-    behavior: SnackBarBehavior.floating,
-    content: DivineSnackbarContainer(
-      label: message,
-      error: error,
-      actionLabel: actionLabel,
-      onActionPressed: onActionPressed,
-    ),
-  );
 
   /// The label of the snackbar.
   final String label;
@@ -45,18 +35,22 @@ class DivineSnackbarContainer extends StatelessWidget {
   /// Callback when the action button is pressed.
   final VoidCallback? onActionPressed;
 
+  /// Callback when the close button is pressed.
+  ///
+  /// When provided, a close (X) icon is displayed on the trailing edge.
+  final VoidCallback? onClose;
+
   @override
   Widget build(BuildContext context) {
     final textStyle = VineTheme.bodyFont(fontWeight: FontWeight.w600);
-    late final Widget bannerText;
-    if (error) {
-      bannerText = Text(
-        label,
-        style: textStyle.copyWith(color: VineTheme.likeRed),
-      );
-    } else {
-      bannerText = Text(label, style: textStyle);
-    }
+    final bannerText = Text(
+      label,
+      style: textStyle.copyWith(
+        color: error ? VineTheme.likeRed : null,
+      ),
+    );
+
+    final hasAction = actionLabel != null && onActionPressed != null;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -72,19 +66,31 @@ class DivineSnackbarContainer extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(child: bannerText),
-            if (actionLabel != null && onActionPressed != null)
+            if (hasAction)
               TextButton(
                 onPressed: onActionPressed,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  minimumSize: const Size(48, 36),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
                 child: Text(
                   actionLabel!,
                   style: textStyle.copyWith(
                     fontWeight: FontWeight.w800,
                     color: error ? VineTheme.likeRed : VineTheme.vineGreen,
+                  ),
+                ),
+              ),
+            if (onClose != null)
+              Semantics(
+                label: 'Close',
+                button: true,
+                child: GestureDetector(
+                  onTap: onClose,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: hasAction ? 8 : 0),
+                    child: DivineIcon(
+                      icon: DivineIconName.x,
+                      size: 20,
+                      color: error ? VineTheme.likeRed : VineTheme.whiteText,
+                    ),
                   ),
                 ),
               ),

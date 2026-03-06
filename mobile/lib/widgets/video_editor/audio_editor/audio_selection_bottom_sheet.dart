@@ -6,11 +6,11 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_sort_dropdown.dart';
+import 'package:sound_service/sound_service.dart';
 
 class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
   const AudioSelectionBottomSheet({required this.scrollController, super.key});
