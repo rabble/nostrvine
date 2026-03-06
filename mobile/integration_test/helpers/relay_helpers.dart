@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
@@ -139,18 +140,17 @@ Future<({String videoHash, String thumbHash})> _ensureTestBlobs() async {
     return (videoHash: _cachedVideoHash!, thumbHash: _cachedThumbHash!);
   }
 
-  // Minimal unique blobs (not valid MP4/JPEG, but blossom stores any bytes)
+  // Minimal MP4-like blob for video (not playable but unique per run)
   final videoData = Uint8List.fromList(
     utf8.encode('e2e-test-video-${DateTime.now().millisecondsSinceEpoch}'),
   );
-  final thumbData = Uint8List.fromList(
-    utf8.encode('e2e-test-thumb-${DateTime.now().millisecondsSinceEpoch}'),
-  );
+  // Generate a real PNG thumbnail so the app can decode it
+  final thumbData = await _generateTestThumbnail();
 
   _cachedVideoHash = await _uploadTestBlob(data: videoData);
   _cachedThumbHash = await _uploadTestBlob(
     data: thumbData,
-    contentType: 'image/jpeg',
+    contentType: 'image/png',
   );
 
   debugPrint(
@@ -158,6 +158,39 @@ Future<({String videoHash, String thumbHash})> _ensureTestBlobs() async {
     'thumb=$_cachedThumbHash',
   );
   return (videoHash: _cachedVideoHash!, thumbHash: _cachedThumbHash!);
+}
+
+/// Generate a real 360x640 PNG thumbnail with a colored gradient.
+///
+/// Uses dart:ui Canvas to paint a valid image that Flutter can decode,
+/// avoiding "Invalid image data" errors in the app's thumbnail loader.
+Future<Uint8List> _generateTestThumbnail() async {
+  const width = 360;
+  const height = 640;
+
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, width, height));
+
+  // Dark gradient background (matches app aesthetic)
+  final bgPaint = Paint()
+    ..shader = const LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
+    ).createShader(const Rect.fromLTWH(0, 0, width, height));
+  canvas.drawRect(const Rect.fromLTWH(0, 0, width, height), bgPaint);
+
+  // Accent circle
+  final circlePaint = Paint()..color = const Color(0xFF0f3460);
+  canvas.drawCircle(const Offset(width / 2, height / 2), 80, circlePaint);
+
+  // Encode to PNG
+  final picture = recorder.endRecording();
+  final image = await picture.toImage(width, height);
+  final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+  image.dispose();
+
+  return byteData!.buffer.asUint8List();
 }
 
 /// Send an event to the local relay and wait for OK confirmation.
