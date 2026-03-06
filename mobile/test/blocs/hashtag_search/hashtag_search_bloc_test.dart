@@ -121,6 +121,7 @@ void main() {
             status: HashtagSearchStatus.success,
             query: 'cdmx',
             results: ['cdmx'],
+            resultCount: 1,
           ),
         ],
       );
@@ -168,6 +169,7 @@ void main() {
             status: HashtagSearchStatus.success,
             query: 'error',
             results: ['errortag'],
+            resultCount: 1,
           ),
         ],
       );
