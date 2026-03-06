@@ -17,6 +17,7 @@ import 'package:openvine/widgets/auth/auth_error_box.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 import 'package:openvine/widgets/divine_primary_button.dart';
 import 'package:openvine/widgets/divine_secondary_button.dart';
+import 'package:openvine/widgets/rounded_icon_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class InviteGateScreen extends StatefulWidget {
@@ -237,119 +238,15 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
               ),
             );
           case OnboardingMode.inviteCodeRequired:
-            return Scaffold(
-              backgroundColor: VineTheme.backgroundColor,
-              body: SafeArea(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 8),
-                            AuthBackButton(onPressed: () => context.pop()),
-                            const SizedBox(height: 32),
-                            const Text(
-                              'Enter invite code',
-                              style: TextStyle(
-                                fontFamily: VineTheme.fontFamilyBricolage,
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: VineTheme.whiteText,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              "You'll need a code to create a new Divine account. No code yet? Join the waitlist.",
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 16,
-                                height: 1.5,
-                                letterSpacing: 0.15,
-                                color: VineTheme.lightText,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            DivineAuthTextField(
-                              label: 'Invite code',
-                              controller: _inviteCodeController,
-                              enabled: !state.isValidatingCode,
-                              textCapitalization: TextCapitalization.characters,
-                              textInputAction: TextInputAction.done,
-                              errorText: state.inviteCodeError,
-                              maxLength: 9,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp('[A-Za-z0-9-]'),
-                                ),
-                                _InviteCodeTextInputFormatter(),
-                              ],
-                              onChanged: (_) {
-                                context
-                                    .read<InviteGateCubit>()
-                                    .clearTransientState();
-                              },
-                              onSubmitted: (_) => _validateInviteCode(),
-                            ),
-                            const SizedBox(height: 16),
-                            if (state.generalError != null) ...[
-                              AuthErrorBox(message: state.generalError!),
-                              const SizedBox(height: 16),
-                            ],
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Transform.translate(
-                                offset: const Offset(20, 0),
-                                child: Image.asset(
-                                  'assets/stickers/key.png',
-                                  width: 144,
-                                  height: 144,
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                            DivinePrimaryButton(
-                              label: 'Continue',
-                              isLoading: state.isValidatingCode,
-                              onPressed: state.isValidatingCode
-                                  ? null
-                                  : _validateInviteCode,
-                            ),
-                            const SizedBox(height: 12),
-                            DivineSecondaryButton(
-                              label: 'Join waitlist',
-                              onPressed: state.isValidatingCode
-                                  ? null
-                                  : () => _showWaitlistSheet(config),
-                            ),
-                            const SizedBox(height: 12),
-                            Center(
-                              child: TextButton(
-                                onPressed: state.isValidatingCode
-                                    ? null
-                                    : () =>
-                                          _contactSupport(config.supportEmail),
-                                child: const Text(
-                                  'Contact support',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 15,
-                                    color: VineTheme.lightText,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            return _InviteCodeEntryPage(
+              controller: _inviteCodeController,
+              state: state,
+              onChanged: () =>
+                  context.read<InviteGateCubit>().clearTransientState(),
+              onBack: () => context.pop(),
+              onSubmit: _validateInviteCode,
+              onShowWaitlist: () => _showWaitlistSheet(config),
+              onContactSupport: () => _contactSupport(config.supportEmail),
             );
         }
       },
@@ -367,6 +264,225 @@ class _InviteLoadingPage extends StatelessWidget {
       body: Center(
         child: CircularProgressIndicator(color: VineTheme.vineGreen),
       ),
+    );
+  }
+}
+
+class _InviteCodeEntryPage extends StatelessWidget {
+  const _InviteCodeEntryPage({
+    required this.controller,
+    required this.state,
+    required this.onChanged,
+    required this.onBack,
+    required this.onSubmit,
+    required this.onShowWaitlist,
+    required this.onContactSupport,
+  });
+
+  final TextEditingController controller;
+  final InviteGateState state;
+  final VoidCallback onChanged;
+  final VoidCallback onBack;
+  final VoidCallback onSubmit;
+  final VoidCallback onShowWaitlist;
+  final VoidCallback onContactSupport;
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboardInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Scaffold(
+      backgroundColor: VineTheme.backgroundColor,
+      resizeToAvoidBottomInset: false,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Stack(
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  RoundedIconButton(
+                    onPressed: onBack,
+                    icon: const Icon(
+                      Icons.chevron_left,
+                      color: VineTheme.vineGreenLight,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Add your invite code',
+                    style: TextStyle(
+                      fontFamily: VineTheme.fontFamilyBricolage,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      color: VineTheme.whiteText,
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  _InviteCodeInput(
+                    controller: controller,
+                    enabled: !state.isValidatingCode,
+                    errorText: state.inviteCodeError,
+                    onChanged: onChanged,
+                    onSubmitted: onSubmit,
+                  ),
+                  if (state.generalError != null) ...[
+                    const SizedBox(height: 16),
+                    AuthErrorBox(message: state.generalError!),
+                  ],
+                ],
+              ),
+              Positioned(
+                left: -36,
+                bottom: keyboardInset + 148,
+                child: Transform.rotate(
+                  angle: 12 * 3.14159 / 180,
+                  child: Image.asset(
+                    'assets/stickers/confetti.png',
+                    width: 174,
+                    height: 174,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: keyboardInset + 16,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DivinePrimaryButton(
+                      label: 'Next',
+                      isLoading: state.isValidatingCode,
+                      onPressed: state.isValidatingCode ? null : onSubmit,
+                    ),
+                    const SizedBox(height: 12),
+                    DivineSecondaryButton(
+                      label: 'Join waitlist',
+                      onPressed: state.isValidatingCode ? null : onShowWaitlist,
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: state.isValidatingCode
+                          ? null
+                          : onContactSupport,
+                      child: const Text(
+                        'Contact support',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 15,
+                          color: VineTheme.lightText,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InviteCodeInput extends StatelessWidget {
+  const _InviteCodeInput({
+    required this.controller,
+    required this.enabled,
+    required this.onChanged,
+    required this.onSubmitted,
+    this.errorText,
+  });
+
+  final TextEditingController controller;
+  final bool enabled;
+  final String? errorText;
+  final VoidCallback onChanged;
+  final VoidCallback onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasError = errorText != null;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          enabled: enabled,
+          autofocus: true,
+          textCapitalization: TextCapitalization.characters,
+          textInputAction: TextInputAction.done,
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9-]')),
+            _InviteCodeTextInputFormatter(),
+          ],
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+            color: VineTheme.whiteText,
+            letterSpacing: 0.15,
+          ),
+          decoration: InputDecoration(
+            labelText: 'Invite code',
+            labelStyle: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+              color: hasError ? VineTheme.error : VineTheme.vineGreen,
+            ),
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            hintText: 'Enter your code',
+            hintStyle: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+              color: VineTheme.whiteText.withValues(alpha: 0.25),
+              letterSpacing: 0.15,
+            ),
+            filled: true,
+            fillColor: VineTheme.surfaceContainer,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: hasError
+                  ? const BorderSide(color: VineTheme.error)
+                  : BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(24),
+              borderSide: BorderSide(
+                color: hasError ? VineTheme.error : VineTheme.vineGreen,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 24,
+            ),
+          ),
+          onChanged: (_) => onChanged(),
+          onSubmitted: (_) => onSubmitted(),
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 20),
+            child: Text(
+              errorText!,
+              style: const TextStyle(color: VineTheme.error, fontSize: 12),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

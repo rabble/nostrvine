@@ -95,14 +95,12 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
+      expect(find.text('Add your invite code'), findsOneWidget);
       await tester.enterText(
-        find.descendant(
-          of: find.widgetWithText(DivineAuthTextField, 'Invite code'),
-          matching: find.byType(TextField),
-        ),
+        find.byType(TextField),
         'ab12ef34',
       );
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Continue'));
+      await tester.tap(find.widgetWithText(ElevatedButton, 'Next'));
       await tester.pumpAndSettle();
 
       expect(find.text('Create Account'), findsOneWidget);
@@ -157,13 +155,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Invite problem'), findsOneWidget);
-      expect(
-        find.descendant(
-          of: find.widgetWithText(DivineAuthTextField, 'Invite code'),
-          matching: find.byType(TextField),
-        ),
-        findsOneWidget,
-      );
+      expect(find.text('Add your invite code'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
     });
   });
 }
