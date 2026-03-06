@@ -18,6 +18,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
@@ -280,8 +281,10 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
     final profileService = ref.read(userProfileServiceProvider);
     final profile = profileService.getCachedProfile(widget.video.pubkey);
-    final username =
-        profile?.bestDisplayName ?? widget.video.authorName ?? 'Divine';
+    final watermarkText = resolveWatermarkText(
+      profile: profile,
+      fallbackAuthorName: widget.video.authorName,
+    );
 
     if (!context.mounted) return;
 
@@ -289,7 +292,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       context: context,
       ref: ref,
       video: widget.video,
-      username: username,
+      watermarkText: watermarkText,
     );
   }
 }
