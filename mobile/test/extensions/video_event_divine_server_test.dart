@@ -54,9 +54,7 @@ void main() {
     });
 
     test('returns true for bare divine.video domain', () {
-      final video = _createVideoWithUrl(
-        'https://divine.video/video.mp4',
-      );
+      final video = _createVideoWithUrl('https://divine.video/video.mp4');
       expect(video.isFromDivineServer, isTrue);
     });
 
@@ -68,9 +66,7 @@ void main() {
     });
 
     test('returns false for other video hosts', () {
-      final video = _createVideoWithUrl(
-        'https://nostr.build/video/abc123.mp4',
-      );
+      final video = _createVideoWithUrl('https://nostr.build/video/abc123.mp4');
       expect(video.isFromDivineServer, isFalse);
     });
   });
@@ -104,7 +100,7 @@ void main() {
             'aaaa1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
         'pubkey':
             'bbbb1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
-        'created_at': 1234567890,
+        'created_at': 1473050841,
         'kind': 34236,
         'content': '',
         'tags': [

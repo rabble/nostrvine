@@ -163,9 +163,9 @@ void main() {
       final video = VideoEvent(
         id: 'vine1',
         pubkey: 'pubkey1',
-        createdAt: DateTime.now().millisecondsSinceEpoch,
+        createdAt: 1473050841,
         content: 'classic vine',
-        timestamp: DateTime.now(),
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
         originalLoops: 1000000,
       );
 
@@ -204,9 +204,9 @@ void main() {
       final video = VideoEvent(
         id: 'vine4',
         pubkey: 'pubkey4',
-        createdAt: DateTime.now().millisecondsSinceEpoch,
+        createdAt: 1473050841,
         content: 'vine with one loop',
-        timestamp: DateTime.now(),
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
         originalLoops: 1,
       );
 
@@ -243,6 +243,7 @@ void main() {
 
       expect(video.isOriginalVine, isTrue);
       expect(video.isVintageRecoveredVine, isFalse);
+      expect(video.shouldShowVineBadge, isFalse);
     });
   });
 
@@ -251,9 +252,9 @@ void main() {
       final video = VideoEvent(
         id: 'combo1',
         pubkey: 'pubkey1',
-        createdAt: DateTime.now().millisecondsSinceEpoch,
+        createdAt: 1473050841,
         content: 'verified original vine',
-        timestamp: DateTime.now(),
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
         rawTags: const {'verification': 'verified_mobile'},
         originalLoops: 500000,
       );
@@ -285,14 +286,30 @@ void main() {
       final video = VideoEvent(
         id: 'combo3',
         pubkey: 'pubkey3',
-        createdAt: DateTime.now().millisecondsSinceEpoch,
+        createdAt: 1473050841,
         content: 'classic unverified vine',
-        timestamp: DateTime.now(),
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
         originalLoops: 1000000,
       );
 
       expect(video.shouldShowProofModeBadge, isFalse);
       expect(video.shouldShowVineBadge, isTrue);
+    });
+
+    test('shows no Vine badge for recent looped videos', () {
+      final video = VideoEvent(
+        id: 'combo5',
+        pubkey: 'pubkey5',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        content: 'recent looped divine video',
+        timestamp: DateTime.now(),
+        originalLoops: 1000000,
+      );
+
+      expect(video.isOriginalVine, isTrue);
+      expect(video.isVintageRecoveredVine, isFalse);
+      expect(video.shouldShowProofModeBadge, isFalse);
+      expect(video.shouldShowVineBadge, isFalse);
     });
 
     test('shows no badges for unverified new videos', () {

@@ -27,6 +27,6 @@ extension ProofModeHelpers on VideoEvent {
   /// Should show original Vine badge
   /// Only show for vintage vines WITHOUT ProofMode (those show ProofMode badge instead)
   bool get shouldShowVineBadge {
-    return isOriginalVine && !hasProofMode;
+    return isVintageRecoveredVine && !hasProofMode;
   }
 }
