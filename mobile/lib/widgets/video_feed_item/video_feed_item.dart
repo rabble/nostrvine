@@ -61,6 +61,25 @@ import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+VideoControllerParams _videoControllerParamsFor(
+  WidgetRef ref,
+  VideoEvent video,
+) {
+  final fallbackUrl = ref.read(fallbackUrlCacheProvider)[video.id];
+  if (fallbackUrl != null) {
+    final cacheableUrl = video.getCacheableVideoUrlForPlatform();
+    return VideoControllerParams(
+      videoId: video.id,
+      videoUrl: fallbackUrl,
+      cacheUrl: cacheableUrl,
+      videoEvent: video,
+      allowCaching: cacheableUrl != null,
+    );
+  }
+
+  return VideoControllerParams.fromVideoEvent(video);
+}
+
 /// Video feed item using individual controller architecture
 class VideoFeedItem extends ConsumerStatefulWidget {
   const VideoFeedItem({
@@ -216,23 +235,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   /// Stable video identifier for active state tracking
   String get _stableVideoId => widget.video.stableId;
 
-  /// Controller params for the current video
-  /// Uses platform-aware URL selection: HLS on Android, MP4 on iOS/macOS
-  /// Cache uses original MP4 URL (HLS can't be cached as single file)
-  /// Checks fallback URL cache first (set when quality variant fails)
-  VideoControllerParams get _controllerParams {
-    // Check for fallback URL (stored when quality variant 720p/480p fails)
-    final fallbackUrl = ref.read(fallbackUrlCacheProvider)[widget.video.id];
-    return VideoControllerParams(
-      videoId: widget.video.id,
-      videoUrl:
-          fallbackUrl ??
-          widget.video.getOptimalVideoUrlForPlatform() ??
-          widget.video.videoUrl!,
-      cacheUrl: widget.video.videoUrl, // Always cache original MP4
-      videoEvent: widget.video,
-    );
-  }
+  /// Controller params for the current video.
+  VideoControllerParams get _controllerParams =>
+      _videoControllerParamsFor(ref, widget.video);
 
   @override
   void initState() {
@@ -257,17 +262,17 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         return;
       }
 
-      // Listen for quality variant fallback URL changes (applies to all play modes).
-      // When a 720p/480p variant fails, the provider stores a fallback URL.
-      // We need to detect this and re-trigger playback with the new controller.
+      // Listen for playback fallback URL changes (applies to all play modes).
+      // When a preferred URL fails, the provider can store a replacement URL.
+      // We need to detect that and re-trigger playback with the new controller.
       ref.listenManual(
         fallbackUrlCacheProvider.select((cache) => cache[widget.video.id]),
         (prev, next) {
           if (!mounted) return;
           if (prev == null && next != null) {
             Log.info(
-              '🔄 Quality fallback URL detected for ${widget.video.id}, '
-              'retriggering playback with original MP4: $next',
+              '🔄 Playback fallback URL detected for ${widget.video.id}, '
+              'retriggering playback with: $next',
               name: 'VideoFeedItem',
               category: LogCategory.video,
             );
@@ -704,9 +709,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       category: LogCategory.ui,
     );
 
-    // Watch fallback URL to trigger rebuild when quality variant (720p/480p) fails.
-    // This ensures _controllerParams switches to the fallback URL and creates a new
-    // controller with the original MP4 URL.
+    // Watch fallback URL to trigger rebuild when playback switches to a new URL.
+    // This ensures _controllerParams creates a controller that matches the
+    // provider's latest fallback selection.
     ref.watch(fallbackUrlCacheProvider.select((cache) => cache[video.id]));
 
     // Skip rendering if no video URL
@@ -958,12 +963,12 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     // and is playing (audio/video working), don't show error overlay
                     final isActuallyBroken = value.hasError && !value.isPlaying;
                     if (isActuallyBroken) {
-                      // When a quality variant (720p/480p) fails, the catchError
-                      // handler in the provider will store a fallback URL and
-                      // trigger a rebuild with a fresh controller for the original
-                      // MP4. During the brief window between the error and the
-                      // rebuild, suppress the error overlay and show the loading
-                      // state instead so the user sees a seamless transition.
+                      // When a preferred playback URL fails, the provider may
+                      // store a fallback URL and trigger a rebuild with a fresh
+                      // controller. During the brief window between the error and
+                      // the rebuild, suppress the error overlay and show the
+                      // loading state instead so the user sees a seamless
+                      // transition.
                       final optimalUrl = video.getOptimalVideoUrlForPlatform();
                       final isQualityVariant =
                           optimalUrl != null &&
@@ -1793,12 +1798,7 @@ class VideoOverlayActions extends ConsumerWidget {
     // Pause video before showing modal
     bool wasPaused = false;
     try {
-      final controllerParams = VideoControllerParams(
-        videoId: video.id,
-        videoUrl: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
-        cacheUrl: video.videoUrl,
-        videoEvent: video,
-      );
+      final controllerParams = _videoControllerParamsFor(ref, video);
 
       final controller = ref.read(
         individualVideoControllerProvider(controllerParams),
@@ -2121,13 +2121,9 @@ class _CommentActionButton extends StatelessWidget {
               // Pause video before navigating to comments
               if (video.videoUrl != null) {
                 try {
-                  final controllerParams = VideoControllerParams(
-                    videoId: video.id,
-                    videoUrl:
-                        video.getOptimalVideoUrlForPlatform() ??
-                        video.videoUrl!,
-                    cacheUrl: video.videoUrl,
-                    videoEvent: video,
+                  final controllerParams = _videoControllerParamsFor(
+                    ref,
+                    video,
                   );
                   final controller = ref.read(
                     individualVideoControllerProvider(controllerParams),

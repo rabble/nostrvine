@@ -132,6 +132,8 @@ void main() {
           '191679cbbeea3e4e3539d46b558e66fbadb673733af1ada0161a6e8b1cf61bea';
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
+      expect(video.hasBareDivineHashPath, isTrue);
+      expect(video.shouldPreferHlsPlayback, isTrue);
       expect(
         video.getOptimalVideoUrlForPlatform(),
         equals('https://media.divine.video/$hash/hls/master.m3u8'),
@@ -146,6 +148,42 @@ void main() {
       expect(
         video.getOptimalVideoUrlForPlatform(),
         equals('https://media.divine.video/test/video.mp4'),
+      );
+    });
+  });
+
+  group('hash-only Divine media URLs', () {
+    const hash =
+        'cfb5cf3415ec4ad3f45eff478570d898ff9a660ecea63d0c058892b22468a90d';
+
+    test('skip direct-file caching for bare hash paths', () {
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
+
+      expect(video.shouldSkipFileCaching, isTrue);
+      expect(video.getCacheableVideoUrlForPlatform(), isNull);
+    });
+
+    test('do not treat quality variants as bare hash paths', () {
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/$hash/720p',
+      );
+
+      expect(video.hasBareDivineHashPath, isFalse);
+      expect(video.shouldPreferHlsPlayback, isFalse);
+    });
+
+    test('do not force HLS for bare hash paths on cdn.divine.video', () {
+      final video = _createVideoWithUrl('https://cdn.divine.video/$hash');
+
+      expect(video.hasBareDivineHashPath, isFalse);
+      expect(video.shouldPreferHlsPlayback, isFalse);
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash/720p'),
+      );
+      expect(
+        video.getCacheableVideoUrlForPlatform(),
+        equals('https://cdn.divine.video/$hash'),
       );
     });
   });

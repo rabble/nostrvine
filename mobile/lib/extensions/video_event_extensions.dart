@@ -66,6 +66,36 @@ extension VideoEventAppExtensions on VideoEvent {
     return url.contains('divine.video');
   }
 
+  /// Check for `media.divine.video` URLs that are just a bare sha256 hash path.
+  ///
+  /// These URLs look like `https://media.divine.video/{hash}` with no file
+  /// extension or quality suffix. Some of these assets do not expose a direct
+  /// downloadable file and are only playable via the derived HLS manifest.
+  bool get hasBareDivineHashPath {
+    final url = videoUrl;
+    if (url == null || url.isEmpty || !isFromDivineServer) {
+      return false;
+    }
+
+    try {
+      final uri = Uri.parse(url);
+      if (uri.host.toLowerCase() != 'media.divine.video') {
+        return false;
+      }
+
+      final segments = uri.pathSegments.where((segment) => segment.isNotEmpty);
+      if (segments.length != 1) {
+        return false;
+      }
+
+      final segment = segments.first;
+      return segment.length == 64 &&
+          RegExp(r'^[a-fA-F0-9]+$').hasMatch(segment);
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Check if we should show the "Not Divine" badge.
   ///
   /// Shows badge for content that is:
@@ -200,6 +230,19 @@ extension VideoEventAppExtensions on VideoEvent {
   /// - Hash cannot be extracted from URL
   String? get hlsUrl => getHlsUrl();
 
+  /// Whether playback should prefer HLS instead of direct asset URLs.
+  ///
+  /// Bare `media.divine.video/{hash}` URLs can resolve to a valid HLS playlist
+  /// even when the direct file and `/720p` variants return 404.
+  bool get shouldPreferHlsPlayback => hasBareDivineHashPath;
+
+  /// Whether background file caching should be skipped for this video.
+  ///
+  /// HLS manifests are not useful for the single-file disk cache path, and the
+  /// bare `media.divine.video/{hash}` URLs that require HLS frequently 404
+  /// when cached directly.
+  bool get shouldSkipFileCaching => shouldPreferHlsPlayback;
+
   /// Get HLS URL with optional quality override.
   ///
   /// [quality] - null for master playlist (ABR), 'high' for 720p, 'low' for 480p
@@ -234,6 +277,10 @@ extension VideoEventAppExtensions on VideoEvent {
     // Non-Divine videos: always use original (no transcoded variants)
     if (!isFromDivineServer) return videoUrl;
 
+    if (shouldPreferHlsPlayback) {
+      return hlsUrl ?? videoUrl;
+    }
+
     final hash = _extractVideoHash(videoUrl);
     if (hash == null) return videoUrl;
 
@@ -257,6 +304,17 @@ extension VideoEventAppExtensions on VideoEvent {
       case VideoQuality.low:
         return '$_divineMediaBase/$hash/480p';
     }
+  }
+
+  /// Get the URL to use for disk caching, if any.
+  ///
+  /// Returns null for HLS-only playback cases where direct-file caching is not
+  /// expected to work.
+  String? getCacheableVideoUrlForPlatform() {
+    if (shouldSkipFileCaching) {
+      return null;
+    }
+    return videoUrl;
   }
 
   /// Get HLS fallback URL for Android codec errors.

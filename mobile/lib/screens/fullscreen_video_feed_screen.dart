@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
@@ -148,11 +149,16 @@ class _FullscreenVideoFeedScreenState
 
     VideoPlayerController? controller;
     try {
-      final controllerParams = VideoControllerParams(
-        videoId: video.id,
-        videoUrl: video.videoUrl!,
-        videoEvent: video,
-      );
+      final fallbackUrl = ref.read(fallbackUrlCacheProvider)[video.id];
+      final controllerParams = fallbackUrl != null
+          ? VideoControllerParams(
+              videoId: video.id,
+              videoUrl: fallbackUrl,
+              cacheUrl: video.getCacheableVideoUrlForPlatform(),
+              videoEvent: video,
+              allowCaching: video.getCacheableVideoUrlForPlatform() != null,
+            )
+          : VideoControllerParams.fromVideoEvent(video);
       controller = ref.read(
         individualVideoControllerProvider(controllerParams),
       );
