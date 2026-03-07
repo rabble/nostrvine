@@ -997,7 +997,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Combines all clips, applies audio settings, and creates the final
   /// rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    if (state.isProcessing || state.finalRenderedClip != null) return;
+    if (state.finalRenderedClip != null) return;
 
     Log.info(
       '🎬 Starting final video render',
@@ -1006,10 +1006,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
     setProcessing(true);
 
+    final renderParameters = _buildRenderParameters();
+
     final result = await VideoEditorRenderService.renderVideoToClip(
       clips: _clips,
       enableAudio: !state.isMuted,
-      parameters: state.editorEditingParameters,
+      parameters: renderParameters,
     );
 
     if (result == null) {
@@ -1097,5 +1099,35 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     await ref
         .read(videoPublishProvider.notifier)
         .publishVideo(context, getActiveDraft());
+  }
+
+  // === PRIVATE HELPERS ===
+
+  /// Build render parameters for video export.
+  ///
+  /// Combines editor editing parameters with custom audio track if selected.
+  /// Returns null if no parameters or sound track are configured.
+  CompleteParameters? _buildRenderParameters() {
+    final hasEditorParams = state.editorEditingParameters != null;
+    final soundTrack = state.selectedSound;
+
+    if (!hasEditorParams && soundTrack == null) return null;
+
+    final baseParams =
+        state.editorEditingParameters ?? CompleteParameters.fromMap({});
+
+    if (soundTrack == null) return baseParams;
+
+    return baseParams.copyWith(
+      customAudioTrack: AudioTrack(
+        id: soundTrack.id,
+        title: soundTrack.title ?? '',
+        subtitle: soundTrack.source ?? '',
+        duration: Duration(seconds: soundTrack.duration?.toInt() ?? 0),
+        audio: soundTrack.isBundled
+            ? EditorAudio.asset(soundTrack.assetPath!)
+            : EditorAudio.network(soundTrack.url!),
+      ),
+    );
   }
 }
