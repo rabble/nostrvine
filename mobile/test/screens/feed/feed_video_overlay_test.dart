@@ -102,6 +102,7 @@ void main() {
       Future<void>? firstFrameFuture,
       bool isActive = true,
       Player? player,
+      bool includePlayer = true,
     }) {
       return testMaterialApp(
         additionalOverrides: [
@@ -118,7 +119,7 @@ void main() {
             child: FeedVideoOverlay(
               video: testVideo,
               isActive: isActive,
-              player: player ?? mockPlayer,
+              player: includePlayer ? (player ?? mockPlayer) : null,
               firstFrameFuture: firstFrameFuture,
               listSources: listSources,
             ),
@@ -184,7 +185,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildSubject(isActive: false, player: null),
+          buildSubject(isActive: false, includePlayer: false),
         );
         await tester.pump();
 
