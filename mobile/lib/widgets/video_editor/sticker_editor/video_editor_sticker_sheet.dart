@@ -106,7 +106,7 @@ class _EmptyState extends StatelessWidget {
     return SliverToBoxAdapter(
       child: Text(
         message,
-        style: VineTheme.bodyFont(color: Colors.white54),
+        style: VineTheme.bodyFont(color: VineTheme.onSurfaceMuted),
         textAlign: .center,
       ),
     );
@@ -124,8 +124,6 @@ class _SearchBar extends StatefulWidget {
 class _SearchBarState extends State<_SearchBar> {
   final _searchController = TextEditingController();
   final _focusNode = FocusNode();
-
-  static const _iconColor = Color(0xFF818E8A);
 
   @override
   void dispose() {
@@ -180,7 +178,7 @@ class _SearchBarState extends State<_SearchBar> {
             contentPadding: const .symmetric(horizontal: 16, vertical: 12),
             prefixIcon: const Padding(
               padding: .only(left: 16, right: 12),
-              child: DivineIcon(icon: .search, color: _iconColor),
+              child: DivineIcon(icon: .search, color: VineTheme.onSurfaceMuted),
             ),
             prefixIconConstraints: const BoxConstraints(
               minWidth: 24,
@@ -197,9 +195,9 @@ class _SearchBarState extends State<_SearchBar> {
                   builder: (context, hasSearchQuery) {
                     return hasSearchQuery
                         ? IconButton(
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              color: _iconColor,
+                            icon: const DivineIcon(
+                              icon: .x,
+                              color: VineTheme.onSurfaceMuted,
                             ),
                             onPressed: _clearSearch,
                           )
