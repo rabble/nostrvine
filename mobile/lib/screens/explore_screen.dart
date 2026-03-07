@@ -27,6 +27,7 @@ import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/categories_tab.dart';
 import 'package:openvine/widgets/classic_vines_tab.dart';
 import 'package:openvine/widgets/for_you_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
@@ -72,10 +73,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   final _errorTracker = ErrorAnalyticsTracker();
 
   /// Calculate tab count based on feature availability
-  /// Base: New Videos, Trending, Lists = 3
+  /// Base: New Videos, Trending, Categories, Lists = 4
   /// +1 if Classics available, +1 if For You available
   int get _tabCount {
-    int count = 3; // Base tabs: New Videos, Trending, Lists
+    int count = 4; // Base tabs: New Videos, Trending, Categories, Lists
     if (_classicsAvailable) count++;
     if (_forYouAvailable) count++;
     return count;
@@ -85,7 +86,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   List<String> get _tabNames {
     final names = <String>[];
     if (_classicsAvailable) names.add('classics');
-    names.addAll(['new', 'popular']);
+    names.addAll(['new', 'popular', 'categories']);
     if (_forYouAvailable) names.add('for_you');
     names.add('lists');
     return names;
@@ -440,6 +441,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               if (_classicsAvailable) const Tab(text: 'Classics'),
               const Tab(text: 'New'),
               const Tab(text: 'Popular'),
+              const Tab(text: 'Categories'),
               if (_forYouAvailable) const Tab(text: 'For You'),
               const Tab(text: 'Lists'),
             ],
@@ -511,6 +513,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   feedTracker: _feedTracker,
                   errorTracker: _errorTracker,
                 ),
+                const CategoriesTab(),
                 if (_forYouAvailable) const ForYouTab(),
                 _buildListsTab(),
               ],
