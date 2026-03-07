@@ -2,8 +2,8 @@
 // ABOUTME: Handles loading categories list and videos within a selected category
 
 import 'package:equatable/equatable.dart';
-import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/video_category.dart';
 
@@ -81,7 +81,6 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     try {
       final videoStats = await _apiClient.getVideosByCategory(
         category: event.category.name,
-        limit: 50,
         sort: state.sortOrder,
       );
 
@@ -129,7 +128,6 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
 
       final videoStats = await _apiClient.getVideosByCategory(
         category: state.selectedCategory!.name,
-        limit: 50,
         before: before,
         sort: state.sortOrder,
       );
@@ -173,7 +171,6 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     try {
       final videoStats = await _apiClient.getVideosByCategory(
         category: state.selectedCategory!.name,
-        limit: 50,
         sort: event.sort,
       );
 

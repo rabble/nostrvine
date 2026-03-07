@@ -2,8 +2,8 @@
 // ABOUTME: Verifies category loading, selection, pagination, sorting, and deselection
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/categories/categories_bloc.dart';
@@ -37,9 +37,9 @@ void main() {
         act: (bloc) => bloc.add(const CategoriesLoadRequested()),
         expect: () => [
           const CategoriesState(categoriesStatus: CategoriesStatus.loading),
-          CategoriesState(
+          const CategoriesState(
             categoriesStatus: CategoriesStatus.loaded,
-            categories: const [
+            categories: [
               VideoCategory(name: 'music', videoCount: 1500),
               VideoCategory(name: 'comedy', videoCount: 900),
               VideoCategory(name: 'dance', videoCount: 800),
@@ -109,7 +109,6 @@ void main() {
           when(
             () => mockApiClient.getVideosByCategory(
               category: 'music',
-              limit: 50,
               sort: 'trending',
             ),
           ).thenAnswer((_) async => mockVideoStats);
@@ -120,7 +119,6 @@ void main() {
           const CategoriesState(
             selectedCategory: category,
             videosStatus: CategoriesVideosStatus.loading,
-            hasMoreVideos: true,
           ),
           isA<CategoriesState>()
               .having(
@@ -139,7 +137,6 @@ void main() {
           when(
             () => mockApiClient.getVideosByCategory(
               category: 'music',
-              limit: 50,
               sort: 'trending',
             ),
           ).thenThrow(const FunnelcakeException('Failed'));
@@ -170,7 +167,6 @@ void main() {
           when(
             () => mockApiClient.getVideosByCategory(
               category: 'music',
-              limit: 50,
               sort: 'loops',
             ),
           ).thenAnswer((_) async => [_createVideoStats('id1')]);

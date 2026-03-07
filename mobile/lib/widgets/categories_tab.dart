@@ -281,7 +281,6 @@ class _CategoryVideoViewState extends State<_CategoryVideoView> {
           ),
         );
       },
-      crossAxisCount: 2,
       useMasonryLayout: true,
       onLoadMore: () async {
         context.read<CategoriesBloc>().add(const CategoryVideosLoadMore());

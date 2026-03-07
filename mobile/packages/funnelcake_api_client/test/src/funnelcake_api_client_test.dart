@@ -4149,7 +4149,7 @@ void main() {
           );
 
           expect(
-            () => emptyClient.getCategories(),
+            emptyClient.getCategories,
             throwsA(isA<FunnelcakeNotConfiguredException>()),
           );
 
