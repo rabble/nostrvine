@@ -109,7 +109,6 @@ void main() {
           when(
             () => mockApiClient.getVideosByCategory(
               category: 'music',
-              sort: 'trending',
             ),
           ).thenAnswer((_) async => mockVideoStats);
         },
@@ -119,6 +118,7 @@ void main() {
           const CategoriesState(
             selectedCategory: category,
             videosStatus: CategoriesVideosStatus.loading,
+            hasMoreVideos: true,
           ),
           isA<CategoriesState>()
               .having(
@@ -137,7 +137,6 @@ void main() {
           when(
             () => mockApiClient.getVideosByCategory(
               category: 'music',
-              sort: 'trending',
             ),
           ).thenThrow(const FunnelcakeException('Failed'));
         },
@@ -174,7 +173,6 @@ void main() {
         seed: () => const CategoriesState(
           selectedCategory: category,
           videosStatus: CategoriesVideosStatus.loaded,
-          sortOrder: 'trending',
         ),
         build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
         act: (bloc) => bloc.add(const CategoryVideosSortChanged('loops')),
