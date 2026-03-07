@@ -9,11 +9,9 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../helpers/test_provider_overrides.dart';
 import '../test_data/video_test_data.dart';
@@ -30,25 +28,31 @@ void main() {
     late _MockVideoEventService mockVideoEventService;
     late _MockContentBlocklistService mockBlocklistService;
     late _MockNostrClient mockNostrClient;
+    late MockUserProfileService mockUserProfileService;
 
-    setUp(() async {
-      await PlayerPool.init();
-
+    setUp(() {
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = _MockNostrClient();
       mockBlocklistService = _MockContentBlocklistService();
+      mockUserProfileService = createMockUserProfileService();
 
       // Stub configuredRelays (needed by analyticsApiService provider)
       when(() => mockNostrClient.configuredRelays).thenReturn(<String>[]);
+      when(() => mockNostrClient.publicKey).thenReturn('');
+      when(() => mockNostrClient.isInitialized).thenReturn(true);
+      when(() => mockNostrClient.hasKeys).thenReturn(false);
+      when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
+      when(() => mockNostrClient.subscribe(any())).thenAnswer(
+        (_) => const Stream<Event>.empty(),
+      );
+      when(
+        () => mockNostrClient.queryEvents(any()),
+      ).thenAnswer((_) async => <Event>[]);
 
       // Default: no authors blocked
       when(
         () => mockBlocklistService.shouldFilterFromFeeds(any()),
       ).thenReturn(false);
-    });
-
-    tearDown(() async {
-      await PlayerPool.reset();
     });
 
     Widget buildSubject({String videoId = 'test_video_id'}) {
@@ -59,8 +63,14 @@ void main() {
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
           ),
+          followRepositoryProvider.overrideWithValue(null),
         ],
-        home: VideoDetailScreen(videoId: videoId),
+        mockUserProfileService: mockUserProfileService,
+        home: VideoDetailScreen(
+          videoId: videoId,
+          videoFeedBuilder: (_) =>
+              const SizedBox(key: Key('video-feed-placeholder')),
+        ),
       );
     }
 
@@ -83,7 +93,7 @@ void main() {
 
     group('video found in cache', () {
       testWidgets(
-        'renders $PooledFullscreenVideoFeedScreen with cached video',
+        'renders placeholder feed with cached video',
         (tester) async {
           final video = createTestVideoEvent(
             id: 'test_video_id',
@@ -98,7 +108,10 @@ void main() {
           await tester.pumpWidget(buildSubject());
           await tester.pump();
 
-          expect(find.byType(PooledFullscreenVideoFeedScreen), findsOneWidget);
+          expect(
+            find.byKey(const Key('video-feed-placeholder')),
+            findsOneWidget,
+          );
         },
       );
     });
@@ -159,7 +172,7 @@ void main() {
         await tester.pump();
 
         expect(find.text('This account is not available'), findsOneWidget);
-        expect(find.byType(PooledFullscreenVideoFeedScreen), findsNothing);
+        expect(find.byKey(const Key('video-feed-placeholder')), findsNothing);
       });
 
       testWidgets('renders back button for blocked author', (tester) async {

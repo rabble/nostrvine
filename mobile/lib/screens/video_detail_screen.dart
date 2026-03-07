@@ -28,9 +28,14 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
   /// Build path for a specific video ID.
   static String pathForId(String id) => '$basePath/$id';
 
-  const VideoDetailScreen({required this.videoId, super.key});
+  const VideoDetailScreen({
+    required this.videoId,
+    this.videoFeedBuilder,
+    super.key,
+  });
 
   final String videoId;
+  final Widget Function(VideoEvent video)? videoFeedBuilder;
 
   @override
   ConsumerState<VideoDetailScreen> createState() => _VideoDetailScreenState();
@@ -208,11 +213,12 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     }
 
     // Display video in full-screen pooled player
-    return PooledFullscreenVideoFeedScreen(
-      videosStream: Stream.value([_video!]),
-      initialIndex: 0,
-      contextTitle: 'Shared Video',
-      trafficSource: ViewTrafficSource.share,
-    );
+    return widget.videoFeedBuilder?.call(_video!) ??
+        PooledFullscreenVideoFeedScreen(
+          videosStream: Stream.value([_video!]),
+          initialIndex: 0,
+          contextTitle: 'Shared Video',
+          trafficSource: ViewTrafficSource.share,
+        );
   }
 }
