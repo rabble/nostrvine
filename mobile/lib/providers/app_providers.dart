@@ -1050,6 +1050,25 @@ FollowRepository followRepository(Ref ref) {
     );
   });
 
+  // Listen for isNostrReady changes to re-initialize when keys become available.
+  // This handles the case where the provider was created before keys were loaded.
+  ref.listen<bool>(isNostrReadyProvider, (previous, next) {
+    if (previous == false && next && !repository.isInitialized) {
+      Log.info(
+        'NostrClient became ready, re-initializing FollowRepository',
+        name: 'AppProviders',
+        category: LogCategory.system,
+      );
+      repository.initialize().catchError((e) {
+        Log.error(
+          'Failed to re-initialize FollowRepository after keys ready',
+          name: 'AppProviders',
+          error: e,
+        );
+      });
+    }
+  });
+
   ref.onDispose(repository.dispose);
 
   return repository;

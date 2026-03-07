@@ -515,6 +515,17 @@ class FollowRepository {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
+    // Guard: Skip initialization if user is not authenticated.
+    // Don't set _isInitialized = true so we can retry when keys are available.
+    if (!_nostrClient.hasKeys) {
+      Log.debug(
+        'FollowRepository.initialize() skipped - no keys yet',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     try {
       // 1. Load from local storage first for immediate UI display
       await _loadFromLocalStorage();
