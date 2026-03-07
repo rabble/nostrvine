@@ -115,11 +115,10 @@ class PooledVideoPlayer extends StatelessWidget {
               _DefaultLoadingState(thumbnailUrl: thumbnailUrl);
           final children = <Widget>[
             loadingPlaceholder,
-            if (loadState == LoadState.ready)
-              _RevealVideoAfterFirstFrame(
-                videoController: videoController,
-                child: videoBuilder(context, videoController, player),
-              ),
+            _RevealVideoAfterFirstFrame(
+              videoController: videoController,
+              child: videoBuilder(context, videoController, player),
+            ),
             ?overlay,
           ];
           content = Stack(fit: StackFit.expand, children: children);

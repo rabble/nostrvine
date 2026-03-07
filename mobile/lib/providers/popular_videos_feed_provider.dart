@@ -71,22 +71,16 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         _nextCursor = _getOldestTimestamp(videos);
 
         final filteredVideos = _filterVideos(videos);
-
-        // Enrich with Nostr tags for ProofMode badge
-        final enrichedVideos = await enrichVideosWithNostrTags(
-          filteredVideos,
-          nostrService: ref.read(nostrServiceProvider),
-          callerName: 'PopularVideosFeedProvider',
-        );
+        _scheduleEnrichment(filteredVideos);
 
         Log.info(
-          'PopularVideosFeed: Got ${enrichedVideos.length} trending videos',
+          'PopularVideosFeed: Got ${filteredVideos.length} trending videos',
           name: 'PopularVideosFeedProvider',
           category: LogCategory.video,
         );
 
         return VideoFeedState(
-          videos: enrichedVideos,
+          videos: filteredVideos,
           hasMoreContent: videos.length >= AppConstants.paginationBatchSize,
           lastUpdated: DateTime.now(),
         );
@@ -160,20 +154,10 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         );
         return;
       }
-
-      // Enrich with Nostr tags for ProofMode badge
-      final enrichedNew = await enrichVideosWithNostrTags(
-        filteredNew,
-        nostrService: ref.read(nostrServiceProvider),
-        callerName: 'PopularVideosFeedProvider',
-      );
-
-      if (!ref.mounted) return;
-
-      final allVideos = [...currentState.videos, ...enrichedNew];
+      final allVideos = [...currentState.videos, ...filteredNew];
 
       Log.info(
-        'PopularVideosFeed: Loaded ${enrichedNew.length} more videos '
+        'PopularVideosFeed: Loaded ${filteredNew.length} more videos '
         '(total: ${allVideos.length})',
         name: 'PopularVideosFeedProvider',
         category: LogCategory.video,
@@ -186,6 +170,8 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           lastUpdated: DateTime.now(),
         ),
       );
+
+      _scheduleEnrichment(filteredNew);
     } catch (e) {
       Log.error(
         'PopularVideosFeed: Error loading more: $e',
@@ -229,5 +215,66 @@ class PopularVideosFeed extends _$PopularVideosFeed {
   int? _getOldestTimestamp(List<VideoEvent> videos) {
     if (videos.isEmpty) return null;
     return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
+  }
+
+  void _scheduleEnrichment(List<VideoEvent> videos) {
+    if (videos.isEmpty) return;
+
+    enrichVideosInBackground(
+      videos,
+      nostrService: ref.read(nostrServiceProvider),
+      callerName: 'PopularVideosFeedProvider',
+      onEnriched: (enrichedVideos) {
+        if (!ref.mounted || !state.hasValue) return;
+
+        final currentState = state.value;
+        if (currentState == null || currentState.videos.isEmpty) return;
+
+        final mergedVideos = _mergeEnrichedVideos(
+          existing: currentState.videos,
+          enriched: enrichedVideos,
+        );
+
+        if (_videoListsEqual(currentState.videos, mergedVideos)) {
+          return;
+        }
+
+        state = AsyncData(
+          currentState.copyWith(
+            videos: mergedVideos,
+            lastUpdated: DateTime.now(),
+          ),
+        );
+
+        Log.info(
+          'PopularVideosFeed: Applied background Nostr enrichment to ${enrichedVideos.length} videos',
+          name: 'PopularVideosFeedProvider',
+          category: LogCategory.video,
+        );
+      },
+    );
+  }
+
+  List<VideoEvent> _mergeEnrichedVideos({
+    required List<VideoEvent> existing,
+    required List<VideoEvent> enriched,
+  }) {
+    final enrichedById = {
+      for (final video in enriched) video.id.toLowerCase(): video,
+    };
+
+    return existing.map((video) {
+      return enrichedById[video.id.toLowerCase()] ?? video;
+    }).toList();
+  }
+
+  bool _videoListsEqual(List<VideoEvent> a, List<VideoEvent> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }
