@@ -90,6 +90,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).thenAnswer((_) async => createTestProfile());
           },
@@ -120,6 +121,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).called(1);
             verifyNever(
@@ -144,6 +146,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
                 currentProfile: existingProfile,
               ),
             ).thenAnswer((_) async => createTestProfile());
@@ -182,6 +185,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).thenAnswer((_) async => createTestProfile());
           },
@@ -213,6 +217,43 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'passes clearNip05: true when no username in divine mode',
+          setUp: () {
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                clearNip05: true,
+              ),
+            ).thenAnswer((_) async => createTestProfile());
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+            ),
+          ),
+          verify: (_) {
+            verify(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                clearNip05: true,
               ),
             ).called(1);
           },
@@ -376,6 +417,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).thenThrow(const ProfilePublishFailedException('Network error'));
           },
