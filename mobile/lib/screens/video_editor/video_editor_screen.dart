@@ -130,11 +130,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       context: context,
       // TODO(l10n): Replace with context.l10n when localization is added.
       title: const Text('Stickers'),
-      scrollable: false,
-      isScrollControlled: true,
-      body: BlocProvider.value(
+      maxChildSize: 1,
+      initialChildSize: 1,
+      minChildSize: 0.8,
+      buildScrollBody: (scrollController) => BlocProvider.value(
         value: _stickerBloc,
-        child: const VideoEditorStickerSheet(),
+        child: VideoEditorStickerSheet(scrollController: scrollController),
       ),
     );
 

@@ -94,23 +94,19 @@ class _ActionButton extends StatelessWidget {
           child: GestureDetector(
             onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: VineTheme.surfaceContainer,
-                border: .all(width: 2, color: VineTheme.containerLow),
-                borderRadius: .circular(20),
+                border: .all(width: 2, color: VineTheme.outlineMuted),
+                borderRadius: .circular(16),
               ),
-              child: DivineIcon(icon: icon, color: VineTheme.whiteText),
+              child: DivineIcon(icon: icon, color: VineTheme.primary),
             ),
           ),
         ),
         Text(
           label,
-          style: VineTheme.bodyFont(
-            fontSize: 12,
-            height: 1.33,
-            letterSpacing: 0.4,
-          ),
+          style: VineTheme.bodySmallFont(),
           textAlign: .center,
         ),
       ],

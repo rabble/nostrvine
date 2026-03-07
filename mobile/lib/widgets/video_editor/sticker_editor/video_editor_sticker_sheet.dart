@@ -14,15 +14,20 @@ import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticke
 /// Returns the selected [StickerData] via [context.pop] when a sticker is
 /// tapped.
 class VideoEditorStickerSheet extends StatelessWidget {
-  const VideoEditorStickerSheet({super.key});
+  const VideoEditorStickerSheet({super.key, this.scrollController});
+
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final bottomInset =
+        MediaQuery.viewInsetsOf(context).bottom +
+        MediaQuery.viewPaddingOf(context).bottom;
 
     return GestureDetector(
       onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
       child: CustomScrollView(
+        controller: scrollController,
         slivers: [
           // Floating Search Bar Header
           const _SearchBar(),

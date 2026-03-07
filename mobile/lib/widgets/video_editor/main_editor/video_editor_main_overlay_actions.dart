@@ -109,7 +109,7 @@ class _TopActions extends ConsumerWidget {
         ),
         DivineIconButton(
           size: .small,
-          type: .ghostSecondary,
+          type: .tertiary,
           // TODO(l10n): Replace with context.l10n when localization is added.
           semanticLabel: 'Done',
           icon: .check,
