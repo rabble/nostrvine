@@ -256,30 +256,34 @@ class _PreviewOverlay extends ConsumerWidget {
     );
 
     // Non-interactive overlay with reduced opacity
-    return IgnorePointer(
-      child: Opacity(
-        opacity: 0.5,
-        child: ValueListenableBuilder(
-          valueListenable: isPreviewReady,
-          builder: (_, isActive, _) {
-            // Show overlay actions in preview mode
-            return VideoOverlayActions(
-              video: VideoEvent(
-                id: 'id',
-                pubkey: publicKey,
-                timestamp: DateTime.now(),
-                createdAt: DateTime.now().millisecondsSinceEpoch,
-                content: metadata.title,
-                hashtags: metadata.tags.toList(),
-                originalLikes: 1,
-                originalComments: 1,
-                originalReposts: 1,
-              ),
-              isVisible: true,
-              isActive: isActive,
-              isPreviewMode: true,
-            );
-          },
+    return MediaQuery.removeViewPadding(
+      context: context,
+      removeBottom: true,
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: 0.5,
+          child: ValueListenableBuilder(
+            valueListenable: isPreviewReady,
+            builder: (_, isActive, _) {
+              // Show overlay actions in preview mode
+              return VideoOverlayActions(
+                video: VideoEvent(
+                  id: 'id',
+                  pubkey: publicKey,
+                  timestamp: DateTime.now(),
+                  createdAt: DateTime.now().millisecondsSinceEpoch,
+                  content: metadata.title,
+                  hashtags: metadata.tags.toList(),
+                  originalLikes: 1,
+                  originalComments: 1,
+                  originalReposts: 1,
+                ),
+                isVisible: true,
+                isActive: isActive,
+                isPreviewMode: true,
+              );
+            },
+          ),
         ),
       ),
     );
