@@ -166,8 +166,7 @@ void main() {
 
         expect(
           find.byWidgetPredicate(
-            (widget) =>
-                widget is DivineIcon && widget.icon == DivineIconName.x,
+            (widget) => widget is DivineIcon && widget.icon == DivineIconName.x,
           ),
           findsOneWidget,
         );
