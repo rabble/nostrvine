@@ -4,6 +4,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -43,6 +44,7 @@ class VideoEditorProviderState {
     this.inspiredByVideo,
     this.inspiredByNpub,
     this.selectedSound,
+    this.contentWarnings = const {},
     this.proofManifestJson,
     GlobalKey? deleteButtonKey,
   }) : deleteButtonKey = deleteButtonKey ?? GlobalKey();
@@ -131,6 +133,9 @@ class VideoEditorProviderState {
   /// This is persisted in drafts and used for audio playback during editing.
   final AudioEvent? selectedSound;
 
+  /// NIP-32 content warning labels for sensitive content self-labeling.
+  final Set<ContentLabel> contentWarnings;
+
   /// ProofMode attestation manifest JSON for the final rendered clip.
   final String? proofManifestJson;
 
@@ -188,6 +193,7 @@ class VideoEditorProviderState {
     bool clearInspiredByNpub = false,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
+    Set<ContentLabel>? contentWarnings,
   }) {
     return VideoEditorProviderState(
       currentClipIndex: currentClipIndex ?? this.currentClipIndex,
@@ -225,6 +231,7 @@ class VideoEditorProviderState {
       selectedSound: clearSelectedSound
           ? null
           : (selectedSound ?? this.selectedSound),
+      contentWarnings: contentWarnings ?? this.contentWarnings,
       proofManifestJson: clearProofManifestJson || clearFinalRenderedClip
           ? null
           : proofManifestJson ?? this.proofManifestJson,

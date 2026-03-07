@@ -7,6 +7,7 @@ import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -37,6 +38,7 @@ class DivineVideoDraft {
     this.inspiredByVideo,
     this.inspiredByNpub,
     this.selectedSound,
+    this.contentWarning,
   });
 
   factory DivineVideoDraft.create({
@@ -56,6 +58,7 @@ class DivineVideoDraft {
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
     AudioEvent? selectedSound,
+    String? contentWarning,
   }) {
     final now = DateTime.now();
     return DivineVideoDraft(
@@ -79,6 +82,7 @@ class DivineVideoDraft {
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
       selectedSound: selectedSound,
+      contentWarning: contentWarning,
     );
   }
 
@@ -172,6 +176,7 @@ class DivineVideoDraft {
       selectedSound: json['selectedSound'] != null
           ? AudioEvent.fromJson(json['selectedSound'] as Map<String, dynamic>)
           : null,
+      contentWarning: json['contentWarning'] as String?,
     );
   }
 
@@ -228,6 +233,9 @@ class DivineVideoDraft {
   /// Persisted to drafts so the sound selection survives app restarts.
   final AudioEvent? selectedSound;
 
+  /// Comma-separated NIP-32 content warning labels for this video.
+  final String? contentWarning;
+
   /// Check if this draft has ProofMode data
   bool get hasProofMode => proofManifestJson != null;
 
@@ -275,6 +283,7 @@ class DivineVideoDraft {
     String? inspiredByNpub,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
+    Object? contentWarning = _sentinel,
     bool skipUpdateLastModified = false,
   }) => DivineVideoDraft(
     id: id ?? this.id,
@@ -307,7 +316,12 @@ class DivineVideoDraft {
     selectedSound: clearSelectedSound
         ? null
         : (selectedSound ?? this.selectedSound),
+    contentWarning: contentWarning == _sentinel
+        ? this.contentWarning
+        : contentWarning as String?,
   );
+
+  static const _sentinel = Object();
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -334,7 +348,10 @@ class DivineVideoDraft {
     if (inspiredByVideo != null) 'inspiredByVideo': inspiredByVideo!.toJson(),
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
     if (selectedSound != null) 'selectedSound': selectedSound!.toJson(),
+    if (contentWarning != null) 'contentWarning': contentWarning,
   };
+
+  Set<ContentLabel> get contentWarnings => ContentLabel.fromCsv(contentWarning);
 
   String get displayDuration {
     final duration = DateTime.now().difference(createdAt);
