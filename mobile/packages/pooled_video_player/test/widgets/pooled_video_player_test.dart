@@ -421,7 +421,46 @@ void main() {
         );
       });
 
-      testWidgets('reveals video after timeout when first frame stalls', (
+      testWidgets('does not reveal video from timeout while still loading', (
+        tester,
+      ) async {
+        final firstFrameCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => firstFrameCompleter.future);
+
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.loading,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        expect(opacityFinder, findsOneWidget);
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+      });
+
+      testWidgets('reveals video after timeout when ready and first frame '
+          'stalls', (
         tester,
       ) async {
         final firstFrameCompleter = Completer<void>();

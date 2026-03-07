@@ -2067,6 +2067,128 @@ void main() {
     });
 
     group('HLS streaming support', () {
+      test(
+        'desktop canonical Divine HLS URLs open the raw blob first',
+        () async {
+          debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+          addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+          const hash =
+              '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+          final hlsVideo = VideoItem(
+            id: 'hls_video',
+            url: 'https://media.divine.video/$hash/hls/master.m3u8',
+          );
+          final setup = createMockPlayerSetup();
+          final pooledPlayer = _MockPooledPlayer();
+          when(() => pooledPlayer.player).thenReturn(setup.player);
+          when(
+            () => pooledPlayer.videoController,
+          ).thenReturn(createMockVideoController());
+          when(() => pooledPlayer.isDisposed).thenReturn(false);
+          when(pooledPlayer.dispose).thenAnswer((_) async {});
+
+          final localPool = TestablePlayerPool(
+            maxPlayers: 1,
+            mockPlayerFactory: (_) => pooledPlayer,
+          );
+          addTearDown(() async {
+            await setup.dispose();
+            await localPool.dispose();
+          });
+
+          final controller = VideoFeedController(
+            videos: [hlsVideo],
+            pool: localPool,
+          );
+          addTearDown(controller.dispose);
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          verify(
+            () => setup.player.open(
+              any(
+                that: isA<Media>().having(
+                  (m) => m.uri,
+                  'uri',
+                  'https://media.divine.video/$hash',
+                ),
+              ),
+              play: false,
+            ),
+          ).called(1);
+          verifyNever(
+            () => setup.player.open(
+              any(
+                that: isA<Media>().having((m) => m.uri, 'uri', hlsVideo.url),
+              ),
+              play: false,
+            ),
+          );
+        },
+      );
+
+      test('desktop canonical Divine HLS URLs retry the HLS manifest when '
+          'raw blob open fails', () async {
+        debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
+
+        const hash =
+            'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+        final rawUrl = 'https://media.divine.video/$hash';
+        final hlsUrl = 'https://media.divine.video/$hash/hls/master.m3u8';
+        final hlsVideo = VideoItem(id: 'hls_video', url: hlsUrl);
+        final setup = createMockPlayerSetup();
+        when(
+          () => setup.player.open(
+            any(that: isA<Media>().having((m) => m.uri, 'uri', rawUrl)),
+            play: false,
+          ),
+        ).thenThrow(Exception('404'));
+        when(
+          () => setup.player.open(
+            any(that: isA<Media>().having((m) => m.uri, 'uri', hlsUrl)),
+            play: false,
+          ),
+        ).thenAnswer((_) async {});
+
+        final pooledPlayer = _MockPooledPlayer();
+        when(() => pooledPlayer.player).thenReturn(setup.player);
+        when(
+          () => pooledPlayer.videoController,
+        ).thenReturn(createMockVideoController());
+        when(() => pooledPlayer.isDisposed).thenReturn(false);
+        when(pooledPlayer.dispose).thenAnswer((_) async {});
+
+        final localPool = TestablePlayerPool(
+          maxPlayers: 1,
+          mockPlayerFactory: (_) => pooledPlayer,
+        );
+        addTearDown(() async {
+          await setup.dispose();
+          await localPool.dispose();
+        });
+
+        final controller = VideoFeedController(
+          videos: [hlsVideo],
+          pool: localPool,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        verifyInOrder([
+          () => setup.player.open(
+            any(that: isA<Media>().having((m) => m.uri, 'uri', rawUrl)),
+            play: false,
+          ),
+          () => setup.player.open(
+            any(that: isA<Media>().having((m) => m.uri, 'uri', hlsUrl)),
+            play: false,
+          ),
+        ]);
+      });
+
       test('accepts HLS URLs with .m3u8 extension', () {
         final hlsVideos = [
           const VideoItem(

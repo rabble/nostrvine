@@ -103,6 +103,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Tracks the last set of pooled videos to detect new additions.
   List<VideoItem>? lastPooledVideos;
 
+  /// Tracks which feed mode the current controller was built for.
+  FeedMode? controllerMode;
+
   /// Whether this state owns (and should dispose) the controller.
   bool get ownsController => widget.controller == null;
 
@@ -140,12 +143,21 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Called from [didChangeDependencies] for eager setup and from
   /// [BlocListener] when videos arrive asynchronously.
   void handleVideoController([VideoFeedState? state]) {
-    if (controller != null) return;
+    if (!ownsController) return;
 
     final effectiveState = state ?? context.read<VideoFeedBloc>().state;
     if (!effectiveState.isLoaded || effectiveState.videos.isEmpty) return;
 
     final pooledVideos = effectiveState.videos.toPooledVideoItems();
+
+    if (controller != null &&
+        controllerMode == effectiveState.mode &&
+        lastPooledVideos != null &&
+        _samePooledVideos(lastPooledVideos!, pooledVideos)) {
+      return;
+    }
+
+    _resetVideoController();
 
     controller = VideoFeedController(
       videos: pooledVideos,
@@ -158,22 +170,71 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       },
     );
 
+    controllerMode = effectiveState.mode;
     lastPooledVideos = pooledVideos;
   }
 
   /// Handles new videos from pagination by adding them to the controller.
   void handleVideosChanged(VideoFeedState state) {
-    if (controller == null || lastPooledVideos == null) return;
+    if (!ownsController) return;
 
     final pooledVideos = state.videos.toPooledVideoItems();
 
-    final newVideos = pooledVideos
-        .where((v) => !lastPooledVideos!.any((old) => old.id == v.id))
-        .toList();
+    if (controller == null || lastPooledVideos == null) {
+      handleVideoController(state);
+      return;
+    }
+
+    if (controllerMode != state.mode ||
+        !_isAppendOnlyPooledUpdate(lastPooledVideos!, pooledVideos)) {
+      handleVideoController(state);
+      return;
+    }
+
+    final newVideos = pooledVideos.skip(lastPooledVideos!.length).toList();
 
     if (newVideos.isNotEmpty) controller?.addVideos(newVideos);
 
     lastPooledVideos = pooledVideos;
+  }
+
+  void _resetVideoController() {
+    if (ownsController) {
+      controller?.dispose();
+      controller = null;
+    }
+    controllerMode = null;
+    lastPooledVideos = null;
+    lastPrefetchIndex = null;
+  }
+
+  bool _samePooledVideos(List<VideoItem> previous, List<VideoItem> current) {
+    if (previous.length != current.length) return false;
+
+    for (var i = 0; i < previous.length; i++) {
+      if (previous[i].id != current[i].id ||
+          previous[i].url != current[i].url) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  bool _isAppendOnlyPooledUpdate(
+    List<VideoItem> previous,
+    List<VideoItem> current,
+  ) {
+    if (current.length < previous.length) return false;
+
+    for (var i = 0; i < previous.length; i++) {
+      if (previous[i].id != current[i].id ||
+          previous[i].url != current[i].url) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   void prefetchProfiles(List<VideoEvent> videos, int index) {
@@ -231,13 +292,10 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
           // Reset controller when mode changes so a fresh one is
           // created for the new feed.
           BlocListener<VideoFeedBloc, VideoFeedState>(
-            listenWhen: (previous, current) =>
-                previous.mode != current.mode && current.isLoading,
+            listenWhen: (previous, current) => previous.mode != current.mode,
             listener: (_, state) {
-              if (ownsController) controller?.dispose();
-              controller = null;
-              lastPooledVideos = null;
-              lastPrefetchIndex = null;
+              _resetVideoController();
+              handleVideoController(state);
             },
           ),
           // Initialize controller when videos first become available
@@ -301,10 +359,26 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   itemBuilder: (context, video, index, {required isActive}) {
                     final originalEvent = eventsById[video.id];
                     if (originalEvent == null) {
+                      Log.debug(
+                        'Feed item missing original event: '
+                        'mode=${state.mode.name}, index=$index, '
+                        'videoId=${video.id}, playbackUrl=${video.url}, '
+                        'stateVideoCount=${state.videos.length}',
+                        name: 'VideoFeedPage',
+                        category: LogCategory.video,
+                      );
                       return const ColoredBox(
                         color: VineTheme.backgroundColor,
                       );
                     }
+                    Log.debug(
+                      'Feed item build: mode=${state.mode.name}, index=$index, '
+                      'eventId=${originalEvent.id}, isActive=$isActive, '
+                      'playbackUrl=${video.url}, originalUrl=${originalEvent.videoUrl}, '
+                      'thumbnailUrl=${originalEvent.thumbnailUrl}',
+                      name: 'VideoFeedPage',
+                      category: LogCategory.video,
+                    );
                     final listSources =
                         state.listOnlyVideoIds.contains(originalEvent.id)
                         ? state.videoListSources[originalEvent.id]
@@ -534,6 +608,9 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
+          videoId: video.id,
+          feedMode: contextTitle,
+          index: index,
         ),
         overlayBuilder: (context, videoController, player) => FeedVideoOverlay(
           video: video,
@@ -570,27 +647,118 @@ class _FittedVideoPlayer extends StatelessWidget {
   }
 }
 
-class _VideoLoadingPlaceholder extends StatelessWidget {
-  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
+class _VideoLoadingPlaceholder extends StatefulWidget {
+  const _VideoLoadingPlaceholder({
+    required this.videoId,
+    required this.index,
+    this.feedMode,
+    this.thumbnailUrl,
+    this.isPortrait = true,
+  });
 
+  final String videoId;
+  final int index;
+  final String? feedMode;
   final String? thumbnailUrl;
   final bool isPortrait;
 
   @override
+  State<_VideoLoadingPlaceholder> createState() =>
+      _VideoLoadingPlaceholderState();
+}
+
+class _VideoLoadingPlaceholderState extends State<_VideoLoadingPlaceholder> {
+  bool _loggedStart = false;
+  bool _loggedLoaded = false;
+  bool _loggedError = false;
+
+  void _logStartIfNeeded() {
+    if (_loggedStart) return;
+    _loggedStart = true;
+    Log.debug(
+      'Feed thumbnail load_start: mode=${widget.feedMode ?? 'unknown'}, '
+      'index=${widget.index}, eventId=${widget.videoId}, '
+      'thumbnailUrl=${widget.thumbnailUrl}',
+      name: 'VideoFeedPage',
+      category: LogCategory.video,
+    );
+  }
+
+  void _logLoadedIfNeeded() {
+    if (_loggedLoaded) return;
+    _loggedLoaded = true;
+    Log.debug(
+      'Feed thumbnail loaded: mode=${widget.feedMode ?? 'unknown'}, '
+      'index=${widget.index}, eventId=${widget.videoId}, '
+      'thumbnailUrl=${widget.thumbnailUrl}',
+      name: 'VideoFeedPage',
+      category: LogCategory.video,
+    );
+  }
+
+  void _logErrorIfNeeded(Object error) {
+    if (_loggedError) return;
+    _loggedError = true;
+    Log.warning(
+      'Feed thumbnail load_failed: mode=${widget.feedMode ?? 'unknown'}, '
+      'index=${widget.index}, eventId=${widget.videoId}, '
+      'thumbnailUrl=${widget.thumbnailUrl}, error=$error',
+      name: 'VideoFeedPage',
+      category: LogCategory.video,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (thumbnailUrl == null) {
+    if (widget.thumbnailUrl == null) {
+      if (!_loggedStart) {
+        _loggedStart = true;
+        Log.debug(
+          'Feed thumbnail missing: mode=${widget.feedMode ?? 'unknown'}, '
+          'index=${widget.index}, eventId=${widget.videoId}',
+          name: 'VideoFeedPage',
+          category: LogCategory.video,
+        );
+      }
       return const _LoadingIndicator();
     }
 
     // Portrait: fill height, crop sides (cover)
     // Landscape: fit entirely, centered (contain)
-    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+    final boxFit = widget.isPortrait ? BoxFit.cover : BoxFit.contain;
+    _logStartIfNeeded();
 
-    return SizedBox.expand(
-      child: Image.network(
-        thumbnailUrl!,
-        fit: boxFit,
-        errorBuilder: (_, _, _) => const _LoadingIndicator(),
+    return ColoredBox(
+      color: VineTheme.backgroundColor,
+      child: SizedBox.expand(
+        child: Image.network(
+          widget.thumbnailUrl!,
+          fit: boxFit,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (wasSynchronouslyLoaded || frame != null) {
+              _logLoadedIfNeeded();
+            }
+            return child;
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) {
+              _logLoadedIfNeeded();
+              return child;
+            }
+
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                child,
+                const _LoadingIndicator(),
+              ],
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            _logErrorIfNeeded(error);
+            return const _LoadingIndicator();
+          },
+        ),
       ),
     );
   }

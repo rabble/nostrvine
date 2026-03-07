@@ -17,6 +17,7 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -70,6 +71,16 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
   @override
   Widget build(BuildContext context) {
     final video = widget.video;
+
+    Log.debug(
+      'Feed overlay build: eventId=${video.id}, pubkey=${video.pubkey}, '
+      'isActive=${widget.isActive}, hasPlayer=${widget.player != null}, '
+      'hasFirstFrameFuture=${widget.firstFrameFuture != null}, '
+      'hasSubtitles=${video.hasSubtitles}, hasWarning=${video.shouldShowWarning}, '
+      'videoUrl=${video.videoUrl}, thumbnailUrl=${video.thumbnailUrl}',
+      name: 'FeedVideoOverlay',
+      category: LogCategory.video,
+    );
 
     // Content warning blur overlay takes priority over normal overlay
     if (video.shouldShowWarning && !_contentWarningRevealed) {

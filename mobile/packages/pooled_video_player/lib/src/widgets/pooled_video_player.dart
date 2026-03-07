@@ -117,6 +117,7 @@ class PooledVideoPlayer extends StatelessWidget {
             loadingPlaceholder,
             _RevealVideoAfterFirstFrame(
               videoController: videoController,
+              readyForFallback: loadState == LoadState.ready,
               child: videoBuilder(context, videoController, player),
             ),
             ?overlay,
@@ -152,10 +153,12 @@ class PooledVideoPlayer extends StatelessWidget {
 class _RevealVideoAfterFirstFrame extends StatefulWidget {
   const _RevealVideoAfterFirstFrame({
     required this.videoController,
+    required this.readyForFallback,
     required this.child,
   });
 
   final VideoController videoController;
+  final bool readyForFallback;
   final Widget child;
 
   @override
@@ -165,51 +168,74 @@ class _RevealVideoAfterFirstFrame extends StatefulWidget {
 
 class _RevealVideoAfterFirstFrameState
     extends State<_RevealVideoAfterFirstFrame> {
-  late Future<void> _firstFrameFuture;
+  bool _hasRenderedFirstFrame = false;
+  bool _revealedByTimeout = false;
+  int _generation = 0;
   Timer? _firstFrameTimeout;
 
   @override
   void initState() {
     super.initState();
-    _firstFrameFuture = _buildFirstFrameFuture();
+    _subscribeToFirstFrame();
+    _syncFallbackTimer();
   }
 
   @override
   void didUpdateWidget(covariant _RevealVideoAfterFirstFrame oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.videoController, widget.videoController)) {
-      _firstFrameFuture = _buildFirstFrameFuture();
+      _resetRevealState();
+      _subscribeToFirstFrame();
+    }
+    if (oldWidget.readyForFallback != widget.readyForFallback) {
+      _syncFallbackTimer();
     }
   }
 
-  Future<void> _buildFirstFrameFuture() {
+  void _resetRevealState() {
     _firstFrameTimeout?.cancel();
+    _hasRenderedFirstFrame = false;
+    _revealedByTimeout = false;
+  }
 
-    final completer = Completer<void>();
+  void _subscribeToFirstFrame() {
+    final generation = ++_generation;
+    _firstFrameTimeout?.cancel();
 
     unawaited(
       widget.videoController.waitUntilFirstFrameRendered
           .then((_) {
-            if (!completer.isCompleted) {
-              _firstFrameTimeout?.cancel();
-              completer.complete();
-            }
+            if (!mounted || generation != _generation) return;
+            _firstFrameTimeout?.cancel();
+            setState(() {
+              _hasRenderedFirstFrame = true;
+            });
           })
           .catchError((_) {
-            if (!completer.isCompleted) {
-              _firstFrameTimeout?.cancel();
-              completer.complete();
-            }
+            if (!mounted || generation != _generation) return;
+            _firstFrameTimeout?.cancel();
+            setState(() {
+              _hasRenderedFirstFrame = true;
+            });
           }),
     );
+  }
 
+  void _syncFallbackTimer() {
     _firstFrameTimeout = Timer(_firstFrameRevealTimeout, () {
-      if (!completer.isCompleted) {
-        completer.complete();
+      if (!mounted || _hasRenderedFirstFrame || !widget.readyForFallback) {
+        return;
       }
+      setState(() {
+        _revealedByTimeout = true;
+      });
     });
 
-    return completer.future;
+    if (!widget.readyForFallback || _hasRenderedFirstFrame) {
+      _firstFrameTimeout?.cancel();
+      _revealedByTimeout = false;
+      return;
+    }
   }
 
   @override
@@ -220,18 +246,15 @@ class _RevealVideoAfterFirstFrameState
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<void>(
-      future: _firstFrameFuture,
-      builder: (context, snapshot) {
-        final hasRenderedFirstFrame =
-            snapshot.connectionState == ConnectionState.done;
-        return AnimatedOpacity(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          opacity: hasRenderedFirstFrame ? 1 : 0,
-          child: widget.child,
-        );
-      },
+    final shouldReveal =
+        _hasRenderedFirstFrame ||
+        (widget.readyForFallback && _revealedByTimeout);
+
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      opacity: shouldReveal ? 1 : 0,
+      child: widget.child,
     );
   }
 }
