@@ -6,8 +6,11 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/tools/video_editor_draw_tool_arrow.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/tools/video_editor_draw_tool_eraser.dart';
@@ -44,8 +47,11 @@ void main() {
     late MockVideoEditorDrawBloc mockBloc;
     late GlobalKey<ProImageEditorState> editorKey;
     late MockPaintEditorState mockPaintEditor;
+    late SharedPreferences sharedPreferences;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockBloc = MockVideoEditorDrawBloc();
       editorKey = GlobalKey<ProImageEditorState>();
       mockPaintEditor = MockPaintEditorState();
@@ -61,21 +67,26 @@ void main() {
     });
 
     Widget buildWidget({MockPaintEditorState? paintEditor}) {
-      return MaterialApp(
-        home: Scaffold(
-          body: BlocProvider<VideoEditorDrawBloc>.value(
-            value: mockBloc,
-            child: VideoEditorScope(
-              editorKey: editorKey,
-              removeAreaKey: GlobalKey(),
-              originalClipAspectRatio: 9 / 16,
-              bodySizeNotifier: ValueNotifier(const Size(400, 600)),
-              onAddStickers: () {},
-              onAddEditTextLayer: ([layer]) async => null,
-              child: const SizedBox(
-                width: 400,
-                height: 600,
-                child: VideoEditorDrawBottomBar(),
+      return ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: BlocProvider<VideoEditorDrawBloc>.value(
+              value: mockBloc,
+              child: VideoEditorScope(
+                editorKey: editorKey,
+                removeAreaKey: GlobalKey(),
+                originalClipAspectRatio: 9 / 16,
+                bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+                onAddStickers: () {},
+                onAddEditTextLayer: ([layer]) async => null,
+                child: const SizedBox(
+                  width: 400,
+                  height: 600,
+                  child: VideoEditorDrawBottomBar(),
+                ),
               ),
             ),
           ),
