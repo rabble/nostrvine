@@ -466,7 +466,7 @@ void main() {
 
     group('cache resolution', () {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'resolves cached file paths when videos arrive',
+        'does not replace videoUrl with cache path when videos arrive',
         setUp: () {
           final mockFile = MockFile();
           when(() => mockFile.path).thenReturn('/cached/video1.mp4');
@@ -486,8 +486,8 @@ void main() {
               .having((s) => s.status, 'status', FullscreenFeedStatus.ready)
               .having(
                 (s) => s.videos.first.videoUrl,
-                'resolved video URL',
-                '/cached/video1.mp4',
+                'videoUrl preserved as HTTP',
+                'https://example.com/video_video1.mp4',
               ),
         ],
       );
@@ -507,6 +507,36 @@ void main() {
             'original video URL',
             'https://example.com/video_video1.mp4',
           ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'preserves HTTP videoUrl when cache hit occurs '
+        '(never replaces with local file path)',
+        setUp: () {
+          final mockFile = MockFile();
+          when(() => mockFile.path).thenReturn(
+            '/data/user/0/co.openvine.app/cache/openvine_video_cache/video1.mp4',
+          );
+          when(
+            () => mockMediaCache.getCachedFileSync('video1'),
+          ).thenReturn(mockFile);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('video1')]);
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having((s) => s.status, 'status', FullscreenFeedStatus.ready)
+              .having(
+                (s) => s.videos.first.videoUrl,
+                'videoUrl must remain HTTP',
+                startsWith('https://'),
+              ),
         ],
       );
     });
@@ -579,6 +609,77 @@ void main() {
         act: (bloc) =>
             bloc.add(const FullscreenFeedVideoCacheStarted(index: 5)),
         wait: const Duration(milliseconds: 50),
+        verify: (_) {
+          verifyNever(
+            () => mockMediaCache.downloadFile(
+              any(),
+              key: any(named: 'key'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          );
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'background caching uses HTTP URL '
+        '(never passes local file path to downloadFile)',
+        setUp: () {
+          when(
+            () => mockMediaCache.downloadFile(
+              any(),
+              key: any(named: 'key'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          ).thenAnswer((_) async => MockFileInfo());
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const FullscreenFeedStarted());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          videosController.add([createTestVideo('video1')]);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          bloc.add(const FullscreenFeedVideoCacheStarted(index: 0));
+        },
+        wait: const Duration(milliseconds: 200),
+        verify: (_) {
+          // downloadFile must receive an HTTP URL, not a local file path
+          verify(
+            () => mockMediaCache.downloadFile(
+              'https://example.com/video_video1.mp4',
+              key: 'video1',
+            ),
+          ).called(1);
+          // Must never be called with a file path
+          verifyNever(
+            () => mockMediaCache.downloadFile(
+              any(that: startsWith('/')),
+              key: any(named: 'key'),
+              authHeaders: any(named: 'authHeaders'),
+            ),
+          );
+        },
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'skips caching when videoUrl is a local file path',
+        build: createBloc,
+        seed: () => FullscreenFeedState(
+          status: FullscreenFeedStatus.ready,
+          videos: [
+            VideoEvent(
+              id: 'video1',
+              pubkey: '0' * 64,
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              content: '',
+              timestamp: DateTime.now(),
+              title: 'Test',
+              videoUrl: '/data/user/0/cache/video1.mp4',
+            ),
+          ],
+        ),
+        act: (bloc) =>
+            bloc.add(const FullscreenFeedVideoCacheStarted(index: 0)),
+        wait: const Duration(milliseconds: 100),
         verify: (_) {
           verifyNever(
             () => mockMediaCache.downloadFile(

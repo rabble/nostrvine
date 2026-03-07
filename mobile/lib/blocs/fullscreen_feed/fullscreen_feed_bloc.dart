@@ -47,9 +47,9 @@ const _maxConcurrentCacheDownloads = 1;
 /// loading indicators, seek commands).
 ///
 /// **Playback hooks integration:**
-/// - Videos are cache-resolved when received (cached file paths replace URLs)
 /// - Background caching triggered via [FullscreenFeedVideoCacheStarted]
 /// - Loop enforcement via [FullscreenFeedPositionUpdated] → [SeekCommand]
+/// - Cache resolution happens at the player level (individual_video_providers)
 class FullscreenFeedBloc
     extends Bloc<FullscreenFeedEvent, FullscreenFeedState> {
   FullscreenFeedBloc({
@@ -94,8 +94,8 @@ class FullscreenFeedBloc
   /// - Emits states for each data event
   /// - Cancels the subscription when the bloc is closed
   ///
-  /// Videos are cache-resolved when received - if a video's file is cached,
-  /// the videoUrl is replaced with the cached file path for instant playback.
+  /// Cache resolution is handled at the player level by
+  /// individualVideoControllerProvider, not here.
   Future<void> _onStarted(
     FullscreenFeedStarted event,
     Emitter<FullscreenFeedState> emit,
@@ -109,17 +109,14 @@ class FullscreenFeedBloc
           category: LogCategory.video,
         );
 
-        // Resolve cache paths for videos
-        final resolvedVideos = _resolveCachePaths(videos);
-
         // Clamp current index to valid range
-        final clampedIndex = resolvedVideos.isEmpty
+        final clampedIndex = videos.isEmpty
             ? 0
-            : state.currentIndex.clamp(0, resolvedVideos.length - 1);
+            : state.currentIndex.clamp(0, videos.length - 1);
 
         return state.copyWith(
           status: FullscreenFeedStatus.ready,
-          videos: resolvedVideos,
+          videos: videos,
           currentIndex: clampedIndex,
           isLoadingMore: false,
         );
@@ -134,25 +131,6 @@ class FullscreenFeedBloc
         return state;
       },
     );
-  }
-
-  /// Resolves cache paths for a list of videos.
-  ///
-  /// For each video, checks if a cached file exists and replaces the videoUrl
-  /// with the cached file path for instant playback.
-  List<VideoEvent> _resolveCachePaths(List<VideoEvent> videos) {
-    return videos.map((video) {
-      final cachedFile = _mediaCache.getCachedFileSync(video.id);
-      if (cachedFile != null) {
-        Log.debug(
-          'FullscreenFeedBloc: Cache hit for video ${video.id}',
-          name: 'FullscreenFeedBloc',
-          category: LogCategory.video,
-        );
-        return video.copyWith(videoUrl: cachedFile.path);
-      }
-      return video;
-    }).toList();
   }
 
   /// Handle load more request - trigger the source's pagination.
@@ -215,6 +193,17 @@ class FullscreenFeedBloc
     if (videoUrl == null || videoUrl.isEmpty) {
       Log.warning(
         'FullscreenFeedBloc: Video ${video.id} has no URL, cannot cache',
+        name: 'FullscreenFeedBloc',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    // Guard: only cache HTTP URLs (never local file paths)
+    if (!videoUrl.startsWith('http://') && !videoUrl.startsWith('https://')) {
+      Log.warning(
+        'FullscreenFeedBloc: Video ${video.id} has non-HTTP URL, '
+        'skipping cache: $videoUrl',
         name: 'FullscreenFeedBloc',
         category: LogCategory.video,
       );
