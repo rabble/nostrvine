@@ -17,6 +17,7 @@ import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/video_presentation.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -594,6 +595,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
     // All videos without dimensions are treated as portrait as its default
     // usecase (e.g. Reels-style vertical videos).
     final isPortrait = !(video.dimensions != null) || video.isPortrait;
+    final alignment = videoAlignmentForDimensions(video.width, video.height);
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
@@ -604,6 +606,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
         videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
           videoController: videoController,
           isPortrait: isPortrait,
+          alignment: alignment,
         ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
@@ -611,6 +614,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           videoId: video.id,
           feedMode: contextTitle,
           index: index,
+          alignment: alignment,
         ),
         overlayBuilder: (context, videoController, player) => FeedVideoOverlay(
           video: video,
@@ -628,10 +632,12 @@ class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
     required this.videoController,
     this.isPortrait = true,
+    this.alignment = Alignment.center,
   });
 
   final VideoController videoController;
   final bool isPortrait;
+  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -641,6 +647,7 @@ class _FittedVideoPlayer extends StatelessWidget {
     return Video(
       controller: videoController,
       fit: boxFit,
+      alignment: alignment,
       filterQuality: FilterQuality.high,
       controls: null,
     );
@@ -654,6 +661,7 @@ class _VideoLoadingPlaceholder extends StatefulWidget {
     this.feedMode,
     this.thumbnailUrl,
     this.isPortrait = true,
+    this.alignment = Alignment.center,
   });
 
   final String videoId;
@@ -661,6 +669,7 @@ class _VideoLoadingPlaceholder extends StatefulWidget {
   final String? feedMode;
   final String? thumbnailUrl;
   final bool isPortrait;
+  final Alignment alignment;
 
   @override
   State<_VideoLoadingPlaceholder> createState() =>
@@ -734,6 +743,7 @@ class _VideoLoadingPlaceholderState extends State<_VideoLoadingPlaceholder> {
         child: Image.network(
           widget.thumbnailUrl!,
           fit: boxFit,
+          alignment: widget.alignment,
           frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
             if (wasSynchronouslyLoaded || frame != null) {
               _logLoadedIfNeeded();

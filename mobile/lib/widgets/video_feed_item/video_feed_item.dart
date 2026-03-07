@@ -41,6 +41,7 @@ import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/video_presentation.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
@@ -1023,6 +1024,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     //   to stay centered without cropping
                     final isPortraitVideo = videoHeight > videoWidth;
                     final useCoverFit = isPortraitVideo;
+                    final alignment = videoAlignmentForDimensions(
+                      videoWidth,
+                      videoHeight,
+                    );
 
                     // UNIFIED structure - use Offstage instead of conditional
                     // widgets to maintain stable widget tree during scroll
@@ -1036,6 +1041,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             Offstage(
                               offstage: !value.isInitialized,
                               child: FittedBox(
+                                alignment: alignment,
                                 fit: useCoverFit
                                     ? BoxFit.cover
                                     : BoxFit.contain,
@@ -1734,10 +1740,7 @@ class VideoOverlayActions extends ConsumerWidget {
                   const SizedBox(height: 4),
 
                   // Like button
-                  LikeActionButton(
-                    video: video,
-                    isPreviewMode: isPreviewMode,
-                  ),
+                  LikeActionButton(video: video, isPreviewMode: isPreviewMode),
 
                   const SizedBox(height: 4),
 

@@ -18,6 +18,7 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/utils/video_presentation.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
@@ -561,6 +562,7 @@ class _PooledFullscreenItemContentState
   Widget build(BuildContext context) {
     final video = widget.video;
     final isPortrait = video.dimensions != null && video.isPortrait;
+    final alignment = videoAlignmentForDimensions(video.width, video.height);
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
@@ -579,11 +581,13 @@ class _PooledFullscreenItemContentState
               child: _FittedVideoPlayer(
                 videoController: videoController,
                 isPortrait: isPortrait,
+                alignment: alignment,
               ),
             ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
+          alignment: alignment,
         ),
         overlayBuilder: (context, videoController, player) {
           if (video.shouldShowWarning && !_contentWarningRevealed) {
@@ -632,10 +636,12 @@ class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
     required this.videoController,
     this.isPortrait = true,
+    this.alignment = Alignment.center,
   });
 
   final VideoController videoController;
   final bool isPortrait;
+  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -644,6 +650,7 @@ class _FittedVideoPlayer extends StatelessWidget {
     return Video(
       controller: videoController,
       fit: boxFit,
+      alignment: alignment,
       filterQuality: FilterQuality.high,
       controls: null,
     );
@@ -651,10 +658,15 @@ class _FittedVideoPlayer extends StatelessWidget {
 }
 
 class _VideoLoadingPlaceholder extends StatelessWidget {
-  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
+  const _VideoLoadingPlaceholder({
+    this.thumbnailUrl,
+    this.isPortrait = true,
+    this.alignment = Alignment.center,
+  });
 
   final String? thumbnailUrl;
   final bool isPortrait;
+  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -669,6 +681,7 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
           Image.network(
             url,
             fit: boxFit,
+            alignment: alignment,
             errorBuilder: (_, _, _) =>
                 const ColoredBox(color: VineTheme.backgroundColor),
           )
