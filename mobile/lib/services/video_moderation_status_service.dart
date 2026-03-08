@@ -156,8 +156,7 @@ class VideoModerationStatusService {
        _endpointBases =
            endpointBases ??
            const [
-             'https://divine-moderation-service.protestnet.workers.dev',
-             'https://moderation.admin.divine.video',
+             'https://moderation-api.divine.video',
            ].map(Uri.parse).toList(),
        _cacheTtl = cacheTtl ?? const Duration(minutes: 10);
 
