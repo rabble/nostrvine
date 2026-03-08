@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
 VideoEvent _createVideoWithUrl(String url) {
   final event = Event.fromJson({
@@ -113,6 +114,69 @@ void main() {
       });
       final video = VideoEvent.fromNostrEvent(event);
       expect(video.shouldShowNotDivineBadge, isFalse);
+    });
+  });
+
+  group('getOptimalVideoUrlForPlatform', () {
+    test('returns original MP4 for Divine-hosted videos on desktop hosts', () {
+      const url =
+          'https://media.divine.video/'
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.mp4';
+      final video = _createVideoWithUrl(url);
+
+      expect(video.getOptimalVideoUrlForPlatform(), url);
+    });
+
+    test('prefers HLS for bare media.divine.video blob URLs', () {
+      const hash =
+          '191679cbbeea3e4e3539d46b558e66fbadb673733af1ada0161a6e8b1cf61bea';
+      final video = _createVideoWithUrl('https://media.divine.video/$hash');
+
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash/hls/master.m3u8'),
+      );
+    });
+
+    test('keeps explicit MP4 URLs unchanged on Divine hosts', () {
+      final video = _createVideoWithUrl(
+        'https://media.divine.video/test/video.mp4',
+      );
+
+      expect(
+        video.getOptimalVideoUrlForPlatform(),
+        equals('https://media.divine.video/test/video.mp4'),
+      );
+    });
+  });
+
+  group('toPooledVideoItems', () {
+    test('uses the platform-aware URL for pooled playback', () {
+      const url =
+          'https://media.divine.video/'
+          '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef.mp4';
+      final video = _createVideoWithUrl(url);
+
+      final items = <VideoEvent>[video].toPooledVideoItems();
+
+      expect(items, hasLength(1));
+      expect(items.single, isA<VideoItem>());
+      expect(items.single.id, video.id);
+      expect(items.single.url, url);
+    });
+
+    test('filters out videos with null URLs', () {
+      final now = DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000);
+      final videoWithoutUrl = VideoEvent(
+        id: 'deadbeef',
+        pubkey:
+            'bbbb1234567890abcdef1234567890abcdef1234567890abcdef1234567890ab',
+        createdAt: 1704067200,
+        content: '',
+        timestamp: now,
+      );
+
+      expect(<VideoEvent>[videoWithoutUrl].toPooledVideoItems(), isEmpty);
     });
   });
 }

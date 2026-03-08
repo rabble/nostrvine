@@ -388,6 +388,89 @@ void main() {
             ).called(1);
           },
         );
+
+        test(
+          'preserves existing nip05 from rawData when clearNip05 is false',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'nip05': 'alice@example.com',
+            });
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'nip05': 'alice@example.com',
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'removes nip05 from rawData when clearNip05 is true',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'nip05': 'alice@example.com',
+              'about': 'Bio',
+            });
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              clearNip05: true,
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'about': 'Bio',
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'clearNip05 is a no-op when a new nip05 is also provided',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'nip05': 'old@example.com',
+            });
+
+            when(() => mockProfileEvent.content).thenReturn(
+              jsonEncode({
+                'display_name': 'New Name',
+                'nip05': 'new@example.com',
+              }),
+            );
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              nip05: 'new@example.com',
+              clearNip05: true,
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'nip05': 'new@example.com',
+                },
+              ),
+            ).called(1);
+          },
+        );
       });
     });
 

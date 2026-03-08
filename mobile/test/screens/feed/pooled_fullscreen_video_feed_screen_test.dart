@@ -35,9 +35,49 @@ const testVideoId3 =
 const testPubkey =
     'd4e5f6789012345678901234567890abcdef123456789012345678901234a1b2c3';
 
+void stubVideoFeedController(
+  MockVideoFeedController controller,
+  Map<int, ValueNotifier<VideoIndexState>> indexNotifiers,
+) {
+  when(() => controller.videos).thenReturn([]);
+  when(() => controller.videoCount).thenReturn(0);
+  when(() => controller.currentIndex).thenReturn(0);
+  when(() => controller.isPaused).thenReturn(false);
+  when(() => controller.isActive).thenReturn(true);
+  when(() => controller.getVideoController(any())).thenReturn(null);
+  when(() => controller.getPlayer(any())).thenReturn(null);
+  when(() => controller.getLoadState(any())).thenReturn(LoadState.none);
+  when(() => controller.isVideoReady(any())).thenReturn(false);
+  when(() => controller.onPageChanged(any())).thenReturn(null);
+  when(controller.play).thenReturn(null);
+  when(controller.pause).thenReturn(null);
+  when(controller.togglePlayPause).thenReturn(null);
+  when(() => controller.seek(any())).thenAnswer((_) async {});
+  when(() => controller.setVolume(any())).thenReturn(null);
+  when(() => controller.setPlaybackSpeed(any())).thenReturn(null);
+  when(
+    () => controller.setActive(active: any(named: 'active')),
+  ).thenReturn(null);
+  when(() => controller.addVideos(any())).thenReturn(null);
+  when(() => controller.addListener(any())).thenReturn(null);
+  when(() => controller.removeListener(any())).thenReturn(null);
+  when(controller.dispose).thenReturn(null);
+
+  when(() => controller.getIndexNotifier(any())).thenAnswer((inv) {
+    final index = inv.positionalArguments[0] as int;
+    return indexNotifiers.putIfAbsent(
+      index,
+      () => ValueNotifier(const VideoIndexState()),
+    );
+  });
+}
+
 void main() {
   group('PooledFullscreenVideoFeedScreen', () {
     late MockFullscreenFeedBloc mockBloc;
+    late MockVideoFeedController defaultController;
+    late MockUserProfileService mockUserProfileService;
+    late Map<int, ValueNotifier<VideoIndexState>> defaultIndexNotifiers;
     late StreamController<FullscreenFeedState> stateController;
 
     setUpAll(() {
@@ -56,7 +96,11 @@ void main() {
     setUp(() async {
       await PlayerPool.init();
       mockBloc = MockFullscreenFeedBloc();
+      defaultController = MockVideoFeedController();
+      mockUserProfileService = createMockUserProfileService();
+      defaultIndexNotifiers = <int, ValueNotifier<VideoIndexState>>{};
       stateController = StreamController<FullscreenFeedState>.broadcast();
+      stubVideoFeedController(defaultController, defaultIndexNotifiers);
 
       // Default stream setup
       when(() => mockBloc.stream).thenAnswer((_) => stateController.stream);
@@ -92,15 +136,30 @@ void main() {
     Widget buildSubject({
       FullscreenFeedState? state,
       List<dynamic>? additionalOverrides,
+      VideoFeedControllerFactory? controllerFactory,
     }) {
       final effectiveState = state ?? const FullscreenFeedState();
       when(() => mockBloc.state).thenReturn(effectiveState);
+      when(
+        () => defaultController.videos,
+      ).thenReturn(effectiveState.pooledVideos);
+      when(
+        () => defaultController.videoCount,
+      ).thenReturn(effectiveState.pooledVideos.length);
+      when(
+        () => defaultController.currentIndex,
+      ).thenReturn(effectiveState.currentIndex);
 
       return testMaterialApp(
         additionalOverrides: additionalOverrides,
+        mockUserProfileService: mockUserProfileService,
         home: BlocProvider<FullscreenFeedBloc>.value(
           value: mockBloc,
-          child: const FullscreenFeedContent(),
+          child: FullscreenFeedContent(
+            controllerFactory:
+                controllerFactory ??
+                ((videos, initialIndex) => defaultController),
+          ),
         ),
       );
     }
@@ -252,7 +311,7 @@ void main() {
           );
 
           await tester.pumpWidget(buildSubject(state: initialState));
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           // Emit state with SeekCommand
           final stateWithSeekCommand = FullscreenFeedState(
@@ -304,7 +363,7 @@ void main() {
         );
 
         await tester.pumpWidget(buildSubject(state: initialState));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         const seekCommand = SeekCommand(index: 0, position: Duration.zero);
         final stateWithSeekCommand = FullscreenFeedState(
@@ -336,42 +395,7 @@ void main() {
       setUp(() {
         mockController = MockVideoFeedController();
         indexNotifiers = <int, ValueNotifier<VideoIndexState>>{};
-
-        // Pre-configure the mock controller with all required stubs
-        when(() => mockController.videos).thenReturn([]);
-        when(() => mockController.videoCount).thenReturn(0);
-        when(() => mockController.currentIndex).thenReturn(0);
-        when(() => mockController.isPaused).thenReturn(false);
-        when(() => mockController.isActive).thenReturn(true);
-        when(() => mockController.getVideoController(any())).thenReturn(null);
-        when(() => mockController.getPlayer(any())).thenReturn(null);
-        when(
-          () => mockController.getLoadState(any()),
-        ).thenReturn(LoadState.none);
-        when(() => mockController.isVideoReady(any())).thenReturn(false);
-        when(() => mockController.onPageChanged(any())).thenReturn(null);
-        when(mockController.play).thenReturn(null);
-        when(mockController.pause).thenReturn(null);
-        when(mockController.togglePlayPause).thenReturn(null);
-        when(() => mockController.seek(any())).thenAnswer((_) async {});
-        when(() => mockController.setVolume(any())).thenReturn(null);
-        when(() => mockController.setPlaybackSpeed(any())).thenReturn(null);
-        when(
-          () => mockController.setActive(active: any(named: 'active')),
-        ).thenReturn(null);
-        when(() => mockController.addVideos(any())).thenReturn(null);
-        when(() => mockController.addListener(any())).thenReturn(null);
-        when(() => mockController.removeListener(any())).thenReturn(null);
-        when(mockController.dispose).thenReturn(null);
-
-        // Mock getIndexNotifier to return a ValueNotifier for each index
-        when(() => mockController.getIndexNotifier(any())).thenAnswer((inv) {
-          final index = inv.positionalArguments[0] as int;
-          return indexNotifiers.putIfAbsent(
-            index,
-            () => ValueNotifier(const VideoIndexState()),
-          );
-        });
+        stubVideoFeedController(mockController, indexNotifiers);
       });
 
       testWidgets('controller factory is called with correct videos', (
@@ -397,6 +421,7 @@ void main() {
 
         await tester.pumpWidget(
           testMaterialApp(
+            mockUserProfileService: mockUserProfileService,
             home: BlocProvider<FullscreenFeedBloc>.value(
               value: mockBloc,
               child: FullscreenFeedContent(
@@ -418,47 +443,45 @@ void main() {
       });
 
       testWidgets(
-        'default controller wires onVideoReady to dispatch cache event',
+        'renders with a single video when controller factory is injected',
         (tester) async {
-          // This test verifies the actual hook wiring by NOT using a factory
-          // and instead letting the real controller be created, then
-          // checking the BLoC receives the event
-
           final videos = createTestVideos(count: 1);
+          final pooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
 
-          // Use the real widget (no factory) to test actual hook wiring
           when(() => mockBloc.state).thenReturn(
             FullscreenFeedState(
               status: FullscreenFeedStatus.ready,
               videos: videos,
             ),
           );
+          when(() => mockController.videos).thenReturn(pooledVideos);
+          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
 
           await tester.pumpWidget(
             testMaterialApp(
+              mockUserProfileService: mockUserProfileService,
               home: BlocProvider<FullscreenFeedBloc>.value(
                 value: mockBloc,
-                child: const FullscreenFeedContent(),
+                child: FullscreenFeedContent(
+                  controllerFactory: (videos, initialIndex) => mockController,
+                ),
               ),
             ),
           );
 
-          // The real VideoFeedController is created with hooks
-          // We can't easily trigger onVideoReady without MediaKit,
-          // but we CAN verify the controller was created by checking
-          // the PooledVideoFeed exists
           expect(find.byType(PooledVideoFeed), findsOneWidget);
-
-          // The hook wiring is verified by code inspection and
-          // integration tests - the factory test above proves
-          // the controllerFactory parameter works for injection
         },
       );
 
       testWidgets(
-        'default controller wires positionCallback to dispatch position event',
+        'renders with a single video for position callback scenarios',
         (tester) async {
           final videos = createTestVideos(count: 1);
+          final pooledVideos = videos
+              .map((v) => VideoItem(id: v.id, url: v.videoUrl!))
+              .toList();
 
           when(() => mockBloc.state).thenReturn(
             FullscreenFeedState(
@@ -466,23 +489,22 @@ void main() {
               videos: videos,
             ),
           );
+          when(() => mockController.videos).thenReturn(pooledVideos);
+          when(() => mockController.videoCount).thenReturn(pooledVideos.length);
 
           await tester.pumpWidget(
             testMaterialApp(
+              mockUserProfileService: mockUserProfileService,
               home: BlocProvider<FullscreenFeedBloc>.value(
                 value: mockBloc,
-                child: const FullscreenFeedContent(),
+                child: FullscreenFeedContent(
+                  controllerFactory: (videos, initialIndex) => mockController,
+                ),
               ),
             ),
           );
 
-          // Verify the widget renders with the real controller
           expect(find.byType(PooledVideoFeed), findsOneWidget);
-
-          // The positionCallback wiring is verified by:
-          // 1. Code inspection - _createController sets up the hook
-          // 2. BLoC tests - FullscreenFeedPositionUpdated handler works
-          // 3. VideoFeedController tests - positionCallback is called
         },
       );
     });

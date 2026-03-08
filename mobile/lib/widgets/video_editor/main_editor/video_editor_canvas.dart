@@ -749,7 +749,7 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
 
     // Size in renderSize coordinates that equals bodySize after scaling
     final size = bodySize / scale;
-    final radius = Radius.circular(32 / scale);
+    final radius = Radius.circular(VideoEditorConstants.canvasRadius / scale);
 
     if (useFullSize) {
       // Cover mode: show the visible portion of bodySize
@@ -769,7 +769,7 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
         renderSize.height,
       );
       final containRadius = Radius.circular(
-        32 * containSize.width / bodySize.width,
+        VideoEditorConstants.canvasRadius * containSize.width / bodySize.width,
       );
 
       return Center(

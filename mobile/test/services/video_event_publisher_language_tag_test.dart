@@ -215,4 +215,70 @@ void main() {
       );
     });
   });
+
+  group('NIP-32 content warning tagging', () {
+    test('adds content-warning tags when labels are provided', () async {
+      stubSignAndPublish();
+
+      await publisher.publishDirectUpload(
+        createTestUpload(),
+        contentWarning: 'nudity,violence',
+      );
+
+      expect(capturedTags, isNotNull);
+      expect(
+        _containsTag(capturedTags!, ['content-warning', 'nudity']),
+        isTrue,
+      );
+      expect(_containsTag(capturedTags!, ['L', 'content-warning']), isTrue);
+      expect(
+        _containsTag(capturedTags!, ['l', 'nudity', 'content-warning']),
+        isTrue,
+      );
+      expect(
+        _containsTag(capturedTags!, ['l', 'violence', 'content-warning']),
+        isTrue,
+      );
+    });
+
+    test('publishVideoEvent passes contentWarning through', () async {
+      stubSignAndPublish();
+
+      await publisher.publishVideoEvent(
+        upload: createTestUpload(),
+        contentWarning: 'drugs',
+      );
+
+      expect(capturedTags, isNotNull);
+      expect(_containsTag(capturedTags!, ['content-warning', 'drugs']), isTrue);
+      expect(
+        _containsTag(capturedTags!, ['l', 'drugs', 'content-warning']),
+        isTrue,
+      );
+    });
+
+    test('does not add content-warning tags when labels are empty', () async {
+      stubSignAndPublish();
+
+      await publisher.publishDirectUpload(
+        createTestUpload(),
+        contentWarning: '',
+      );
+
+      expect(capturedTags, isNotNull);
+      expect(
+        capturedTags!.any(
+          (tag) => tag.isNotEmpty && tag.first == 'content-warning',
+        ),
+        isFalse,
+      );
+      expect(
+        capturedTags!.any(
+          (tag) =>
+              tag.length >= 3 && tag[0] == 'l' && tag[2] == 'content-warning',
+        ),
+        isFalse,
+      );
+    });
+  });
 }

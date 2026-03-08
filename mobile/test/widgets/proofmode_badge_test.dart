@@ -137,6 +137,81 @@ void main() {
       expect(find.byType(Icon), findsOneWidget);
       expect(find.byType(Text), findsOneWidget);
     });
+
+    testWidgets(
+      'human made badge keeps a neutral shell and uses tier color on the icon',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
+            ),
+          ),
+        );
+
+        final container = tester.widget<Container>(
+          find
+              .descendant(
+                of: find.byType(ProofModeBadge),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+        final decoration = container.decoration! as BoxDecoration;
+        final border = decoration.border! as Border;
+        final icon = tester.widget<Icon>(find.byType(Icon));
+        final text = tester.widget<Text>(find.text('Human Made'));
+
+        expect(decoration.color, const Color(0xFF161A1D));
+        expect(border.top.color, const Color(0xFF434A52));
+        expect(icon.color, const Color(0xFFFFD700));
+        expect(text.style?.color, const Color(0xFFF5F7FA));
+      },
+    );
+
+    testWidgets('human made tiers share the same badge shell', (tester) async {
+      Future<BoxDecoration> pumpAndGetDecoration(
+        VerificationLevel level,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: ProofModeBadge(level: level)),
+          ),
+        );
+
+        final container = tester.widget<Container>(
+          find
+              .descendant(
+                of: find.byType(ProofModeBadge),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+
+        return container.decoration! as BoxDecoration;
+      }
+
+      final mobileDecoration = await pumpAndGetDecoration(
+        VerificationLevel.verifiedMobile,
+      );
+      final webDecoration = await pumpAndGetDecoration(
+        VerificationLevel.verifiedWeb,
+      );
+      final basicDecoration = await pumpAndGetDecoration(
+        VerificationLevel.basicProof,
+      );
+
+      expect(webDecoration.color, mobileDecoration.color);
+      expect(
+        (webDecoration.border! as Border).top.color,
+        (mobileDecoration.border! as Border).top.color,
+      );
+      expect(basicDecoration.color, mobileDecoration.color);
+      expect(
+        (basicDecoration.border! as Border).top.color,
+        (mobileDecoration.border! as Border).top.color,
+      );
+    });
   });
 
   group('OriginalVineBadge Widget', () {

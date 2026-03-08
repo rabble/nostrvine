@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio, InspiredByInfo;
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -80,6 +81,25 @@ void main() {
         );
 
         expect(draft.inspiredByNpub, equals('npub1testvalue123'));
+      });
+
+      test('accepts content warnings', () {
+        final draft = DivineVideoDraft.create(
+          clips: [_testClip()],
+          title: 'Test',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'native',
+          contentWarning: ContentLabel.toCsv({
+            ContentLabel.nudity,
+            ContentLabel.violence,
+          }),
+        );
+
+        expect(
+          draft.contentWarnings,
+          equals({ContentLabel.nudity, ContentLabel.violence}),
+        );
       });
     });
 
@@ -179,6 +199,20 @@ void main() {
         final json = draft.toJson();
         expect(json.containsKey('inspiredByNpub'), isFalse);
       });
+
+      test('includes contentWarning when set', () {
+        final draft = DivineVideoDraft.create(
+          clips: [_testClip()],
+          title: 'Test',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'native',
+          contentWarning: 'nudity,violence',
+        );
+
+        final json = draft.toJson();
+        expect(json['contentWarning'], equals('nudity,violence'));
+      });
     });
 
     group('fromJson round-trip', () {
@@ -252,6 +286,26 @@ void main() {
         expect(restored.inspiredByNpub, equals('npub1testvalue'));
       });
 
+      test('preserves contentWarning through serialization', () {
+        final original = DivineVideoDraft.create(
+          clips: [_testClip()],
+          title: 'Warning Video',
+          description: 'Sensitive content',
+          hashtags: const {},
+          selectedApproach: 'native',
+          contentWarning: 'nudity,violence',
+        );
+
+        final json = original.toJson();
+        final restored = DivineVideoDraft.fromJson(json, '/path/to');
+
+        expect(restored.contentWarning, equals('nudity,violence'));
+        expect(
+          restored.contentWarnings,
+          equals({ContentLabel.nudity, ContentLabel.violence}),
+        );
+      });
+
       test('preserves all collab+IB fields together', () {
         const ib = InspiredByInfo(addressableId: '34236:pubkey:dtag');
 
@@ -320,6 +374,23 @@ void main() {
         expect(updated.title, equals('Updated Title'));
         expect(updated.collaboratorPubkeys, hasLength(1));
         expect(updated.inspiredByNpub, equals('npub1keep'));
+      });
+
+      test('preserves contentWarning when not updated', () {
+        final draft = DivineVideoDraft.create(
+          clips: [_testClip()],
+          title: 'Original',
+          description: '',
+          hashtags: const {},
+          selectedApproach: 'native',
+          contentWarning: 'nudity',
+        );
+
+        final updated = draft.copyWith(title: 'Updated Title');
+
+        expect(updated.title, equals('Updated Title'));
+        expect(updated.contentWarning, equals('nudity'));
+        expect(updated.contentWarnings, equals({ContentLabel.nudity}));
       });
 
       test('can update collaboratorPubkeys', () {

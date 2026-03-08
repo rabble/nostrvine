@@ -146,6 +146,7 @@ class VideoPublishService {
         selectedAudioEventId: draft.selectedSound?.id,
         selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
         language: languagePreferenceService?.contentLanguage,
+        contentWarning: draft.contentWarning,
       );
 
       if (!published) {

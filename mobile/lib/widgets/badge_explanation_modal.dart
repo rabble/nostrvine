@@ -137,11 +137,16 @@ class _ProofModeExplanationState extends ConsumerState<_ProofModeExplanation> {
   Widget build(BuildContext context) {
     final video = widget.video;
     final labelService = ref.read(moderationLabelServiceProvider);
-    var aiResult = _manualAiResult ?? _lookupAIDetection(labelService);
+    final resolvedSha256 = VideoModerationStatusService.resolveSha256(
+      explicitSha256: video.sha256,
+      videoUrl: video.videoUrl,
+    );
+    var aiResult =
+        _manualAiResult ?? _lookupAIDetection(labelService, resolvedSha256);
 
     if (aiResult == null && video.isFromDivineServer) {
       final statusAsync = ref.watch(
-        videoModerationStatusProvider(video.sha256),
+        videoModerationStatusProvider(resolvedSha256),
       );
       aiResult = statusAsync.whenOrNull(
         data: (status) {
@@ -192,6 +197,7 @@ class _ProofModeExplanationState extends ConsumerState<_ProofModeExplanation> {
 
   AIDetectionResult? _lookupAIDetection(
     ModerationLabelService labelService,
+    String? resolvedSha256,
   ) {
     final video = widget.video;
 
@@ -200,7 +206,7 @@ class _ProofModeExplanationState extends ConsumerState<_ProofModeExplanation> {
     if (byEventId != null) return byEventId;
 
     // Fallback: lookup by content hash
-    final hash = video.sha256 ?? video.vineId;
+    final hash = resolvedSha256 ?? video.vineId;
     if (hash != null) {
       return labelService.getAIDetectionByHash(hash);
     }

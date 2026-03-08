@@ -117,7 +117,10 @@ class ProfileHeaderWidget extends ConsumerWidget {
               children: [
                 // Setup profile banner for new users with default names
                 // (only on own profile)
-                if (isOwnProfile && !hasCustomName && onSetupProfile != null)
+                if (isOwnProfile &&
+                    !profileAsync.isLoading &&
+                    !hasCustomName &&
+                    onSetupProfile != null)
                   _SetupProfileBanner(onSetup: onSetupProfile!),
 
                 // Session expired banner for divineOAuth users (only on own

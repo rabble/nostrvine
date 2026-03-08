@@ -30,6 +30,8 @@ import com.zendesk.service.ZendeskCallback
 import com.zendesk.service.ErrorResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 import org.witness.proofmode.notarization.NotarizationProvider
@@ -50,6 +52,9 @@ class MainActivity : FlutterActivity() {
     private val ZENDESK_CHANNEL = "com.openvine/zendesk_support"
     private val PROOFMODE_TAG = "OpenVineProofMode"
     private val ZENDESK_TAG = "OpenVineZendesk"
+
+    // Lifecycle-aware scope: cancelled in onDestroy to prevent post-detach crashes
+    private val activityScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     // NIP-55 Android Signer plugin
     private var nostrSignerPlugin: NostrSignerPlugin? = null
@@ -179,17 +184,20 @@ class MainActivity : FlutterActivity() {
 
     override fun onDestroy() {
         isActivityDestroyed = true
-        super.onDestroy()
+        activityScope.cancel()
+        navigationChannel = null
+        nostrSignerPlugin = null
         // Unregister callback when activity is destroyed
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && backCallback != null) {
             onBackInvokedDispatcher.unregisterOnBackInvokedCallback(backCallback!!)
         }
+        super.onDestroy()
     }
     private fun initC2PA () {
         var keyAlias = "c2pa_signing_divine";
         var fileCert = File(context.filesDir.parent + "/app_flutter","$keyAlias.cert")
 
-        CoroutineScope(Dispatchers.IO).launch {
+        activityScope.launch {
             try {
                 C2PAIdentityManager(this@MainActivity).createHardwareSigner(
                     keyAlias,
@@ -241,6 +249,10 @@ class MainActivity : FlutterActivity() {
                             val proofHash = ProofMode.generateProof(context, mediaUri)
 
                             mainHandler.post {
+                                if (isActivityDestroyed || isFinishing) {
+                                    Log.w(PROOFMODE_TAG, "Dropped proof result: activity destroyed")
+                                    return@post
+                                }
                                 if (proofHash.isNullOrEmpty()) {
                                     Log.e(PROOFMODE_TAG, "ProofMode did not generate hash")
                                     result.error("PROOF_HASH_MISSING", "ProofMode did not generate video hash", null)
@@ -252,6 +264,10 @@ class MainActivity : FlutterActivity() {
                         } catch (e: Exception) {
                             Log.e(PROOFMODE_TAG, "Failed to generate proof", e)
                             mainHandler.post {
+                                if (isActivityDestroyed || isFinishing) {
+                                    Log.w(PROOFMODE_TAG, "Dropped proof error: activity destroyed")
+                                    return@post
+                                }
                                 result.error("PROOF_GENERATION_FAILED", e.message, null)
                             }
                         }
@@ -464,11 +480,19 @@ class MainActivity : FlutterActivity() {
 
                         provider.createRequest(createRequest, object : ZendeskCallback<Request>() {
                             override fun onSuccess(request: Request?) {
+                                if (isActivityDestroyed || isFinishing) {
+                                    Log.w(ZENDESK_TAG, "Dropped ticket result: activity destroyed")
+                                    return
+                                }
                                 Log.d(ZENDESK_TAG, "Ticket created successfully - ID: ${request?.id}")
                                 result.success(true)
                             }
 
                             override fun onError(error: ErrorResponse?) {
+                                if (isActivityDestroyed || isFinishing) {
+                                    Log.w(ZENDESK_TAG, "Dropped ticket error: activity destroyed")
+                                    return
+                                }
                                 Log.e(ZENDESK_TAG, "Failed to create ticket: ${error?.reason}")
                                 result.success(false)
                             }

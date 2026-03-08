@@ -37,6 +37,7 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
                       // TODO(l10n): Replace with context.l10n when localization is added.
                       semanticLabel: 'Close',
                       icon: .x,
+                      size: .small,
                       type: .ghostSecondary,
                       onPressed: () => scope.editor?.closeSubEditor(),
                     ),
@@ -63,56 +64,19 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
                     ),
 
                     const Spacer(),
-                    // TODO(@hm21): replace with done button.
-                    _DoneButton(onTap: () => scope.paintEditor?.done()),
+
+                    DivineIconButton(
+                      size: .small,
+                      type: .tertiary,
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      semanticLabel: 'Done',
+                      icon: .check,
+                      onPressed: () => scope.paintEditor?.done(),
+                    ),
                   ],
                 );
               },
             ),
-      ),
-    );
-  }
-}
-
-// TODO(@hm21): Once the design decision has been made regarding what the
-// buttons will look like, create them in the divine_ui package and reuse them.
-
-/// Done button with white background.
-class _DoneButton extends StatelessWidget {
-  const _DoneButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Done',
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const .symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: VineTheme.whiteText,
-            borderRadius: .circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: VineTheme.innerShadow,
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-              BoxShadow(
-                color: VineTheme.innerShadow,
-                offset: Offset(0.4, 0.4),
-                blurRadius: 0.6,
-              ),
-            ],
-          ),
-          child: Text(
-            'Done',
-            style: VineTheme.titleMediumFont(color: VineTheme.inverseOnSurface),
-          ),
-        ),
       ),
     );
   }

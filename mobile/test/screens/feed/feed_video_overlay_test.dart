@@ -14,6 +14,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
+import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -99,6 +100,9 @@ void main() {
     Widget buildSubject({
       Set<String>? listSources,
       Future<void>? firstFrameFuture,
+      bool isActive = true,
+      Player? player,
+      bool includePlayer = true,
     }) {
       return testMaterialApp(
         additionalOverrides: [
@@ -114,8 +118,8 @@ void main() {
             value: mockInteractionsBloc,
             child: FeedVideoOverlay(
               video: testVideo,
-              isActive: true,
-              player: mockPlayer,
+              isActive: isActive,
+              player: includePlayer ? (player ?? mockPlayer) : null,
               firstFrameFuture: firstFrameFuture,
               listSources: listSources,
             ),
@@ -176,6 +180,17 @@ void main() {
           expect(find.bySemanticsLabel('Play video'), findsOneWidget);
         },
       );
+
+      testWidgets('still renders badges when inactive and player is missing', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildSubject(isActive: false, includePlayer: false),
+        );
+        await tester.pump();
+
+        expect(find.byType(ProofModeBadgeRow), findsOneWidget);
+      });
 
       testWidgets('renders $ListAttributionChip when listSources is provided', (
         tester,

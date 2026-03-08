@@ -115,15 +115,10 @@ class PopularNowFeed extends _$PopularNowFeed {
                 .toList(),
           );
 
-          // Enrich REST API videos with Nostr tags for ProofMode badge
-          final enrichedVideos = await enrichVideosWithNostrTags(
-            filteredVideos,
-            nostrService: ref.read(nostrServiceProvider),
-            callerName: 'PopularNowFeedProvider',
-          );
+          _scheduleRestEnrichment(filteredVideos);
 
           return VideoFeedState(
-            videos: enrichedVideos,
+            videos: filteredVideos,
             hasMoreContent:
                 apiVideos.length >= AppConstants.paginationBatchSize,
             lastUpdated: DateTime.now(),
@@ -283,15 +278,9 @@ class PopularNowFeed extends _$PopularNowFeed {
           _nextCursor = _getOldestTimestamp(apiVideos);
 
           if (newVideos.isNotEmpty) {
-            // Enrich REST API videos with Nostr tags for ProofMode badge
-            final enrichedNewVideos = await enrichVideosWithNostrTags(
-              newVideos,
-              nostrService: ref.read(nostrServiceProvider),
-              callerName: 'PopularNowFeedProvider',
-            );
-            final allVideos = [...currentState.videos, ...enrichedNewVideos];
+            final allVideos = [...currentState.videos, ...newVideos];
             Log.info(
-              '🆕 PopularNowFeed: Loaded ${enrichedNewVideos.length} new videos from REST API (total: ${allVideos.length})',
+              '🆕 PopularNowFeed: Loaded ${newVideos.length} new videos from REST API (total: ${allVideos.length})',
               name: 'PopularNowFeedProvider',
               category: LogCategory.video,
             );
@@ -304,6 +293,7 @@ class PopularNowFeed extends _$PopularNowFeed {
                 lastUpdated: DateTime.now(),
               ),
             );
+            _scheduleRestEnrichment(newVideos);
           } else {
             Log.info(
               '🆕 PopularNowFeed: All returned videos already in state',
@@ -455,24 +445,18 @@ class PopularNowFeed extends _$PopularNowFeed {
                 .toList(),
           );
 
-          // Enrich REST API videos with Nostr tags for ProofMode badge
-          final enrichedVideos = await enrichVideosWithNostrTags(
-            filteredVideos,
-            nostrService: ref.read(nostrServiceProvider),
-            callerName: 'PopularNowFeedProvider',
-          );
-
           state = AsyncData(
             VideoFeedState(
-              videos: enrichedVideos,
+              videos: filteredVideos,
               hasMoreContent:
                   apiVideos.length >= AppConstants.paginationBatchSize,
               lastUpdated: DateTime.now(),
             ),
           );
+          _scheduleRestEnrichment(filteredVideos);
 
           Log.info(
-            '✅ PopularNowFeed: Refreshed ${enrichedVideos.length} videos from REST API, cursor: $_nextCursor',
+            '✅ PopularNowFeed: Refreshed ${filteredVideos.length} videos from REST API, cursor: $_nextCursor',
             name: 'PopularNowFeedProvider',
             category: LogCategory.video,
           );
@@ -499,6 +483,67 @@ class PopularNowFeed extends _$PopularNowFeed {
   int? _getOldestTimestamp(List<VideoEvent> videos) {
     if (videos.isEmpty) return null;
     return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
+  }
+
+  void _scheduleRestEnrichment(List<VideoEvent> videos) {
+    if (videos.isEmpty) return;
+
+    enrichVideosInBackground(
+      videos,
+      nostrService: ref.read(nostrServiceProvider),
+      callerName: 'PopularNowFeedProvider',
+      onEnriched: (enrichedVideos) {
+        if (!ref.mounted || !_usingRestApi || !state.hasValue) return;
+
+        final currentState = state.value;
+        if (currentState == null || currentState.videos.isEmpty) return;
+
+        final mergedVideos = _mergeEnrichedVideos(
+          existing: currentState.videos,
+          enriched: enrichedVideos,
+        );
+
+        if (_videoListsEqual(currentState.videos, mergedVideos)) {
+          return;
+        }
+
+        state = AsyncData(
+          currentState.copyWith(
+            videos: mergedVideos,
+            lastUpdated: DateTime.now(),
+          ),
+        );
+
+        Log.info(
+          '🆕 PopularNowFeed: Applied background Nostr enrichment to ${enrichedVideos.length} videos',
+          name: 'PopularNowFeedProvider',
+          category: LogCategory.video,
+        );
+      },
+    );
+  }
+
+  List<VideoEvent> _mergeEnrichedVideos({
+    required List<VideoEvent> existing,
+    required List<VideoEvent> enriched,
+  }) {
+    final enrichedById = {
+      for (final video in enriched) video.id.toLowerCase(): video,
+    };
+
+    return existing.map((video) {
+      return enrichedById[video.id.toLowerCase()] ?? video;
+    }).toList();
+  }
+
+  bool _videoListsEqual(List<VideoEvent> a, List<VideoEvent> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }
 

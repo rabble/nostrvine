@@ -17,6 +17,7 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -48,7 +49,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   const FeedVideoOverlay({
     required this.video,
     required this.isActive,
-    required this.player,
+    this.player,
     this.firstFrameFuture,
     this.listSources,
     super.key,
@@ -56,7 +57,7 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
 
   final VideoEvent video;
   final bool isActive;
-  final Player player;
+  final Player? player;
   final Future<void>? firstFrameFuture;
   final Set<String>? listSources;
 
@@ -69,9 +70,17 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isActive) return const SizedBox();
-
     final video = widget.video;
+
+    Log.debug(
+      'Feed overlay build: eventId=${video.id}, pubkey=${video.pubkey}, '
+      'isActive=${widget.isActive}, hasPlayer=${widget.player != null}, '
+      'hasFirstFrameFuture=${widget.firstFrameFuture != null}, '
+      'hasSubtitles=${video.hasSubtitles}, hasWarning=${video.shouldShowWarning}, '
+      'videoUrl=${video.videoUrl}, thumbnailUrl=${video.thumbnailUrl}',
+      name: 'FeedVideoOverlay',
+      category: LogCategory.video,
+    );
 
     // Content warning blur overlay takes priority over normal overlay
     if (video.shouldShowWarning && !_contentWarningRevealed) {
@@ -112,16 +121,17 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
             ),
           ),
         ),
-        PausedVideoPlayOverlay(
-          player: widget.player,
-          firstFrameFuture: widget.firstFrameFuture,
-          isVisible: widget.isActive,
-        ),
+        if (widget.player != null)
+          PausedVideoPlayOverlay(
+            player: widget.player!,
+            firstFrameFuture: widget.firstFrameFuture,
+            isVisible: widget.isActive,
+          ),
         // Subtitle overlay — Positioned.fill gives the inner Stack a size
         // so SubtitleOverlay's Positioned can resolve correctly.
-        if (video.hasSubtitles)
+        if (video.hasSubtitles && widget.player != null)
           Positioned.fill(
-            child: _SubtitleLayer(video: video, player: widget.player),
+            child: _SubtitleLayer(video: video, player: widget.player!),
           ),
         // ProofMode and Vine badges (top-right)
         Positioned(

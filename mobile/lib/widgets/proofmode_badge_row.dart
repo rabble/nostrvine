@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/video_moderation_status_service.dart';
 import 'package:openvine/utils/proofmode_helpers.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -35,14 +36,23 @@ class ProofModeBadgeRow extends ConsumerWidget {
     final moderationStatusService = ref.read(
       videoModerationStatusServiceProvider,
     );
-    var aiResult = _lookupAIDetection(labelService);
+    final resolvedSha256 = VideoModerationStatusService.resolveSha256(
+      explicitSha256: video.sha256,
+      videoUrl: video.videoUrl,
+    );
+    AsyncValue<VideoModerationStatus?>? moderationStatusAsync;
+    AIDetectionResult? aiResult = _lookupAIDetection(
+      labelService,
+      resolvedSha256,
+    );
 
     // For Divine-hosted videos without Kind 1985 AI labels,
     // fall back to the moderation status service (auto-scans all uploads)
     if (aiResult == null && video.isFromDivineServer) {
       final statusAsync = ref.watch(
-        videoModerationStatusProvider(video.sha256),
+        videoModerationStatusProvider(resolvedSha256),
       );
+      moderationStatusAsync = statusAsync;
       aiResult = statusAsync.whenOrNull(
         data: (status) {
           if (status?.aiScore != null) {
@@ -70,25 +80,19 @@ class ProofModeBadgeRow extends ConsumerWidget {
     final isPossiblyAI =
         aiResult != null && aiResult.score >= 0.5 && !video.isOriginalVine;
 
-    // Divine-hosted videos without proof show the hosting badge until an AI
-    // assessment promotes them or warns on them.
-    final showDivineBadge =
-        video.isFromDivineServer &&
-        !video.shouldShowProofModeBadge &&
-        !video.shouldShowVineBadge &&
-        !hasAIScanBadge &&
-        !isPossiblyAI;
-
     final badges = <Widget>[];
+    final badgeLabels = <String>[];
 
     // Add ProofMode badge for proof-backed content or a clean AI scan.
     if (video.shouldShowProofModeBadge || hasAIScanBadge) {
       badges.add(ProofModeBadge(level: effectiveLevel, size: size));
+      badgeLabels.add('proofmode:${effectiveLevel.name}');
     }
 
     // Add "Possibly AI-Generated" badge for high AI scores
     if (isPossiblyAI && !video.shouldShowProofModeBadge) {
       badges.add(PossiblyAIBadge(size: size));
+      badgeLabels.add('possibly_ai');
     }
 
     // Add "Not Divine Hosted" badge for external content (tappable)
@@ -103,17 +107,27 @@ class ProofModeBadgeRow extends ConsumerWidget {
           child: NotDivineBadge(size: size),
         ),
       );
-    }
-
-    // Add "Hosted on Divine" badge for Divine videos without other badges
-    if (showDivineBadge) {
-      badges.add(DivineBadge(size: size));
+      badgeLabels.add('not_divine');
     }
 
     // Add Original Vine badge for vintage recovered vines
     if (video.shouldShowVineBadge) {
       badges.add(OriginalVineBadge(size: size));
+      badgeLabels.add('original_vine');
     }
+
+    Log.debug(
+      'Badge decision: eventId=${video.id}, resolvedSha256=$resolvedSha256, '
+      'isFromDivine=${video.isFromDivineServer}, hasProofMode=${video.hasProofMode}, '
+      'proofBadge=${video.shouldShowProofModeBadge}, vineBadge=${video.shouldShowVineBadge}, '
+      'notDivine=${video.shouldShowNotDivineBadge}, '
+      'aiScore=${aiResult?.score}, aiSource=${aiResult?.source}, '
+      'moderationLoading=${moderationStatusAsync?.isLoading ?? false}, '
+      'moderationHasError=${moderationStatusAsync?.hasError ?? false}, '
+      'badgeLabels=${badgeLabels.join(',')}',
+      name: 'ProofModeBadgeRow',
+      category: LogCategory.video,
+    );
 
     if (badges.isEmpty) {
       return const SizedBox.shrink();
@@ -148,11 +162,12 @@ class ProofModeBadgeRow extends ConsumerWidget {
   /// Look up AI detection results from the moderation label service.
   AIDetectionResult? _lookupAIDetection(
     ModerationLabelService labelService,
+    String? resolvedSha256,
   ) {
     final byEventId = labelService.getAIDetectionResult(video.id);
     if (byEventId != null) return byEventId;
 
-    final hash = video.sha256 ?? video.vineId;
+    final hash = resolvedSha256 ?? video.vineId;
     if (hash != null) {
       return labelService.getAIDetectionByHash(hash);
     }

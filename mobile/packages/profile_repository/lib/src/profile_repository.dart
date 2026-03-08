@@ -131,7 +131,9 @@ class ProfileRepository {
   ///
   /// If both [nip05] and [username] are provided, [nip05] takes precedence.
   /// When neither is provided and a [currentProfile] is supplied, the existing
-  /// NIP-05 value is preserved from `currentProfile.rawData`.
+  /// NIP-05 value is preserved from `currentProfile.rawData`. Pass
+  /// [clearNip05] as `true` to explicitly remove the NIP-05 from the profile
+  /// (overriding any value in `currentProfile.rawData`).
   ///
   /// After successful publish, the profile is cached locally for immediate
   /// subsequent reads.
@@ -142,6 +144,7 @@ class ProfileRepository {
     String? about,
     String? username,
     String? nip05,
+    bool clearNip05 = false,
     String? picture,
     String? banner,
     UserProfile? currentProfile,
@@ -159,6 +162,13 @@ class ProfileRepository {
       'picture': ?picture,
       'banner': ?banner,
     };
+
+    // When the user explicitly removes their NIP-05 (no username, no external
+    // NIP-05), remove the key so the rawData spread does not preserve the old
+    // value.
+    if (clearNip05 && resolvedNip05 == null) {
+      profileContent.remove('nip05');
+    }
 
     final profileEvent = await _nostrClient.sendProfile(
       profileContent: profileContent,
