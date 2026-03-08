@@ -22,11 +22,13 @@ import 'package:openvine/services/auth_service.dart';
 ///
 /// The actual redirect logic is:
 /// 1. If authenticated AND on top-level auth entry routes -> redirect to /home/0
+///    (EXCEPT expired-session users navigating to loginOptionsPath)
 /// 2. If NOT on auth route AND unauthenticated -> redirect to /welcome
 /// 3. Otherwise -> null (no redirect)
 String? testRedirectLogic({
   required String location,
   required AuthState authState,
+  bool hasExpiredOAuthSession = false,
 }) {
   // Auth routes that should be accessible without authentication.
   // Mirrors the isAuthRoute check in app_router.dart.
@@ -49,6 +51,11 @@ String? testRedirectLogic({
 
   // Rule 1: Authenticated users on redirectable auth routes go to home.
   if (authState == AuthState.authenticated && shouldRedirectAuthenticated) {
+    // Allow expired-session users through to login options
+    // so they can re-authenticate instead of being bounced home
+    if (hasExpiredOAuthSession && location == WelcomeScreen.loginOptionsPath) {
+      return null;
+    }
     return VideoFeedPage.pathForIndex(0);
   }
 
@@ -296,6 +303,65 @@ void main() {
             reason:
                 'BUG: ${LoginOptionsScreen.path} is an auth route and should be accessible '
                 'to unauthenticated users trying to log in!',
+          );
+        },
+      );
+
+      test(
+        'expired-session user on ${WelcomeScreen.loginOptionsPath} '
+        'should NOT be bounced to home (the original bug)',
+        () {
+          // This test reproduces the bug: authenticated users with an
+          // expired OAuth session were redirected away from loginOptionsPath,
+          // making the "Sign in" button on the Session Expired banner useless.
+          final redirect = testRedirectLogic(
+            location: WelcomeScreen.loginOptionsPath,
+            authState: AuthState.authenticated,
+            hasExpiredOAuthSession: true,
+          );
+          expect(
+            redirect,
+            isNull,
+            reason:
+                'Expired-session user must reach login options to '
+                're-authenticate, not be bounced to home',
+          );
+        },
+      );
+
+      test(
+        'expired-session user on ${WelcomeScreen.path} still redirects to home',
+        () {
+          // The exception only applies to loginOptionsPath, not all auth routes
+          final redirect = testRedirectLogic(
+            location: WelcomeScreen.path,
+            authState: AuthState.authenticated,
+            hasExpiredOAuthSession: true,
+          );
+          expect(
+            redirect,
+            equals(VideoFeedPage.pathForIndex(0)),
+            reason:
+                'Expired-session exception only applies to loginOptionsPath',
+          );
+        },
+      );
+
+      test(
+        'non-expired authenticated user on ${WelcomeScreen.loginOptionsPath} '
+        'still redirects to home',
+        () {
+          // Normal authenticated users (no expired session) should still
+          // be redirected away from auth routes as before
+          final redirect = testRedirectLogic(
+            location: WelcomeScreen.loginOptionsPath,
+            authState: AuthState.authenticated,
+          );
+          expect(
+            redirect,
+            equals(VideoFeedPage.pathForIndex(0)),
+            reason:
+                'Normal authenticated user should still be redirected to home',
           );
         },
       );
