@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
@@ -64,44 +63,16 @@ class _MyFollowingView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.whiteText,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-          tooltip: 'Back',
-        ),
-        title: FollowerCountTitle<MyFollowingBloc, MyFollowingState>(
+      appBar: DiVineAppBar(
+        titleWidget: FollowerCountTitle<MyFollowingBloc, MyFollowingState>(
           title: appBarTitle,
           selector: (state) => state.status == MyFollowingStatus.success
               ? state.followingPubkeys.length
               : 0,
         ),
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).pop(),
+        backButtonSemanticLabel: 'Back',
       ),
       body: BlocConsumer<MyFollowingBloc, MyFollowingState>(
         listenWhen: (previous, current) =>

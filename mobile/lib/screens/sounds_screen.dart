@@ -226,21 +226,11 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       container: true,
       child: Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        appBar: AppBar(
+        appBar: DiVineAppBar(
+          title: 'Sounds',
+          showBackButton: true,
+          onBackPressed: context.pop,
           backgroundColor: VineTheme.cardBackground,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-            onPressed: context.pop,
-          ),
-          title: const Text(
-            'Sounds',
-            style: TextStyle(
-              color: VineTheme.whiteText,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          centerTitle: true,
         ),
         body: Column(
           children: [

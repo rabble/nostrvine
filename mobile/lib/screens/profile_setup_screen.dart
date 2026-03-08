@@ -331,81 +331,37 @@ class _ProfileSetupScreenViewState
         builder: (context, profileEditorState) {
           return Scaffold(
             backgroundColor: VineTheme.surfaceContainerHigh,
-            appBar: AppBar(
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              toolbarHeight: 72,
-              leadingWidth: 80,
-              centerTitle: true,
-              backgroundColor: Colors.transparent,
-              leading: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Container(
-                  width: 48,
-                  height: 48,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: VineTheme.scrim15,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: SvgPicture.asset(
-                    'assets/icon/CaretLeft.svg',
-                    width: 32,
-                    height: 32,
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.whiteText,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
-                onPressed: () {
-                  // Try to pop using context.pop() which GoRouter intercepts
-                  // This should work even if canPop() returns false
-                  try {
-                    context.pop();
-                  } catch (e) {
-                    // If pop fails, navigate to profile or home as fallback
-                    final authService = ref.read(authServiceProvider);
-                    final currentPubkey = authService.currentPublicKeyHex;
-                    if (currentPubkey != null) {
-                      final npub = authService.currentNpub;
-                      context.go('/profile/$npub');
-                    } else {
-                      context.go('/home/0');
-                    }
+            appBar: DiVineAppBar(
+              title: 'Edit Profile',
+              backgroundMode: DiVineAppBarBackgroundMode.transparent,
+              showBackButton: true,
+              backButtonSemanticLabel: 'Back',
+              onBackPressed: () {
+                // Try to pop using context.pop() which GoRouter intercepts
+                // This should work even if canPop() returns false
+                try {
+                  context.pop();
+                } catch (e) {
+                  // If pop fails, navigate to profile or home as fallback
+                  final authService = ref.read(authServiceProvider);
+                  final currentPubkey = authService.currentPublicKeyHex;
+                  if (currentPubkey != null) {
+                    final npub = authService.currentNpub;
+                    context.go('/profile/$npub');
+                  } else {
+                    context.go('/home/0');
                   }
-                },
-                tooltip: 'Back',
+                }
+              },
+              style: const DiVineAppBarStyle(
+                iconButtonBackgroundColor: VineTheme.scrim15,
               ),
-              title: Text('Edit Profile', style: VineTheme.titleMediumFont()),
               actions: [
-                Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Container(
-                      width: 48,
-                      height: 48,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: VineTheme.scrim15,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: SvgPicture.asset(
-                        'assets/icon/info.svg',
-                        width: 32,
-                        height: 32,
-                        colorFilter: const ColorFilter.mode(
-                          VineTheme.whiteText,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                    onPressed: () => _showNostrInfoSheet(context),
-                    tooltip: 'About Nostr',
-                  ),
+                DiVineAppBarAction(
+                  icon: const SvgIconSource('assets/icon/info.svg'),
+                  onPressed: () => _showNostrInfoSheet(context),
+                  tooltip: 'About Nostr',
+                  semanticLabel: 'About Nostr',
                 ),
               ],
             ),

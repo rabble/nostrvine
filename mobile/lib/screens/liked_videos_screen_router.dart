@@ -79,24 +79,19 @@ class _LikedVideosScreenRouterState
       );
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        appBar: AppBar(
+        appBar: DiVineAppBar(
+          title: 'Liked Videos',
+          showBackButton: true,
           backgroundColor: VineTheme.backgroundColor,
-          title: const Text(
-            'Liked Videos',
-            style: TextStyle(color: VineTheme.whiteText),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-            onPressed: () {
-              // Navigate to own profile grid
-              final authService = ref.read(authServiceProvider);
-              final currentUserHex = authService.currentPublicKeyHex;
-              if (currentUserHex != null) {
-                final npub = NostrKeyUtils.encodePubKey(currentUserHex);
-                context.go(ProfileScreenRouter.pathForNpub(npub));
-              }
-            },
-          ),
+          onBackPressed: () {
+            // Navigate to own profile grid
+            final authService = ref.read(authServiceProvider);
+            final currentUserHex = authService.currentPublicKeyHex;
+            if (currentUserHex != null) {
+              final npub = NostrKeyUtils.encodePubKey(currentUserHex);
+              context.go(ProfileScreenRouter.pathForNpub(npub));
+            }
+          },
         ),
         body: BlocProvider<ProfileLikedVideosBloc>(
           create: (_) => ProfileLikedVideosBloc(

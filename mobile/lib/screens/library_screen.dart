@@ -393,40 +393,42 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
     return BlocSelector<ClipsLibraryBloc, ClipsLibraryState, bool>(
       selector: (state) => state.selectedClipIds.isNotEmpty,
       builder: (context, hasSelection) {
-        return AppBar(
+        return DiVineAppBar(
+          title: 'Library',
           backgroundColor: VineTheme.onPrimary,
-          foregroundColor: VineTheme.whiteText,
           surfaceTintColor: Colors.transparent,
           shape: const Border(
             bottom: BorderSide(color: VineTheme.outlineDisabled),
           ),
-          centerTitle: false,
-          leadingWidth: 64,
-          leading: const Padding(
-            padding: .only(left: 16),
-            child: Align(alignment: .centerLeft, child: _BackButton()),
-          ),
-          title: Text('Library', style: VineTheme.titleLargeFont()),
+          showBackButton: true,
+          onBackPressed: () {
+            final ctx = context;
+            if (ctx.canPop()) {
+              ctx.pop();
+            } else {
+              ctx.go(VideoFeedPage.pathForIndex(0));
+            }
+          },
+          style: const DiVineAppBarStyle(leadingWidth: 64),
           actions: hasSelection
               ? [
-                  IconButton(
-                    icon: const DivineIcon(
-                      icon: .downloadSimple,
-                      color: VineTheme.whiteText,
+                  DiVineAppBarAction(
+                    icon: const SvgIconSource(
+                      'assets/icon/download_simple.svg',
                     ),
                     onPressed: onSaveToGallery,
                     tooltip: 'Save to camera roll',
+                    semanticLabel: 'Save to camera roll',
                   ),
-                  IconButton(
-                    icon: const DivineIcon(
-                      icon: .trash,
-                      color: VineTheme.error,
-                    ),
+                  DiVineAppBarAction(
+                    icon: const SvgIconSource('assets/icon/trash.svg'),
                     onPressed: onDelete,
                     tooltip: 'Delete selected clips',
+                    semanticLabel: 'Delete selected clips',
+                    iconColor: VineTheme.error,
                   ),
                 ]
-              : null,
+              : const [],
           bottom: TabBar(
             controller: tabController,
             indicator: const UnderlineTabIndicator(
@@ -446,26 +448,6 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
             ],
           ),
         );
-      },
-    );
-  }
-}
-
-class _BackButton extends StatelessWidget {
-  const _BackButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return DivineIconButton(
-      icon: .caretLeft,
-      size: .small,
-      type: .secondary,
-      onPressed: () {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go(VideoFeedPage.pathForIndex(0));
-        }
       },
     );
   }

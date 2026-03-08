@@ -327,18 +327,30 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         builder: (context, state) {
           if (state.status == FullscreenFeedStatus.initial ||
               !state.hasVideos) {
-            return const Scaffold(
+            return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
-              appBar: _FullscreenAppBar(),
-              body: Center(child: BrandedLoadingIndicator(size: 60)),
+              appBar: DiVineAppBar(
+                title: '',
+                showBackButton: true,
+                onBackPressed: context.pop,
+                backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                forceMaterialTransparency: true,
+              ),
+              body: const Center(child: BrandedLoadingIndicator(size: 60)),
             );
           }
 
           if (!state.hasPooledVideos) {
-            return const Scaffold(
+            return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
-              appBar: _FullscreenAppBar(),
-              body: Center(
+              appBar: DiVineAppBar(
+                title: '',
+                showBackButton: true,
+                onBackPressed: context.pop,
+                backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                forceMaterialTransparency: true,
+              ),
+              body: const Center(
                 child: Text(
                   'No videos available',
                   style: TextStyle(color: VineTheme.whiteText),
@@ -353,12 +365,33 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               currentUserPubkey != null &&
               currentUserPubkey == state.currentVideo?.pubkey;
 
+          final featureFlagService = ref.watch(featureFlagServiceProvider);
+          final isEditorEnabled = featureFlagService.isEnabled(
+            FeatureFlag.enableVideoEditorV1,
+          );
+          final currentVideo = state.currentVideo;
+          final editAction =
+              isEditorEnabled && isOwnVideo && currentVideo != null
+              ? DiVineAppBarAction(
+                  icon: SvgIconSource(
+                    'assets/icon/${DivineIconName.pencilSimpleLine.fileName}.svg',
+                  ),
+                  onPressed: () =>
+                      showEditDialogForVideo(context, currentVideo),
+                  semanticLabel: 'Edit video',
+                )
+              : null;
+
           return Scaffold(
             backgroundColor: VineTheme.backgroundColor,
             extendBodyBehindAppBar: true,
-            appBar: _FullscreenAppBar(
-              currentVideo: state.currentVideo,
-              isOwnVideo: isOwnVideo,
+            appBar: DiVineAppBar(
+              title: '',
+              showBackButton: true,
+              onBackPressed: context.pop,
+              backgroundMode: DiVineAppBarBackgroundMode.transparent,
+              forceMaterialTransparency: true,
+              actions: [if (editAction != null) editAction],
             ),
             body: PooledVideoFeed(
               videos: state.pooledVideos,
@@ -411,65 +444,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
           );
         },
       ),
-    );
-  }
-}
-
-class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
-  const _FullscreenAppBar({this.isOwnVideo = false, this.currentVideo});
-
-  final VideoEvent? currentVideo;
-  final bool isOwnVideo;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(72);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
-        child: Row(
-          mainAxisAlignment: .spaceBetween,
-          crossAxisAlignment: .start,
-          children: [
-            DiVineAppBarIconButton(
-              icon: SvgIconSource(
-                'assets/icon/${DivineIconName.caretLeft.fileName}.svg',
-              ),
-              onPressed: context.pop,
-              iconSize: 24,
-              semanticLabel: 'Go back',
-              backgroundColor: VineTheme.scrim30,
-            ),
-
-            ?_buildEditAction(context, ref),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // TODO(any) : update to use bloc instead of riverpod
-  Widget? _buildEditAction(BuildContext context, WidgetRef ref) {
-    final video = currentVideo;
-    if (video == null) return null;
-
-    final featureFlagService = ref.watch(featureFlagServiceProvider);
-    final isEditorEnabled = featureFlagService.isEnabled(
-      FeatureFlag.enableVideoEditorV1,
-    );
-    if (!isEditorEnabled || !isOwnVideo) return null;
-
-    return DiVineAppBarIconButton(
-      icon: SvgIconSource(
-        'assets/icon/${DivineIconName.pencilSimpleLine.fileName}.svg',
-      ),
-      onPressed: () => showEditDialogForVideo(context, video),
-      iconSize: 24,
-      semanticLabel: 'Edit video',
-      backgroundColor: VineTheme.scrim30,
     );
   }
 }

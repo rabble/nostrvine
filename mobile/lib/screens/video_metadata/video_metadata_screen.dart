@@ -83,35 +83,19 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
             const Positioned.fill(child: _BackgroundGradient()),
             Scaffold(
               backgroundColor: Colors.transparent,
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
+              appBar: DiVineAppBar(
+                title: 'Post details',
+                backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 surfaceTintColor: Colors.transparent,
-                leading: Hero(
-                  tag: VideoEditorConstants.heroBackButtonId,
-                  child: IconButton(
-                    padding: const .all(8),
-                    icon: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: const Color(0x33000000),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: VineTheme.outlineVariant),
-                      ),
-                      child: const Padding(
-                        padding: .all(4.0),
-                        child: DivineIcon(
-                          size: 32,
-                          icon: .caretLeft,
-                          color: VineTheme.whiteText,
-                        ),
-                      ),
-                    ),
-                    onPressed: () => context.pop(),
-                    tooltip: 'Back',
+                showBackButton: true,
+                onBackPressed: context.pop,
+                backButtonHeroTag: VideoEditorConstants.heroBackButtonId,
+                style: const DiVineAppBarStyle(
+                  iconButtonBackgroundColor: Color(0x33000000),
+                  iconButtonBorderRadius: 14,
+                  iconButtonBorderSide: BorderSide(
+                    color: VineTheme.outlineVariant,
                   ),
-                ),
-                title: Text(
-                  'Post details',
-                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
                 ),
               ),
               body: Column(

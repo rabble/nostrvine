@@ -15,13 +15,11 @@ class BlockedUserScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-          onPressed: onBack,
-        ),
+      appBar: DiVineAppBar(
+        title: '',
+        showBackButton: true,
+        onBackPressed: onBack,
+        backgroundMode: DiVineAppBarBackgroundMode.transparent,
       ),
       body: const Center(
         child: Text(

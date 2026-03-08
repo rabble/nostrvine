@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -357,108 +356,24 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
 
         return Scaffold(
           backgroundColor: VineTheme.backgroundColor,
-          appBar: AppBar(
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            toolbarHeight: 72,
-            leadingWidth: 80,
-            centerTitle: false,
-            titleSpacing: 0,
+          appBar: DiVineAppBar(
+            title: displayName,
+            showBackButton: true,
+            onBackPressed: context.pop,
             backgroundColor: profileColor ?? VineTheme.navGreen,
-            leading: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Container(
-                width: 48,
-                height: 48,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: VineTheme.iconButtonBackground,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SvgPicture.asset(
-                  'assets/icon/CaretLeft.svg',
-                  width: 32,
-                  height: 32,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.whiteText,
-                    BlendMode.srcIn,
-                  ),
-                  semanticsLabel: 'Back',
-                ),
-              ),
-              onPressed: context.pop,
-            ),
-            title: Text(
-              displayName,
-              style: VineTheme.titleFont(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
             actions: [
-              // Refresh button
-              IconButton(
-                key: const Key('refresh-icon-button'),
-                tooltip: 'Refresh',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Container(
-                  width: 48,
-                  height: 48,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: VineTheme.iconButtonBackground,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: _isRefreshing
-                      ? const SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(
-                            color: VineTheme.whiteText,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : SvgPicture.asset(
-                          'assets/icon/refresh.svg',
-                          width: 28,
-                          height: 28,
-                          colorFilter: const ColorFilter.mode(
-                            VineTheme.whiteText,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                ),
+              DiVineAppBarAction(
+                icon: _isRefreshing
+                    ? const MaterialIconSource(Icons.refresh)
+                    : const SvgIconSource('assets/icon/refresh.svg'),
                 onPressed: _isRefreshing ? null : _refreshProfile,
+                tooltip: 'Refresh',
+                semanticLabel: 'Refresh profile',
               ),
-              const SizedBox(width: 8),
-              // More button
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: Container(
-                    width: 48,
-                    height: 48,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: VineTheme.iconButtonBackground,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/icon/DotsThree.svg',
-                      width: 28,
-                      height: 28,
-                      colorFilter: const ColorFilter.mode(
-                        VineTheme.whiteText,
-                        BlendMode.srcIn,
-                      ),
-                      semanticsLabel: 'More options',
-                    ),
-                  ),
-                  onPressed: _more,
-                ),
+              DiVineAppBarAction(
+                icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+                onPressed: _more,
+                semanticLabel: 'More options',
               ),
             ],
           ),
@@ -499,43 +414,10 @@ class _ProfileErrorScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.whiteText,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: onBack,
-        ),
-        title: Text(
-          'Profile',
-          style: VineTheme.titleFont(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+      appBar: DiVineAppBar(
+        title: 'Profile',
+        showBackButton: true,
+        onBackPressed: onBack,
       ),
       body: Center(
         child: Text(

@@ -89,6 +89,7 @@ class _ActionButton extends StatelessWidget {
       semanticLabel: action.semanticLabel,
       backgroundColor:
           action.backgroundColor ?? style.iconButtonBackgroundColor,
+      borderSide: style.iconButtonBorderSide,
       iconColor: action.iconColor ?? style.iconColor,
       size: style.iconButtonSize,
       iconSize: style.iconSize,

@@ -31,11 +31,21 @@ import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/widgets/notification_badge.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
 
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({required this.child, required this.currentIndex, super.key});
 
   final Widget child;
   final int currentIndex;
+
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  int get currentIndex => widget.currentIndex;
+  Widget get child => widget.child;
 
   String _titleFor(WidgetRef ref) {
     final ctx = ref.watch(pageContextProvider).asData?.value;
@@ -248,7 +258,7 @@ class AppShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final title = _titleFor(ref);
 
     // Initialize auto-cleanup provider to ensure only one video plays at a time
@@ -316,6 +326,7 @@ class AppShell extends ConsumerWidget {
     final environment = ref.watch(currentEnvironmentProvider);
 
     return Scaffold(
+      key: _scaffoldKey,
       onDrawerChanged: (isOpen) {
         // Track drawer visibility for video pause/resume
         ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
@@ -324,221 +335,158 @@ class AppShell extends ConsumerWidget {
       // instead of the standard AppBar, for full-screen video UX.
       appBar: currentIndex == 0
           ? null
-          : AppBar(
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              toolbarHeight: 72,
-              leadingWidth: 80,
-              centerTitle: false,
-              titleSpacing: 0,
+          : DiVineAppBar(
+              titleWidget: _buildTappableTitle(context, ref, title),
+              titleSuffix: const EnvironmentBadge(),
               backgroundColor: getEnvironmentAppBarColor(environment),
-              leading: showBackButton
-                  ? IconButton(
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Container(
-                        width: 48,
-                        height: 48,
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: VineTheme.iconButtonBackground,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: SvgPicture.asset(
-                          'assets/icon/CaretLeft.svg',
-                          width: 32,
-                          height: 32,
-                        ),
-                      ),
-                      onPressed: () {
+              showBackButton: showBackButton,
+              onBackPressed: showBackButton
+                  ? () {
+                      Log.info(
+                        '👆 User tapped back button',
+                        name: 'Navigation',
+                        category: LogCategory.ui,
+                      );
+
+                      // First, try to pop if there's something on the navigation stack
+                      // This handles pushed routes (e.g., list → profile → back to list)
+                      if (context.canPop()) {
                         Log.info(
-                          '👆 User tapped back button',
+                          '👈 Popping navigation stack',
                           name: 'Navigation',
                           category: LogCategory.ui,
                         );
+                        context.pop();
+                        return;
+                      }
 
-                        // First, try to pop if there's something on the navigation stack
-                        // This handles pushed routes (e.g., list → profile → back to list)
-                        if (context.canPop()) {
-                          Log.info(
-                            '👈 Popping navigation stack',
-                            name: 'Navigation',
-                            category: LogCategory.ui,
-                          );
-                          context.pop();
-                          return;
-                        }
+                      // Get current route context
+                      final ctx = ref.read(pageContextProvider).asData?.value;
+                      if (ctx == null) return;
 
-                        // Get current route context
-                        final ctx = ref.read(pageContextProvider).asData?.value;
-                        if (ctx == null) return;
+                      // Check if we're in a sub-route (hashtag, search, etc.)
+                      // If so, navigate back to parent route
+                      switch (ctx.type) {
+                        case RouteType.hashtag:
+                        case RouteType.search:
+                          // Go back to explore
+                          return context.go(ExploreScreen.path);
+                        default:
+                          break;
+                      }
 
-                        // Check if we're in a sub-route (hashtag, search, etc.)
-                        // If so, navigate back to parent route
+                      // For routes with videoIndex (feed mode), go to grid mode first
+                      // This handles page-internal navigation before tab switching
+                      // For explore/profile: any videoIndex (including 0) should go to grid (null)
+                      // For notifications: videoIndex > 0 should go to index 0
+
+                      if (ctx.videoIndex != null) {
                         switch (ctx.type) {
-                          case RouteType.hashtag:
-                          case RouteType.search:
-                            // Go back to explore
+                          case RouteType.explore:
+                            // For Explore, grid mode is null
                             return context.go(ExploreScreen.path);
+                          // For Profile, grid mode is null
+                          case RouteType.profile:
+                            return context.go(
+                              ProfileScreenRouter.pathForNpub(
+                                ctx.npub ?? 'me',
+                              ),
+                            );
+                          // For Notifications, index 0 is the base state
+                          case RouteType.notifications when ctx.videoIndex != 0:
+                            return context.go(
+                              NotificationsScreen.pathForIndex(0),
+                            );
                           default:
                             break;
                         }
+                      }
 
-                        // For routes with videoIndex (feed mode), go to grid mode first
-                        // This handles page-internal navigation before tab switching
-                        // For explore/profile: any videoIndex (including 0) should go to grid (null)
-                        // For notifications: videoIndex > 0 should go to index 0
+                      // Check tab history for navigation
+                      final tabHistory = ref.read(
+                        tabHistoryProvider.notifier,
+                      );
+                      final previousTab = tabHistory.getPreviousTab();
 
-                        if (ctx.videoIndex != null) {
-                          switch (ctx.type) {
-                            case RouteType.explore:
-                              // For Explore, grid mode is null
-                              return context.go(ExploreScreen.path);
-                            // For Profile, grid mode is null
-                            case RouteType.profile:
-                              return context.go(
-                                ProfileScreenRouter.pathForNpub(
-                                  ctx.npub ?? 'me',
-                                ),
-                              );
-                            // For Notifications, index 0 is the base state
-                            case RouteType.notifications
-                                when ctx.videoIndex != 0:
-                              return context.go(
-                                NotificationsScreen.pathForIndex(0),
-                              );
-                            default:
-                              break;
-                          }
-                        }
-
-                        // Check tab history for navigation
-                        final tabHistory = ref.read(
-                          tabHistoryProvider.notifier,
+                      // If there's a previous tab in history, navigate to it
+                      if (previousTab != null) {
+                        // Navigate to previous tab
+                        final previousRouteType = _routeTypeForTab(
+                          previousTab,
                         );
-                        final previousTab = tabHistory.getPreviousTab();
+                        final lastIndex = ref
+                            .read(lastTabPositionProvider.notifier)
+                            .getPosition(previousRouteType);
 
-                        // If there's a previous tab in history, navigate to it
-                        if (previousTab != null) {
-                          // Navigate to previous tab
-                          final previousRouteType = _routeTypeForTab(
-                            previousTab,
-                          );
-                          final lastIndex = ref
-                              .read(lastTabPositionProvider.notifier)
-                              .getPosition(previousRouteType);
+                        // Remove current tab from history before navigating
+                        tabHistory.navigateBack();
 
-                          // Remove current tab from history before navigating
-                          tabHistory.navigateBack();
-
-                          // Navigate to previous tab
-                          switch (previousTab) {
-                            case 0:
-                              context.go(
-                                VideoFeedPage.pathForIndex(lastIndex ?? 0),
-                              );
-                            case 1:
-                              if (lastIndex != null) {
-                                return context.go(
-                                  ExploreScreen.pathForIndex(lastIndex),
-                                );
-                              } else {
-                                return context.go(ExploreScreen.path);
-                              }
-                            case 2:
+                        // Navigate to previous tab
+                        switch (previousTab) {
+                          case 0:
+                            context.go(
+                              VideoFeedPage.pathForIndex(lastIndex ?? 0),
+                            );
+                          case 1:
+                            if (lastIndex != null) {
                               return context.go(
-                                NotificationsScreen.pathForIndex(
-                                  lastIndex ?? 0,
-                                ),
+                                ExploreScreen.pathForIndex(lastIndex),
                               );
-                            case 3:
-                              final authService = ref.read(authServiceProvider);
-                              final currentUserHex =
-                                  authService.currentPublicKeyHex;
-                              if (currentUserHex != null) {
-                                final npub = NostrKeyUtils.encodePubKey(
-                                  currentUserHex,
-                                );
-                                return context.go(
-                                  ProfileScreenRouter.pathForNpub(npub),
-                                );
-                              }
-                          }
-                          return;
+                            } else {
+                              return context.go(ExploreScreen.path);
+                            }
+                          case 2:
+                            return context.go(
+                              NotificationsScreen.pathForIndex(
+                                lastIndex ?? 0,
+                              ),
+                            );
+                          case 3:
+                            final authService = ref.read(authServiceProvider);
+                            final currentUserHex =
+                                authService.currentPublicKeyHex;
+                            if (currentUserHex != null) {
+                              final npub = NostrKeyUtils.encodePubKey(
+                                currentUserHex,
+                              );
+                              return context.go(
+                                ProfileScreenRouter.pathForNpub(npub),
+                              );
+                            }
                         }
+                        return;
+                      }
 
-                        // No previous tab - check if we're on a non-home tab
-                        // If so, go to home first before exiting
-                        final currentTab = _tabIndexFromRouteType(ctx.type);
-                        if (currentTab != null && currentTab != 0) {
-                          // Go to home first
-                          return context.go(VideoFeedPage.pathForIndex(0));
-                        }
+                      // No previous tab - check if we're on a non-home tab
+                      // If so, go to home first before exiting
+                      final currentTab = _tabIndexFromRouteType(ctx.type);
+                      if (currentTab != null && currentTab != 0) {
+                        // Go to home first
+                        return context.go(VideoFeedPage.pathForIndex(0));
+                      }
 
-                        // Already at home with no history - let system handle exit
-                      },
-                    )
-                  : Builder(
-                      // Hamburger menu in upper left when no back button
-                      builder: (context) => IconButton(
-                        key: const Key('menu-icon-button'),
-                        tooltip: 'Menu',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Container(
-                          width: 48,
-                          height: 48,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: VineTheme.iconButtonBackground,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/icon/menu.svg',
-                            width: 32,
-                            height: 32,
-                          ),
-                        ),
-                        onPressed: () {
-                          Log.info(
-                            '👆 User tapped menu button',
-                            name: 'Navigation',
-                            category: LogCategory.ui,
-                          );
-                          // Drawer open state is tracked via onDrawerChanged callback
-                          // which triggers overlay visibility provider to pause videos
-                          Scaffold.of(context).openDrawer();
-                        },
-                      ),
-                    ),
-              title: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(child: _buildTappableTitle(context, ref, title)),
-                  const EnvironmentBadge(),
-                ],
-              ),
+                      // Already at home with no history - let system handle exit
+                    }
+                  : null,
+              showMenuButton: !showBackButton,
+              onMenuPressed: !showBackButton
+                  ? () {
+                      Log.info(
+                        '👆 User tapped menu button',
+                        name: 'Navigation',
+                        category: LogCategory.ui,
+                      );
+                      // Drawer open state is tracked via onDrawerChanged callback
+                      // which triggers overlay visibility provider to pause videos
+                      _scaffoldKey.currentState?.openDrawer();
+                    }
+                  : null,
               actions: isSearchRoute
-                  ? null
+                  ? const []
                   : [
-                      IconButton(
+                      DiVineAppBarAction(
+                        icon: const SvgIconSource('assets/icon/search.svg'),
                         tooltip: 'Search',
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: Container(
-                          width: 48,
-                          height: 48,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: VineTheme.iconButtonBackground,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/icon/search.svg',
-                            width: 32,
-                            height: 32,
-                          ),
-                        ),
                         onPressed: () {
                           Log.info(
                             '👆 User tapped search button',
@@ -548,7 +496,6 @@ class AppShell extends ConsumerWidget {
                           context.go(SearchScreenPure.path);
                         },
                       ),
-                      const SizedBox(width: 16),
                     ],
             ),
       drawer: const VineDrawer(),

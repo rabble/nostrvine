@@ -19,6 +19,7 @@ class DiVineAppBarLeading extends StatelessWidget {
     required this.onLeadingPressed,
     required this.style,
     this.backButtonSemanticLabel,
+    this.backButtonHeroTag,
     super.key,
   });
 
@@ -46,6 +47,9 @@ class DiVineAppBarLeading extends StatelessWidget {
   /// tooltip to avoid iOS merging both into the accessibility text.
   final String? backButtonSemanticLabel;
 
+  /// Optional hero tag to wrap the back button in a [Hero] widget.
+  final Object? backButtonHeroTag;
+
   /// Style configuration.
   final DiVineAppBarStyle style;
 
@@ -58,13 +62,17 @@ class DiVineAppBarLeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (showBackButton) {
-      return _LeadingIconButton(
+      final button = _LeadingIconButton(
         icon: const SvgIconSource(backIconAsset),
         onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
         semanticLabel: backButtonSemanticLabel ?? 'Go back',
         tooltip: backButtonSemanticLabel == null ? 'Back' : null,
         style: style,
       );
+      if (backButtonHeroTag != null) {
+        return Hero(tag: backButtonHeroTag!, child: button);
+      }
+      return button;
     }
 
     if (showMenuButton) {
@@ -108,18 +116,22 @@ class _LeadingIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(left: style.horizontalPadding),
-      child: DiVineAppBarIconButton(
-        icon: icon,
-        onPressed: onPressed,
-        semanticLabel: semanticLabel,
-        tooltip: tooltip,
-        backgroundColor: style.iconButtonBackgroundColor,
-        iconColor: style.iconColor,
-        size: style.iconButtonSize,
-        iconSize: style.iconSize,
-        borderRadius: style.iconButtonBorderRadius,
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.only(left: style.horizontalPadding),
+        child: DiVineAppBarIconButton(
+          icon: icon,
+          onPressed: onPressed,
+          semanticLabel: semanticLabel,
+          tooltip: tooltip,
+          backgroundColor: style.iconButtonBackgroundColor,
+          borderSide: style.iconButtonBorderSide,
+          iconColor: style.iconColor,
+          size: style.iconButtonSize,
+          iconSize: style.iconSize,
+          borderRadius: style.iconButtonBorderRadius,
+        ),
       ),
     );
   }
