@@ -374,7 +374,7 @@ class _SortDropdown extends StatelessWidget {
       itemBuilder: (context) => [
         _sortMenuItem('trending', 'Hot'),
         _sortMenuItem('timestamp', 'New'),
-        _sortMenuItem('loops', 'Classic'),
+        _sortMenuItem('classic', 'Classic'),
       ],
     );
   }
@@ -401,7 +401,7 @@ class _SortDropdown extends StatelessWidget {
         return 'Hot';
       case 'timestamp':
         return 'New';
-      case 'loops':
+      case 'classic':
         return 'Classic';
       default:
         return 'Hot';

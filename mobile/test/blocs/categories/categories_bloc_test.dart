@@ -167,6 +167,7 @@ void main() {
             () => mockApiClient.getVideosByCategory(
               category: 'music',
               sort: 'loops',
+              classic: true,
             ),
           ).thenAnswer((_) async => [_createVideoStats('id1')]);
         },
@@ -175,10 +176,10 @@ void main() {
           videosStatus: CategoriesVideosStatus.loaded,
         ),
         build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
-        act: (bloc) => bloc.add(const CategoryVideosSortChanged('loops')),
+        act: (bloc) => bloc.add(const CategoryVideosSortChanged('classic')),
         expect: () => [
           isA<CategoriesState>()
-              .having((s) => s.sortOrder, 'sortOrder', 'loops')
+              .having((s) => s.sortOrder, 'sortOrder', 'classic')
               .having(
                 (s) => s.videosStatus,
                 'videosStatus',
@@ -197,7 +198,7 @@ void main() {
       blocTest<CategoriesBloc, CategoriesState>(
         'does nothing when no category selected',
         build: () => CategoriesBloc(funnelcakeApiClient: mockApiClient),
-        act: (bloc) => bloc.add(const CategoryVideosSortChanged('loops')),
+        act: (bloc) => bloc.add(const CategoryVideosSortChanged('classic')),
         expect: () => <CategoriesState>[],
       );
     });

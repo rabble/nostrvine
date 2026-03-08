@@ -79,9 +79,11 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     );
 
     try {
+      final isClassic = state.sortOrder == 'classic';
       final videoStats = await _apiClient.getVideosByCategory(
         category: event.category.name,
-        sort: state.sortOrder,
+        sort: isClassic ? 'loops' : state.sortOrder,
+        classic: isClassic,
       );
 
       final videos = videoStats.map((s) => s.toVideoEvent()).toList();
@@ -126,10 +128,12 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
       final lastVideo = state.videos.lastOrNull;
       final before = lastVideo?.createdAt;
 
+      final isClassic = state.sortOrder == 'classic';
       final videoStats = await _apiClient.getVideosByCategory(
         category: state.selectedCategory!.name,
         before: before,
-        sort: state.sortOrder,
+        sort: isClassic ? 'loops' : state.sortOrder,
+        classic: isClassic,
       );
 
       final newVideos = videoStats.map((s) => s.toVideoEvent()).toList();
@@ -169,9 +173,11 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     );
 
     try {
+      final isClassic = event.sort == 'classic';
       final videoStats = await _apiClient.getVideosByCategory(
         category: state.selectedCategory!.name,
-        sort: event.sort,
+        sort: isClassic ? 'loops' : event.sort,
+        classic: isClassic,
       );
 
       final videos = videoStats.map((s) => s.toVideoEvent()).toList();
