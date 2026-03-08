@@ -34,6 +34,7 @@ class PooledVideoFeed extends StatefulWidget {
     this.onActiveVideoChanged,
     this.onNearEnd,
     this.nearEndThreshold = 3,
+    this.onScrollOffsetChanged,
     super.key,
   });
 
@@ -70,6 +71,13 @@ class PooledVideoFeed extends StatefulWidget {
   /// How many videos from the end should trigger [onNearEnd].
   final int nearEndThreshold;
 
+  /// Called continuously as the feed scrolls with the fractional page position.
+  ///
+  /// The value is the current page as a double (e.g. 1.7 means 70% scrolled
+  /// from page 1 toward page 2). Useful for computing per-item scroll fraction
+  /// without changing the [itemBuilder] signature.
+  final void Function(double page)? onScrollOffsetChanged;
+
   @override
   State<PooledVideoFeed> createState() => PooledVideoFeedState();
 }
@@ -91,6 +99,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
+    _pageController.addListener(_onScrollChanged);
 
     // Use provided pool or fall back to singleton
     _effectivePool = widget.pool ?? PlayerPool.instance;
@@ -117,6 +126,13 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
         _controller.play();
       }
     });
+  }
+
+  void _onScrollChanged() {
+    final page = _pageController.page;
+    if (page != null) {
+      widget.onScrollOffsetChanged?.call(page);
+    }
   }
 
   void _onControllerChanged() {
@@ -200,7 +216,9 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
   @override
   void dispose() {
     _controller.removeListener(_onControllerChanged);
-    _pageController.dispose();
+    _pageController
+      ..removeListener(_onScrollChanged)
+      ..dispose();
     if (_ownsController) {
       _controller.dispose();
     }
