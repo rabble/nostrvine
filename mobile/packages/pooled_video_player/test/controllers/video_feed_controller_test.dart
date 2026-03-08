@@ -2314,36 +2314,39 @@ void main() {
 
     group('resume playback position', () {
       test(
-        'always restarts from beginning when resuming a swiped-away video',
+        'preserves mid-playback position when resuming a swiped-away video',
         () async {
-          // preloadBehind=1 (default) keeps video 0 loaded while at
-          // index 1, so swipe-back goes through _resumeFromStart.
+          // preloadBehind=1 (default) keeps video 0 in the pool while at
+          // index 1, so swipe-back goes through _resume (not a full reload).
           final videos = createTestVideos(count: 3);
-          final controller = VideoFeedController(videos: videos, pool: pool);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+          );
 
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
           final setup0 = playerSetups[videos[0].url]!;
           // Simulate mid-playback state: 5s into a 30s video.
-          when(
-            () => setup0.state.position,
-          ).thenReturn(const Duration(seconds: 5));
-          when(
-            () => setup0.state.duration,
-          ).thenReturn(const Duration(seconds: 30));
+          when(() => setup0.state.position).thenReturn(
+            const Duration(seconds: 5),
+          );
+          when(() => setup0.state.duration).thenReturn(
+            const Duration(seconds: 30),
+          );
 
           clearInteractions(setup0.player);
 
-          // Swipe to video 1 (pauses video 0), then swipe back.
+          // Swipe to video 1 (pauses video 0), then swipe back
+          // (resumes video 0).
           controller.onPageChanged(1);
           await Future<void>.delayed(const Duration(milliseconds: 50));
           controller.onPageChanged(0);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // _resumeFromStart always seeks to zero.
-          verify(
-            () => setup0.player.seek(Duration.zero),
-          ).called(greaterThanOrEqualTo(1));
+          // Position is not at the end — no seek should have been called.
+          verifyNever(() => setup0.player.seek(Duration.zero));
+          // Video should be playing again.
           verify(setup0.player.play).called(greaterThanOrEqualTo(1));
 
           controller.dispose();
@@ -2353,10 +2356,13 @@ void main() {
       test(
         'seeks to zero when resuming a video that reached the end',
         () async {
-          // preloadBehind=1 keeps video 0 loaded while at index 1,
-          // so swipe-back goes through _resumeFromStart.
+          // preloadBehind=1 keeps video 0 in the pool while at index 1,
+          // so swipe-back goes through _resume (not a full reload).
           final videos = createTestVideos(count: 3);
-          final controller = VideoFeedController(videos: videos, pool: pool);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+          );
 
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
@@ -2369,13 +2375,13 @@ void main() {
           clearInteractions(setup0.player);
 
           // Swipe to video 1 (pauses video 0 but keeps it loaded),
-          // then swipe back.
+          // then swipe back (resumes via _resume).
           controller.onPageChanged(1);
           await Future<void>.delayed(const Duration(milliseconds: 50));
           controller.onPageChanged(0);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // _resumeFromStart always seeks to zero.
+          // Position equals duration — should seek to zero for loop behavior.
           verify(() => setup0.player.seek(Duration.zero)).called(1);
           verify(setup0.player.play).called(greaterThanOrEqualTo(1));
 
@@ -2384,10 +2390,11 @@ void main() {
       );
 
       test(
-        'seeks to zero when preloaded video becomes current',
+        'preloaded video is still at position zero when it becomes current',
         () async {
-          // preloadAhead=1 loads video 1 as a preload. When navigating
-          // to it, _resumeFromStart seeks to zero and plays.
+          // preloadAhead=1 loads video 1 as a preload and seeks it to zero
+          // via _onBufferReady. When the user navigates to video 1 it should
+          // play from the start without an additional seek.
           final videos = createTestVideos(count: 3);
           final controller = VideoFeedController(
             videos: videos,
@@ -2399,10 +2406,11 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
           final setup1 = playerSetups[videos[1].url]!;
+          // Preloaded video is at position zero and duration is non-zero.
           when(() => setup1.state.position).thenReturn(Duration.zero);
-          when(
-            () => setup1.state.duration,
-          ).thenReturn(const Duration(seconds: 30));
+          when(() => setup1.state.duration).thenReturn(
+            const Duration(seconds: 30),
+          );
 
           clearInteractions(setup1.player);
 
@@ -2410,10 +2418,8 @@ void main() {
           controller.onPageChanged(1);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // _resumeFromStart always seeks to zero.
-          verify(
-            () => setup1.player.seek(Duration.zero),
-          ).called(greaterThanOrEqualTo(1));
+          // Position (0) < duration (30s) — no seek needed.
+          verifyNever(() => setup1.player.seek(Duration.zero));
           verify(setup1.player.play).called(greaterThanOrEqualTo(1));
 
           controller.dispose();
