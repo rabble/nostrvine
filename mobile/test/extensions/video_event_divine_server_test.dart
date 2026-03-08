@@ -179,7 +179,7 @@ void main() {
       expect(video.shouldPreferHlsPlayback, isFalse);
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash/720p'),
+        equals('https://cdn.divine.video/$hash'),
       );
       expect(
         video.getCacheableVideoUrlForPlatform(),
