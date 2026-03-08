@@ -383,7 +383,7 @@ class NotDivineBadge extends StatelessWidget {
   }
 }
 
-/// "Checking for AI" badge for Divine-hosted videos awaiting moderation AI.
+/// "AI scan pending" badge for Divine-hosted videos awaiting moderation AI.
 class CheckingForAIBadge extends StatelessWidget {
   const CheckingForAIBadge({super.key, this.size = BadgeSize.small});
 
@@ -413,7 +413,7 @@ class CheckingForAIBadge extends StatelessWidget {
           ),
           SizedBox(width: dimensions.iconTextSpacing),
           Text(
-            'Checking for AI',
+            'AI scan pending',
             style: TextStyle(
               fontSize: dimensions.fontSize,
               fontWeight: FontWeight.w500,

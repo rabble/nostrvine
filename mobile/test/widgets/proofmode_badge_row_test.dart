@@ -44,7 +44,7 @@ void main() {
 
   group('ProofModeBadgeRow', () {
     testWidgets(
-      'shows Checking for AI for proofless Divine-hosted videos without AI',
+      'shows AI scan pending for proofless Divine-hosted videos without AI',
       (tester) async {
         final video = VideoEvent(
           id: 'divine_no_proof_no_ai',
@@ -61,7 +61,7 @@ void main() {
         await tester.pumpWidget(buildSubject(video));
         await tester.pumpAndSettle();
 
-        expect(find.text('Checking for AI'), findsOneWidget);
+        expect(find.text('AI scan pending'), findsOneWidget);
         expect(find.text('Human Made'), findsNothing);
         expect(find.text('Possibly AI-Generated'), findsNothing);
         expect(find.text('Not Divine Hosted'), findsNothing);
