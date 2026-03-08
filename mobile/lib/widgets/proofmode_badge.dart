@@ -383,6 +383,81 @@ class NotDivineBadge extends StatelessWidget {
   }
 }
 
+/// "Checking for AI" badge for Divine-hosted videos awaiting moderation AI.
+class CheckingForAIBadge extends StatelessWidget {
+  const CheckingForAIBadge({super.key, this.size = BadgeSize.small});
+
+  final BadgeSize size;
+
+  @override
+  Widget build(BuildContext context) {
+    final dimensions = _getDimensions(size);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: dimensions.horizontalPadding,
+        vertical: dimensions.verticalPadding,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF161A1D),
+        borderRadius: BorderRadius.circular(dimensions.borderRadius),
+        border: Border.all(color: const Color(0xFF4F6474)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.hourglass_top,
+            size: dimensions.iconSize,
+            color: const Color(0xFFA9C4D9),
+          ),
+          SizedBox(width: dimensions.iconTextSpacing),
+          Text(
+            'Checking for AI',
+            style: TextStyle(
+              fontSize: dimensions.fontSize,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFFE6F0F7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _BadgeDimensions _getDimensions(BadgeSize size) {
+    switch (size) {
+      case BadgeSize.small:
+        return const _BadgeDimensions(
+          horizontalPadding: 6,
+          verticalPadding: 2,
+          borderRadius: 4,
+          iconSize: 10,
+          fontSize: 10,
+          iconTextSpacing: 3,
+        );
+      case BadgeSize.medium:
+        return const _BadgeDimensions(
+          horizontalPadding: 8,
+          verticalPadding: 4,
+          borderRadius: 6,
+          iconSize: 12,
+          fontSize: 11,
+          iconTextSpacing: 4,
+        );
+      case BadgeSize.large:
+        return const _BadgeDimensions(
+          horizontalPadding: 10,
+          verticalPadding: 5,
+          borderRadius: 8,
+          iconSize: 14,
+          fontSize: 12,
+          iconTextSpacing: 5,
+        );
+    }
+  }
+}
+
 /// "Possibly AI-Generated" warning badge
 class PossiblyAIBadge extends StatelessWidget {
   const PossiblyAIBadge({super.key, this.size = BadgeSize.small});

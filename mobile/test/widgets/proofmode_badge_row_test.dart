@@ -43,33 +43,32 @@ void main() {
   }
 
   group('ProofModeBadgeRow', () {
-    testWidgets('shows no badge for proofless Divine-hosted videos without AI', (
-      tester,
-    ) async {
-      final video = VideoEvent(
-        id: 'divine_no_proof_no_ai',
-        pubkey: 'pubkey0',
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        content: 'plain divine hosted video',
-        timestamp: DateTime.now(),
-        sha256:
-            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        videoUrl:
-            'https://media.divine.video/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.mp4',
-      );
+    testWidgets(
+      'shows Checking for AI for proofless Divine-hosted videos without AI',
+      (tester) async {
+        final video = VideoEvent(
+          id: 'divine_no_proof_no_ai',
+          pubkey: 'pubkey0',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          content: 'plain divine hosted video',
+          timestamp: DateTime.now(),
+          sha256:
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          videoUrl:
+              'https://media.divine.video/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.mp4',
+        );
 
-      await tester.pumpWidget(buildSubject(video));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildSubject(video));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Hosted on Divine'), findsNothing);
-      expect(find.text('Human Made'), findsNothing);
-      expect(find.text('Possibly AI-Generated'), findsNothing);
-      expect(find.text('Not Divine Hosted'), findsNothing);
-    });
+        expect(find.text('Checking for AI'), findsOneWidget);
+        expect(find.text('Human Made'), findsNothing);
+        expect(find.text('Possibly AI-Generated'), findsNothing);
+        expect(find.text('Not Divine Hosted'), findsNothing);
+      },
+    );
 
-    testWidgets('shows Human Made for scan-only human results', (
-      tester,
-    ) async {
+    testWidgets('shows Human Made for scan-only human results', (tester) async {
       const sha256 =
           'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
       when(

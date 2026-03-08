@@ -79,6 +79,13 @@ class ProofModeBadgeRow extends ConsumerWidget {
     // AI scan indicates possibly AI-generated (score >= 0.5)
     final isPossiblyAI =
         aiResult != null && aiResult.score >= 0.5 && !video.isOriginalVine;
+    final isCheckingForAI =
+        video.isFromDivineServer &&
+        !video.shouldShowProofModeBadge &&
+        !video.shouldShowVineBadge &&
+        !hasAIScanBadge &&
+        !isPossiblyAI &&
+        aiResult == null;
 
     final badges = <Widget>[];
     final badgeLabels = <String>[];
@@ -93,6 +100,13 @@ class ProofModeBadgeRow extends ConsumerWidget {
     if (isPossiblyAI && !video.shouldShowProofModeBadge) {
       badges.add(PossiblyAIBadge(size: size));
       badgeLabels.add('possibly_ai');
+    }
+
+    // Divine-hosted videos should surface pending AI status instead of
+    // rendering blank while scan results are unavailable.
+    if (isCheckingForAI) {
+      badges.add(CheckingForAIBadge(size: size));
+      badgeLabels.add('checking_ai');
     }
 
     // Add "Not Divine Hosted" badge for external content (tappable)
@@ -122,6 +136,7 @@ class ProofModeBadgeRow extends ConsumerWidget {
       'proofBadge=${video.shouldShowProofModeBadge}, vineBadge=${video.shouldShowVineBadge}, '
       'notDivine=${video.shouldShowNotDivineBadge}, '
       'aiScore=${aiResult?.score}, aiSource=${aiResult?.source}, '
+      'checkingForAI=$isCheckingForAI, '
       'moderationLoading=${moderationStatusAsync?.isLoading ?? false}, '
       'moderationHasError=${moderationStatusAsync?.hasError ?? false}, '
       'badgeLabels=${badgeLabels.join(',')}',
@@ -446,9 +461,7 @@ class _AICheckSectionState extends State<_AICheckSection> {
                 label: const Text('Check if AI-generated'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: VineTheme.onSurfaceVariant,
-                  side: const BorderSide(
-                    color: VineTheme.onSurfaceMuted,
-                  ),
+                  side: const BorderSide(color: VineTheme.onSurfaceMuted),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 8,
