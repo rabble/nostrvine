@@ -46,6 +46,14 @@ mixin VideoPrefetchMixin {
   /// Override this to customize throttle duration (useful for testing)
   int get prefetchThrottleSeconds => 2;
 
+  /// Build the controller params for a video.
+  ///
+  /// Tests can override this to simulate provider key changes without relying
+  /// on platform-specific URL selection.
+  @visibleForTesting
+  VideoControllerParams videoControllerParamsFor(VideoEvent video) =>
+      VideoControllerParams.fromVideoEvent(video);
+
   /// Check if videos should be prefetched and trigger prefetch if appropriate
   ///
   /// - [currentIndex]: Current video index in the feed
@@ -96,7 +104,7 @@ mixin VideoPrefetchMixin {
       if (i != currentIndex && i >= 0 && i < videos.length) {
         final video = videos[i];
         if (video.videoUrl != null && video.videoUrl!.isNotEmpty) {
-          final params = VideoControllerParams.fromVideoEvent(video);
+          final params = videoControllerParamsFor(video);
           if (!params.allowCaching) {
             continue;
           }
@@ -181,7 +189,7 @@ mixin VideoPrefetchMixin {
 
       // Trigger controller creation by reading the provider
       // This is fire-and-forget - we just want to start initialization
-      final params = VideoControllerParams.fromVideoEvent(video);
+      final params = videoControllerParamsFor(video);
       final existingParams = _preInitializedControllers[video.id];
 
       if (existingParams == params) {

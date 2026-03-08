@@ -9,7 +9,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
-import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:video_player/video_player.dart';
 
 class MockMediaCacheManager extends Mock implements MediaCacheManager {}
@@ -30,8 +29,6 @@ void main() {
         authHeadersProvider: any(named: 'authHeadersProvider'),
       ),
     ).thenAnswer((_) async {});
-
-    BandwidthTrackerService.instance.clearSamples();
   });
 
   group('VideoPrefetchMixin', () {
@@ -177,24 +174,36 @@ void main() {
     testWidgets(
       'SPEC: should replace tracked preinitialized params and dispose exact provider key',
       (tester) async {
-        const hash =
-            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
         final videos = [
           _createVideo('current', hasUrl: true),
-          _createVideo(
-            'video-1',
-            hasUrl: true,
-            videoUrl: 'https://media.divine.video/$hash/source',
-          ),
+          _createVideo('video-1', hasUrl: true),
         ];
 
-        final mixin = TestVideoPrefetchMixin(mockCache);
+        const mediumParams = VideoControllerParams(
+          videoId: 'video-1',
+          videoUrl: 'https://media.divine.video/video-1/720p',
+          cacheUrl: 'https://media.divine.video/video-1/source',
+        );
+        const lowParams = VideoControllerParams(
+          videoId: 'video-1',
+          videoUrl: 'https://media.divine.video/video-1/480p',
+          cacheUrl: 'https://media.divine.video/video-1/source',
+        );
+        var selectedParams = mediumParams;
+
+        final mixin = TestVideoPrefetchMixin(
+          mockCache,
+          videoControllerParamsBuilder: (video) {
+            if (video.id == 'video-1') {
+              return selectedParams;
+            }
+            return VideoControllerParams.fromVideoEvent(video);
+          },
+        );
         final createdParams = <VideoControllerParams>[];
         final disposedParams = <VideoControllerParams>[];
         WidgetRef? widgetRef;
 
-        BandwidthTrackerService.instance.recordTimeToFirstFrame(1000);
-        final mediumParams = VideoControllerParams.fromVideoEvent(videos[1]);
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
@@ -233,9 +242,7 @@ void main() {
           isEmpty,
         );
 
-        BandwidthTrackerService.instance.clearSamples();
-        BandwidthTrackerService.instance.recordTimeToFirstFrame(5000);
-        final lowParams = VideoControllerParams.fromVideoEvent(videos[1]);
+        selectedParams = lowParams;
         expect(lowParams, isNot(equals(mediumParams)));
 
         mixin.preInitializeControllers(
@@ -433,13 +440,23 @@ VideoEvent _createVideo(String id, {required bool hasUrl, String? videoUrl}) {
 
 /// Test implementation of VideoPrefetchMixin
 class TestVideoPrefetchMixin with VideoPrefetchMixin {
-  TestVideoPrefetchMixin(this._cache);
+  TestVideoPrefetchMixin(
+    this._cache, {
+    this.videoControllerParamsBuilder,
+  });
 
   final MediaCacheManager _cache;
+  final VideoControllerParams Function(VideoEvent video)?
+  videoControllerParamsBuilder;
 
   @override
   MediaCacheManager get videoCacheManager => _cache;
 
   @override
   int get prefetchThrottleSeconds => 1; // Shorter for testing
+
+  @override
+  VideoControllerParams videoControllerParamsFor(VideoEvent video) =>
+      videoControllerParamsBuilder?.call(video) ??
+      super.videoControllerParamsFor(video);
 }
