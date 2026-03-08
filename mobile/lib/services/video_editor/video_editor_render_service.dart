@@ -645,7 +645,9 @@ class VideoEditorRenderService {
       endTime: VideoEditorConstants.maxDuration,
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
-      customAudioPath: await parameters?.customAudioTrack?.audio.safeFilePath(),
+      customAudioPath: await _getAudioFilePath(
+        parameters?.customAudioTrack?.audio,
+      ),
       loopCustomAudio: false,
       originalAudioVolume: originalAudioVolume,
       customAudioVolume: customAudioVolume,
@@ -698,5 +700,24 @@ class VideoEditorRenderService {
         );
       }
     }
+  }
+
+  /// Returns a file path for the given [EditorAudio], writing bytes to a
+  /// temp file if necessary. Equivalent to `EditorAudio.safeFilePath()` which
+  /// was added in pro_image_editor 12.0.5.
+  static Future<String?> _getAudioFilePath(EditorAudio? audio) async {
+    if (audio == null) return null;
+    if (audio.file != null) return audio.file!.path;
+    if (audio.assetPath != null) return audio.assetPath;
+    if (audio.networkUrl != null) return audio.networkUrl;
+    if (audio.bytes != null) {
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(
+        '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.mp3',
+      );
+      await tempFile.writeAsBytes(audio.bytes!);
+      return tempFile.path;
+    }
+    return null;
   }
 }
