@@ -1573,7 +1573,7 @@ class FunnelcakeApiClient {
     int limit = 50,
     int? before,
     String sort = 'trending',
-    bool classic = false,
+    String? platform,
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -1591,8 +1591,8 @@ class FunnelcakeApiClient {
     if (before != null) {
       queryParams['before'] = before.toString();
     }
-    if (classic) {
-      queryParams['classic'] = 'true';
+    if (platform != null) {
+      queryParams['platform'] = platform;
     }
 
     final uri = Uri.parse(

@@ -167,7 +167,7 @@ void main() {
             () => mockApiClient.getVideosByCategory(
               category: 'music',
               sort: 'loops',
-              classic: true,
+              platform: 'vine',
             ),
           ).thenAnswer((_) async => [_createVideoStats('id1')]);
         },
