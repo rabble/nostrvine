@@ -121,17 +121,6 @@ void main() {
         isTrue,
       );
     });
-
-    test('deprecated setModalOpen maps to setPageOpen', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
-
-      // ignore: deprecated_member_use_from_same_package
-      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
-      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
-    });
   });
 
   group('hasVisibleOverlayProvider', () {

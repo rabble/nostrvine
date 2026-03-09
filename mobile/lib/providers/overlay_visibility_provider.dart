@@ -94,10 +94,6 @@ class OverlayVisibility extends _$OverlayVisibility {
       state = state.copyWith(isBottomSheetOpen: isOpen);
     }
   }
-
-  /// Legacy method - now maps to setPageOpen for backwards compatibility.
-  @Deprecated('Use setPageOpen or setBottomSheetOpen instead')
-  void setModalOpen(bool isOpen) => setPageOpen(isOpen);
 }
 
 /// Convenience provider that returns true if any overlay is visible
