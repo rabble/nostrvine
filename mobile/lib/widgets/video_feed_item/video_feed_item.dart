@@ -151,6 +151,13 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   late final VideoInteractionsBloc
   _interactionsBloc; // Per-video interactions bloc
 
+  /// Whether the user intentionally paused via tap.
+  /// Prevents the playback watchdog from auto-resuming after user pause.
+  bool _userPaused = false;
+
+  /// Listener function for the playback watchdog, stored so we can remove it.
+  VoidCallback? _playbackWatchdog;
+
   // State for fading pause button animation
   bool _showFadingPauseButton = false;
   double _pauseButtonOpacity = 1.0;
@@ -230,6 +237,62 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
     // Always show heart animation (even if already liked)
     _triggerDoubleTapHeartAnimation();
+  }
+
+  /// Installs (or re-installs) a listener on [controller] that auto-resumes
+  /// playback when the native player pauses unexpectedly (e.g. iOS audio
+  /// session interruption, HLS buffer stall, seek-based loop glitch).
+  ///
+  /// Skips resume when:
+  /// - The user intentionally paused via tap ([_userPaused])
+  /// - The widget has been disposed ([mounted] == false)
+  /// - The video is not supposed to be active
+  /// - The controller is buffering, has an error, or is not initialized
+  void _installPlaybackWatchdog(VideoPlayerController controller) {
+    // Remove previous watchdog if any (controller may have been recreated)
+    _removePlaybackWatchdog(controller);
+
+    void watchdog() {
+      if (!mounted) return;
+
+      final value = controller.value;
+
+      // Only act when video should be playing but isn't
+      if (_userPaused) return;
+      if (value.isPlaying) return;
+      if (!value.isInitialized) return;
+      if (value.isBuffering) return;
+      if (value.hasError) return;
+
+      // Check if this video is supposed to be active
+      final bool shouldBeActive =
+          widget.isActiveOverride ??
+          ref.read(isVideoActiveProvider(_stableVideoId));
+      if (!shouldBeActive) return;
+
+      // Check overlay state - don't resume if a modal/drawer is open
+      final hasOverlay = ref.read(hasVisibleOverlayProvider);
+      if (hasOverlay) return;
+
+      Log.info(
+        '🔄 Playback watchdog: auto-resuming ${widget.video.id} '
+        '(native player stopped unexpectedly)',
+        name: 'VideoFeedItem',
+        category: LogCategory.video,
+      );
+      safePlay(controller, widget.video.id);
+    }
+
+    _playbackWatchdog = watchdog;
+    controller.addListener(watchdog);
+  }
+
+  /// Removes the playback watchdog from the given controller.
+  void _removePlaybackWatchdog(VideoPlayerController controller) {
+    if (_playbackWatchdog != null) {
+      controller.removeListener(_playbackWatchdog!);
+      _playbackWatchdog = null;
+    }
   }
 
   /// Stable video identifier for active state tracking
@@ -479,6 +542,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         final controller = ref.read(
           individualVideoControllerProvider(_controllerParams),
         );
+        // Remove playback watchdog before pausing to prevent auto-resume
+        _removePlaybackWatchdog(controller);
         if (controller.value.isInitialized && controller.value.isPlaying) {
           Log.info(
             '⏸️ VideoFeedItem.dispose: pausing video ${widget.video.id}',
@@ -512,6 +577,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         widget.video.shouldShowWarning &&
         !_contentWarningRevealed) {
       return;
+    }
+
+    // Clear user-paused flag when system requests play (e.g. swipe to this video)
+    if (shouldPlay) {
+      _userPaused = false;
     }
 
     final gen = ++_playbackGeneration;
@@ -550,6 +620,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
             name: 'VideoFeedItem',
             category: LogCategory.ui,
           );
+
+          // Install playback watchdog to auto-resume from native interruptions
+          _installPlaybackWatchdog(controller);
 
           // Use safePlay to handle "No active player with ID" errors gracefully
           safePlay(controller, widget.video.id)
@@ -636,6 +709,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                 name: 'VideoFeedItem',
                 category: LogCategory.ui,
               );
+              // Install playback watchdog for auto-resume
+              _installPlaybackWatchdog(controller);
               // Use safePlay to handle disposed controller gracefully
               safePlay(controller, widget.video.id).catchError((error) {
                 if (gen == _playbackGeneration) {
@@ -670,6 +745,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
           name: 'VideoFeedItem',
           category: LogCategory.video,
         );
+        // Remove watchdog so it doesn't fight the system-requested pause
+        _removePlaybackWatchdog(controller);
         // Use safePause to handle disposed controller gracefully
         safePause(controller, widget.video.id)
             .then((success) {
@@ -821,6 +898,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                   name: 'VideoFeedItem',
                   category: LogCategory.ui,
                 );
+                _userPaused = true;
                 // Use safePause to handle disposed controller gracefully
                 safePause(controller, video.id);
               } else {
@@ -829,6 +907,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                   name: 'VideoFeedItem',
                   category: LogCategory.ui,
                 );
+                _userPaused = false;
                 // Use safePlay to handle disposed controller gracefully
                 safePlay(controller, video.id);
 
@@ -1731,45 +1810,10 @@ class VideoOverlayActions extends ConsumerWidget {
             duration: const Duration(milliseconds: 200),
             child: IgnorePointer(
               ignoring: false, // Action buttons SHOULD receive taps
-              child: Column(
-                children: [
-                  // Edit button (only show for owned videos when feature
-                  // is enabled)
-                  // Hide in fullscreen mode since it's shown in AppBar
-                  if (!isFullscreen && !isPreviewMode)
-                    _VideoEditButton(video: video),
-
-                  // CC (subtitles) button
-                  CcActionButton(video: video),
-
-                  const SizedBox(height: 4),
-
-                  // Like button
-                  LikeActionButton(video: video, isPreviewMode: isPreviewMode),
-
-                  const SizedBox(height: 4),
-
-                  // Comment button with count
-                  _CommentActionButton(video: video, ref: ref),
-
-                  const SizedBox(height: 4),
-
-                  // Repost button
-                  RepostActionButton(
-                    video: video,
-                    isPreviewMode: isPreviewMode,
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  // Share button
-                  ShareActionButton(video: video),
-
-                  const SizedBox(height: 4),
-
-                  // More button (report, mute, block, etc.)
-                  MoreActionButton(video: video),
-                ],
+              child: VideoOverlayActionColumn(
+                video: video,
+                isPreviewMode: isPreviewMode,
+                isFullscreen: isFullscreen,
               ),
             ),
           ),
@@ -1834,6 +1878,41 @@ class VideoOverlayActions extends ConsumerWidget {
     );
 
     // Video resumes when modal closes via overlay visibility provider
+  }
+}
+
+class VideoOverlayActionColumn extends ConsumerWidget {
+  const VideoOverlayActionColumn({
+    required this.video,
+    super.key,
+    this.isPreviewMode = false,
+    this.isFullscreen = false,
+  });
+
+  final VideoEvent video;
+  final bool isPreviewMode;
+  final bool isFullscreen;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        // Hide edit in fullscreen because those screens already surface it
+        // in their app bar.
+        if (!isFullscreen && !isPreviewMode) _VideoEditButton(video: video),
+        CcActionButton(video: video),
+        const SizedBox(height: 4),
+        LikeActionButton(video: video, isPreviewMode: isPreviewMode),
+        const SizedBox(height: 4),
+        _CommentActionButton(video: video, ref: ref),
+        const SizedBox(height: 4),
+        RepostActionButton(video: video, isPreviewMode: isPreviewMode),
+        const SizedBox(height: 4),
+        ShareActionButton(video: video),
+        const SizedBox(height: 4),
+        MoreActionButton(video: video),
+      ],
+    );
   }
 }
 
