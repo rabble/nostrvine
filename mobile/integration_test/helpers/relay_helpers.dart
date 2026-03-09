@@ -38,7 +38,7 @@ Future<PublishedVideo> publishTestVideoEvent({
   final dTag = 'e2e-${DateTime.now().millisecondsSinceEpoch}';
 
   // Upload real blobs to blossom so the app can fetch valid URLs
-  const blossomBase = 'http://$emulatorHost:$blossomPort';
+  const blossomBase = 'http://$localHost:$localBlossomPort';
   final blobs = await _ensureTestBlobs();
 
   final event = Event(
@@ -108,7 +108,7 @@ Future<String> _uploadTestBlob({
 }) async {
   final client = HttpClient();
   try {
-    final uri = Uri.parse('http://$emulatorHost:$blossomPort/upload');
+    final uri = Uri.parse('http://$localHost:$localBlossomPort/upload');
     final request = await client.openUrl('PUT', uri);
     request.headers.set('Content-Type', contentType);
     request.add(data);
@@ -201,7 +201,7 @@ Future<Uint8List> _generateTestThumbnail() async {
 /// Send an event to the local relay and wait for OK confirmation.
 Future<String> _publishEvent(Event event) async {
   final channel = WebSocketChannel.connect(
-    Uri.parse('ws://$emulatorHost:$relayPort'),
+    Uri.parse('ws://$localHost:$localRelayPort'),
   );
 
   final completer = Completer<String>();

@@ -1,6 +1,15 @@
 // ABOUTME: Environment configuration model for poc/staging/test/production/local
 // ABOUTME: Each environment maps to exactly one relay URL and API base URL
 
+/// Host address from Android emulator to reach the host machine's localhost.
+const localHost = '10.0.2.2';
+
+/// Local Docker stack port mappings.
+const localKeycastPort = 43000;
+const localRelayPort = 47777;
+const localApiPort = 43001;
+const localBlossomPort = 43003;
+
 /// Build-time default environment
 /// Set via: --dart-define=DEFAULT_ENV=STAGING
 const String _defaultEnvString = String.fromEnvironment(
@@ -49,7 +58,7 @@ class EnvironmentConfig {
       case AppEnvironment.test:
         return 'wss://relay.test.dvines.org';
       case AppEnvironment.local:
-        return 'ws://10.0.2.2:47777';
+        return 'ws://$localHost:$localRelayPort';
       case AppEnvironment.production:
         return 'wss://relay.divine.video';
     }
@@ -61,7 +70,7 @@ class EnvironmentConfig {
   /// For all other environments, derives from relayUrl to stay in sync.
   String get apiBaseUrl {
     if (environment == AppEnvironment.local) {
-      return 'http://10.0.2.2:43001';
+      return 'http://$localHost:$localApiPort';
     }
     final url = relayUrl;
     if (url.startsWith('wss://')) {
@@ -75,7 +84,7 @@ class EnvironmentConfig {
   /// Get blossom media server URL
   String get blossomUrl {
     if (environment == AppEnvironment.local) {
-      return 'http://10.0.2.2:43003';
+      return 'http://$localHost:$localBlossomPort';
     }
     return 'https://media.divine.video';
   }
@@ -86,7 +95,7 @@ class EnvironmentConfig {
   /// wasting time querying external indexers for test-created users.
   List<String> get indexerRelays {
     if (environment == AppEnvironment.local) {
-      return const ['ws://10.0.2.2:47777'];
+      return ['ws://$localHost:$localRelayPort'];
     }
     return const [
       'wss://purplepag.es',

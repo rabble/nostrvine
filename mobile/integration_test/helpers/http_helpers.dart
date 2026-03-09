@@ -15,7 +15,7 @@ Future<void> callVerifyEmail(String token) async {
   final client = HttpClient();
   try {
     final request = await client.postUrl(
-      Uri.parse('http://$emulatorHost:$keycastPort/api/auth/verify-email'),
+      Uri.parse('http://$localHost:$localKeycastPort/api/auth/verify-email'),
     );
     request.headers.set('Content-Type', 'application/json');
     request.write(jsonEncode({'token': token}));
@@ -42,7 +42,7 @@ Future<void> callForgotPassword(String email) async {
   try {
     final request = await client.postUrl(
       Uri.parse(
-        'http://$emulatorHost:$keycastPort/api/auth/forgot-password',
+        'http://$localHost:$localKeycastPort/api/auth/forgot-password',
       ),
     );
     request.headers.set('Content-Type', 'application/json');

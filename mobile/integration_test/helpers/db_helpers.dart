@@ -10,7 +10,7 @@ import 'constants.dart';
 Future<Connection> _openKeycastConnection() async {
   return Connection.open(
     Endpoint(
-      host: emulatorHost,
+      host: localHost,
       port: pgPort,
       database: 'keycast',
       username: 'postgres',

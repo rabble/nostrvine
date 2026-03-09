@@ -501,10 +501,10 @@ SecureKeyStorage secureKeyStorage(Ref ref) {
 OAuthConfig oauthConfig(Ref ref) {
   final env = ref.watch(currentEnvironmentProvider);
   if (env.environment == AppEnvironment.local) {
-    return const OAuthConfig(
-      serverUrl: 'http://10.0.2.2:43000',
+    return OAuthConfig(
+      serverUrl: 'http://$localHost:$localKeycastPort',
       clientId: 'divine-mobile',
-      redirectUri: 'http://localhost:43000/app/callback',
+      redirectUri: 'http://localhost:$localKeycastPort/app/callback',
     );
   }
   return const OAuthConfig(

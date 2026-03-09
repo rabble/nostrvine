@@ -24,6 +24,7 @@ All generic Flutter/Dart standards are organized in `.claude/rules/`:
 | Routing | `rules/routing.md` | GoRouter patterns, type-safe routes, redirects |
 | UI/Theming | `rules/ui_theming.md` | ThemeData, typography, spacing, accessibility |
 | Error Handling | `rules/error_handling.md` | Exceptions, documentation, security basics |
+| E2E Testing | `rules/e2e_testing.md` | Patrol, Docker stack, test helpers, auth journeys |
 
 ---
 
