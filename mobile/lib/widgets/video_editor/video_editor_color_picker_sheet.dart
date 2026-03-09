@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/widgets/divine_primary_button.dart';
+import 'package:openvine/widgets/divine_secondary_button.dart';
 import 'package:openvine/widgets/video_editor/video_editor_blurred_panel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -88,7 +88,7 @@ class _VideoEditorColorPickerSheetState
       scrollable: false,
       isScrollControlled: true,
       body: _FullColorPickerSheet(
-        initialColor: widget.selectedColor,
+        initialColor: VineTheme.primary,
         onColorSelected: (color) {
           _saveRecentColor(color, maxCount: maxCount);
           widget.onColorSelected(color);
@@ -287,33 +287,31 @@ class _FullColorPickerSheetState extends State<_FullColorPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return VideoEditorBlurredPanel(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: .start,
-          mainAxisSize: .min,
-          spacing: 16,
-          children: [
-            ColorPicker(
-              pickerColor: _pickerColor,
-              onColorChanged: (color) => setState(() {
-                _pickerColor = color;
-              }),
-              enableAlpha: false,
-              displayThumbColor: true,
-              pickerAreaHeightPercent: 0.7,
-              pickerAreaBorderRadius: .circular(16),
-            ),
-            DivinePrimaryButton(
-              onPressed: () {
-                widget.onColorSelected(_pickerColor);
-                context.pop();
-              },
-              label: 'Select',
-            ),
-          ],
-        ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: .start,
+        mainAxisSize: .min,
+        spacing: 16,
+        children: [
+          ColorPicker(
+            pickerColor: _pickerColor,
+            onColorChanged: (color) => setState(() {
+              _pickerColor = color;
+            }),
+            enableAlpha: false,
+            displayThumbColor: true,
+            pickerAreaHeightPercent: 0.7,
+            pickerAreaBorderRadius: .circular(16),
+          ),
+          DivineSecondaryButton(
+            onPressed: () {
+              widget.onColorSelected(_pickerColor);
+              context.pop();
+            },
+            label: 'Select',
+          ),
+        ],
       ),
     );
   }
