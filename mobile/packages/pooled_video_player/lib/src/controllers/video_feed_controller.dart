@@ -707,21 +707,28 @@ class VideoFeedController extends ChangeNotifier {
     if (player == null) return;
 
     // The player is paused (from _onBufferReady or _pauseVideo).
-    // Seek to the beginning while paused (safe — no renderer stall),
-    // then unmute and play.
-    unawaited(_resumeFromStart(index, player));
+    // Unmute and play, seeking to zero only if the video reached the end
+    // (loop behavior) or was preloaded (already at zero from _onBufferReady).
+    unawaited(_resume(index, player));
     _startPositionTimer(index);
   }
 
-  /// Seek to the beginning, unmute, and play.
+  /// Unmute and play, seeking to the beginning only when at the end of the
+  /// video (loop behavior).
   ///
   /// The player is expected to be paused (from [_onBufferReady] for preloaded
   /// videos, or from [_pauseVideo] for swiped-away videos). Seeking while
   /// paused avoids the mpv renderer stall that occurs when seeking a playing
   /// HLS stream.
-  Future<void> _resumeFromStart(int index, Player player) async {
+  Future<void> _resume(int index, Player player) async {
     try {
-      await player.seek(Duration.zero);
+      // Seek to zero only when the video has reached the end so it loops.
+      // Mid-playback position is preserved for swiped-away videos.
+      // Preloaded videos are already at position zero from _onBufferReady.
+      final duration = player.state.duration;
+      if (duration > Duration.zero && player.state.position >= duration) {
+        await player.seek(Duration.zero);
+      }
 
       // Guard: user may have scrolled away during the seek.
       if (_isDisposed || _currentIndex != index || !_isActive || _isPaused) {
@@ -752,8 +759,8 @@ class VideoFeedController extends ChangeNotifier {
     final player = _loadedPlayers[index]?.player;
     if (player != null) {
       // Mute and pause. The player stays in the pool for reuse.
-      // _resumeFromStart will seek to 0, unmute, and play when this
-      // video becomes current again.
+      // _resume will unmute and play when this video becomes current again,
+      // preserving the current playback position.
       unawaited(player.setVolume(0));
       unawaited(player.pause());
     }

@@ -165,7 +165,6 @@ class VideoStats {
           eventData['content_labels'] ??
           statsData['content_labels'],
     );
-
     // Also check for blurhash and summary in tags (NIP-71 standard)
     // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
     String? blurhashFromTag;
@@ -355,7 +354,7 @@ class VideoStats {
   /// Blurhash for placeholder thumbnail.
   final String? blurhash;
 
-  /// Video dimensions from Nostr `dim`/`size` tags as `WIDTHxHEIGHT`.
+  /// Video dimensions from REST or Nostr `dim`/`size` metadata.
   final String? dimensions;
 
   /// Reaction/like count.

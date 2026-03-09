@@ -21,13 +21,6 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
-import 'package:openvine/widgets/video_feed_item/actions/cc_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/comment_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/more_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/repost_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/video_edit_button.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
@@ -369,30 +362,7 @@ class _ActionButtons extends StatelessWidget {
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context) {
-    const gap = 24.0;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Edit button self-hides via SizedBox.shrink() when not
-        // applicable, so it sits outside the uniform spacing to
-        // avoid a phantom gap.
-        VideoEditButton(video: video),
-        Column(
-          spacing: gap,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LikeActionButton(video: video),
-            CommentActionButton(video: video),
-            CcActionButton(video: video),
-            RepostActionButton(video: video),
-            ShareActionButton(video: video),
-            MoreActionButton(video: video),
-          ],
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => VideoOverlayActionColumn(video: video);
 }
 
 /// NIP-05 verification badge.

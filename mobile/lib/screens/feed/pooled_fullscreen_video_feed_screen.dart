@@ -2,6 +2,9 @@
 // ABOUTME: Displays videos with swipe navigation using managed player pool
 // ABOUTME: Uses FullscreenFeedBloc for state management
 
+import 'dart:async';
+import 'dart:ui' show lerpDouble;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -27,6 +30,45 @@ import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart'
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
+
+// Scroll-fraction constants for overlay opacity during page transitions.
+//
+// Opacity is scroll-driven: it changes continuously as the page scrolls,
+// tracking the finger position rather than running on a separate timer.
+// A small transition band around each threshold gives a smooth cross-fade.
+const double _kOverlayFullOpacityThreshold = 0.1; // fully visible below 10 %
+const double _kOverlayHideThreshold = 0.5; // fully hidden above 50 %
+const double _kOverlayDimmedOpacity = 0.5; // opacity while in the dim band
+// Half-width of the smooth cross-fade zone around each threshold.
+// e.g. 0.03 → full↔dim transition spans 7 %–13 %, dim↔hidden spans 47 %–53 %.
+const double _kOverlayFadeHalfWidth = 0.03;
+
+/// Maps [distance] (0–1 fraction scrolled away from an item) to overlay
+/// opacity using smooth linear interpolation around each threshold.
+double _scrollDrivenOpacity(double distance) {
+  const dimLo = _kOverlayFullOpacityThreshold - _kOverlayFadeHalfWidth;
+  const dimHi = _kOverlayFullOpacityThreshold + _kOverlayFadeHalfWidth;
+  const hideLo = _kOverlayHideThreshold - _kOverlayFadeHalfWidth;
+  const hideHi = _kOverlayHideThreshold + _kOverlayFadeHalfWidth;
+
+  if (distance <= dimLo) return 1.0;
+  if (distance <= dimHi) {
+    return lerpDouble(
+      1.0,
+      _kOverlayDimmedOpacity,
+      (distance - dimLo) / (dimHi - dimLo),
+    )!;
+  }
+  if (distance <= hideLo) return _kOverlayDimmedOpacity;
+  if (distance <= hideHi) {
+    return lerpDouble(
+      _kOverlayDimmedOpacity,
+      0.0,
+      (distance - hideLo) / (hideHi - hideLo),
+    )!;
+  }
+  return 0.0;
+}
 
 /// Arguments for navigating to PooledFullscreenVideoFeedScreen.
 ///
@@ -165,6 +207,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     with RouteAware {
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
+  late final ValueNotifier<double> _pagePosition;
 
   @override
   void didChangeDependencies() {
@@ -179,9 +222,17 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   }
 
   @override
+  void initState() {
+    super.initState();
+    final initialIndex = context.read<FullscreenFeedBloc>().state.currentIndex;
+    _pagePosition = ValueNotifier<double>(initialIndex.toDouble());
+  }
+
+  @override
   void dispose() {
     routeObserver.unsubscribe(this);
     _controller?.dispose();
+    _pagePosition.dispose();
     super.dispose();
   }
 
@@ -373,6 +424,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               },
               onNearEnd: (index) => _onNearEnd(state, index),
               nearEndThreshold: 0,
+              onScrollOffsetChanged: (page) => _pagePosition.value = page,
               itemBuilder: (context, video, index, {required isActive}) {
                 // Look up by video ID instead of index, because
                 // pooledVideos filters out null-URL entries and indices
@@ -402,6 +454,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   video: originalEvent,
                   index: index,
                   isActive: isActive,
+                  pagePosition: _pagePosition,
                   contextTitle: widget.contextTitle,
                   trafficSource: widget.trafficSource,
                   sourceDetail: widget.sourceDetail,
@@ -481,6 +534,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     required this.isOwnVideo,
+    required this.pagePosition,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -490,6 +544,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
   final int index;
   final bool isActive;
   final bool isOwnVideo;
+  final ValueNotifier<double> pagePosition;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -521,6 +576,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
         video: video,
         index: index,
         isActive: isActive,
+        pagePosition: pagePosition,
         contextTitle: contextTitle,
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
@@ -536,6 +592,7 @@ class _PooledFullscreenItemContent extends StatefulWidget {
     required this.index,
     required this.isActive,
     required this.isOwnVideo,
+    required this.pagePosition,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -545,6 +602,7 @@ class _PooledFullscreenItemContent extends StatefulWidget {
   final int index;
   final bool isActive;
   final bool isOwnVideo;
+  final ValueNotifier<double> pagePosition;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -614,14 +672,26 @@ class _PooledFullscreenItemContentState
                   Positioned.fill(
                     child: _SubtitleLayer(video: video, player: player),
                   ),
-                VideoOverlayActions(
-                  video: video,
-                  isVisible: widget.isActive,
-                  isActive: widget.isActive,
-                  hasBottomNavigation: false,
-                  contextTitle: widget.contextTitle,
-                  isFullscreen: true,
-                  topOffset: widget.isOwnVideo ? 64 : 8,
+                ValueListenableBuilder<double>(
+                  valueListenable: widget.pagePosition,
+                  builder: (context, page, _) {
+                    final distance = (page - widget.index).abs().clamp(
+                      0.0,
+                      1.0,
+                    );
+                    return VideoOverlayActions(
+                      video: video,
+                      // isVisible:true — scroll opacity handles fading;
+                      // the hard-cut guard is not needed in fullscreen.
+                      isVisible: true,
+                      isActive: widget.isActive,
+                      overlayOpacity: _scrollDrivenOpacity(distance),
+                      hasBottomNavigation: false,
+                      contextTitle: widget.contextTitle,
+                      isFullscreen: true,
+                      topOffset: widget.isOwnVideo ? 64 : 8,
+                    );
+                  },
                 ),
               ],
             ),
@@ -694,12 +764,44 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
   }
 }
 
-class _LoadingIndicator extends StatelessWidget {
+class _LoadingIndicator extends StatefulWidget {
   const _LoadingIndicator();
 
   @override
+  State<_LoadingIndicator> createState() => _LoadingIndicatorState();
+}
+
+class _LoadingIndicatorState extends State<_LoadingIndicator> {
+  // Delay before the indicator becomes visible. Suppresses sub-threshold
+  // flashes that occur during play/pause and loop-enforcement seeks without
+  // hiding the indicator during genuine long loads.
+  static const _delay = Duration(milliseconds: 100);
+  static const _fadeDuration = Duration(milliseconds: 150);
+
+  bool _visible = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(_delay, () {
+      if (mounted) setState(() => _visible = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(child: BrandedLoadingIndicator(size: 60));
+    return AnimatedOpacity(
+      duration: _fadeDuration,
+      opacity: _visible ? 1.0 : 0.0,
+      child: const Center(child: BrandedLoadingIndicator(size: 60)),
+    );
   }
 }
 
