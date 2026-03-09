@@ -53,17 +53,20 @@ class VideosRepository {
     VideoLocalStorage? localStorage,
     BlockedVideoFilter? blockFilter,
     VideoContentFilter? contentFilter,
+    VideoWarningLabelsResolver? warningLabelsResolver,
     FunnelcakeApiClient? funnelcakeApiClient,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _blockFilter = blockFilter,
        _contentFilter = contentFilter,
+       _warningLabelsResolver = warningLabelsResolver,
        _funnelcakeApiClient = funnelcakeApiClient;
 
   final NostrClient _nostrClient;
   final VideoLocalStorage? _localStorage;
   final BlockedVideoFilter? _blockFilter;
   final VideoContentFilter? _contentFilter;
+  final VideoWarningLabelsResolver? _warningLabelsResolver;
   final FunnelcakeApiClient? _funnelcakeApiClient;
 
   /// Fetches videos from followed users for the home feed, optionally
@@ -733,9 +736,11 @@ class VideosRepository {
             if (_blockFilter?.call(video.pubkey) ?? false) continue;
             if (!video.hasVideo) continue;
             if (video.isExpired) continue;
-            if (_contentFilter?.call(video) ?? false) continue;
 
-            foundVideos[videoAddressableId] = video;
+            final processed = _applyContentPreferences(video);
+            if (processed == null) continue;
+
+            foundVideos[videoAddressableId] = processed;
           }
         }
       } on FunnelcakeException {
@@ -775,10 +780,10 @@ class VideosRepository {
       // Skip expired videos (NIP-40)
       if (video.isExpired) continue;
 
-      // Content filter - check parsed video (NSFW, etc.)
-      if (_contentFilter?.call(video) ?? false) continue;
-
-      videos.add(video);
+      final processed = _applyContentPreferences(video);
+      if (processed != null) {
+        videos.add(processed);
+      }
     }
 
     if (sortByCreatedAt) {
@@ -811,10 +816,20 @@ class VideosRepository {
     // Skip expired videos (NIP-40)
     if (video.isExpired) return null;
 
-    // Content filter - check parsed video (NSFW, etc.)
+    return _applyContentPreferences(video);
+  }
+
+  VideoEvent? _applyContentPreferences(VideoEvent video) {
     if (_contentFilter?.call(video) ?? false) return null;
 
-    return video;
+    final warnLabels = _warningLabelsResolver?.call(video) ?? const <String>[];
+    if (warnLabels.isEmpty) {
+      return video.warnLabels.isEmpty
+          ? video
+          : video.copyWith(warnLabels: const <String>[]);
+    }
+
+    return video.copyWith(warnLabels: warnLabels);
   }
 
   /// Transforms raw Nostr events to VideoEvents and filters invalid ones.

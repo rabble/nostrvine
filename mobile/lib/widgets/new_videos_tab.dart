@@ -218,6 +218,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
         _videosStreamController.add(videos);
       }
     });
+    final popularNowFeedNotifier = ref.read(popularNowFeedProvider.notifier);
 
     return ComposableVideoGrid(
       videos: widget.videos,
@@ -233,8 +234,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
           extra: PooledFullscreenVideoFeedArgs(
             videosStream: _videosStreamController.stream.startWith(videoList),
             initialIndex: index,
-            onLoadMore: () =>
-                ref.read(popularNowFeedProvider.notifier).loadMore(),
+            onLoadMore: popularNowFeedNotifier.loadMore,
             contextTitle: 'New Videos',
             trafficSource: ViewTrafficSource.discoveryNew,
           ),
@@ -245,11 +245,11 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
           '🔄 NewVideosTab: Refreshing feed',
           category: LogCategory.video,
         );
-        await ref.read(popularNowFeedProvider.notifier).refresh();
+        await popularNowFeedNotifier.refresh();
       },
       onLoadMore: () async {
         Log.info('📜 NewVideosTab: Loading more', category: LogCategory.video);
-        await ref.read(popularNowFeedProvider.notifier).loadMore();
+        await popularNowFeedNotifier.loadMore();
       },
       isLoadingMore: widget.isLoadingMore,
       hasMoreContent: widget.hasMoreContent,

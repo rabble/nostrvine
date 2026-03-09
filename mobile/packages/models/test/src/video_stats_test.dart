@@ -742,6 +742,38 @@ void main() {
         expect(stats.textTrackContent, isNull);
       });
 
+      test(
+        'promotes only recognized moderation labels from REST responses',
+        () {
+          final json = {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'd_tag': 'video-1',
+            'title': 'Test',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'video_url': 'https://example.com/video.mp4',
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+            'content_labels': [
+              'nudity',
+              'violence',
+              'topic:music',
+              'archive.divine.video:vine-archive',
+            ],
+          };
+
+          final stats = VideoStats.fromJson(json);
+          final event = stats.toVideoEvent();
+
+          expect(stats.contentLabels, equals(['nudity', 'violence']));
+          expect(event.contentWarningLabels, equals(['nudity', 'violence']));
+        },
+      );
+
       test('passes textTrackRef and textTrackContent to toVideoEvent', () {
         final stats = VideoStats(
           id: 'test-id',

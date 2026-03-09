@@ -352,6 +352,26 @@ void main() {
         act: (bloc) => bloc.add(const FullscreenFeedLoadMoreRequested()),
         expect: () => <FullscreenFeedState>[],
       );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'resets isLoadingMore when onLoadMore throws synchronously',
+        build: () => createBloc(
+          onLoadMore: () => throw StateError('stale widget callback'),
+        ),
+        act: (bloc) => bloc.add(const FullscreenFeedLoadMoreRequested()),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<FullscreenFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            false,
+          ),
+        ],
+      );
     });
 
     group('FullscreenFeedIndexChanged', () {

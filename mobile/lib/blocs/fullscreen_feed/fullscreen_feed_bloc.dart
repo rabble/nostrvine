@@ -149,7 +149,18 @@ class FullscreenFeedBloc
     );
 
     emit(state.copyWith(isLoadingMore: true));
-    onLoadMore();
+    try {
+      onLoadMore();
+    } catch (error, stackTrace) {
+      Log.error(
+        'FullscreenFeedBloc: Load more callback failed',
+        name: 'FullscreenFeedBloc',
+        category: LogCategory.video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      emit(state.copyWith(isLoadingMore: false));
+    }
     // isLoadingMore will be reset when _onVideosUpdated is called
   }
 
