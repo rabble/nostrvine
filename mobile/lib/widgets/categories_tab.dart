@@ -222,6 +222,8 @@ class _CategoryVideoViewState extends State<_CategoryVideoView> {
   }
 
   Widget _buildContent(BuildContext context) {
+    final categoriesBloc = context.read<CategoriesBloc>();
+
     if (widget.state.videosStatus == CategoriesVideosStatus.loading) {
       return const Center(child: BrandedLoadingIndicator());
     }
@@ -273,9 +275,7 @@ class _CategoryVideoViewState extends State<_CategoryVideoView> {
             videosStream: _videosStreamController.stream.startWith(videos),
             initialIndex: index,
             onLoadMore: () {
-              context.read<CategoriesBloc>().add(
-                const CategoryVideosLoadMore(),
-              );
+              categoriesBloc.add(const CategoryVideosLoadMore());
             },
             contextTitle: widget.category.displayName,
           ),
@@ -283,12 +283,12 @@ class _CategoryVideoViewState extends State<_CategoryVideoView> {
       },
       useMasonryLayout: true,
       onLoadMore: () async {
-        context.read<CategoriesBloc>().add(const CategoryVideosLoadMore());
+        categoriesBloc.add(const CategoryVideosLoadMore());
       },
       isLoadingMore: widget.state.isLoadingMore,
       hasMoreContent: widget.state.hasMoreVideos,
       onRefresh: () async {
-        context.read<CategoriesBloc>().add(CategorySelected(widget.category));
+        categoriesBloc.add(CategorySelected(widget.category));
       },
     );
   }
