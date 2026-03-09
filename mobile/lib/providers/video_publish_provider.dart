@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -128,6 +129,32 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
 
     for (final draft in pendingDrafts) {
+      // Check if video file still exists before attempting resume
+      if (!kIsWeb && draft.clips.isNotEmpty) {
+        try {
+          final videoPath = await draft.clips.first.video.safeFilePath();
+          final videoFile = File(videoPath);
+          if (!videoFile.existsSync()) {
+            Log.warning(
+              '🗑️ Deleting draft ${draft.id} - video file no longer exists: $videoPath',
+              name: 'VideoPublishNotifier',
+              category: LogCategory.video,
+            );
+            await _draftService.deleteDraft(draft.id);
+            continue;
+          }
+        } catch (e) {
+          Log.warning(
+            '⚠️ Could not verify video file for draft ${draft.id}: $e',
+            name: 'VideoPublishNotifier',
+            category: LogCategory.video,
+          );
+          // Delete draft if we can't verify the video
+          await _draftService.deleteDraft(draft.id);
+          continue;
+        }
+      }
+
       Log.info(
         '📤 Resuming upload for draft: ${draft.id}',
         name: 'VideoPublishNotifier',

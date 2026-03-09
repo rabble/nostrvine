@@ -22,6 +22,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -739,8 +740,9 @@ class ProfileViewSwitcher extends StatelessWidget {
             refreshNotifier: refreshNotifier,
           );
 
+    // Filter for uploads that explicitly failed (PublishError), not all completed
     final completedWithErrorUploads = backgroundPublishBloc.state.uploads
-        .where((upload) => upload.result != null)
+        .where((upload) => upload.result is PublishError)
         .toList();
 
     if (completedWithErrorUploads.isNotEmpty) {
