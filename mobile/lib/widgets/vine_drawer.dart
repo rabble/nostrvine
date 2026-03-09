@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/settings_screen.dart';
@@ -286,8 +287,8 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   /// is closed, because ref becomes invalid after widget unmounts.
   void _showSupportOptionsDialog(
     BuildContext context,
-    dynamic bugReportService,
-    dynamic userProfile,
+    BugReportService bugReportService,
+    UserProfile? userProfile,
     String? userPubkey,
     bool isZendeskAvailable,
   ) {
@@ -374,7 +375,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   /// This version doesn't use ref, so it works after drawer is closed
   Future<void> _setZendeskIdentityWithService(
     String? userPubkey,
-    dynamic profile,
+    UserProfile? profile,
   ) async {
     if (userPubkey == null) {
       // Users always have pubkey in this app, but handle edge case gracefully
@@ -418,8 +419,8 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   /// Handle bug report submission
   Future<void> _handleBugReportWithServices(
     BuildContext context,
-    dynamic bugReportService,
-    dynamic userProfile,
+    BugReportService bugReportService,
+    UserProfile? userProfile,
     String? userPubkey,
     bool isZendeskAvailable,
   ) async {
