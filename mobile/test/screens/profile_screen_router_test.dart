@@ -11,6 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
@@ -309,8 +310,13 @@ void main() {
         ],
         child: MaterialApp(
           theme: VineTheme.theme,
-          home: BlocProvider<BackgroundPublishBloc>.value(
-            value: bloc,
+          home: MultiBlocProvider(
+            providers: [
+              BlocProvider<BackgroundPublishBloc>.value(value: bloc),
+              BlocProvider<MyProfileBloc>(
+                create: (_) => _FakeMyProfileBloc(),
+              ),
+            ],
             child: Scaffold(
               body: ProfileViewSwitcher(
                 npub:
@@ -478,6 +484,19 @@ class FakeUserProfileNotifier extends UserProfileNotifier {
   Future<void> prefetchProfilesImmediately(List<String> pubkeys) async {
     onPrefetch(pubkeys);
   }
+}
+
+/// Fake MyProfileBloc that emits [MyProfileInitial] and ignores all events.
+class _FakeMyProfileBloc extends Bloc<MyProfileEvent, MyProfileState>
+    implements MyProfileBloc {
+  _FakeMyProfileBloc() : super(const MyProfileInitial()) {
+    on<MyProfileLoadRequested>((_, __) {});
+    on<MyProfileSubscriptionRequested>((_, __) {});
+    on<MyProfileFetchRequested>((_, __) {});
+  }
+
+  @override
+  String get pubkey => _MockNostrClient.testPubkeyHex;
 }
 
 /// Fake BackgroundPublishBloc for testing error snackbar display and retry
