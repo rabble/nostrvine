@@ -9,6 +9,7 @@
 # Claude Code
 .claude/settings.local.json
 .claude/*.local.md
+**/.private-journal/
 
 # Git worktrees
 .worktrees/
@@ -146,6 +147,7 @@ node_modules/
 logs/
 
 # IDE files
+.vscode/
 !*/.vscode/launch.json
 */.vscode/*
 .idea/

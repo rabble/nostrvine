@@ -3,9 +3,10 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_processing_overlay.dart';
@@ -34,7 +35,7 @@ class VideoEditorClipPreview extends ConsumerStatefulWidget {
   });
 
   /// The clip to display.
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   /// Whether this is the currently selected/playing clip.
   final bool isCurrentClip;
@@ -231,26 +232,15 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
               borderRadius: .circular(16),
               border: .all(
                 color: isOverDeleteZone
-                    ? const Color(0xFFF44336) // Red when over delete zone
+                    // Red when over delete zone
+                    ? VineTheme.error
                     : widget.isReordering
-                    ? const Color(0xFFEBDE3B) // Yellow when reordering
-                    : const Color(0x00000000), // Transparent otherwise
+                    // Yellow when reordering
+                    ? VineTheme.accentYellow
+                    : Colors.transparent, // Transparent otherwise
                 width: 6,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x51000000),
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
-                ),
-                BoxShadow(
-                  color: Color(0x28000000),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                  spreadRadius: 3,
-                ),
-              ],
             ),
             child: ClipRRect(
               borderRadius: .circular(16),
@@ -297,7 +287,7 @@ class _ThumbnailVisibility extends ConsumerWidget {
   const _ThumbnailVisibility({required this.isCurrentClip, required this.clip});
 
   final bool isCurrentClip;
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -328,17 +318,17 @@ class _ThumbnailVisibility extends ConsumerWidget {
 class _ClipThumbnail extends StatelessWidget {
   const _ClipThumbnail({required this.clip});
 
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   @override
   Widget build(BuildContext context) {
     if (clip.thumbnailPath == null) {
-      return ColoredBox(
-        color: Colors.grey.shade400,
-        child: const Icon(
+      return const ColoredBox(
+        color: VineTheme.lightText,
+        child: Icon(
           Icons.play_circle_outline,
           size: 64,
-          color: Colors.white,
+          color: VineTheme.whiteText,
         ),
       );
     }

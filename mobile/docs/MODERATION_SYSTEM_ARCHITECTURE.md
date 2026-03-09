@@ -1,8 +1,8 @@
-# diVine Moderation System Architecture
+# Divine Moderation System Architecture
 
 ## Overview
 
-diVine implements a **stackable, user-controlled moderation system** inspired by Bluesky's labeler architecture, using Nostr's NIP-32 (labeling) and NIP-56 (reporting) specifications.
+Divine implements a **stackable, user-controlled moderation system** inspired by Bluesky's labeler architecture, using Nostr's NIP-32 (labeling) and NIP-56 (reporting) specifications.
 
 ## Design Principles
 
@@ -16,7 +16,7 @@ diVine implements a **stackable, user-controlled moderation system** inspired by
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│           diVine Moderation Stack (Stackable)         │
+│           Divine Moderation Stack (Stackable)         │
 ├─────────────────────────────────────────────────────────┤
 │  Layer 1: Built-in Safety (Default, Always Active)     │
 │           - CSAM detection                               │
@@ -449,12 +449,12 @@ class ModerationPreferences {
 ### Default Moderators
 
 ```dart
-// diVine provides curated default moderators
+// Divine provides curated default moderators
 final defaultModerators = [
   ModeratorProfile(
     pubkey: 'openvine_safety_team_pubkey',
-    displayName: 'diVine Safety',
-    description: 'Official diVine content safety team',
+    displayName: 'Divine Safety',
+    description: 'Official Divine content safety team',
     specialties: ['csam', 'illegal', 'malware'],
     policy: ModerationPolicy(
       policyUrl: 'https://openvine.com/moderation-policy',
@@ -473,7 +473,7 @@ final defaultModerators = [
 To ensure compatibility with other Nostr clients:
 
 ```
-com.openvine.moderation.*  - diVine-specific
+com.openvine.moderation.*  - Divine-specific
 social.nos.moderation.*    - Nos client labels
 social.damus.moderation.*  - Damus client labels
 org.nostr.moderation.*     - Universal Nostr labels

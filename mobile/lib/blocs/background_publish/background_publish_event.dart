@@ -11,7 +11,7 @@ class BackgroundPublishRequested extends BackgroundPublishEvent {
     required this.publishmentProcess,
   });
 
-  final VineDraft draft;
+  final DivineVideoDraft draft;
   final Future<PublishResult> publishmentProcess;
 
   @override

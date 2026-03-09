@@ -8,8 +8,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/background_activity_manager.dart';
-import 'package:openvine/services/clip_library_service.dart';
-import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -38,8 +38,8 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       ref.read(videoPublishProvider.notifier).resumePendingPublishes(context);
-      await DraftStorageService().migrateOldDrafts();
-      await ClipLibraryService().migrateOldClips();
+      await ref.read(clipLibraryServiceProvider).migrateOldClips();
+      await ref.read(draftStorageServiceProvider).migrateOldDrafts();
     });
   }
 
@@ -67,6 +67,12 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
           name: 'AppLifecycleHandler',
           category: LogCategory.system,
         );
+
+        // Reset performance tracker sessions to prevent stale start
+        // times from producing absurd load-time measurements (e.g.
+        // 27+ hours) when providers re-fire on resume.
+        FeedPerformanceTracker().resetAllSessions();
+        ScreenAnalyticsService().resetAllSessions();
 
         // Notify foreground state provider - enables visibility detection
         ref.read(appForegroundProvider.notifier).setForeground(true);

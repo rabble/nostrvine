@@ -131,6 +131,12 @@
 
 
         </activity>
+        <activity
+            android:name="zendesk.support.request.RequestActivity"
+            android:theme="@style/ZendeskTheme" />
+        <activity
+            android:name="zendesk.support.requestlist.RequestListActivity"
+            android:theme="@style/ZendeskTheme" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

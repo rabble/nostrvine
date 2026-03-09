@@ -105,7 +105,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   Future<void> _loadFollowProfiles() async {
     final followRepo = ref.read(followRepositoryProvider);
     final profileRepo = ref.read(profileRepositoryProvider);
-    if (followRepo == null || profileRepo == null) {
+    if (profileRepo == null) {
       setState(() => _followListLoaded = true);
       return;
     }

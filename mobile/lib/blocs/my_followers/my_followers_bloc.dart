@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 part 'my_followers_event.dart';
@@ -15,14 +16,33 @@ part 'my_followers_state.dart';
 ///
 /// Fetches Kind 3 (contact list) events that mention the current user
 /// in their 'p' tags - these are users who follow the current user.
+///
+/// Filters out blocked and follow-severed users before emitting state.
 class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
-  MyFollowersBloc({required FollowRepository followRepository})
-    : _followRepository = followRepository,
-      super(const MyFollowersState()) {
+  MyFollowersBloc({
+    required FollowRepository followRepository,
+    required ContentBlocklistService contentBlocklistService,
+  }) : _followRepository = followRepository,
+       _blocklistService = contentBlocklistService,
+       super(const MyFollowersState()) {
     on<MyFollowersListLoadRequested>(_onLoadRequested);
+    on<MyFollowersBlocklistChanged>(_onBlocklistChanged);
   }
 
   final FollowRepository _followRepository;
+  final ContentBlocklistService _blocklistService;
+
+  /// Raw unfiltered follower pubkeys for re-filtering on blocklist changes.
+  List<String> _rawFollowersPubkeys = [];
+
+  /// Filter pubkeys by removing blocked and follow-severed users.
+  List<String> _filterPubkeys(List<String> pubkeys) => pubkeys
+      .where(
+        (pk) =>
+            !_blocklistService.isBlocked(pk) &&
+            !_blocklistService.isFollowSevered(pk),
+      )
+      .toList();
 
   /// Handle request to load current user's followers list
   Future<void> _onLoadRequested(
@@ -45,10 +65,13 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       final countFromService = results[1] as int;
       final followerCount = max(followers.length, countFromService);
 
+      _rawFollowersPubkeys = followers;
+      final filtered = _filterPubkeys(followers);
+
       emit(
         state.copyWith(
           status: MyFollowersStatus.success,
-          followersPubkeys: followers,
+          followersPubkeys: filtered,
           followerCount: followerCount,
         ),
       );
@@ -60,5 +83,17 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       );
       emit(state.copyWith(status: MyFollowersStatus.failure));
     }
+  }
+
+  /// Re-filter followers when blocklist changes.
+  void _onBlocklistChanged(
+    MyFollowersBlocklistChanged event,
+    Emitter<MyFollowersState> emit,
+  ) {
+    if (state.status != MyFollowersStatus.success) return;
+
+    emit(
+      state.copyWith(followersPubkeys: _filterPubkeys(_rawFollowersPubkeys)),
+    );
   }
 }

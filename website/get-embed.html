@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Embed Widget - Divine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="main.css?v=1">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <meta name="description" content="Generate an embeddable Divine video widget for your website or blog sidebar.">
+    <style>
+        .embed-generator {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 24px 60px;
+        }
+        .embed-generator h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .embed-generator .subtitle {
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 15px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #333;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            background: #fff;
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #00B488;
+            box-shadow: 0 0 0 3px rgba(0, 180, 136, 0.15);
+        }
+        .form-row {
+            display: flex;
+            gap: 16px;
+        }
+        .form-row .form-group {
+            flex: 1;
+        }
+        .preview-section {
+            margin-top: 32px;
+            margin-bottom: 24px;
+        }
+        .preview-section h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        .preview-frame {
+            background: #f0f0f0;
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+            min-height: 200px;
+        }
+        .preview-frame iframe {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+        }
+        .code-section {
+            margin-top: 24px;
+        }
+        .code-section h2 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+        .code-wrapper {
+            position: relative;
+        }
+        .code-wrapper textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: 'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            resize: vertical;
+            background: #fafafa;
+            color: #333;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #00B488;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.2s;
+        }
+        .copy-btn:hover {
+            background: #009A72;
+        }
+        .copy-btn.copied {
+            background: #666;
+        }
+        .placeholder-msg {
+            color: #999;
+            font-size: 14px;
+            text-align: center;
+            padding: 60px 20px;
+        }
+        @media (max-width: 600px) {
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="vine-header">
+        <div class="vine-header-bg"></div>
+        <div class="vine-header-content">
+            <a href="/" class="vine-logo">Divine</a>
+            <div class="vine-auth-buttons">
+                <a href="https://divine.video" class="vine-auth-btn vine-login-btn">Log in</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="embed-generator">
+        <h1>Embed Divine Widget</h1>
+        <p class="subtitle">Add your latest Divine videos to any website or blog sidebar.</p>
+
+        <div class="form-group">
+            <label for="npub-input">Your npub (Nostr public key)</label>
+            <input type="text" id="npub-input" placeholder="npub1..." autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="theme-select">Theme</label>
+                <select id="theme-select">
+                    <option value="dark">Dark</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="count-select">Videos to show</label>
+                <select id="count-select">
+                    <option value="1" selected>1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="refresh-select">Auto-refresh</label>
+                <select id="refresh-select">
+                    <option value="30">30 min</option>
+                    <option value="60" selected>1 hour</option>
+                    <option value="120">2 hours</option>
+                    <option value="0">Never</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <h2>Preview</h2>
+            <div class="preview-frame" id="preview-frame">
+                <div class="placeholder-msg">Enter your npub above to see a preview</div>
+            </div>
+        </div>
+
+        <div class="code-section" id="code-section" style="display:none;">
+            <h2>Embed Code</h2>
+            <div class="code-wrapper">
+                <textarea id="embed-code" readonly></textarea>
+                <button class="copy-btn" id="copy-btn">Copy</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <p>Made with &hearts; by <a href="https://rabblelabs.com" target="_blank">Rabble Labs</a> |
+        Built on <a href="https://nostr.com" target="_blank">Nostr Protocol</a> |
+        <a href="https://github.com/divinevideo/divine-mobile" target="_blank">Source Code: GitHub</a></p>
+    </footer>
+
+    <script>
+        (function () {
+            var npubInput = document.getElementById('npub-input');
+            var themeSelect = document.getElementById('theme-select');
+            var countSelect = document.getElementById('count-select');
+            var refreshSelect = document.getElementById('refresh-select');
+            var previewFrame = document.getElementById('preview-frame');
+            var codeSection = document.getElementById('code-section');
+            var embedCode = document.getElementById('embed-code');
+            var copyBtn = document.getElementById('copy-btn');
+
+            var debounceTimer = null;
+
+            function getEmbedParams() {
+                var npub = npubInput.value.trim();
+                if (!npub || !npub.startsWith('npub1')) return null;
+                var params = new URLSearchParams();
+                params.set('npub', npub);
+                params.set('theme', themeSelect.value);
+                params.set('count', countSelect.value);
+                var refresh = refreshSelect.value;
+                if (refresh !== '60') params.set('autorefresh', refresh);
+                return params.toString();
+            }
+
+            function getHeight() {
+                var count = parseInt(countSelect.value, 10);
+                return 200 + count * 180;
+            }
+
+            function update() {
+                var qs = getEmbedParams();
+                if (!qs) {
+                    previewFrame.innerHTML = '';
+                    var placeholder = document.createElement('div');
+                    placeholder.className = 'placeholder-msg';
+                    placeholder.textContent = 'Enter your npub above to see a preview';
+                    previewFrame.appendChild(placeholder);
+                    codeSection.style.display = 'none';
+                    return;
+                }
+
+                var height = getHeight();
+                var prodUrl = 'https://divine.video/embed?' + qs;
+                // Use embed.html directly (works both locally and with redirects)
+                var previewUrl = '/embed.html?' + qs;
+
+                // Update preview using safe DOM construction (avoid innerHTML with user input)
+                previewFrame.innerHTML = '';
+                var iframe = document.createElement('iframe');
+                iframe.src = previewUrl;
+                iframe.width = '350';
+                iframe.height = String(height);
+                iframe.style.cssText = 'border:none; border-radius:12px;';
+                iframe.title = 'Divine Video Widget';
+                previewFrame.appendChild(iframe);
+
+                // Update embed code (always uses production URL)
+                var snippet =
+                    '<iframe\n' +
+                    '  src="' + prodUrl + '"\n' +
+                    '  width="350"\n' +
+                    '  height="' + height + '"\n' +
+                    '  style="border-radius: 12px; border: none;"\n' +
+                    '  title="Divine Video Widget"\n' +
+                    '></iframe>';
+                embedCode.value = snippet;
+                codeSection.style.display = 'block';
+
+                // Reset copy button
+                copyBtn.textContent = 'Copy';
+                copyBtn.classList.remove('copied');
+            }
+
+            function debouncedUpdate() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(update, 400);
+            }
+
+            npubInput.addEventListener('input', debouncedUpdate);
+            themeSelect.addEventListener('change', update);
+            countSelect.addEventListener('change', update);
+            refreshSelect.addEventListener('change', update);
+
+            copyBtn.addEventListener('click', function () {
+                embedCode.select();
+                navigator.clipboard.writeText(embedCode.value).then(function () {
+                    copyBtn.textContent = 'Copied!';
+                    copyBtn.classList.add('copied');
+                    setTimeout(function () {
+                        copyBtn.textContent = 'Copy';
+                        copyBtn.classList.remove('copied');
+                    }, 2000);
+                });
+            });
+
+            // Check for npub in URL params (pre-fill from mobile app link)
+            var urlParams = new URLSearchParams(window.location.search);
+            var prefillNpub = urlParams.get('npub');
+            if (prefillNpub) {
+                npubInput.value = prefillNpub;
+                update();
+            }
+        })();
+    </script>
+</body>
+</html>

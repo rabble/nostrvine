@@ -12,8 +12,8 @@ class VideoEditorIconButton extends StatelessWidget {
   const VideoEditorIconButton({
     required this.icon,
     super.key,
-    this.backgroundColor = const Color(0xFF000000),
-    this.iconColor = Colors.white,
+    this.backgroundColor = VineTheme.backgroundColor,
+    this.iconColor = VineTheme.whiteText,
     this.iconSize = 32,
     this.size = 48,
     this.radius = 20,

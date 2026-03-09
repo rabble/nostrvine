@@ -1188,6 +1188,76 @@ void main() {
       });
     });
 
+    group('followingStream force-emit on initialize', () {
+      test(
+        'emits on followingStream after initialize '
+        'when user has no follows',
+        () async {
+          // No cached follows, no PersonalEventCache, no relay data
+          SharedPreferences.setMockInitialValues({});
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            personalEventCache: mockPersonalEventCache,
+            indexerRelayUrls: const [],
+          );
+
+          final emissions = <List<String>>[];
+          final subscription = repository.followingStream.listen(
+            emissions.add,
+          );
+
+          // Seed value is [] — capture it
+          await Future<void>.delayed(Duration.zero);
+          final preInitCount = emissions.length;
+
+          await repository.initialize();
+          await Future<void>.delayed(Duration.zero);
+
+          // Force-emit should add one more [] emission
+          expect(emissions.length, greaterThan(preInitCount));
+          expect(emissions.last, isEmpty);
+
+          await subscription.cancel();
+        },
+      );
+
+      test(
+        'does not double-emit after initialize '
+        'when user has follows',
+        () async {
+          SharedPreferences.setMockInitialValues({
+            'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+          });
+
+          repository = FollowRepository(
+            nostrClient: mockNostrClient,
+            personalEventCache: mockPersonalEventCache,
+            indexerRelayUrls: const [],
+          );
+
+          final emissions = <List<String>>[];
+          final subscription = repository.followingStream.listen(
+            emissions.add,
+          );
+
+          await repository.initialize();
+          await Future<void>.delayed(Duration.zero);
+
+          // Should emit exactly once with the follow list (from
+          // _emitFollowingList during _loadFromLocalStorage), no
+          // extra force-emit because _followingPubkeys is non-empty.
+          final nonSeedEmissions = emissions
+              .where((e) => e.isNotEmpty)
+              .toList();
+          expect(nonSeedEmissions, hasLength(1));
+          expect(nonSeedEmissions.first, contains(testTargetPubkey));
+
+          await subscription.cancel();
+        },
+      );
+    });
+
     group('getSocialCounts', () {
       late _MockFunnelcakeApiClient mockFunnelcakeClient;
 
@@ -1289,9 +1359,8 @@ void main() {
 
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
-          () => mockFunnelcakeClient.getFollowers(
-            pubkey: testCurrentUserPubkey,
-          ),
+          () =>
+              mockFunnelcakeClient.getFollowers(pubkey: testCurrentUserPubkey),
         ).thenAnswer((_) async => testPaginatedPubkeys);
 
         final repo = FollowRepository(
@@ -1307,9 +1376,8 @@ void main() {
 
         expect(result, equals(testPaginatedPubkeys));
         verify(
-          () => mockFunnelcakeClient.getFollowers(
-            pubkey: testCurrentUserPubkey,
-          ),
+          () =>
+              mockFunnelcakeClient.getFollowers(pubkey: testCurrentUserPubkey),
         ).called(1);
       });
 
@@ -1435,9 +1503,8 @@ void main() {
 
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
         when(
-          () => mockFunnelcakeClient.getFollowing(
-            pubkey: testCurrentUserPubkey,
-          ),
+          () =>
+              mockFunnelcakeClient.getFollowing(pubkey: testCurrentUserPubkey),
         ).thenAnswer((_) async => testPaginatedPubkeys);
 
         final repo = FollowRepository(
@@ -1453,9 +1520,8 @@ void main() {
 
         expect(result, equals(testPaginatedPubkeys));
         verify(
-          () => mockFunnelcakeClient.getFollowing(
-            pubkey: testCurrentUserPubkey,
-          ),
+          () =>
+              mockFunnelcakeClient.getFollowing(pubkey: testCurrentUserPubkey),
         ).called(1);
       });
 

@@ -84,5 +84,44 @@ class VideoEditorLayerRemoved extends VideoEditorMainEvent {
   List<Object?> get props => [layer];
 }
 
+/// Triggered when the video playback state changes.
+class VideoEditorPlaybackChanged extends VideoEditorMainEvent {
+  const VideoEditorPlaybackChanged({required this.isPlaying});
+
+  final bool isPlaying;
+
+  @override
+  List<Object?> get props => [isPlaying];
+}
+
+/// Triggered when the video player is ready for playback.
+class VideoEditorPlayerReady extends VideoEditorMainEvent {
+  const VideoEditorPlayerReady();
+}
+
+/// Triggered when an external component requests playback pause/resume.
+///
+/// Used by the audio selection UI to pause video during audio browsing.
+class VideoEditorExternalPauseRequested extends VideoEditorMainEvent {
+  const VideoEditorExternalPauseRequested({required this.isPaused});
+
+  final bool isPaused;
+
+  @override
+  List<Object?> get props => [isPaused];
+}
+
+/// Triggered when playback restart is requested (video + audio sync).
+///
+/// Used after audio selection changes to restart synchronized playback.
+class VideoEditorPlaybackRestartRequested extends VideoEditorMainEvent {
+  const VideoEditorPlaybackRestartRequested();
+}
+
+/// Triggered when playback toggle (play/pause) is requested.
+class VideoEditorPlaybackToggleRequested extends VideoEditorMainEvent {
+  const VideoEditorPlaybackToggleRequested();
+}
+
 /// Types of sub-editors that can be opened.
 enum SubEditorType { text, draw, filter, stickers, music }

@@ -72,7 +72,7 @@ void main() {
     );
 
     testWidgets(
-      'Navigate /hashtag/bitcoin → /hashtag/bitcoin/0 without GlobalKey conflict',
+      'Navigate to /hashtag/bitcoin without GlobalKey conflict',
       (tester) async {
         final container = ProviderContainer();
         addTearDown(container.dispose);
@@ -86,16 +86,10 @@ void main() {
           ),
         );
 
-        // Start at /hashtag/bitcoin (grid)
+        // Navigate to /hashtag/bitcoin (grid)
         container
             .read(goRouterProvider)
             .go(HashtagScreenRouter.pathForTag('bitcoin'));
-        await tester.pumpAndSettle();
-
-        // Navigate to /hashtag/bitcoin/0 (feed)
-        container
-            .read(goRouterProvider)
-            .go(HashtagScreenRouter.pathForTag('bitcoin', index: 0));
         await tester.pumpAndSettle();
 
         // Should complete without GlobalKey conflict
@@ -136,18 +130,11 @@ void main() {
       expect(withTermAndIndex.videoIndex, 3);
     });
 
-    test('parseRoute handles optional index for hashtag', () {
+    test('parseRoute handles hashtag grid mode', () {
       final gridMode = parseRoute(HashtagScreenRouter.pathForTag('bitcoin'));
       expect(gridMode.type, RouteType.hashtag);
       expect(gridMode.hashtag, 'bitcoin');
       expect(gridMode.videoIndex, null);
-
-      final feedMode = parseRoute(
-        HashtagScreenRouter.pathForTag('bitcoin', index: 2),
-      );
-      expect(feedMode.type, RouteType.hashtag);
-      expect(feedMode.hashtag, 'bitcoin');
-      expect(feedMode.videoIndex, 2);
     });
   });
 }

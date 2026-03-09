@@ -17,6 +17,9 @@ class KeycastSession {
   /// Handle for silent re-authentication
   final String? authorizationHandle;
 
+  /// Refresh token for obtaining new access tokens
+  final String? refreshToken;
+
   const KeycastSession({
     required this.bunkerUrl,
     this.accessToken,
@@ -24,6 +27,7 @@ class KeycastSession {
     this.scope,
     this.userPubkey,
     this.authorizationHandle,
+    this.refreshToken,
   });
 
   factory KeycastSession.fromTokenResponse(TokenResponse response) {
@@ -35,6 +39,7 @@ class KeycastSession {
           : null,
       scope: response.scope,
       authorizationHandle: response.authorizationHandle,
+      refreshToken: response.refreshToken,
     );
   }
 
@@ -49,6 +54,7 @@ class KeycastSession {
     String? scope,
     String? userPubkey,
     String? authorizationHandle,
+    String? refreshToken,
   }) {
     return KeycastSession(
       bunkerUrl: bunkerUrl ?? this.bunkerUrl,
@@ -57,6 +63,7 @@ class KeycastSession {
       scope: scope ?? this.scope,
       userPubkey: userPubkey ?? this.userPubkey,
       authorizationHandle: authorizationHandle ?? this.authorizationHandle,
+      refreshToken: refreshToken ?? this.refreshToken,
     );
   }
 
@@ -68,6 +75,7 @@ class KeycastSession {
       'scope': scope,
       'user_pubkey': userPubkey,
       'authorization_handle': authorizationHandle,
+      'refresh_token': refreshToken,
     };
   }
 
@@ -81,6 +89,7 @@ class KeycastSession {
       scope: json['scope'] as String?,
       userPubkey: json['user_pubkey'] as String?,
       authorizationHandle: json['authorization_handle'] as String?,
+      refreshToken: json['refresh_token'] as String?,
     );
   }
 

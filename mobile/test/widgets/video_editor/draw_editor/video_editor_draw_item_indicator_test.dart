@@ -66,9 +66,7 @@ void main() {
 
     group('Position based on tool', () {
       testWidgets('offset is 0 when pencil is selected', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const VideoEditorDrawState(),
-        );
+        when(() => mockBloc.state).thenReturn(const VideoEditorDrawState());
 
         await tester.pumpWidget(buildWidget());
         await tester.pump();
@@ -118,9 +116,7 @@ void main() {
       testWidgets('updates position when tool changes', (tester) async {
         final controller = StreamController<VideoEditorDrawState>.broadcast();
 
-        when(() => mockBloc.state).thenReturn(
-          const VideoEditorDrawState(),
-        );
+        when(() => mockBloc.state).thenReturn(const VideoEditorDrawState());
         when(() => mockBloc.stream).thenAnswer((_) => controller.stream);
 
         await tester.pumpWidget(buildWidget());

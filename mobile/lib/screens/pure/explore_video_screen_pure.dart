@@ -1,6 +1,7 @@
 // ABOUTME: Pure explore video screen using VideoFeedItem directly in PageView
 // ABOUTME: Simplified implementation with direct VideoFeedItem usage
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -111,7 +112,7 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
 
     // Use tab-specific video list from parent (preserves grid sort order)
     return ColoredBox(
-      color: Colors.black,
+      color: VineTheme.backgroundColor,
       child: PageView.builder(
         itemCount: videos.length,
         controller: _pageController,

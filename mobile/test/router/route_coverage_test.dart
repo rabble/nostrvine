@@ -5,12 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -98,21 +98,26 @@ void main() {
     });
 
     group('Clip routes parse to RouteType.clips', () {
-      const clipRoutes = [
-        ClipLibraryScreen.clipsPath,
-        ClipLibraryScreen.draftsPath, // Legacy route should also work
-      ];
+      test('${LibraryScreen.clipsPath} parses to RouteType.clips', () {
+        final context = parseRoute(LibraryScreen.clipsPath);
+        expect(
+          context.type,
+          RouteType.clips,
+          reason: '${LibraryScreen.clipsPath} should parse to RouteType.clips',
+        );
+      });
+    });
 
-      for (final route in clipRoutes) {
-        test('$route parses to RouteType.clips', () {
-          final context = parseRoute(route);
-          expect(
-            context.type,
-            RouteType.clips,
-            reason: '$route should parse to RouteType.clips',
-          );
-        });
-      }
+    group('Draft routes parse to RouteType.drafts', () {
+      test('${LibraryScreen.draftsPath} parses to RouteType.drafts', () {
+        final context = parseRoute(LibraryScreen.draftsPath);
+        expect(
+          context.type,
+          RouteType.drafts,
+          reason:
+              '${LibraryScreen.draftsPath} should parse to RouteType.drafts',
+        );
+      });
     });
 
     group('Tab routes parse correctly', () {
@@ -231,18 +236,6 @@ void main() {
           expect(context.type, RouteType.hashtag);
           expect(context.hashtag, 'nostr');
           expect(context.videoIndex, isNull);
-        },
-      );
-
-      test(
-        '${HashtagScreenRouter.pathForTag('nostr', index: 3)} parses to RouteType.hashtag with index',
-        () {
-          final context = parseRoute(
-            HashtagScreenRouter.pathForTag('nostr', index: 3),
-          );
-          expect(context.type, RouteType.hashtag);
-          expect(context.hashtag, 'nostr');
-          expect(context.videoIndex, 3);
         },
       );
 
@@ -394,7 +387,8 @@ void main() {
         RouteType.keyManagement: KeyManagementScreen.path,
         RouteType.safetySettings: SafetySettingsScreen.path,
         RouteType.editProfile: ProfileSetupScreen.editPath,
-        RouteType.clips: ClipLibraryScreen.clipsPath,
+        RouteType.clips: LibraryScreen.clipsPath,
+        RouteType.drafts: LibraryScreen.draftsPath,
         RouteType.welcome: WelcomeScreen.path,
         RouteType.videoDetail: VideoDetailScreen.pathForId('test_id'),
       };

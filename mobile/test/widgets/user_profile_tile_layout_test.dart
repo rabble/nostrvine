@@ -418,9 +418,7 @@ void main() {
           _buildTestWidget(
             testUserProfileService,
             testAuthService,
-            const UserProfileTile(
-              pubkey: currentUserPubkey,
-            ),
+            const UserProfileTile(pubkey: currentUserPubkey),
           ),
         );
 

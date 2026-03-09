@@ -5,14 +5,16 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
+
+const _toggleFollowErrorMessage =
+    'Failed to update follow status. Please try again.';
 
 /// Page widget for displaying another user's followers list.
 ///
@@ -31,23 +33,23 @@ class OthersFollowersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
-
-    // Show loading until NostrClient has keys
-    if (followRepository == null) {
-      return const BrandedLoadingScaffold();
-    }
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
 
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) =>
-              OthersFollowersBloc(followRepository: followRepository)
-                ..add(OthersFollowersListLoadRequested(pubkey)),
+          create: (_) => OthersFollowersBloc(
+            followRepository: followRepository,
+            contentBlocklistService: blocklistService,
+            currentUserPubkey: nostrClient.publicKey,
+          )..add(OthersFollowersListLoadRequested(pubkey)),
         ),
         BlocProvider(
-          create: (_) =>
-              MyFollowingBloc(followRepository: followRepository)
-                ..add(const MyFollowingListLoadRequested()),
+          create: (_) => MyFollowingBloc(
+            followRepository: followRepository,
+            contentBlocklistService: blocklistService,
+          )..add(const MyFollowingListLoadRequested()),
         ),
       ],
       child: _OthersFollowersView(pubkey: pubkey, displayName: displayName),
@@ -55,83 +57,76 @@ class OthersFollowersScreen extends ConsumerWidget {
   }
 }
 
-class _OthersFollowersView extends StatelessWidget {
+class _OthersFollowersView extends ConsumerWidget {
   const _OthersFollowersView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(blocklistVersionProvider, (_, _) {
+      context.read<OthersFollowersBloc>().add(
+        const OthersFollowersBlocklistChanged(),
+      );
+    });
+
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Followers"
         : 'Followers';
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
+      appBar: DiVineAppBar(
+        titleWidget:
+            FollowerCountTitle<OthersFollowersBloc, OthersFollowersState>(
+              title: appBarTitle,
+              selector: (state) => state.status == OthersFollowersStatus.success
+                  ? state.followersPubkeys.length
+                  : 0,
             ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-          tooltip: 'Back',
-        ),
-        title: FollowerCountTitle<OthersFollowersBloc, OthersFollowersState>(
-          title: appBarTitle,
-          selector: (state) => state.status == OthersFollowersStatus.success
-              ? state.followersPubkeys.length
-              : 0,
-        ),
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).pop(),
+        backButtonSemanticLabel: 'Back',
       ),
-      body: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
-        builder: (context, state) {
-          return switch (state.status) {
-            OthersFollowersStatus.initial || OthersFollowersStatus.loading =>
-              const Center(child: CircularProgressIndicator()),
-            OthersFollowersStatus.success => _FollowersListBody(
-              followers: state.followersPubkeys,
-              targetPubkey: pubkey,
-            ),
-            OthersFollowersStatus.failure => _FollowersErrorBody(
-              onRetry: () {
-                final targetPubkey = context
-                    .read<OthersFollowersBloc>()
-                    .state
-                    .targetPubkey;
-                if (targetPubkey != null) {
-                  context.read<OthersFollowersBloc>().add(
-                    OthersFollowersListLoadRequested(targetPubkey),
-                  );
-                }
-              },
-            ),
-          };
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<MyFollowingBloc, MyFollowingState>(
+            listenWhen: (previous, current) =>
+                current.status == MyFollowingStatus.toggleFailure &&
+                previous.status != MyFollowingStatus.toggleFailure,
+            listener: (context, state) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text(_toggleFollowErrorMessage)),
+              );
+            },
+          ),
+        ],
+        child: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
+          builder: (context, state) {
+            return switch (state.status) {
+              OthersFollowersStatus.initial || OthersFollowersStatus.loading =>
+                const Center(child: CircularProgressIndicator()),
+              OthersFollowersStatus.success => _FollowersListBody(
+                followers: state.followersPubkeys,
+                targetPubkey: pubkey,
+              ),
+              OthersFollowersStatus.failure => _FollowersErrorBody(
+                onRetry: () {
+                  final targetPubkey = context
+                      .read<OthersFollowersBloc>()
+                      .state
+                      .targetPubkey;
+                  if (targetPubkey != null) {
+                    context.read<OthersFollowersBloc>().add(
+                      OthersFollowersListLoadRequested(targetPubkey),
+                    );
+                  }
+                },
+              ),
+            };
+          },
+        ),
       ),
     );
   }
@@ -191,15 +186,15 @@ class _FollowersEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey[600]),
-          const SizedBox(height: 16),
+          Icon(Icons.people_outline, size: 64, color: VineTheme.lightText),
+          SizedBox(height: 16),
           Text(
             'No followers yet',
-            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
           ),
         ],
       ),
@@ -218,11 +213,11 @@ class _FollowersErrorBody extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.grey[600]),
+          const Icon(Icons.error_outline, size: 64, color: VineTheme.lightText),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load followers list',
-            style: TextStyle(color: Colors.grey[400], fontSize: 16),
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
           ),
           const SizedBox(height: 8),
           TextButton(onPressed: onRetry, child: const Text('Retry')),

@@ -144,6 +144,21 @@ class DbVideoLocalStorage implements VideoLocalStorage {
   }
 
   @override
+  Future<List<Event>> searchEvents({
+    required String query,
+    int limit = 100,
+  }) async {
+    if (query.isEmpty) return [];
+
+    final filter = Filter(
+      kinds: [_videoKind],
+      search: query,
+      limit: limit,
+    );
+    return _dao.getEventsByFilter(filter);
+  }
+
+  @override
   Future<int> getEventCount() async {
     // Note: This counts all events, not just video events.
     // For video-specific count, we'd need to add a method to the DAO.

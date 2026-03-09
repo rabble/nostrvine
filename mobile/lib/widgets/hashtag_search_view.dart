@@ -167,13 +167,13 @@ class _HashtagSearchErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
-          const SizedBox(height: 16),
-          const Text(
+          Icon(Icons.error_outline, size: 64, color: VineTheme.error),
+          SizedBox(height: 16),
+          Text(
             'Search failed',
             style: TextStyle(color: VineTheme.lightText),
           ),

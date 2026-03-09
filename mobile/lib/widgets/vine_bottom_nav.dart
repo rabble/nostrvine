@@ -15,6 +15,7 @@ import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_badge.dart';
 
@@ -94,7 +95,9 @@ class VineBottomNav extends ConsumerWidget {
     String semanticIdentifier,
   ) {
     final isSelected = currentIndex == tabIndex;
-    final iconColor = isSelected ? Colors.white : VineTheme.tabIconInactive;
+    final iconColor = isSelected
+        ? VineTheme.whiteText
+        : VineTheme.tabIconInactive;
 
     return Semantics(
       identifier: semanticIdentifier,
@@ -147,7 +150,7 @@ class VineBottomNav extends ConsumerWidget {
                   name: 'Navigation',
                   category: LogCategory.ui,
                 );
-                context.push(VideoRecorderScreen.path);
+                context.pushWithVideoPause(VideoRecorderScreen.path);
               },
             ),
             NotificationBadge(

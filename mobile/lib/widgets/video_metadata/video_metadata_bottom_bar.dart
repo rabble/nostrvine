@@ -7,8 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -21,19 +21,52 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   const VideoMetadataBottomBar({super.key});
 
   /// Saves the final rendered video to the device gallery.
-  Future<void> _saveToGallery(WidgetRef ref) async {
+  Future<GallerySaveResult?> _saveToGallery(WidgetRef ref) async {
     final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
-    if (finalRenderedClip == null) return;
+    if (finalRenderedClip == null) return null;
 
     final gallerySaveService = ref.read(gallerySaveServiceProvider);
-    await gallerySaveService.saveVideoToGallery(finalRenderedClip.video);
+    return gallerySaveService.saveVideoToGallery(finalRenderedClip.video);
+  }
+
+  String? _gallerySaveFailureMessage(GallerySaveResult? result) {
+    final destination = GallerySaveService.destinationName;
+
+    return switch (result) {
+      null || GallerySaveSuccess() => null,
+      GallerySavePermissionDenied() => '$destination permission denied',
+      GallerySaveFailure(:final reason) =>
+        'failed to save to $destination: $reason',
+    };
+  }
+
+  void _showStatusSnackBar(
+    BuildContext context, {
+    required String label,
+    required bool error,
+    String? actionLabel,
+    VoidCallback? onActionPressed,
+  }) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        padding: EdgeInsets.zero,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        content: DivineSnackbarContainer(
+          label: label,
+          error: error,
+          actionLabel: actionLabel,
+          onActionPressed: onActionPressed,
+        ),
+      ),
+    );
   }
 
   Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
-    var saveSuccess = true;
-
-    // Save the final rendered video to the gallery (non-blocking).
-    unawaited(_saveToGallery(ref));
+    final gallerySave = _saveToGallery(ref);
+    var draftSaved = true;
 
     try {
       // Save the draft to the library.
@@ -51,37 +84,38 @@ class VideoMetadataBottomBar extends ConsumerWidget {
         error: e,
         stackTrace: stackTrace,
       );
-      saveSuccess = false;
+      draftSaved = false;
     }
+
+    final galleryResult = await gallerySave;
 
     if (!context.mounted) return;
 
-    // Store router reference before showing SnackBar
     final router = GoRouter.of(context);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final galleryFailureMessage = _gallerySaveFailureMessage(galleryResult);
+    final gallerySaveSucceeded =
+        galleryResult == null || galleryResult is GallerySaveSuccess;
+    final saveSuccess = draftSaved && gallerySaveSucceeded;
+    final destination = GallerySaveService.destinationName;
 
-    // Build the status message
-    // TODO(l10n): Replace with context.l10n when localization is added.
-    final label = saveSuccess ? 'Saved to library' : 'Failed to save';
+    final label = switch ((draftSaved, galleryFailureMessage, galleryResult)) {
+      (true, null, _) => 'Saved to library',
+      (true, final message?, _) => 'Saved to library, but $message',
+      (false, null, GallerySaveSuccess()) =>
+        'Saved to $destination, but failed to save to library',
+      (false, final message?, _) => 'Failed to save to library, and $message',
+      (false, null, _) => 'Failed to save',
+    };
 
-    scaffoldMessenger.showSnackBar(
-      SnackBar(
-        padding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 5),
-        content: DivineSnackbarContainer(
-          label: label,
-          error: !saveSuccess,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          actionLabel: 'Go to Library',
-          onActionPressed: () {
-            scaffoldMessenger.hideCurrentSnackBar();
-            router.push(ClipLibraryScreen.clipsPath);
-          },
-        ),
-      ),
+    _showStatusSnackBar(
+      context,
+      label: label,
+      error: !saveSuccess,
+      actionLabel: 'Go to Library',
+      onActionPressed: () {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        router.push(LibraryScreen.draftsPath);
+      },
     );
 
     if (saveSuccess) {
@@ -95,8 +129,17 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   }
 
   Future<void> _onPost(BuildContext context, WidgetRef ref) async {
-    // Save the final rendered video to the gallery (non-blocking).
-    unawaited(_saveToGallery(ref));
+    final galleryResult = await _saveToGallery(ref);
+    if (!context.mounted) return;
+
+    final galleryFailureMessage = _gallerySaveFailureMessage(galleryResult);
+    if (galleryFailureMessage != null) {
+      _showStatusSnackBar(
+        context,
+        label: '$galleryFailureMessage. Video will still post.',
+        error: true,
+      );
+    }
 
     await ref.read(videoEditorProvider.notifier).postVideo(context);
   }
@@ -108,7 +151,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xE5032017),
+          color: VineTheme.surfaceContainer90,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: VineTheme.outlineVariant),
           boxShadow: const [
@@ -179,7 +222,7 @@ class _SaveForLaterButton extends ConsumerWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Color(0xAA0E2B21), Color(0xE5032017)],
+                  colors: [Color(0xAA0E2B21), VineTheme.surfaceContainer90],
                 ),
                 border: Border.all(color: const Color(0xFF184235), width: 1.5),
                 borderRadius: BorderRadius.circular(18),
@@ -267,7 +310,7 @@ class _PostButton extends ConsumerWidget {
                 child: Text(
                   'Post',
                   style: VineTheme.titleSmallFont(
-                    color: const Color(0xFF002C1C),
+                    color: VineTheme.surfaceContainer,
                   ),
                 ),
               ),

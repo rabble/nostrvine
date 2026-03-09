@@ -471,6 +471,165 @@ class Nip05Verifications extends Table {
   ];
 }
 
+/// Persistent storage for video drafts
+///
+/// Stores draft metadata and full serialized JSON for offline access.
+/// Key fields are indexed columns for efficient queries; the full draft
+/// payload (clips, editor state, etc.) lives in the [data] JSON blob.
+@DataClassName('DraftRow')
+class Drafts extends Table {
+  @override
+  String get tableName => 'drafts';
+
+  /// Unique draft identifier (e.g. "draft_1700000000000")
+  TextColumn get id => text()();
+
+  /// User-provided title (may be empty)
+  TextColumn get title => text().withDefault(const Constant(''))();
+
+  /// User-provided description (may be empty)
+  TextColumn get description => text().withDefault(const Constant(''))();
+
+  /// Current publish status: draft, publishing, failed, published
+  TextColumn get publishStatus =>
+      text().withDefault(const Constant('draft')).named('publish_status')();
+
+  /// Number of publish attempts
+  IntColumn get publishAttempts =>
+      integer().withDefault(const Constant(0)).named('publish_attempts')();
+
+  /// Last publish error message
+  TextColumn get publishError => text().nullable().named('publish_error')();
+
+  /// When the draft was originally created
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
+
+  /// When the draft was last modified
+  DateTimeColumn get lastModified => dateTime().named('last_modified')();
+
+  /// Full JSON-serialized draft payload (clips, hashtags, editor state, etc.)
+  TextColumn get data => text()();
+
+  /// Basename of the final rendered video file (for indexed lookups)
+  TextColumn get renderedFilePath =>
+      text().nullable().named('rendered_file_path')();
+
+  /// Basename of the final rendered thumbnail (for indexed lookups)
+  TextColumn get renderedThumbnailPath =>
+      text().nullable().named('rendered_thumbnail_path')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_draft_publish_status',
+      'CREATE INDEX IF NOT EXISTS idx_draft_publish_status '
+          'ON drafts (publish_status)',
+    ),
+    Index(
+      'idx_draft_last_modified',
+      'CREATE INDEX IF NOT EXISTS idx_draft_last_modified '
+          'ON drafts (last_modified DESC)',
+    ),
+    Index(
+      'idx_draft_created_at',
+      'CREATE INDEX IF NOT EXISTS idx_draft_created_at '
+          'ON drafts (created_at DESC)',
+    ),
+    Index(
+      'idx_draft_rendered_file_path',
+      'CREATE INDEX IF NOT EXISTS idx_draft_rendered_file_path '
+          'ON drafts (rendered_file_path)',
+    ),
+    Index(
+      'idx_draft_rendered_thumbnail_path',
+      'CREATE INDEX IF NOT EXISTS idx_draft_rendered_thumbnail_path '
+          'ON drafts (rendered_thumbnail_path)',
+    ),
+  ];
+}
+
+/// Persistent storage for video clips belonging to drafts
+///
+/// Each clip is a recorded video segment that belongs to a single draft.
+/// Key fields are indexed columns for efficient queries; the full clip
+/// payload (lens metadata, thumbnail info, etc.) lives in the [data]
+/// JSON blob.
+@DataClassName('ClipRow')
+class Clips extends Table {
+  @override
+  String get tableName => 'clips';
+
+  /// Unique clip identifier
+  TextColumn get id => text()();
+
+  /// Foreign key to the parent draft (null for library clips)
+  TextColumn get draftId => text().nullable().named('draft_id')();
+
+  /// Position of this clip within the draft (0-based)
+  IntColumn get orderIndex =>
+      integer().withDefault(const Constant(0)).named('order_index')();
+
+  /// Duration in milliseconds
+  IntColumn get durationMs => integer().named('duration_ms')();
+
+  /// When the clip was recorded
+  DateTimeColumn get recordedAt => dateTime().named('recorded_at')();
+
+  /// Full JSON-serialized clip payload (file path, thumbnail, lens metadata,
+  /// aspect ratio, etc.)
+  TextColumn get data => text()();
+
+  /// Basename of the video file (for indexed lookups)
+  TextColumn get filePath => text().nullable().named('file_path')();
+
+  /// Basename of the thumbnail file (for indexed lookups)
+  TextColumn get thumbnailPath => text().nullable().named('thumbnail_path')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  @override
+  List<String> get customConstraints => [
+    'FOREIGN KEY (draft_id) REFERENCES drafts(id) ON DELETE CASCADE',
+  ];
+
+  List<Index> get indexes => [
+    // Partial index for library clips (clips without a draft)
+    Index(
+      'idx_clip_library',
+      'CREATE INDEX IF NOT EXISTS idx_clip_library '
+          'ON clips (draft_id) WHERE draft_id IS NULL',
+    ),
+    Index(
+      'idx_clip_draft_id',
+      'CREATE INDEX IF NOT EXISTS idx_clip_draft_id '
+          'ON clips (draft_id)',
+    ),
+    Index(
+      'idx_clip_draft_order',
+      'CREATE INDEX IF NOT EXISTS idx_clip_draft_order '
+          'ON clips (draft_id, order_index)',
+    ),
+    Index(
+      'idx_clip_recorded_at',
+      'CREATE INDEX IF NOT EXISTS idx_clip_recorded_at '
+          'ON clips (recorded_at DESC)',
+    ),
+    Index(
+      'idx_clip_file_path',
+      'CREATE INDEX IF NOT EXISTS idx_clip_file_path '
+          'ON clips (file_path)',
+    ),
+    Index(
+      'idx_clip_thumbnail_path',
+      'CREATE INDEX IF NOT EXISTS idx_clip_thumbnail_path '
+          'ON clips (thumbnail_path)',
+    ),
+  ];
+}
+
 /// Stores the current user's own repost events (Kind 16 generic reposts).
 ///
 /// This table tracks the mapping between addressable video IDs and the

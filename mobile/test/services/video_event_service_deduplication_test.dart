@@ -72,16 +72,10 @@ void main() {
 
     test('should generate different IDs for different authors', () async {
       // Subscribe with first set of authors
-      await videoEventService.subscribeToHomeFeed([
-        'author1',
-        'author2',
-      ]);
+      await videoEventService.subscribeToHomeFeed(['author1', 'author2']);
 
       // Subscribe with different authors
-      await videoEventService.subscribeToHomeFeed([
-        'author3',
-        'author4',
-      ]);
+      await videoEventService.subscribeToHomeFeed(['author3', 'author4']);
 
       // Both should create separate subscriptions
       verify(() => mockNostrService.subscribe(any())).called(2);

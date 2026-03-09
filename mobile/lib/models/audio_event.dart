@@ -15,6 +15,10 @@ const int audioEventKind = 1063;
 ///
 /// See NIP-94 for the full file metadata specification.
 class AudioEvent {
+  /// Marker for bundled sounds to distinguish from Nostr events.
+  /// Used as ID prefix (with underscore) and as pubkey value.
+  static const bundledMarker = 'bundled';
+
   /// Creates a new AudioEvent with the specified fields.
   const AudioEvent({
     required this.id,
@@ -29,6 +33,7 @@ class AudioEvent {
     this.source,
     this.sourceVideoReference,
     this.sourceVideoRelay,
+    this.startOffset = Duration.zero,
   });
 
   /// Parse an AudioEvent from a Nostr Event.
@@ -55,9 +60,9 @@ class AudioEvent {
 
     // Parse tags according to NIP-94
     for (final tagRaw in event.tags) {
-      if (tagRaw is! List || tagRaw.isEmpty) continue;
+      if (tagRaw.isEmpty) continue;
 
-      final tag = tagRaw.map((e) => e.toString()).toList();
+      final tag = tagRaw.map((e) => e).toList();
       final tagName = tag[0];
       final tagValue = tag.length > 1 ? tag[1] : '';
 
@@ -105,7 +110,7 @@ class AudioEvent {
   /// Create an AudioEvent from a bundled VineSound asset.
   ///
   /// Uses a special `asset://` URL scheme to indicate this is a bundled sound.
-  /// The ID is prefixed with `bundled_` to distinguish from Nostr events.
+  /// The ID is prefixed with [bundledPrefix] to distinguish from Nostr events.
   ///
   /// Usage:
   /// ```dart
@@ -116,8 +121,8 @@ class AudioEvent {
   /// ```
   factory AudioEvent.fromBundledSound(VineSound sound) {
     return AudioEvent(
-      id: 'bundled_${sound.id}',
-      pubkey: 'bundled', // Indicates this is not from a Nostr user
+      id: '${bundledMarker}_${sound.id}',
+      pubkey: bundledMarker, // Indicates this is not from a Nostr user
       createdAt: 0, // No timestamp for bundled sounds
       url: 'asset://${sound.assetPath}',
       mimeType: 'audio/mpeg',
@@ -127,7 +132,7 @@ class AudioEvent {
   }
 
   /// Whether this audio is a bundled sound (from app assets).
-  bool get isBundled => id.startsWith('bundled_');
+  bool get isBundled => id.startsWith('${bundledMarker}_');
 
   /// Get the asset path for bundled sounds.
   /// Returns null if this is not a bundled sound.
@@ -176,6 +181,11 @@ class AudioEvent {
 
   /// Optional relay hint for the source video.
   final String? sourceVideoRelay;
+
+  /// Start offset within the audio track.
+  /// This is the point from which the audio will start playing during video playback.
+  /// Default is [Duration.zero] (start from beginning). Only used locally, not published to Nostr.
+  final Duration startOffset;
 
   /// Get the kind number from the source video reference.
   /// Returns null if no source video reference is set.
@@ -280,6 +290,7 @@ class AudioEvent {
     String? source,
     String? sourceVideoReference,
     String? sourceVideoRelay,
+    Duration? startOffset,
   }) {
     return AudioEvent(
       id: id ?? this.id,
@@ -294,6 +305,7 @@ class AudioEvent {
       source: source ?? this.source,
       sourceVideoReference: sourceVideoReference ?? this.sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay ?? this.sourceVideoRelay,
+      startOffset: startOffset ?? this.startOffset,
     );
   }
 
@@ -313,5 +325,43 @@ class AudioEvent {
         'title: $title, '
         'duration: $duration'
         ')';
+  }
+
+  /// Serialize to JSON for draft persistence.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'pubkey': pubkey,
+    'createdAt': createdAt,
+    'url': ?url,
+    'mimeType': ?mimeType,
+    'sha256': ?sha256,
+    'fileSize': ?fileSize,
+    'duration': ?duration,
+    'title': ?title,
+    'source': ?source,
+    'sourceVideoReference': ?sourceVideoReference,
+    'sourceVideoRelay': ?sourceVideoRelay,
+    if (startOffset != .zero) 'startOffsetMs': startOffset.inMilliseconds,
+  };
+
+  /// Deserialize from JSON for draft restoration.
+  static AudioEvent fromJson(Map<String, dynamic> json) {
+    return AudioEvent(
+      id: json['id'] as String,
+      pubkey: json['pubkey'] as String,
+      createdAt: json['createdAt'] as int,
+      url: json['url'] as String?,
+      mimeType: json['mimeType'] as String?,
+      sha256: json['sha256'] as String?,
+      fileSize: json['fileSize'] as int?,
+      duration: json['duration'] as double?,
+      title: json['title'] as String?,
+      source: json['source'] as String?,
+      sourceVideoReference: json['sourceVideoReference'] as String?,
+      sourceVideoRelay: json['sourceVideoRelay'] as String?,
+      startOffset: json['startOffsetMs'] != null
+          ? Duration(milliseconds: json['startOffsetMs'] as int)
+          : Duration.zero,
+    );
   }
 }

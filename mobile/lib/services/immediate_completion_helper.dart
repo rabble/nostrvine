@@ -201,7 +201,7 @@ class ImmediateCompletionHelper {
       },
       onError: (error) {
         if (!completer.isCompleted) {
-          completer.completeError(error);
+          completer.completeError(error as Object);
         }
       },
     );

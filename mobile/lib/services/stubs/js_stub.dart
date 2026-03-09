@@ -1,6 +1,8 @@
 // ABOUTME: Stub implementation for js package when not on web platform
 // ABOUTME: Provides empty implementations to prevent compilation errors on mobile
 
+// ignore_for_file: avoid_unused_constructor_parameters
+
 // Stub implementations for non-web platforms
 class JS {
   const JS([String? name]);

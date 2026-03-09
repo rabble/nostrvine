@@ -78,7 +78,11 @@ class _Segments extends ConsumerWidget {
       if (i < recordSegments.length - 1 || activeRecordingDuration > .zero) {
         if (used < _maxDuration) {
           segments.add(
-            Container(height: 16, width: 2, color: const Color(0xFF000A06)),
+            Container(
+              height: 16,
+              width: 2,
+              color: VineTheme.surfaceContainerHigh,
+            ),
           );
         }
       }
@@ -102,7 +106,7 @@ class _Segments extends ConsumerWidget {
                 width: 4,
                 height: 48,
                 decoration: ShapeDecoration(
-                  color: const Color(0xFFFFF140),
+                  color: VineTheme.accentYellow,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

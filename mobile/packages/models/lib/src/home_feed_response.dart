@@ -10,6 +10,7 @@ class HomeFeedResponse {
     required this.videos,
     this.nextCursor,
     this.hasMore = false,
+    this.rawBody,
   });
 
   /// The videos in this page of the feed.
@@ -23,4 +24,11 @@ class HomeFeedResponse {
 
   /// Whether there are more videos to load.
   final bool hasMore;
+
+  /// The raw JSON response body, if available.
+  ///
+  /// Populated by the API client so callers can cache the response
+  /// for instant display on next cold start. Not included in equality
+  /// checks.
+  final String? rawBody;
 }

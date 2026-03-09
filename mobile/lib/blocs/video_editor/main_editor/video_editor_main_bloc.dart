@@ -23,6 +23,11 @@ class VideoEditorMainBloc
     on<VideoEditorMainSubEditorClosed>(_onSubEditorClosed);
     on<VideoEditorLayerAdded>(_onLayerAdded);
     on<VideoEditorLayerRemoved>(_onLayerRemoved);
+    on<VideoEditorPlaybackChanged>(_onPlaybackChanged);
+    on<VideoEditorPlayerReady>(_onPlayerReady);
+    on<VideoEditorExternalPauseRequested>(_onExternalPauseRequested);
+    on<VideoEditorPlaybackRestartRequested>(_onPlaybackRestartRequested);
+    on<VideoEditorPlaybackToggleRequested>(_onPlaybackToggleRequested);
   }
 
   /// Updates undo/redo/subEditor state based on editor capabilities.
@@ -96,6 +101,45 @@ class VideoEditorMainBloc
       state.copyWith(
         layers: state.layers.where((l) => l != event.layer).toList(),
       ),
+    );
+  }
+
+  void _onPlaybackChanged(
+    VideoEditorPlaybackChanged event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(isPlaying: event.isPlaying));
+  }
+
+  void _onPlayerReady(
+    VideoEditorPlayerReady event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(isPlayerReady: true));
+  }
+
+  void _onExternalPauseRequested(
+    VideoEditorExternalPauseRequested event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(isExternalPauseRequested: event.isPaused));
+  }
+
+  void _onPlaybackRestartRequested(
+    VideoEditorPlaybackRestartRequested event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(
+      state.copyWith(playbackRestartCounter: state.playbackRestartCounter + 1),
+    );
+  }
+
+  void _onPlaybackToggleRequested(
+    VideoEditorPlaybackToggleRequested event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(
+      state.copyWith(playbackToggleCounter: state.playbackToggleCounter + 1),
     );
   }
 }

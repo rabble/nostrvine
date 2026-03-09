@@ -202,7 +202,7 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
       final userProfileService = ref.read(userProfileServiceProvider);
 
       // Get the user's follow list
-      final followList = followRepository?.followingPubkeys ?? [];
+      final followList = followRepository.followingPubkeys;
       final contacts = <ShareableUser>[];
 
       // Batch-fetch uncached profiles before building the list
@@ -231,9 +231,7 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
             category: LogCategory.ui,
           );
           // Still add the contact without profile data
-          contacts.add(
-            ShareableUser(pubkey: pubkey),
-          );
+          contacts.add(ShareableUser(pubkey: pubkey));
         }
       }
 

@@ -27,135 +27,71 @@ class BlockConfirmationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      key: const ValueKey('confirmation'),
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Title
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Block $displayName?',
-              style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        key: const ValueKey('confirmation'),
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const DivineSticker(sticker: DivineStickerName.blocked),
+          const SizedBox(height: 32),
+          // Title
+          Text(
+            'Block $displayName?',
+            style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
+          ),
+          const SizedBox(height: 8),
+          // Explanation content
+          Text(
+            'When you block a user:',
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 8),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Column(
+              spacing: 14,
+              children: [
+                BulletPoint('Their posts will not appear in your feeds.'),
+                BulletPoint(
+                  'They will be unable to view your profile, follow you, or view your posts.',
+                ),
+                BulletPoint('They will not be notified of this change.'),
+                BulletPoint(
+                  'You will still be able to view their profile.',
+                ),
+              ],
             ),
           ),
-        ),
-        // Explanation content
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 32),
+
+          // Button row
+          Column(
+            spacing: 16,
             children: [
-              Text(
-                'When you block a user:',
-                style: VineTheme.bodyLargeFont(
-                  color: VineTheme.onSurfaceVariant,
-                ),
+              DivineButton(
+                label: 'Block $displayName',
+                onPressed: onConfirm,
+                expanded: true,
+                type: DivineButtonType.error,
               ),
-              const SizedBox(height: 8),
-              const BulletPoint('Their posts will not appear in your feeds.'),
-              const BulletPoint(
-                'They will be unable to view your profile, follow you, or view your posts.',
+              DivineButton(
+                label: 'Cancel',
+                type: DivineButtonType.secondary,
+                onPressed: onCancel,
+                expanded: true,
               ),
-              const BulletPoint('They will not be notified of this change.'),
-              const BulletPoint(
-                'You will still be able to view their profile.',
-              ),
-              const SizedBox(height: 16),
-              GestureDetector(
-                onTap: () =>
+              DivineButton(
+                label: 'Learn More',
+                type: DivineButtonType.link,
+                onPressed: () =>
                     launchUrl(Uri.parse('https://divine.video/safety')),
-                child: Text.rich(
-                  TextSpan(
-                    text: 'Learn more at ',
-                    style: VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurfaceVariant,
-                    ),
-                    children: [
-                      TextSpan(
-                        text: 'divine.video/safety',
-                        style:
-                            VineTheme.bodyLargeFont(
-                              color: VineTheme.onSurface,
-                            ).copyWith(
-                              decoration: TextDecoration.underline,
-                              decorationColor: VineTheme.vineGreen,
-                              decorationThickness: 2,
-                            ),
-                      ),
-                    ],
-                  ),
-                ),
+                expanded: true,
               ),
             ],
           ),
-        ),
-        // Button row
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Row(
-            children: [
-              // Cancel button
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onCancel,
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: VineTheme.surfaceContainer,
-                    foregroundColor: VineTheme.vineGreen,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                    side: const BorderSide(
-                      color: VineTheme.outlineMuted,
-                      width: 2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    'Cancel',
-                    style: VineTheme.titleMediumFont(
-                      color: VineTheme.vineGreen,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              // Block button
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: onConfirm,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: VineTheme.error,
-                    foregroundColor: VineTheme.onErrorContainer,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                      horizontal: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: Text(
-                    'Block',
-                    style: VineTheme.titleMediumFont(
-                      color: VineTheme.onErrorContainer,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

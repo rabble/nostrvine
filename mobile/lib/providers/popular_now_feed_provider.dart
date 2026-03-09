@@ -43,6 +43,9 @@ class PopularNowFeed extends _$PopularNowFeed {
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
 
+    // Watch blocklist version — rebuilds when block/unblock actions occur.
+    ref.watch(blocklistVersionProvider);
+
     // Watch appReady gate - provider rebuilds when this changes
     final isAppReady = ref.watch(appReadyProvider);
 
@@ -72,11 +75,11 @@ class PopularNowFeed extends _$PopularNowFeed {
         name: 'PopularNowFeedProvider',
         category: LogCategory.video,
       );
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: true,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: true);
     }
+
+    // Read blocklist service for filtering blocked users
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
 
     // Try REST API first if available (use centralized availability check)
     final funnelcakeAvailable =
@@ -101,20 +104,21 @@ class PopularNowFeed extends _$PopularNowFeed {
             category: LogCategory.video,
           );
 
-          // Filter for platform compatibility and content preferences
+          // Filter for platform compatibility, content preferences,
+          // and blocked users
           final filteredVideos = videoEventService.filterVideoList(
-            apiVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+            apiVideos
+                .where((v) => v.isSupportedOnCurrentPlatform)
+                .where(
+                  (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+                )
+                .toList(),
           );
 
-          // Enrich REST API videos with Nostr tags for ProofMode badge
-          final enrichedVideos = await enrichVideosWithNostrTags(
-            filteredVideos,
-            nostrService: ref.read(nostrServiceProvider),
-            callerName: 'PopularNowFeedProvider',
-          );
+          _scheduleRestEnrichment(filteredVideos);
 
           return VideoFeedState(
-            videos: enrichedVideos,
+            videos: filteredVideos,
             hasMoreContent:
                 apiVideos.length >= AppConstants.paginationBatchSize,
             lastUpdated: DateTime.now(),
@@ -150,10 +154,15 @@ class PopularNowFeed extends _$PopularNowFeed {
       },
       getVideos: (service) => service.popularNowVideos,
       filterVideos: (videos) {
-        // Filter out WebM videos on iOS/macOS (not supported by AVPlayer)
-        // and filter by user content preferences
+        // Filter out WebM videos on iOS/macOS (not supported by AVPlayer),
+        // filter by user content preferences, and remove blocked users
         return videoEventService.filterVideoList(
-          videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+          videos
+              .where((v) => v.isSupportedOnCurrentPlatform)
+              .where(
+                (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+              )
+              .toList(),
         );
       },
       sortVideos: (videos) {
@@ -173,10 +182,7 @@ class PopularNowFeed extends _$PopularNowFeed {
 
     // Check if still mounted after async gap
     if (!ref.mounted) {
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     // Set up continuous listener for updates
@@ -252,6 +258,9 @@ class PopularNowFeed extends _$PopularNowFeed {
 
         if (apiVideos.isNotEmpty) {
           // Deduplicate and merge (case-insensitive for Nostr IDs)
+          final blocklistService = ref.read(
+            contentBlocklistServiceProvider,
+          );
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
@@ -259,6 +268,9 @@ class PopularNowFeed extends _$PopularNowFeed {
             apiVideos
                 .where((v) => !existingIds.contains(v.id.toLowerCase()))
                 .where((v) => v.isSupportedOnCurrentPlatform)
+                .where(
+                  (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+                )
                 .toList(),
           );
 
@@ -266,15 +278,9 @@ class PopularNowFeed extends _$PopularNowFeed {
           _nextCursor = _getOldestTimestamp(apiVideos);
 
           if (newVideos.isNotEmpty) {
-            // Enrich REST API videos with Nostr tags for ProofMode badge
-            final enrichedNewVideos = await enrichVideosWithNostrTags(
-              newVideos,
-              nostrService: ref.read(nostrServiceProvider),
-              callerName: 'PopularNowFeedProvider',
-            );
-            final allVideos = [...currentState.videos, ...enrichedNewVideos];
+            final allVideos = [...currentState.videos, ...newVideos];
             Log.info(
-              '🆕 PopularNowFeed: Loaded ${enrichedNewVideos.length} new videos from REST API (total: ${allVideos.length})',
+              '🆕 PopularNowFeed: Loaded ${newVideos.length} new videos from REST API (total: ${allVideos.length})',
               name: 'PopularNowFeedProvider',
               category: LogCategory.video,
             );
@@ -287,6 +293,7 @@ class PopularNowFeed extends _$PopularNowFeed {
                 lastUpdated: DateTime.now(),
               ),
             );
+            _scheduleRestEnrichment(newVideos);
           } else {
             Log.info(
               '🆕 PopularNowFeed: All returned videos already in state',
@@ -373,8 +380,14 @@ class PopularNowFeed extends _$PopularNowFeed {
     var updatedVideos = videoEventService.popularNowVideos.toList();
 
     // Apply same filtering as build()
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
     updatedVideos = videoEventService.filterVideoList(
-      updatedVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+      updatedVideos
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .where(
+            (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+          )
+          .toList(),
     );
 
     // Sort by timestamp (newest first)
@@ -420,28 +433,30 @@ class PopularNowFeed extends _$PopularNowFeed {
           // Reset cursor for pagination
           _nextCursor = _getOldestTimestamp(apiVideos);
 
-          final filteredVideos = videoEventService.filterVideoList(
-            apiVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+          final blocklistService = ref.read(
+            contentBlocklistServiceProvider,
           );
-
-          // Enrich REST API videos with Nostr tags for ProofMode badge
-          final enrichedVideos = await enrichVideosWithNostrTags(
-            filteredVideos,
-            nostrService: ref.read(nostrServiceProvider),
-            callerName: 'PopularNowFeedProvider',
+          final filteredVideos = videoEventService.filterVideoList(
+            apiVideos
+                .where((v) => v.isSupportedOnCurrentPlatform)
+                .where(
+                  (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+                )
+                .toList(),
           );
 
           state = AsyncData(
             VideoFeedState(
-              videos: enrichedVideos,
+              videos: filteredVideos,
               hasMoreContent:
                   apiVideos.length >= AppConstants.paginationBatchSize,
               lastUpdated: DateTime.now(),
             ),
           );
+          _scheduleRestEnrichment(filteredVideos);
 
           Log.info(
-            '✅ PopularNowFeed: Refreshed ${enrichedVideos.length} videos from REST API, cursor: $_nextCursor',
+            '✅ PopularNowFeed: Refreshed ${filteredVideos.length} videos from REST API, cursor: $_nextCursor',
             name: 'PopularNowFeedProvider',
             category: LogCategory.video,
           );
@@ -468,6 +483,67 @@ class PopularNowFeed extends _$PopularNowFeed {
   int? _getOldestTimestamp(List<VideoEvent> videos) {
     if (videos.isEmpty) return null;
     return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
+  }
+
+  void _scheduleRestEnrichment(List<VideoEvent> videos) {
+    if (videos.isEmpty) return;
+
+    enrichVideosInBackground(
+      videos,
+      nostrService: ref.read(nostrServiceProvider),
+      callerName: 'PopularNowFeedProvider',
+      onEnriched: (enrichedVideos) {
+        if (!ref.mounted || !_usingRestApi || !state.hasValue) return;
+
+        final currentState = state.value;
+        if (currentState == null || currentState.videos.isEmpty) return;
+
+        final mergedVideos = _mergeEnrichedVideos(
+          existing: currentState.videos,
+          enriched: enrichedVideos,
+        );
+
+        if (_videoListsEqual(currentState.videos, mergedVideos)) {
+          return;
+        }
+
+        state = AsyncData(
+          currentState.copyWith(
+            videos: mergedVideos,
+            lastUpdated: DateTime.now(),
+          ),
+        );
+
+        Log.info(
+          '🆕 PopularNowFeed: Applied background Nostr enrichment to ${enrichedVideos.length} videos',
+          name: 'PopularNowFeedProvider',
+          category: LogCategory.video,
+        );
+      },
+    );
+  }
+
+  List<VideoEvent> _mergeEnrichedVideos({
+    required List<VideoEvent> existing,
+    required List<VideoEvent> enriched,
+  }) {
+    final enrichedById = {
+      for (final video in enriched) video.id.toLowerCase(): video,
+    };
+
+    return existing.map((video) {
+      return enrichedById[video.id.toLowerCase()] ?? video;
+    }).toList();
+  }
+
+  bool _videoListsEqual(List<VideoEvent> a, List<VideoEvent> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 }
 

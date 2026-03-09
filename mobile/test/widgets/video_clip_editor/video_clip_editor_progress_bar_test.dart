@@ -1,11 +1,12 @@
 // ABOUTME: Widget tests for VideoClipEditorProgressBar widget
 // ABOUTME: Tests progress bar segments, colors, and animations
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -19,7 +20,7 @@ void main() {
     ) async {
       final clips = List.generate(
         3,
-        (i) => RecordingClip(
+        (i) => DivineVideoClip(
           id: 'clip$i',
           video: EditorVideo.file('/test/clip$i.mp4'),
           duration: const Duration(seconds: 2),
@@ -59,7 +60,7 @@ void main() {
       tester,
     ) async {
       final clips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
@@ -67,7 +68,7 @@ void main() {
           targetAspectRatio: .vertical,
           originalAspectRatio: 9 / 16,
         ),
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip2',
           video: EditorVideo.file('/test/clip2.mp4'),
           duration: const Duration(seconds: 4),
@@ -106,7 +107,7 @@ void main() {
     testWidgets('completed clips show green color', (tester) async {
       final clips = List.generate(
         3,
-        (i) => RecordingClip(
+        (i) => DivineVideoClip(
           id: 'clip$i',
           video: EditorVideo.file('/test/clip$i.mp4'),
           duration: const Duration(seconds: 2),
@@ -141,20 +142,20 @@ void main() {
           .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
           .toList();
 
-      // First two clips should be green (completed)
+      // First two clips should be green with alpha (completed)
       final firstClipDecoration = containers[0].decoration as BoxDecoration?;
       final secondClipDecoration = containers[1].decoration as BoxDecoration?;
-      expect(firstClipDecoration?.color, const Color(0xFF146346));
-      expect(secondClipDecoration?.color, const Color(0xFF146346));
+      expect(firstClipDecoration?.color, VineTheme.primary.withAlpha(128));
+      expect(secondClipDecoration?.color, VineTheme.primary.withAlpha(128));
 
-      // Current clip (index 2) should be gray
+      // Current clip (index 2) should be disabled color
       final currentClipDecoration = containers[2].decoration as BoxDecoration?;
-      expect(currentClipDecoration?.color, const Color(0xFF404040));
+      expect(currentClipDecoration?.color, VineTheme.onSurfaceDisabled);
     });
 
     testWidgets('reordering clip shows special styling', (tester) async {
       final clips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
@@ -190,19 +191,19 @@ void main() {
       );
       final decoration = container.decoration as BoxDecoration?;
 
-      // Should have green color
-      expect(decoration?.color, const Color(0xFF27C58B));
+      // Should have primary green color
+      expect(decoration?.color, VineTheme.primary);
 
       // Should have yellow border
       expect(decoration?.border, isNotNull);
       final border = decoration?.border as Border?;
-      expect(border?.top.color, const Color(0xFFEBDE3B));
+      expect(border?.top.color, VineTheme.accentYellow);
       expect(border?.top.width, 3);
     });
 
     testWidgets('displays progress overlay on current clip', (tester) async {
       final clips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 10),
@@ -247,7 +248,7 @@ void main() {
 
     testWidgets('first and last segments have rounded corners', (tester) async {
       final clips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
@@ -255,7 +256,7 @@ void main() {
           targetAspectRatio: .vertical,
           originalAspectRatio: 9 / 16,
         ),
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip2',
           video: EditorVideo.file('/test/clip2.mp4'),
           duration: const Duration(seconds: 2),

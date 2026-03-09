@@ -1,7 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
@@ -18,7 +18,7 @@ class VideoMetadataClipPreview extends ConsumerWidget {
   const VideoMetadataClipPreview({super.key});
 
   /// Opens the full-screen video preview with a fade transition.
-  Future<void> _openPreview(BuildContext context, RecordingClip clip) async {
+  Future<void> _openPreview(BuildContext context, DivineVideoClip clip) async {
     await Navigator.push(
       context,
       PageRouteBuilder<void>(
@@ -101,12 +101,12 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                                 ? // Video thumbnail image
                                   VideoMetadataPreviewThumbnail(clip: clip)
                                 : // Fallback placeholder
-                                  ColoredBox(
-                                    color: Colors.grey.shade400,
-                                    child: const Icon(
+                                  const ColoredBox(
+                                    color: VineTheme.secondaryText,
+                                    child: Icon(
                                       Icons.play_circle_outline,
                                       size: 64,
-                                      color: Colors.white,
+                                      color: VineTheme.whiteText,
                                     ),
                                   ),
                           ),

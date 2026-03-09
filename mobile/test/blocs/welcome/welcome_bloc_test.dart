@@ -4,6 +4,7 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:db_client/db_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/welcome/welcome_bloc.dart';
@@ -305,6 +306,33 @@ void main() {
             status: WelcomeStatus.error,
             previousAccounts: [_testPreviousAccount],
             error: 'Failed to continue: Exception: Network error',
+          ),
+        ],
+      );
+
+      blocTest<WelcomeBloc, WelcomeState>(
+        'emits user-friendly error on $SessionExpiredException',
+        setUp: () {
+          when(
+            () => mockAuthService.signInForAccount(any(), any()),
+          ).thenThrow(SessionExpiredException());
+        },
+        build: buildBloc,
+        seed: () => const WelcomeState(
+          status: WelcomeStatus.loaded,
+          previousAccounts: [_testPreviousAccount],
+        ),
+        act: (bloc) => bloc.add(const WelcomeLogBackInRequested()),
+        expect: () => [
+          const WelcomeState(
+            status: WelcomeStatus.accepting,
+            previousAccounts: [_testPreviousAccount],
+            signingInPubkeyHex: _testPubkeyHex,
+          ),
+          const WelcomeState(
+            status: WelcomeStatus.error,
+            previousAccounts: [_testPreviousAccount],
+            error: 'Your session has expired. Please sign in again.',
           ),
         ],
       );

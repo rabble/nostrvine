@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -20,7 +20,7 @@ void main() {
     testWidgets('displays multiple clips in gallery', (tester) async {
       final clips = List.generate(
         3,
-        (i) => RecordingClip(
+        (i) => DivineVideoClip(
           id: 'clip$i',
           video: EditorVideo.file('assets/videos/default_intro.mp4'),
           duration: const Duration(seconds: 2),
@@ -60,7 +60,7 @@ void main() {
     testWidgets('displays Scrollable for clips', (tester) async {
       final clips = List.generate(
         2,
-        (i) => RecordingClip(
+        (i) => DivineVideoClip(
           id: 'clip$i',
           video: EditorVideo.file('assets/videos/default_intro.mp4'),
           duration: const Duration(seconds: 2),
@@ -95,7 +95,7 @@ void main() {
 
     testWidgets('displays instruction text when not editing', (tester) async {
       final clips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('assets/videos/default_intro.mp4'),
           duration: const Duration(seconds: 2),
@@ -134,7 +134,7 @@ void main() {
     testWidgets('can scroll through clips', (tester) async {
       final clips = List.generate(
         3,
-        (i) => RecordingClip(
+        (i) => DivineVideoClip(
           id: 'clip$i',
           video: EditorVideo.file('assets/videos/default_intro.mp4'),
           duration: const Duration(seconds: 2),

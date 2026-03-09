@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -85,7 +86,7 @@ class ShareService {
     try {
       final shareText = generateShareText(video);
       await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: 'Check out this video on divine'),
+        ShareParams(text: shareText, subject: 'Check out this video on Divine'),
       );
     } catch (e) {
       Log.error(
@@ -137,7 +138,7 @@ class _ShareOptionsBottomSheet extends StatelessWidget {
           width: 40,
           height: 4,
           decoration: BoxDecoration(
-            color: Colors.grey[300],
+            color: VineTheme.secondaryText,
             borderRadius: BorderRadius.circular(2),
           ),
         ),

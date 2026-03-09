@@ -28,6 +28,8 @@ const _notificationRetentionDays = 7;
     PersonalReposts,
     PendingActions,
     Nip05Verifications,
+    Drafts,
+    Clips,
   ],
   daos: [
     UserProfilesDao,
@@ -41,6 +43,8 @@ const _notificationRetentionDays = 7;
     PersonalRepostsDao,
     PendingActionsDao,
     Nip05VerificationsDao,
+    DraftsDao,
+    ClipsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -155,6 +159,158 @@ class AppDatabase extends _$AppDatabase {
         ON pending_actions (created_at)
       ''');
     }
+
+    // Check if drafts table exists, create if missing
+    final draftsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='drafts'",
+    ).get();
+
+    if (draftsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE drafts (
+          id TEXT NOT NULL PRIMARY KEY,
+          title TEXT NOT NULL DEFAULT '',
+          description TEXT NOT NULL DEFAULT '',
+          publish_status TEXT NOT NULL DEFAULT 'draft',
+          publish_attempts INTEGER NOT NULL DEFAULT 0,
+          publish_error TEXT,
+          created_at INTEGER NOT NULL,
+          last_modified INTEGER NOT NULL,
+          data TEXT NOT NULL
+        )
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_draft_publish_status
+        ON drafts (publish_status)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_draft_last_modified
+        ON drafts (last_modified DESC)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_draft_created_at
+        ON drafts (created_at DESC)
+      ''');
+    }
+
+    // Check if clips table exists, create if missing
+    final clipsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='clips'",
+    ).get();
+
+    if (clipsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE clips (
+          id TEXT NOT NULL PRIMARY KEY,
+          draft_id TEXT,
+          order_index INTEGER NOT NULL DEFAULT 0,
+          duration_ms INTEGER NOT NULL,
+          recorded_at INTEGER NOT NULL,
+          data TEXT NOT NULL,
+          FOREIGN KEY (draft_id) REFERENCES drafts(id) ON DELETE CASCADE
+        )
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_clip_draft_id
+        ON clips (draft_id)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_clip_draft_order
+        ON clips (draft_id, order_index)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_clip_recorded_at
+        ON clips (recorded_at DESC)
+      ''');
+    }
+
+    // Create partial index unconditionally (for new and existing databases)
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_library
+      ON clips (draft_id) WHERE draft_id IS NULL
+    ''');
+
+    // Add file_path / thumbnail_path columns to clips (if missing)
+    await _addColumnIfMissing('clips', 'file_path', 'TEXT');
+    await _addColumnIfMissing('clips', 'thumbnail_path', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_file_path
+      ON clips (file_path)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_thumbnail_path
+      ON clips (thumbnail_path)
+    ''');
+
+    // Add rendered_file_path / rendered_thumbnail_path to drafts (if missing)
+    await _addColumnIfMissing('drafts', 'rendered_file_path', 'TEXT');
+    await _addColumnIfMissing('drafts', 'rendered_thumbnail_path', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_draft_rendered_file_path
+      ON drafts (rendered_file_path)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_draft_rendered_thumbnail_path
+      ON drafts (rendered_thumbnail_path)
+    ''');
+
+    // Populate new columns from existing JSON data blobs
+    await _backfillFilePathColumns();
+  }
+
+  /// Adds a column to a table if it does not already exist.
+  Future<void> _addColumnIfMissing(
+    String table,
+    String column,
+    String type,
+  ) async {
+    final columns = await customSelect(
+      'PRAGMA table_info($table)',
+    ).get();
+    final exists = columns.any(
+      (row) => row.read<String>('name') == column,
+    );
+    if (!exists) {
+      await customStatement('ALTER TABLE $table ADD COLUMN $column $type');
+    }
+  }
+
+  /// Populates file_path / thumbnail_path columns from JSON data blobs
+  /// for rows where they are still NULL.
+  Future<void> _backfillFilePathColumns() async {
+    // Clips: backfill file_path where missing
+    await customStatement(r'''
+      UPDATE clips
+      SET file_path = json_extract(data, '$.filePath')
+      WHERE file_path IS NULL
+    ''');
+
+    // Clips: backfill thumbnail_path where missing
+    await customStatement(r'''
+      UPDATE clips
+      SET thumbnail_path = json_extract(data, '$.thumbnailPath')
+      WHERE thumbnail_path IS NULL
+    ''');
+
+    // Drafts: backfill rendered_file_path where missing
+    await customStatement(r'''
+      UPDATE drafts
+      SET rendered_file_path = json_extract(
+            data, '$.finalRenderedClip.filePath'
+          )
+      WHERE rendered_file_path IS NULL
+    ''');
+
+    // Drafts: backfill rendered_thumbnail_path where missing
+    await customStatement(r'''
+      UPDATE drafts
+      SET rendered_thumbnail_path = json_extract(
+            data, '$.finalRenderedClip.thumbnailPath'
+          )
+      WHERE rendered_thumbnail_path IS NULL
+    ''');
   }
 
   /// Runs cleanup of expired data from all tables.

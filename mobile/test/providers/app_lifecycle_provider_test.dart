@@ -51,10 +51,7 @@ void main() {
         // videosForExploreRouteProvider for explore routes
         videosForExploreRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
-            VideoFeedState(
-              videos: mockVideos,
-              hasMoreContent: false,
-            ),
+            VideoFeedState(videos: mockVideos, hasMoreContent: false),
           );
         }),
       ],
@@ -104,10 +101,7 @@ void main() {
         // Feed (one item)
         videosForExploreRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
-            VideoFeedState(
-              videos: mockVideos,
-              hasMoreContent: false,
-            ),
+            VideoFeedState(videos: mockVideos, hasMoreContent: false),
           );
         }),
       ],

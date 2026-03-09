@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -42,7 +42,7 @@ void main() {
             () => TestClipManagerNotifier(
               ClipManagerState(
                 clips: [
-                  RecordingClip(
+                  DivineVideoClip(
                     id: 'test-clip',
                     video: EditorVideo.file('/test/clip.mp4'),
                     duration: totalDuration,

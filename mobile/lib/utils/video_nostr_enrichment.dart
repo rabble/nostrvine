@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
@@ -86,17 +88,14 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           originalLikes: video.originalLikes ?? parsed.originalLikes,
           originalComments: video.originalComments ?? parsed.originalComments,
           originalReposts: video.originalReposts ?? parsed.originalReposts,
-          /* FIXME: The audio show always a skeleton below of the video
-          description, so we don't add them for the ZapStore.
-
-          audioEventId: video.audioEventId? parsed.audioEventId: null
+          audioEventId: video.audioEventId ?? parsed.audioEventId,
           audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay,
-          */
           collaboratorPubkeys: video.collaboratorPubkeys.isEmpty
               ? parsed.collaboratorPubkeys
               : video.collaboratorPubkeys,
           inspiredByVideo: video.inspiredByVideo ?? parsed.inspiredByVideo,
           textTrackRef: video.textTrackRef ?? parsed.textTrackRef,
+          textTrackContent: video.textTrackContent ?? parsed.textTrackContent,
           nostrEventTags: video.nostrEventTags.isEmpty
               ? parsed.nostrEventTags
               : video.nostrEventTags,
@@ -113,4 +112,32 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
     );
     return videos;
   }
+}
+
+/// Fire-and-forget enrichment that calls [onEnriched] when complete.
+///
+/// Returns the original [videos] immediately. Enrichment runs in the
+/// background; when it finishes, [onEnriched] is called with the
+/// enriched list so the caller can update its state. If enrichment
+/// fails, [onEnriched] is never called and the un-enriched videos
+/// remain visible.
+List<VideoEvent> enrichVideosInBackground(
+  List<VideoEvent> videos, {
+  required NostrClient nostrService,
+  required void Function(List<VideoEvent> enrichedVideos) onEnriched,
+  String callerName = 'VideoEnrichment',
+}) {
+  unawaited(
+    enrichVideosWithNostrTags(
+      videos,
+      nostrService: nostrService,
+      callerName: callerName,
+    ).then((enriched) {
+      // Only call back if enrichment actually changed something
+      if (enriched != videos) {
+        onEnriched(enriched);
+      }
+    }),
+  );
+  return videos;
 }

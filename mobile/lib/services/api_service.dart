@@ -1,4 +1,4 @@
-// ABOUTME: HTTP API service for communicating with the divine backend
+// ABOUTME: HTTP API service for communicating with the Divine backend
 import 'dart:async';
 import 'dart:convert';
 
@@ -117,12 +117,7 @@ class ApiService {
       final uri = Uri.parse('$_baseUrl/v1/media/status');
 
       final response = await _client
-          .get(
-            uri,
-            headers: await _getHeaders(
-              url: uri.toString(),
-            ),
-          )
+          .get(uri, headers: await _getHeaders(url: uri.toString()))
           .timeout(_defaultTimeout);
 
       if (response.statusCode == 200) {

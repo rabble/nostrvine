@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-//adding c2pa support for publishing c2pa manifest data into nostr
 import 'package:db_client/db_client.dart';
 import 'package:models/models.dart'
     hide LogCategory, NIP71VideoKinds, PendingUpload, UploadStatus;
@@ -257,6 +256,7 @@ class VideoEventPublisher {
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
+    String? contentWarning,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -276,6 +276,7 @@ class VideoEventPublisher {
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
       language: language,
+      contentWarning: contentWarning,
     );
   }
 
@@ -291,6 +292,7 @@ class VideoEventPublisher {
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
+    String? contentWarning,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
@@ -574,6 +576,16 @@ class VideoEventPublisher {
       if (language != null && language.isNotEmpty) {
         tags.add(['L', 'ISO-639-1']);
         tags.add(['l', language, 'ISO-639-1']);
+      }
+
+      // Add NIP-32 content-warning self-labeling tags (NIP-36).
+      if (contentWarning != null && contentWarning.isNotEmpty) {
+        final warnings = contentWarning.split(',').map((value) => value.trim());
+        tags.add(['content-warning', warnings.first]);
+        tags.add(['L', 'content-warning']);
+        for (final warning in warnings) {
+          tags.add(['l', warning, 'content-warning']);
+        }
       }
 
       // Add client tag

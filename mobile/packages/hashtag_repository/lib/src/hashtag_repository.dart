@@ -4,6 +4,9 @@
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 
+/// Callback for searching locally cached hashtags.
+typedef LocalHashtagSearch = List<String> Function(String query, int limit);
+
 /// Repository for searching hashtags.
 ///
 /// Provides a clean abstraction over the Funnelcake API for hashtag search.
@@ -12,9 +15,12 @@ class HashtagRepository {
   /// Creates a new [HashtagRepository] instance.
   const HashtagRepository({
     required FunnelcakeApiClient funnelcakeApiClient,
-  }) : _funnelcakeApiClient = funnelcakeApiClient;
+    LocalHashtagSearch? localSearch,
+  }) : _funnelcakeApiClient = funnelcakeApiClient,
+       _localSearch = localSearch;
 
   final FunnelcakeApiClient _funnelcakeApiClient;
+  final LocalHashtagSearch? _localSearch;
 
   /// Searches for hashtags matching [query].
   ///
@@ -34,6 +40,21 @@ class HashtagRepository {
     query: query,
     limit: limit,
   );
+
+  /// Searches locally cached hashtags without performing a network request.
+  List<String> searchHashtagsLocally({
+    required String query,
+    int limit = 20,
+  }) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty || _localSearch == null) return const [];
+    return _localSearch(trimmed, limit);
+  }
+
+  /// Counts locally cached hashtag matches.
+  int countHashtagsLocally({required String query}) {
+    return searchHashtagsLocally(query: query, limit: 1000).length;
+  }
 
   /// Fetches trending hashtags.
   ///

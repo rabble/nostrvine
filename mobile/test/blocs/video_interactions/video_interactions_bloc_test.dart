@@ -546,9 +546,7 @@ void main() {
             isLiked: true,
             isLikeInProgress: true,
           ),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-          ),
+          const VideoInteractionsState(status: VideoInteractionsStatus.success),
         ],
       );
 
@@ -758,9 +756,7 @@ void main() {
             isReposted: true,
             isRepostInProgress: true,
           ),
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-          ),
+          const VideoInteractionsState(status: VideoInteractionsStatus.success),
         ],
       );
 

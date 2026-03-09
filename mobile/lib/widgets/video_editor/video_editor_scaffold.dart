@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +13,7 @@ import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_bottom_bar.dart';
-import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_top_bar.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_overlay_actions.dart';
 
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_remove_area.dart';
 
@@ -37,9 +39,7 @@ class VideoEditorScaffold extends ConsumerWidget {
           clipBehavior: .none,
           children: [
             VideoEditorCanvas(),
-
             _OverlayControls(),
-
             _BottomActions(),
           ],
         ),
@@ -78,7 +78,7 @@ class _OverlayControls extends StatelessWidget {
                   key: ValueKey('Filter-Overlay-Controls'),
                 ),
               // Fallback
-              _ => const VideoEditorMainTopBar(),
+              _ => const VideoEditorMainOverlayActions(),
             };
 
             return AnimatedSwitcher(
@@ -110,8 +110,11 @@ class _BottomActions extends StatelessWidget {
       alignment: .bottomCenter,
       child: SafeArea(
         top: false,
+        left: false,
         child: SizedBox(
-          height: VideoEditorConstants.bottomBarHeight,
+          height:
+              VideoEditorConstants.bottomBarHeight +
+              VideoEditorConstants.canvasRadius,
           child: BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
             buildWhen: (previous, current) =>
                 previous.isLayerInteractionActive !=
@@ -122,41 +125,49 @@ class _BottomActions extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 child: state.isLayerInteractionActive
                     ? const VideoEditorRemoveArea()
-                    : AnimatedSwitcher(
-                        switchInCurve: Curves.easeInOut,
-                        duration: const Duration(milliseconds: 200),
-                        transitionBuilder: (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: SizeTransition(
-                            sizeFactor: animation,
-                            axisAlignment: -1,
-                            child: child,
-                          ),
-                        ),
-                        layoutBuilder: (currentChild, previousChildren) =>
-                            Container(
-                              height: VideoEditorConstants.bottomBarHeight,
-                              color: VineTheme.surfaceContainerHigh,
-                              child: Stack(
-                                clipBehavior: .none,
-                                alignment: .bottomCenter,
-                                children: <Widget>[?currentChild],
+                    : Column(
+                        children: [
+                          const _BottomCornerArcs(),
+                          AnimatedSwitcher(
+                            switchInCurve: Curves.easeInOut,
+                            duration: const Duration(milliseconds: 200),
+                            transitionBuilder: (child, animation) =>
+                                FadeTransition(
+                                  opacity: animation,
+                                  child: SizeTransition(
+                                    sizeFactor: animation,
+                                    axisAlignment: -1,
+                                    child: child,
+                                  ),
+                                ),
+                            layoutBuilder: (currentChild, previousChildren) =>
+                                Container(
+                                  height: VideoEditorConstants.bottomBarHeight,
+                                  color: VineTheme.surfaceContainerHigh,
+                                  child: Stack(
+                                    clipBehavior: .none,
+                                    alignment: .bottomCenter,
+                                    children: <Widget>[?currentChild],
+                                  ),
+                                ),
+                            child: switch (state.openSubEditor) {
+                              // Text-Bar (no bottom bar for text editor)
+                              .text => const SizedBox(),
+                              // Draw-Bar
+                              .draw => const VideoEditorDrawBottomBar(
+                                key: ValueKey('Draw-Editor-Bottom-Bar'),
                               ),
-                            ),
-                        child: switch (state.openSubEditor) {
-                          // Text-Bar (no bottom bar for text editor)
-                          .text => const SizedBox(),
-                          // Draw-Bar
-                          .draw => const VideoEditorDrawBottomBar(
-                            key: ValueKey('Draw-Editor-Bottom-Bar'),
+                              // Filter-Bar
+                              .filter => const VideoEditorFilterBottomBar(
+                                key: ValueKey('Filter-Editor-Bottom-Bar'),
+                              ),
+                              // Audio-Bar (no bottom bar, timing screen has its own)
+                              .music => const SizedBox(),
+                              // Main-Bar
+                              _ => const VideoEditorMainBottomBar(),
+                            },
                           ),
-                          // Filter-Bar
-                          .filter => const VideoEditorFilterBottomBar(
-                            key: ValueKey('Filter-Editor-Bottom-Bar'),
-                          ),
-                          // Main-Bar
-                          _ => const VideoEditorMainBottomBar(),
-                        },
+                        ],
                       ),
               );
             },
@@ -165,4 +176,79 @@ class _BottomActions extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BottomCornerArcs extends StatelessWidget {
+  const _BottomCornerArcs();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: .infinity,
+      height: VideoEditorConstants.canvasRadius,
+      child: CustomPaint(
+        painter: _BottomCornerArcsPainter(
+          arcRadius: VideoEditorConstants.canvasRadius,
+          color: VineTheme.surfaceContainerHigh,
+        ),
+      ),
+    );
+  }
+}
+
+class _BottomCornerArcsPainter extends CustomPainter {
+  _BottomCornerArcsPainter({
+    required this.arcRadius,
+    required this.color,
+  });
+
+  final double arcRadius;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = .fill;
+
+    final double radius = arcRadius.clamp(
+      0.0,
+      math.min(size.width / 2, size.height),
+    );
+
+    // Bottom-left: quarter-circle hole curving into the video area
+    final leftPath = Path()
+      ..moveTo(0, 0)
+      ..lineTo(0, size.height)
+      ..lineTo(radius, size.height)
+      ..arcTo(
+        Rect.fromCircle(center: Offset(radius, 0), radius: radius),
+        math.pi / 2, // start: bottom (radius, radius)
+        math.pi / 2, // sweep CW toward (0, 0)
+        false,
+      )
+      ..close();
+    canvas.drawPath(leftPath, paint);
+
+    // Bottom-right: quarter-circle hole curving into the video area
+    final rightPath = Path()
+      ..moveTo(size.width, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(size.width - radius, size.height)
+      ..arcTo(
+        Rect.fromCircle(
+          center: Offset(size.width - radius, 0),
+          radius: radius,
+        ),
+        math.pi / 2, // start: bottom (width - radius, radius)
+        -math.pi / 2, // sweep CCW toward (width, 0)
+        false,
+      )
+      ..close();
+    canvas.drawPath(rightPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _BottomCornerArcsPainter oldDelegate) =>
+      oldDelegate.arcRadius != arcRadius || oldDelegate.color != color;
 }

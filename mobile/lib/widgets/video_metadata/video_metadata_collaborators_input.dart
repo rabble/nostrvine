@@ -141,7 +141,6 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
 
     // Verify mutual follow
     final followRepo = ref.read(followRepositoryProvider);
-    if (followRepo == null) return;
     final isMutual = await followRepo.isMutualFollow(profile.pubkey);
 
     if (!isMutual) {
@@ -221,7 +220,7 @@ class _CollaboratorChip extends ConsumerWidget {
                 child: SvgPicture.asset(
                   'assets/icon/close.svg',
                   colorFilter: const ColorFilter.mode(
-                    Color(0xFF818F8B),
+                    VineTheme.lightText,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -253,7 +252,7 @@ class _AddCollaboratorButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          color: const Color(0x8C032017),
+          color: VineTheme.surfaceContainer55,
           border: Border.all(color: VineTheme.outlineVariant),
         ),
         child: Row(
@@ -264,7 +263,7 @@ class _AddCollaboratorButton extends StatelessWidget {
               height: 22,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(7),
-                color: const Color(0xFF0E2B21),
+                color: VineTheme.outlineMuted,
               ),
               child: const Icon(Icons.add, color: VineTheme.primary, size: 15),
             ),
@@ -314,7 +313,7 @@ class _HelpButton extends StatelessWidget {
           width: 22,
           height: 22,
           decoration: BoxDecoration(
-            color: const Color(0x8C032017),
+            color: VineTheme.surfaceContainer55,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(color: VineTheme.outlineVariant),
           ),

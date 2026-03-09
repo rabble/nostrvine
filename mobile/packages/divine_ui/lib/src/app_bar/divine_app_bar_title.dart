@@ -123,8 +123,8 @@ class _TitleContent extends StatelessWidget {
               height: style.dropdownCaretSize,
               child: SvgPicture.asset(
                 DiVineAppBarTitle.caretDownAsset,
-                colorFilter: const ColorFilter.mode(
-                  VineTheme.whiteText,
+                colorFilter: ColorFilter.mode(
+                  style.iconColor ?? VineTheme.whiteText,
                   BlendMode.srcIn,
                 ),
               ),

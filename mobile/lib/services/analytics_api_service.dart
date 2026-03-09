@@ -297,6 +297,7 @@ class AnalyticsApiService {
     int limit = 50,
     int? before,
     bool forceRefresh = false,
+    Duration? timeout,
   }) async {
     if (!isAvailable) return [];
 
@@ -336,7 +337,7 @@ class AnalyticsApiService {
               'User-Agent': 'OpenVine-Mobile/1.0',
             },
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(timeout ?? const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -1030,12 +1031,15 @@ class AnalyticsApiService {
             'lud16': profile['lud16'],
           };
         }
+        // User exists in FunnelCake but has no Kind 0 profile data.
+        // Return sentinel so caller can skip the relay/indexer fallback.
         Log.debug(
-          'FunnelCake returned user but no profile data',
+          'FunnelCake returned user but no profile data for $pubkey'
+          ' - returning confirmed-missing sentinel',
           name: 'AnalyticsApiService',
           category: LogCategory.system,
         );
-        return null;
+        return {'_noProfile': true, 'pubkey': pubkey};
       } else if (response.statusCode == 404) {
         Log.debug(
           'Profile not found in FunnelCake: $pubkey',
@@ -1646,9 +1650,22 @@ class AnalyticsApiService {
         for (final user in usersData) {
           if (user is Map<String, dynamic>) {
             final pubkey = user['pubkey']?.toString();
+            if (pubkey == null || pubkey.isEmpty) continue;
+
             final profile = user['profile'] as Map<String, dynamic>?;
-            if (pubkey != null && pubkey.isNotEmpty && profile != null) {
-              result[pubkey] = profile;
+            if (profile != null) {
+              // Check if profile has any real data
+              final hasProfileData =
+                  profile['name'] != null ||
+                  profile['display_name'] != null ||
+                  profile['picture'] != null ||
+                  profile['about'] != null;
+              if (hasProfileData) {
+                result[pubkey] = profile;
+              } else {
+                // User exists but has no Kind 0 profile data
+                result[pubkey] = {'_noProfile': true};
+              }
             }
           }
         }

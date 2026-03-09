@@ -48,7 +48,7 @@ class ProfileLikedGrid extends StatelessWidget {
                 child: Center(
                   child: Text(
                     'Error loading liked videos',
-                    style: TextStyle(color: Colors.white),
+                    style: TextStyle(color: VineTheme.whiteText),
                   ),
                 ),
               ),
@@ -140,12 +140,16 @@ class _LikedEmptyState extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.favorite_border, color: Colors.grey, size: 64),
+              const Icon(
+                Icons.favorite_border,
+                color: VineTheme.lightText,
+                size: 64,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'No Liked Videos Yet',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -155,7 +159,10 @@ class _LikedEmptyState extends StatelessWidget {
                 isOwnProfile
                     ? 'Videos you like will appear here'
                     : 'Videos they like will appear here',
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
+                style: const TextStyle(
+                  color: VineTheme.lightText,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),

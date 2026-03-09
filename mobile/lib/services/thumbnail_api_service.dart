@@ -1,4 +1,4 @@
-// ABOUTME: Service for interacting with divine thumbnail generation API
+// ABOUTME: Service for interacting with Divine thumbnail generation API
 // ABOUTME: Handles automatic thumbnail generation, custom uploads, and caching
 
 import 'dart:typed_data';
@@ -12,7 +12,7 @@ enum ThumbnailSize {
   large, // 1280x720
 }
 
-/// Service for divine thumbnail API operations
+/// Service for Divine thumbnail API operations
 class ThumbnailApiService {
   static const String _baseUrl = 'https://api.openvine.co';
 

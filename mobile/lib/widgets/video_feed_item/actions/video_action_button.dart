@@ -86,7 +86,9 @@ class VideoActionButton extends StatelessWidget {
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
+                          color: VineTheme.backgroundColor.withValues(
+                            alpha: 0.15,
+                          ),
                           blurRadius: 15,
                           spreadRadius: 1,
                         ),

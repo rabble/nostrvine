@@ -103,7 +103,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                     spacing: 16,
                     children: [
                       VideoEditorIconButton(
-                        backgroundColor: const Color(0x00000000),
+                        backgroundColor: Colors.transparent,
                         icon: state.isPlaying ? .pause : .play,
                         onTap: notifier.togglePlayPause,
                         // TODO(l10n): Replace with context.l10n when localization is added.
@@ -111,7 +111,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                       ),
                       if (state.isEditing)
                         VideoEditorIconButton(
-                          backgroundColor: const Color(0x00000000),
+                          backgroundColor: Colors.transparent,
                           icon: .scissors,
                           onTap: () => _handleSplitClip(context, ref),
                           // TODO(l10n): Replace with context.l10n when localization is added.
@@ -197,7 +197,7 @@ class _ClipRemoveArea extends ConsumerWidget {
           key: deleteButtonKey,
           padding: const .all(10),
           decoration: ShapeDecoration(
-            color: const Color(0xFFF44336),
+            color: VineTheme.error,
             shape: RoundedRectangleBorder(borderRadius: .circular(20)),
           ),
           child: const DivineIcon(

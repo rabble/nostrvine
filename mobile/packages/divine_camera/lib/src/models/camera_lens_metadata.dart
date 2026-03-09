@@ -243,4 +243,53 @@ class CameraLensMetadata extends Equatable {
     isoMin,
     isoMax,
   ];
+
+  /// Creates a copy of this metadata with the given fields replaced.
+  CameraLensMetadata copyWith({
+    String? lensType,
+    String? cameraId,
+    double? focalLength,
+    double? focalLengthEquivalent35mm,
+    double? aperture,
+    double? sensorWidth,
+    double? sensorHeight,
+    int? pixelArrayWidth,
+    int? pixelArrayHeight,
+    double? minFocusDistance,
+    double? fieldOfView,
+    bool? hasOpticalStabilization,
+    bool? isLogicalCamera,
+    List<String>? physicalCameraIds,
+    double? exposureDuration,
+    double? exposureTimeMin,
+    double? exposureTimeMax,
+    double? iso,
+    int? isoMin,
+    int? isoMax,
+  }) {
+    return CameraLensMetadata(
+      lensType: lensType ?? this.lensType,
+      cameraId: cameraId ?? this.cameraId,
+      focalLength: focalLength ?? this.focalLength,
+      focalLengthEquivalent35mm:
+          focalLengthEquivalent35mm ?? this.focalLengthEquivalent35mm,
+      aperture: aperture ?? this.aperture,
+      sensorWidth: sensorWidth ?? this.sensorWidth,
+      sensorHeight: sensorHeight ?? this.sensorHeight,
+      pixelArrayWidth: pixelArrayWidth ?? this.pixelArrayWidth,
+      pixelArrayHeight: pixelArrayHeight ?? this.pixelArrayHeight,
+      minFocusDistance: minFocusDistance ?? this.minFocusDistance,
+      fieldOfView: fieldOfView ?? this.fieldOfView,
+      hasOpticalStabilization:
+          hasOpticalStabilization ?? this.hasOpticalStabilization,
+      isLogicalCamera: isLogicalCamera ?? this.isLogicalCamera,
+      physicalCameraIds: physicalCameraIds ?? this.physicalCameraIds,
+      exposureDuration: exposureDuration ?? this.exposureDuration,
+      exposureTimeMin: exposureTimeMin ?? this.exposureTimeMin,
+      exposureTimeMax: exposureTimeMax ?? this.exposureTimeMax,
+      iso: iso ?? this.iso,
+      isoMin: isoMin ?? this.isoMin,
+      isoMax: isoMax ?? this.isoMax,
+    );
+  }
 }

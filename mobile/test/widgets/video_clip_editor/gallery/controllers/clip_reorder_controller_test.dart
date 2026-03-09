@@ -37,6 +37,20 @@ void main() {
 
         expect(controller.enableTweenOffset, true);
       });
+
+      test('resets X drag offset notifier', () {
+        controller.dragOffsetNotifier.value = 42;
+        controller.startReorder(0);
+
+        expect(controller.dragOffsetNotifier.value, 0);
+      });
+
+      test('resets Y drag offset notifier', () {
+        controller.dragYOffsetNotifier.value = 99;
+        controller.startReorder(0);
+
+        expect(controller.dragYOffsetNotifier.value, 0);
+      });
     });
 
     group('addDragOffset', () {
@@ -110,6 +124,36 @@ void main() {
         expect(controller.dragResetStartValue, 42.5);
       });
 
+      test('prepareForDragReset sets Y reset value to zero', () {
+        controller.dragYOffsetNotifier.value = 80;
+        controller.prepareForDragReset();
+
+        // Y should not be animated when using X-only reset
+        controller.updateDragOffsetFromAnimation(1);
+        expect(controller.dragYOffsetNotifier.value, 80);
+      });
+
+      test('prepareForFullDragReset saves both X and Y offsets', () {
+        controller.dragOffsetNotifier.value = 42.5;
+        controller.dragYOffsetNotifier.value = 75;
+        controller.prepareForFullDragReset();
+
+        expect(controller.dragResetStartValue, 42.5);
+
+        // Verify Y animates by running animation to completion
+        controller.updateDragOffsetFromAnimation(1);
+        expect(controller.dragOffsetNotifier.value, 0);
+        expect(controller.dragYOffsetNotifier.value, 0);
+      });
+
+      test('prepareForFullDragReset Y animates at 50%', () {
+        controller.dragYOffsetNotifier.value = 100;
+        controller.prepareForFullDragReset();
+
+        controller.updateDragOffsetFromAnimation(0.5);
+        expect(controller.dragYOffsetNotifier.value, 50);
+      });
+
       test('updateDragOffsetFromAnimation interpolates to zero', () {
         controller.dragOffsetNotifier.value = 100;
         controller
@@ -134,6 +178,38 @@ void main() {
           ..updateDragOffsetFromAnimation(0.5);
         expect(controller.dragOffsetNotifier.value, -40);
       });
+
+      test(
+        'updateDragOffsetFromAnimation does not animate Y '
+        'after prepareForDragReset',
+        () {
+          controller.dragOffsetNotifier.value = 50;
+          controller.dragYOffsetNotifier.value = 120;
+          controller.prepareForDragReset();
+
+          controller.updateDragOffsetFromAnimation(0.5);
+
+          // X should animate
+          expect(controller.dragOffsetNotifier.value, 25);
+          // Y should stay unchanged
+          expect(controller.dragYOffsetNotifier.value, 120);
+        },
+      );
+
+      test(
+        'updateDragOffsetFromAnimation animates both X and Y '
+        'after prepareForFullDragReset',
+        () {
+          controller.dragOffsetNotifier.value = 50;
+          controller.dragYOffsetNotifier.value = 120;
+          controller.prepareForFullDragReset();
+
+          controller.updateDragOffsetFromAnimation(0.5);
+
+          expect(controller.dragOffsetNotifier.value, 25);
+          expect(controller.dragYOffsetNotifier.value, 60);
+        },
+      );
     });
 
     group('completeReorder', () {
@@ -142,6 +218,13 @@ void main() {
         controller.completeReorder();
 
         expect(controller.dragOffsetNotifier.value, 0);
+      });
+
+      test('resets Y drag offset notifier to zero', () {
+        controller.dragYOffsetNotifier.value = 120;
+        controller.completeReorder();
+
+        expect(controller.dragYOffsetNotifier.value, 0);
       });
 
       test('resets accumulated drag offset', () {
@@ -164,7 +247,7 @@ void main() {
     });
 
     group('shouldAnimateReset', () {
-      test('returns true when drag offset exceeds threshold', () {
+      test('returns true when X drag offset exceeds threshold', () {
         controller.dragOffsetNotifier.value = 0.2;
         expect(controller.shouldAnimateReset, true);
 
@@ -172,11 +255,27 @@ void main() {
         expect(controller.shouldAnimateReset, true);
       });
 
-      test('returns false when drag offset is below threshold', () {
+      test('returns true when Y drag offset exceeds threshold', () {
+        controller.dragYOffsetNotifier.value = 0.2;
+        expect(controller.shouldAnimateReset, true);
+
+        controller.dragYOffsetNotifier.value = -0.2;
+        expect(controller.shouldAnimateReset, true);
+      });
+
+      test('returns true when only Y exceeds threshold and X is zero', () {
+        controller.dragOffsetNotifier.value = 0;
+        controller.dragYOffsetNotifier.value = 50;
+        expect(controller.shouldAnimateReset, true);
+      });
+
+      test('returns false when both offsets are below threshold', () {
         controller.dragOffsetNotifier.value = 0.05;
+        controller.dragYOffsetNotifier.value = 0.05;
         expect(controller.shouldAnimateReset, false);
 
         controller.dragOffsetNotifier.value = 0;
+        controller.dragYOffsetNotifier.value = 0;
         expect(controller.shouldAnimateReset, false);
       });
 
@@ -186,6 +285,27 @@ void main() {
 
         controller.dragOffsetNotifier.value = 0.11;
         expect(controller.shouldAnimateReset, true);
+      });
+    });
+
+    group('shouldAnimateXReset', () {
+      test('returns true when X drag offset exceeds threshold', () {
+        controller.dragOffsetNotifier.value = 0.2;
+        expect(controller.shouldAnimateXReset, true);
+
+        controller.dragOffsetNotifier.value = -0.2;
+        expect(controller.shouldAnimateXReset, true);
+      });
+
+      test('returns false when X drag offset is below threshold', () {
+        controller.dragOffsetNotifier.value = 0.05;
+        expect(controller.shouldAnimateXReset, false);
+      });
+
+      test('ignores Y offset entirely', () {
+        controller.dragOffsetNotifier.value = 0;
+        controller.dragYOffsetNotifier.value = 999;
+        expect(controller.shouldAnimateXReset, false);
       });
     });
 
@@ -263,6 +383,65 @@ void main() {
       test('clamps negative values to negative max drag offset', () {
         controller.updateVisualDragOffset(-50, 100);
         expect(controller.dragOffsetNotifier.value, -30);
+      });
+
+      test('compensates delta by contentScale', () {
+        // With contentScale 0.5, a delta of 10 screen px = 20 logical px
+        controller.updateVisualDragOffset(10, 100, contentScale: 0.5);
+        expect(controller.dragOffsetNotifier.value, 20);
+      });
+
+      test('compensates clamp bounds by contentScale', () {
+        // maxDragOffset = 100 * 0.3 / 0.5 = 60
+        // delta 40 / 0.5 = 80, clamped to 60
+        controller.updateVisualDragOffset(40, 100, contentScale: 0.5);
+        expect(controller.dragOffsetNotifier.value, 60);
+      });
+    });
+
+    group('updateVisualDragY', () {
+      test('updates Y offset notifier with delta', () {
+        controller.updateVisualDragY(15);
+        expect(controller.dragYOffsetNotifier.value, 15);
+      });
+
+      test('accumulates multiple updates', () {
+        controller
+          ..updateVisualDragY(10)
+          ..updateVisualDragY(20);
+        expect(controller.dragYOffsetNotifier.value, 30);
+      });
+
+      test('clamps upward movement to dragYClampUp', () {
+        // dragYClampUp is 40
+        controller.updateVisualDragY(-100);
+        expect(controller.dragYOffsetNotifier.value, -40);
+      });
+
+      test('clamps downward movement to dragYClampDown', () {
+        // dragYClampDown is 200
+        controller.updateVisualDragY(500);
+        expect(controller.dragYOffsetNotifier.value, 200);
+      });
+
+      test('compensates delta by contentScale', () {
+        // With contentScale 0.5, a delta of 10 screen px = 20 logical px
+        controller.updateVisualDragY(10, contentScale: 0.5);
+        expect(controller.dragYOffsetNotifier.value, 20);
+      });
+
+      test('compensates upward clamp by contentScale', () {
+        // compensatedClampUp = 40 / 0.5 = 80
+        controller.updateVisualDragY(-50, contentScale: 0.5);
+        // delta -50 / 0.5 = -100, clamped to -80
+        expect(controller.dragYOffsetNotifier.value, -80);
+      });
+
+      test('compensates downward clamp by contentScale', () {
+        // compensatedClampDown = 200 / 0.5 = 400
+        controller.updateVisualDragY(250, contentScale: 0.5);
+        // delta 250 / 0.5 = 500, clamped to 400
+        expect(controller.dragYOffsetNotifier.value, 400);
       });
     });
 
@@ -354,6 +533,27 @@ void main() {
 
         expect(controller.accumulatedDragOffset, 0);
       });
+
+      test('uses shouldAnimateXReset not shouldAnimateReset', () {
+        // Large Y offset but X is zero — should NOT trigger reset animation
+        controller.dragOffsetNotifier.value = 0;
+        controller.dragYOffsetNotifier.value = 100;
+
+        final shouldAnimate = controller.handleEnterDeleteZone();
+
+        expect(shouldAnimate, false);
+      });
+
+      test('does not reset Y offset on enter', () {
+        // Y should stay where it is when entering delete zone
+        controller.dragOffsetNotifier.value = 50;
+        controller.dragYOffsetNotifier.value = 80;
+
+        controller.handleEnterDeleteZone();
+
+        // Y stays unchanged — clip remains near delete zone visually
+        expect(controller.dragYOffsetNotifier.value, 80);
+      });
     });
 
     group('calculateIndexAfterDeletion', () {
@@ -374,6 +574,73 @@ void main() {
 
         expect(controller.calculateIndexAfterDeletion(1), 0);
       });
+    });
+
+    group('startIndex preservation for correct clip deletion', () {
+      test('startIndex is preserved when targetIndex changes via drag', () {
+        // Critical test: When reordering clips [A, B, C] and dragging A
+        // from index 0 to index 2, startIndex must stay 0 while targetIndex
+        // becomes 2. This is essential for correct deletion behavior.
+        controller.startReorder(0);
+        expect(controller.startIndex, 0);
+
+        // Simulate dragging right to index 1
+        controller.updateTargetIndex(1);
+        expect(controller.startIndex, 0);
+        expect(controller.targetIndex, 1);
+
+        // Simulate dragging further right to index 2
+        controller.updateTargetIndex(2);
+        expect(controller.startIndex, 0);
+        expect(controller.targetIndex, 2);
+
+        // startIndex should still be 0 - this is where the clip actually is
+        // in the clips array, until reorderClip() is called
+        expect(controller.startIndex, 0);
+      });
+
+      test(
+        'deletion during reorder must use startIndex to get correct clip.id',
+        () {
+          // Scenario: clips = [A, B, C, D, E] with IDs ['id-A', 'id-B', ...]
+          // User drags clip B (index 1) to visual position 3
+          //
+          // WRONG: Using targetIndex (3) would get clip D's ID
+          // CORRECT: Using startIndex (1) gets clip B's ID
+          //
+          // The gallery widget should:
+          // 1. Get clipToDelete = clips[startIndex]  (not targetIndex!)
+          // 2. Delete by clipToDelete.id
+          controller.startReorder(1); // Started dragging clip at index 1
+          controller.updateTargetIndex(3); // Dragged to visual position 3
+
+          // At deletion time:
+          // - clips array is UNCHANGED (reorderClip not called yet)
+          // - clips[startIndex] = the actual clip being dragged
+          // - clips[targetIndex] = a DIFFERENT clip!
+          expect(controller.startIndex, 1);
+          expect(controller.targetIndex, 3);
+
+          // The caller must use startIndex to find the correct clip.id
+        },
+      );
+
+      test(
+        'after multiple target updates startIndex remains unchanged',
+        () {
+          controller.startReorder(2);
+
+          // Drag left, right, left, right
+          controller.updateTargetIndex(1);
+          controller.updateTargetIndex(2);
+          controller.updateTargetIndex(3);
+          controller.updateTargetIndex(0);
+
+          // startIndex should still be original position
+          expect(controller.startIndex, 2);
+          expect(controller.targetIndex, 0);
+        },
+      );
     });
   });
 }

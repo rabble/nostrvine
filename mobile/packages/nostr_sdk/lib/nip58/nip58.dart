@@ -12,7 +12,7 @@ class NIP58 {
     String? relayAddr,
   }) async {
     String content = "";
-    List<dynamic> tags = [];
+    List<List<String>> tags = [];
 
     if (badgeEvent != null) {
       content = badgeEvent.content;
@@ -24,7 +24,7 @@ class NIP58 {
     }
 
     tags.add(["a", badgeId]);
-    var eList = ["e", eventId];
+    final eList = <String>["e", eventId];
     if (relayAddr != null) {
       eList.add(relayAddr);
     }

@@ -54,3 +54,9 @@ class WatchCommentsFailedException extends CommentsRepositoryException {
   /// Creates a new watch comments failed exception.
   const WatchCommentsFailedException([super.message]);
 }
+
+/// Exception thrown when loading comments by author fails.
+class LoadCommentsByAuthorFailedException extends CommentsRepositoryException {
+  /// Creates a new load comments by author failed exception.
+  const LoadCommentsByAuthorFailedException([super.message]);
+}

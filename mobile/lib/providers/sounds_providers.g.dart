@@ -301,7 +301,7 @@ final class SoundByIdProvider
   }
 }
 
-String _$soundByIdHash() => r'005c8608963af8fff1007d6a39b7632b0a03fb98';
+String _$soundByIdHash() => r'78312c13305ba58abbc71565853a0c1fb67725b9';
 
 /// Family provider to fetch a single sound by event ID.
 ///
@@ -691,7 +691,7 @@ final class SelectedSoundProvider
   }
 }
 
-String _$selectedSoundHash() => r'886638f550d365dd220fc9034acef00622ce64ab';
+String _$selectedSoundHash() => r'75c107010b725ac76d22b89d040db38b1376eee0';
 
 /// State provider for the currently selected sound.
 ///

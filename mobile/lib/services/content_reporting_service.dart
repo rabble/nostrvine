@@ -69,17 +69,17 @@ class ContentReport {
   };
 
   static ContentReport fromJson(Map<String, dynamic> json) => ContentReport(
-    reportId: json['reportId'],
-    eventId: json['eventId'],
-    authorPubkey: json['authorPubkey'],
+    reportId: json['reportId'] as String,
+    eventId: json['eventId'] as String,
+    authorPubkey: json['authorPubkey'] as String?,
     reason: ContentFilterReason.values.firstWhere(
       (r) => r.name == json['reason'],
       orElse: () => ContentFilterReason.other,
     ),
-    details: json['details'],
-    createdAt: DateTime.parse(json['createdAt']),
-    additionalContext: json['additionalContext'],
-    tags: List<String>.from(json['tags'] ?? []),
+    details: json['details'] as String,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    additionalContext: json['additionalContext'] as String?,
+    tags: List<String>.from(json['tags'] as Iterable? ?? []),
   );
 }
 
@@ -99,7 +99,7 @@ class ContentReportingService {
   final AuthService _authService;
   final SharedPreferences _prefs;
 
-  // divine moderation relay for reports
+  // Divine moderation relay for reports
   static const String moderationRelayUrl =
       'wss://relay.divine.video'; // Divine moderation relay
   static const String reportsStorageKey = 'content_reports_history';
@@ -436,7 +436,7 @@ class ContentReportingService {
     }
 
     buffer.writeln(
-      'Reported via divine for community safety and Apple App Store compliance',
+      'Reported via Divine for community safety and Apple App Store compliance',
     );
     return buffer.toString();
   }
@@ -484,7 +484,7 @@ class ContentReportingService {
 
       description.writeln();
       description.writeln('---');
-      description.writeln('Reported via diVine mobile app');
+      description.writeln('Reported via Divine mobile app');
       description.writeln('NIP-56 Nostr event created: $eventId');
 
       // Create Zendesk ticket silently
@@ -523,19 +523,19 @@ class ContentReportingService {
       case ContentFilterReason.spam:
         return 'This content appears to be spam or unwanted promotional material.';
       case ContentFilterReason.harassment:
-        return 'This content contains harassment, bullying, or abusive behavior.';
+        return 'This content contains harassment, profanity, or abusive behavior.';
       case ContentFilterReason.violence:
-        return 'This content contains violence, threats, or harmful behavior.';
+        return 'This content contains violent or extremist material.';
       case ContentFilterReason.sexualContent:
-        return 'This content contains inappropriate sexual or adult material.';
+        return 'This content contains nudity, pornography, or sexual material.';
       case ContentFilterReason.copyright:
-        return 'This content appears to violate copyright or intellectual property rights.';
+        return 'This content appears to violate copyright.';
       case ContentFilterReason.falseInformation:
-        return 'This content contains misinformation or deliberately false information.';
+        return 'This content contains misinformation or false claims.';
       case ContentFilterReason.csam:
-        return 'This content violates child safety policies and may contain illegal material.';
+        return 'This content violates child safety policies.';
       case ContentFilterReason.aiGenerated:
-        return 'This content appears to be AI-generated and may violate authenticity policies.';
+        return 'This content appears to be deceptive AI-generated media.';
       case ContentFilterReason.other:
         return 'This content violates community guidelines.';
     }

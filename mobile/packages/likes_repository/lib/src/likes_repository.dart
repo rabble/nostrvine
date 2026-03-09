@@ -18,8 +18,11 @@ import 'package:rxdart/rxdart.dart';
 /// Default limit for fetching user reactions from relays.
 const _defaultReactionFetchLimit = 500;
 
-/// NIP-25 reaction content for a like.
+/// NIP-25 reaction content for a like/upvote.
 const _likeContent = '+';
+
+/// NIP-25 reaction content for a downvote.
+const _downvoteContent = '-';
 
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
@@ -500,8 +503,8 @@ class LikesRepository {
     for (final event in eventsByE) {
       // Find the 'e' tag that references the target event
       for (final tag in event.tags) {
-        if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-          final targetId = tag[1] as String;
+        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          final targetId = tag[1];
           if (counts.containsKey(targetId)) {
             counts[targetId] = counts[targetId]! + 1;
           }
@@ -533,11 +536,8 @@ class LikesRepository {
 
       for (final event in eventsByA) {
         for (final tag in event.tags) {
-          if (tag is List &&
-              tag.isNotEmpty &&
-              tag[0] == 'a' &&
-              tag.length > 1) {
-            final aTagValue = tag[1] as String;
+          if (tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
+            final aTagValue = tag[1];
             final eventId = aTagToEventId[aTagValue];
             if (eventId != null && countsFromA.containsKey(eventId)) {
               countsFromA[eventId] = countsFromA[eventId]! + 1;
@@ -553,6 +553,137 @@ class LikesRepository {
     }
 
     return counts;
+  }
+
+  /// Get vote counts (upvotes and downvotes) for multiple events.
+  ///
+  /// Queries relays for Kind 7 reactions on each event, differentiating
+  /// between `+` (upvote) and `-` (downvote) content.
+  ///
+  /// Returns a record of upvote and downvote count maps.
+  Future<({Map<String, int> upvotes, Map<String, int> downvotes})>
+  getVoteCounts(List<String> eventIds) async {
+    if (eventIds.isEmpty) {
+      return (upvotes: <String, int>{}, downvotes: <String, int>{});
+    }
+
+    final filter = Filter(
+      kinds: const [EventKind.reaction],
+      e: eventIds,
+    );
+
+    final events = await _nostrClient.queryEvents([filter]);
+
+    final upvotes = <String, int>{};
+    final downvotes = <String, int>{};
+    for (final eventId in eventIds) {
+      upvotes[eventId] = 0;
+      downvotes[eventId] = 0;
+    }
+
+    for (final event in events) {
+      for (final tag in event.tags) {
+        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          final targetId = tag[1];
+          if (upvotes.containsKey(targetId)) {
+            if (event.content == _downvoteContent) {
+              downvotes[targetId] = downvotes[targetId]! + 1;
+            } else {
+              // '+' and any other content counts as upvote
+              upvotes[targetId] = upvotes[targetId]! + 1;
+            }
+          }
+        }
+      }
+    }
+
+    return (upvotes: upvotes, downvotes: downvotes);
+  }
+
+  /// Get the user's current vote status for multiple events.
+  ///
+  /// Returns maps of event IDs the user has upvoted or downvoted.
+  Future<({Set<String> upvotedIds, Set<String> downvotedIds})>
+  getUserVoteStatuses(List<String> eventIds) async {
+    if (eventIds.isEmpty) {
+      return (upvotedIds: <String>{}, downvotedIds: <String>{});
+    }
+
+    final filter = Filter(
+      kinds: const [EventKind.reaction],
+      authors: [_nostrClient.publicKey],
+      e: eventIds,
+    );
+
+    final events = await _nostrClient.queryEvents([filter]);
+
+    // Also fetch deletions to exclude deleted votes
+    final deletionFilter = Filter(
+      kinds: const [EventKind.eventDeletion],
+      authors: [_nostrClient.publicKey],
+    );
+    final deletions = await _nostrClient.queryEvents([deletionFilter]);
+
+    final deletedIds = <String>{};
+    for (final deletion in deletions) {
+      for (final tag in deletion.tags) {
+        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          deletedIds.add(tag[1]);
+        }
+      }
+    }
+
+    final upvotedIds = <String>{};
+    final downvotedIds = <String>{};
+
+    for (final event in events) {
+      if (deletedIds.contains(event.id)) continue;
+
+      final targetId = _extractTargetEventId(event);
+      if (targetId == null || !eventIds.contains(targetId)) continue;
+
+      if (event.content == _downvoteContent) {
+        downvotedIds.add(targetId);
+      } else {
+        upvotedIds.add(targetId);
+      }
+    }
+
+    return (upvotedIds: upvotedIds, downvotedIds: downvotedIds);
+  }
+
+  /// Publish a downvote (Kind 7 reaction with content '-').
+  ///
+  /// Returns the reaction event ID.
+  ///
+  /// Throws `LikeFailedException` if the operation fails.
+  Future<String> downvoteEvent({
+    required String eventId,
+    required String authorPubkey,
+    int? targetKind,
+  }) async {
+    final reactionEvent = await _nostrClient.sendLike(
+      eventId,
+      content: _downvoteContent,
+      targetAuthorPubkey: authorPubkey,
+      targetKind: targetKind,
+    );
+
+    if (reactionEvent == null) {
+      throw const LikeFailedException('Failed to publish downvote reaction');
+    }
+
+    return reactionEvent.id;
+  }
+
+  /// Delete a reaction event by its ID (Kind 5 deletion).
+  ///
+  /// Used for vote switching (removing old vote before publishing new one).
+  Future<void> deleteReaction(String reactionEventId) async {
+    final deletionEvent = await _nostrClient.deleteEvent(reactionEventId);
+    if (deletionEvent == null) {
+      throw const UnlikeFailedException('Failed to delete reaction');
+    }
   }
 
   /// Get a like record by target event ID.
@@ -611,11 +742,8 @@ class LikesRepository {
       final deletedReactionIds = <String>{};
       for (final deletion in deletionEvents) {
         for (final tag in deletion.tags) {
-          if (tag is List &&
-              tag.isNotEmpty &&
-              tag[0] == 'e' &&
-              tag.length > 1) {
-            deletedReactionIds.add(tag[1] as String);
+          if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+            deletedReactionIds.add(tag[1]);
           }
         }
       }
@@ -885,8 +1013,8 @@ class LikesRepository {
   /// According to NIP-25, the 'e' tag contains the event ID being reacted to.
   String? _extractTargetEventId(Event event) {
     for (final tag in event.tags) {
-      if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-        return tag[1] as String;
+      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+        return tag[1];
       }
     }
     return null;

@@ -1,4 +1,4 @@
-// ABOUTME: Simple video player for diVine without external dependencies
+// ABOUTME: Simple video player for Divine without external dependencies
 // ABOUTME: Handles autoplay, looping, and playlist management
 
 // Video playlist data - using new example videos

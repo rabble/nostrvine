@@ -28,12 +28,12 @@ class UserName extends ConsumerWidget {
   factory UserName.fromPubKey(
     String pubkey, {
     String? embeddedName,
-    key,
-    style,
-    maxLines,
-    overflow,
-    selectable,
-    anonymousName,
+    Key? key,
+    TextStyle? style,
+    int? maxLines,
+    bool? selectable,
+    String? anonymousName,
+    TextOverflow? overflow,
   }) => UserName._(
     pubkey: pubkey,
     embeddedName: embeddedName,
@@ -47,12 +47,12 @@ class UserName extends ConsumerWidget {
 
   factory UserName.fromUserProfile(
     UserProfile userProfile, {
-    key,
-    style,
-    maxLines,
-    overflow,
-    selectable,
-    anonymousName,
+    Key? key,
+    TextStyle? style,
+    int? maxLines,
+    bool? selectable,
+    String? anonymousName,
+    TextOverflow? overflow,
   }) => UserName._(
     userProfile: userProfile,
     key: key,
@@ -143,10 +143,14 @@ class UserName extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(2),
             decoration: const BoxDecoration(
-              color: Colors.blue,
+              color: VineTheme.info,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.check, color: Colors.white, size: 10),
+            child: const Icon(
+              Icons.check,
+              color: VineTheme.whiteText,
+              size: 10,
+            ),
           ),
       ],
     );

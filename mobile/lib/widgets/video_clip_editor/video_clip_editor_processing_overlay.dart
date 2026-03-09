@@ -3,7 +3,7 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:pro_video_editor/core/models/video/progress_model.dart';
 import 'package:pro_video_editor/core/platform/platform_interface.dart';
 
@@ -17,7 +17,7 @@ class VideoClipEditorProcessingOverlay extends StatelessWidget {
   });
 
   /// The clip to show processing status for.
-  final RecordingClip clip;
+  final DivineVideoClip clip;
   final bool isProcessing;
   final bool isCurrentClip;
   final Widget? inactivePlaceholder;

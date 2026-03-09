@@ -6,7 +6,7 @@ labels: ["bug"]
 assignees:
   - NotThatKindOfDrLiz
 projects:
-  - divine/2  # diVine Program project number
+  - divine/2  # Divine Program project number
 
 body:
   - type: textarea

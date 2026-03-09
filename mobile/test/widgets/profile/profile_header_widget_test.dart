@@ -1,6 +1,8 @@
 // ABOUTME: Tests for ProfileHeaderWidget
 // ABOUTME: Verifies profile header displays avatar, stats, name, bio, and npub correctly
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -84,6 +86,9 @@ class MockAuthService extends Mock implements AuthService {
   @override
   Stream<AuthState> get authStateStream =>
       Stream.value(AuthState.authenticated);
+
+  @override
+  bool get hasExpiredOAuthSession => false;
 }
 
 const testUserHex =
@@ -147,6 +152,7 @@ void main() {
       required AsyncValue<ProfileStats> profileStatsAsync,
       int videoCount = 10,
       UserProfile? profile,
+      bool profileIsLoading = false,
       VoidCallback? onSetupProfile,
       bool isAnonymous = false,
       String? displayNameHint,
@@ -188,9 +194,11 @@ void main() {
             mockNostrService: mockNostrClient,
             mockUserProfileService: mockUserProfileService,
           ),
-          fetchUserProfileProvider(
-            userIdHex,
-          ).overrideWith((ref) async => profile),
+          fetchUserProfileProvider(userIdHex).overrideWith(
+            profileIsLoading
+                ? (ref) => Completer<UserProfile?>().future
+                : (ref) async => profile,
+          ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWith(
@@ -314,6 +322,25 @@ void main() {
 
       expect(setupCalled, isTrue);
     });
+
+    testWidgets(
+      'hides setup banner while profile is still loading',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profileStatsAsync: AsyncValue.data(createTestStats()),
+            profileIsLoading: true,
+            onSetupProfile: () {},
+          ),
+        );
+        // Do not pumpAndSettle — provider never resolves
+        await tester.pump();
+
+        expect(find.text('Complete Your Profile'), findsNothing);
+      },
+    );
 
     testWidgets('hides setup banner when profile has custom name', (
       tester,

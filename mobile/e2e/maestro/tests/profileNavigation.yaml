@@ -47,7 +47,7 @@ env:
 
 # 7. Tap on Share profile: OS modal is displayed
 - tapOn: Share Profile
-- assertVisible: User on divine #To improve once tested on Android. For now it only validates the iOS menu
+- assertVisible: User on Divine #To improve once tested on Android. For now it only validates the iOS menu
 
 # 8. Tap on close: Profile screen is displayed
 - tapOn:

@@ -76,8 +76,8 @@ class NIP96Uploader {
     }
 
     if (isNip98Required) {
-      var tags = [];
-      tags.add(["u", sa.apiUrl]);
+      var tags = <List<String>>[];
+      tags.add(["u", sa.apiUrl!]);
       tags.add(["method", "POST"]);
       if (StringUtil.isNotBlank(payload)) {
         tags.add(["payload", payload]);

@@ -132,9 +132,9 @@ void main() {
 
     test('safeSeekTo returns false when controller is disposed', () async {
       // Arrange - simulate disposed controller
-      when(() => mockController.value).thenReturn(
-        const VideoPlayerValue(duration: Duration.zero),
-      );
+      when(
+        () => mockController.value,
+      ).thenReturn(const VideoPlayerValue(duration: Duration.zero));
 
       // Act
       final result = await safeSeekTo(

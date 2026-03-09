@@ -26,7 +26,7 @@ grep -r "seal\|gift.*wrap" ../nostr_sdk/lib/nip59/
 ### 2. Set Up Bug Report Recipient
 
 **Action Required**:
-- [ ] Generate or obtain diVine support Nostr keypair
+- [ ] Generate or obtain Divine support Nostr keypair
 - [ ] Set pubkey in `lib/config/bug_report_config.dart`
 - [ ] Securely store nsec for decryption tool (Phase 7)
 - [ ] Test decryption manually with nostr client (e.g., nak, nostr-tools)

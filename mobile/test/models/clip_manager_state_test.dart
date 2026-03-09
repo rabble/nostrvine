@@ -4,12 +4,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('ClipManagerState', () {
-    final clip1 = RecordingClip(
+    final clip1 = DivineVideoClip(
       id: 'clip_001',
       video: EditorVideo.file('/path/to/video1.mp4'),
       duration: const Duration(seconds: 2),
@@ -18,7 +18,7 @@ void main() {
       originalAspectRatio: 9 / 16,
     );
 
-    final clip2 = RecordingClip(
+    final clip2 = DivineVideoClip(
       id: 'clip_002',
       video: EditorVideo.file('/path/to/video2.mp4'),
       duration: const Duration(milliseconds: 1500),
@@ -50,7 +50,7 @@ void main() {
     });
 
     test('canRecordMore is false when at limit', () {
-      final fullClip = RecordingClip(
+      final fullClip = DivineVideoClip(
         id: 'clip_full',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: VideoEditorConstants.maxDuration,

@@ -18,11 +18,12 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -72,6 +73,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   /// Whether a refresh is currently in progress.
   bool _isRefreshing = false;
+
+  /// Key used to open the drawer from the AppBar leading button.
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void _fetchProfileIfNeeded(String userIdHex, bool isOwnProfile) {
     if (isOwnProfile) return; // Own profile loads automatically
@@ -215,127 +219,42 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             };
 
             return Scaffold(
+              key: _scaffoldKey,
               backgroundColor: VineTheme.backgroundColor,
               onDrawerChanged: (isOpen) {
                 ref
                     .read(overlayVisibilityProvider.notifier)
                     .setDrawerOpen(isOpen);
               },
-              appBar: AppBar(
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                toolbarHeight: 72,
-                leadingWidth: 80,
-                centerTitle: false,
-                titleSpacing: 0,
+              appBar: DiVineAppBar(
+                title: 'My Profile',
                 backgroundColor:
                     profileColor ?? getEnvironmentAppBarColor(environment),
-                leading: Builder(
-                  builder: (context) => IconButton(
-                    key: const Key('menu-icon-button'),
-                    tooltip: 'Menu',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Container(
-                      width: 48,
-                      height: 48,
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: VineTheme.iconButtonBackground,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: SvgPicture.asset(
-                        'assets/icon/menu.svg',
-                        width: 32,
-                        height: 32,
-                        colorFilter: const ColorFilter.mode(
-                          Colors.white,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                    ),
-                    onPressed: () {
-                      Log.info(
-                        '👆 User tapped menu button',
-                        name: 'Navigation',
-                        category: LogCategory.ui,
-                      );
-                      Scaffold.of(context).openDrawer();
-                    },
-                  ),
-                ),
-                title: Text(
-                  'My Profile',
-                  style: VineTheme.titleFont(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                showMenuButton: true,
+                onMenuPressed: () {
+                  Log.info(
+                    '👆 User tapped menu button',
+                    name: 'Navigation',
+                    category: LogCategory.ui,
+                  );
+                  _scaffoldKey.currentState?.openDrawer();
+                },
                 actions: [
-                  // Refresh button
-                  IconButton(
-                    key: const Key('refresh-icon-button'),
-                    tooltip: 'Refresh',
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    icon: Container(
-                      width: 48,
-                      height: 48,
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: VineTheme.iconButtonBackground,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: _isRefreshing
-                          ? const SizedBox(
-                              width: 28,
-                              height: 28,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : SvgPicture.asset(
-                              'assets/icon/refresh.svg',
-                              width: 28,
-                              height: 28,
-                              colorFilter: const ColorFilter.mode(
-                                Colors.white,
-                                BlendMode.srcIn,
-                              ),
-                            ),
-                    ),
+                  DiVineAppBarAction(
+                    icon: _isRefreshing
+                        ? const MaterialIconSource(Icons.refresh)
+                        : const SvgIconSource('assets/icon/refresh.svg'),
                     onPressed: !_isRefreshing
                         ? () => _refreshProfile(userIdHex)
                         : null,
+                    tooltip: 'Refresh',
+                    semanticLabel: 'Refresh profile',
                   ),
-                  const SizedBox(width: 8),
-                  // More button
-                  Padding(
-                    padding: const EdgeInsets.only(right: 16),
-                    child: IconButton(
-                      tooltip: 'More',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      icon: Container(
-                        width: 48,
-                        height: 48,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: VineTheme.iconButtonBackground,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: SvgPicture.asset(
-                          'assets/icon/DotsThree.svg',
-                          width: 28,
-                          height: 28,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                      ),
-                      onPressed: () => _more(userIdHex),
-                    ),
+                  DiVineAppBarAction(
+                    icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+                    onPressed: () => _more(userIdHex),
+                    tooltip: 'More',
+                    semanticLabel: 'More options',
                   ),
                 ],
               ),
@@ -376,12 +295,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
       // Create share text with divine.video URL format
       final shareText =
-          'Check out $displayName on divine!\n\n'
+          'Check out $displayName on Divine!\n\n'
           'https://divine.video/profile/$npub';
 
       // Use share_plus to show native share sheet
       final result = await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: '$displayName on divine'),
+        ShareParams(text: shareText, subject: '$displayName on Divine'),
       );
 
       if (result.status == ShareResultStatus.success) {
@@ -408,7 +327,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   void _openClips() {
     // Navigate to clips route (defined outside ShellRoute)
-    context.push(ClipLibraryScreen.clipsPath);
+    context.push(LibraryScreen.draftsPath);
   }
 
   void _openAnalytics() {
@@ -452,7 +371,11 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
             child: Row(
               children: [
-                const Icon(Icons.analytics_outlined, size: 24),
+                const Icon(
+                  Icons.analytics_outlined,
+                  size: 24,
+                  color: VineTheme.whiteText,
+                ),
                 const SizedBox(width: 16),
                 Text('Creator analytics', style: VineTheme.titleMediumFont()),
               ],
@@ -504,6 +427,19 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             ),
           ),
         ),
+        InkWell(
+          onTap: () => Navigator.of(context).pop('embed_code'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                const Icon(Icons.code, size: 24, color: VineTheme.whiteText),
+                const SizedBox(width: 16),
+                Text('Get embed code', style: VineTheme.titleMediumFont()),
+              ],
+            ),
+          ),
+        ),
       ],
     );
 
@@ -517,6 +453,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       await _shareProfile(userIdHex);
     } else if (result == 'copy_npub') {
       await _copyNpub(userIdHex);
+    } else if (result == 'embed_code') {
+      await _copyEmbedCode(userIdHex);
     }
   }
 
@@ -527,6 +465,25 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Public key copied to clipboard')),
+      );
+    }
+  }
+
+  Future<void> _copyEmbedCode(String userIdHex) async {
+    final npub = NostrKeyUtils.encodePubKey(userIdHex);
+    final embedSnippet =
+        '<iframe\n'
+        '  src="https://divine.video/embed?npub=$npub"\n'
+        '  width="350"\n'
+        '  height="380"\n'
+        '  style="border-radius: 12px; border: none;"\n'
+        '  title="Divine Video Widget"\n'
+        '></iframe>';
+    await Clipboard.setData(ClipboardData(text: embedSnippet));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Embed code copied to clipboard')),
       );
     }
   }
@@ -584,8 +541,10 @@ class _ProfileContentView extends ConsumerWidget {
     // Check if this user has muted us (mutual mute blocking)
     // Note: We only block profile viewing for users who muted US, not users WE blocked.
     // Users can still view profiles of people they blocked (to unblock them).
+    ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    if (blocklistService.hasMutedUs(userIdHex)) {
+    if (blocklistService.hasMutedUs(userIdHex) ||
+        blocklistService.hasBlockedUs(userIdHex)) {
       return BlockedUserScreen(onBack: context.pop);
     }
 
@@ -814,8 +773,9 @@ class ProfileViewSwitcher extends StatelessWidget {
             refreshNotifier: refreshNotifier,
           );
 
+    // Filter for uploads that explicitly failed (PublishError), not all completed
     final completedWithErrorUploads = backgroundPublishBloc.state.uploads
-        .where((upload) => upload.result != null)
+        .where((upload) => upload.result is PublishError)
         .toList();
 
     if (completedWithErrorUploads.isNotEmpty) {

@@ -54,7 +54,7 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
     switch (upload.status) {
       case UploadStatus.pending:
         icon = Icons.schedule;
-        color = Colors.orange;
+        color = VineTheme.warning;
         title = 'Waiting to upload';
       case UploadStatus.uploading:
         icon = Icons.cloud_upload;
@@ -62,27 +62,27 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
         title = 'Uploading video';
       case UploadStatus.processing:
         icon = Icons.hourglass_empty;
-        color = Colors.blue;
+        color = VineTheme.info;
         title = 'Processing video';
       case UploadStatus.readyToPublish:
         icon = Icons.check_circle;
-        color = Colors.green;
+        color = VineTheme.success;
         title = 'Processing complete';
       case UploadStatus.published:
         icon = Icons.check_circle;
-        color = Colors.green;
+        color = VineTheme.success;
         title = 'Published successfully';
       case UploadStatus.failed:
         icon = Icons.error;
-        color = Colors.red;
+        color = VineTheme.error;
         title = 'Upload failed';
       case UploadStatus.retrying:
         icon = Icons.refresh;
-        color = Colors.orange;
+        color = VineTheme.warning;
         title = 'Retrying upload';
       case UploadStatus.paused:
         icon = Icons.pause;
-        color = Colors.grey;
+        color = VineTheme.lightText;
         title = 'Upload paused';
     }
 
@@ -120,7 +120,7 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
       children: [
         LinearProgressIndicator(
           value: progress,
-          backgroundColor: Colors.grey[300],
+          backgroundColor: VineTheme.secondaryText,
           valueColor: AlwaysStoppedAnimation<Color>(
             _getProgressColor(upload.status),
           ),
@@ -129,7 +129,7 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
         const SizedBox(height: 4),
         Text(
           '${(progress * 100).toInt()}% complete',
-          style: const TextStyle(fontSize: 12, color: Colors.grey),
+          style: const TextStyle(fontSize: 12, color: VineTheme.lightText),
         ),
       ],
     );
@@ -146,16 +146,16 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
         message = 'Uploading to server...';
       case UploadStatus.processing:
         message = 'Processing video - this may take a few minutes';
-        textColor = Colors.blue;
+        textColor = VineTheme.info;
       case UploadStatus.readyToPublish:
         message = 'Video processed successfully and ready to publish';
-        textColor = Colors.green;
+        textColor = VineTheme.success;
       case UploadStatus.published:
         message = 'Video published to your profile';
-        textColor = Colors.green;
+        textColor = VineTheme.success;
       case UploadStatus.failed:
         message = upload.errorMessage ?? 'Upload failed - please try again';
-        textColor = Colors.red;
+        textColor = VineTheme.error;
       case UploadStatus.retrying:
         message = 'Retrying upload...';
       case UploadStatus.paused:
@@ -164,7 +164,10 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
 
     return Text(
       message,
-      style: TextStyle(fontSize: 14, color: textColor ?? Colors.grey[700]),
+      style: TextStyle(
+        fontSize: 14,
+        color: textColor ?? VineTheme.secondaryText,
+      ),
     );
   }
 
@@ -193,7 +196,7 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Failed to retry upload: $e'),
-                  backgroundColor: Colors.red,
+                  backgroundColor: VineTheme.error,
                 ),
               );
             }
@@ -201,7 +204,7 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: VineTheme.vineGreen,
-          foregroundColor: Colors.white,
+          foregroundColor: VineTheme.whiteText,
         ),
         child: const Text('RETRY'),
       ),
@@ -213,14 +216,14 @@ class VideoProcessingStatusWidget extends ConsumerWidget {
       case UploadStatus.uploading:
         return VineTheme.vineGreen;
       case UploadStatus.processing:
-        return Colors.blue;
+        return VineTheme.info;
       case UploadStatus.readyToPublish:
       case UploadStatus.published:
-        return Colors.green;
+        return VineTheme.success;
       case UploadStatus.retrying:
-        return Colors.orange;
+        return VineTheme.warning;
       default:
-        return Colors.grey;
+        return VineTheme.lightText;
     }
   }
 }

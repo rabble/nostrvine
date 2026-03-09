@@ -14,6 +14,7 @@ void main() {
       Widget? titleSuffix,
       bool showBackButton = false,
       VoidCallback? onBackPressed,
+      Object? backButtonHeroTag,
       bool showMenuButton = false,
       VoidCallback? onMenuPressed,
       IconSource? leadingIcon,
@@ -37,6 +38,7 @@ void main() {
             titleSuffix: titleSuffix,
             showBackButton: showBackButton,
             onBackPressed: onBackPressed,
+            backButtonHeroTag: backButtonHeroTag,
             showMenuButton: showMenuButton,
             onMenuPressed: onMenuPressed,
             leadingIcon: leadingIcon,
@@ -177,6 +179,22 @@ void main() {
 
         await tester.tap(find.byType(DiVineAppBarIconButton));
         expect(pressed, isTrue);
+      });
+
+      testWidgets('back button wraps in Hero when backButtonHeroTag is set', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            showBackButton: true,
+            backButtonHeroTag: 'back-hero',
+          ),
+        );
+
+        expect(find.byType(Hero), findsOneWidget);
+        final hero = tester.widget<Hero>(find.byType(Hero));
+        expect(hero.tag, 'back-hero');
       });
 
       testWidgets('shows menu button when showMenuButton is true', (
@@ -505,6 +523,83 @@ void main() {
         const appBar = DiVineAppBar(title: 'Test');
 
         expect(appBar.preferredSize.height, 72);
+      });
+    });
+
+    group('background mode auto-style', () {
+      testWidgets('solid mode applies solidStyle icon color', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            showBackButton: true,
+          ),
+        );
+
+        final iconButton = tester.widget<DiVineAppBarIconButton>(
+          find.byType(DiVineAppBarIconButton),
+        );
+        expect(iconButton.iconColor, VineTheme.primary);
+        expect(iconButton.backgroundColor, VineTheme.surfaceContainer);
+        expect(
+          iconButton.borderSide,
+          const BorderSide(color: VineTheme.outlineMuted, width: 2),
+        );
+      });
+
+      testWidgets('transparent mode applies transparentStyle icon color', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            showBackButton: true,
+            backgroundMode: DiVineAppBarBackgroundMode.transparent,
+          ),
+        );
+
+        final iconButton = tester.widget<DiVineAppBarIconButton>(
+          find.byType(DiVineAppBarIconButton),
+        );
+        expect(iconButton.iconColor, VineTheme.whiteText);
+        expect(iconButton.backgroundColor, const Color(0x26000000));
+        expect(iconButton.borderSide, isNull);
+      });
+
+      testWidgets('gradient mode applies transparentStyle icon color', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            showBackButton: true,
+            backgroundMode: DiVineAppBarBackgroundMode.gradient,
+            gradient: DiVineAppBarGradient.videoOverlay,
+          ),
+        );
+
+        final iconButton = tester.widget<DiVineAppBarIconButton>(
+          find.byType(DiVineAppBarIconButton),
+        );
+        expect(iconButton.iconColor, VineTheme.whiteText);
+        expect(iconButton.backgroundColor, const Color(0x26000000));
+        expect(iconButton.borderSide, isNull);
+      });
+
+      testWidgets('caller-supplied style overrides auto-style icon color', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            title: 'Test',
+            showBackButton: true,
+            style: const DiVineAppBarStyle(iconColor: Colors.red),
+          ),
+        );
+
+        final iconButton = tester.widget<DiVineAppBarIconButton>(
+          find.byType(DiVineAppBarIconButton),
+        );
+        expect(iconButton.iconColor, Colors.red);
       });
     });
 

@@ -38,6 +38,21 @@ void main() {
         expect(response.nextCursor, equals(1699999000));
         expect(response.hasMore, isTrue);
       });
+
+      test('rawBody defaults to null', () {
+        const response = HomeFeedResponse(videos: []);
+
+        expect(response.rawBody, isNull);
+      });
+
+      test('stores rawBody when provided', () {
+        const response = HomeFeedResponse(
+          videos: [],
+          rawBody: '{"videos":[]}',
+        );
+
+        expect(response.rawBody, equals('{"videos":[]}'));
+      });
     });
   });
 }

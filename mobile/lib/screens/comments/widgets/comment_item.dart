@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' show UserProfile;
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -63,7 +64,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
           _isHeld = true;
         });
       },
-      onLongPressEnd: (_) async {
+      onLongPress: () async {
         setState(() {
           _isHeld = false;
         });
@@ -164,7 +165,11 @@ class _CommentItemState extends ConsumerState<CommentItem> {
     final CommentOptionResult? result;
 
     if (isCurrentUser) {
-      result = await CommentOptionsModal.showForOwnComment(context);
+      result = await CommentOptionsModal.showForOwnComment(
+        context,
+        commentId: widget.comment.id,
+        commentContent: widget.comment.content,
+      );
     } else {
       result = await CommentOptionsModal.showForOtherUserIntegrated(
         context,
@@ -188,6 +193,13 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         );
       case CommentBlockUserResult(:final authorPubkey):
         bloc.add(CommentBlockUserRequested(authorPubkey));
+      case CommentEditResult(:final commentId, :final content):
+        bloc.add(
+          CommentEditModeEntered(
+            commentId: commentId,
+            originalContent: content,
+          ),
+        );
     }
   }
 }
@@ -244,7 +256,7 @@ class _CommentHeader extends ConsumerWidget {
                   Text(
                     relativeTime,
                     style: VineTheme.bodyFont(
-                      color: Colors.white54,
+                      color: VineTheme.onSurfaceMuted,
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -253,7 +265,7 @@ class _CommentHeader extends ConsumerWidget {
                     Text(
                       ' • ',
                       style: VineTheme.bodyFont(
-                        color: Colors.white54,
+                        color: VineTheme.onSurfaceMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -261,7 +273,7 @@ class _CommentHeader extends ConsumerWidget {
                     Text(
                       'You',
                       style: VineTheme.bodyFont(
-                        color: Colors.white54,
+                        color: VineTheme.onSurfaceMuted,
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
@@ -276,9 +288,9 @@ class _CommentHeader extends ConsumerWidget {
                 },
                 child: profile == null
                     ? Text(
-                        NostrKeyUtils.encodePubKey(authorPubkey),
+                        UserProfile.generatedNameFor(authorPubkey),
                         style: const TextStyle(
-                          color: Color(0xF2FFFFFF), // rgba(255,255,255,0.95)
+                          color: VineTheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.1,
@@ -289,7 +301,7 @@ class _CommentHeader extends ConsumerWidget {
                     : UserName.fromUserProfile(
                         profile,
                         style: const TextStyle(
-                          color: Color(0xF2FFFFFF),
+                          color: VineTheme.onSurface,
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 0.1,
@@ -304,6 +316,46 @@ class _CommentHeader extends ConsumerWidget {
   }
 }
 
+/// Returns true if [text] contains only emoji characters (up to 3 grapheme
+/// clusters) with no text, mentions, or other content.
+///
+/// Handles compound emojis correctly: Dart's `.characters` segments ZWJ
+/// sequences (e.g. 👨‍👩‍👧‍👦), skin-tone variants (👋🏿), flags (🇺🇸),
+/// and keycap sequences (1️⃣) as single grapheme clusters. The regex then
+/// validates that each grapheme consists only of emoji-related code points.
+bool _isEmojiOnly(String text) {
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return false;
+  final graphemes = trimmed.characters;
+  if (graphemes.length > 3) return false;
+  // Check each grapheme is emoji (no ASCII text, no nostr: mentions).
+  // Includes Emoji_Component for keycap (\u20e3) and tag sequences,
+  // and Regional_Indicator for flag emojis.
+  final emojiRegex = RegExp(
+    // Emoji component chars (ZWJ, VS-16, keycap, skin tones, digits/#/*)
+    r'^[\u200d\ufe0f\u20e30-9#*\u{1F3FB}-\u{1F3FF}'
+    // BMP emoji symbols and dingbats
+    r'\u00a9\u00ae\u203c\u2049'
+    r'\u2194-\u2199\u21a9-\u21aa\u231a-\u231b\u2328\u23cf'
+    r'\u23e9-\u23f3\u23f8-\u23fa\u24c2\u25aa-\u25ab\u25b6\u25c0'
+    r'\u25fb-\u25fe\u2600-\u27bf\u2934-\u2935\u2b05-\u2b07'
+    r'\u2b1b-\u2b1c\u2b50\u2b55\u3030\u303d\u3297\u3299'
+    // Supplementary plane emoji (plane 1: mahjong through symbols extended-a)
+    r'\u{1F000}-\u{1FFFF}'
+    r']+$',
+    unicode: true,
+  );
+  // Exclude bare ASCII digits/symbols that have \p{Emoji} but aren't
+  // visually emoji (e.g. "0"-"9", "#", "*").
+  final asciiTextRegex = RegExp(r'^[0-9#*]$');
+  return graphemes.every(
+    (g) => emojiRegex.hasMatch(g) && !asciiTextRegex.hasMatch(g),
+  );
+}
+
+/// Font size for emoji-only comments (1-3 emoji with no text).
+const _emojiOnlyFontSize = 40.0;
+
 /// Content section of a comment showing text with parsed @mentions.
 class _CommentContent extends StatelessWidget {
   const _CommentContent({required this.commentId, required this.content});
@@ -316,11 +368,15 @@ class _CommentContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isEmoji = _isEmojiOnly(content);
     return TapRegion(
       onTapOutside: (_) => FocusScope.of(context).unfocus(),
       child: Text.rich(
         _buildContentSpans(context),
-        style: const TextStyle(color: VineTheme.onSurface),
+        style: TextStyle(
+          color: VineTheme.onSurface,
+          fontSize: isEmoji ? _emojiOnlyFontSize : null,
+        ),
       ),
     );
   }
@@ -405,10 +461,10 @@ class _MentionLink extends ConsumerWidget {
 class _ActionsRow extends StatelessWidget {
   const _ActionsRow({required this.commentId, required this.authorPubkey});
 
-  /// ID of the comment (for reply targeting and like toggling)
+  /// ID of the comment (for reply targeting and vote toggling)
   final String commentId;
 
-  /// Pubkey of the comment author (for like toggling)
+  /// Pubkey of the comment author (for vote toggling)
   final String authorPubkey;
 
   @override
@@ -452,15 +508,18 @@ class _ActionsRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 20),
-        _CommentLikeButton(commentId: commentId, authorPubkey: authorPubkey),
+        _CommentVoteButtons(commentId: commentId, authorPubkey: authorPubkey),
       ],
     );
   }
 }
 
-/// Like button for a comment, using BlocSelector for efficient rebuilds.
-class _CommentLikeButton extends StatelessWidget {
-  const _CommentLikeButton({
+/// Upvote/downvote buttons for a comment, using BlocSelector for efficient
+/// rebuilds.
+///
+/// Layout: [↑ arrow] [net_score] [↓ arrow]
+class _CommentVoteButtons extends StatelessWidget {
+  const _CommentVoteButtons({
     required this.commentId,
     required this.authorPubkey,
   });
@@ -473,65 +532,123 @@ class _CommentLikeButton extends StatelessWidget {
     return BlocSelector<
       CommentsBloc,
       CommentsState,
-      ({bool isLiked, int count})
+      ({bool isUpvoted, bool isDownvoted, int upvotes, int downvotes})
     >(
       selector: (state) => (
-        isLiked: state.likedCommentIds.contains(commentId),
-        count: state.commentLikeCounts[commentId] ?? 0,
+        isUpvoted: state.upvotedCommentIds.contains(commentId),
+        isDownvoted: state.downvotedCommentIds.contains(commentId),
+        upvotes: state.commentUpvoteCounts[commentId] ?? 0,
+        downvotes: state.commentDownvoteCounts[commentId] ?? 0,
       ),
-      builder: (context, likeState) {
-        final isLiked = likeState.isLiked;
-        final count = likeState.count;
+      builder: (context, voteState) {
+        final netScore = voteState.upvotes - voteState.downvotes;
 
-        return Semantics(
-          identifier: 'like_button',
-          button: true,
-          label: isLiked ? 'Unlike comment' : 'Like comment',
-          child: InkWell(
-            onTap: () {
-              context.read<CommentsBloc>().add(
-                CommentLikeToggled(
-                  commentId: commentId,
-                  authorPubkey: authorPubkey,
-                ),
-              );
-            },
-            child: SizedBox(
-              height: 16,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SvgPicture.asset(
-                    isLiked
-                        ? 'assets/icon/heart_fill.svg'
-                        : 'assets/icon/heart.svg',
-                    height: 12,
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Upvote arrow
+            Semantics(
+              identifier: 'upvote_button',
+              button: true,
+              label: voteState.isUpvoted ? 'Remove upvote' : 'Upvote comment',
+              child: InkWell(
+                onTap: () {
+                  context.read<CommentsBloc>().add(
+                    CommentUpvoteToggled(
+                      commentId: commentId,
+                      authorPubkey: authorPubkey,
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/arrow_fat_up.svg',
+                    height: 16,
                     colorFilter: ColorFilter.mode(
-                      isLiked ? VineTheme.likeRed : VineTheme.onSurface,
+                      voteState.isUpvoted
+                          ? VineTheme.vineGreen
+                          : VineTheme.onSurfaceMuted,
                       BlendMode.srcIn,
                     ),
                   ),
-                  if (count > 0) ...[
-                    const SizedBox(width: 4),
-                    Text(
-                      '$count',
-                      style: VineTheme.bodyFont(
-                        fontSize: 12,
-                        color: isLiked
-                            ? VineTheme.likeRed
-                            : VineTheme.onSurfaceMuted,
-                        fontWeight: FontWeight.w600,
-                        height: 12 / 16,
-                      ),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
-          ),
+            // Net score
+            if (netScore != 0)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Text(
+                  netScore.formatScore,
+                  style: VineTheme.bodyFont(
+                    fontSize: 12,
+                    color: voteState.isUpvoted
+                        ? VineTheme.vineGreen
+                        : voteState.isDownvoted
+                        ? VineTheme.likeRed
+                        : VineTheme.onSurfaceMuted,
+                    fontWeight: FontWeight.w600,
+                    height: 12 / 16,
+                  ),
+                ),
+              ),
+            // Downvote arrow
+            Semantics(
+              identifier: 'downvote_button',
+              button: true,
+              label: voteState.isDownvoted
+                  ? 'Remove downvote'
+                  : 'Downvote comment',
+              child: InkWell(
+                onTap: () {
+                  context.read<CommentsBloc>().add(
+                    CommentDownvoteToggled(
+                      commentId: commentId,
+                      authorPubkey: authorPubkey,
+                    ),
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/arrow_fat_down.svg',
+                    height: 16,
+                    colorFilter: ColorFilter.mode(
+                      voteState.isDownvoted
+                          ? VineTheme.likeRed
+                          : VineTheme.onSurfaceMuted,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );
+  }
+}
+
+/// Formats an [int] score with k/M suffix for large numbers.
+extension _ScoreFormatting on int {
+  String get formatScore {
+    final abs = this.abs();
+    final prefix = this < 0 ? '-' : '';
+    if (abs >= 1000000) {
+      return '$prefix${(abs / 1000000).toStringAsFixed(1)}M';
+    }
+    if (abs >= 1000) {
+      return '$prefix${(abs / 1000).toStringAsFixed(1)}k';
+    }
+    return '$this';
   }
 }
 
@@ -560,7 +677,7 @@ class _ReplyIndicator extends ConsumerWidget {
     final displayName =
         profile?.displayName ??
         profile?.name ??
-        NostrKeyUtils.encodePubKey(parentAuthorPubkey);
+        UserProfile.generatedNameFor(parentAuthorPubkey);
 
     return Row(
       mainAxisSize: MainAxisSize.min,

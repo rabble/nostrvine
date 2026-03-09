@@ -1,32 +1,49 @@
-// ABOUTME: BuildContext extensions for showing modals that pause video playback
-// ABOUTME: Automatically calls setModalOpen(true/false) to pause/resume videos
+// ABOUTME: BuildContext extensions for showing modals/navigating that pause
+// ABOUTME: video playback. Calls setModalOpen(true/false) to pause/resume.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 
-/// Extension methods for showing modals that automatically pause video
-/// playback.
+/// Extension methods for showing modals and navigating that automatically
+/// pause video playback.
 ///
-/// These methods wrap [VineBottomSheet.show] and [showDialog] to integrate with
-/// [OverlayVisibility], ensuring videos pause when modals open and resume when
-/// they close.
+/// These methods wrap [VineBottomSheet.show], [showDialog], and
+/// [GoRouter.push] to integrate with [OverlayVisibility], ensuring videos
+/// pause when overlays/routes open and resume when they close.
 ///
 /// Example:
 /// ```dart
+/// // Push a route with video pause:
+/// context.pushWithVideoPause('/profile/npub1...');
+///
 /// // Standard VineBottomSheet with video pause:
 /// context.showVideoPausingVineBottomSheet(
 ///   title: Text('Options'),
 ///   children: [...],
 /// );
-///
-/// // Custom bottom sheet widget with video pause:
-/// context.showVideoPausingVineBottomSheet(
-///   builder: (context) => MyCustomSheet(),
-/// );
 /// ```
 extension PauseAwareModals on BuildContext {
+  /// Pushes a route that automatically pauses video playback.
+  ///
+  /// Calls [OverlayVisibility.setModalOpen(true)] before pushing and
+  /// [setModalOpen(false)] when the pushed route is popped.
+  Future<T?> pushWithVideoPause<T extends Object?>(
+    String location, {
+    Object? extra,
+  }) {
+    final container = ProviderScope.containerOf(this, listen: false);
+    final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
+
+    overlayNotifier.setModalOpen(true);
+
+    return push<T>(location, extra: extra).whenComplete(() {
+      overlayNotifier.setModalOpen(false);
+    });
+  }
+
   /// Shows a dialog that automatically pauses video playback.
   ///
   /// Calls [OverlayVisibility.setModalOpen(true)] before showing and

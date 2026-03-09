@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
+import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
@@ -29,7 +30,6 @@ import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
@@ -72,6 +72,7 @@ import 'package:openvine/services/seen_videos_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/subscribed_list_video_cache.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_list_service.dart';
@@ -91,6 +92,7 @@ import 'package:permissions_service/permissions_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:sound_service/sound_service.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';
@@ -144,7 +146,7 @@ PendingActionService? pendingActionService(Ref ref) {
   return service;
 }
 
-/// Relay capability service for detecting NIP-11 divine extensions
+/// Relay capability service for detecting NIP-11 Divine extensions
 @Riverpod(keepAlive: true)
 RelayCapabilityService relayCapabilityService(Ref ref) {
   final service = RelayCapabilityService();
@@ -600,9 +602,20 @@ SeenVideosService seenVideosService(Ref ref) {
 }
 
 /// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 @riverpod
 ContentBlocklistService contentBlocklistService(Ref ref) {
-  return ContentBlocklistService();
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return ContentBlocklistService(
+    prefs: prefs,
+    onChanged: () {
+      if (!ref.mounted) return;
+      ref.read(blocklistVersionProvider.notifier).increment();
+    },
+  );
 }
 
 /// Version counter to trigger rebuilds when blocklist changes.
@@ -617,14 +630,16 @@ class BlocklistVersion extends _$BlocklistVersion {
 
 /// Draft storage service for persisting vine drafts
 @riverpod
-Future<DraftStorageService> draftStorageService(Ref ref) async {
-  return DraftStorageService();
+DraftStorageService draftStorageService(Ref ref) {
+  final db = ref.watch(databaseProvider);
+  return DraftStorageService(draftsDao: db.draftsDao, clipsDao: db.clipsDao);
 }
 
 /// Clip library service for persisting individual video clips
 @riverpod
 ClipLibraryService clipLibraryService(Ref ref) {
-  return ClipLibraryService();
+  final db = ref.watch(databaseProvider);
+  return ClipLibraryService(clipsDao: db.clipsDao, draftsDao: db.draftsDao);
 }
 
 // (Removed duplicate legacy provider for StreamUploadService)
@@ -942,21 +957,14 @@ List<String> cachedFollowingList(Ref ref) {
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.
-/// Requires authentication.
+/// Non-nullable: the repository works without keys at construction time.
+/// Read operations return cached/empty data; write operations check keys.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalEventCacheService (for caching contact list events)
 @Riverpod(keepAlive: true)
-FollowRepository? followRepository(Ref ref) {
-  // Return null if NostrClient is not ready yet
-  // This prevents race conditions during auth where auth state is 'authenticated'
-  // but NostrClient hasn't yet rebuilt with the new keys.
-  // The provider will rebuild when isNostrReady becomes true.
-  if (!ref.watch(isNostrReadyProvider)) {
-    return null;
-  }
-
+FollowRepository followRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
@@ -1021,8 +1029,46 @@ FollowRepository? followRepository(Ref ref) {
     );
   });
 
+  // Listen for isNostrReady changes to re-initialize when keys become available.
+  // This handles the case where the provider was created before keys were loaded.
+  ref.listen<bool>(isNostrReadyProvider, (previous, next) {
+    if (previous == false && next && !repository.isInitialized) {
+      Log.info(
+        'NostrClient became ready, re-initializing FollowRepository',
+        name: 'AppProviders',
+        category: LogCategory.system,
+      );
+      repository.initialize().catchError((e) {
+        Log.error(
+          'Failed to re-initialize FollowRepository after keys ready',
+          name: 'AppProviders',
+          error: e,
+        );
+      });
+    }
+  });
+
   ref.onDispose(repository.dispose);
 
+  return repository;
+}
+
+/// Provider for [CuratedListRepository] instance.
+///
+/// Creates a repository that exposes subscribed curated lists via a
+/// [BehaviorSubject] stream for reactive BLoC subscription. Data is
+/// bridged from the legacy [CuratedListService] via [setSubscribedLists]
+/// until the repository owns its own persistence (Phase 1b).
+@Riverpod(keepAlive: true)
+CuratedListRepository curatedListRepository(Ref ref) {
+  final repository = CuratedListRepository();
+
+  // Bridge: push curated list updates from legacy service into repository
+  ref.listen(curatedListsStateProvider, (_, next) {
+    next.whenData(repository.setSubscribedLists);
+  });
+
+  ref.onDispose(repository.dispose);
   return repository;
 }
 
@@ -1032,7 +1078,30 @@ FollowRepository? followRepository(Ref ref) {
 @riverpod
 HashtagRepository hashtagRepository(Ref ref) {
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
-  return HashtagRepository(funnelcakeApiClient: funnelcakeClient);
+  final hashtagService = ref.watch(hashtagServiceProvider);
+  return HashtagRepository(
+    funnelcakeApiClient: funnelcakeClient,
+    localSearch: (query, limit) {
+      final results = <String>[];
+
+      void addMatches(Iterable<String> matches) {
+        for (final hashtag in matches) {
+          if (results.contains(hashtag)) continue;
+          results.add(hashtag);
+          if (results.length >= limit) break;
+        }
+      }
+
+      addMatches(hashtagService.searchHashtags(query));
+      if (results.length < limit) {
+        addMatches(
+          TopHashtagsService.instance.searchHashtags(query, limit: limit),
+        );
+      }
+
+      return results;
+    },
+  );
 }
 
 /// Provider for ProfileRepository instance
@@ -1055,7 +1124,6 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return ProfileRepository(
@@ -1063,7 +1131,6 @@ ProfileRepository? profileRepository(Ref ref) {
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
     funnelcakeApiClient: funnelcakeClient,
-    userBlockFilter: blocklistService.shouldFilterFromFeeds,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
   );
@@ -1549,6 +1616,7 @@ VideosRepository videosRepository(Ref ref) {
     localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(contentFilterService),
+    warningLabelsResolver: createNsfwWarnLabels(contentFilterService),
     funnelcakeApiClient: funnelcakeClient,
   );
 }
