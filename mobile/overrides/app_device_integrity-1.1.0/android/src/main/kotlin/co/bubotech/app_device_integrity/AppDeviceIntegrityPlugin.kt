@@ -2,7 +2,6 @@ package co.bubotech.app_device_integrity
 
 import android.app.Activity
 import android.content.Context
-import androidx.annotation.NonNull
 
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
@@ -26,22 +25,42 @@ class AppDeviceIntegrityPlugin: FlutterPlugin, MethodCallHandler, ActivityAware 
   }
 
   override fun onMethodCall(call: MethodCall, result: Result) {
-    if (call.method == "getAttestationServiceSupport") {
-      var challenge: String?
-      if (call.argument<Long>("gcp") != null) {
-        challenge = call.argument<String>("challengeString").toString()
-        var attestation: AppDeviceIntegrity = AppDeviceIntegrity(context,call.argument<Long>("gcp")!!)
-        attestation.integrityTokenResponse.addOnSuccessListener { response ->
-          val integrityToken: String = response.token()
-          result.success(integrityToken.toString())
-        }.addOnFailureListener { e ->
-          println("integrityToken Error:="+e)
-//                    result.error()
-        }
-
-      }
-    } else {
+    if (call.method != "getAttestationServiceSupport") {
       result.notImplemented()
+      return
+    }
+
+    val challenge = call.argument<String>("challengeString")
+    if (challenge.isNullOrBlank()) {
+      result.error("INVALID_ARGUMENT", "challengeString is required", null)
+      return
+    }
+
+    val cloudProjectNumber = call.argument<Number>("gcp")?.toLong()
+    if (cloudProjectNumber == null) {
+      result.error("INVALID_ARGUMENT", "gcp is required on Android", null)
+      return
+    }
+
+    try {
+      val attestation = AppDeviceIntegrity(context, challenge, cloudProjectNumber)
+      attestation.integrityTokenResponse
+        .addOnSuccessListener { response ->
+          result.success(response.token())
+        }
+        .addOnFailureListener { e ->
+          result.error(
+            "INTEGRITY_TOKEN_FAILED",
+            e.message ?: "Failed to request Play Integrity token",
+            null,
+          )
+        }
+    } catch (e: Exception) {
+      result.error(
+        "INTEGRITY_TOKEN_INIT_FAILED",
+        e.message ?: "Failed to initialize Play Integrity request",
+        null,
+      )
     }
   }
 
