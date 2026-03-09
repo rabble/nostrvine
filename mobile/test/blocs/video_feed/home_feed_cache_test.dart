@@ -15,7 +15,7 @@ void main() {
       cache = const HomeFeedCache();
     });
 
-    String _validFeedJson({int videoCount = 2}) {
+    String validFeedJson({int videoCount = 2}) {
       final videos = List.generate(
         videoCount,
         (i) => {
@@ -44,7 +44,7 @@ void main() {
             .millisecondsSinceEpoch;
 
         SharedPreferences.setMockInitialValues({
-          homeFeedCacheKey: _validFeedJson(),
+          homeFeedCacheKey: validFeedJson(),
           homeFeedCacheTimeKey: expiredTime,
         });
         final prefs = await SharedPreferences.getInstance();
@@ -60,7 +60,7 @@ void main() {
             .millisecondsSinceEpoch;
 
         SharedPreferences.setMockInitialValues({
-          homeFeedCacheKey: _validFeedJson(),
+          homeFeedCacheKey: validFeedJson(),
           homeFeedCacheTimeKey: freshTime,
         });
         final prefs = await SharedPreferences.getInstance();
@@ -127,7 +127,7 @@ void main() {
 
       test('returns null when cache time key is missing', () async {
         SharedPreferences.setMockInitialValues({
-          homeFeedCacheKey: _validFeedJson(),
+          homeFeedCacheKey: validFeedJson(),
           // No time key — defaults to epoch 0, which is > 1 hour ago
         });
         final prefs = await SharedPreferences.getInstance();
@@ -142,7 +142,7 @@ void main() {
       test('stores JSON and timestamp in SharedPreferences', () async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
-        final json = _validFeedJson();
+        final json = validFeedJson();
 
         await cache.write(prefs, json);
 
@@ -159,7 +159,7 @@ void main() {
       test('write then read returns valid result', () async {
         SharedPreferences.setMockInitialValues({});
         final prefs = await SharedPreferences.getInstance();
-        final json = _validFeedJson(videoCount: 3);
+        final json = validFeedJson(videoCount: 3);
 
         await cache.write(prefs, json);
         final result = cache.read(prefs);
