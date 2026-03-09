@@ -500,7 +500,7 @@ SecureKeyStorage secureKeyStorage(Ref ref) {
 OAuthConfig oauthConfig(Ref ref) {
   final env = ref.watch(currentEnvironmentProvider);
   if (env.environment == AppEnvironment.local) {
-    return OAuthConfig(
+    return const OAuthConfig(
       serverUrl: 'http://$localHost:$localKeycastPort',
       clientId: 'divine-mobile',
       redirectUri: 'http://localhost:$localKeycastPort/app/callback',

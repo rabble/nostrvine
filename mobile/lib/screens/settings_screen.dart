@@ -102,7 +102,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     onTap: () async {
                       final refreshed = await authService
                           .tryRefreshExpiredSession();
-                      if (!mounted) return;
+                      if (!context.mounted) return;
                       if (!refreshed) {
                         context.go(WelcomeScreen.loginOptionsPath);
                       }

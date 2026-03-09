@@ -290,7 +290,7 @@ class AuthService implements BackgroundAwareService {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        await refreshed.save(_flutterSecureStorage!);
+        await refreshed.save(_flutterSecureStorage);
         await signInWithDivineOAuth(refreshed);
         return true;
       }
