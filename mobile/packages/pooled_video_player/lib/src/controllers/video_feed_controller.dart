@@ -194,12 +194,7 @@ class VideoFeedController extends ChangeNotifier {
     if (_isDisposed) return;
     final notifier = _indexNotifiers[index];
     if (notifier != null) {
-      var pooledPlayer = _loadedPlayers[index];
-      if (pooledPlayer != null && pooledPlayer.isDisposed) {
-        _clearIndexTracking(index);
-        pooledPlayer = null;
-      }
-
+      final pooledPlayer = _loadedPlayers[index];
       // A player that exists but was disposed (e.g. pool eviction) should
       // report LoadState.none so the UI shows the placeholder, not a stale
       // Video widget referencing disposed native resources.  When no player
@@ -214,13 +209,6 @@ class VideoFeedController extends ChangeNotifier {
         videoController: isAlive ? pooledPlayer.videoController : null,
         player: isAlive ? pooledPlayer.player : null,
       );
-    }
-  }
-
-  void _refreshTrackedNotifiers({int? excludeIndex}) {
-    for (final trackedIndex in _indexNotifiers.keys.toList()) {
-      if (trackedIndex == excludeIndex) continue;
-      _notifyIndex(trackedIndex);
     }
   }
 
@@ -462,42 +450,12 @@ class VideoFeedController extends ChangeNotifier {
       }
     }
 
-    final currentPendingLoad =
-        _loadStates[index] == LoadState.loading ||
-        (!_loadedPlayers.containsKey(index) &&
-            !_loadingIndices.contains(index));
-
-    if (currentPendingLoad) {
-      _cancelSiblingLoadsWhileCurrentBuffers(currentIndex: index, keep: toKeep);
-
-      if (!_loadedPlayers.containsKey(index) &&
-          !_loadingIndices.contains(index)) {
-        unawaited(_loadPlayer(index));
-      }
-      return;
-    }
-
-    // Load missing players in window after the current video is playable.
-    for (final idx in toKeep.where((i) => i != index)) {
+    // Load missing players in window (current first, then others)
+    final loadOrder = [index, ...toKeep.where((i) => i != index)];
+    for (final idx in loadOrder) {
       if (!_loadedPlayers.containsKey(idx) && !_loadingIndices.contains(idx)) {
         unawaited(_loadPlayer(idx));
       }
-    }
-  }
-
-  void _cancelSiblingLoadsWhileCurrentBuffers({
-    required int currentIndex,
-    required Set<int> keep,
-  }) {
-    for (final idx in keep) {
-      if (idx == currentIndex) continue;
-      if (_loadStates[idx] != LoadState.loading) continue;
-
-      _logDebug(
-        'prioritize_current cancel=${_videoDebugDetails(idx)} '
-        'current=${_videoDebugDetails(currentIndex)}',
-      );
-      _releasePlayer(idx);
     }
   }
 
@@ -535,7 +493,6 @@ class VideoFeedController extends ChangeNotifier {
 
       _loadedPlayers[index] = pooledPlayer;
       _notifyIndex(index);
-      _refreshTrackedNotifiers(excludeIndex: index);
 
       // Register a callback so we learn when the pool evicts this player.
       // The identity check in _onPlayerEvicted ensures stale callbacks
@@ -562,6 +519,38 @@ class VideoFeedController extends ChangeNotifier {
       // Expose the allocated player/controller immediately so overlays can
       // render while the media is still buffering.
       _notifyIndex(index);
+
+      // Fast path: reuse player that already has media loaded.
+      // When a player was released from the controller but stayed in the
+      // pool, it retains its loaded media. Skip the expensive open() call
+      // that would reset and rebuffer, causing a visible freeze.
+      if (hadExistingPlayer &&
+          pooledPlayer.player.state.duration > Duration.zero) {
+        _logDebug(
+          'reuse_fast_path ${_videoDebugDetails(index)} '
+          'positionMs='
+          '${pooledPlayer.player.state.position.inMilliseconds} '
+          'durationMs='
+          '${pooledPlayer.player.state.duration.inMilliseconds} '
+          'elapsedMs=${loadStopwatch.elapsedMilliseconds}',
+        );
+
+        _setupStreamSubscriptions(index, pooledPlayer);
+
+        _loadStates[index] = LoadState.ready;
+        _loadStopwatches[index]?.stop();
+        onVideoReady?.call(index, pooledPlayer.player);
+
+        if (index == _currentIndex && _isActive && !_isPaused) {
+          _playVideo(index);
+        } else {
+          unawaited(pooledPlayer.player.pause());
+          unawaited(pooledPlayer.player.seek(Duration.zero));
+        }
+
+        _notifyIndex(index);
+        return;
+      }
 
       final playbackSources = _resolvePlaybackSources(video);
       var openedSource = playbackSources.primary;
@@ -603,47 +592,7 @@ class VideoFeedController extends ChangeNotifier {
       // Guard: index may have been released during open/setPlaylistMode.
       if (_isDisposed || !_loadingIndices.contains(index)) return;
 
-      // Set up buffer subscription — stays alive for the entire player
-      // lifetime to handle both initial buffering and post-seek rebuffering.
-      unawaited(_bufferSubscriptions[index]?.cancel());
-      _bufferSubscriptions[index] = pooledPlayer.player.stream.buffering.listen(
-        (isBuffering) {
-          _logDebug(
-            'buffering_event ${_videoDebugDetails(index)} '
-            'value=$isBuffering '
-            'elapsedMs=${_loadStopwatches[index]?.elapsedMilliseconds} '
-            'positionMs=${pooledPlayer.player.state.position.inMilliseconds}',
-          );
-          if (!isBuffering) {
-            if (_loadStates[index] == LoadState.loading) {
-              _onBufferReady(index);
-            } else if (_loadStates[index] == LoadState.ready &&
-                index == _currentIndex &&
-                _isActive &&
-                !_isPaused) {
-              // Rebuffer completed — ensure playback resumes as a safety
-              // net after seek or any transient stall.
-              final player = _loadedPlayers[index]?.player;
-              if (player != null) {
-                unawaited(player.play());
-              }
-            }
-          }
-        },
-      );
-
-      unawaited(_playingSubscriptions[index]?.cancel());
-      _playingSubscriptions[index] = pooledPlayer.player.stream.playing.listen((
-        isPlaying,
-      ) {
-        _logDebug(
-          'playing_event ${_videoDebugDetails(index)} '
-          'value=$isPlaying '
-          'elapsedMs=${_loadStopwatches[index]?.elapsedMilliseconds} '
-          'positionMs=${pooledPlayer.player.state.position.inMilliseconds} '
-          'current=${index == _currentIndex}',
-        );
-      });
+      _setupStreamSubscriptions(index, pooledPlayer);
 
       // Start buffering (muted)
       await pooledPlayer.player.setVolume(0);
@@ -689,7 +638,17 @@ class VideoFeedController extends ChangeNotifier {
 
     _logDebug('player_evicted ${_videoDebugDetails(index)}');
 
-    _clearIndexTracking(index);
+    _stopPositionTimer(index);
+    unawaited(_bufferSubscriptions[index]?.cancel());
+    _bufferSubscriptions.remove(index);
+    unawaited(_playingSubscriptions[index]?.cancel());
+    _playingSubscriptions.remove(index);
+    _stopLoadWatchdog(index);
+    _loadStopwatches.remove(index)?.stop();
+    _openedSources.remove(index);
+    _loadedPlayers.remove(index);
+    _loadStates.remove(index);
+    _loadingIndices.remove(index);
     _notifyIndex(index);
   }
 
@@ -718,9 +677,6 @@ class VideoFeedController extends ChangeNotifier {
 
       // Start position callback timer for current video
       _startPositionTimer(index);
-
-      // Once the visible video is actually ready, start any adjacent preloads.
-      _updatePreloadWindow(index);
     } else {
       // Preloaded video — pause and rewind to the beginning.
       // The video played muted just long enough to fill the buffer.
@@ -738,33 +694,72 @@ class VideoFeedController extends ChangeNotifier {
     _notifyIndex(index);
   }
 
+  /// Sets up buffer and playing stream subscriptions for [index].
+  ///
+  /// Shared by the full-load path and the fast-path reuse shortcut so
+  /// both flows get identical rebuffer-recovery and logging behaviour.
+  void _setupStreamSubscriptions(int index, PooledPlayer pooledPlayer) {
+    unawaited(_bufferSubscriptions[index]?.cancel());
+    _bufferSubscriptions[index] = pooledPlayer.player.stream.buffering.listen((
+      isBuffering,
+    ) {
+      _logDebug(
+        'buffering_event ${_videoDebugDetails(index)} '
+        'value=$isBuffering '
+        'elapsedMs=${_loadStopwatches[index]?.elapsedMilliseconds} '
+        'positionMs='
+        '${pooledPlayer.player.state.position.inMilliseconds}',
+      );
+      if (!isBuffering) {
+        if (_loadStates[index] == LoadState.loading) {
+          _onBufferReady(index);
+        } else if (_loadStates[index] == LoadState.ready &&
+            index == _currentIndex &&
+            _isActive &&
+            !_isPaused) {
+          final player = _loadedPlayers[index]?.player;
+          if (player != null) {
+            unawaited(player.play());
+          }
+        }
+      }
+    });
+
+    unawaited(_playingSubscriptions[index]?.cancel());
+    _playingSubscriptions[index] = pooledPlayer.player.stream.playing.listen((
+      isPlaying,
+    ) {
+      _logDebug(
+        'playing_event ${_videoDebugDetails(index)} '
+        'value=$isPlaying '
+        'elapsedMs=${_loadStopwatches[index]?.elapsedMilliseconds} '
+        'positionMs='
+        '${pooledPlayer.player.state.position.inMilliseconds} '
+        'current=${index == _currentIndex}',
+      );
+    });
+  }
+
   void _playVideo(int index) {
     final player = _loadedPlayers[index]?.player;
     if (player == null) return;
 
     // The player is paused (from _onBufferReady or _pauseVideo).
-    // Unmute and play, seeking to zero only if the video reached the end
-    // (loop behavior) or was preloaded (already at zero from _onBufferReady).
-    unawaited(_resume(index, player));
+    // Seek to the beginning while paused (safe — no renderer stall),
+    // then unmute and play.
+    unawaited(_resumeFromStart(index, player));
     _startPositionTimer(index);
   }
 
-  /// Unmute and play, seeking to the beginning only when at the end of the
-  /// video (loop behavior).
+  /// Seek to the beginning, unmute, and play.
   ///
   /// The player is expected to be paused (from [_onBufferReady] for preloaded
   /// videos, or from [_pauseVideo] for swiped-away videos). Seeking while
   /// paused avoids the mpv renderer stall that occurs when seeking a playing
   /// HLS stream.
-  Future<void> _resume(int index, Player player) async {
+  Future<void> _resumeFromStart(int index, Player player) async {
     try {
-      // Seek to zero only when the video has reached the end so it loops.
-      // Mid-playback position is preserved for swiped-away videos.
-      // Preloaded videos are already at position zero from _onBufferReady.
-      final duration = player.state.duration;
-      if (duration > Duration.zero && player.state.position >= duration) {
-        await player.seek(Duration.zero);
-      }
+      await player.seek(Duration.zero);
 
       // Guard: user may have scrolled away during the seek.
       if (_isDisposed || _currentIndex != index || !_isActive || _isPaused) {
@@ -795,8 +790,8 @@ class VideoFeedController extends ChangeNotifier {
     final player = _loadedPlayers[index]?.player;
     if (player != null) {
       // Mute and pause. The player stays in the pool for reuse.
-      // _resume will unmute and play when this video becomes current again,
-      // preserving the current playback position.
+      // _resumeFromStart will seek to 0, unmute, and play when this
+      // video becomes current again.
       unawaited(player.setVolume(0));
       unawaited(player.pause());
     }
@@ -820,7 +815,15 @@ class VideoFeedController extends ChangeNotifier {
     _positionTimers.remove(index);
   }
 
-  void _clearIndexTracking(int index) {
+  void _releasePlayer(int index) {
+    // Stop audio before removing from tracking to prevent audio leaks.
+    // The player stays in the pool for reuse, but must be silent.
+    final player = _loadedPlayers[index]?.player;
+    if (player != null) {
+      unawaited(player.setVolume(0));
+      unawaited(player.pause());
+    }
+
     _stopPositionTimer(index);
     unawaited(_bufferSubscriptions[index]?.cancel());
     _bufferSubscriptions.remove(index);
@@ -832,18 +835,6 @@ class VideoFeedController extends ChangeNotifier {
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
     _loadingIndices.remove(index);
-  }
-
-  void _releasePlayer(int index) {
-    // Stop audio before removing from tracking to prevent audio leaks.
-    // The player stays in the pool for reuse, but must be silent.
-    final player = _loadedPlayers[index]?.player;
-    if (player != null) {
-      unawaited(player.setVolume(0));
-      unawaited(player.pause());
-    }
-
-    _clearIndexTracking(index);
     _notifyIndex(index);
   }
 
