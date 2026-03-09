@@ -8,9 +8,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 void main() {
   group(ShareActionButton, () {
@@ -18,8 +21,12 @@ void main() {
         'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
 
     late VideoEvent testVideo;
+    late _MockFollowRepository mockFollowRepository;
 
     setUp(() {
+      mockFollowRepository = _MockFollowRepository();
+      when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+
       testVideo = VideoEvent(
         id: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
         pubkey: ownPubkey,
@@ -161,7 +168,9 @@ void main() {
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
             additionalOverrides: [
-              followRepositoryProvider.overrideWithValue(null),
+              followRepositoryProvider.overrideWithValue(
+                mockFollowRepository,
+              ),
             ],
             mockAuthService: mockAuth,
             mockUserProfileService: mockProfile,

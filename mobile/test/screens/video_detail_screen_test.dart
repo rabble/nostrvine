@@ -10,6 +10,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -18,6 +19,8 @@ import '../helpers/test_provider_overrides.dart';
 import '../test_data/video_test_data.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -29,13 +32,17 @@ void main() {
     late _MockVideoEventService mockVideoEventService;
     late _MockContentBlocklistService mockBlocklistService;
     late _MockNostrClient mockNostrClient;
+    late _MockFollowRepository mockFollowRepository;
     late MockUserProfileService mockUserProfileService;
 
     setUp(() {
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = _MockNostrClient();
       mockBlocklistService = _MockContentBlocklistService();
+      mockFollowRepository = _MockFollowRepository();
       mockUserProfileService = createMockUserProfileService();
+
+      when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
       // Stub configuredRelays (needed by analyticsApiService provider)
       when(() => mockNostrClient.configuredRelays).thenReturn(<String>[]);
@@ -64,7 +71,7 @@ void main() {
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
           ),
-          followRepositoryProvider.overrideWithValue(null),
+          followRepositoryProvider.overrideWithValue(mockFollowRepository),
         ],
         mockUserProfileService: mockUserProfileService,
         home: VideoDetailScreen(
