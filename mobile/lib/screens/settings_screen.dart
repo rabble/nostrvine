@@ -130,11 +130,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     title: 'Session Expired',
                     subtitle: 'Sign in again to restore full access',
                     onTap: () async {
+                      final router = GoRouter.of(context);
                       final refreshed = await authService
                           .tryRefreshExpiredSession();
                       if (!mounted) return;
                       if (!refreshed) {
-                        context.go(WelcomeScreen.loginOptionsPath);
+                        router.go(WelcomeScreen.loginOptionsPath);
                       }
                     },
                     iconColor: VineTheme.accentOrange,
