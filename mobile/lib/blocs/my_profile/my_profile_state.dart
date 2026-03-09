@@ -84,6 +84,31 @@ final class MyProfileLoaded extends MyProfileState {
   ];
 }
 
+/// Profile updated via stream subscription.
+///
+/// Emitted by [MyProfileSubscriptionRequested] whenever the local DB
+/// row changes. No `isFresh` flag — the stream always reflects the
+/// latest DB state regardless of who wrote it.
+final class MyProfileUpdated extends MyProfileState {
+  const MyProfileUpdated({
+    required this.profile,
+    this.extractedUsername,
+    this.externalNip05,
+  });
+
+  /// The current user profile from the local database.
+  final UserProfile profile;
+
+  /// Username extracted from the profile's NIP-05 identifier.
+  final String? extractedUsername;
+
+  /// External NIP-05 identifier (e.g., `alice@example.com`).
+  final String? externalNip05;
+
+  @override
+  List<Object?> get props => [profile, extractedUsername, externalNip05];
+}
+
 /// Error state when profile loading fails.
 final class MyProfileError extends MyProfileState {
   const MyProfileError({required this.errorType});

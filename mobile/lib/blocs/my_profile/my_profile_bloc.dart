@@ -1,6 +1,9 @@
-// ABOUTME: BLoC for loading the current user's own profile for editing
-// ABOUTME: Implements cache+fresh pattern and extracts divine.video username
+// ABOUTME: BLoC for the current user's own profile
+// ABOUTME: Supports one-shot load (editor) and stream subscription (profile screen)
 
+import 'dart:async';
+
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
@@ -9,16 +12,7 @@ import 'package:profile_repository/profile_repository.dart';
 part 'my_profile_event.dart';
 part 'my_profile_state.dart';
 
-/// BLoC for loading the current user's own profile for editing.
-///
-/// Implements the cache+fresh pattern:
-/// 1. On [MyProfileLoadRequested], emit cached profile immediately
-/// 2. Fetch fresh profile from relay
-/// 3. Extract divine.video username from NIP-05 if present
-/// 4. Emit loaded state with profile and extracted username
-///
-/// The [pubkey] is provided at construction time since this BLoC is scoped
-/// to a single profile editor screen instance.
+/// BLoC for the current user's own profile.
 class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
   MyProfileBloc({
     required ProfileRepository profileRepository,
@@ -26,6 +20,11 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
   }) : _profileRepository = profileRepository,
        super(const MyProfileInitial()) {
     on<MyProfileLoadRequested>(_onLoadRequested);
+    on<MyProfileSubscriptionRequested>(
+      _onSubscriptionRequested,
+      transformer: restartable(),
+    );
+    on<MyProfileFetchRequested>(_onFetchRequested);
   }
 
   final ProfileRepository _profileRepository;
@@ -76,7 +75,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       } else {
         emit(const MyProfileError(errorType: MyProfileErrorType.notFound));
       }
-    } catch (e) {
+    } on Exception {
       if (cachedProfile != null) {
         emit(
           MyProfileLoaded(
@@ -89,6 +88,42 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       } else {
         emit(const MyProfileError(errorType: MyProfileErrorType.networkError));
       }
+    }
+  }
+
+  Future<void> _onSubscriptionRequested(
+    MyProfileSubscriptionRequested event,
+    Emitter<MyProfileState> emit,
+  ) async {
+    emit(const MyProfileLoading());
+
+    await emit.forEach<UserProfile?>(
+      _profileRepository.watchProfile(pubkey: pubkey),
+      onData: (profile) {
+        if (profile != null) {
+          return MyProfileUpdated(
+            profile: profile,
+            extractedUsername: profile.divineUsername,
+            externalNip05: profile.externalNip05,
+          );
+        }
+        return const MyProfileLoading();
+      },
+      onError: (error, stackTrace) {
+        addError(error, stackTrace);
+        return state;
+      },
+    );
+  }
+
+  Future<void> _onFetchRequested(
+    MyProfileFetchRequested event,
+    Emitter<MyProfileState> emit,
+  ) async {
+    try {
+      await _profileRepository.fetchFreshProfile(pubkey: pubkey);
+    } on Exception catch (e, stackTrace) {
+      addError(e, stackTrace);
     }
   }
 }

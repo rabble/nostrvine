@@ -153,3 +153,4 @@ logs/
 .idea/
 *.swp
 *.swo
+.claude/worktrees/

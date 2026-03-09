@@ -5,7 +5,8 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import 'package:db_client/db_client.dart';
+// Hide Drift table class to avoid collision with ProfileStats domain model.
+import 'package:db_client/db_client.dart' hide ProfileStats;
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
 import 'package:models/models.dart';
@@ -34,17 +35,20 @@ class ProfileRepository {
     required NostrClient nostrClient,
     required UserProfilesDao userProfilesDao,
     required Client httpClient,
+    ProfileStatsDao? profileStatsDao,
     FunnelcakeApiClient? funnelcakeApiClient,
     ProfileSearchFilter? profileSearchFilter,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
        _httpClient = httpClient,
+       _profileStatsDao = profileStatsDao,
        _funnelcakeApiClient = funnelcakeApiClient,
        _profileSearchFilter = profileSearchFilter;
 
   final NostrClient _nostrClient;
   final UserProfilesDao _userProfilesDao;
   final Client _httpClient;
+  final ProfileStatsDao? _profileStatsDao;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
 
@@ -114,6 +118,42 @@ class ProfileRepository {
   /// Used for bulk-loading profiles into memory on startup.
   Future<List<UserProfile>> getAllCachedProfiles() {
     return _userProfilesDao.getAllProfiles();
+  }
+
+  /// Watches a profile by pubkey, emitting updates from local storage.
+  ///
+  /// Returns a stream that emits the current [UserProfile] whenever the
+  /// cached profile changes (insert, update, or delete). Emits `null` if
+  /// no cached profile exists for the given pubkey.
+  ///
+  /// Use this for reactive UI updates (e.g., BlocBuilder subscriptions).
+  /// Pair with [fetchFreshProfile] to trigger relay fetches that write
+  /// back to the cache and automatically flow through this stream.
+  Stream<UserProfile?> watchProfile({required String pubkey}) {
+    return _userProfilesDao.watchProfile(pubkey);
+  }
+
+  /// Watches profile stats by pubkey, emitting updates from local storage.
+  ///
+  /// Returns a stream that maps [ProfileStatRow] from the database to
+  /// [ProfileStats] domain models. Emits `null` if no stats exist.
+  ///
+  /// Returns an empty stream if [ProfileStatsDao] was not injected.
+  Stream<ProfileStats?> watchProfileStats({required String pubkey}) {
+    final dao = _profileStatsDao;
+    if (dao == null) return const Stream.empty();
+    return dao.watchStats(pubkey).map((row) {
+      if (row == null) return null;
+      return ProfileStats(
+        pubkey: row.pubkey,
+        videoCount: row.videoCount ?? 0,
+        totalLikes: row.totalLikes ?? 0,
+        followers: row.followerCount ?? 0,
+        following: row.followingCount ?? 0,
+        totalViews: row.totalViews ?? 0,
+        lastUpdated: row.cachedAt,
+      );
+    });
   }
 
   /// Fetches a fresh profile from Nostr relays and updates the local cache.

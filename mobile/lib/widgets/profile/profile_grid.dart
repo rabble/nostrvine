@@ -14,7 +14,6 @@ import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.da
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
 import 'package:openvine/widgets/profile/profile_comments_grid.dart';
@@ -29,7 +28,6 @@ class ProfileGridView extends ConsumerStatefulWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     required this.videos,
-    required this.profileStatsAsync,
     this.displayName,
     this.onSetupProfile,
     this.onEditProfile,
@@ -56,9 +54,6 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// List of videos to display in the videos tab.
   final List<VideoEvent> videos;
-
-  /// Async value containing profile stats.
-  final AsyncValue<ProfileStats> profileStatsAsync;
 
   /// Callback when "Set Up" button is tapped (own profile only).
   final VoidCallback? onSetupProfile;
@@ -292,7 +287,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               userIdHex: widget.userIdHex,
               isOwnProfile: widget.isOwnProfile,
               videoCount: widget.videos.length,
-              profileStatsAsync: widget.profileStatsAsync,
               onSetupProfile: widget.onSetupProfile,
               displayNameHint: widget.displayNameHint,
               avatarUrlHint: widget.avatarUrlHint,

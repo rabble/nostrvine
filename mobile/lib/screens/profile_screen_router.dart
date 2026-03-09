@@ -10,11 +10,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
@@ -136,9 +136,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     // Refresh videos from provider
     await ref.read(profileFeedProvider(userIdHex).notifier).refresh();
 
-    // Invalidate stats to recompute
-    ref.invalidate(fetchProfileStatsProvider(userIdHex));
-
     // Refresh user profile info
     ref.read(userProfileServiceProvider).fetchProfile(userIdHex);
 
@@ -179,58 +176,90 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       ),
     };
 
-    // Own profile grid gets its own scaffold with custom app bar
     if (isOwnProfileGrid) {
       final environment = ref.watch(currentEnvironmentProvider);
       final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
+      final profileRepository = ref.watch(profileRepositoryProvider);
 
-      // Watch profile for profile color
-      final profileAsync = userIdHex != null
-          ? ref.watch(fetchUserProfileProvider(userIdHex))
-          : null;
-      final profileColor = profileAsync?.value?.profileBackgroundColor;
+      if (userIdHex == null || profileRepository == null) {
+        return const ProfileLoadingView();
+      }
 
-      return Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: VineTheme.backgroundColor,
-        onDrawerChanged: (isOpen) {
-          ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
-        },
-        appBar: DiVineAppBar(
-          title: 'My Profile',
-          backgroundColor:
-              profileColor ?? getEnvironmentAppBarColor(environment),
-          showMenuButton: true,
-          onMenuPressed: () {
-            Log.info(
-              '👆 User tapped menu button',
-              name: 'Navigation',
-              category: LogCategory.ui,
-            );
-            _scaffoldKey.currentState?.openDrawer();
+      return BlocProvider<MyProfileBloc>(
+        create: (context) =>
+            MyProfileBloc(
+                profileRepository: profileRepository,
+                pubkey: userIdHex,
+              )
+              ..add(const MyProfileSubscriptionRequested())
+              ..add(const MyProfileFetchRequested()),
+        child: BlocBuilder<MyProfileBloc, MyProfileState>(
+          buildWhen: (previous, current) {
+            final previousColor = switch (previous) {
+              MyProfileUpdated(:final profile) =>
+                profile.profileBackgroundColor,
+              _ => null,
+            };
+            final currentColor = switch (current) {
+              MyProfileUpdated(:final profile) =>
+                profile.profileBackgroundColor,
+              _ => null,
+            };
+            return previousColor != currentColor;
           },
-          actions: [
-            DiVineAppBarAction(
-              icon: _isRefreshing
-                  ? const MaterialIconSource(Icons.refresh)
-                  : const SvgIconSource('assets/icon/refresh.svg'),
-              onPressed: userIdHex != null && !_isRefreshing
-                  ? () => _refreshProfile(userIdHex)
-                  : null,
-              tooltip: 'Refresh',
-              semanticLabel: 'Refresh profile',
-            ),
-            DiVineAppBarAction(
-              icon: const SvgIconSource('assets/icon/DotsThree.svg'),
-              onPressed: userIdHex != null ? () => _more(userIdHex) : null,
-              tooltip: 'More',
-              semanticLabel: 'More options',
-            ),
-          ],
+          builder: (context, state) {
+            final profileColor = switch (state) {
+              MyProfileUpdated(:final profile) =>
+                profile.profileBackgroundColor,
+              _ => null,
+            };
+
+            return Scaffold(
+              key: _scaffoldKey,
+              backgroundColor: VineTheme.backgroundColor,
+              onDrawerChanged: (isOpen) {
+                ref
+                    .read(overlayVisibilityProvider.notifier)
+                    .setDrawerOpen(isOpen);
+              },
+              appBar: DiVineAppBar(
+                title: 'My Profile',
+                backgroundColor:
+                    profileColor ?? getEnvironmentAppBarColor(environment),
+                showMenuButton: true,
+                onMenuPressed: () {
+                  Log.info(
+                    '👆 User tapped menu button',
+                    name: 'Navigation',
+                    category: LogCategory.ui,
+                  );
+                  _scaffoldKey.currentState?.openDrawer();
+                },
+                actions: [
+                  DiVineAppBarAction(
+                    icon: _isRefreshing
+                        ? const MaterialIconSource(Icons.refresh)
+                        : const SvgIconSource('assets/icon/refresh.svg'),
+                    onPressed: !_isRefreshing
+                        ? () => _refreshProfile(userIdHex)
+                        : null,
+                    tooltip: 'Refresh',
+                    semanticLabel: 'Refresh profile',
+                  ),
+                  DiVineAppBarAction(
+                    icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+                    onPressed: () => _more(userIdHex),
+                    tooltip: 'More',
+                    semanticLabel: 'More options',
+                  ),
+                ],
+              ),
+              drawer: const VineDrawer(),
+              body: content,
+              bottomNavigationBar: const VineBottomNav(currentIndex: 3),
+            );
+          },
         ),
-        drawer: const VineDrawer(),
-        body: content,
-        bottomNavigationBar: const VineBottomNav(currentIndex: 3),
       );
     }
 
@@ -618,9 +647,6 @@ class _ProfileDataView extends ConsumerWidget {
     // Get video data from profile feed
     final videosAsync = ref.watch(profileFeedProvider(userIdHex));
 
-    // Get profile stats
-    final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
-
     if (videosAsync is AsyncData) {
       ScreenAnalyticsService().markDataLoaded(
         'own_profile',
@@ -656,7 +682,6 @@ class _ProfileDataView extends ConsumerWidget {
           displayName: displayName,
           videos: value.videos,
           videoIndex: videoIndex,
-          profileStatsAsync: profileStatsAsync,
           scrollController: scrollController,
           onSetupProfile: onSetupProfile,
           onEditProfile: onEditProfile,
@@ -679,7 +704,6 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.isOwnProfile,
     required this.videos,
     required this.videoIndex,
-    required this.profileStatsAsync,
     required this.scrollController,
     required this.onSetupProfile,
     required this.onEditProfile,
@@ -696,7 +720,6 @@ class ProfileViewSwitcher extends StatelessWidget {
   final String? displayName;
   final List<VideoEvent> videos;
   final int? videoIndex;
-  final AsyncValue<ProfileStats> profileStatsAsync;
   final ScrollController scrollController;
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
@@ -731,7 +754,6 @@ class ProfileViewSwitcher extends StatelessWidget {
             isOwnProfile: isOwnProfile,
             displayName: displayName,
             videos: videos,
-            profileStatsAsync: profileStatsAsync,
             scrollController: scrollController,
             onSetupProfile: onSetupProfile,
             onEditProfile: onEditProfile,

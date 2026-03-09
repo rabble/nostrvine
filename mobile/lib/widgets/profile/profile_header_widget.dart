@@ -9,9 +9,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -31,7 +31,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
     required this.userIdHex,
     required this.isOwnProfile,
     required this.videoCount,
-    required this.profileStatsAsync,
     this.onSetupProfile,
     this.displayNameHint,
     this.avatarUrlHint,
@@ -47,9 +46,6 @@ class ProfileHeaderWidget extends ConsumerWidget {
   /// The number of videos loaded in the profile grid.
   final int videoCount;
 
-  /// Async value containing profile stats (video count, etc.).
-  final AsyncValue<ProfileStats> profileStatsAsync;
-
   /// Callback when "Set Up" button is tapped on the setup banner.
   /// Only shown for own profile with default name.
   final VoidCallback? onSetupProfile;
@@ -62,9 +58,16 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch profile from relay (reactive)
-    final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
-    final profile = profileAsync.value;
+    final UserProfile? profile;
+    if (isOwnProfile) {
+      final state = context.watch<MyProfileBloc>().state;
+      profile = switch (state) {
+        MyProfileUpdated(:final profile) => profile,
+        _ => null,
+      };
+    } else {
+      profile = ref.watch(fetchUserProfileProvider(userIdHex)).value;
+    }
 
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
     // Check for both null AND empty string - some profiles have empty picture field
@@ -118,7 +121,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                 // Setup profile banner for new users with default names
                 // (only on own profile)
                 if (isOwnProfile &&
-                    !profileAsync.isLoading &&
+                    profile != null &&
                     !hasCustomName &&
                     onSetupProfile != null)
                   _SetupProfileBanner(onSetup: onSetupProfile!),

@@ -10,7 +10,6 @@ import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
@@ -174,9 +173,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     // Refresh videos from provider
     await ref.read(profileFeedProvider(widget.pubkey).notifier).refresh();
 
-    // Invalidate stats to recompute
-    ref.invalidate(fetchProfileStatsProvider(widget.pubkey));
-
     if (!mounted) return;
 
     // Refresh user profile info
@@ -310,11 +306,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     // Get video data from profile feed
     final videosAsync = ref.watch(profileFeedProvider(widget.pubkey));
 
-    // Get profile stats
-    final profileStatsAsync = ref.watch(
-      fetchProfileStatsProvider(widget.pubkey),
-    );
-
     // Watch profile reactively to get display name for AppBar
     // Use hint as fallback for users without Kind 0 profiles (e.g., classic Viners)
     final profileAsync = ref.watch(userProfileReactiveProvider(widget.pubkey));
@@ -388,7 +379,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               isOwnProfile: false,
               displayName: displayName,
               videos: value.videos,
-              profileStatsAsync: profileStatsAsync,
               scrollController: _scrollController,
               onBlockedTap: _showUnblockConfirmation,
               displayNameHint: widget.displayNameHint,

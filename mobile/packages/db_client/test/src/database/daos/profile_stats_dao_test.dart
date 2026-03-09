@@ -160,6 +160,65 @@ void main() {
       });
     });
 
+    group('watchStats', () {
+      test('emits null when no row exists', () async {
+        final stream = dao.watchStats(testPubkey);
+        await expectLater(stream.first, completion(isNull));
+      });
+
+      test('emits row when stats are inserted', () async {
+        final stream = dao.watchStats(testPubkey);
+
+        Future.delayed(Duration.zero, () async {
+          await dao.upsertStats(
+            pubkey: testPubkey,
+            videoCount: 10,
+            followerCount: 100,
+          );
+        });
+
+        await expectLater(
+          stream.take(2),
+          emitsInOrder([
+            isNull,
+            isA<ProfileStatRow>()
+                .having((r) => r.videoCount, 'videoCount', equals(10))
+                .having(
+                  (r) => r.followerCount,
+                  'followerCount',
+                  equals(100),
+                ),
+          ]),
+        );
+      });
+
+      test('emits updated row when stats change', () async {
+        await dao.upsertStats(pubkey: testPubkey, videoCount: 10);
+
+        final stream = dao.watchStats(testPubkey);
+
+        Future.delayed(Duration.zero, () async {
+          await dao.upsertStats(pubkey: testPubkey, videoCount: 20);
+        });
+
+        await expectLater(
+          stream.take(2),
+          emitsInOrder([
+            isA<ProfileStatRow>().having(
+              (r) => r.videoCount,
+              'videoCount',
+              equals(10),
+            ),
+            isA<ProfileStatRow>().having(
+              (r) => r.videoCount,
+              'videoCount',
+              equals(20),
+            ),
+          ]),
+        );
+      });
+    });
+
     group('deleteStats', () {
       test('deletes stats for a pubkey', () async {
         await dao.upsertStats(pubkey: testPubkey, videoCount: 10);
