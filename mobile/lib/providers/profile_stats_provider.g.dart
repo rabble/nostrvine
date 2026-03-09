@@ -74,7 +74,7 @@ final class FetchProfileStatsProvider
   }
 }
 
-String _$fetchProfileStatsHash() => r'30e0f2928752f131f93ae3fc5b3771274dbeacc9';
+String _$fetchProfileStatsHash() => r'dede81a5ccab3b07521b2607fa98bc6355aeae84';
 
 /// Async provider for loading profile statistics.
 /// Derives video count from profileFeedProvider to ensure consistency
