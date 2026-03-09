@@ -997,7 +997,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
-    await _cameraService.initialize();
+    await initialize();
   }
 
   /// Update the state based on the current camera state.
