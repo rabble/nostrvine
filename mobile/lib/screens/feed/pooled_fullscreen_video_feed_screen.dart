@@ -46,10 +46,10 @@ const double _kOverlayFadeHalfWidth = 0.03;
 /// Maps [distance] (0–1 fraction scrolled away from an item) to overlay
 /// opacity using smooth linear interpolation around each threshold.
 double _scrollDrivenOpacity(double distance) {
-  final dimLo = _kOverlayFullOpacityThreshold - _kOverlayFadeHalfWidth;
-  final dimHi = _kOverlayFullOpacityThreshold + _kOverlayFadeHalfWidth;
-  final hideLo = _kOverlayHideThreshold - _kOverlayFadeHalfWidth;
-  final hideHi = _kOverlayHideThreshold + _kOverlayFadeHalfWidth;
+  const dimLo = _kOverlayFullOpacityThreshold - _kOverlayFadeHalfWidth;
+  const dimHi = _kOverlayFullOpacityThreshold + _kOverlayFadeHalfWidth;
+  const hideLo = _kOverlayHideThreshold - _kOverlayFadeHalfWidth;
+  const hideHi = _kOverlayHideThreshold + _kOverlayFadeHalfWidth;
 
   if (distance <= dimLo) return 1.0;
   if (distance <= dimHi) {
