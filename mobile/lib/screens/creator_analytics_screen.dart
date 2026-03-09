@@ -196,7 +196,14 @@ class _CreatorAnalyticsScreenState
             onRefresh: _refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                // Important on Android to ensure content is not behind the
+                // device navigation bar.
+                24 + MediaQuery.viewPaddingOf(context).bottom,
+              ),
               children: [
                 _RangeSelector(
                   selected: _selectedWindow,
@@ -213,7 +220,9 @@ class _CreatorAnalyticsScreenState
                     useFixture: useFixture,
                     onToggleFixture: (enabled) async {
                       ref
-                              .read(useFixtureCreatorAnalyticsProvider.notifier)
+                              .read(
+                                useFixtureCreatorAnalyticsProvider.notifier,
+                              )
                               .state =
                           enabled;
                       await _refresh();
