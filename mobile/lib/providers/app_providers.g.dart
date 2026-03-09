@@ -1313,7 +1313,7 @@ final class OauthConfigProvider
   }
 }
 
-String _$oauthConfigHash() => r'b11c3df3f54b22165844d498c073e779b2b88815';
+String _$oauthConfigHash() => r'f32c18f5c887e53d5c11479fabe62a1046250dcc';
 
 @ProviderFor(flutterSecureStorage)
 const flutterSecureStorageProvider = FlutterSecureStorageProvider._();
