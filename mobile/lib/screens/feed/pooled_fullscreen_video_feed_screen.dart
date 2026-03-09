@@ -391,7 +391,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               onBackPressed: context.pop,
               backgroundMode: DiVineAppBarBackgroundMode.transparent,
               forceMaterialTransparency: true,
-              actions: [if (editAction != null) editAction],
+              actions: [?editAction],
             ),
             body: PooledVideoFeed(
               videos: state.pooledVideos,

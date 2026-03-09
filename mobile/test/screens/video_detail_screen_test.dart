@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -180,7 +181,7 @@ void main() {
         await tester.pumpWidget(buildSubject(videoId: 'blocked_video_id'));
         await tester.pump();
 
-        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
       });
     });
   });

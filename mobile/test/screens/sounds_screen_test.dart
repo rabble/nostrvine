@@ -116,7 +116,7 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
       });
 
       testWidgets('has search text field', (tester) async {
