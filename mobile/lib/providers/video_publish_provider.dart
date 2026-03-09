@@ -3,25 +3,28 @@
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// Provider for video publish screen state management.
 final videoPublishProvider =
@@ -31,7 +34,9 @@ final videoPublishProvider =
 
 /// Manages video publish screen state including playback and position.
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
-  final _draftService = DraftStorageService();
+  late final DraftStorageService _draftService = ref.read(
+    draftStorageServiceProvider,
+  );
 
   @override
   VideoPublishProviderState build() {
@@ -58,7 +63,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
   /// Resets all video-related providers.
   ///
-  /// Clears recorder, editor, clip manager, sound selection, and publish state.
+  /// Clears recorder, editor, clip manager, and publish state.
   Future<void> clearAll() async {
     Log.debug(
       '🧹 Clearing all video providers',
@@ -67,7 +72,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     );
     try {
       ref.read(videoRecorderProvider.notifier).reset();
-      ref.read(selectedSoundProvider.notifier).clear();
       reset();
 
       await Future.wait([
@@ -90,7 +94,17 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// Called on app startup to check for drafts with [VideoEditorConstants.publishPrefixId]
   /// prefix and restart their upload process.
   Future<void> resumePendingPublishes(BuildContext context) async {
-    final drafts = await _draftService.getAllDrafts();
+    final List<DivineVideoDraft> drafts;
+    try {
+      drafts = await _draftService.getAllDrafts();
+    } catch (e) {
+      Log.error(
+        '❌ Failed to load drafts for pending publish resume: $e',
+        name: 'VideoPublishNotifier',
+        category: LogCategory.video,
+      );
+      return;
+    }
     if (!context.mounted) return;
 
     final pendingDrafts = drafts.where(
@@ -115,6 +129,32 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
 
     for (final draft in pendingDrafts) {
+      // Check if video file still exists before attempting resume
+      if (!kIsWeb && draft.clips.isNotEmpty) {
+        try {
+          final videoPath = await draft.clips.first.video.safeFilePath();
+          final videoFile = File(videoPath);
+          if (!videoFile.existsSync()) {
+            Log.warning(
+              '🗑️ Deleting draft ${draft.id} - video file no longer exists: $videoPath',
+              name: 'VideoPublishNotifier',
+              category: LogCategory.video,
+            );
+            await _draftService.deleteDraft(draft.id);
+            continue;
+          }
+        } catch (e) {
+          Log.warning(
+            '⚠️ Could not verify video file for draft ${draft.id}: $e',
+            name: 'VideoPublishNotifier',
+            category: LogCategory.video,
+          );
+          // Delete draft if we can't verify the video
+          await _draftService.deleteDraft(draft.id);
+          continue;
+        }
+      }
+
       Log.info(
         '📤 Resuming upload for draft: ${draft.id}',
         name: 'VideoPublishNotifier',
@@ -173,8 +213,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
   /// Publishes the video with ProofMode attestation and navigates to
   /// profile on success.
-  Future<void> publishVideo(BuildContext context, VineDraft draft) async {
-    if (state.publishState != .idle) {
+  Future<void> publishVideo(
+    BuildContext context,
+    DivineVideoDraft draft,
+  ) async {
+    // Only block if actively preparing/uploading
+    if (state.publishState == .preparing || state.publishState == .uploading) {
       Log.warning(
         '⚠️ Publish already in progress, ignoring duplicate request',
         name: 'VideoPublishNotifier',
@@ -183,11 +227,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       return;
     }
 
-    VineDraft publishDraft = draft.copyWith(
-      id:
-          '${VideoEditorConstants.publishPrefixId}_'
-          '${DateTime.now().microsecondsSinceEpoch}',
-    );
+    state = state.copyWith(publishState: .preparing);
 
     try {
       Log.info(
@@ -196,37 +236,57 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
 
-      // If the draft hasn't been proofread yet, we'll try again here.
-      if (draft.proofManifestJson == null) {
+      DivineVideoClip? finalRenderedClip = draft.finalRenderedClip;
+      String? proofManifestJson = draft.proofManifestJson;
+
+      if (finalRenderedClip == null) {
+        if (draft.clips.length == 1) {
+          finalRenderedClip = draft.clips.first;
+        } else {
+          // Multiple clips without rendered output - render now
+          Log.info(
+            '🎬 Rendering ${draft.clips.length} clips for publish',
+            name: 'VideoPublishNotifier',
+            category: LogCategory.video,
+          );
+
+          final parameters = draft.editorEditingParameters.isNotEmpty
+              ? CompleteParameters.fromMap(draft.editorEditingParameters)
+              : null;
+
+          final result = await VideoEditorRenderService.renderVideoToClip(
+            clips: draft.clips,
+            parameters: parameters,
+          );
+
+          if (result == null) {
+            setError('Video rendering failed');
+            return;
+          }
+
+          final (clip, proofJson) = result;
+          finalRenderedClip = clip;
+          proofManifestJson = proofJson;
+
+          Log.info(
+            '✅ Video rendered successfully for publish',
+            name: 'VideoPublishNotifier',
+            category: LogCategory.video,
+          );
+        }
+      }
+
+      // Generate proof if not already available
+      if (proofManifestJson == null) {
         Log.info(
           '🔐 Generating proof manifest for video',
           name: 'VideoPublishNotifier',
           category: .video,
         );
 
-        // When we publish a clip, we expect all the clips to be merged, so we
-        // can read the first clip directly. Multiple clips are only required to
-        // restore the editor state from drafts.
-        final filePath = await publishDraft.clips.first.video.safeFilePath();
+        final filePath = await finalRenderedClip.video.safeFilePath();
         final result = await NativeProofModeService.proofFile(File(filePath));
-        final String? proofManifestJson = result == null
-            ? null
-            : jsonEncode(result);
-        publishDraft = publishDraft.copyWith(
-          proofManifestJson: proofManifestJson,
-        );
-
-        Log.debug(
-          '💾 Saving publish draft: ${publishDraft.id}',
-          name: 'VideoPublishNotifier',
-          category: .video,
-        );
-        await _draftService.saveDraft(publishDraft);
-        Log.debug(
-          '🧹 Clearing all editor state after draft save',
-          name: 'VideoPublishNotifier',
-          category: .video,
-        );
+        proofManifestJson = result != null ? jsonEncode(result) : null;
 
         if (proofManifestJson != null) {
           Log.info(
@@ -241,6 +301,31 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             category: .video,
           );
         }
+      }
+
+      final publishDraft = draft.copyWith(
+        id:
+            '${VideoEditorConstants.publishPrefixId}_'
+            '${DateTime.now().microsecondsSinceEpoch}',
+        finalRenderedClip: finalRenderedClip,
+        proofManifestJson: proofManifestJson,
+      );
+
+      Log.debug(
+        '💾 Saving publish draft: ${publishDraft.id}',
+        name: 'VideoPublishNotifier',
+        category: .video,
+      );
+      await _draftService.saveDraft(publishDraft);
+
+      // Delete the original draft since we now have the publish draft
+      if (!draft.id.startsWith(VideoEditorConstants.publishPrefixId)) {
+        Log.debug(
+          '🗑️ Deleting original draft: ${draft.id}',
+          name: 'VideoPublishNotifier',
+          category: .video,
+        );
+        await _draftService.deleteDraft(draft.id);
       }
 
       Log.info(

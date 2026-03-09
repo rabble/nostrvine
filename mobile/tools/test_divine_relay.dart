@@ -14,7 +14,7 @@ void main() async {
   // Listen for responses
   ws.listen(
     (message) {
-      final decoded = json.decode(message);
+      final decoded = json.decode(message as String);
       final type = decoded[0];
 
       if (type == 'EVENT') {
@@ -22,7 +22,7 @@ void main() async {
         print('📥 EVENT: ${event['id'].substring(0, 8)}');
         print('   Kind: ${event['kind']}');
         print(
-          '   Created: ${DateTime.fromMillisecondsSinceEpoch(event['created_at'] * 1000)}',
+          '   Created: ${DateTime.fromMillisecondsSinceEpoch((event['created_at'] as int) * 1000)}',
         );
 
         // Check for loop count in tags

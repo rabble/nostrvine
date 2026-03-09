@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/safe_json_cache_repository.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -64,6 +65,62 @@ void main() {
           await appSupportDir.delete(recursive: true);
         }
       });
+
+      test(
+        'open recovers from corrupted JSON without triggering FlutterError',
+        () async {
+          // This test proves that when the cache JSON file is corrupted,
+          // SafeJsonCacheInfoRepository.open() should:
+          //   1. NOT let FlutterError.onError fire (which Crashlytics records as fatal)
+          //   2. Delete the corrupted file
+          //   3. Complete successfully
+          //
+          // BUG: The upstream JsonCacheInfoRepository._readFile() catches the
+          // FormatException internally and calls FlutterError.reportError()
+          // instead of rethrowing. So our try/catch in open() never fires,
+          // and the error reaches Crashlytics as a fatal crash.
+
+          const databaseName = 'test_corrupt_recovery';
+
+          // Create a truncated/corrupted JSON file (simulates iOS kill mid-write)
+          final cacheFile = File('${appSupportDir.path}/$databaseName.json');
+          await cacheFile.writeAsString('{"truncated":');
+
+          // Track whether FlutterError.onError is called
+          FlutterErrorDetails? capturedError;
+          final previousHandler = FlutterError.onError;
+          FlutterError.onError = (details) {
+            capturedError = details;
+          };
+
+          try {
+            final repo = SafeJsonCacheInfoRepository(
+              databaseName: databaseName,
+            );
+            await repo.open();
+
+            // The corrupted file should have been deleted
+            expect(
+              cacheFile.existsSync(),
+              isFalse,
+              reason: 'Corrupted cache file should be deleted after recovery',
+            );
+
+            // FlutterError.onError should NOT have been called —
+            // the error should be handled internally, not reported as fatal
+            expect(
+              capturedError,
+              isNull,
+              reason:
+                  'FlutterError.onError should not fire — the corrupted cache '
+                  'should be handled internally without reaching the global '
+                  'error handler (which Crashlytics records as fatal)',
+            );
+          } finally {
+            FlutterError.onError = previousHandler;
+          }
+        },
+      );
 
       test('cache JSON should be stored in app support directory (not temp)', () async {
         // This test verifies that the cache file path uses getApplicationSupportDirectory

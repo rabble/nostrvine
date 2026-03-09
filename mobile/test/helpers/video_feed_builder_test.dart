@@ -1,7 +1,5 @@
 // ABOUTME: Tests for VideoFeedBuilder helper class that encapsulates common feed logic
-// ABOUTME: Validates debouncing, stability waiting, and state management patterns
-
-import 'dart:async';
+// ABOUTME: Validates debouncing, streaming return, and state management patterns
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -79,82 +77,68 @@ void main() {
         },
       );
 
-      test('should wait for video count stability before returning', () async {
-        // Arrange
-        final videos = <VideoEvent>[];
-        var listenerCallCount = 0;
-
+      test('should return immediately without waiting for stability', () async {
+        // Arrange - subscribe adds videos asynchronously but buildFeed
+        // should NOT wait for them
         final config = VideoFeedConfig(
           subscriptionType: SubscriptionType.popularNow,
-          subscribe: (service) async {
-            // Simulate delayed video arrival
-            Future.delayed(const Duration(milliseconds: 100), () {
-              videos.add(_createMockVideo(id: 'video1'));
-              mockService.notifyListeners();
-            });
-            Future.delayed(const Duration(milliseconds: 200), () {
-              videos.add(_createMockVideo(id: 'video2'));
-              mockService.notifyListeners();
-            });
-            // Stable after 500ms (300ms stability threshold)
-          },
-          getVideos: (service) => videos,
+          subscribe: (service) async {},
+          getVideos: (service) => [],
           sortVideos: (videos) => videos,
         );
-
-        when(() => mockService.addListener(any())).thenAnswer((invocation) {
-          // Capture listener and simulate calls
-          listenerCallCount++;
-        });
 
         // Act
         final stopwatch = Stopwatch()..start();
         final state = await builder.buildFeed(config: config);
         stopwatch.stop();
 
-        // Assert
-        expect(state.videos.length, greaterThanOrEqualTo(0));
-        expect(listenerCallCount, greaterThanOrEqualTo(1));
+        // Assert - should return nearly instantly (no 300ms+ stability wait)
+        expect(stopwatch.elapsedMilliseconds, lessThan(100));
+        expect(state.videos, isEmpty);
+        expect(state.isInitialLoad, isTrue);
+      });
 
-        // Should wait at least 300ms for stability
-        expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(100));
+      test('should set isInitialLoad true when no videos available', () async {
+        // Arrange
+        final config = VideoFeedConfig(
+          subscriptionType: SubscriptionType.discovery,
+          subscribe: (service) async {},
+          getVideos: (service) => [],
+          sortVideos: (videos) => videos,
+        );
+
+        // Act
+        final state = await builder.buildFeed(config: config);
+
+        // Assert
+        expect(state.videos, isEmpty);
+        expect(state.isInitialLoad, isTrue);
       });
 
       test(
-        'should timeout after 3 seconds if videos never stabilize',
+        'should set isInitialLoad false when videos are available',
         () async {
           // Arrange
+          final videos = [_createMockVideo(id: 'v1')];
           final config = VideoFeedConfig(
             subscriptionType: SubscriptionType.discovery,
-            subscribe: (service) async {
-              // Continuously add videos - never stabilize
-              Timer.periodic(const Duration(milliseconds: 100), (timer) {
-                // Keep changing count
-              });
-            },
-            getVideos: (service) => [],
+            subscribe: (service) async {},
+            getVideos: (service) => videos,
             sortVideos: (videos) => videos,
           );
 
           // Act
-          final stopwatch = Stopwatch()..start();
           final state = await builder.buildFeed(config: config);
-          stopwatch.stop();
 
           // Assert
-          expect(state.videos.length, greaterThanOrEqualTo(0));
-          // Should timeout at 3 seconds
-          expect(stopwatch.elapsedMilliseconds, lessThan(3500));
-          expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(2800));
+          expect(state.videos.length, 1);
+          expect(state.isInitialLoad, isFalse);
         },
       );
 
       test('should sort videos using provided comparator', () async {
         // Arrange
-        final video1 = _createMockVideo(
-          id: 'v1',
-          createdAt: DateTime(2025),
-        );
+        final video1 = _createMockVideo(id: 'v1', createdAt: DateTime(2025));
         final video2 = _createMockVideo(
           id: 'v2',
           createdAt: DateTime(2025, 1, 3),

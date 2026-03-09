@@ -70,7 +70,24 @@ class FunnelcakeAvailable extends _$FunnelcakeAvailable {
     // Access relayStatuses to establish dependency (triggers rebuild on change)
     final relayCount = nostrService.relayStatuses.length;
 
-    // Capability detection: try a lightweight API call
+    // Fast path: our relay is always Funnelcake - skip the network probe
+    final environmentConfig = ref.watch(currentEnvironmentProvider);
+    final baseUrl = resolveApiBaseUrlFromRelays(
+      configuredRelays: nostrService.configuredRelays,
+      fallbackBaseUrl: environmentConfig.apiBaseUrl,
+    );
+
+    if (baseUrl.contains('divine.video')) {
+      Log.debug(
+        '🔌 Funnelcake: Known Divine relay - skipping probe '
+        '(relays: $relayCount)',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      return true;
+    }
+
+    // Fallback: probe unknown relays to check Funnelcake compatibility
     try {
       Log.debug(
         '🔌 Funnelcake: Probing API availability (relays: $relayCount)',
@@ -79,7 +96,11 @@ class FunnelcakeAvailable extends _$FunnelcakeAvailable {
       );
       // Use recent endpoint with limit=1 as lightweight probe
       // (trending endpoint may 500 on staging due to scoring query issues)
-      await analyticsService.getRecentVideos(limit: 1);
+      // Use a short 3s timeout so the probe doesn't block startup
+      await analyticsService.getRecentVideos(
+        limit: 1,
+        timeout: const Duration(seconds: 3),
+      );
       Log.info(
         '✅ Funnelcake: API available',
         name: 'FunnelcakeAvailable',
@@ -322,9 +343,7 @@ class AnalyticsTrending extends _$AnalyticsTrending {
       final service = ref.read(analyticsApiServiceProvider);
 
       // Use cursor-based pagination with 'before' parameter
-      final videos = await service.getTrendingVideos(
-        before: _nextCursor,
-      );
+      final videos = await service.getTrendingVideos(before: _nextCursor);
 
       // Check if provider is still mounted after async gap
       if (!ref.mounted) return;

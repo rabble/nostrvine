@@ -212,7 +212,7 @@ void main() {
         // VERIFY 3: Check for embedded thumbnail (base64 data URI)
         // NOTE: Thumbnail extraction may fail in test environment (no FFmpeg/plugin available)
         final imageComponent = imetaTag.firstWhere(
-          (c) => (c as String).startsWith('image '),
+          (c) => c.startsWith('image '),
           orElse: () => '',
         );
 
@@ -258,7 +258,7 @@ void main() {
 
         // VERIFY 5: Check for blurhash component
         final blurhashComponent = imetaTag.firstWhere(
-          (c) => (c as String).startsWith('blurhash '),
+          (c) => c.startsWith('blurhash '),
           orElse: () => '',
         );
 
@@ -278,7 +278,7 @@ void main() {
 
         // VERIFY 6: Event has video URL
         final urlComponent = imetaTag.firstWhere(
-          (c) => (c as String).startsWith('url '),
+          (c) => c.startsWith('url '),
           orElse: () => '',
         );
 
@@ -336,12 +336,12 @@ void main() {
 
         // VERIFY 9: Event has file metadata (size, hash)
         final sizeComponent = imetaTag.firstWhere(
-          (c) => (c as String).startsWith('size '),
+          (c) => c.startsWith('size '),
           orElse: () => '',
         );
 
         final hashComponent = imetaTag.firstWhere(
-          (c) => (c as String).startsWith('x '),
+          (c) => c.startsWith('x '),
           orElse: () => '',
         );
 
@@ -414,7 +414,7 @@ void main() {
 
       // Should NOT have embedded thumbnail
       final hasEmbeddedThumbnail = imetaTag.any(
-        (c) => (c as String).startsWith('image data:image/jpeg;base64,'),
+        (c) => c.startsWith('image data:image/jpeg;base64,'),
       );
 
       expect(
@@ -455,7 +455,7 @@ void main() {
       );
 
       final imageComponent = imetaTag.firstWhere(
-        (c) => (c as String).startsWith('image '),
+        (c) => c.startsWith('image '),
         orElse: () => '',
       );
 

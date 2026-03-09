@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_preview.dart';
@@ -18,7 +18,7 @@ void main() {
     testWidgets('displays clip preview with correct aspect ratio', (
       tester,
     ) async {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip1',
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
         duration: const Duration(seconds: 2),
@@ -50,7 +50,7 @@ void main() {
     });
 
     testWidgets('can be tapped when onTap is provided', (tester) async {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip1',
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
         duration: const Duration(seconds: 2),
@@ -90,7 +90,7 @@ void main() {
     });
 
     testWidgets('shows border when reordering', (tester) async {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip1',
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
         duration: const Duration(seconds: 2),
@@ -126,7 +126,7 @@ void main() {
     });
 
     testWidgets('shows deletion zone border color', (tester) async {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip1',
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
         duration: const Duration(seconds: 2),

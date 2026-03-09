@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -99,6 +100,16 @@ void main() {
       expect(stats['total_blocks'], isA<int>());
       expect(stats['runtime_blocks'], isA<int>());
       expect(stats['internal_blocks'], isA<int>());
+    });
+
+    test('invokes onChanged callback for local block changes', () {
+      var changeCount = 0;
+      service = ContentBlocklistService(onChanged: () => changeCount++);
+
+      service.blockUser('blocked_pubkey');
+      service.unblockUser('blocked_pubkey');
+
+      expect(changeCount, equals(2));
     });
 
     group('self-block prevention', () {
@@ -358,4 +369,150 @@ void main() {
       },
     );
   });
+
+  group('ContentBlocklistService - Block List Sync', () {
+    late ContentBlocklistService service;
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
+
+    setUp(() {
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
+    });
+
+    test(
+      'syncBlockListsInBackground subscribes to kind 30000 with our pubkey',
+      () async {
+        const ourPubkey = 'test_our_pubkey_hex';
+        service = ContentBlocklistService();
+
+        List<dynamic>? capturedFilters;
+        when(() => mockNostrService.subscribe(any())).thenAnswer((invocation) {
+          capturedFilters = invocation.positionalArguments[0] as List;
+          return const Stream.empty();
+        });
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        verify(() => mockNostrService.subscribe(any())).called(1);
+
+        expect(capturedFilters, isNotNull);
+        expect(capturedFilters!.length, equals(1));
+
+        final filter = capturedFilters![0];
+        expect(filter.kinds, contains(30000));
+        expect(filter.p, contains(ourPubkey));
+      },
+    );
+
+    test(
+      'handleBlockListEvent adds blocker when our pubkey is in block list',
+      () async {
+        const ourPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000001';
+        const blockerPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000002';
+
+        var changeCount = 0;
+        service = ContentBlocklistService(onChanged: () => changeCount++);
+
+        final event = Event(
+          blockerPubkey,
+          30000,
+          [
+            ['d', 'block'],
+            ['p', ourPubkey],
+          ],
+          'Block list',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        event.id = 'block-event-id';
+        event.sig = 'signature';
+
+        when(
+          () => mockNostrService.subscribe(any()),
+        ).thenAnswer((_) => Stream.fromIterable([event]));
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        expect(service.hasBlockedUs(blockerPubkey), isTrue);
+        expect(service.shouldFilterFromFeeds(blockerPubkey), isTrue);
+        expect(changeCount, equals(1));
+      },
+    );
+
+    test(
+      'handleBlockListEvent removes blocker when updated event no longer contains our pubkey',
+      () async {
+        const ourPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000001';
+        const blockerPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000002';
+
+        var changeCount = 0;
+        service = ContentBlocklistService(onChanged: () => changeCount++);
+
+        final blockEvent = Event(
+          blockerPubkey,
+          30000,
+          [
+            ['d', 'block'],
+            ['p', ourPubkey],
+          ],
+          'Block list',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        blockEvent.id = 'block-event-id';
+        blockEvent.sig = 'signature';
+
+        final unblockEvent = Event(
+          blockerPubkey,
+          30000,
+          [
+            ['d', 'block'],
+            ['p', 'some_other_pubkey'],
+          ],
+          'Block list',
+          createdAt: (DateTime.now().millisecondsSinceEpoch ~/ 1000) + 60,
+        );
+        unblockEvent.id = 'unblock-event-id';
+        unblockEvent.sig = 'signature';
+
+        final controller = StreamController<Event>();
+
+        when(
+          () => mockNostrService.subscribe(any()),
+        ).thenAnswer((_) => controller.stream);
+
+        await service.syncBlockListsInBackground(
+          mockNostrService,
+          mockAuthService,
+          ourPubkey,
+        );
+
+        controller.add(blockEvent);
+        await Future.delayed(const Duration(milliseconds: 50));
+        expect(service.hasBlockedUs(blockerPubkey), isTrue);
+
+        controller.add(unblockEvent);
+        await Future.delayed(const Duration(milliseconds: 50));
+        expect(service.hasBlockedUs(blockerPubkey), isFalse);
+        expect(changeCount, equals(2));
+
+        await controller.close();
+      },
+    );
+  });
 }
+
+class _MockAuthService extends Mock implements AuthService {}

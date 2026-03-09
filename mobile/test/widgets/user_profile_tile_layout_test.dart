@@ -358,9 +358,7 @@ void main() {
         await tester.pumpWidget(
           _buildTestWidget(
             testAuthService,
-            const UserProfileTile(
-              pubkey: currentUserPubkey,
-            ),
+            const UserProfileTile(pubkey: currentUserPubkey),
           ),
         );
 

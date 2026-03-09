@@ -80,12 +80,12 @@ void main() {
         expect(find.textContaining('02:05'), findsOneWidget);
       });
 
-      testWidgets('renders "--:--" when duration is null', (tester) async {
+      testWidgets('renders "00:01" when duration is null', (tester) async {
         final audio = _createTestAudioEvent();
         await tester.pumpWidget(buildWidget(audio: audio));
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('--:--'), findsOneWidget);
+        expect(find.textContaining('00:01'), findsOneWidget);
       });
 
       testWidgets('renders source when available', (tester) async {

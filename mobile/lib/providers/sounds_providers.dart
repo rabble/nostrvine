@@ -3,6 +3,7 @@
 
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/repositories/sounds_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -86,6 +87,20 @@ class TrendingSounds extends _$TrendingSounds {
 Future<AudioEvent?> soundById(Ref ref, String eventId) async {
   if (eventId.isEmpty) return null;
 
+  // Handle bundled sounds (from app assets)
+  const bundledPrefix = '${AudioEvent.bundledMarker}_';
+  if (eventId.startsWith(bundledPrefix)) {
+    final soundId = eventId.substring(bundledPrefix.length);
+    final soundService = await ref.watch(
+      soundLibraryServiceProvider.future,
+    );
+    final vineSound = soundService.getSoundById(soundId);
+    if (vineSound != null) {
+      return AudioEvent.fromBundledSound(vineSound);
+    }
+    return null;
+  }
+
   final repository = ref.watch(soundsRepositoryProvider);
   return repository.fetchSoundById(eventId);
 }
@@ -153,6 +168,13 @@ class SelectedSound extends _$SelectedSound {
   /// Select a sound for use in recording.
   void select(AudioEvent sound) {
     state = sound;
+  }
+
+  /// Update the start offset of the currently selected sound.
+  void setStartOffset(Duration offset) {
+    if (state != null) {
+      state = state!.copyWith(startOffset: offset);
+    }
   }
 
   /// Clear the current sound selection.

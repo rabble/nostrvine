@@ -2,16 +2,14 @@
 // ABOUTME: Manages video lists for individual user profiles with loadMore() capability
 // ABOUTME: Tries REST API first for better performance, falls back to Nostr subscription
 
-import 'dart:async';
-
 import 'package:models/models.dart' hide LogCategory;
-import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'profile_feed_provider.g.dart';
@@ -81,14 +79,32 @@ class ProfileFeed extends _$ProfileFeed {
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
           // Filter out reposts and store cursor
-          authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+          final tempAuthorVideos = apiVideos.where((v) => !v.isRepost).toList();
           _nextCursor = _getOldestTimestamp(apiVideos);
 
           // Cache metadata for later merging with Nostr data
-          _cacheVideoMetadata(authorVideos);
+          _cacheVideoMetadata(tempAuthorVideos);
 
-          // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
-          authorVideos = await _enrichWithNostrTags(authorVideos);
+          // Enrich with full Nostr event data in the background so we
+          // don't block the initial render waiting on relay round-trips
+          // (up to 5s timeout). Badges appear once enrichment completes.
+          authorVideos = enrichVideosInBackground(
+            tempAuthorVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            onEnriched: (enriched) {
+              if (!ref.mounted) return;
+              final currentState = state.asData?.value;
+              if (currentState == null) return;
+              final enrichedMap = <String, VideoEvent>{
+                for (final v in enriched) v.id: v,
+              };
+              final updated = currentState.videos
+                  .map((v) => enrichedMap[v.id] ?? v)
+                  .toList();
+              state = AsyncData(currentState.copyWith(videos: updated));
+            },
+            callerName: 'ProfileFeedProvider',
+          );
 
           Log.info(
             '✅ ProfileFeed: Got ${authorVideos.length} videos from REST API for user=$userId, cursor: $_nextCursor',
@@ -115,118 +131,17 @@ class ProfileFeed extends _$ProfileFeed {
 
     // Fall back to Nostr subscription if REST API not used
     if (!_usingRestApi) {
-      // Subscribe to this user's videos
+      // Subscribe to this user's videos (non-blocking: events stream in
+      // progressively via VideoEventService)
       await videoEventService.subscribeToUserVideos(userId, limit: 100);
 
-      // Wait for initial batch of videos to arrive from relay
-      final completer = Completer<void>();
-      int stableCount = 0;
-      Timer? stabilityTimer;
-
-      void checkStability() {
-        final currentCount = videoEventService.authorVideos(userId).length;
-        if (currentCount != stableCount) {
-          // Count changed, reset stability timer
-          stableCount = currentCount;
-          stabilityTimer?.cancel();
-          stabilityTimer = Timer(const Duration(milliseconds: 300), () {
-            // Count stable for 300ms, we're done
-            if (!completer.isCompleted) {
-              completer.complete();
-            }
-          });
-        }
-      }
-
-      videoEventService.addListener(checkStability);
-
-      // Also set a maximum wait time (1.5s is sufficient since relay EOSE
-      // typically arrives in ~300ms; reduces wait for 0-video profiles)
-      Timer(const Duration(milliseconds: 1500), () {
-        if (!completer.isCompleted) {
-          completer.complete();
-        }
-      });
-
-      // Trigger initial check
-      final waitStart = DateTime.now();
-      checkStability();
-
-      await completer.future;
-
-      final waitDuration = DateTime.now().difference(waitStart);
-
-      // Clean up
-      videoEventService.removeListener(checkStability);
-      stabilityTimer?.cancel();
-
-      // Get videos for this author, filtering out reposts (originals only)
+      // Return immediately with whatever videos are available.
+      // Progressive updates arrive via the video update/new video listeners
+      // registered below.
       authorVideos = videoEventService
           .authorVideos(userId)
           .where((v) => !v.isRepost)
           .toList();
-
-      // If initial load returned 0 videos, retry once — but only if the wait
-      // hit the timeout ceiling. A fast completion with 0 results means the
-      // relay sent EOSE promptly with no events (user genuinely has no videos),
-      // so retrying the same subscription is pointless. We only retry when the
-      // timeout fired, which suggests a relay reconnect may have killed the
-      // subscription mid-load.
-      final hitTimeout = waitDuration.inMilliseconds >= 1400;
-      if (authorVideos.isEmpty && hitTimeout) {
-        Log.warning(
-          'ProfileFeed: Initial load returned 0 videos for user=$userId, '
-          'retrying once',
-          name: 'ProfileFeedProvider',
-          category: LogCategory.video,
-        );
-
-        await videoEventService.subscribeToUserVideos(userId, limit: 100);
-
-        // Wait for retry results with same stability pattern
-        final retryCompleter = Completer<void>();
-        int retryStableCount = 0;
-        Timer? retryStabilityTimer;
-
-        void checkRetryStability() {
-          final currentCount = videoEventService.authorVideos(userId).length;
-          if (currentCount != retryStableCount) {
-            retryStableCount = currentCount;
-            retryStabilityTimer?.cancel();
-            retryStabilityTimer = Timer(const Duration(milliseconds: 300), () {
-              if (!retryCompleter.isCompleted) {
-                retryCompleter.complete();
-              }
-            });
-          }
-        }
-
-        videoEventService.addListener(checkRetryStability);
-
-        Timer(const Duration(seconds: 2), () {
-          if (!retryCompleter.isCompleted) {
-            retryCompleter.complete();
-          }
-        });
-
-        checkRetryStability();
-        await retryCompleter.future;
-
-        videoEventService.removeListener(checkRetryStability);
-        retryStabilityTimer?.cancel();
-
-        authorVideos = videoEventService
-            .authorVideos(userId)
-            .where((v) => !v.isRepost)
-            .toList();
-
-        Log.info(
-          'ProfileFeed: Retry got ${authorVideos.length} videos for '
-          'user=$userId',
-          name: 'ProfileFeedProvider',
-          category: LogCategory.video,
-        );
-      }
 
       // Apply cached metadata to preserve engagement stats from previous REST API calls
       authorVideos = _applyMetadataCache(authorVideos);
@@ -236,14 +151,42 @@ class ProfileFeed extends _$ProfileFeed {
         name: 'ProfileFeedProvider',
         category: LogCategory.video,
       );
+
+      // Set up continuous listener for progressive updates from Nostr
+      void onNostrVideosChanged() {
+        if (!ref.mounted) return;
+        final currentVideos = videoEventService
+            .authorVideos(userId)
+            .where((v) => !v.isRepost)
+            .toList();
+
+        // Only update if count actually changed
+        final currentState = state.asData?.value;
+        if (currentState != null &&
+            currentVideos.length != currentState.videos.length) {
+          var updatedVideos = _applyMetadataCache(currentVideos);
+          updatedVideos = videoEventService.filterVideoList(updatedVideos);
+
+          state = AsyncData(
+            VideoFeedState(
+              videos: updatedVideos,
+              hasMoreContent:
+                  updatedVideos.length >= AppConstants.hasMoreContentThreshold,
+              lastUpdated: DateTime.now(),
+            ),
+          );
+        }
+      }
+
+      videoEventService.addListener(onNostrVideosChanged);
+      ref.onDispose(() {
+        videoEventService.removeListener(onNostrVideosChanged);
+      });
     }
 
     // Check if provider is still mounted after async gap
     if (!ref.mounted) {
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     // Register for video update callbacks to auto-refresh when this user's video is updated
@@ -288,6 +231,7 @@ class ProfileFeed extends _$ProfileFeed {
       videos: authorVideos,
       hasMoreContent:
           authorVideos.length >= AppConstants.hasMoreContentThreshold,
+      isInitialLoad: authorVideos.isEmpty && !_usingRestApi,
       lastUpdated: DateTime.now(),
     );
   }
@@ -466,8 +410,12 @@ class ProfileFeed extends _$ProfileFeed {
         // Update metadata cache with fresh data
         _cacheVideoMetadata(authorVideos);
 
-        // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
-        authorVideos = await _enrichWithNostrTags(authorVideos);
+        // Enrich with full Nostr event data (rawTags, dimensions, etc.)
+        authorVideos = await enrichVideosWithNostrTags(
+          authorVideos,
+          nostrService: ref.read(nostrServiceProvider),
+          callerName: 'ProfileFeedProvider',
+        );
 
         // Apply content filter preferences
         final videoEventService = ref.read(videoEventServiceProvider);
@@ -576,8 +524,12 @@ class ProfileFeed extends _$ProfileFeed {
           // Cache metadata from new videos
           _cacheVideoMetadata(newVideos);
 
-          // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
-          newVideos = await _enrichWithNostrTags(newVideos);
+          // Enrich with full Nostr event data (rawTags, dimensions, etc.)
+          newVideos = await enrichVideosWithNostrTags(
+            newVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            callerName: 'ProfileFeedProvider',
+          );
 
           // Apply content filter preferences
           final videoEventService = ref.read(videoEventServiceProvider);
@@ -646,10 +598,7 @@ class ProfileFeed extends _$ProfileFeed {
       final eventCountBefore = videoEventService.authorVideos(userId).length;
 
       // Query for older events from this specific user
-      await videoEventService.queryHistoricalUserVideos(
-        userId,
-        until: until,
-      );
+      await videoEventService.queryHistoricalUserVideos(userId, until: until);
 
       // Check if provider is still mounted after async gap
       if (!ref.mounted) return;
@@ -728,8 +677,12 @@ class ProfileFeed extends _$ProfileFeed {
           // Cache metadata for future Nostr fallbacks
           _cacheVideoMetadata(authorVideos);
 
-          // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
-          authorVideos = await _enrichWithNostrTags(authorVideos);
+          // Enrich with full Nostr event data (rawTags, dimensions, etc.)
+          authorVideos = await enrichVideosWithNostrTags(
+            authorVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            callerName: 'ProfileFeedProvider',
+          );
 
           // Apply content filter preferences
           final videoEventService = ref.read(videoEventServiceProvider);
@@ -805,80 +758,6 @@ class ProfileFeed extends _$ProfileFeed {
       }
       return video;
     }).toList();
-  }
-
-  /// Enrich REST API videos with rawTags from Nostr relay events.
-  ///
-  /// The Funnelcake REST API does not return the raw Nostr event tags array,
-  /// so ProofMode/C2PA/verification tags are missing. This method fetches
-  /// the full events from Nostr relays by ID and merges their rawTags.
-  Future<List<VideoEvent>> _enrichWithNostrTags(List<VideoEvent> videos) async {
-    if (videos.isEmpty) return videos;
-
-    // Collect IDs of videos that have empty rawTags
-    final idsToEnrich = videos
-        .where((v) => v.rawTags.isEmpty)
-        .map((v) => v.id)
-        .toList();
-
-    if (idsToEnrich.isEmpty) return videos;
-
-    try {
-      final nostrService = ref.read(nostrServiceProvider);
-
-      // Batch query Nostr relays for the full events
-      final filter = Filter(
-        ids: idsToEnrich,
-        kinds: [34236],
-        limit: idsToEnrich.length,
-      );
-      final nostrEvents = await nostrService
-          .queryEvents([filter])
-          .timeout(const Duration(seconds: 5));
-
-      if (nostrEvents.isEmpty) return videos;
-
-      // Build a lookup map: event ID -> parsed VideoEvent from Nostr
-      final nostrVideoMap = <String, VideoEvent>{};
-      for (final event in nostrEvents) {
-        try {
-          final parsed = VideoEvent.fromNostrEvent(event, permissive: true);
-          if (parsed.rawTags.isNotEmpty) {
-            nostrVideoMap[parsed.id] = parsed;
-          }
-        } catch (_) {
-          // Skip events that fail to parse
-        }
-      }
-
-      if (nostrVideoMap.isEmpty) return videos;
-
-      // Merge rawTags and engagement stats into REST API videos
-      // The REST API profile endpoint doesn't return embedded engagement
-      // stats (loops, likes, comments, reposts) but Nostr events have
-      // them in tags. Copy both rawTags and engagement fields.
-      return videos.map((video) {
-        final parsed = nostrVideoMap[video.id];
-        if (parsed != null) {
-          return video.copyWith(
-            rawTags: parsed.rawTags,
-            originalLoops: parsed.originalLoops,
-            originalLikes: parsed.originalLikes,
-            originalComments: parsed.originalComments,
-            originalReposts: parsed.originalReposts,
-          );
-        }
-        return video;
-      }).toList();
-    } catch (e) {
-      // Non-fatal: return original videos if enrichment fails
-      Log.warning(
-        'ProfileFeed: Failed to enrich with Nostr tags: $e',
-        name: 'ProfileFeedProvider',
-        category: LogCategory.video,
-      );
-      return videos;
-    }
   }
 }
 

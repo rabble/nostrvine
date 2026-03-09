@@ -1,9 +1,9 @@
-// ABOUTME: States for diVine authentication cubit
+// ABOUTME: States for Divine authentication cubit
 // ABOUTME: Tracks sign in/sign up form state and email verification
 
 part of 'divine_auth_cubit.dart';
 
-/// State for diVine authentication cubit
+/// State for Divine authentication cubit
 sealed class DivineAuthState extends Equatable {
   const DivineAuthState();
 

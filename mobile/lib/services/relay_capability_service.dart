@@ -191,7 +191,7 @@ class RelayCapabilityService {
 
       if (capabilities.hasDivineExtensions) {
         UnifiedLogger.info(
-          'Relay $relayWsUrl supports divine extensions:\n'
+          'Relay $relayWsUrl supports Divine extensions:\n'
           '  - Sort fields: ${capabilities.sortFields}\n'
           '  - Int filters: ${capabilities.intFilterFields}\n'
           '  - Max limit: ${capabilities.maxLimit}',
@@ -199,7 +199,7 @@ class RelayCapabilityService {
         );
       } else {
         UnifiedLogger.info(
-          'Relay $relayWsUrl does not support divine extensions (will use local sorting)',
+          'Relay $relayWsUrl does not support Divine extensions (will use local sorting)',
           name: 'RelayCapability',
         );
       }

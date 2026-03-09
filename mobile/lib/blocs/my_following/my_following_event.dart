@@ -21,3 +21,8 @@ final class MyFollowingToggleRequested extends MyFollowingEvent {
   /// The public key of the user to follow/unfollow
   final String pubkey;
 }
+
+/// Notification that the blocklist has changed, requiring re-filtering.
+final class MyFollowingBlocklistChanged extends MyFollowingEvent {
+  const MyFollowingBlocklistChanged();
+}

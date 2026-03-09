@@ -4095,6 +4095,196 @@ void main() {
         expect(internalClient.dispose, returnsNormally);
       });
     });
+
+    group('getCategories', () {
+      const validResponseBody = '''
+[
+  {"name": "music", "video_count": 1500},
+  {"name": "comedy", "video_count": 900}
+]
+''';
+
+      test('returns categories on success', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validResponseBody, 200),
+        );
+
+        final categories = await client.getCategories();
+
+        expect(categories, hasLength(2));
+        expect(categories[0]['name'], equals('music'));
+        expect(categories[0]['video_count'], equals(1500));
+        expect(categories[1]['name'], equals('comedy'));
+      });
+
+      test('includes query parameter when provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validResponseBody, 200),
+        );
+
+        await client.getCategories(query: 'mus');
+
+        final captured =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.first
+                as Uri;
+
+        expect(captured.queryParameters['q'], equals('mus'));
+      });
+
+      test(
+        'throws FunnelcakeNotConfiguredException when unavailable',
+        () async {
+          final emptyClient = FunnelcakeApiClient(
+            baseUrl: '',
+            httpClient: mockHttpClient,
+          );
+
+          expect(
+            emptyClient.getCategories,
+            throwsA(isA<FunnelcakeNotConfiguredException>()),
+          );
+
+          emptyClient.dispose();
+        },
+      );
+
+      test('throws FunnelcakeApiException on non-200 response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('Server error', 500),
+        );
+
+        expect(
+          () => client.getCategories(),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
+
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) => Future.delayed(
+            const Duration(minutes: 1),
+            () => http.Response('', 200),
+          ),
+        );
+
+        expect(
+          () => client.getCategories(),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+    });
+
+    group('getVideosByCategory', () {
+      const validResponseBody =
+          '''
+[
+  {
+    "id": "cat_video_1",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "cat_video_1",
+    "title": "Music Video",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "https://example.com/video.mp4",
+    "reactions": 10,
+    "comments": 5,
+    "reposts": 2,
+    "engagement_score": 17
+  }
+]
+''';
+
+      test('returns videos on success', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validResponseBody, 200),
+        );
+
+        final videos = await client.getVideosByCategory(
+          category: 'music',
+        );
+
+        expect(videos, hasLength(1));
+        expect(videos.first.title, equals('Music Video'));
+      });
+
+      test('includes category and sort in query params', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.getVideosByCategory(
+          category: 'Music',
+          sort: 'loops',
+        );
+
+        final captured =
+            verify(
+                  () => mockHttpClient.get(
+                    captureAny(),
+                    headers: any(named: 'headers'),
+                  ),
+                ).captured.first
+                as Uri;
+
+        expect(captured.queryParameters['category'], equals('music'));
+        expect(captured.queryParameters['sort'], equals('loops'));
+      });
+
+      test('throws FunnelcakeException when category is empty', () async {
+        expect(
+          () => client.getVideosByCategory(category: ''),
+          throwsA(isA<FunnelcakeException>()),
+        );
+      });
+
+      test(
+        'throws FunnelcakeNotConfiguredException when unavailable',
+        () async {
+          final emptyClient = FunnelcakeApiClient(
+            baseUrl: '',
+            httpClient: mockHttpClient,
+          );
+
+          expect(
+            () => emptyClient.getVideosByCategory(category: 'music'),
+            throwsA(isA<FunnelcakeNotConfiguredException>()),
+          );
+
+          emptyClient.dispose();
+        },
+      );
+
+      test('throws FunnelcakeApiException on non-200 response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('Error', 500),
+        );
+
+        expect(
+          () => client.getVideosByCategory(category: 'music'),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
+    });
   });
 
   group('Exceptions', () {

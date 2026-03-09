@@ -1,6 +1,8 @@
 // ABOUTME: Tests for PooledVideoPlayer widget
 // ABOUTME: Validates loading, ready, error states and tap handling
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_kit/media_kit.dart';
@@ -103,6 +105,9 @@ void main() {
       mockController = result.controller;
       indexNotifiers = result.notifiers;
       mockVideoController = _MockVideoController();
+      when(
+        () => mockVideoController.waitUntilFirstFrameRendered,
+      ).thenAnswer((_) => Future<void>.value());
       mockPlayer = _createMockPlayer();
     });
 
@@ -202,6 +207,88 @@ void main() {
         expect(find.byType(Image), findsOneWidget);
       });
 
+      testWidgets('shows overlay while loading when player already exists', (
+        tester,
+      ) async {
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.loading,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            overlayBuilder: (context, controller, player) =>
+                const Text('Overlay'),
+          ),
+        );
+
+        expect(find.text('Overlay'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets('renders video layer while loading when player exists', (
+        tester,
+      ) async {
+        final firstFrameCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => firstFrameCompleter.future);
+
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.loading,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        expect(opacityFinder, findsOneWidget);
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        firstFrameCompleter.complete();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
+
+      testWidgets('shows overlay while loading before player exists', (
+        tester,
+      ) async {
+        indexNotifiers[0] = ValueNotifier(
+          const VideoIndexState(loadState: LoadState.loading),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(
+            overlayBuilder: (context, controller, player) =>
+                const Text('Overlay'),
+          ),
+        );
+
+        expect(find.text('Overlay'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+
       testWidgets('thumbnail errorBuilder returns SizedBox.shrink', (
         tester,
       ) async {
@@ -238,9 +325,7 @@ void main() {
         );
       });
 
-      testWidgets('shows videoBuilder when LoadState is ready', (
-        tester,
-      ) async {
+      testWidgets('shows videoBuilder when LoadState is ready', (tester) async {
         await tester.pumpWidget(buildWidget());
 
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
@@ -275,30 +360,25 @@ void main() {
         expect(find.byKey(const Key('overlay_widget')), findsOneWidget);
       });
 
-      testWidgets(
-        'renders default loading placeholder behind video to prevent '
-        'black flash',
-        (tester) async {
-          await tester.pumpWidget(buildWidget());
+      testWidgets('renders default loading placeholder behind video to prevent '
+          'black flash', (tester) async {
+        await tester.pumpWidget(buildWidget());
 
-          // Both the video widget AND the default loading placeholder
-          // (CircularProgressIndicator) should be in the widget tree.
-          // The placeholder stays behind the video so the thumbnail
-          // remains visible until the first video frame renders.
-          expect(find.byKey(const Key('video_widget')), findsOneWidget);
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        },
-      );
+        // Both the video widget AND the default loading placeholder
+        // (CircularProgressIndicator) should be in the widget tree.
+        // The placeholder stays behind the video so the thumbnail
+        // remains visible until the first video frame renders.
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
 
       testWidgets(
         'renders custom loadingBuilder behind video to prevent black flash',
         (tester) async {
           await tester.pumpWidget(
             buildWidget(
-              loadingBuilder: (context) => const Text(
-                'Custom Loading',
-                key: Key('custom_loading'),
-              ),
+              loadingBuilder: (context) =>
+                  const Text('Custom Loading', key: Key('custom_loading')),
             ),
           );
 
@@ -308,6 +388,107 @@ void main() {
           expect(find.byKey(const Key('custom_loading')), findsOneWidget);
         },
       );
+
+      testWidgets('keeps video transparent until first frame renders', (
+        tester,
+      ) async {
+        final firstFrameCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => firstFrameCompleter.future);
+
+        await tester.pumpWidget(buildWidget());
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        expect(opacityFinder, findsOneWidget);
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        firstFrameCompleter.complete();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
+
+      testWidgets('does not reveal video from timeout while still loading', (
+        tester,
+      ) async {
+        final firstFrameCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => firstFrameCompleter.future);
+
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.loading,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
+
+        await tester.pumpWidget(buildWidget());
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        expect(opacityFinder, findsOneWidget);
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+      });
+
+      testWidgets('reveals video after timeout when ready and first frame '
+          'stalls', (
+        tester,
+      ) async {
+        final firstFrameCompleter = Completer<void>();
+        when(
+          () => mockVideoController.waitUntilFirstFrameRendered,
+        ).thenAnswer((_) => firstFrameCompleter.future);
+
+        await tester.pumpWidget(buildWidget());
+
+        final opacityFinder = find.ancestor(
+          of: find.byKey(const Key('video_widget')),
+          matching: find.byType(AnimatedOpacity),
+        );
+
+        expect(opacityFinder, findsOneWidget);
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(0),
+        );
+
+        await tester.pump(const Duration(seconds: 2));
+        await tester.pump(const Duration(milliseconds: 120));
+
+        expect(
+          tester.widget<AnimatedOpacity>(opacityFinder).opacity,
+          equals(1),
+        );
+      });
     });
 
     group('error state', () {
@@ -390,18 +571,15 @@ void main() {
         },
       );
 
-      testWidgets(
-        'gesture detector added when enableTapToPause is true',
-        (tester) async {
-          await tester.pumpWidget(buildWidget(enableTapToPause: true));
-
-          expect(find.byType(GestureDetector), findsOneWidget);
-        },
-      );
-
-      testWidgets('gesture detector added when onTap provided', (
+      testWidgets('gesture detector added when enableTapToPause is true', (
         tester,
       ) async {
+        await tester.pumpWidget(buildWidget(enableTapToPause: true));
+
+        expect(find.byType(GestureDetector), findsOneWidget);
+      });
+
+      testWidgets('gesture detector added when onTap provided', (tester) async {
         await tester.pumpWidget(buildWidget(onTap: () {}));
 
         expect(find.byType(GestureDetector), findsOneWidget);
@@ -433,10 +611,7 @@ void main() {
         var tapped = false;
 
         await tester.pumpWidget(
-          buildWidget(
-            enableTapToPause: true,
-            onTap: () => tapped = true,
-          ),
+          buildWidget(enableTapToPause: true, onTap: () => tapped = true),
         );
 
         await tester.tap(find.byType(GestureDetector));

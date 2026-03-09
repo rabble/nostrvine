@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
@@ -71,39 +70,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: _activeVideoIndex == null
-          ? AppBar(
-              elevation: 0,
-              scrolledUnderElevation: 0,
-              toolbarHeight: 72,
-              leadingWidth: 80,
-              centerTitle: false,
-              titleSpacing: 0,
-              backgroundColor: VineTheme.navGreen,
-              leading: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Container(
-                  width: 48,
-                  height: 48,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: VineTheme.iconButtonBackground,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: SvgPicture.asset(
-                    'assets/icon/CaretLeft.svg',
-                    width: 32,
-                    height: 32,
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
-                onPressed: context.pop,
-                tooltip: 'Back',
-              ),
-              title: Column(
+          ? DiVineAppBar(
+              titleWidget: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -112,7 +80,9 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
                   _buildSubheading(),
                 ],
               ),
-              actions: [_buildSubscribeButton()],
+              showBackButton: true,
+              onBackPressed: context.pop,
+              actions: [_buildSubscribeAction()],
             )
           : null,
       body: videosAsync.when(
@@ -271,8 +241,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             child: IconButton(
               icon: Container(
                 padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
+                decoration: const BoxDecoration(
+                  color: VineTheme.scrim50,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
@@ -306,10 +276,10 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            const Text(
               'By ',
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
+                color: VineTheme.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -318,7 +288,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
               child: UserName.fromPubKey(
                 widget.authorPubkey!,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -328,8 +298,8 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
             ),
             Text(
               ' • $videoText',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
+              style: const TextStyle(
+                color: VineTheme.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -341,15 +311,14 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
     // No author - just show video count
     return Text(
       videoText,
-      style: TextStyle(
-        color: Colors.white.withValues(alpha: 0.7),
+      style: const TextStyle(
+        color: VineTheme.onSurfaceVariant,
         fontSize: 12,
       ),
     );
   }
 
-  Widget _buildSubscribeButton() {
-    // Watch the service state for subscription status
+  DiVineAppBarAction _buildSubscribeAction() {
     final serviceAsync = ref.watch(curatedListsStateProvider);
     final service = ref.read(curatedListsStateProvider.notifier).service;
     final isSubscribed =
@@ -358,49 +327,16 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
         ) ??
         false;
 
-    return Padding(
-      padding: const EdgeInsets.only(right: 16),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        onPressed: _isTogglingSubscription ? null : _toggleSubscription,
-        icon: Container(
-          width: 48,
-          height: 48,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isSubscribed
-                ? VineTheme.iconButtonBackground
-                : VineTheme.vineGreen,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: _isTogglingSubscription
-              ? Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: isSubscribed
-                          ? VineTheme.vineGreen
-                          : VineTheme.backgroundColor,
-                    ),
-                  ),
-                )
-              : SvgPicture.asset(
-                  isSubscribed
-                      ? 'assets/icon/Check.svg'
-                      : 'assets/icon/plus.svg',
-                  width: 32,
-                  height: 32,
-                  colorFilter: ColorFilter.mode(
-                    isSubscribed ? VineTheme.vineGreen : Colors.white,
-                    BlendMode.srcIn,
-                  ),
-                ),
-        ),
-        tooltip: isSubscribed ? 'Subscribed' : 'Subscribe',
+    return DiVineAppBarAction(
+      icon: SvgIconSource(
+        isSubscribed ? 'assets/icon/Check.svg' : 'assets/icon/plus.svg',
       ),
+      backgroundColor: isSubscribed
+          ? VineTheme.iconButtonBackground
+          : VineTheme.vineGreen,
+      iconColor: isSubscribed ? VineTheme.vineGreen : VineTheme.whiteText,
+      onPressed: _isTogglingSubscription ? null : _toggleSubscription,
+      tooltip: isSubscribed ? 'Subscribed' : 'Subscribe',
     );
   }
 

@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -27,7 +27,7 @@ class VideoMetadataPreviewScreen extends ConsumerStatefulWidget {
   const VideoMetadataPreviewScreen({required this.clip, super.key});
 
   /// The recording clip to preview.
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   @override
   ConsumerState<VideoMetadataPreviewScreen> createState() =>
@@ -96,7 +96,7 @@ class _VideoMetadataPreviewScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF000A06),
+      backgroundColor: VineTheme.surfaceContainerHigh,
       body: Stack(
         children: [
           Column(
@@ -140,7 +140,7 @@ class _VideoPreviewContent extends ConsumerWidget {
     required this.isPreviewReady,
   });
 
-  final RecordingClip clip;
+  final DivineVideoClip clip;
   final VideoPlayerController? controller;
   final bool isInitialized;
   final ValueNotifier<bool> isPreviewReady;
@@ -178,7 +178,7 @@ class _VideoPlayerWidget extends StatelessWidget {
     required this.isInitialized,
   });
 
-  final RecordingClip clip;
+  final DivineVideoClip clip;
   final VideoPlayerController? controller;
   final bool isInitialized;
 
@@ -256,30 +256,34 @@ class _PreviewOverlay extends ConsumerWidget {
     );
 
     // Non-interactive overlay with reduced opacity
-    return IgnorePointer(
-      child: Opacity(
-        opacity: 0.5,
-        child: ValueListenableBuilder(
-          valueListenable: isPreviewReady,
-          builder: (_, isActive, _) {
-            // Show overlay actions in preview mode
-            return VideoOverlayActions(
-              video: VideoEvent(
-                id: 'id',
-                pubkey: publicKey,
-                timestamp: DateTime.now(),
-                createdAt: DateTime.now().millisecondsSinceEpoch,
-                content: metadata.title,
-                hashtags: metadata.tags.toList(),
-                originalLikes: 1,
-                originalComments: 1,
-                originalReposts: 1,
-              ),
-              isVisible: true,
-              isActive: isActive,
-              isPreviewMode: true,
-            );
-          },
+    return MediaQuery.removeViewPadding(
+      context: context,
+      removeBottom: true,
+      child: IgnorePointer(
+        child: Opacity(
+          opacity: 0.5,
+          child: ValueListenableBuilder(
+            valueListenable: isPreviewReady,
+            builder: (_, isActive, _) {
+              // Show overlay actions in preview mode
+              return VideoOverlayActions(
+                video: VideoEvent(
+                  id: 'id',
+                  pubkey: publicKey,
+                  timestamp: DateTime.now(),
+                  createdAt: DateTime.now().millisecondsSinceEpoch,
+                  content: metadata.title,
+                  hashtags: metadata.tags.toList(),
+                  originalLikes: 1,
+                  originalComments: 1,
+                  originalReposts: 1,
+                ),
+                isVisible: true,
+                isActive: isActive,
+                isPreviewMode: true,
+              );
+            },
+          ),
         ),
       ),
     );

@@ -1,19 +1,27 @@
 // ABOUTME: TDD tests for VideoPrefetchMixin
 // ABOUTME: Verifies video prefetching behavior in PageView-based feeds
 
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
+import 'package:openvine/providers/individual_video_providers.dart';
+import 'package:video_player/video_player.dart';
 
 class MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
+class MockVideoPlayerController extends Mock implements VideoPlayerController {}
+
 void main() {
   late MockMediaCacheManager mockCache;
+  late MockVideoPlayerController mockController;
 
   setUp(() {
     mockCache = MockMediaCacheManager();
+    mockController = MockVideoPlayerController();
     when(
       () => mockCache.preCacheFiles(
         any(),
@@ -132,6 +140,139 @@ void main() {
       // Should skip video-2 (no URL)
       expect(cachedIds, isNot(contains('video-2')));
     });
+
+    test('SPEC: should skip HLS-only divine hash URLs during prefetch', () {
+      final videos = [
+        _createVideo('video-1', hasUrl: true),
+        _createVideo(
+          'video-2',
+          hasUrl: true,
+          videoUrl:
+              'https://media.divine.video/'
+              'cfb5cf3415ec4ad3f45eff478570d898ff9a660ecea63d0c058892b22468a90d',
+        ),
+        _createVideo('video-3', hasUrl: true),
+      ];
+
+      final mixin = TestVideoPrefetchMixin(mockCache);
+      mixin.checkForPrefetch(currentIndex: 0, videos: videos);
+
+      final captured = verify(
+        () => mockCache.preCacheFiles(
+          captureAny(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).captured;
+      final items = captured[0] as List<({String url, String key})>;
+      final cachedIds = items.map((item) => item.key).toList();
+
+      expect(cachedIds, isNot(contains('video-2')));
+      expect(cachedIds, contains('video-3'));
+    });
+
+    testWidgets(
+      'SPEC: should replace tracked preinitialized params and dispose exact provider key',
+      (tester) async {
+        final videos = [
+          _createVideo('current', hasUrl: true),
+          _createVideo('video-1', hasUrl: true),
+        ];
+
+        const mediumParams = VideoControllerParams(
+          videoId: 'video-1',
+          videoUrl: 'https://media.divine.video/video-1/720p',
+          cacheUrl: 'https://media.divine.video/video-1/source',
+        );
+        const lowParams = VideoControllerParams(
+          videoId: 'video-1',
+          videoUrl: 'https://media.divine.video/video-1/480p',
+          cacheUrl: 'https://media.divine.video/video-1/source',
+        );
+        var selectedParams = mediumParams;
+
+        final mixin = TestVideoPrefetchMixin(
+          mockCache,
+          videoControllerParamsBuilder: (video) {
+            if (video.id == 'video-1') {
+              return selectedParams;
+            }
+            return VideoControllerParams.fromVideoEvent(video);
+          },
+        );
+        final createdParams = <VideoControllerParams>[];
+        final disposedParams = <VideoControllerParams>[];
+        WidgetRef? widgetRef;
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              individualVideoControllerProvider.overrideWith((ref, params) {
+                ref.keepAlive();
+                createdParams.add(params);
+                ref.onDispose(() => disposedParams.add(params));
+                return mockController;
+              }),
+            ],
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  widgetRef = ref;
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          ),
+        );
+        expect(widgetRef, isNotNull);
+
+        mixin.preInitializeControllers(
+          ref: widgetRef!,
+          currentIndex: 0,
+          videos: videos,
+          preInitBefore: 0,
+          preInitAfter: 1,
+        );
+        await tester.pump();
+
+        expect(createdParams, contains(mediumParams));
+        expect(
+          disposedParams.where((params) => params == mediumParams),
+          isEmpty,
+        );
+
+        selectedParams = lowParams;
+        expect(lowParams, isNot(equals(mediumParams)));
+
+        mixin.preInitializeControllers(
+          ref: widgetRef!,
+          currentIndex: 0,
+          videos: videos,
+          preInitBefore: 0,
+          preInitAfter: 1,
+        );
+        await tester.pump();
+
+        expect(
+          disposedParams.where((params) => params == mediumParams).length,
+          1,
+        );
+        expect(createdParams, contains(lowParams));
+        expect(disposedParams.where((params) => params == lowParams), isEmpty);
+
+        mixin.disposeControllersOutsideRange(
+          ref: widgetRef!,
+          currentIndex: 0,
+          videos: videos,
+          keepBefore: 0,
+          keepAfter: 0,
+        );
+        await tester.pump();
+
+        expect(disposedParams.where((params) => params == lowParams).length, 1);
+      },
+    );
 
     test('SPEC: should throttle rapid prefetch calls', () {
       final videos = _createMockVideos(10);
@@ -284,7 +425,7 @@ List<VideoEvent> _createMockVideos(int count) {
 }
 
 /// Helper: Create single video with optional URL
-VideoEvent _createVideo(String id, {required bool hasUrl}) {
+VideoEvent _createVideo(String id, {required bool hasUrl, String? videoUrl}) {
   final timestamp = DateTime.now();
   return VideoEvent(
     id: id,
@@ -292,20 +433,30 @@ VideoEvent _createVideo(String id, {required bool hasUrl}) {
     createdAt: timestamp.millisecondsSinceEpoch ~/ 1000,
     content: 'Video content',
     timestamp: timestamp,
-    videoUrl: hasUrl ? 'https://example.com/$id.mp4' : null,
+    videoUrl: hasUrl ? (videoUrl ?? 'https://example.com/$id.mp4') : null,
     title: 'Test Video',
   );
 }
 
 /// Test implementation of VideoPrefetchMixin
 class TestVideoPrefetchMixin with VideoPrefetchMixin {
-  TestVideoPrefetchMixin(this._cache);
+  TestVideoPrefetchMixin(
+    this._cache, {
+    this.videoControllerParamsBuilder,
+  });
 
   final MediaCacheManager _cache;
+  final VideoControllerParams Function(VideoEvent video)?
+  videoControllerParamsBuilder;
 
   @override
   MediaCacheManager get videoCacheManager => _cache;
 
   @override
   int get prefetchThrottleSeconds => 1; // Shorter for testing
+
+  @override
+  VideoControllerParams videoControllerParamsFor(VideoEvent video) =>
+      videoControllerParamsBuilder?.call(video) ??
+      super.videoControllerParamsFor(video);
 }

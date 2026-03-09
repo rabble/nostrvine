@@ -13,9 +13,9 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/sounds_screen.dart';
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/sound_tile.dart';
+import 'package:sound_service/sound_service.dart';
 
 import '../helpers/go_router.dart';
 
@@ -116,7 +116,7 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
       });
 
       testWidgets('has search text field', (tester) async {

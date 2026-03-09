@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +19,6 @@ import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/content_filters_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
@@ -31,6 +31,7 @@ import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
 import 'package:openvine/screens/notifications_screen.dart';
@@ -98,14 +99,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       );
 
       // Handle authenticated users on auth routes
+      // Note: resetPasswordPath and EmailVerificationScreen are intentionally
+      // excluded — authenticated users may navigate there via deep links.
       if (authState == AuthState.authenticated &&
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
               location == NostrConnectScreen.path ||
               location == WelcomeScreen.createAccountPath ||
-              location == WelcomeScreen.loginOptionsPath ||
-              location == WelcomeScreen.resetPasswordPath ||
-              location == EmailVerificationScreen.path)) {
+              location == WelcomeScreen.loginOptionsPath)) {
         // On first navigation, redirect to explore if user has no following
         if (!_hasNavigated) {
           _hasNavigated = true;
@@ -135,11 +136,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           location.startsWith(ResetPasswordScreen.path) ||
           location.startsWith(EmailVerificationScreen.path);
 
-      // Unauthenticated users on non-auth routes → redirect to welcome
-      if (!isAuthRoute && authState == AuthState.unauthenticated) {
+      // Non-authenticated users on protected routes → welcome.
+      // awaitingTosAcceptance has no dedicated screen, so treat it like unauthenticated.
+      if (!isAuthRoute &&
+          (authState == AuthState.unauthenticated ||
+              authState == AuthState.awaitingTosAcceptance)) {
         _hasNavigated = false;
         Log.info(
-          'Router redirect: unauthenticated on $location — '
+          'Router redirect: ${authState.name} on $location — '
           'redirecting to ${WelcomeScreen.path}',
           name: 'AppRouter',
           category: LogCategory.auth,
@@ -378,23 +382,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ),
-
-          // HASHTAG route - feed mode (with video index)
-          GoRoute(
-            path: HashtagScreenRouter.pathWithIndex,
-            pageBuilder: (ctx, st) => NoTransitionPage(
-              key: st.pageKey,
-              child: Navigator(
-                key: NavigatorKeys.hashtagFeed,
-                onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const HashtagScreenRouter(),
-                  settings: const RouteSettings(
-                    name: HashtagScreenRouter.routeName,
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
 
@@ -414,9 +401,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final listId = st.pathParameters['listId'];
           if (listId == null || listId.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid list ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid list ID')),
             );
           }
           // Extra data contains listName, videoIds, authorPubkey
@@ -616,14 +603,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: ClipLibraryScreen.draftsPath,
-        name: ClipLibraryScreen.draftsRouteName,
-        builder: (_, _) => const ClipLibraryScreen(),
+        path: LibraryScreen.draftsPath,
+        name: LibraryScreen.draftsRouteName,
+        builder: (_, _) => const LibraryScreen(),
       ),
       GoRoute(
-        path: ClipLibraryScreen.clipsPath,
-        name: ClipLibraryScreen.clipsRouteName,
-        builder: (_, _) => const ClipLibraryScreen(),
+        path: LibraryScreen.clipsPath,
+        name: LibraryScreen.clipsRouteName,
+        builder: (_, _) => const LibraryScreen(initialTabIndex: 1),
       ),
       // Followers screen - routes to My or Others based on pubkey
       GoRoute(
@@ -633,9 +620,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
           if (pubkey == null || pubkey.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid user ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid user ID')),
             );
           }
           return FollowersScreenRouter(
@@ -652,9 +639,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
           if (pubkey == null || pubkey.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid user ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid user ID')),
             );
           }
           return FollowingScreenRouter(
@@ -670,9 +657,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final videoId = st.pathParameters['id'];
           if (videoId == null || videoId.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid video ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid video ID')),
             );
           }
           return VideoDetailScreen(videoId: videoId);
@@ -686,9 +673,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final soundId = st.pathParameters['id'];
           final sound = st.extra as AudioEvent?;
           if (soundId == null || soundId.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid sound ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid sound ID')),
             );
           }
           // If sound was passed via extra, use it directly
@@ -750,9 +737,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final args = st.extra as FullscreenVideoFeedArgs?;
           if (args == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('No videos to display')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('No videos to display')),
             );
           }
           return FullscreenVideoFeedScreen(
@@ -770,9 +757,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final args = st.extra as PooledFullscreenVideoFeedArgs?;
           if (args == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('No videos to display')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('No videos to display')),
             );
           }
           return PooledFullscreenVideoFeedScreen(
@@ -793,9 +780,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final npub = st.pathParameters['npub'];
           if (npub == null || npub.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid profile ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid profile ID')),
             );
           }
           // Extract profile hints from extra (for users without Kind 0 profiles)

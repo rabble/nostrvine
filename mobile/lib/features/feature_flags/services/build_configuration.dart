@@ -10,31 +10,19 @@ class BuildConfiguration {
   bool getDefault(FeatureFlag flag) {
     switch (flag) {
       case FeatureFlag.newCameraUI:
-        return const bool.fromEnvironment(
-          'FF_NEW_CAMERA_UI',
-        );
+        return const bool.fromEnvironment('FF_NEW_CAMERA_UI');
       case FeatureFlag.enhancedVideoPlayer:
-        return const bool.fromEnvironment(
-          'FF_ENHANCED_VIDEO_PLAYER',
-        );
+        return const bool.fromEnvironment('FF_ENHANCED_VIDEO_PLAYER');
       case FeatureFlag.enhancedAnalytics:
-        return const bool.fromEnvironment(
-          'FF_ENHANCED_ANALYTICS',
-        );
+        return const bool.fromEnvironment('FF_ENHANCED_ANALYTICS');
       case FeatureFlag.newProfileLayout:
-        return const bool.fromEnvironment(
-          'FF_NEW_PROFILE_LAYOUT',
-        );
+        return const bool.fromEnvironment('FF_NEW_PROFILE_LAYOUT');
       case FeatureFlag.livestreamingBeta:
-        return const bool.fromEnvironment(
-          'FF_LIVESTREAMING_BETA',
-        );
+        return const bool.fromEnvironment('FF_LIVESTREAMING_BETA');
       case FeatureFlag.debugTools:
         return const bool.fromEnvironment('FF_DEBUG_TOOLS', defaultValue: true);
       case FeatureFlag.routerDrivenHome:
-        return const bool.fromEnvironment(
-          'FF_ROUTER_DRIVEN_HOME',
-        );
+        return const bool.fromEnvironment('FF_ROUTER_DRIVEN_HOME');
       case FeatureFlag.enableVideoEditorV1:
         // Video editor now works on all platforms (uses dialog-based editor)
         return const bool.fromEnvironment(
@@ -42,13 +30,9 @@ class BuildConfiguration {
           defaultValue: true,
         );
       case FeatureFlag.classicsHashtags:
-        return const bool.fromEnvironment(
-          'FF_CLASSICS_HASHTAGS',
-        );
+        return const bool.fromEnvironment('FF_CLASSICS_HASHTAGS');
       case FeatureFlag.curatedLists:
-        return const bool.fromEnvironment(
-          'FF_CURATED_LISTS',
-        );
+        return const bool.fromEnvironment('FF_CURATED_LISTS');
     }
   }
 

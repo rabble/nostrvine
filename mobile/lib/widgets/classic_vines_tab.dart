@@ -12,6 +12,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -28,13 +29,25 @@ import 'package:rxdart/rxdart.dart';
 /// - Loading/error/data states
 /// - Empty state when REST API unavailable
 class ClassicVinesTab extends ConsumerStatefulWidget {
-  const ClassicVinesTab({super.key});
+  const ClassicVinesTab({super.key, this.feedTracker});
+
+  /// Optional analytics tracker (for testing, defaults to singleton).
+  final FeedPerformanceTracker? feedTracker;
 
   @override
   ConsumerState<ClassicVinesTab> createState() => _ClassicVinesTabState();
 }
 
 class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
+  late final FeedPerformanceTracker? _feedTracker;
+  DateTime? _feedLoadStartTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _feedTracker = widget.feedTracker;
+  }
+
   @override
   Widget build(BuildContext context) {
     final classicVinesAsync = ref.watch(classicVinesFeedProvider);
@@ -53,12 +66,24 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
       return const _ClassicVinesUnavailableState();
     }
 
+    // Track feed loading start
+    if (classicVinesAsync.isLoading && _feedLoadStartTime == null) {
+      _feedLoadStartTime = DateTime.now();
+      _feedTracker?.startFeedLoad('classics');
+    }
+
     // Check hasValue FIRST before isLoading
     if (classicVinesAsync.hasValue && classicVinesAsync.value != null) {
       return _buildDataState(classicVinesAsync.value!);
     }
 
     if (classicVinesAsync.hasError) {
+      _feedTracker?.trackFeedError(
+        'classics',
+        errorType: 'load_failed',
+        errorMessage: classicVinesAsync.error.toString(),
+      );
+      _feedLoadStartTime = null;
       return _ClassicVinesErrorState(error: classicVinesAsync.error.toString());
     }
 
@@ -75,7 +100,15 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
       category: LogCategory.video,
     );
 
+    // Track feed loaded with videos
+    if (_feedLoadStartTime != null) {
+      _feedTracker?.markFirstVideosReceived('classics', videos.length);
+      _feedTracker?.markFeedDisplayed('classics', videos.length);
+      _feedLoadStartTime = null;
+    }
+
     if (videos.isEmpty) {
+      _feedTracker?.trackEmptyFeed('classics');
       return const _ClassicVinesEmptyState();
     }
 
@@ -169,6 +202,9 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
         _videosStreamController.add(next.value!.videos);
       }
     });
+    final classicVinesFeedNotifier = ref.read(
+      classicVinesFeedProvider.notifier,
+    );
 
     return RefreshIndicator(
       color: VineTheme.onPrimary,
@@ -180,7 +216,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
           category: LogCategory.video,
         );
         // Only refresh classics feed (roulette to next page)
-        await ref.read(classicVinesFeedProvider.notifier).refresh();
+        await classicVinesFeedNotifier.refresh();
       },
       child: CustomScrollView(
         controller: _scrollController,
@@ -203,8 +239,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
                     videos,
                   ),
                   initialIndex: index,
-                  onLoadMore: () =>
-                      ref.read(classicVinesFeedProvider.notifier).loadMore(),
+                  onLoadMore: classicVinesFeedNotifier.loadMore,
                   contextTitle: 'Classics',
                   trafficSource: ViewTrafficSource.discoveryClassic,
                 ),
@@ -344,14 +379,14 @@ class _ClassicVideoItem extends StatelessWidget {
                   embeddedName: video.authorName,
                   maxLines: 1,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: VineTheme.whiteText,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     shadows: [
                       Shadow(
                         offset: Offset(0, 1),
                         blurRadius: 3,
-                        color: Color(0x80000000),
+                        color: VineTheme.scrim50,
                       ),
                     ],
                   ),

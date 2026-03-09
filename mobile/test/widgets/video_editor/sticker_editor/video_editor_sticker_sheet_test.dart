@@ -2,6 +2,7 @@
 // ABOUTME: Tests search, grid display, empty states, and sticker selection.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -154,14 +155,21 @@ void main() {
           stickers: testStickers,
           searchQuery: 'test',
         );
-        when(() => mockBloc.state).thenReturn(stateWithQuery);
-        whenListen(mockBloc, Stream.value(stateWithQuery));
+        whenListen(
+          mockBloc,
+          Stream.value(stateWithQuery),
+          initialState: stateWithQuery,
+        );
 
-        await tester.pumpWidget(buildSubject());
+        await tester.pumpWidget(buildSubject(state: stateWithQuery));
         await tester.pump();
-        await tester.pump(); // Extra pump for BlocSelector rebuild
 
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (widget) => widget is DivineIcon && widget.icon == DivineIconName.x,
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('hides clear button when no search query', (tester) async {

@@ -1,6 +1,7 @@
 // ABOUTME: Visual drag handle indicator for bottom sheets
 // ABOUTME: Provides affordance for draggable sheet interaction
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 class CommentsDragHandle extends StatelessWidget {
@@ -15,7 +16,7 @@ class CommentsDragHandle extends StatelessWidget {
       height: 4,
       margin: const EdgeInsets.symmetric(vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white54,
+        color: VineTheme.onSurfaceMuted,
         borderRadius: BorderRadius.circular(2),
       ),
     ),

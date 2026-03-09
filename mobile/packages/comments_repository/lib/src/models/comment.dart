@@ -24,6 +24,11 @@ class Comment extends Equatable {
     required this.rootAuthorPubkey,
     this.replyToEventId,
     this.replyToAuthorPubkey,
+    this.videoUrl,
+    this.thumbnailUrl,
+    this.videoDimensions,
+    this.videoDuration,
+    this.videoBlurhash,
   });
 
   /// Unique comment ID (Nostr event ID).
@@ -51,6 +56,24 @@ class Comment extends Equatable {
 
   /// If this is a reply, the public key of the parent comment author.
   final String? replyToAuthorPubkey;
+
+  /// URL of an attached video (NIP-92 imeta).
+  final String? videoUrl;
+
+  /// Thumbnail URL for the attached video (NIP-92 imeta `image` field).
+  final String? thumbnailUrl;
+
+  /// Video dimensions as "widthxheight" (NIP-92 imeta `dim` field).
+  final String? videoDimensions;
+
+  /// Video duration in seconds (NIP-92 imeta `duration` field).
+  final int? videoDuration;
+
+  /// Blurhash of the video thumbnail (NIP-92 imeta `blurhash` field).
+  final String? videoBlurhash;
+
+  /// Whether this comment has an attached video.
+  bool get hasVideo => videoUrl != null && videoUrl!.isNotEmpty;
 
   /// Get relative time string (e.g., "2h ago", "1d ago", "3mo ago", "2y ago").
   String get relativeTime {
@@ -89,6 +112,11 @@ class Comment extends Equatable {
     String? rootAuthorPubkey,
     String? replyToEventId,
     String? replyToAuthorPubkey,
+    String? videoUrl,
+    String? thumbnailUrl,
+    String? videoDimensions,
+    int? videoDuration,
+    String? videoBlurhash,
   }) => Comment(
     id: id ?? this.id,
     content: content ?? this.content,
@@ -98,6 +126,11 @@ class Comment extends Equatable {
     rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
     replyToEventId: replyToEventId ?? this.replyToEventId,
     replyToAuthorPubkey: replyToAuthorPubkey ?? this.replyToAuthorPubkey,
+    videoUrl: videoUrl ?? this.videoUrl,
+    thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+    videoDimensions: videoDimensions ?? this.videoDimensions,
+    videoDuration: videoDuration ?? this.videoDuration,
+    videoBlurhash: videoBlurhash ?? this.videoBlurhash,
   );
 
   @override
@@ -110,5 +143,10 @@ class Comment extends Equatable {
     rootAuthorPubkey,
     replyToEventId,
     replyToAuthorPubkey,
+    videoUrl,
+    thumbnailUrl,
+    videoDimensions,
+    videoDuration,
+    videoBlurhash,
   ];
 }

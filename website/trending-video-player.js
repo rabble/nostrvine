@@ -1,4 +1,4 @@
-// ABOUTME: Video player that loads trending videos from diVine analytics API
+// ABOUTME: Video player that loads trending videos from Divine analytics API
 // ABOUTME: Fetches and plays popular vine videos with view tracking
 
 const TRENDING_API = 'https://api.openvine.co/analytics/trending/vines';

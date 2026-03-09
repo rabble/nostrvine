@@ -195,7 +195,7 @@ class _CameraPlaceholderScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: Stack(
         children: [
           _CameraPlaceholder(onClose: onClose),
@@ -258,7 +258,7 @@ class _PermissionErrorSheet extends StatelessWidget {
       alignment: Alignment.bottomCenter,
       child: _PermissionBottomSheet(
         icon: Icons.error_outline,
-        iconColor: Colors.red,
+        iconColor: VineTheme.error,
         title: 'Permission Error',
         subtitle: 'Something went wrong while checking permissions.',
         primaryButtonText: 'Retry',
@@ -372,7 +372,7 @@ class _PermissionBottomSheet extends StatelessWidget {
                 height: 4,
                 margin: const EdgeInsets.only(bottom: 20),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: VineTheme.whiteText.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -381,7 +381,7 @@ class _PermissionBottomSheet extends StatelessWidget {
               Text(
                 title,
                 style: textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
@@ -389,14 +389,18 @@ class _PermissionBottomSheet extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 subtitle,
-                style: textTheme.bodyLarge?.copyWith(color: Colors.white70),
+                style: textTheme.bodyLarge?.copyWith(
+                  color: VineTheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
               if (additionalText != null) ...[
                 const SizedBox(height: 8),
                 Text(
                   additionalText!,
-                  style: textTheme.bodyMedium?.copyWith(color: Colors.white54),
+                  style: textTheme.bodyMedium?.copyWith(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -407,7 +411,7 @@ class _PermissionBottomSheet extends StatelessWidget {
                   onPressed: onPrimaryPressed,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: Colors.white,
+                    foregroundColor: VineTheme.whiteText,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 16,
@@ -428,7 +432,7 @@ class _PermissionBottomSheet extends StatelessWidget {
                 child: TextButton(
                   onPressed: onSecondaryPressed,
                   style: TextButton.styleFrom(
-                    foregroundColor: Colors.white70,
+                    foregroundColor: VineTheme.onSurfaceVariant,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 16,

@@ -1,6 +1,7 @@
 // ABOUTME: Button for selecting the arrow drawing tool.
 // ABOUTME: Displays a white squiggle line with arrow head icon.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item_button.dart';
 
@@ -42,7 +43,7 @@ class _ArrowPainter extends CustomPainter {
     final centerX = size.width / 2;
 
     final paint = Paint()
-      ..color = Colors.white
+      ..color = VineTheme.whiteText
       ..style = .stroke
       ..strokeWidth = 6
       ..strokeCap = .round

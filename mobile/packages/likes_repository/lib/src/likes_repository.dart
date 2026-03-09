@@ -503,8 +503,8 @@ class LikesRepository {
     for (final event in eventsByE) {
       // Find the 'e' tag that references the target event
       for (final tag in event.tags) {
-        if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-          final targetId = tag[1] as String;
+        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          final targetId = tag[1];
           if (counts.containsKey(targetId)) {
             counts[targetId] = counts[targetId]! + 1;
           }
@@ -536,11 +536,8 @@ class LikesRepository {
 
       for (final event in eventsByA) {
         for (final tag in event.tags) {
-          if (tag is List &&
-              tag.isNotEmpty &&
-              tag[0] == 'a' &&
-              tag.length > 1) {
-            final aTagValue = tag[1] as String;
+          if (tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
+            final aTagValue = tag[1];
             final eventId = aTagToEventId[aTagValue];
             if (eventId != null && countsFromA.containsKey(eventId)) {
               countsFromA[eventId] = countsFromA[eventId]! + 1;
@@ -586,8 +583,8 @@ class LikesRepository {
 
     for (final event in events) {
       for (final tag in event.tags) {
-        if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-          final targetId = tag[1] as String;
+        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          final targetId = tag[1];
           if (upvotes.containsKey(targetId)) {
             if (event.content == _downvoteContent) {
               downvotes[targetId] = downvotes[targetId]! + 1;
@@ -630,8 +627,8 @@ class LikesRepository {
     final deletedIds = <String>{};
     for (final deletion in deletions) {
       for (final tag in deletion.tags) {
-        if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-          deletedIds.add(tag[1] as String);
+        if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+          deletedIds.add(tag[1]);
         }
       }
     }
@@ -745,11 +742,8 @@ class LikesRepository {
       final deletedReactionIds = <String>{};
       for (final deletion in deletionEvents) {
         for (final tag in deletion.tags) {
-          if (tag is List &&
-              tag.isNotEmpty &&
-              tag[0] == 'e' &&
-              tag.length > 1) {
-            deletedReactionIds.add(tag[1] as String);
+          if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+            deletedReactionIds.add(tag[1]);
           }
         }
       }
@@ -1019,8 +1013,8 @@ class LikesRepository {
   /// According to NIP-25, the 'e' tag contains the event ID being reacted to.
   String? _extractTargetEventId(Event event) {
     for (final tag in event.tags) {
-      if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-        return tag[1] as String;
+      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
+        return tag[1];
       }
     }
     return null;

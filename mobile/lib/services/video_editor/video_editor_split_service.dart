@@ -3,7 +3,7 @@
 
 import 'dart:async';
 
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -19,8 +19,8 @@ class SplitClipResult {
     required this.endClipPath,
   });
 
-  final RecordingClip startClip;
-  final RecordingClip endClip;
+  final DivineVideoClip startClip;
+  final DivineVideoClip endClip;
   final String startClipPath;
   final String endClipPath;
 }
@@ -32,7 +32,10 @@ class VideoEditorSplitService {
   /// Validates if the split position is valid for the given clip.
   ///
   /// Both resulting clips must meet the minimum duration requirement.
-  static bool isValidSplitPosition(RecordingClip clip, Duration splitPosition) {
+  static bool isValidSplitPosition(
+    DivineVideoClip clip,
+    Duration splitPosition,
+  ) {
     return splitPosition >= minClipDuration &&
         clip.duration - splitPosition >= minClipDuration;
   }
@@ -48,13 +51,13 @@ class VideoEditorSplitService {
   ///
   /// Throws if rendering fails or split position is invalid
   static Future<SplitClipResult> splitClip({
-    required RecordingClip sourceClip,
+    required DivineVideoClip sourceClip,
     required Duration splitPosition,
-    required void Function(RecordingClip startClip, RecordingClip endClip)?
+    required void Function(DivineVideoClip startClip, DivineVideoClip endClip)?
     onClipsCreated,
-    required void Function(RecordingClip clip, String thumbnailPath)?
+    required void Function(DivineVideoClip clip, String thumbnailPath)?
     onThumbnailExtracted,
-    required void Function(RecordingClip clip, EditorVideo video)?
+    required void Function(DivineVideoClip clip, EditorVideo video)?
     onClipRendered,
   }) async {
     if (!isValidSplitPosition(sourceClip, splitPosition)) {
@@ -164,10 +167,10 @@ class VideoEditorSplitService {
 
   /// Extract a thumbnail for the split clip at the specified timestamp.
   static Future<void> _extractThumbnailForClip(
-    RecordingClip sourceClip,
+    DivineVideoClip sourceClip,
     Duration timestamp,
-    RecordingClip targetClip,
-    void Function(RecordingClip clip, String thumbnailPath)?
+    DivineVideoClip targetClip,
+    void Function(DivineVideoClip clip, String thumbnailPath)?
     onThumbnailExtracted,
   ) async {
     try {
@@ -199,11 +202,11 @@ class VideoEditorSplitService {
 
   /// Render a single split clip segment to file.
   static Future<void> _renderSplitClip({
-    required RecordingClip clip,
+    required DivineVideoClip clip,
     required String outputPath,
     required EditorVideo sourceVideo,
     required VideoRenderData renderData,
-    required void Function(RecordingClip clip, EditorVideo video)?
+    required void Function(DivineVideoClip clip, EditorVideo video)?
     onClipRendered,
   }) async {
     try {

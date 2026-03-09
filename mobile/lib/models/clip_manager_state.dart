@@ -2,7 +2,7 @@
 // ABOUTME: Tracks clips, selection state, and duration calculations
 
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 
 /// State model for the Clip Manager.
 ///
@@ -25,7 +25,7 @@ class ClipManagerState {
   });
 
   /// List of all recorded clips in order.
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
 
   /// ID of the currently selected clip for editing, or null if none selected.
   final String? selectedClipId;
@@ -71,7 +71,7 @@ class ClipManagerState {
   int get clipCount => clips.length;
 
   /// The currently selected clip, or null if none selected or not found.
-  RecordingClip? get selectedClip {
+  DivineVideoClip? get selectedClip {
     if (selectedClipId == null) return null;
     try {
       return clips.firstWhere((c) => c.id == selectedClipId);
@@ -81,7 +81,7 @@ class ClipManagerState {
   }
 
   /// The clip currently being previewed, or null if none previewing or not found.
-  RecordingClip? get previewingClip {
+  DivineVideoClip? get previewingClip {
     if (previewingClipId == null) return null;
     try {
       return clips.firstWhere((c) => c.id == previewingClipId);
@@ -97,7 +97,7 @@ class ClipManagerState {
   /// - [clearPreview]: Sets previewingClipId to null
   /// - [clearError]: Sets errorMessage to null
   ClipManagerState copyWith({
-    List<RecordingClip>? clips,
+    List<DivineVideoClip>? clips,
     String? selectedClipId,
     String? previewingClipId,
     bool? isReordering,

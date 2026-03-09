@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 
 void main() {
   group('Profile Clips Button', () {
@@ -109,7 +109,7 @@ void main() {
                       await Navigator.push<void>(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ClipLibraryScreen(),
+                          builder: (context) => const LibraryScreen(),
                         ),
                       );
                     },
@@ -126,7 +126,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should navigate to ClipLibraryScreen
-        expect(find.byType(ClipLibraryScreen), findsOneWidget);
+        expect(find.byType(LibraryScreen), findsOneWidget);
       },
     );
 

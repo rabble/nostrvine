@@ -185,7 +185,7 @@ void main() {
         [
           ['t'], // Missing value
           ['t', 'bitcoin'], // Valid tag
-          'not_a_list', // Invalid tag format
+          [], // Empty tag
           [
             'expiration',
             '${(DateTime.now().millisecondsSinceEpoch ~/ 1000) + 3600}',

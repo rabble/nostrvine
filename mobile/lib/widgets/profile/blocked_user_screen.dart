@@ -15,18 +15,16 @@ class BlockedUserScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: onBack,
-        ),
+      appBar: DiVineAppBar(
+        title: '',
+        showBackButton: true,
+        onBackPressed: onBack,
+        backgroundMode: DiVineAppBarBackgroundMode.transparent,
       ),
       body: const Center(
         child: Text(
           'This account is not available',
-          style: TextStyle(color: Colors.grey, fontSize: 16),
+          style: TextStyle(color: VineTheme.lightText, fontSize: 16),
         ),
       ),
     );

@@ -6,7 +6,7 @@ import '../relay/relay_status.dart';
 
 class NIP65 {
   static void save(Nostr nostr, List<RelayStatus> relayStatuses) {
-    List tags = [];
+    List<List<String>> tags = [];
     for (var relayStatus in relayStatuses) {
       var readAccess = relayStatus.readAccess;
       var writeAccess = relayStatus.writeAccess;

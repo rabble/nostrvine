@@ -263,7 +263,7 @@ class FollowRepository {
   ///
   /// Runs REST API, connected relay, and indexer relay queries in parallel
   /// and merges results (union of pubkeys). The REST API (Funnelcake) only
-  /// indexes kind 3 events seen on the divine relay, so follower lists are
+  /// indexes kind 3 events seen on the Divine relay, so follower lists are
   /// often incomplete. Connected relays may timeout. Indexer relays
   /// (relay.damus.io, purplepag.es) maintain broad kind 3 indexes and
   /// provide the most complete follower lists.
@@ -515,11 +515,16 @@ class FollowRepository {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    Log.debug(
-      'Initializing FollowRepository',
-      name: 'FollowRepository',
-      category: LogCategory.system,
-    );
+    // Guard: Skip initialization if user is not authenticated.
+    // Don't set _isInitialized = true so we can retry when keys are available.
+    if (!_nostrClient.hasKeys) {
+      Log.debug(
+        'FollowRepository.initialize() skipped - no keys yet',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
 
     try {
       // 1. Load from local storage first for immediate UI display
@@ -548,11 +553,13 @@ class FollowRepository {
 
       _isInitialized = true;
 
-      Log.info(
-        'FollowRepository initialized: ${_followingPubkeys.length} following',
-        name: 'FollowRepository',
-        category: LogCategory.system,
-      );
+      // Guarantee at least one post-seed emission for "no follows" users.
+      // When the user follows nobody, _emitFollowingList() never fires
+      // (list stays [] = same as seed). Force-emit so subscribers can
+      // distinguish "init not done" from "genuinely empty."
+      if (_followingPubkeys.isEmpty && !_followingSubject.isClosed) {
+        _followingSubject.add(const []);
+      }
     } catch (e) {
       Log.error(
         'FollowRepository initialization error: $e',

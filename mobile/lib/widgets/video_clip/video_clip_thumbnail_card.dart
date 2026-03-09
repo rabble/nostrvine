@@ -4,7 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 
@@ -21,12 +21,13 @@ class VideoClipThumbnailCard extends StatefulWidget {
     required this.onLongPress,
     this.isSelected = false,
     this.disabled = false,
+    this.showDurationBadge = false,
     super.key,
   });
 
   /// The clip data to display, including thumbnail path, duration, and
   /// aspect ratio.
-  final SavedClip clip;
+  final DivineVideoClip clip;
 
   /// Callback invoked when the card is tapped.
   final VoidCallback onTap;
@@ -37,6 +38,9 @@ class VideoClipThumbnailCard extends StatefulWidget {
   /// Whether this clip is currently selected, showing green border and
   /// check icon.
   final bool isSelected;
+
+  /// Whether to show the duration badge at the bottom-left corner.
+  final bool showDurationBadge;
 
   /// Whether this clip is disabled and cannot be interacted with.
   /// When disabled, the card is shown with reduced opacity and tap handlers
@@ -55,7 +59,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
   @override
   Widget build(BuildContext context) {
     // Calculate aspect ratio for container
-    final aspectRatio = widget.clip.aspectRatio == 'vertical' ? 9 / 16 : 1.0;
+    final aspectRatio = widget.clip.targetAspectRatio.value;
 
     return Semantics(
       // TODO(l10n): Replace with context.l10n when localization is added.
@@ -82,7 +86,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
             child: AspectRatio(
               aspectRatio: aspectRatio,
               child: ColoredBox(
-                color: Colors.grey.shade800,
+                color: VineTheme.cardBackground,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -90,7 +94,8 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
                     _Thumbnail(clip: widget.clip),
 
                     /// Duration badge - bottom left
-                    _DurationBadge(clip: widget.clip),
+                    if (widget.showDurationBadge)
+                      _DurationBadge(clip: widget.clip),
 
                     /// Selection check circle - top right
                     AnimatedSwitcher(
@@ -118,7 +123,7 @@ class _VideoClipThumbnailCardState extends State<VideoClipThumbnailCard> {
 class _Thumbnail extends StatefulWidget {
   const _Thumbnail({required this.clip});
 
-  final SavedClip clip;
+  final DivineVideoClip clip;
 
   @override
   State<_Thumbnail> createState() => _ThumbnailState();
@@ -150,7 +155,7 @@ class _ThumbnailState extends State<_Thumbnail> {
       );
     }
 
-    return const Icon(Icons.videocam, color: Colors.grey, size: 32);
+    return const Icon(Icons.videocam, color: VineTheme.lightText, size: 32);
   }
 }
 
@@ -160,7 +165,7 @@ class _ThumbnailState extends State<_Thumbnail> {
 class _DurationBadge extends StatelessWidget {
   const _DurationBadge({required this.clip});
 
-  final SavedClip clip;
+  final DivineVideoClip clip;
 
   @override
   Widget build(BuildContext context) {
@@ -170,13 +175,13 @@ class _DurationBadge extends StatelessWidget {
       child: Container(
         padding: const .symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.65),
+          color: VineTheme.scrim65,
           borderRadius: .circular(4),
         ),
         child: Text(
           clip.durationInSeconds.toStringAsFixed(2),
           style: const TextStyle(
-            color: Colors.white,
+            color: VineTheme.whiteText,
             fontSize: 14,
             fontFamily: VineTheme.fontFamilyBricolage,
             fontWeight: .w800,
@@ -224,7 +229,7 @@ class _SelectionOverlay extends StatelessWidget {
             ),
             child: SvgPicture.asset(
               'assets/icon/Check.svg',
-              colorFilter: const .mode(Color(0xFF002C1C), .srcIn),
+              colorFilter: const .mode(VineTheme.surfaceContainer, .srcIn),
             ),
           ),
         ),

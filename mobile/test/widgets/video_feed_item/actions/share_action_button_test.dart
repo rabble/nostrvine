@@ -1,23 +1,35 @@
 // ABOUTME: Tests for ShareActionButton widget
-// ABOUTME: Verifies share icon renders and menu items display correctly
+// ABOUTME: Verifies share icon renders, share sheet opens with correct sections,
+// ABOUTME: and standard action items display in the unified share sheet.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
+class _MockFollowRepository extends Mock implements FollowRepository {}
+
 void main() {
   group(ShareActionButton, () {
+    const ownPubkey =
+        'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+
     late VideoEvent testVideo;
+    late _MockFollowRepository mockFollowRepository;
 
     setUp(() {
+      mockFollowRepository = _MockFollowRepository();
+      when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+
       testVideo = VideoEvent(
         id: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
-        pubkey:
-            'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
+        pubkey: ownPubkey,
         createdAt: 1757385263,
         content: 'Test video',
         timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
@@ -65,6 +77,101 @@ void main() {
       // Find Semantics widget with share button label
       final semanticsFinder = find.bySemanticsLabel('Share video');
       expect(semanticsFinder, findsOneWidget);
+    });
+
+    group('share menu', () {
+      testWidgets('shows Share with section', (tester) async {
+        final mockAuth = createMockAuthService();
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Scaffold(body: ShareActionButton(video: testVideo)),
+            mockAuthService: mockAuth,
+          ),
+        );
+
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Share with'), findsOneWidget);
+      });
+
+      testWidgets('shows Find people button', (tester) async {
+        final mockAuth = createMockAuthService();
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Scaffold(body: ShareActionButton(video: testVideo)),
+            mockAuthService: mockAuth,
+          ),
+        );
+
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Find\npeople'), findsOneWidget);
+      });
+
+      testWidgets('shows More actions section', (tester) async {
+        final mockAuth = createMockAuthService();
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Scaffold(body: ShareActionButton(video: testVideo)),
+            mockAuthService: mockAuth,
+          ),
+        );
+
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('More actions'), findsOneWidget);
+      });
+
+      testWidgets('shows standard action items', (tester) async {
+        final mockAuth = createMockAuthService();
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Scaffold(body: ShareActionButton(video: testVideo)),
+            mockAuthService: mockAuth,
+          ),
+        );
+
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Save'), findsOneWidget);
+        expect(find.text('Save Video'), findsOneWidget);
+        expect(find.text('Copy'), findsOneWidget);
+        expect(find.text('Share via'), findsOneWidget);
+        expect(find.text('Report'), findsOneWidget);
+      });
+
+      testWidgets('shows own-video download actions for owned content', (
+        tester,
+      ) async {
+        final mockAuth = createMockAuthService();
+
+        when(() => mockAuth.isAuthenticated).thenReturn(true);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(ownPubkey);
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Scaffold(body: ShareActionButton(video: testVideo)),
+            additionalOverrides: [
+              followRepositoryProvider.overrideWithValue(mockFollowRepository),
+            ],
+            mockAuthService: mockAuth,
+          ),
+        );
+
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Save to Gallery'), findsOneWidget);
+        expect(find.text('Save with Watermark'), findsOneWidget);
+      });
     });
   });
 }

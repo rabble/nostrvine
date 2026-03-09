@@ -5,9 +5,9 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 
 void main() {
@@ -38,9 +38,9 @@ void main() {
       expect(proofJson, contains('abc123def456'));
 
       // Step 3: Create draft with proof data (as done in VineRecordingProvider:180-189)
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'id',
             video: EditorVideo.file('/tmp/test.mp4'),
             duration: const Duration(seconds: 4),
@@ -123,9 +123,9 @@ void main() {
 
     test('Missing ProofMode data is handled gracefully', () {
       // Draft without ProofMode
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'id',
             video: EditorVideo.file('/tmp/test.mp4'),
             duration: const Duration(seconds: 4),

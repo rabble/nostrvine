@@ -738,7 +738,7 @@ class CurationService {
             );
           }
         },
-        onError: (error) {
+        onError: (Object error) {
           Log.error(
             'Error fetching curation sets: $error',
             name: 'CurationService',

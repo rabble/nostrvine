@@ -26,6 +26,7 @@ class MockCameraService extends CameraService {
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
+    bool enableAutoLensSwitch = false,
   }) async {
     _currentLens = initialLens;
     _isInitialized = true;

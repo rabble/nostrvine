@@ -117,12 +117,12 @@ final class PendingActionServiceProvider
 String _$pendingActionServiceHash() =>
     r'67a3a30b8cc1072263ce47f4e2bb3c34fa876fa1';
 
-/// Relay capability service for detecting NIP-11 divine extensions
+/// Relay capability service for detecting NIP-11 Divine extensions
 
 @ProviderFor(relayCapabilityService)
 const relayCapabilityServiceProvider = RelayCapabilityServiceProvider._();
 
-/// Relay capability service for detecting NIP-11 divine extensions
+/// Relay capability service for detecting NIP-11 Divine extensions
 
 final class RelayCapabilityServiceProvider
     extends
@@ -132,7 +132,7 @@ final class RelayCapabilityServiceProvider
           RelayCapabilityService
         >
     with $Provider<RelayCapabilityService> {
-  /// Relay capability service for detecting NIP-11 divine extensions
+  /// Relay capability service for detecting NIP-11 Divine extensions
   const RelayCapabilityServiceProvider._()
     : super(
         from: null,
@@ -1849,11 +1849,19 @@ final class SeenVideosServiceProvider
 String _$seenVideosServiceHash() => r'74099bd4d859b446a3fc0cf1a7f416756a104e43';
 
 /// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 
 @ProviderFor(contentBlocklistService)
 const contentBlocklistServiceProvider = ContentBlocklistServiceProvider._();
 
 /// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 
 final class ContentBlocklistServiceProvider
     extends
@@ -1864,6 +1872,10 @@ final class ContentBlocklistServiceProvider
         >
     with $Provider<ContentBlocklistService> {
   /// Content blocklist service for filtering unwanted content from feeds
+  ///
+  /// Injects SharedPreferences for local block persistence across restarts.
+  /// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+  /// during app startup in main.dart.
   const ContentBlocklistServiceProvider._()
     : super(
         from: null,
@@ -1899,7 +1911,7 @@ final class ContentBlocklistServiceProvider
 }
 
 String _$contentBlocklistServiceHash() =>
-    r'a05020e10b4402686d4630f99b020c4f0e58eab3';
+    r'e9f2a94864c583c91619dffc906067ba6c907bb0';
 
 /// Version counter to trigger rebuilds when blocklist changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.
@@ -1974,13 +1986,11 @@ const draftStorageServiceProvider = DraftStorageServiceProvider._();
 final class DraftStorageServiceProvider
     extends
         $FunctionalProvider<
-          AsyncValue<DraftStorageService>,
           DraftStorageService,
-          FutureOr<DraftStorageService>
+          DraftStorageService,
+          DraftStorageService
         >
-    with
-        $FutureModifier<DraftStorageService>,
-        $FutureProvider<DraftStorageService> {
+    with $Provider<DraftStorageService> {
   /// Draft storage service for persisting vine drafts
   const DraftStorageServiceProvider._()
     : super(
@@ -1998,18 +2008,26 @@ final class DraftStorageServiceProvider
 
   @$internal
   @override
-  $FutureProviderElement<DraftStorageService> $createElement(
+  $ProviderElement<DraftStorageService> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $ProviderElement(pointer);
 
   @override
-  FutureOr<DraftStorageService> create(Ref ref) {
+  DraftStorageService create(Ref ref) {
     return draftStorageService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DraftStorageService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DraftStorageService>(value),
+    );
   }
 }
 
 String _$draftStorageServiceHash() =>
-    r'7261c841e01e1a1792419ccc2600e52a417ac927';
+    r'27a52029060a87f60092ca7b856ca61f8d6646e2';
 
 /// Clip library service for persisting individual video clips
 
@@ -2062,7 +2080,7 @@ final class ClipLibraryServiceProvider
 }
 
 String _$clipLibraryServiceHash() =>
-    r'71785151c732f9cb8a095b2a80466fb28ee7b575';
+    r'657ca5751fb520c4671997e6fbb8e87a760aecef';
 
 /// Authentication service
 
@@ -2602,7 +2620,8 @@ String _$cachedFollowingListHash() =>
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.
-/// Requires authentication.
+/// Non-nullable: the repository works without keys at construction time.
+/// Read operations return cached/empty data; write operations check keys.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -2614,7 +2633,8 @@ const followRepositoryProvider = FollowRepositoryProvider._();
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.
-/// Requires authentication.
+/// Non-nullable: the repository works without keys at construction time.
+/// Read operations return cached/empty data; write operations check keys.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -2623,15 +2643,16 @@ const followRepositoryProvider = FollowRepositoryProvider._();
 final class FollowRepositoryProvider
     extends
         $FunctionalProvider<
-          FollowRepository?,
-          FollowRepository?,
-          FollowRepository?
+          FollowRepository,
+          FollowRepository,
+          FollowRepository
         >
-    with $Provider<FollowRepository?> {
+    with $Provider<FollowRepository> {
   /// Provider for FollowRepository instance
   ///
   /// Creates a FollowRepository for managing follow relationships.
-  /// Requires authentication.
+  /// Non-nullable: the repository works without keys at construction time.
+  /// Read operations return cached/empty data; write operations check keys.
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -2652,25 +2673,24 @@ final class FollowRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<FollowRepository?> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  $ProviderElement<FollowRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  FollowRepository? create(Ref ref) {
+  FollowRepository create(Ref ref) {
     return followRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(FollowRepository? value) {
+  Override overrideWithValue(FollowRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<FollowRepository?>(value),
+      providerOverride: $SyncValueProvider<FollowRepository>(value),
     );
   }
 }
 
-String _$followRepositoryHash() => r'5a9ff80dec0621bc321f78694cd2ae0c448bb2a2';
+String _$followRepositoryHash() => r'9ed8a0dfeb3cb62d7b64036f60f246924946096b';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -2796,7 +2816,7 @@ final class HashtagRepositoryProvider
   }
 }
 
-String _$hashtagRepositoryHash() => r'7d61e9d5f99412e7f62cbb1456aeca1c12ab5b34';
+String _$hashtagRepositoryHash() => r'aacff5fc9d7d369a80b68ffa4595628b18ab1f99';
 
 /// Provider for ProfileRepository instance
 ///
@@ -2869,7 +2889,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'e5b7a06106aa8a6c00fae914129748ea80a02018';
+String _$profileRepositoryHash() => r'9d24b8b90fed2a2d47dc16a0f90472cd541b6eac';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -4215,7 +4235,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'35b31c2f62a0eb9a1714422439060ef6229d725d';
+String _$videosRepositoryHash() => r'f7b97d2e4dee86201dcad641f980be7c56f51d57';
 
 /// Provider for LikesRepository instance
 ///

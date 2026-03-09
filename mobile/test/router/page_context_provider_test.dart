@@ -97,14 +97,14 @@ void main() {
       // Navigate to hashtag
       container
           .read(goRouterProvider)
-          .go(HashtagScreenRouter.pathForTag('bitcoin', index: 2));
+          .go(HashtagScreenRouter.pathForTag('bitcoin'));
       await tester.pumpAndSettle();
 
       final contextAsync = container.read(pageContextProvider);
       final context = contextAsync.value!;
       expect(context.type, RouteType.hashtag);
       expect(context.hashtag, 'bitcoin');
-      expect(context.videoIndex, 2);
+      expect(context.videoIndex, isNull);
     });
 
     testWidgets('parses video-recorder route correctly', (tester) async {

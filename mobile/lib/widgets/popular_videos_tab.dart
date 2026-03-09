@@ -224,6 +224,9 @@ class _PopularVideosTrendingContentState
         _videosStreamController.add(next.value!.videos);
       }
     });
+    final popularVideosFeedNotifier = ref.read(
+      popularVideosFeedProvider.notifier,
+    );
     final hashtags = TopHashtagsService.instance.getTopHashtags(limit: 20);
 
     measureHeaderHeight();
@@ -258,8 +261,7 @@ class _PopularVideosTrendingContentState
                       videoList,
                     ),
                     initialIndex: index,
-                    onLoadMore: () =>
-                        ref.read(popularVideosFeedProvider.notifier).loadMore(),
+                    onLoadMore: popularVideosFeedNotifier.loadMore,
                     contextTitle: 'Popular Videos',
                     trafficSource: ViewTrafficSource.discoveryPopular,
                   ),
@@ -270,14 +272,14 @@ class _PopularVideosTrendingContentState
                   '🔄 PopularVideosTab: Refreshing',
                   category: LogCategory.video,
                 );
-                await ref.read(popularVideosFeedProvider.notifier).refresh();
+                await popularVideosFeedNotifier.refresh();
               },
               onLoadMore: () async {
                 Log.info(
                   '📜 PopularVideosTab: Loading more',
                   category: LogCategory.video,
                 );
-                await ref.read(popularVideosFeedProvider.notifier).loadMore();
+                await popularVideosFeedNotifier.loadMore();
               },
               isLoadingMore: widget.isLoadingMore,
               hasMoreContent: widget.hasMoreContent,

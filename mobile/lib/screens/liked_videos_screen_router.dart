@@ -53,9 +53,12 @@ class _LikedVideosScreenRouterState
         category: LogCategory.ui,
       );
       return const Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: VineTheme.backgroundColor,
         body: Center(
-          child: Text('Invalid route', style: TextStyle(color: Colors.white)),
+          child: Text(
+            'Invalid route',
+            style: TextStyle(color: VineTheme.whiteText),
+          ),
         ),
       );
     }
@@ -75,25 +78,20 @@ class _LikedVideosScreenRouterState
         category: LogCategory.ui,
       );
       return Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: const Text(
-            'Liked Videos',
-            style: TextStyle(color: Colors.white),
-          ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () {
-              // Navigate to own profile grid
-              final authService = ref.read(authServiceProvider);
-              final currentUserHex = authService.currentPublicKeyHex;
-              if (currentUserHex != null) {
-                final npub = NostrKeyUtils.encodePubKey(currentUserHex);
-                context.go(ProfileScreenRouter.pathForNpub(npub));
-              }
-            },
-          ),
+        backgroundColor: VineTheme.backgroundColor,
+        appBar: DiVineAppBar(
+          title: 'Liked Videos',
+          showBackButton: true,
+          backgroundColor: VineTheme.backgroundColor,
+          onBackPressed: () {
+            // Navigate to own profile grid
+            final authService = ref.read(authServiceProvider);
+            final currentUserHex = authService.currentPublicKeyHex;
+            if (currentUserHex != null) {
+              final npub = NostrKeyUtils.encodePubKey(currentUserHex);
+              context.go(ProfileScreenRouter.pathForNpub(npub));
+            }
+          },
         ),
         body: BlocProvider<ProfileLikedVideosBloc>(
           create: (_) => ProfileLikedVideosBloc(
@@ -167,7 +165,7 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
             state.status == ProfileLikedVideosStatus.syncing ||
             state.status == ProfileLikedVideosStatus.loading) {
           return const Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: VineTheme.backgroundColor,
             body: Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
             ),
@@ -176,7 +174,7 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
 
         if (state.status == ProfileLikedVideosStatus.failure) {
           return const Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: VineTheme.backgroundColor,
             body: Center(
               child: Text(
                 'Error loading liked videos',
@@ -190,7 +188,7 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
 
         if (videos.isEmpty) {
           return const Scaffold(
-            backgroundColor: Colors.black,
+            backgroundColor: VineTheme.backgroundColor,
             body: Center(
               child: Text(
                 'No liked videos',

@@ -50,17 +50,20 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
     // Use read() to get values once, not watch() which causes rebuilds
     final followRepository = ref.read(followRepositoryProvider);
     final nostrClient = ref.read(nostrServiceProvider);
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
 
     // Check if this is the user's own video (read once, never changes)
     _isOwnVideo = nostrClient.publicKey == widget.pubkey;
 
     // Only create BLoC if we actually need to show the button
-    if (followRepository != null && !_isOwnVideo) {
+    if (!_isOwnVideo) {
       // Check if already following and should hide
       final isFollowing = followRepository.isFollowing(widget.pubkey);
       if (!(widget.hideIfFollowing && isFollowing)) {
-        _bloc = MyFollowingBloc(followRepository: followRepository)
-          ..add(const MyFollowingListLoadRequested());
+        _bloc = MyFollowingBloc(
+          followRepository: followRepository,
+          contentBlocklistService: blocklistService,
+        )..add(const MyFollowingListLoadRequested());
       }
     }
 
@@ -85,13 +88,8 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
       return const SizedBox.shrink();
     }
 
-    // Fast path: no repository available
-    final followRepository = ref.read(followRepositoryProvider);
-    if (followRepository == null) {
-      return const SizedBox.shrink();
-    }
-
     // Check current follow state for hide logic
+    final followRepository = ref.read(followRepositoryProvider);
     // Use read() since we only need the value, not reactivity here
     // The BlocSelector below handles reactivity for the actual button
     if (widget.hideIfFollowing) {
@@ -137,7 +135,9 @@ class VideoFollowButtonView extends StatelessWidget {
     >(
       selector: (state) => (
         isFollowing: state.isFollowing(pubkey),
-        isReady: state.status == MyFollowingStatus.success,
+        isReady:
+            state.status == MyFollowingStatus.success ||
+            state.status == MyFollowingStatus.toggleFailure,
       ),
       builder: (context, data) {
         // Don't show button until status is success to prevent flash on Home feed
@@ -170,7 +170,9 @@ class VideoFollowButtonView extends StatelessWidget {
               width: 20,
               height: 20,
               decoration: BoxDecoration(
-                color: isFollowing ? Colors.white : VineTheme.cameraButtonGreen,
+                color: isFollowing
+                    ? VineTheme.whiteText
+                    : VineTheme.cameraButtonGreen,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -182,7 +184,10 @@ class VideoFollowButtonView extends StatelessWidget {
                   height: 13,
                   colorFilter: isFollowing
                       ? null // Icon-Following.svg has its own green color
-                      : const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                      : const ColorFilter.mode(
+                          VineTheme.whiteText,
+                          BlendMode.srcIn,
+                        ),
                 ),
               ),
             ),

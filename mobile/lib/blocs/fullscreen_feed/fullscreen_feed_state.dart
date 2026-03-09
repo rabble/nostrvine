@@ -77,10 +77,7 @@ final class FullscreenFeedState extends Equatable {
   ///
   /// Filters out videos without URLs and maps to the format needed by
   /// [VideoFeedController].
-  List<VideoItem> get pooledVideos => videos
-      .where((v) => v.videoUrl != null)
-      .map((e) => VideoItem(id: e.id, url: e.videoUrl!))
-      .toList();
+  List<VideoItem> get pooledVideos => videos.toPooledVideoItems();
 
   /// Whether we have pooled videos ready for playback.
   bool get hasPooledVideos => pooledVideos.isNotEmpty;

@@ -89,7 +89,7 @@ class UploadProgressIndicator extends StatelessWidget {
   Widget _buildStatusIcon() {
     switch (upload.status) {
       case UploadStatus.pending:
-        return const Icon(Icons.schedule, color: Colors.orange);
+        return const Icon(Icons.schedule, color: VineTheme.warning);
       case UploadStatus.uploading:
         return const SizedBox(
           width: 20,
@@ -102,19 +102,19 @@ class UploadProgressIndicator extends StatelessWidget {
           height: 20,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: Colors.orange,
+            color: VineTheme.warning,
           ),
         );
       case UploadStatus.processing:
-        return const Icon(Icons.settings, color: Colors.blue);
+        return const Icon(Icons.settings, color: VineTheme.info);
       case UploadStatus.readyToPublish:
         return const Icon(Icons.publish, color: VineTheme.vineGreen);
       case UploadStatus.published:
         return const Icon(Icons.check_circle, color: VineTheme.vineGreen);
       case UploadStatus.failed:
-        return const Icon(Icons.error, color: Colors.red);
+        return const Icon(Icons.error, color: VineTheme.error);
       case UploadStatus.paused:
-        return const Icon(Icons.pause_circle, color: Colors.orange);
+        return const Icon(Icons.pause_circle, color: VineTheme.warning);
     }
   }
 
@@ -125,7 +125,7 @@ class UploadProgressIndicator extends StatelessWidget {
       children: [
         LinearProgressIndicator(
           value: progress,
-          backgroundColor: Colors.grey[300],
+          backgroundColor: VineTheme.secondaryText,
           valueColor: AlwaysStoppedAnimation<Color>(_getProgressColor()),
         ),
         const SizedBox(height: 4),
@@ -134,11 +134,11 @@ class UploadProgressIndicator extends StatelessWidget {
           children: [
             Text(
               '${(progress * 100).toInt()}%',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: VineTheme.lightText),
             ),
             Text(
               _getTimeInfo(),
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: VineTheme.lightText),
             ),
           ],
         ),
@@ -155,8 +155,8 @@ class UploadProgressIndicator extends StatelessWidget {
           icon: const Icon(Icons.pause),
           label: const Text('Pause'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
+            backgroundColor: VineTheme.info,
+            foregroundColor: VineTheme.whiteText,
           ),
         ),
       if (upload.status == UploadStatus.paused && onResume != null)
@@ -165,8 +165,8 @@ class UploadProgressIndicator extends StatelessWidget {
           icon: const Icon(Icons.play_arrow),
           label: const Text('Resume'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
+            backgroundColor: VineTheme.warning,
+            foregroundColor: VineTheme.whiteText,
           ),
         ),
       if (upload.status == UploadStatus.failed) ...[
@@ -175,8 +175,8 @@ class UploadProgressIndicator extends StatelessWidget {
           ElevatedButton(
             onPressed: onCancel,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey[700],
-              foregroundColor: Colors.white,
+              backgroundColor: VineTheme.cardBackground,
+              foregroundColor: VineTheme.whiteText,
             ),
             child: const Text('Go Back'),
           ),
@@ -186,8 +186,8 @@ class UploadProgressIndicator extends StatelessWidget {
           ElevatedButton(
             onPressed: onRetry,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
+              backgroundColor: VineTheme.warning,
+              foregroundColor: VineTheme.whiteText,
             ),
             child: Text('Retry (${3 - (upload.retryCount ?? 0)} left)'),
           ),
@@ -196,7 +196,7 @@ class UploadProgressIndicator extends StatelessWidget {
           const SizedBox(width: 8),
           TextButton(
             onPressed: onDelete,
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: VineTheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -205,8 +205,8 @@ class UploadProgressIndicator extends StatelessWidget {
         ElevatedButton(
           onPressed: onRetry,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
+            backgroundColor: VineTheme.warning,
+            foregroundColor: VineTheme.whiteText,
           ),
           child: Text('Retry (${3 - (upload.retryCount ?? 0)} left)'),
         ),
@@ -217,42 +217,42 @@ class UploadProgressIndicator extends StatelessWidget {
   Color _getStatusColor(BuildContext context) {
     switch (upload.status) {
       case UploadStatus.pending:
-        return Colors.orange;
+        return VineTheme.warning;
       case UploadStatus.uploading:
-        return Colors.blue;
+        return VineTheme.info;
       case UploadStatus.retrying:
-        return Colors.orange;
+        return VineTheme.warning;
       case UploadStatus.processing:
-        return Colors.blue;
+        return VineTheme.info;
       case UploadStatus.readyToPublish:
         return VineTheme.vineGreen;
       case UploadStatus.published:
         return VineTheme.vineGreen;
       case UploadStatus.failed:
-        return Colors.red;
+        return VineTheme.error;
       case UploadStatus.paused:
-        return Colors.orange;
+        return VineTheme.warning;
     }
   }
 
   Color _getProgressColor() {
     switch (upload.status) {
       case UploadStatus.pending:
-        return Colors.orange;
+        return VineTheme.warning;
       case UploadStatus.uploading:
-        return Colors.blue;
+        return VineTheme.info;
       case UploadStatus.retrying:
-        return Colors.orange;
+        return VineTheme.warning;
       case UploadStatus.processing:
-        return Colors.blue;
+        return VineTheme.info;
       case UploadStatus.readyToPublish:
         return VineTheme.vineGreen;
       case UploadStatus.published:
         return VineTheme.vineGreen;
       case UploadStatus.failed:
-        return Colors.red;
+        return VineTheme.error;
       case UploadStatus.paused:
-        return Colors.orange;
+        return VineTheme.warning;
     }
   }
 
@@ -284,7 +284,7 @@ class CompactUploadProgress extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.8),
+        color: VineTheme.backgroundColor.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -296,11 +296,11 @@ class CompactUploadProgress extends StatelessWidget {
             child: CircularProgressIndicator(
               value: upload.progressValue,
               strokeWidth: 2,
-              backgroundColor: Colors.grey[600],
+              backgroundColor: VineTheme.lightText,
               valueColor: AlwaysStoppedAnimation<Color>(
                 upload.status == UploadStatus.failed
-                    ? Colors.red
-                    : Colors.white,
+                    ? VineTheme.error
+                    : VineTheme.whiteText,
               ),
             ),
           ),
@@ -311,7 +311,7 @@ class CompactUploadProgress extends StatelessWidget {
                 : upload.status == UploadStatus.paused
                 ? 'Paused ${(upload.progressValue * 100).toInt()}%'
                 : upload.statusText,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
+            style: const TextStyle(color: VineTheme.whiteText, fontSize: 12),
           ),
         ],
       ),

@@ -1,12 +1,13 @@
 // ABOUTME: Generic fullscreen video feed screen (no bottom nav)
 // ABOUTME: Displays videos with swipe navigation, used from profile/hashtag grids
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
@@ -147,11 +148,16 @@ class _FullscreenVideoFeedScreenState
 
     VideoPlayerController? controller;
     try {
-      final controllerParams = VideoControllerParams(
-        videoId: video.id,
-        videoUrl: video.videoUrl!,
-        videoEvent: video,
-      );
+      final fallbackUrl = ref.read(fallbackUrlCacheProvider)[video.id];
+      final controllerParams = fallbackUrl != null
+          ? VideoControllerParams(
+              videoId: video.id,
+              videoUrl: fallbackUrl,
+              cacheUrl: video.getCacheableVideoUrlForPlatform(),
+              videoEvent: video,
+              allowCaching: video.getCacheableVideoUrlForPlatform() != null,
+            )
+          : VideoControllerParams.fromVideoEvent(video);
       controller = ref.read(
         individualVideoControllerProvider(controllerParams),
       );
@@ -287,21 +293,17 @@ class _FullscreenVideoFeedScreenState
   }
 
   /// Build the Edit button for the AppBar (only shown for owned videos)
-  Widget? _buildEditButton(List<VideoEvent> videos) {
+  DiVineAppBarAction? _buildEditAction(List<VideoEvent> videos) {
     // Check feature flag
     final featureFlagService = ref.watch(featureFlagServiceProvider);
     final isEditorEnabled = featureFlagService.isEnabled(
       FeatureFlag.enableVideoEditorV1,
     );
 
-    if (!isEditorEnabled) {
-      return null;
-    }
+    if (!isEditorEnabled) return null;
 
     // Get current video
-    if (_currentIndex < 0 || _currentIndex >= videos.length) {
-      return null;
-    }
+    if (_currentIndex < 0 || _currentIndex >= videos.length) return null;
     final currentVideo = videos[_currentIndex];
 
     // Check ownership
@@ -310,36 +312,13 @@ class _FullscreenVideoFeedScreenState
     final isOwnVideo =
         currentUserPubkey != null && currentUserPubkey == currentVideo.pubkey;
 
-    if (!isOwnVideo) {
-      return null;
-    }
+    if (!isOwnVideo) return null;
 
-    // Return edit button with same styling as back button
-    return Padding(
-      padding: const EdgeInsets.only(right: 16),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        icon: Container(
-          width: 48,
-          height: 48,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: SvgPicture.asset(
-            'assets/icon/content-controls/pencil.svg',
-            width: 32,
-            height: 32,
-            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-          ),
-        ),
-        onPressed: () {
-          showEditDialogForVideo(context, currentVideo);
-        },
-        tooltip: 'Edit video',
-      ),
+    return DiVineAppBarAction(
+      icon: const SvgIconSource('assets/icon/content-controls/pencil.svg'),
+      onPressed: () => showEditDialogForVideo(context, currentVideo),
+      tooltip: 'Edit video',
+      semanticLabel: 'Edit video',
     );
   }
 
@@ -365,90 +344,47 @@ class _FullscreenVideoFeedScreenState
       });
     }
 
+    // Shared style: semi-transparent button background for video overlay
+    const videoOverlayStyle = DiVineAppBarStyle(
+      iconButtonBackgroundColor: Color(0x4D000000), // backgroundColor 30% alpha
+    );
+
     // Show loading state if we don't have videos yet
     if (videos.isEmpty || !_initializedPageController) {
       return Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
+        backgroundColor: VineTheme.backgroundColor,
+        appBar: DiVineAppBar(
+          title: '',
+          showBackButton: true,
+          onBackPressed: context.pop,
+          backButtonSemanticLabel: 'Close video player',
+          backgroundMode: DiVineAppBarBackgroundMode.transparent,
           surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          toolbarHeight: 72,
-          leadingWidth: 80,
-          leading: IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: Container(
-              width: 48,
-              height: 48,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: SvgPicture.asset(
-                'assets/icon/CaretLeft.svg',
-                width: 32,
-                height: 32,
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
-                  BlendMode.srcIn,
-                ),
-                semanticsLabel: 'Close video player',
-              ),
-            ),
-            onPressed: context.pop,
-          ),
+          style: videoOverlayStyle,
         ),
         body: const Center(
-          child: CircularProgressIndicator(color: Colors.white),
+          child: CircularProgressIndicator(color: VineTheme.whiteText),
         ),
       );
     }
 
-    // Build edit button (may be null if not owned or feature disabled)
-    final editButton = _buildEditButton(videos);
+    // Build edit action (may be null if not owned or feature disabled)
+    final editAction = _buildEditAction(videos);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
+      appBar: DiVineAppBar(
+        title: '',
+        showBackButton: true,
+        onBackPressed: context.pop,
+        backButtonSemanticLabel: 'Close video player',
+        backgroundMode: DiVineAppBarBackgroundMode.transparent,
         surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
         forceMaterialTransparency: true,
         systemOverlayStyle: SystemUiOverlayStyle.light,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-              semanticsLabel: 'Close video player',
-            ),
-          ),
-          onPressed: context.pop,
-        ),
-        actions: (_currentIndex < videos.length && editButton != null)
-            ? [editButton]
-            : null,
+        style: videoOverlayStyle,
+        actions: editAction != null ? [editAction] : const [],
       ),
       body: PageView.builder(
         controller: _pageController,

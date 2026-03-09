@@ -1,4 +1,4 @@
-# ABOUTME: Codemagic CI/CD configuration for diVine mobile app builds.
+# ABOUTME: Codemagic CI/CD configuration for Divine mobile app builds.
 # ABOUTME: Configured for iOS and Android builds with manual triggering only.
 
 # Steps to setup:
@@ -72,7 +72,10 @@ definitions:
     - &build_macos
       name: Build macOS app
       script: |
-        flutter build macos --release \
+        # This workflow packages a DMG for direct download. It does not provision
+        # a macOS signing identity/profile in Codemagic, so disable signing for
+        # the CI build and handle signing/notarization separately when needed.
+        env CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO flutter build macos --release \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
@@ -84,9 +87,9 @@ definitions:
       script: |
         APP_PATH="build/macos/Build/Products/Release"
         APP_NAME=$(ls "$APP_PATH" | grep '\.app$' | head -1)
-        DMG_NAME="diVine-macOS.dmg"
+        DMG_NAME="Divine-macOS.dmg"
         echo "Packaging $APP_NAME as $DMG_NAME"
-        hdiutil create -volname "diVine" -srcfolder "$APP_PATH/$APP_NAME" \
+        hdiutil create -volname "Divine" -srcfolder "$APP_PATH/$APP_NAME" \
           -ov -format UDZO "$APP_PATH/$DMG_NAME"
     - &publish_github_release
       name: Publish to GitHub Release

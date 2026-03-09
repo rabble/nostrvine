@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_preview.dart';
 
 /// Overlay widget that renders the centered clip on top of the PageView.
@@ -21,13 +21,14 @@ class VideoEditorCenterClipOverlay extends ConsumerWidget {
     required this.pageWidth,
     required this.isReordering,
     required this.dragOffsetNotifier,
+    required this.dragYOffsetNotifier,
     required this.scale,
     required this.xOffset,
     super.key,
   });
 
   /// The clip to display in the center.
-  final RecordingClip clip;
+  final DivineVideoClip clip;
 
   /// The currently selected clip index.
   final int currentClipIndex;
@@ -44,8 +45,11 @@ class VideoEditorCenterClipOverlay extends ConsumerWidget {
   /// Whether the clip is in reordering mode.
   final bool isReordering;
 
-  /// Notifier for drag offset changes.
+  /// Notifier for horizontal drag offset changes (rotation + X translation).
   final ValueNotifier<double> dragOffsetNotifier;
+
+  /// Notifier for vertical drag offset changes (Y translation).
+  final ValueNotifier<double> dragYOffsetNotifier;
 
   /// Pre-calculated scale factor for this clip.
   final double scale;
@@ -56,9 +60,12 @@ class VideoEditorCenterClipOverlay extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pageViewOffset = -(page - currentClipIndex) * pageWidth;
-    return ValueListenableBuilder(
-      valueListenable: dragOffsetNotifier,
-      builder: (_, dragOffset, _) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([dragOffsetNotifier, dragYOffsetNotifier]),
+      builder: (_, _) {
+        final dragOffset = dragOffsetNotifier.value;
+        final dragYOffset = dragYOffsetNotifier.value;
+
         // Calculate rotation based on drag offset (-15° to +15°)
         final rotationAngle =
             (dragOffset / pageWidth) * 0.26; // ~15° in radians
@@ -67,7 +74,7 @@ class VideoEditorCenterClipOverlay extends ConsumerWidget {
           ..rotateZ(isReordering ? rotationAngle : 0)
           ..translateByDouble(
             xOffset + pageViewOffset + (isReordering ? dragOffset : 0),
-            0,
+            isReordering ? dragYOffset : 0,
             0,
             1,
           );

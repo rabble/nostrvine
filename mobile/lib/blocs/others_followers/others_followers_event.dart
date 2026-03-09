@@ -37,3 +37,8 @@ final class OthersFollowersDecrementRequested extends OthersFollowersEvent {
   /// The public key of the follower to remove (current user)
   final String followerPubkey;
 }
+
+/// Notification that the blocklist has changed, requiring re-filtering.
+final class OthersFollowersBlocklistChanged extends OthersFollowersEvent {
+  const OthersFollowersBlocklistChanged();
+}

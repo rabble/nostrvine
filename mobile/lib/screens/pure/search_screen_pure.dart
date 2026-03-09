@@ -1,8 +1,6 @@
 // ABOUTME: Pure search screen using revolutionary Riverpod architecture
 // ABOUTME: Searches for videos, users, and hashtags using composition architecture
 
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,16 +10,13 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/blocs/video_search/video_search_bloc.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/utils/search_utils.dart';
+import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/hashtag_search_view.dart';
@@ -71,25 +66,22 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   late TabController _tabController;
   late UserSearchBloc _userSearchBloc;
   late HashtagSearchBloc _hashtagSearchBloc;
-
-  List<VideoEvent> _videoResults = [];
-
-  bool _isSearching = false;
-  bool _isSearchingExternal = false;
-  bool _isSearchingWebSocket = false; // Track WebSocket search phase separately
-  String _currentQuery = '';
-  Timer? _debounceTimer;
-  int _searchGeneration = 0; // Prevents race conditions between search phases
+  late VideoSearchBloc _videoSearchBloc;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _userSearchBloc = UserSearchBloc(
       profileRepository: ref.read(profileRepositoryProvider)!,
     );
     _hashtagSearchBloc = HashtagSearchBloc(
       hashtagRepository: ref.read(hashtagRepositoryProvider),
+      localHashtagSearch: _searchLocalHashtags,
+    );
+    _videoSearchBloc = VideoSearchBloc(
+      videosRepository: ref.read(videosRepositoryProvider),
     );
     _searchController.addListener(_onSearchChanged);
 
@@ -101,330 +93,138 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           if (ctx.type == RouteType.search &&
               ctx.searchTerm != null &&
               ctx.searchTerm!.isNotEmpty) {
-            // Set search controller text and trigger search
-            // Pass updateUrl: false to avoid infinite loop during initialization
             _searchController.text = ctx.searchTerm!;
-            _performSearch(ctx.searchTerm!, updateUrl: false);
+            _dispatchSearch(ctx.searchTerm!);
             Log.info(
-              '🔍 SearchScreenPure: Initialized with search term: ${ctx.searchTerm}',
+              'SearchScreenPure: Initialized with search term: '
+              '${ctx.searchTerm}',
               category: LogCategory.video,
             );
           } else {
-            // Request focus for empty search
             _searchFocusNode.requestFocus();
           }
         });
       }
     });
 
-    Log.info('🔍 SearchScreenPure: Initialized', category: LogCategory.video);
+    Log.info('SearchScreenPure: Initialized', category: LogCategory.video);
   }
 
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
+    _tabController.removeListener(_onTabChanged);
     _searchController.dispose();
     _searchFocusNode.dispose();
     _tabController.dispose();
-    _debounceTimer?.cancel();
     _userSearchBloc.close();
     _hashtagSearchBloc.close();
+    _videoSearchBloc.close();
     super.dispose();
 
-    Log.info('🔍 SearchScreenPure: Disposed', category: LogCategory.video);
+    Log.info('SearchScreenPure: Disposed', category: LogCategory.video);
   }
 
   void _onSearchChanged() {
-    final query = _searchController.text.trim();
-
-    if (query == _currentQuery) return;
-
-    _userSearchBloc.add(UserSearchQueryChanged(query));
-    _hashtagSearchBloc.add(HashtagSearchQueryChanged(query));
-
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        _performSearch(query);
-      }
-    });
+    _dispatchSearch(_searchController.text.trim());
   }
 
-  Future<void> _performSearch(String query, {bool updateUrl = true}) async {
-    if (query.isEmpty) {
-      final videoEventService = ref.read(videoEventServiceProvider);
-      videoEventService.clearSearchResults();
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging || !mounted) return;
+    setState(() {});
+    _dispatchSearch(_searchController.text.trim());
+  }
 
-      setState(() {
-        _videoResults = [];
-        _isSearching = false;
-        _isSearchingExternal = false;
-        _isSearchingWebSocket = false;
-        _currentQuery = '';
-      });
-      _userSearchBloc.add(const UserSearchCleared());
-      _hashtagSearchBloc.add(const HashtagSearchCleared());
-      return;
+  void _dispatchSearch(String query) {
+    final activeIndex = _tabController.index;
+    _videoSearchBloc.add(
+      VideoSearchQueryChanged(query, fetchResults: activeIndex == 0),
+    );
+    _userSearchBloc.add(
+      UserSearchQueryChanged(query, fetchResults: activeIndex == 1),
+    );
+    _hashtagSearchBloc.add(
+      HashtagSearchQueryChanged(query, fetchResults: activeIndex == 2),
+    );
+  }
+
+  int _videoCount(VideoSearchState state) {
+    return state.resultCount ?? state.videos.length;
+  }
+
+  int _userCount(UserSearchState state) {
+    return state.resultCount ?? state.results.length;
+  }
+
+  int _hashtagCount(HashtagSearchState state) {
+    return state.resultCount ?? state.results.length;
+  }
+
+  bool _isActiveTabSearching({
+    required VideoSearchState videoState,
+    required UserSearchState userState,
+    required HashtagSearchState hashtagState,
+  }) {
+    return switch (_tabController.index) {
+      0 => videoState.status == VideoSearchStatus.searching,
+      1 => userState.status == UserSearchStatus.loading,
+      2 => hashtagState.status == HashtagSearchStatus.loading,
+      _ => false,
+    };
+  }
+
+  Future<List<String>> _searchLocalHashtags(
+    String query, {
+    int limit = 20,
+  }) async {
+    final normalizedQuery = query.trim().replaceFirst('#', '').toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return const [];
     }
 
-    setState(() {
-      _isSearching = true;
-      _currentQuery = query;
-    });
+    final results = <String>[];
+    final seen = <String>{};
 
-    Log.info(
-      '🔍 SearchScreenPure: Local search for: $query',
-      category: LogCategory.video,
-    );
+    void addResults(Iterable<String> hashtags) {
+      for (final hashtag in hashtags) {
+        final normalizedTag = hashtag.replaceFirst('#', '').trim();
+        final key = normalizedTag.toLowerCase();
+        if (key.isEmpty || seen.contains(key)) {
+          continue;
+        }
+        seen.add(key);
+        results.add(normalizedTag);
+        if (results.length >= limit) {
+          return;
+        }
+      }
+    }
 
     try {
-      final videoEventService = ref.read(videoEventServiceProvider);
-      final videos = videoEventService.discoveryVideos;
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-
-      Log.debug(
-        '🔍 SearchScreenPure: Filtering ${videos.length} cached videos',
-        category: LogCategory.video,
+      addResults(
+        ref.read(hashtagServiceProvider).searchHashtags(normalizedQuery),
       );
-
-      // Filter local videos based on search query
-      final filteredVideos = videos.where((video) {
-        // Filter out blocked users first
-        if (blocklistService.shouldFilterFromFeeds(video.pubkey)) {
-          return false;
-        }
-
-        final creatorProfile = ref
-            .read(userProfileReactiveProvider(video.pubkey))
-            .value;
-        final creatorName = creatorProfile?.bestDisplayName;
-        final score = SearchUtils.matchVideo(
-          query: query,
-          title: video.title,
-          content: video.content,
-          hashtags: video.hashtags,
-          creatorName: creatorName,
-        );
-        return score >= 0.3;
-      }).toList();
-
-      filteredVideos.sort(VideoEvent.compareByLoopsThenTime);
-
-      if (mounted) {
-        setState(() {
-          _videoResults = filteredVideos;
-          _isSearching = false;
-        });
-        ref.read(searchScreenVideosProvider.notifier).state = filteredVideos;
-
-        ScreenAnalyticsService().markDataLoaded(
-          'search',
-          dataMetrics: {'video_count': filteredVideos.length},
-        );
-      }
-
-      Log.info(
-        '🔍 SearchScreenPure: Local results: ${filteredVideos.length} videos',
-        category: LogCategory.video,
-      );
-
-      unawaited(_searchExternalRelays());
-    } catch (e) {
-      Log.error(
-        '🔍 SearchScreenPure: Local search failed: $e',
-        category: LogCategory.video,
-      );
-
-      if (mounted) {
-        setState(() {
-          _isSearching = false;
-        });
-      }
-    }
-  }
-
-  /// Search external sources for more results
-  ///
-  /// Strategy: Try Funnelcake REST API first (fast), then WebSocket NIP-50 (slower)
-  /// Results flow incrementally - REST results appear first, WS results merge in
-  ///
-  /// Uses a generation counter to prevent race conditions when queries change
-  /// mid-search - stale results from old queries are discarded.
-  Future<void> _searchExternalRelays() async {
-    if (_currentQuery.isEmpty || _isSearchingExternal) return;
-
-    // Increment generation to invalidate any in-flight searches
-    final generation = ++_searchGeneration;
-
-    setState(() {
-      _isSearchingExternal = true;
-    });
-
-    final querySnapshot = _currentQuery;
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-
-    // Helper to check if this search is still valid
-    bool isSearchStale() => !mounted || _searchGeneration != generation;
-
-    // Check if Funnelcake REST API is available
-    final funnelcakeAvailable =
-        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
-
-    Log.info(
-      '🔍 SearchScreenPure: External search for "$querySnapshot" '
-      '(funnelcake: $funnelcakeAvailable)',
-      category: LogCategory.video,
-    );
-
-    // ===== PHASE 1: Funnelcake REST API (fast) =====
-    if (funnelcakeAvailable) {
-      try {
-        final analyticsService = ref.read(analyticsApiServiceProvider);
-
-        Log.debug(
-          '🔍 SearchScreenPure: Trying Funnelcake REST search...',
-          category: LogCategory.video,
-        );
-
-        final restResults = await analyticsService.searchVideos(
-          query: querySnapshot,
-          limit: 100,
-        );
-
-        // Filter out blocked users
-        final filteredRestResults = restResults
-            .where(
-              (video) => !blocklistService.shouldFilterFromFeeds(video.pubkey),
-            )
-            .toList();
-
-        if (filteredRestResults.isNotEmpty && !isSearchStale()) {
-          // Merge REST results with local results
-          _mergeAndUpdateResults(
-            newVideos: filteredRestResults,
-            blocklistService: blocklistService,
-            querySnapshot: querySnapshot,
-            generation: generation,
-          );
-
-          Log.info(
-            '🔍 SearchScreenPure: REST search returned '
-            '${filteredRestResults.length} results',
-            category: LogCategory.video,
-          );
-        }
-      } catch (e) {
-        Log.warning(
-          '🔍 SearchScreenPure: REST search failed, continuing to WebSocket: $e',
-          category: LogCategory.video,
-        );
-      }
+    } catch (_) {
+      // Ignore local feed lookup failures and continue with static hashtags.
     }
 
-    // ===== PHASE 2: WebSocket NIP-50 search (slower, more comprehensive) =====
-    // Always run WebSocket search to catch results not in Funnelcake
-    if (!isSearchStale()) {
-      setState(() {
-        _isSearchingWebSocket = true;
-      });
-
-      try {
-        final videoEventService = ref.read(videoEventServiceProvider);
-
-        Log.debug(
-          '🔍 SearchScreenPure: Starting WebSocket NIP-50 search...',
-          category: LogCategory.video,
-        );
-
-        // Search external relays via NIP-50
-        await videoEventService.searchVideos(querySnapshot, limit: 100);
-
-        final wsResults = videoEventService.searchResults
-            .where(
-              (video) => !blocklistService.shouldFilterFromFeeds(video.pubkey),
-            )
-            .toList();
-
-        if (!isSearchStale()) {
-          // Merge WebSocket results
-          _mergeAndUpdateResults(
-            newVideos: wsResults,
-            blocklistService: blocklistService,
-            querySnapshot: querySnapshot,
-            generation: generation,
-          );
-
-          Log.info(
-            '🔍 SearchScreenPure: WebSocket search returned '
-            '${wsResults.length} results',
-            category: LogCategory.video,
-          );
-        }
-      } catch (e) {
-        // Use warning level since this is recoverable - partial results may exist
-        Log.warning(
-          '🔍 SearchScreenPure: WebSocket search failed: $e',
-          category: LogCategory.video,
-        );
-      }
+    if (results.length >= limit) {
+      return results;
     }
 
-    // ===== Complete =====
-    if (mounted) {
-      setState(() {
-        _isSearchingExternal = false;
-        _isSearchingWebSocket = false;
-      });
-
-      Log.info(
-        '🔍 SearchScreenPure: External search complete '
-        '(total: ${_videoResults.length} videos)',
-        category: LogCategory.video,
+    try {
+      await TopHashtagsService.instance.loadTopHashtags();
+      addResults(
+        TopHashtagsService.instance.searchHashtags(
+          normalizedQuery,
+          limit: limit,
+        ),
       );
-    }
-  }
-
-  /// Merge new results with existing results and update UI
-  ///
-  /// Uses generation counter to ensure we don't update UI with stale results
-  /// from a previous search that completed after the user changed queries.
-  void _mergeAndUpdateResults({
-    required List<VideoEvent> newVideos,
-    required ContentBlocklistService blocklistService,
-    required String querySnapshot,
-    required int generation,
-  }) {
-    // Check if this search is still valid before updating
-    if (!mounted || _searchGeneration != generation) {
-      Log.debug(
-        '🔍 SearchScreenPure: Discarding stale results for "$querySnapshot"',
-        category: LogCategory.video,
-      );
-      return;
+    } catch (_) {
+      // Ignore asset lookup failures - remote results have already failed.
     }
 
-    // Combine existing + new results
-    final allVideos = [..._videoResults, ...newVideos];
-
-    // Deduplicate by video ID
-    final seenIds = <String>{};
-    final uniqueVideos = allVideos.where((video) {
-      if (seenIds.contains(video.id)) return false;
-      seenIds.add(video.id);
-      return true;
-    }).toList();
-
-    // Sort: by loops then time
-    uniqueVideos.sort(VideoEvent.compareByLoopsThenTime);
-
-    setState(() {
-      _videoResults = uniqueVideos;
-    });
-    // Update provider so active video system can access merged search results
-    ref.read(searchScreenVideosProvider.notifier).state = uniqueVideos;
-
-    // Prefetch top video files for faster playback on tap
-    prefetchGridVideos(uniqueVideos);
+    return results;
   }
 
   @override
@@ -439,14 +239,153 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
     // Show fullscreen video player when in feed mode
     if (isInFeedMode) {
-      return _SearchFeedModeContent(searchTerm: _currentQuery);
+      return BlocBuilder<VideoSearchBloc, VideoSearchState>(
+        bloc: _videoSearchBloc,
+        builder: (context, videoState) {
+          return _SearchFeedModeContent(searchTerm: videoState.query);
+        },
+      );
     }
 
-    final searchBar = SizedBox(
+    final tabContent = TabBarView(
+      controller: _tabController,
+      children: const [_VideosTab(), UserSearchView(), HashtagSearchView()],
+    );
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: _userSearchBloc),
+        BlocProvider.value(value: _hashtagSearchBloc),
+        BlocProvider.value(value: _videoSearchBloc),
+      ],
+      child: BlocBuilder<VideoSearchBloc, VideoSearchState>(
+        bloc: _videoSearchBloc,
+        builder: (context, videoState) {
+          return BlocBuilder<UserSearchBloc, UserSearchState>(
+            bloc: _userSearchBloc,
+            builder: (context, userSearchState) {
+              return BlocBuilder<HashtagSearchBloc, HashtagSearchState>(
+                bloc: _hashtagSearchBloc,
+                builder: (context, hashtagSearchState) {
+                  final searchBar = _SearchBar(
+                    controller: _searchController,
+                    focusNode: _searchFocusNode,
+                    isSearching: _isActiveTabSearching(
+                      videoState: videoState,
+                      userState: userSearchState,
+                      hashtagState: hashtagSearchState,
+                    ),
+                    onClear: () {
+                      _searchController.clear();
+                      _userSearchBloc.add(const UserSearchCleared());
+                      _hashtagSearchBloc.add(const HashtagSearchCleared());
+                      _videoSearchBloc.add(const VideoSearchCleared());
+                    },
+                  );
+
+                  final tabBar = TabBar(
+                    controller: _tabController,
+                    isScrollable: true,
+                    tabAlignment: TabAlignment.start,
+                    padding: const EdgeInsets.only(left: 16),
+                    indicatorColor: VineTheme.tabIndicatorGreen,
+                    indicatorWeight: 4,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
+                    labelColor: VineTheme.whiteText,
+                    unselectedLabelColor: VineTheme.tabIconInactive,
+                    labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+                    labelStyle: VineTheme.tabTextStyle(),
+                    unselectedLabelStyle: VineTheme.tabTextStyle(
+                      color: VineTheme.tabIconInactive,
+                    ),
+                    tabs: [
+                      Tab(text: 'Videos (${_videoCount(videoState)})'),
+                      Tab(text: 'Users (${_userCount(userSearchState)})'),
+                      Tab(
+                        text: 'Hashtags (${_hashtagCount(hashtagSearchState)})',
+                      ),
+                    ],
+                  );
+
+                  final body = BlocListener<VideoSearchBloc, VideoSearchState>(
+                    bloc: _videoSearchBloc,
+                    listener: (context, state) {
+                      ref.read(searchScreenVideosProvider.notifier).state =
+                          state.videos;
+                      if (state.videos.isNotEmpty) {
+                        prefetchGridVideos(state.videos);
+                      }
+                    },
+                    child: widget.embedded
+                        ? Material(
+                            color: VineTheme.backgroundColor,
+                            child: Column(
+                              children: [
+                                Container(
+                                  color: VineTheme.navGreen,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: searchBar,
+                                ),
+                                ColoredBox(
+                                  color: VineTheme.navGreen,
+                                  child: tabBar,
+                                ),
+                                Expanded(child: tabContent),
+                              ],
+                            ),
+                          )
+                        : Scaffold(
+                            backgroundColor: VineTheme.backgroundColor,
+                            appBar: DiVineAppBar(
+                              title: '',
+                              titleWidget: searchBar,
+                              showBackButton: true,
+                              onBackPressed: context.pop,
+                              backButtonSemanticLabel: 'search_back_button',
+                              backgroundColor: VineTheme.cardBackground,
+                              bottom: PreferredSize(
+                                preferredSize: const Size.fromHeight(48),
+                                child: tabBar,
+                              ),
+                            ),
+                            body: tabContent,
+                          ),
+                  );
+
+                  return body;
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({
+    required this.controller,
+    required this.focusNode,
+    required this.isSearching,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isSearching;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
       height: 48,
       child: TextField(
-        controller: _searchController,
-        focusNode: _searchFocusNode,
+        controller: controller,
+        focusNode: focusNode,
         style: const TextStyle(color: VineTheme.whiteText),
         decoration: InputDecoration(
           hintText: 'Find something cool...',
@@ -463,7 +402,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           prefixIconConstraints: const BoxConstraints(),
           prefixIcon: Padding(
             padding: const EdgeInsets.only(left: 12, right: 8),
-            child: _isSearching
+            child: isSearching
                 ? const SizedBox(
                     width: 24,
                     height: 24,
@@ -480,248 +419,94 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                     width: 24,
                     height: 24,
                     colorFilter: const ColorFilter.mode(
-                      Color(0xFF818E8A),
+                      VineTheme.lightText,
                       BlendMode.srcIn,
                     ),
                   ),
           ),
-          suffixIcon: _searchController.text.isNotEmpty
+          suffixIcon: controller.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, color: VineTheme.whiteText),
-                  onPressed: () {
-                    _searchController.clear();
-                    _performSearch('');
-                  },
+                  onPressed: onClear,
                 )
               : null,
         ),
       ),
     );
+  }
+}
 
-    final tabBar = BlocBuilder<UserSearchBloc, UserSearchState>(
-      bloc: _userSearchBloc,
-      builder: (context, userSearchState) {
-        final userCount = userSearchState.results.length;
-        return BlocBuilder<HashtagSearchBloc, HashtagSearchState>(
-          bloc: _hashtagSearchBloc,
-          builder: (context, hashtagSearchState) {
-            final hashtagCount = hashtagSearchState.results.length;
-            return TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              padding: const EdgeInsets.only(left: 16),
-              indicatorColor: VineTheme.tabIndicatorGreen,
-              indicatorWeight: 4,
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              labelColor: VineTheme.whiteText,
-              unselectedLabelColor: VineTheme.tabIconInactive,
-              labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-              labelStyle: VineTheme.tabTextStyle(),
-              unselectedLabelStyle: VineTheme.tabTextStyle(
-                color: VineTheme.tabIconInactive,
-              ),
-              tabs: [
-                Tab(text: 'Videos (${_videoResults.length})'),
-                Tab(text: 'Users ($userCount)'),
-                Tab(text: 'Hashtags ($hashtagCount)'),
+class _VideosTab extends StatelessWidget {
+  const _VideosTab();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<VideoSearchBloc, VideoSearchState>(
+      builder: (context, state) {
+        if (state.status == VideoSearchStatus.searching &&
+            state.videos.isEmpty) {
+          return const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          );
+        }
+
+        if (state.query.isEmpty) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.search, size: 64, color: VineTheme.secondaryText),
+                SizedBox(height: 16),
+                Text(
+                  'Search for videos',
+                  style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
+                ),
+                Text(
+                  'Enter keywords, hashtags, or user names',
+                  style: TextStyle(color: VineTheme.secondaryText),
+                ),
               ],
+            ),
+          );
+        }
+
+        return ComposableVideoGrid(
+          key: const Key('search-videos-grid'),
+          videos: state.videos,
+          onVideoTap: (videos, index) {
+            Log.info(
+              'SearchScreenPure: Tapped video at index $index',
+              category: LogCategory.video,
+            );
+            context.go(
+              SearchScreenPure.pathForTerm(
+                term: state.query.isNotEmpty ? state.query : null,
+                index: index,
+              ),
             );
           },
-        );
-      },
-    );
-
-    final tabContent = TabBarView(
-      controller: _tabController,
-      children: [
-        _buildVideosTab(),
-        const UserSearchView(),
-        const HashtagSearchView(),
-      ],
-    );
-
-    // Embedded mode: return content without scaffold
-    if (widget.embedded) {
-      return MultiBlocProvider(
-        providers: [
-          BlocProvider.value(value: _userSearchBloc),
-          BlocProvider.value(value: _hashtagSearchBloc),
-        ],
-        child: Material(
-          color: VineTheme.backgroundColor,
-          child: Column(
-            children: [
-              Container(
-                color: VineTheme.navGreen,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: searchBar,
-              ),
-              ColoredBox(color: VineTheme.navGreen, child: tabBar),
-              Expanded(child: tabContent),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Standalone mode: return full scaffold with app bar
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: _userSearchBloc),
-        BlocProvider.value(value: _hashtagSearchBloc),
-      ],
-      child: Scaffold(
-        backgroundColor: VineTheme.backgroundColor,
-        appBar: AppBar(
-          backgroundColor: VineTheme.cardBackground,
-          leading: Semantics(
-            identifier: 'search_back_button',
-            button: true,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-              onPressed: context.pop,
-            ),
-          ),
-          title: searchBar,
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(48),
-            child: tabBar,
-          ),
-        ),
-        body: tabContent,
-      ),
-    );
-  }
-
-  Widget _buildVideosTab() {
-    if (_isSearching) {
-      return const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      );
-    }
-
-    if (_currentQuery.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 64, color: VineTheme.secondaryText),
-            SizedBox(height: 16),
-            Text(
-              'Search for videos',
-              style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
-            ),
-            Text(
-              'Enter keywords, hashtags, or user names',
-              style: TextStyle(color: VineTheme.secondaryText),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Column(
-      children: [
-        // Show search status indicator
-        if (_isSearchingExternal)
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: VineTheme.cardBackground,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: VineTheme.vineGreen.withValues(alpha: 0.3),
-              ),
-            ),
-            child: Row(
+          emptyBuilder: () => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VineTheme.vineGreen,
-                  ),
+                const Icon(
+                  Icons.video_library,
+                  size: 64,
+                  color: VineTheme.secondaryText,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _isSearchingWebSocket
-                            ? 'Searching Nostr relays...'
-                            : 'Searching servers...',
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      if (_videoResults.isNotEmpty)
-                        Text(
-                          '${_videoResults.length} results found',
-                          style: const TextStyle(
-                            color: VineTheme.secondaryText,
-                            fontSize: 12,
-                          ),
-                        ),
-                    ],
+                const SizedBox(height: 16),
+                Text(
+                  'No videos found for "${state.query}"',
+                  style: const TextStyle(
+                    color: VineTheme.primaryText,
+                    fontSize: 18,
                   ),
                 ),
               ],
             ),
           ),
-
-        // Video grid
-        Expanded(
-          child: ComposableVideoGrid(
-            key: const Key('search-videos-grid'),
-            videos: _videoResults,
-            onVideoTap: (videos, index) {
-              Log.info(
-                '🔍 SearchScreenPure: Tapped video at index $index',
-                category: LogCategory.video,
-              );
-              // Pre-warm adjacent videos before navigation
-              prefetchAroundIndex(index, videos);
-              // Navigate using GoRouter to enable router-driven video playback
-              context.go(
-                SearchScreenPure.pathForTerm(
-                  term: _currentQuery.isNotEmpty ? _currentQuery : null,
-                  index: index,
-                ),
-              );
-            },
-            emptyBuilder: () => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.video_library,
-                    size: 64,
-                    color: VineTheme.secondaryText,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    _isSearchingExternal
-                        ? 'Searching servers for "$_currentQuery"...'
-                        : 'No videos found for "$_currentQuery"',
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
-                      fontSize: 18,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

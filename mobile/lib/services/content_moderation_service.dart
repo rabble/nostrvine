@@ -67,8 +67,8 @@ class MuteListEntry {
   };
 
   static MuteListEntry fromJson(Map<String, dynamic> json) => MuteListEntry(
-    type: json['type'],
-    value: json['value'],
+    type: json['type'] as String,
+    value: json['value'] as String,
     reason: ContentFilterReason.values.firstWhere(
       (r) => r.name == json['reason'],
       orElse: () => ContentFilterReason.other,
@@ -77,8 +77,8 @@ class MuteListEntry {
       (s) => s.name == json['severity'],
       orElse: () => ContentSeverity.hide,
     ),
-    createdAt: DateTime.parse(json['createdAt']),
-    note: json['note'],
+    createdAt: DateTime.parse(json['createdAt'] as String),
+    note: json['note'] as String?,
   );
 
   /// Convert to NIP-51 list entry tag format
@@ -138,7 +138,7 @@ class ContentModerationService with NostrListServiceMixin {
   @override
   AuthService get authService => _authService;
 
-  // Default divine moderation list
+  // Default Divine moderation list
   static const String defaultMuteListId = 'openvine-default-mutes-v1';
   static const String defaultMuteListPubkey =
       'npub1openvinemoderation'; // Placeholder
@@ -169,7 +169,7 @@ class ContentModerationService with NostrListServiceMixin {
   /// Initialize content moderation
   Future<void> initialize() async {
     try {
-      // Subscribe to default divine moderation list
+      // Subscribe to default Divine moderation list
       if (_enableDefaultModeration) {
         await _subscribeToDefaultList();
       }
@@ -371,10 +371,10 @@ class ContentModerationService with NostrListServiceMixin {
     };
   }
 
-  /// Subscribe to default divine moderation list
+  /// Subscribe to default Divine moderation list
   Future<void> _subscribeToDefaultList() async {
     try {
-      // This would subscribe to official divine moderation list
+      // This would subscribe to official Divine moderation list
       // For now, create a basic default list
       final defaultEntries = [
         MuteListEntry(
@@ -683,7 +683,7 @@ class ContentModerationService with NostrListServiceMixin {
     final listsJson = _prefs.getString(_subscribedListsKey);
     if (listsJson != null) {
       try {
-        _subscribedLists = List<String>.from(jsonDecode(listsJson));
+        _subscribedLists = List<String>.from(jsonDecode(listsJson) as Iterable);
       } catch (e) {
         Log.error(
           'Failed to load subscribed lists: $e',

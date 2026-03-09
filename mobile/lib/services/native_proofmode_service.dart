@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:app_device_integrity/app_device_integrity.dart';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:flutter/services.dart';
 import 'package:models/models.dart' show NativeProofData;
@@ -51,10 +52,7 @@ class NativeProofModeService {
             name: 'VideoRecorderProofService',
             category: .video,
           );
-          return null;
-        }
-
-        if (metadata.length > 1) {
+        } else if (metadata.length > 1) {
           Log.info(
             '🔐 Found existing proof metadata fields: ${metadata.keys.join(", ")}',
             name: 'VideoRecorderProofService',
@@ -148,6 +146,21 @@ class NativeProofModeService {
         name: 'VideoRecorderProofService',
         category: .video,
       );
+
+      //add iOS specific device attestation
+      if (Platform.isIOS) {
+        final appAttestationPlugin = AppDeviceIntegrity();
+        final tokenReceived = await appAttestationPlugin
+            .getAttestationServiceSupport(challengeString: proofHash);
+        if (tokenReceived != null) {
+          final String? proofDir = await _channel.invokeMethod('getProofDir', {
+            'proofHash': proofHash,
+          });
+
+          final deviceAttestation = File('$proofDir/$proofHash.attest');
+          deviceAttestation.writeAsString(tokenReceived);
+        }
+      }
 
       // Read proof metadata from native library
       final metadata = await NativeProofModeService.readProofMetadata(

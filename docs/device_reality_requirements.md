@@ -1,18 +1,18 @@
 
-# Device-Reality Requirements for QA Testing in diVine
+# Device-Reality Requirements for QA Testing in Divine
 ### Technical Rationale, Testing Boundaries, and Hardware-Specific Constraints
 
 ## 1. Purpose of This Document
 
-This document explains why QA testing for **diVine**, a Nostr-native short-video application, must be conducted on real iOS and Android hardware. It outlines the technical limitations of emulators, specifies which test classes are safe to complete in emulator environments, and details the hardware-dependent behaviors that require physical devices.
+This document explains why QA testing for **Divine**, a Nostr-native short-video application, must be conducted on real iOS and Android hardware. It outlines the technical limitations of emulators, specifies which test classes are safe to complete in emulator environments, and details the hardware-dependent behaviors that require physical devices.
 
 This is intended for the full QA and engineering team, with a technical appendix at the end for developers who need system-level detail.
 
 ---
 
-# 2. Overview: Why Hardware Matters for diVine
+# 2. Overview: Why Hardware Matters for Divine
 
-diVine integrates:
+Divine integrates:
 
 - Real-time camera capture  
 - Hardware-accelerated video encoding (H.264/HEVC)  
@@ -26,7 +26,7 @@ Because these systems interact directly with physical hardware, **emulators cann
 
 ---
 
-# 3. Emulator Limitations Relevant to diVine
+# 3. Emulator Limitations Relevant to Divine
 
 ## 3.1 Camera and Sensor Behavior Cannot Be Simulated
 Emulators provide only mock camera streams. They cannot reproduce:
@@ -38,7 +38,7 @@ Emulators provide only mock camera streams. They cannot reproduce:
 - Sensor noise characteristics  
 - Frame timing under variable lighting  
 
-Since diVine’s primary function is recording short-form video, this limitation makes emulator-based testing insufficient for any video capture scenario.
+Since Divine’s primary function is recording short-form video, this limitation makes emulator-based testing insufficient for any video capture scenario.
 
 ---
 
@@ -57,7 +57,7 @@ Emulators bypass these layers entirely, producing encoding behavior that does no
 ---
 
 ## 3.3 Real Networking, Bandwidth, and Backgrounding Behavior
-Critical workflows in diVine rely on real hardware interactions:
+Critical workflows in Divine rely on real hardware interactions:
 
 - Uploading media files to Blossom  
 - Publishing Nostr events  
@@ -71,7 +71,7 @@ Emulators operate under stable, desktop-controlled networking and cannot surface
 ---
 
 ## 3.4 Secure Key Management Depends on Hardware
-Nostr identity in diVine uses:
+Nostr identity in Divine uses:
 
 - iOS Secure Enclave + Keychain  
 - Android Keystore (hardware-backed when available)  
@@ -91,7 +91,7 @@ Testing identity flows on emulators yields unreliable results.
 ---
 
 ## 3.5 Performance, Thermal, and Memory Limitations
-Hardware variability is one of the most important factors in diVine’s real-world performance. Emulator environments mask:
+Hardware variability is one of the most important factors in Divine’s real-world performance. Emulator environments mask:
 
 - device-level RAM constraints  
 - rendering performance differences  
@@ -168,7 +168,7 @@ The following categories must be executed on real hardware:
 
 # 6. Summary
 
-Emulators are valuable for quick UI verification and functional smoke tests, but they are fundamentally unsuitable for validating the reliability, performance, and user experience of a hardware-dependent, video-first application such as diVine.
+Emulators are valuable for quick UI verification and functional smoke tests, but they are fundamentally unsuitable for validating the reliability, performance, and user experience of a hardware-dependent, video-first application such as Divine.
 
 To ensure correctness and production readiness, **all video capture, media processing, cryptographic identity, and performance testing must be carried out on physical iOS and Android devices.**
 
@@ -257,4 +257,4 @@ Real devices introduce:
 - background WebSocket handling differences (iOS suspends aggressively)  
 - timing issues for media upload + event publish coordination  
 
-These are core to diVine’s reliability and cannot be replicated in emulator environments.
+These are core to Divine’s reliability and cannot be replicated in emulator environments.

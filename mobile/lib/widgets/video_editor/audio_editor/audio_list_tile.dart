@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/models/audio_event.dart';
@@ -47,7 +49,12 @@ class AudioListTile extends StatelessWidget {
             style: VineTheme.bodyMediumFont(),
             children: [
               TextSpan(
-                text: audio.duration?.toMmSs() ?? '--:--',
+                text: Duration(
+                  seconds: max(
+                    (audio.duration ?? 0).toInt(),
+                    1,
+                  ),
+                ).toMmSs(),
                 style: const TextStyle(fontFeatures: [.tabularFigures()]),
               ),
               if (audio.source != null) ...[

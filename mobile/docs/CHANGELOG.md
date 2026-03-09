@@ -7,6 +7,184 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-03-06
+
+### Added - Post-1.0.5 Merged PR Backfill (2026-03-06)
+
+This section backfills changelog coverage for all PRs merged to `main` after the first `1.0.5` release tag (`2026-02-20 22:54:49 -0600`).
+
+- Total merged PRs: 166
+- Coverage window: 2026-02-21 through 2026-03-06
+
+#### Merged PRs
+- [#1706](https://github.com/divinevideo/divine-mobile/pull/1706) chore: bump version to 1.0.5+495 - merged 2026-02-21
+- [#1713](https://github.com/divinevideo/divine-mobile/pull/1713) fix(auth): reconnect NIP-46 session relays on Android resume - merged 2026-02-22
+- [#1705](https://github.com/divinevideo/divine-mobile/pull/1705) feat: add view event tracking to all video surfaces - merged 2026-02-22
+- [#1723](https://github.com/divinevideo/divine-mobile/pull/1723) fix: eliminate phantom pause in pooled video player - merged 2026-02-22
+- [#1722](https://github.com/divinevideo/divine-mobile/pull/1722) fix: prevent local file paths from being published in Nostr events - merged 2026-02-22
+- [#1687](https://github.com/divinevideo/divine-mobile/pull/1687) fix(badges): ensure videos show the correct badge like "fully-verified" - merged 2026-02-22
+- [#1710](https://github.com/divinevideo/divine-mobile/pull/1710) fix(video): correct video orientation handling in fullscreen feed - merged 2026-02-22
+- [#1725](https://github.com/divinevideo/divine-mobile/pull/1725) fix(video): add isPreviewMode to Repost and Like action buttons - merged 2026-02-22
+- [#1726](https://github.com/divinevideo/divine-mobile/pull/1726) fix: email verification deep link not calling server API - merged 2026-02-22
+- [#1729](https://github.com/divinevideo/divine-mobile/pull/1729) fix: blossom server default not applied when custom toggle disabled - merged 2026-02-23
+- [#1740](https://github.com/divinevideo/divine-mobile/pull/1740) feat: add Zapstore publishing config and split APKs - merged 2026-02-23
+- [#1741](https://github.com/divinevideo/divine-mobile/pull/1741) fix: handle existing GitHub releases in Codemagic publish step - merged 2026-02-23
+- [#1739](https://github.com/divinevideo/divine-mobile/pull/1739) docs: sync well-known files with production server - merged 2026-02-23
+- [#1665](https://github.com/divinevideo/divine-mobile/pull/1665) fix: diverse fixes in page and bloc - merged 2026-02-23
+- [#1509](https://github.com/divinevideo/divine-mobile/pull/1509) fix: hashtag search - merged 2026-02-23
+- [#1744](https://github.com/divinevideo/divine-mobile/pull/1744) fix: remove redundant dSYM upload build phase - merged 2026-02-23
+- [#1655](https://github.com/divinevideo/divine-mobile/pull/1655) feat: reactive following list in bloc - merged 2026-02-23
+- [#1745](https://github.com/divinevideo/divine-mobile/pull/1745) feat: handle auto refresh in new home page - merged 2026-02-23
+- [#1748](https://github.com/divinevideo/divine-mobile/pull/1748) fix: stop silent key loss on secure storage errors - merged 2026-02-23
+- [#1683](https://github.com/divinevideo/divine-mobile/pull/1683) fix: hearing audio of video that should not be playing - merged 2026-02-23
+- [#1747](https://github.com/divinevideo/divine-mobile/pull/1747) fix: like and search flows - merged 2026-02-23
+- [#1678](https://github.com/divinevideo/divine-mobile/pull/1678) fix(notifications): show badge on all tabs, not just profile - merged 2026-02-23
+- [#1702](https://github.com/divinevideo/divine-mobile/pull/1702) fix(hooks): allow pubkey display-name fallbacks in nostr-id-guard - merged 2026-02-23
+- [#1743](https://github.com/divinevideo/divine-mobile/pull/1743) fix(login-screen): resolve issue that users can scroll to the sign-in button - merged 2026-02-23
+- [#1676](https://github.com/divinevideo/divine-mobile/pull/1676) fix(back_button): handle back navigation for video editing routes - merged 2026-02-23
+- [#1696](https://github.com/divinevideo/divine-mobile/pull/1696) docs: funnelcake consolidation plan - merged 2026-02-23
+- [#1761](https://github.com/divinevideo/divine-mobile/pull/1761) chore: update iOS/macOS build configuration - merged 2026-02-23
+- [#1760](https://github.com/divinevideo/divine-mobile/pull/1760) chore: update zapstore.yaml format and add release source - merged 2026-02-23
+- [#1750](https://github.com/divinevideo/divine-mobile/pull/1750) docs: update zapstore app description and icon - merged 2026-02-23
+- [#1764](https://github.com/divinevideo/divine-mobile/pull/1764) feat: add macOS build workflow and GitHub Release for all platforms - merged 2026-02-24
+- [#1765](https://github.com/divinevideo/divine-mobile/pull/1765) feat: add NIP-32 language tagging for published videos - merged 2026-02-24
+- [#1749](https://github.com/divinevideo/divine-mobile/pull/1749) refactor: video recorder and editor UI components to use DivineIcon and DivineIconButton - merged 2026-02-24
+- [#1663](https://github.com/divinevideo/divine-mobile/pull/1663) feat(camera): implement camera lens state persistence and restore functionality - merged 2026-02-24
+- [#1598](https://github.com/divinevideo/divine-mobile/pull/1598) feat(video-editor): add haptic feedback for special video editor interactions - merged 2026-02-24
+- [#1656](https://github.com/divinevideo/divine-mobile/pull/1656) feat(video-recorder): implement new audio features - merged 2026-02-24
+- [#1779](https://github.com/divinevideo/divine-mobile/pull/1779) build: skip debug firebase upload symbols - merged 2026-02-24
+- [#1781](https://github.com/divinevideo/divine-mobile/pull/1781) feat: prefetch profiles and fix empty state ui - merged 2026-02-24
+- [#1753](https://github.com/divinevideo/divine-mobile/pull/1753) refactor: consolidate AnalyticsApiService into FunnelcakeApiClient (#1618) - merged 2026-02-24
+- [#1674](https://github.com/divinevideo/divine-mobile/pull/1674) fix: for ValueNotifier<int?> used after dispose - merged 2026-02-24
+- [#1774](https://github.com/divinevideo/divine-mobile/pull/1774) refactor: package updates, generated display names, and cosmetic cleanups (Login 1) - merged 2026-02-24
+- [#1780](https://github.com/divinevideo/divine-mobile/pull/1780) feat: Improving background upload progress handling - merged 2026-02-24
+- [#1773](https://github.com/divinevideo/divine-mobile/pull/1773) feat(gallery): improve the logic when to save clips to the gallery - merged 2026-02-24
+- [#1782](https://github.com/divinevideo/divine-mobile/pull/1782) feat(video-recorder): enhance audio waveform progress bar with entrance animation - merged 2026-02-24
+- [#1775](https://github.com/divinevideo/divine-mobile/pull/1775) feat: add multi-account support to AuthService (Login 2) - merged 2026-02-24
+- [#1776](https://github.com/divinevideo/divine-mobile/pull/1776) feat: shared auth widgets, DivineAuthCubit, and email verification fix (Login 3) - merged 2026-02-24
+- [#1777](https://github.com/divinevideo/divine-mobile/pull/1777) feat: welcome screen, account switcher, router rewiring, auth screens (Login 4) - merged 2026-02-24
+- [#1787](https://github.com/divinevideo/divine-mobile/pull/1787) fix: Prevent concurrent race conditions on the background upload bloc - merged 2026-02-24
+- [#1792](https://github.com/divinevideo/divine-mobile/pull/1792) fix: add dSYM upload to Codemagic iOS build - merged 2026-02-25
+- [#1794](https://github.com/divinevideo/divine-mobile/pull/1794) fix: handle double-typed numeric fields in VideoStats REST API parsing - merged 2026-02-25
+- [#1798](https://github.com/divinevideo/divine-mobile/pull/1798) perf: speed up initial home feed load by ~10s - merged 2026-02-25
+- [#1795](https://github.com/divinevideo/divine-mobile/pull/1795) feat: add experimental Linux desktop support - merged 2026-02-25
+- [#1797](https://github.com/divinevideo/divine-mobile/pull/1797) feat: Bluesky-inspired per-category content filters with Show/Warn/Hide - merged 2026-02-25
+- [#1799](https://github.com/divinevideo/divine-mobile/pull/1799) perf: speed up home feed initial load with cache-first pattern - merged 2026-02-25
+- [#1767](https://github.com/divinevideo/divine-mobile/pull/1767) feat(event-source): fetch raw Nostr event in Event Source dialog - merged 2026-02-25
+- [#1714](https://github.com/divinevideo/divine-mobile/pull/1714) fix: filter duplicate comments appearing across profile videos - merged 2026-02-25
+- [#1759](https://github.com/divinevideo/divine-mobile/pull/1759) feat: global subtitle toggle and whisper cleanup - merged 2026-02-25
+- [#1746](https://github.com/divinevideo/divine-mobile/pull/1746) feat: replace new home - merged 2026-02-25
+- [#1783](https://github.com/divinevideo/divine-mobile/pull/1783) fix(video-recorder): recording unexpectedly restarts when switching camera or deleting clips (iOS)  - merged 2026-02-25
+- [#1803](https://github.com/divinevideo/divine-mobile/pull/1803) feat(feed): add For You feed mode with persistent selection - merged 2026-02-25
+- [#1802](https://github.com/divinevideo/divine-mobile/pull/1802) fix(username): validate characters and check both name-server and keycast - merged 2026-02-25
+- [#1785](https://github.com/divinevideo/divine-mobile/pull/1785) refactor(tests): migrate NostrClient mocks from Mockito to mocktail - merged 2026-02-25
+- [#1809](https://github.com/divinevideo/divine-mobile/pull/1809) fix(feed): adjust positioning and padding of home-feed overlay - merged 2026-02-25
+- [#1808](https://github.com/divinevideo/divine-mobile/pull/1808) fix(feed): add CC button and subtitles to new feed overlay - merged 2026-02-25
+- [#1807](https://github.com/divinevideo/divine-mobile/pull/1807) fix(ui): rename 'Fully Verified' badge to 'Human Made' - merged 2026-02-25
+- [#1810](https://github.com/divinevideo/divine-mobile/pull/1810) fix(video): show combined loop count for migrated videos - merged 2026-02-25
+- [#1812](https://github.com/divinevideo/divine-mobile/pull/1812) fix(explore): New tab only showing 1 video due to probe cache poisoning - merged 2026-02-25
+- [#1585](https://github.com/divinevideo/divine-mobile/pull/1585) feat(comments): real-time comment updates via Nostr subscription - merged 2026-02-25
+- [#1757](https://github.com/divinevideo/divine-mobile/pull/1757) fix(video): preserve all imeta URLs when editing video metadata - merged 2026-02-25
+- [#1728](https://github.com/divinevideo/divine-mobile/pull/1728) feat(profile): support external NIP-05 identifiers in profile editor - merged 2026-02-25
+- [#1768](https://github.com/divinevideo/divine-mobile/pull/1768) refactor: extract ReportContentDialog and list dialogs to own files - merged 2026-02-25
+- [#1770](https://github.com/divinevideo/divine-mobile/pull/1770) feat: extract SendToUserDialog, fix user search, rewrite ShareActionButton - merged 2026-02-25
+- [#1771](https://github.com/divinevideo/divine-mobile/pull/1771) refactor: streamline ShareVideoMenu, remove sections moved to action buttons - merged 2026-02-25
+- [#1788](https://github.com/divinevideo/divine-mobile/pull/1788) test: update e2e tests for new login flow and search selectors - merged 2026-02-25
+- [#1817](https://github.com/divinevideo/divine-mobile/pull/1817) chore: Fix skipped tests (part 1 of many) - merged 2026-02-25
+- [#1814](https://github.com/divinevideo/divine-mobile/pull/1814) fix(settings): video playback - merged 2026-02-25
+- [#1789](https://github.com/divinevideo/divine-mobile/pull/1789) fix: replace "login" with "sign in" across auth screens - merged 2026-02-25
+- [#1819](https://github.com/divinevideo/divine-mobile/pull/1819) fix: home modes showing wrong feeds - merged 2026-02-25
+- [#1805](https://github.com/divinevideo/divine-mobile/pull/1805) fix(video-recorder): iOS Audio output forced to speaker during video record/edit/publish (ignores headset)  - merged 2026-02-25
+- [#1800](https://github.com/divinevideo/divine-mobile/pull/1800) fix: upload individual dSYM bundles to Crashlytics - merged 2026-02-25
+- [#1815](https://github.com/divinevideo/divine-mobile/pull/1815) feat: curated list repository - merged 2026-02-25
+- [#1701](https://github.com/divinevideo/divine-mobile/pull/1701) feat: Adding e2e jobs on code magic - merged 2026-02-25
+- [#1682](https://github.com/divinevideo/divine-mobile/pull/1682) fix(video): prevent like count flash on videos - merged 2026-02-25
+- [#1829](https://github.com/divinevideo/divine-mobile/pull/1829) refactor: enrich repositories with FunnelcakeApiClient methods - merged 2026-02-26
+- [#1846](https://github.com/divinevideo/divine-mobile/pull/1846) fix: multiple fixes in the home feed - merged 2026-02-26
+- [#1847](https://github.com/divinevideo/divine-mobile/pull/1847) refactor: migrate all tests from mockito to mocktail (#1154) - merged 2026-02-26
+- [#1848](https://github.com/divinevideo/divine-mobile/pull/1848) feat: furnish curated list repository with getter methods - merged 2026-02-26
+- [#1850](https://github.com/divinevideo/divine-mobile/pull/1850) feat: implemented curated list in videos repository - merged 2026-02-26
+- [#1821](https://github.com/divinevideo/divine-mobile/pull/1821) chore: Fix skipped tests (Part 2 of many) - merged 2026-02-26
+- [#1762](https://github.com/divinevideo/divine-mobile/pull/1762) fix(sync): enable real-time cross-device sync for likes and reposts - merged 2026-02-26
+- [#1851](https://github.com/divinevideo/divine-mobile/pull/1851) docs: correct method placement in funnelcake migration plan - merged 2026-02-26
+- [#1852](https://github.com/divinevideo/divine-mobile/pull/1852) refactor: switch to pooled player in profile grids - merged 2026-02-26
+- [#1842](https://github.com/divinevideo/divine-mobile/pull/1842) fix: display generatedName instead of truncated npub - merged 2026-02-26
+- [#1649](https://github.com/divinevideo/divine-mobile/pull/1649) chore: add analysis_options.yaml for linting and code style enforcement - merged 2026-02-26
+- [#1854](https://github.com/divinevideo/divine-mobile/pull/1854) fix: nsfw content not filtered correctly - merged 2026-02-26
+- [#1855](https://github.com/divinevideo/divine-mobile/pull/1855) chore: remove dead code - merged 2026-02-26
+- [#1863](https://github.com/divinevideo/divine-mobile/pull/1863) fix: prevent auto-start of recording during camera switch - merged 2026-02-26
+- [#1853](https://github.com/divinevideo/divine-mobile/pull/1853) refactor: use videos repository in popupar feed provider - merged 2026-02-26
+- [#1833](https://github.com/divinevideo/divine-mobile/pull/1833) fix(collaborators): prevent selecting the same collaborator twice - merged 2026-02-26
+- [#1831](https://github.com/divinevideo/divine-mobile/pull/1831) fix(ui): ensure fullscreen badges clear status bar icons - merged 2026-02-26
+- [#1720](https://github.com/divinevideo/divine-mobile/pull/1720) fix: reorder macOS build phases to fix media_kit codesign crash - merged 2026-02-26
+- [#1763](https://github.com/divinevideo/divine-mobile/pull/1763) feat(comments): implement P1 comments improvements - merged 2026-02-27
+- [#1861](https://github.com/divinevideo/divine-mobile/pull/1861) fix: resolve e2e testing failures in follow, sign in, and comment flows - merged 2026-02-27
+- [#1885](https://github.com/divinevideo/divine-mobile/pull/1885) feat: curated list in bloc - merged 2026-02-27
+- [#1862](https://github.com/divinevideo/divine-mobile/pull/1862) fix(sign-in): resolve various minor issues when sign-in - merged 2026-02-27
+- [#1889](https://github.com/divinevideo/divine-mobile/pull/1889) feat: impl curated lists logic in home feed - merged 2026-02-27
+- [#1860](https://github.com/divinevideo/divine-mobile/pull/1860) feat(video-recorder): add countdown sound - merged 2026-02-27
+- [#1893](https://github.com/divinevideo/divine-mobile/pull/1893) refactor(sound-service): extract CountdownSoundService into dedicated package - merged 2026-02-27
+- [#1888](https://github.com/divinevideo/divine-mobile/pull/1888) chore: activate various analysis_options rules - merged 2026-02-27
+- [#1904](https://github.com/divinevideo/divine-mobile/pull/1904) fix: hashtag playing wrong video - merged 2026-03-01
+- [#1898](https://github.com/divinevideo/divine-mobile/pull/1898) fix(cc-button): only show CC button when subtitles actually exist - merged 2026-03-01
+- [#1910](https://github.com/divinevideo/divine-mobile/pull/1910) fix(eose): convert blocking EOSE waits to streaming event processing - merged 2026-03-01
+- [#1909](https://github.com/divinevideo/divine-mobile/pull/1909) fix: display "generated name" instead of npub - merged 2026-03-01
+- [#1913](https://github.com/divinevideo/divine-mobile/pull/1913) feat(profile): add comments tab to profile grid - merged 2026-03-01
+- [#1914](https://github.com/divinevideo/divine-mobile/pull/1914) fix(profile): remove max-width constraint causing black bars in header - merged 2026-03-01
+- [#1900](https://github.com/divinevideo/divine-mobile/pull/1900) fix: adjust badge positioning and offsets in video overlay components - merged 2026-03-01
+- [#1880](https://github.com/divinevideo/divine-mobile/pull/1880) fix: refresh expired Keycast sessions and show re-login prompt on failure - merged 2026-03-01
+- [#1901](https://github.com/divinevideo/divine-mobile/pull/1901) fix(sounds): add support for bundled sounds in soundById method - merged 2026-03-01
+- [#1911](https://github.com/divinevideo/divine-mobile/pull/1911) fix(subtitles): parse and preserve text-track fields for explore feed - merged 2026-03-01
+- [#1919](https://github.com/divinevideo/divine-mobile/pull/1919) fix: simplify divine server detection to match all subdomains - merged 2026-03-01
+- [#1920](https://github.com/divinevideo/divine-mobile/pull/1920) fix(auth): show clear message when OAuth session expires - merged 2026-03-02
+- [#1912](https://github.com/divinevideo/divine-mobile/pull/1912) refactor: replace hardcoded colors with VineTheme constants - merged 2026-03-02
+- [#1935](https://github.com/divinevideo/divine-mobile/pull/1935) feat(analytics): add time-to-video performance tracking - merged 2026-03-03
+- [#1902](https://github.com/divinevideo/divine-mobile/pull/1902) chore: activate various analysis_options rules phase-2 - merged 2026-03-03
+- [#1924](https://github.com/divinevideo/divine-mobile/pull/1924) fix(video-editor): ensure correct clip deletion using startIndex during reorder - merged 2026-03-03
+- [#1886](https://github.com/divinevideo/divine-mobile/pull/1886) refactor: migrate drafts & clips storage from sharedPreferences to drift (Part 1/2) - merged 2026-03-03
+- [#1939](https://github.com/divinevideo/divine-mobile/pull/1939) fix(audio): pause/resume home feed on tab switches and clear manual pause on reactivation - merged 2026-03-03
+- [#1927](https://github.com/divinevideo/divine-mobile/pull/1927) fix: Add isSubmitting flag for report dialog - merged 2026-03-03
+- [#1938](https://github.com/divinevideo/divine-mobile/pull/1938) chore: remove analytics API integration tests from mobile frontend - merged 2026-03-03
+- [#1843](https://github.com/divinevideo/divine-mobile/pull/1843) feat: add embeddable iframe widget for Divine profiles - merged 2026-03-03
+- [#1933](https://github.com/divinevideo/divine-mobile/pull/1933) fix(video-editor): crash when merging clips on older iPhones (A11 devices) - merged 2026-03-03
+- [#1944](https://github.com/divinevideo/divine-mobile/pull/1944) fix(share): restore save/download options in share action button - merged 2026-03-03
+- [#1943](https://github.com/divinevideo/divine-mobile/pull/1943) fix: resolve home screen blank after logout/re-login - merged 2026-03-03
+- [#1951](https://github.com/divinevideo/divine-mobile/pull/1951) fix(perf): discard stale performance sessions after app resume - merged 2026-03-03
+- [#1950](https://github.com/divinevideo/divine-mobile/pull/1950) fix(profiles): treat FunnelCake all-null profile as confirmed missing - merged 2026-03-03
+- [#1949](https://github.com/divinevideo/divine-mobile/pull/1949) fix(auth): clear stale bunker/keycast keys on account switch - merged 2026-03-03
+- [#1952](https://github.com/divinevideo/divine-mobile/pull/1952) fix(notifications): pause auto-refresh when app is backgrounded - merged 2026-03-03
+- [#1931](https://github.com/divinevideo/divine-mobile/pull/1931) fix: user search returns zero results - merged 2026-03-04
+- [#1926](https://github.com/divinevideo/divine-mobile/pull/1926) fix: search video - merged 2026-03-04
+- [#1954](https://github.com/divinevideo/divine-mobile/pull/1954) fix(camera): improve initialization handling and add watchdog for frame delivery - merged 2026-03-04
+- [#1825](https://github.com/divinevideo/divine-mobile/pull/1825) feat(camera): implement auto lens switching depending on zoom - merged 2026-03-04
+- [#1916](https://github.com/divinevideo/divine-mobile/pull/1916) feat(library): update the clip/draft library design to the newest figma version - merged 2026-03-05
+- [#1941](https://github.com/divinevideo/divine-mobile/pull/1941) fix(countdown): adjust delay for countdown beep playback to prevent audio bleed - merged 2026-03-05
+- [#1962](https://github.com/divinevideo/divine-mobile/pull/1962) fix(notifications): clear badge when screen is opened - merged 2026-03-05
+- [#1964](https://github.com/divinevideo/divine-mobile/pull/1964) fix(video): suppress FFmpeg smpte170m log spam in player pool - merged 2026-03-05
+- [#1963](https://github.com/divinevideo/divine-mobile/pull/1963) fix(camera): pause background video playback when opening recorder - merged 2026-03-05
+- [#1957](https://github.com/divinevideo/divine-mobile/pull/1957) feat(clip-editor): add vertical drag tracking and improve delete zone interaction - merged 2026-03-05
+- [#1968](https://github.com/divinevideo/divine-mobile/pull/1968) fix(library): add initialTabIndex parameter to LibraryScreen for default tab selection - merged 2026-03-05
+- [#1892](https://github.com/divinevideo/divine-mobile/pull/1892) refactor: migrate drafts & clips storage from sharedPreferences to drift (Part 2/2)  - merged 2026-03-05
+- [#1836](https://github.com/divinevideo/divine-mobile/pull/1836) fix(auth): let deep link screens render for authenticated users - merged 2026-03-05
+- [#1958](https://github.com/divinevideo/divine-mobile/pull/1958) fix(video): prevent video freeze and black flash during home feed scrolling - merged 2026-03-05
+- [#1982](https://github.com/divinevideo/divine-mobile/pull/1982) fix: Restore last-used account on app restart - merged 2026-03-05
+- [#1969](https://github.com/divinevideo/divine-mobile/pull/1969) feat(audio-editor): add AudioSessionWrapper and SimpleAudioPlayer abstractions - merged 2026-03-05
+- [#1987](https://github.com/divinevideo/divine-mobile/pull/1987) fix(search): avoid mutating unmodifiable relay address lists - merged 2026-03-05
+- [#1966](https://github.com/divinevideo/divine-mobile/pull/1966) fix: use shared enrichment utility for profile feed badge tags - merged 2026-03-05
+- [#1986](https://github.com/divinevideo/divine-mobile/pull/1986) fix(auth): first-success relay discovery and swap damus for nos.social - merged 2026-03-05
+- [#1981](https://github.com/divinevideo/divine-mobile/pull/1981) feat(ui): add close button variant to DivineSnackbarContainer - merged 2026-03-05
+- [#1965](https://github.com/divinevideo/divine-mobile/pull/1965) feat(badges): tiered Human Made badges with AI detection and vine fix - merged 2026-03-05
+- [#1988](https://github.com/divinevideo/divine-mobile/pull/1988) perf: improve home feed loading speed with Funnelcake fast path - merged 2026-03-05
+- [#1991](https://github.com/divinevideo/divine-mobile/pull/1991) fix(feed): show loading placeholder until first frame renders - merged 2026-03-05
+- [#1989](https://github.com/divinevideo/divine-mobile/pull/1989) chore: standardize branding from diVine/divine to Divine - merged 2026-03-05
+- [#1959](https://github.com/divinevideo/divine-mobile/pull/1959) fix: treat admin-assigned usernames as available for owning user - merged 2026-03-05
+- [#1953](https://github.com/divinevideo/divine-mobile/pull/1953) fix(follow): add error handling and droppable transformer to follow toggle - merged 2026-03-06
+- [#1840](https://github.com/divinevideo/divine-mobile/pull/1840) feat: unified share sheet with quick-send and find people - merged 2026-03-06
+- [#1811](https://github.com/divinevideo/divine-mobile/pull/1811) docs: invite system API v2 spec - merged 2026-03-06
+- [#1992](https://github.com/divinevideo/divine-mobile/pull/1992) fix(feed): prevent pooled feed index RangeError during rapid updates - merged 2026-03-06
+- [#1756](https://github.com/divinevideo/divine-mobile/pull/1756) feat: block a user - merged 2026-03-06
+
+
 ### Changed - Model Deduplication (2026-02-08)
 
 #### Summary
@@ -546,7 +724,7 @@ Completed the VGV model migration by eliminating 6 duplicate model classes that 
   - Handles NIP-62 kind 62 event creation with ALL_RELAYS tag
   - Broadcasts deletion request to all configured relays
   - Manages deletion result state (success/failure)
-  - Custom reason support (defaults to "User requested account deletion via diVine app")
+  - Custom reason support (defaults to "User requested account deletion via Divine app")
 - Created `lib/widgets/delete_account_dialog.dart`:
   - Warning dialog with clear consequences explanation
   - Completion dialog with new account creation option

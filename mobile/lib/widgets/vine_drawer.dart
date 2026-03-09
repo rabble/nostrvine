@@ -11,6 +11,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/services/bug_report_service.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -59,7 +60,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Could not open $pageName'),
-              backgroundColor: Colors.red,
+              backgroundColor: VineTheme.error,
             ),
           );
         }
@@ -69,7 +70,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error opening $pageName: $error'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -296,7 +297,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
           'How can we help?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: VineTheme.whiteText),
         ),
         scrollable: true,
         content: Column(
@@ -326,10 +327,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                 dialogContext.pop();
                 if (isZendeskAvailable) {
                   // Ensure identity is set before viewing tickets
-                  await _setZendeskIdentityWithService(
-                    userPubkey,
-                    userProfile,
-                  );
+                  await _setZendeskIdentityWithService(userPubkey, userProfile);
                   Log.debug(
                     '💬 Opening Zendesk ticket list',
                     category: LogCategory.ui,
@@ -340,7 +338,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Support chat not available'),
-                        backgroundColor: Colors.red,
+                        backgroundColor: VineTheme.error,
                       ),
                     );
                   }
@@ -463,7 +461,7 @@ Platform: ${Theme.of(context).platform.name}
   /// Note: Zendesk identity is already set by the calling method
   void _showSupportFallbackWithServices(
     BuildContext context,
-    dynamic bugReportService,
+    BugReportService bugReportService,
     String? userPubkey,
   ) {
     showDialog(
@@ -527,7 +525,7 @@ class _SupportOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: VineTheme.backgroundColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade800),
+          border: Border.all(color: VineTheme.cardBackground),
         ),
         child: Row(
           children: [
@@ -540,7 +538,7 @@ class _SupportOption extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: VineTheme.whiteText,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -548,12 +546,15 @@ class _SupportOption extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                    style: const TextStyle(
+                      color: VineTheme.secondaryText,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey.shade600),
+            const Icon(Icons.chevron_right, color: VineTheme.lightText),
           ],
         ),
       ),

@@ -30,8 +30,11 @@ class KeyImportScreen extends ConsumerStatefulWidget {
 
 class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
   final _keyController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _isImporting = false;
+  bool _isEncryptedKey = false;
   String? _keyError;
+  String? _passwordError;
 
   /// Cached reference to auth service, since ref is invalid after unmount.
   late final AuthService _authService;
@@ -45,6 +48,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
   @override
   void dispose() {
     _keyController.dispose();
+    _passwordController.dispose();
 
     // Clear any authentication errors when leaving this screen.
     // Uses cached reference because Riverpod ref is invalid after unmount.
@@ -110,12 +114,32 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
                       enabled: !_isImporting,
                       autocorrect: false,
                       errorText: _keyError,
-                      onChanged: (_) {
-                        if (_keyError != null) {
-                          setState(() => _keyError = null);
-                        }
+                      onChanged: (value) {
+                        final encrypted = Nip49.isEncryptedKey(value.trim());
+                        setState(() {
+                          _keyError = null;
+                          _isEncryptedKey = encrypted;
+                          if (!encrypted) _passwordError = null;
+                        });
                       },
                     ),
+
+                    if (_isEncryptedKey) ...[
+                      const SizedBox(height: 16),
+                      DivineAuthTextField(
+                        controller: _passwordController,
+                        label: 'Password',
+                        enabled: !_isImporting,
+                        autocorrect: false,
+                        obscureText: true,
+                        errorText: _passwordError,
+                        onChanged: (_) {
+                          if (_passwordError != null) {
+                            setState(() => _passwordError = null);
+                          }
+                        },
+                      ),
+                    ],
 
                     const SizedBox(height: 24),
 
@@ -177,9 +201,14 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
       return null;
     }
 
+    // ncryptsec1: encrypted private key (NIP-49) — password validated separately
+    if (Nip49.isEncryptedKey(trimmed)) {
+      return null;
+    }
+
     // Check if it looks like a valid key format
     if (!trimmed.startsWith('nsec') && trimmed.length != 64) {
-      return 'Invalid format. Use nsec..., hex, or bunker://...';
+      return 'Invalid format. Use nsec..., hex, ncryptsec1..., or bunker://...';
     }
 
     if (trimmed.startsWith('nsec') && trimmed.length != 63) {
@@ -189,11 +218,28 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
     return null;
   }
 
+  String? _validatePassword(String value) {
+    if (value.isEmpty) {
+      return 'Please enter the password for this encrypted key';
+    }
+    return null;
+  }
+
   Future<void> _importKey() async {
-    final error = _validateKey(_keyController.text);
-    if (error != null) {
-      setState(() => _keyError = error);
+    final keyError = _validateKey(_keyController.text);
+    if (keyError != null) {
+      setState(() => _keyError = keyError);
       return;
+    }
+
+    final keyText = _keyController.text.trim();
+
+    if (Nip49.isEncryptedKey(keyText)) {
+      final passwordError = _validatePassword(_passwordController.text);
+      if (passwordError != null) {
+        setState(() => _passwordError = passwordError);
+        return;
+      }
     }
 
     setState(() {
@@ -202,12 +248,17 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
 
     try {
       final authService = ref.read(authServiceProvider);
-      final keyText = _keyController.text.trim();
       final AuthResult result;
 
       if (NostrRemoteSignerInfo.isBunkerUrl(keyText)) {
         // Handle bunker URL (NIP-46 remote signing)
         result = await authService.connectWithBunker(keyText);
+      } else if (Nip49.isEncryptedKey(keyText)) {
+        // Handle NIP-49 password-encrypted key
+        result = await authService.importFromNcryptsec(
+          keyText,
+          _passwordController.text,
+        );
       } else if (keyText.startsWith('nsec')) {
         result = await authService.importFromNsec(keyText);
       } else {
@@ -215,8 +266,9 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
       }
 
       if (result.success && mounted) {
-        // Clear the text field for security
+        // Clear the text fields for security
         _keyController.clear();
+        _passwordController.clear();
 
         // Start fetching the user's profile from relays in background
         // This ensures profile data is available when user navigates

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Add user-controlled Trust & Safety settings to diVine, allowing users to:
+Add user-controlled Trust & Safety settings to Divine, allowing users to:
 1. Verify their age (18+)
 2. Choose how adult content is handled (auto show, ask each time, auto hide)
 3. See which moderation providers are active (Divine only for v1)

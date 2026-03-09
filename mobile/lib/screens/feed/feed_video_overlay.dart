@@ -2,7 +2,6 @@
 // ABOUTME: Displays author info, video description, and action buttons
 // ABOUTME: matching the new design: Like, Comment, Repost, Share, More.
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,21 +17,18 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:openvine/utils/scroll_driven_opacity.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
-import 'package:openvine/widgets/video_feed_item/actions/cc_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/comment_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/more_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/repost_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
-import 'package:openvine/widgets/video_feed_item/actions/video_edit_button.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/paused_video_play_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
@@ -48,14 +44,26 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   const FeedVideoOverlay({
     required this.video,
     required this.isActive,
-    required this.player,
+    required this.pagePosition,
+    required this.index,
+    this.player,
+    this.firstFrameFuture,
     this.listSources,
     super.key,
   });
 
   final VideoEvent video;
   final bool isActive;
-  final Player player;
+
+  /// Fractional page position from [PooledVideoFeed.onScrollOffsetChanged].
+  /// Used to compute scroll-driven overlay opacity matching the fullscreen feed.
+  final ValueNotifier<double> pagePosition;
+
+  /// The index of this item in the feed, used with [pagePosition] to compute
+  /// the scroll distance for opacity.
+  final int index;
+  final Player? player;
+  final Future<void>? firstFrameFuture;
   final Set<String>? listSources;
 
   @override
@@ -67,9 +75,17 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.isActive) return const SizedBox();
-
     final video = widget.video;
+
+    Log.debug(
+      'Feed overlay build: eventId=${video.id}, pubkey=${video.pubkey}, '
+      'isActive=${widget.isActive}, hasPlayer=${widget.player != null}, '
+      'hasFirstFrameFuture=${widget.firstFrameFuture != null}, '
+      'hasSubtitles=${video.hasSubtitles}, hasWarning=${video.shouldShowWarning}, '
+      'videoUrl=${video.videoUrl}, thumbnailUrl=${video.thumbnailUrl}',
+      name: 'FeedVideoOverlay',
+      category: LogCategory.video,
+    );
 
     // Content warning blur overlay takes priority over normal overlay
     if (video.shouldShowWarning && !_contentWarningRevealed) {
@@ -85,9 +101,12 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
         video.content.isNotEmpty ||
         (video.title != null && video.title!.isNotEmpty);
 
+    final safeAreaBottom = MediaQuery.viewPaddingOf(context).bottom;
+
     return Stack(
       children: [
-        // Bottom gradient overlay
+        // Bottom gradient overlay (not scroll-faded — keeps the gradient
+        // visible so the video edge is always readable).
         Positioned(
           left: 0,
           right: 0,
@@ -101,8 +120,8 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.0),
-                      Colors.black.withValues(alpha: 0.5),
+                      VineTheme.backgroundColor.withValues(alpha: 0.0),
+                      VineTheme.backgroundColor.withValues(alpha: 0.5),
                     ],
                   ),
                 ),
@@ -110,39 +129,65 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
             ),
           ),
         ),
+        if (widget.player != null)
+          PausedVideoPlayOverlay(
+            player: widget.player!,
+            firstFrameFuture: widget.firstFrameFuture,
+            isVisible: widget.isActive,
+          ),
         // Subtitle overlay — Positioned.fill gives the inner Stack a size
         // so SubtitleOverlay's Positioned can resolve correctly.
-        if (video.hasSubtitles)
+        if (video.hasSubtitles && widget.player != null)
           Positioned.fill(
-            child: _SubtitleLayer(video: video, player: widget.player),
+            child: _SubtitleLayer(video: video, player: widget.player!),
           ),
-        // ProofMode and Vine badges (top-right)
-        Positioned(
-          top: MediaQuery.viewPaddingOf(context).top + 8,
-          right: 16,
-          child: GestureDetector(
-            onTap: () => context.showVideoPausingDialog<void>(
-              builder: (context) => BadgeExplanationModal(video: video),
-            ),
-            child: ProofModeBadgeRow(video: video),
+        // Scroll-faded overlay: author info, badges, and action buttons all
+        // fade together as the user swipes to the next video.
+        ValueListenableBuilder<double>(
+          valueListenable: widget.pagePosition,
+          builder: (context, page, child) {
+            final distance = (page - widget.index).abs().clamp(0.0, 1.0);
+            final opacity = scrollDrivenOpacity(distance);
+            return Opacity(
+              opacity: opacity,
+              child: IgnorePointer(
+                ignoring: opacity < 0.01,
+                child: child,
+              ),
+            );
+          },
+          child: Stack(
+            children: [
+              // ProofMode and Vine badges (top-right)
+              Positioned(
+                top: MediaQuery.viewPaddingOf(context).top + 64,
+                right: 16,
+                child: GestureDetector(
+                  onTap: () => context.showVideoPausingDialog<void>(
+                    builder: (context) => BadgeExplanationModal(video: video),
+                  ),
+                  child: ProofModeBadgeRow(video: video),
+                ),
+              ),
+              // Author info and description (bottom-left)
+              Positioned(
+                bottom: 14 + safeAreaBottom,
+                left: 16,
+                right: 80,
+                child: _AuthorInfoSection(
+                  video: video,
+                  hasTextContent: hasTextContent,
+                  listSources: widget.listSources,
+                ),
+              ),
+              // Action buttons column (bottom-right)
+              Positioned(
+                bottom: 14 + safeAreaBottom,
+                right: 16,
+                child: _ActionButtons(video: video),
+              ),
+            ],
           ),
-        ),
-        // Author info and description (bottom-left)
-        Positioned(
-          bottom: 14,
-          left: 16,
-          right: 80,
-          child: _AuthorInfoSection(
-            video: video,
-            hasTextContent: hasTextContent,
-            listSources: widget.listSources,
-          ),
-        ),
-        // Action buttons column (bottom-right)
-        Positioned(
-          bottom: 14,
-          right: 16,
-          child: SafeArea(child: _ActionButtons(video: video)),
         ),
       ],
     );
@@ -282,7 +327,10 @@ class _AuthorAvatar extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          GestureDetector(
+          UserAvatar(
+            imageUrl: avatarUrl,
+            size: 48,
+            semanticLabel: 'Author avatar',
             onTap: () {
               final npub = normalizeToNpub(pubkey);
               if (npub != null) {
@@ -291,48 +339,6 @@ class _AuthorAvatar extends StatelessWidget {
                 );
               }
             },
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: VineTheme.whiteText, width: 2),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: avatarUrl != null && avatarUrl!.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: avatarUrl!,
-                        width: 44,
-                        height: 44,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => const ColoredBox(
-                          color: VineTheme.cardBackground,
-                          child: Icon(
-                            Icons.person,
-                            color: VineTheme.onSurfaceMuted,
-                            size: 24,
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => const ColoredBox(
-                          color: VineTheme.cardBackground,
-                          child: Icon(
-                            Icons.person,
-                            color: VineTheme.onSurfaceMuted,
-                            size: 24,
-                          ),
-                        ),
-                      )
-                    : const ColoredBox(
-                        color: VineTheme.cardBackground,
-                        child: Icon(
-                          Icons.person,
-                          color: VineTheme.onSurfaceMuted,
-                          size: 24,
-                        ),
-                      ),
-              ),
-            ),
           ),
           Positioned(
             left: 31,
@@ -351,30 +357,7 @@ class _ActionButtons extends StatelessWidget {
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context) {
-    const gap = 24.0;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Edit button self-hides via SizedBox.shrink() when not
-        // applicable, so it sits outside the uniform spacing to
-        // avoid a phantom gap.
-        VideoEditButton(video: video),
-        Column(
-          spacing: gap,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            LikeActionButton(video: video),
-            CommentActionButton(video: video),
-            CcActionButton(video: video),
-            RepostActionButton(video: video),
-            ShareActionButton(video: video),
-            MoreActionButton(video: video),
-          ],
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => VideoOverlayActionColumn(video: video);
 }
 
 /// NIP-05 verification badge.

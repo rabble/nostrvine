@@ -21,7 +21,7 @@ import 'package:openvine/services/auth_service.dart';
 /// `app_router.dart`. When you add a new auth route there, add it here too.
 ///
 /// The actual redirect logic is:
-/// 1. If authenticated AND on auth route -> redirect to /home/0
+/// 1. If authenticated AND on top-level auth entry routes -> redirect to /home/0
 /// 2. If NOT on auth route AND unauthenticated -> redirect to /welcome
 /// 3. Otherwise -> null (no redirect)
 String? testRedirectLogic({
@@ -38,8 +38,17 @@ String? testRedirectLogic({
       location.startsWith(ResetPasswordScreen.path) ||
       location.startsWith(EmailVerificationScreen.path);
 
-  // Rule 1: Authenticated users on auth routes go to home
-  if (authState == AuthState.authenticated && isAuthRoute) {
+  // Authenticated users should be redirected from top-level auth entry routes.
+  // Deep-link auth routes remain accessible while authenticated.
+  final shouldRedirectAuthenticated =
+      location == WelcomeScreen.path ||
+      location == KeyImportScreen.path ||
+      location == NostrConnectScreen.path ||
+      location == WelcomeScreen.createAccountPath ||
+      location == WelcomeScreen.loginOptionsPath;
+
+  // Rule 1: Authenticated users on redirectable auth routes go to home.
+  if (authState == AuthState.authenticated && shouldRedirectAuthenticated) {
     return VideoFeedPage.pathForIndex(0);
   }
 
@@ -208,6 +217,38 @@ void main() {
             redirect,
             equals(VideoFeedPage.pathForIndex(0)),
             reason: 'Authenticated user on auth route should go to home',
+          );
+        },
+      );
+
+      test(
+        'authenticated user can access ${WelcomeScreen.resetPasswordPath} deep link flow',
+        () {
+          final redirect = testRedirectLogic(
+            location: WelcomeScreen.resetPasswordPath,
+            authState: AuthState.authenticated,
+          );
+          expect(
+            redirect,
+            isNull,
+            reason:
+                'Authenticated users should remain on reset-password deep links',
+          );
+        },
+      );
+
+      test(
+        'authenticated user can access ${EmailVerificationScreen.path} deep link flow',
+        () {
+          final redirect = testRedirectLogic(
+            location: EmailVerificationScreen.path,
+            authState: AuthState.authenticated,
+          );
+          expect(
+            redirect,
+            isNull,
+            reason:
+                'Authenticated users should remain on verify-email deep links',
           );
         },
       );

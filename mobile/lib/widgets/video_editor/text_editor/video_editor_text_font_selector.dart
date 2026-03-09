@@ -84,7 +84,9 @@ class _FontListItem extends StatelessWidget {
                   overflow: .ellipsis,
                   style: font(
                     fontSize: 24,
-                    color: isSelected ? Colors.white : const Color(0xB3FFFFFF),
+                    color: isSelected
+                        ? VineTheme.whiteText
+                        : VineTheme.onSurfaceVariant,
                   ),
                 ),
               ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -5,6 +7,8 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:pooled_video_player/src/controllers/video_feed_controller.dart';
 import 'package:pooled_video_player/src/models/video_index_state.dart';
 import 'package:pooled_video_player/src/widgets/video_pool_provider.dart';
+
+const _firstFrameRevealTimeout = Duration(seconds: 2);
 
 /// Builder for the video layer.
 typedef VideoBuilder =
@@ -18,16 +22,13 @@ typedef VideoBuilder =
 typedef OverlayBuilder =
     Widget Function(
       BuildContext context,
-      VideoController videoController,
-      Player player,
+      VideoController? videoController,
+      Player? player,
     );
 
 /// Builder for the error state.
 typedef ErrorBuilder =
-    Widget Function(
-      BuildContext context,
-      VoidCallback onRetry,
-    );
+    Widget Function(BuildContext context, VoidCallback onRetry);
 
 /// Video player widget that displays a video from [VideoFeedController].
 class PooledVideoPlayer extends StatelessWidget {
@@ -90,36 +91,47 @@ class PooledVideoPlayer extends StatelessWidget {
         final videoController = state.videoController;
         final player = state.player;
         final loadState = state.loadState;
+        final overlay = overlayBuilder?.call(context, videoController, player);
 
         Widget content;
 
         if (loadState == LoadState.error) {
-          content =
-              errorBuilder?.call(
-                context,
-                () => feedController.onPageChanged(feedController.currentIndex),
-              ) ??
-              const _DefaultErrorState();
-        } else if (videoController != null &&
-            player != null &&
-            loadState == LoadState.ready) {
           content = Stack(
             fit: StackFit.expand,
             children: [
-              // Keep the loading placeholder behind the video so the
-              // thumbnail stays visible while the Video widget renders
-              // its first frame, preventing a black flash on transition.
-              loadingBuilder?.call(context) ??
-                  _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
-              videoBuilder(context, videoController, player),
-              if (overlayBuilder != null)
-                overlayBuilder!(context, videoController, player),
+              errorBuilder?.call(
+                    context,
+                    () => feedController.onPageChanged(
+                      feedController.currentIndex,
+                    ),
+                  ) ??
+                  const _DefaultErrorState(),
+              ?overlay,
             ],
           );
-        } else {
-          content =
+        } else if (videoController != null && player != null) {
+          final loadingPlaceholder =
               loadingBuilder?.call(context) ??
               _DefaultLoadingState(thumbnailUrl: thumbnailUrl);
+          final children = <Widget>[
+            loadingPlaceholder,
+            _RevealVideoAfterFirstFrame(
+              videoController: videoController,
+              readyForFallback: loadState == LoadState.ready,
+              child: videoBuilder(context, videoController, player),
+            ),
+            ?overlay,
+          ];
+          content = Stack(fit: StackFit.expand, children: children);
+        } else {
+          content = Stack(
+            fit: StackFit.expand,
+            children: [
+              loadingBuilder?.call(context) ??
+                  _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
+              ?overlay,
+            ],
+          );
         }
 
         if ((enableTapToPause || onTap != null) &&
@@ -134,6 +146,115 @@ class PooledVideoPlayer extends StatelessWidget {
 
         return content;
       },
+    );
+  }
+}
+
+class _RevealVideoAfterFirstFrame extends StatefulWidget {
+  const _RevealVideoAfterFirstFrame({
+    required this.videoController,
+    required this.readyForFallback,
+    required this.child,
+  });
+
+  final VideoController videoController;
+  final bool readyForFallback;
+  final Widget child;
+
+  @override
+  State<_RevealVideoAfterFirstFrame> createState() =>
+      _RevealVideoAfterFirstFrameState();
+}
+
+class _RevealVideoAfterFirstFrameState
+    extends State<_RevealVideoAfterFirstFrame> {
+  bool _hasRenderedFirstFrame = false;
+  bool _revealedByTimeout = false;
+  int _generation = 0;
+  Timer? _firstFrameTimeout;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscribeToFirstFrame();
+    _syncFallbackTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _RevealVideoAfterFirstFrame oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.videoController, widget.videoController)) {
+      _resetRevealState();
+      _subscribeToFirstFrame();
+    }
+    if (oldWidget.readyForFallback != widget.readyForFallback) {
+      _syncFallbackTimer();
+    }
+  }
+
+  void _resetRevealState() {
+    _firstFrameTimeout?.cancel();
+    _hasRenderedFirstFrame = false;
+    _revealedByTimeout = false;
+  }
+
+  void _subscribeToFirstFrame() {
+    final generation = ++_generation;
+    _firstFrameTimeout?.cancel();
+
+    unawaited(
+      widget.videoController.waitUntilFirstFrameRendered
+          .then((_) {
+            if (!mounted || generation != _generation) return;
+            _firstFrameTimeout?.cancel();
+            setState(() {
+              _hasRenderedFirstFrame = true;
+            });
+          })
+          .catchError((_) {
+            if (!mounted || generation != _generation) return;
+            _firstFrameTimeout?.cancel();
+            setState(() {
+              _hasRenderedFirstFrame = true;
+            });
+          }),
+    );
+  }
+
+  void _syncFallbackTimer() {
+    _firstFrameTimeout = Timer(_firstFrameRevealTimeout, () {
+      if (!mounted || _hasRenderedFirstFrame || !widget.readyForFallback) {
+        return;
+      }
+      setState(() {
+        _revealedByTimeout = true;
+      });
+    });
+
+    if (!widget.readyForFallback || _hasRenderedFirstFrame) {
+      _firstFrameTimeout?.cancel();
+      _revealedByTimeout = false;
+      return;
+    }
+  }
+
+  @override
+  void dispose() {
+    _firstFrameTimeout?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final shouldReveal =
+        _hasRenderedFirstFrame ||
+        (widget.readyForFallback && _revealedByTimeout);
+
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      opacity: shouldReveal ? 1 : 0,
+      child: widget.child,
     );
   }
 }
@@ -158,9 +279,7 @@ class _DefaultLoadingState extends StatelessWidget {
               errorBuilder: (context, error, stackTrace) =>
                   const SizedBox.shrink(),
             ),
-          const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
         ],
       ),
     );

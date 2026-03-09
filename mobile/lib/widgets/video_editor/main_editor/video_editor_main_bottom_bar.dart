@@ -55,13 +55,6 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                     icon: .fadersHorizontal,
                     onTap: () => scope.editor?.openFilterEditor(),
                   ),
-                  _ActionButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    label: 'Music',
-                    icon: .musicNotesSimple,
-                    // TODO(@hm21): Implement music editor
-                    onTap: () {},
-                  ),
                 ],
               ),
             ),
@@ -101,26 +94,19 @@ class _ActionButton extends StatelessWidget {
           child: GestureDetector(
             onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF032017),
-                border: .all(width: 2, color: const Color(0xFF0E2B21)),
-                borderRadius: .circular(20),
+                color: VineTheme.surfaceContainer,
+                border: .all(width: 2, color: VineTheme.outlineMuted),
+                borderRadius: .circular(16),
               ),
-              child: DivineIcon(
-                icon: icon,
-                color: VineTheme.whiteText,
-              ),
+              child: DivineIcon(icon: icon, color: VineTheme.primary),
             ),
           ),
         ),
         Text(
           label,
-          style: VineTheme.bodyFont(
-            fontSize: 12,
-            height: 1.33,
-            letterSpacing: 0.4,
-          ),
+          style: VineTheme.bodySmallFont(),
           textAlign: .center,
         ),
       ],

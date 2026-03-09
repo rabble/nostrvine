@@ -1,6 +1,6 @@
 appId: co.openvine.app
 ---
-- waitForAnimationToEnd # diVine logo may take some time to load
+- waitForAnimationToEnd # Divine logo may take some time to load
 - assertVisible: Authentic moments.
 - assertVisible: Human creativity.
 - assertVisible: Create a new Divine account

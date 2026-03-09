@@ -24,6 +24,7 @@ final class HashtagSearchState extends Equatable {
     this.status = HashtagSearchStatus.initial,
     this.query = '',
     this.results = const [],
+    this.resultCount,
   });
 
   /// The current status of the search
@@ -35,19 +36,28 @@ final class HashtagSearchState extends Equatable {
   /// The list of hashtags matching the search
   final List<String> results;
 
+  /// Lightweight count for tab badges when full results were not fetched.
+  final int? resultCount;
+
   /// Create a copy with updated values
   HashtagSearchState copyWith({
     HashtagSearchStatus? status,
     String? query,
     List<String>? results,
+    Object? resultCount = _unset,
   }) {
     return HashtagSearchState(
       status: status ?? this.status,
       query: query ?? this.query,
       results: results ?? this.results,
+      resultCount: identical(resultCount, _unset)
+          ? this.resultCount
+          : resultCount as int?,
     );
   }
 
   @override
-  List<Object> get props => [status, query, results];
+  List<Object> get props => [status, query, results, resultCount ?? -1];
+
+  static const Object _unset = Object();
 }

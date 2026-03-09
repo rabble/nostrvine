@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 class ErrorMessage extends StatelessWidget {
@@ -14,18 +15,18 @@ class ErrorMessage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red,
+        color: VineTheme.error,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red.shade300),
+        border: Border.all(color: VineTheme.error),
       ),
       child: Row(
         children: [
-          const Icon(Icons.error_outline, color: Colors.white, size: 20),
+          const Icon(Icons.error_outline, color: VineTheme.whiteText, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message!,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
+              style: const TextStyle(color: VineTheme.whiteText, fontSize: 14),
             ),
           ),
         ],

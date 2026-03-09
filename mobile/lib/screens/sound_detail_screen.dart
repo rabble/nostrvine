@@ -11,11 +11,11 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:sound_service/sound_service.dart';
 
 /// Screen displaying details of a specific sound and videos using it.
 ///
@@ -209,24 +209,14 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
     final usageCountAsync = ref.watch(soundUsageCountProvider(widget.sound.id));
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       appBar: _showingVideoFeed
           ? null
-          : AppBar(
+          : DiVineAppBar(
+              title: 'Sound',
+              showBackButton: true,
+              onBackPressed: context.pop,
               backgroundColor: VineTheme.cardBackground,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: context.pop,
-              ),
-              title: const Text(
-                'Sound',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              centerTitle: true,
             ),
       body: Stack(
         children: [
@@ -263,7 +253,7 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
                       Text(
                         'Videos using this sound',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: VineTheme.whiteText,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
@@ -364,7 +354,7 @@ class _SoundHeader extends StatelessWidget {
                     Text(
                       sound.title ?? 'Original sound',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: VineTheme.whiteText,
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
@@ -430,7 +420,7 @@ class _SoundHeader extends StatelessWidget {
                     label: const Text('Use Sound'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: VineTheme.vineGreen,
-                      foregroundColor: Colors.black,
+                      foregroundColor: VineTheme.backgroundColor,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -458,7 +448,7 @@ class _SoundHeader extends StatelessWidget {
 
     return Text(
       items.join(' · '),
-      style: TextStyle(color: Colors.grey[400], fontSize: 14),
+      style: const TextStyle(color: VineTheme.secondaryText, fontSize: 14),
     );
   }
 }
@@ -491,24 +481,28 @@ class _VideosGrid extends ConsumerWidget {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.videocam_off_outlined, size: 64, color: Colors.grey[600]),
-          const SizedBox(height: 16),
-          const Text(
+          Icon(
+            Icons.videocam_off_outlined,
+            size: 64,
+            color: VineTheme.lightText,
+          ),
+          SizedBox(height: 16),
+          Text(
             'No videos yet',
             style: TextStyle(
-              color: Colors.white,
+              color: VineTheme.whiteText,
               fontSize: 18,
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             'Be the first to use this sound!',
-            style: TextStyle(color: Colors.grey[500], fontSize: 14),
+            style: TextStyle(color: VineTheme.onSurfaceMuted, fontSize: 14),
           ),
         ],
       ),
@@ -527,7 +521,7 @@ class _VideosGrid extends ConsumerWidget {
             const Text(
               'Failed to load videos',
               style: TextStyle(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
@@ -535,7 +529,10 @@ class _VideosGrid extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               error.toString(),
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              style: const TextStyle(
+                color: VineTheme.onSurfaceMuted,
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
@@ -547,7 +544,7 @@ class _VideosGrid extends ConsumerWidget {
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
-                foregroundColor: Colors.black,
+                foregroundColor: VineTheme.backgroundColor,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -646,28 +643,31 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
         .toList();
 
     if (validVideos.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.videocam_off_outlined,
               size: 64,
-              color: Colors.grey[600],
+              color: VineTheme.lightText,
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16),
+            Text(
               'Videos unavailable',
               style: TextStyle(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Could not load video details',
-              style: TextStyle(color: Colors.grey[500], fontSize: 14),
+              style: TextStyle(
+                color: VineTheme.onSurfaceMuted,
+                fontSize: 14,
+              ),
             ),
           ],
         ),
@@ -728,7 +728,7 @@ class _VideoGridTile extends StatelessWidget {
             const Center(
               child: Icon(
                 Icons.play_circle_filled,
-                color: Colors.white70,
+                color: VineTheme.onSurfaceVariant,
                 size: 32,
               ),
             ),
@@ -771,7 +771,7 @@ class _ThumbnailPlaceholder extends StatelessWidget {
         gradient: LinearGradient(
           colors: [
             VineTheme.vineGreen.withValues(alpha: 0.3),
-            Colors.blue.withValues(alpha: 0.3),
+            VineTheme.info.withValues(alpha: 0.3),
           ],
         ),
       ),
@@ -827,7 +827,7 @@ class _SoundVideoFeedOverlayState extends State<_SoundVideoFeedOverlay> {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: Colors.black,
+      color: VineTheme.backgroundColor,
       child: SafeArea(
         child: Stack(
           children: [
@@ -865,7 +865,7 @@ class _SoundVideoFeedOverlayState extends State<_SoundVideoFeedOverlay> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.7),
+                      VineTheme.backgroundColor.withValues(alpha: 0.7),
                       Colors.transparent,
                     ],
                   ),
@@ -874,7 +874,7 @@ class _SoundVideoFeedOverlayState extends State<_SoundVideoFeedOverlay> {
                   children: [
                     // Close button
                     IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: const Icon(Icons.close, color: VineTheme.whiteText),
                       onPressed: widget.onClose,
                       tooltip: 'Close',
                     ),
@@ -894,7 +894,7 @@ class _SoundVideoFeedOverlayState extends State<_SoundVideoFeedOverlay> {
                             child: Text(
                               widget.soundTitle,
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: VineTheme.whiteText,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -911,7 +911,10 @@ class _SoundVideoFeedOverlayState extends State<_SoundVideoFeedOverlay> {
                       padding: const EdgeInsets.only(right: 8),
                       child: Text(
                         '${_currentIndex + 1}/${widget.videos.length}',
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                        style: const TextStyle(
+                          color: VineTheme.secondaryText,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],

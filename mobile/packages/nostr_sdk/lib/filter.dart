@@ -175,7 +175,7 @@ class Filter {
     List<String> uppercaseAs = [];
     List<String> uppercaseKs = [];
     for (var tag in event.tags) {
-      if (tag is List && tag.length > 1) {
+      if (tag.length > 1) {
         var k = tag[0];
         var v = tag[1];
 

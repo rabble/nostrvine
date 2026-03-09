@@ -44,9 +44,6 @@ final likedVideosFeedProvider = Provider<AsyncValue<VideoFeedState>>((ref) {
   }
 
   return AsyncData(
-    VideoFeedState(
-      videos: bridgeState.videos,
-      hasMoreContent: false,
-    ),
+    VideoFeedState(videos: bridgeState.videos, hasMoreContent: false),
   );
 });

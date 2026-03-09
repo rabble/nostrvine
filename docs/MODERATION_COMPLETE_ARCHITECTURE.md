@@ -1,10 +1,10 @@
-# diVine + Faro - Complete Moderation Architecture
+# Divine + Faro - Complete Moderation Architecture
 
 ## The Complete System
 
-diVine uses a **three-tier moderation architecture**:
+Divine uses a **three-tier moderation architecture**:
 
-1. **Mobile App (diVine)** - User-facing moderation and filtering
+1. **Mobile App (Divine)** - User-facing moderation and filtering
 2. **Faro** - Moderator tools for triaging reports and publishing labels
 3. **Nostr Network** - Decentralized event distribution
 
@@ -15,7 +15,7 @@ diVine uses a **three-tier moderation architecture**:
 │                                                               │
 │  User Reports Content                                        │
 │         ↓                                                     │
-│  diVine creates kind 1984 report event                    │
+│  Divine creates kind 1984 report event                    │
 │         ↓                                                     │
 │  Broadcast to Nostr relays                                   │
 │         ↓                                                     │
@@ -29,7 +29,7 @@ diVine uses a **three-tier moderation architecture**:
 │         ↓                                                     │
 │  Kind 1985 label broadcast to Nostr                         │
 │         ↓                                                     │
-│  diVine ModerationLabelService subscribes                 │
+│  Divine ModerationLabelService subscribes                 │
 │         ↓                                                     │
 │  Content automatically filtered in app                       │
 │                                                               │
@@ -38,7 +38,7 @@ diVine uses a **three-tier moderation architecture**:
 
 ## Component Roles
 
-### 1. diVine Mobile App (End Users)
+### 1. Divine Mobile App (End Users)
 
 **Creates Reports (kind 1984):**
 - `ContentReportingService` - User reports problematic content
@@ -101,7 +101,7 @@ diVine uses a **three-tier moderation architecture**:
 ### Example 1: User Reports NSFW Content
 
 ```
-1. User in diVine taps "Report" → "NSFW Content"
+1. User in Divine taps "Report" → "NSFW Content"
    ↓
 2. ContentReportingService creates kind 1984 event:
    {
@@ -131,7 +131,7 @@ diVine uses a **three-tier moderation architecture**:
      ]
    }
    ↓
-7. diVine ModerationLabelService receives label
+7. Divine ModerationLabelService receives label
    ↓
 8. Video automatically blurred for all users subscribed to this moderator
 ```
@@ -172,7 +172,7 @@ diVine uses a **three-tier moderation architecture**:
 5. All 50 accounts automatically muted in user's feed
 ```
 
-## diVine Services (Current State)
+## Divine Services (Current State)
 
 ### ✅ Implemented
 
@@ -190,19 +190,19 @@ diVine uses a **three-tier moderation architecture**:
 
 ## Faro Integration Points
 
-### How diVine Integrates with Faro
+### How Divine Integrates with Faro
 
 **1. Report Routing (kind 1984 → Faro)**
 
-diVine can tag reports to route to specific Faro instances:
+Divine can tag reports to route to specific Faro instances:
 ```dart
 // In ContentReportingService
 tags.add(['P', faroModeratorPubkey]); // Route to Faro moderator
 ```
 
-**2. Label Subscription (Faro → diVine)**
+**2. Label Subscription (Faro → Divine)**
 
-diVine subscribes to labels from trusted Faro moderators:
+Divine subscribes to labels from trusted Faro moderators:
 ```dart
 // In ModerationLabelService
 await service.subscribeToLabeler(faroModeratorPubkey);
@@ -211,21 +211,21 @@ await service.subscribeToLabeler(faroModeratorPubkey);
 **3. Multiple Faro Instances**
 
 Users can subscribe to multiple Faro moderators:
-- diVine official safety team
+- Divine official safety team
 - Community-run Faro instances
 - Niche moderators (tech, art, news, etc)
 - Up to 20 labelers (Bluesky pattern)
 
-### Faro Configuration in diVine
+### Faro Configuration in Divine
 
 ```dart
 // Default Faro moderators
 final defaultModerators = [
   ModeratorProfile(
     pubkey: 'openvine_faro_pubkey',
-    displayName: 'diVine Safety',
+    displayName: 'Divine Safety',
     faroUrl: 'https://faro.openvine.co',
-    description: 'Official diVine content safety team',
+    description: 'Official Divine content safety team',
     specialties: ['csam', 'illegal', 'violence'],
   ),
   ModeratorProfile(
@@ -240,7 +240,7 @@ final defaultModerators = [
 
 ## Trust & Safety Workflow
 
-### For Regular Users (diVine)
+### For Regular Users (Divine)
 
 1. **Report problematic content** - One tap, kind 1984 created
 2. **Subscribe to moderators** - Choose trusted Faro instances
@@ -279,7 +279,7 @@ final defaultModerators = [
 
 ## Implementation Status
 
-### diVine Mobile
+### Divine Mobile
 
 | Component | Status | Description |
 |-----------|--------|-------------|
@@ -301,7 +301,7 @@ final defaultModerators = [
 | DMCA Processing | ✅ | Legal compliance |
 | Admin APIs | ✅ | Takedown management |
 
-## Next Steps for diVine
+## Next Steps for Divine
 
 ### 1. ModerationFeedService (CRITICAL)
 
@@ -314,7 +314,7 @@ Implement coordinator that combines:
 ### 2. Faro Integration
 
 - Add Faro moderator discovery
-- Configure default diVine Faro instance
+- Configure default Divine Faro instance
 - Route reports to Faro with `P` tag
 - Subscribe to Faro labels automatically
 
@@ -336,7 +336,7 @@ Implement coordinator that combines:
 ## Architecture Advantages
 
 **Three-Tier Design:**
-1. **Users** (diVine) - Simple, one-tap reporting
+1. **Users** (Divine) - Simple, one-tap reporting
 2. **Moderators** (Faro) - Professional triage and labeling
 3. **Network** (Nostr) - Decentralized distribution
 
@@ -349,13 +349,13 @@ Implement coordinator that combines:
 
 **Compared to Centralized:**
 - Traditional: Reports → Backend → Admins → Decision
-- diVine + Faro: Reports → Nostr → Multiple Faro Instances → Labels → Users choose which to trust
+- Divine + Faro: Reports → Nostr → Multiple Faro Instances → Labels → Users choose which to trust
 
 ## Summary
 
 **Faro is the professional moderator interface** for triaging kind 1984 reports and publishing authoritative kind 1985 labels.
 
-**diVine is the end-user interface** that creates reports, subscribes to labels, and filters content.
+**Divine is the end-user interface** that creates reports, subscribes to labels, and filters content.
 
 Together they form a **decentralized, multi-stakeholder moderation system** where:
 - Users report easily
@@ -364,4 +364,4 @@ Together they form a **decentralized, multi-stakeholder moderation system** wher
 - Users choose which moderators to trust
 - No single point of control
 
-The missing piece in diVine is the **ModerationFeedService** coordinator that ties these systems together into a unified user experience.
+The missing piece in Divine is the **ModerationFeedService** coordinator that ties these systems together into a unified user experience.

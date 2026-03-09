@@ -5,13 +5,13 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -73,10 +73,18 @@ class OtherProfileScreen extends ConsumerWidget {
       );
     }
 
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final followRepository = ref.watch(followRepositoryProvider);
+
     return BlocProvider(
-      create: (context) =>
-          OtherProfileBloc(pubkey: pubkey, profileRepository: profileRepository)
-            ..add(const OtherProfileLoadRequested()),
+      create: (context) => OtherProfileBloc(
+        pubkey: pubkey,
+        profileRepository: profileRepository,
+        contentBlocklistService: blocklistService,
+        currentUserPubkey: nostrClient.publicKey,
+        followRepository: followRepository,
+      )..add(const OtherProfileLoadRequested()),
       child: OtherProfileView(
         pubkey: pubkey,
         displayNameHint: displayNameHint,
@@ -120,9 +128,13 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   /// Whether a refresh is currently in progress.
   bool _isRefreshing = false;
 
+  /// Whether the profile feed load has been tracked.
+  bool _hasTrackedFeedLoad = false;
+
   @override
   void initState() {
     super.initState();
+    FeedPerformanceTracker().startFeedLoad('profile');
   }
 
   @override
@@ -171,12 +183,9 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   }
 
   Future<void> _more() async {
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final isBlocked = blocklistService.isBlocked(widget.pubkey);
-
-    final followRepository = ref.read(followRepositoryProvider);
-    // If NostrClient doesn't have keys yet, treat as not following
-    final isFollowing = followRepository?.isFollowing(widget.pubkey) ?? false;
+    final otherProfileBloc = context.read<OtherProfileBloc>();
+    final isBlocked = otherProfileBloc.isBlocked;
+    final isFollowing = otherProfileBloc.isFollowing;
 
     // Get display name for actions (match pattern from build())
     final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
@@ -208,20 +217,36 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
       case MoreSheetResult.unfollow:
         await _unfollowUser();
       case MoreSheetResult.blockConfirmed:
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-        final nostrClient = ref.read(nostrServiceProvider);
-        blocklistService.blockUser(
-          widget.pubkey,
-          ourPubkey: nostrClient.publicKey,
+        context.read<OtherProfileBloc>().add(
+          const OtherProfileBlockRequested(),
         );
-        ref.read(blocklistVersionProvider.notifier).increment();
         if (mounted) {
+          final profile = ref
+              .read(userProfileReactiveProvider(widget.pubkey))
+              .value;
+          final name =
+              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+          // TODO(SofiaRey): revisit when designs are ready
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Blocked $name')));
           context.pop();
         }
       case MoreSheetResult.unblockConfirmed:
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-        blocklistService.unblockUser(widget.pubkey);
-        ref.read(blocklistVersionProvider.notifier).increment();
+        context.read<OtherProfileBloc>().add(
+          const OtherProfileUnblockRequested(),
+        );
+        if (mounted) {
+          final profile = ref
+              .read(userProfileReactiveProvider(widget.pubkey))
+              .value;
+          final name =
+              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+          // TODO(SofiaRey): revisit when designs are ready
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Unblocked $name')));
+        }
     }
   }
 
@@ -231,8 +256,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
         profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
 
     final followRepository = ref.read(followRepositoryProvider);
-    // Can't unfollow if NostrClient doesn't have keys yet
-    if (followRepository == null) return;
     await followRepository.toggleFollow(widget.pubkey);
 
     if (mounted) {
@@ -263,9 +286,10 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     if (!mounted) return;
 
     if (result == MoreSheetResult.unblockConfirmed) {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(widget.pubkey);
-      ref.read(blocklistVersionProvider.notifier).increment();
+      if (!mounted) return;
+      context.read<OtherProfileBloc>().add(
+        const OtherProfileUnblockRequested(),
+      );
     }
   }
 
@@ -297,6 +321,14 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           'video_count': videosAsync.asData?.value.videos.length ?? 0,
         },
       );
+
+      if (!_hasTrackedFeedLoad) {
+        _hasTrackedFeedLoad = true;
+        final count = videosAsync.asData?.value.videos.length ?? 0;
+        final tracker = FeedPerformanceTracker();
+        tracker.markFirstVideosReceived('profile', count);
+        tracker.markFeedDisplayed('profile', count);
+      }
     }
 
     return BlocBuilder<OtherProfileBloc, OtherProfileState>(
@@ -312,109 +344,25 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             profile?.bestDisplayName ?? widget.displayNameHint ?? 'Profile';
 
         return Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            toolbarHeight: 72,
-            leadingWidth: 80,
-            centerTitle: false,
-            titleSpacing: 0,
+          backgroundColor: VineTheme.backgroundColor,
+          appBar: DiVineAppBar(
+            title: displayName,
+            showBackButton: true,
+            onBackPressed: context.pop,
             backgroundColor: profileColor ?? VineTheme.navGreen,
-            leading: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Container(
-                width: 48,
-                height: 48,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: VineTheme.iconButtonBackground,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SvgPicture.asset(
-                  'assets/icon/CaretLeft.svg',
-                  width: 32,
-                  height: 32,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
-                  ),
-                  semanticsLabel: 'Back',
-                ),
-              ),
-              onPressed: context.pop,
-            ),
-            title: Text(
-              displayName,
-              style: VineTheme.titleFont(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
             actions: [
-              // Refresh button
-              IconButton(
-                key: const Key('refresh-icon-button'),
-                tooltip: 'Refresh',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Container(
-                  width: 48,
-                  height: 48,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: VineTheme.iconButtonBackground,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: _isRefreshing
-                      ? const SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : SvgPicture.asset(
-                          'assets/icon/refresh.svg',
-                          width: 28,
-                          height: 28,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
-                          ),
-                        ),
-                ),
+              DiVineAppBarAction(
+                icon: _isRefreshing
+                    ? const MaterialIconSource(Icons.refresh)
+                    : const SvgIconSource('assets/icon/refresh.svg'),
                 onPressed: _isRefreshing ? null : _refreshProfile,
+                tooltip: 'Refresh',
+                semanticLabel: 'Refresh profile',
               ),
-              const SizedBox(width: 8),
-              // More button
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: Container(
-                    width: 48,
-                    height: 48,
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: VineTheme.iconButtonBackground,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/icon/DotsThree.svg',
-                      width: 28,
-                      height: 28,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                      semanticsLabel: 'More options',
-                    ),
-                  ),
-                  onPressed: _more,
-                ),
+              DiVineAppBarAction(
+                icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+                onPressed: _more,
+                semanticLabel: 'More options',
               ),
             ],
           ),
@@ -423,7 +371,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
             AsyncError(:final error) => Center(
               child: Text(
                 'Error: $error',
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: VineTheme.whiteText),
               ),
             ),
             AsyncData(:final value) => ProfileGridView(
@@ -453,47 +401,17 @@ class _ProfileErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: onBack,
-        ),
-        title: Text(
-          'Profile',
-          style: VineTheme.titleFont(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+      backgroundColor: VineTheme.backgroundColor,
+      appBar: DiVineAppBar(
+        title: 'Profile',
+        showBackButton: true,
+        onBackPressed: onBack,
       ),
       body: Center(
-        child: Text(message, style: const TextStyle(color: Colors.white)),
+        child: Text(
+          message,
+          style: const TextStyle(color: VineTheme.whiteText),
+        ),
       ),
     );
   }

@@ -17,7 +17,7 @@ Event _makeEvent({
   return Event(
     _testPubkey,
     30005,
-    tags.map(List<dynamic>.from).toList(),
+    tags.map(List<String>.from).toList(),
     content,
     createdAt: createdAt ?? 1718400000,
   );

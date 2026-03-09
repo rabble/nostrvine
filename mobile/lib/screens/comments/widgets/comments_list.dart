@@ -1,6 +1,7 @@
 // ABOUTME: Comments list widget with loading, error, and empty states
 // ABOUTME: Renders comments in a flat list using CommentItem widget
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
@@ -8,12 +9,12 @@ import 'package:openvine/screens/comments/widgets/widgets.dart';
 
 class CommentsList extends StatefulWidget {
   const CommentsList({
-    required this.isOriginalVine,
+    required this.showClassicVineNotice,
     required this.scrollController,
     super.key,
   });
 
-  final bool isOriginalVine;
+  final bool showClassicVineNotice;
   final ScrollController scrollController;
 
   @override
@@ -57,7 +58,9 @@ class _CommentsListState extends State<CommentsList> {
         final threaded = state.threadedComments;
 
         if (threaded.isEmpty) {
-          return CommentsEmptyState(isClassicVine: widget.isOriginalVine);
+          return CommentsEmptyState(
+            isClassicVine: widget.showClassicVineNotice,
+          );
         }
 
         return ListView.builder(
@@ -85,6 +88,9 @@ class _ErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Center(
-    child: Text('Failed to load comments', style: TextStyle(color: Colors.red)),
+    child: Text(
+      'Failed to load comments',
+      style: TextStyle(color: VineTheme.error),
+    ),
   );
 }

@@ -84,7 +84,10 @@ class VideoEditorConstants {
   ];
 
   /// Width of drawing tool items in the draw editor toolbar.
-  static double drawItemWidth = 48.0;
+  static const double drawItemWidth = 48.0;
+
+  /// Border radius applied to the video editor canvas.
+  static const double canvasRadius = 32.0;
 
   /// Base font size in pixels for text overlays.
   static const double baseFontSize = 24.0;
@@ -294,6 +297,14 @@ class VideoEditorGalleryConstants {
 
   /// Factor for clamping drag offset relative to width.
   static double dragClampFactor = 0.3;
+
+  /// Maximum upward Y clamp (pixels) during drag — prevents clip from
+  /// leaving the gallery area upward.
+  static double dragYClampUp = 40;
+
+  /// Maximum downward Y clamp (pixels) during drag — prevents clip from
+  /// going too far below the gallery area.
+  static double dragYClampDown = 200;
 
   /// Scale factor when in reorder mode.
   static double reorderScale = 0.5;

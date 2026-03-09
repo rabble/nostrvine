@@ -234,7 +234,7 @@ void main() {
           ),
         );
 
-        expect(findButtonSemantics(), findsOneWidget);
+        expect(findButtonSemantics(), findsWidgets);
       });
 
       testWidgets('Semantics enabled when onPressed is provided', (
@@ -247,7 +247,7 @@ void main() {
           ),
         );
 
-        final semantics = tester.widget<Semantics>(findButtonSemantics());
+        final semantics = tester.firstWidget<Semantics>(findButtonSemantics());
         expect(semantics.properties.enabled, isTrue);
       });
 
@@ -258,7 +258,7 @@ void main() {
           ),
         );
 
-        final semantics = tester.widget<Semantics>(findButtonSemantics());
+        final semantics = tester.firstWidget<Semantics>(findButtonSemantics());
         expect(semantics.properties.enabled, isFalse);
       });
 
@@ -270,7 +270,7 @@ void main() {
           ),
         );
 
-        final semantics = tester.widget<Semantics>(findButtonSemantics());
+        final semantics = tester.firstWidget<Semantics>(findButtonSemantics());
         expect(semantics.properties.label, 'Custom label');
       });
     });

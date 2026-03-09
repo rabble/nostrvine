@@ -1,27 +1,49 @@
 // ABOUTME: Content blocklist service for filtering unwanted content from feeds
 // ABOUTME: Maintains internal blocklist while allowing explicit profile visits
+// ABOUTME: Persists blocks to SharedPreferences and publishes to Nostr (kind 30000)
+
+import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// SharedPreferences key for persisted block list
+const _blockedUsersPrefsKey = 'blocked_users_list';
+
+/// SharedPreferences key for severed followers (follow broken by block)
+const _severedFollowersPrefsKey = 'severed_followers_list';
 
 /// Service for managing content blocklist
 ///
 /// This service maintains an internal blocklist of npubs whose content
 /// should be filtered from all general feeds (home, explore, hashtag feeds).
 /// Users can still explicitly visit blocked profiles if they choose to follow them.
-/// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
+///
+/// Blocks are persisted to SharedPreferences for survival across restarts,
+/// and published to Nostr as kind 30000 events (d=block) for cross-device sync.
 class ContentBlocklistService {
-  ContentBlocklistService() {
+  ContentBlocklistService({
+    SharedPreferences? prefs,
+    void Function()? onChanged,
+  }) : _prefs = prefs,
+       _onChanged = onChanged {
     // Initialize with the specific npub requested
     _addInitialBlockedContent();
+    _loadBlockedUsers();
+    _loadSeveredFollowers();
     Log.info(
       'ContentBlocklistService initialized with $totalBlockedCount blocked accounts',
       name: 'ContentBlocklistService',
       category: LogCategory.system,
     );
   }
+
+  final SharedPreferences? _prefs;
+  final void Function()? _onChanged;
 
   // Internal blocklist of public keys (hex format) - kept empty for now
   static const Set<String> _internalBlocklist = {
@@ -34,14 +56,204 @@ class ContentBlocklistService {
   // Mutual mute blocklist (populated from kind 10000 events)
   final Set<String> _mutualMuteBlocklist = <String>{};
 
+  // Users who have blocked us (populated from kind 30000 events with d=block)
+  final Set<String> _blockedByOthers = <String>{};
+
+  // Followers whose follow relationship was severed by a block.
+  // Persists across unblocking so these users remain hidden from our
+  // followers list until they explicitly re-follow.
+  final Set<String> _severedFollowers = <String>{};
+
   // Subscription tracking for mutual mutes
   String? _mutualMuteSubscriptionId;
   bool _mutualMuteSyncStarted = false;
   String? _ourPubkey;
 
+  // Subscription tracking for block list sync
+  bool _blockListSyncStarted = false;
+
+  // Services for Nostr publishing (injected via sync methods)
+  AuthService? _authService;
+  NostrClient? _nostrClient;
+
+  void _notifyChanged() {
+    _onChanged?.call();
+  }
+
   void _addInitialBlockedContent() {
     // No hardcoded blocks - moderation should happen at relay level
     // Users can still block individuals via the app UI
+  }
+
+  /// Load persisted blocked users from SharedPreferences
+  void _loadBlockedUsers() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    final stored = prefs.getString(_blockedUsersPrefsKey);
+    if (stored == null || stored.isEmpty) return;
+
+    try {
+      final list = (jsonDecode(stored) as List<dynamic>).cast<String>();
+      _runtimeBlocklist.addAll(list);
+      Log.info(
+        'Loaded ${list.length} blocked users from persistence',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to load persisted blocked users: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Save blocked users to SharedPreferences
+  void _saveBlockedUsers() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    try {
+      final json = jsonEncode(_runtimeBlocklist.toList());
+      prefs.setString(_blockedUsersPrefsKey, json);
+    } catch (e) {
+      Log.error(
+        'Failed to persist blocked users: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Load persisted severed followers from SharedPreferences
+  void _loadSeveredFollowers() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    final stored = prefs.getString(_severedFollowersPrefsKey);
+    if (stored == null || stored.isEmpty) return;
+
+    try {
+      final list = (jsonDecode(stored) as List<dynamic>).cast<String>();
+      _severedFollowers.addAll(list);
+      Log.info(
+        'Loaded ${list.length} severed followers from persistence',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to load persisted severed followers: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Save severed followers to SharedPreferences
+  void _saveSeveredFollowers() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    try {
+      final json = jsonEncode(_severedFollowers.toList());
+      prefs.setString(_severedFollowersPrefsKey, json);
+    } catch (e) {
+      Log.error(
+        'Failed to persist severed followers: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Check if a follower's relationship was severed by a block
+  ///
+  /// Returns true if the pubkey was added to severed followers when blocked.
+  /// This persists across unblocking so the user stays hidden from our
+  /// followers list until they explicitly re-follow.
+  bool isFollowSevered(String pubkey) => _severedFollowers.contains(pubkey);
+
+  /// Remove a pubkey from the severed followers set
+  ///
+  /// Call this when the user explicitly re-follows to restore them
+  /// in the followers list.
+  void removeSeveredFollower(String pubkey) {
+    if (_severedFollowers.remove(pubkey)) {
+      _saveSeveredFollowers();
+      Log.debug(
+        'Removed severed follower: $pubkey',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Publish our block list to Nostr as kind 30000 with d=block
+  Future<void> _publishBlockListToNostr() async {
+    final authService = _authService;
+    final nostrClient = _nostrClient;
+
+    if (authService == null || nostrClient == null) {
+      Log.debug(
+        'Cannot publish block list - Nostr services not yet injected',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    if (!authService.isAuthenticated) {
+      Log.warning(
+        'Cannot publish block list - user not authenticated',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    try {
+      final tags = <List<String>>[
+        ['d', 'block'],
+        ['title', 'Block List'],
+        ['client', 'diVine'],
+      ];
+
+      for (final pubkey in _runtimeBlocklist) {
+        tags.add(['p', pubkey]);
+      }
+
+      final event = await authService.createAndSignEvent(
+        kind: 30000,
+        content: 'Block list',
+        tags: tags,
+      );
+
+      if (event != null) {
+        final sentEvent = await nostrClient.publishEvent(event);
+        if (sentEvent != null) {
+          Log.info(
+            'Published block list to Nostr with ${_runtimeBlocklist.length} entries',
+            name: 'ContentBlocklistService',
+            category: LogCategory.system,
+          );
+        } else {
+          Log.warning(
+            'Failed to publish block list event to relays',
+            name: 'ContentBlocklistService',
+            category: LogCategory.system,
+          );
+        }
+      }
+    } catch (e) {
+      Log.error(
+        'Error publishing block list to Nostr: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
   }
 
   /// Check if a public key is blocked
@@ -52,10 +264,17 @@ class ContentBlocklistService {
   }
 
   /// Check if content should be filtered from feeds
+  ///
+  /// Filters content from:
+  /// - Users we blocked (internal + runtime blocklist)
+  /// - Users who mutually muted us (kind 10000)
+  /// - Users who blocked us (kind 30000, d=block) — hides our content
+  ///   from their feeds and their content from ours
   bool shouldFilterFromFeeds(String pubkey) {
     return _internalBlocklist.contains(pubkey) ||
         _runtimeBlocklist.contains(pubkey) ||
-        _mutualMuteBlocklist.contains(pubkey);
+        _mutualMuteBlocklist.contains(pubkey) ||
+        _blockedByOthers.contains(pubkey);
   }
 
   /// Check if another user has muted us (mutual mute blocking)
@@ -65,8 +284,15 @@ class ContentBlocklistService {
   /// but cannot view profiles of users who muted them.
   bool hasMutedUs(String pubkey) => _mutualMuteBlocklist.contains(pubkey);
 
+  /// Check if another user has blocked us via kind 30000 (d=block)
+  ///
+  /// Use this for blockee-side enforcement - prevent viewing profiles of
+  /// users who have blocked us, and prevent following them.
+  bool hasBlockedUs(String pubkey) => _blockedByOthers.contains(pubkey);
+
   /// Add a public key to the runtime blocklist
   ///
+  /// Persists to SharedPreferences and publishes to Nostr (kind 30000).
   /// If [ourPubkey] is provided, it will be used to prevent self-blocking.
   /// Otherwise falls back to [_ourPubkey] set during [syncMuteListsInBackground].
   void blockUser(String pubkey, {String? ourPubkey}) {
@@ -83,29 +309,44 @@ class ContentBlocklistService {
 
     if (!_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.add(pubkey);
+      _saveBlockedUsers();
+      _publishBlockListToNostr();
+      _notifyChanged();
 
       Log.debug(
-        'Added user to blocklist: $pubkey...',
+        'Added user to blocklist: $pubkey',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
     }
+
+    // Track as severed follower so they stay hidden from our followers
+    // list even after unblocking (until they explicitly re-follow).
+    if (!_severedFollowers.contains(pubkey)) {
+      _severedFollowers.add(pubkey);
+      _saveSeveredFollowers();
+    }
   }
 
   /// Remove a public key from the runtime blocklist
-  /// Note: Cannot remove users from internal blocklist
+  ///
+  /// Persists to SharedPreferences and publishes updated list to Nostr.
+  /// Note: Cannot remove users from internal blocklist.
   void unblockUser(String pubkey) {
     if (_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.remove(pubkey);
+      _saveBlockedUsers();
+      _publishBlockListToNostr();
+      _notifyChanged();
 
       Log.info(
-        'Removed user from blocklist: $pubkey...',
+        'Removed user from blocklist: $pubkey',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
     } else if (_internalBlocklist.contains(pubkey)) {
       Log.warning(
-        'Cannot unblock user from internal blocklist: $pubkey...',
+        'Cannot unblock user from internal blocklist: $pubkey',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
@@ -137,9 +378,10 @@ class ContentBlocklistService {
   void clearRuntimeBlocks() {
     if (_runtimeBlocklist.isNotEmpty) {
       _runtimeBlocklist.clear();
+      _saveBlockedUsers();
 
       Log.debug(
-        '🧹 Cleared all runtime blocks',
+        'Cleared all runtime blocks',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
@@ -170,6 +412,9 @@ class ContentBlocklistService {
 
     _mutualMuteSyncStarted = true;
     _ourPubkey = ourPubkey;
+
+    // Store references for Nostr publishing
+    _nostrClient = nostrService;
 
     Log.info(
       'Starting mutual mute list sync for pubkey: $ourPubkey',
@@ -204,6 +449,58 @@ class ContentBlocklistService {
     }
   }
 
+  /// Start background sync of block lists from other users (kind 30000, d=block)
+  ///
+  /// Subscribes to kind 30000 events WHERE our pubkey appears in 'p' tags
+  /// AND the 'd' tag is 'block'. This detects when other users block us.
+  Future<void> syncBlockListsInBackground(
+    NostrClient nostrService,
+    AuthService authService,
+    String ourPubkey,
+  ) async {
+    if (_blockListSyncStarted) {
+      Log.debug(
+        'Block list sync already started, skipping',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    _blockListSyncStarted = true;
+    _ourPubkey = ourPubkey;
+    _authService = authService;
+    _nostrClient = nostrService;
+
+    Log.info(
+      'Starting block list sync for pubkey: $ourPubkey',
+      name: 'ContentBlocklistService',
+      category: LogCategory.system,
+    );
+
+    try {
+      // Subscribe to kind 30000 events WHERE our pubkey is in 'p' tags
+      final filter = Filter(kinds: const [30000]);
+      filter.p = [ourPubkey];
+
+      final subscription = nostrService.subscribe([filter]);
+
+      subscription.listen(_handleBlockListEvent);
+
+      Log.info(
+        'Block list subscription created',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to start block list sync: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
   /// Handle incoming kind 10000 mute list events
   /// Adds/removes muter based on whether our pubkey is in their 'p' tags
   void _handleMuteListEvent(Event event) {
@@ -231,6 +528,7 @@ class ContentBlocklistService {
       // They muted us - add to blocklist
       if (!_mutualMuteBlocklist.contains(muterPubkey)) {
         _mutualMuteBlocklist.add(muterPubkey);
+        _notifyChanged();
         Log.info(
           'Added mutual mute: $muterPubkey',
           name: 'ContentBlocklistService',
@@ -241,8 +539,60 @@ class ContentBlocklistService {
       // They removed us from mute list - remove from blocklist
       if (_mutualMuteBlocklist.contains(muterPubkey)) {
         _mutualMuteBlocklist.remove(muterPubkey);
+        _notifyChanged();
         Log.info(
           'Removed mutual mute (unmuted): $muterPubkey',
+          name: 'ContentBlocklistService',
+          category: LogCategory.system,
+        );
+      }
+    }
+  }
+
+  /// Handle incoming kind 30000 block list events (d=block)
+  ///
+  /// Checks if the event has d=block tag and our pubkey in 'p' tags,
+  /// then adds/removes the blocker from [_blockedByOthers].
+  void _handleBlockListEvent(Event event) {
+    if (event.kind != 30000) return;
+
+    // Only process events with d=block tag
+    final hasBlockDTag = event.tags.any(
+      (tag) =>
+          tag.isNotEmpty &&
+          tag[0] == 'd' &&
+          tag.length >= 2 &&
+          tag[1] == 'block',
+    );
+    if (!hasBlockDTag) return;
+
+    final blockerPubkey = event.pubkey;
+
+    // Check if our pubkey is in this user's block list
+    final stillBlocked = event.tags.any(
+      (tag) =>
+          tag.isNotEmpty &&
+          tag[0] == 'p' &&
+          tag.length >= 2 &&
+          tag[1] == _ourPubkey,
+    );
+
+    if (stillBlocked) {
+      if (!_blockedByOthers.contains(blockerPubkey)) {
+        _blockedByOthers.add(blockerPubkey);
+        _notifyChanged();
+        Log.info(
+          'Detected block from user: $blockerPubkey',
+          name: 'ContentBlocklistService',
+          category: LogCategory.system,
+        );
+      }
+    } else {
+      if (_blockedByOthers.contains(blockerPubkey)) {
+        _blockedByOthers.remove(blockerPubkey);
+        _notifyChanged();
+        Log.info(
+          'Detected unblock from user: $blockerPubkey',
           name: 'ContentBlocklistService',
           category: LogCategory.system,
         );
@@ -255,5 +605,6 @@ class ContentBlocklistService {
     // Subscription cleanup would go here if NostrService had unsubscribe method
     _mutualMuteSyncStarted = false;
     _mutualMuteSubscriptionId = null;
+    _blockListSyncStarted = false;
   }
 }

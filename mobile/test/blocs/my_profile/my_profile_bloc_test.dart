@@ -157,38 +157,32 @@ void main() {
         expect(state1, isNot(equals(state2)));
       });
 
-      test(
-        '$MyProfileUpdated instances are equal with same profile',
-        () {
-          final profile = createTestProfile();
-          final state1 = MyProfileUpdated(
-            profile: profile,
-            extractedUsername: 'alice',
-          );
-          final state2 = MyProfileUpdated(
-            profile: profile,
-            extractedUsername: 'alice',
-          );
-          expect(state1, equals(state2));
-        },
-      );
+      test('$MyProfileUpdated instances are equal with same profile', () {
+        final profile = createTestProfile();
+        final state1 = MyProfileUpdated(
+          profile: profile,
+          extractedUsername: 'alice',
+        );
+        final state2 = MyProfileUpdated(
+          profile: profile,
+          extractedUsername: 'alice',
+        );
+        expect(state1, equals(state2));
+      });
 
-      test(
-        '$MyProfileUpdated instances differ with different profiles',
-        () {
-          final profile1 = createTestProfile(
-            eventId:
-                'event1234567890123456789012345678901234567890123456789012345678',
-          );
-          final profile2 = createTestProfile(
-            eventId:
-                'event2345678901234567890123456789012345678901234567890123456789',
-          );
-          final state1 = MyProfileUpdated(profile: profile1);
-          final state2 = MyProfileUpdated(profile: profile2);
-          expect(state1, isNot(equals(state2)));
-        },
-      );
+      test('$MyProfileUpdated instances differ with different profiles', () {
+        final profile1 = createTestProfile(
+          eventId:
+              'event1234567890123456789012345678901234567890123456789012345678',
+        );
+        final profile2 = createTestProfile(
+          eventId:
+              'event2345678901234567890123456789012345678901234567890123456789',
+        );
+        final state1 = MyProfileUpdated(profile: profile1);
+        final state2 = MyProfileUpdated(profile: profile2);
+        expect(state1, isNot(equals(state2)));
+      });
 
       test(
         '$MyProfileUpdated instances differ with different extractedUsername',
@@ -836,11 +830,7 @@ void main() {
                 'externalNip05',
                 'alice@example.com',
               )
-              .having(
-                (s) => s.extractedUsername,
-                'extractedUsername',
-                isNull,
-              ),
+              .having((s) => s.extractedUsername, 'extractedUsername', isNull),
         ],
         verify: (_) {
           verify(

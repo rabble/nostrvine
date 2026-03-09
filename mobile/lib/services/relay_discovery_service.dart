@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:meta/meta.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,7 +17,10 @@ class IndexerRelayConfig {
   static const List<String> defaultIndexers = [
     'wss://purplepag.es', // Purple Pages - primary NIP-65 indexer
     'wss://user.kindpag.es', // Kind Pages - specialized user metadata indexer
-    'wss://relay.damus.io', // Damus relay - broad indexer fallback
+    // NOTE: relay.damus.io was here but returns 503 sporadically, slowing
+    // discovery. relay.nos.social actively crawls kind 10002 via
+    // nos-event-service, giving it broad NIP-65 coverage.
+    'wss://relay.nos.social',
   ];
 }
 
@@ -138,37 +142,19 @@ class RelayDiscoveryService {
         category: LogCategory.auth,
       );
 
-      // Query all indexers in parallel - first success wins
-      final results = await Future.wait(
-        _indexerRelays.map((indexerUrl) async {
-          try {
-            return await _queryIndexerDirect(indexerUrl, pubkeyHex);
-          } catch (e) {
-            Log.warning(
-              '⚠️ Failed to query indexer $indexerUrl: $e',
-              name: 'RelayDiscoveryService',
-              category: LogCategory.auth,
-            );
-            return <DiscoveredRelay>[];
-          }
-        }),
-      );
+      // Query all indexers in parallel - return on first non-empty result
+      final result = await _queryFirstSuccess(pubkeyHex);
 
-      // Use first non-empty result (maintains indexer priority order)
-      for (int i = 0; i < results.length; i++) {
-        if (results[i].isNotEmpty) {
-          final indexerUrl = _indexerRelays[i];
-          Log.info(
-            '✅ Found ${results[i].length} relays on indexer: $indexerUrl',
-            name: 'RelayDiscoveryService',
-            category: LogCategory.auth,
-          );
+      if (result != null) {
+        final (relays, indexerUrl) = result;
+        Log.info(
+          '✅ Found ${relays.length} relays on indexer: $indexerUrl',
+          name: 'RelayDiscoveryService',
+          category: LogCategory.auth,
+        );
 
-          // Cache the result
-          await _cacheRelays(npub, results[i]);
-
-          return RelayDiscoveryResult.success(results[i], indexerUrl);
-        }
+        await _cacheRelays(npub, relays);
+        return RelayDiscoveryResult.success(relays, indexerUrl);
       }
 
       // No relay list found on any indexer
@@ -188,12 +174,58 @@ class RelayDiscoveryService {
     }
   }
 
+  /// Query all indexers in parallel and return the first non-empty result.
+  ///
+  /// Uses a [Completer] to resolve as soon as any indexer returns relays,
+  /// rather than waiting for all indexers to finish. If all indexers return
+  /// empty or fail, returns null.
+  ///
+  // TODO: cancel remaining WebSocket connections on first success. Currently
+  // losing queries complete naturally (EOSE or 10s timeout) which is harmless
+  // but wastes resources.
+  Future<(List<DiscoveredRelay>, String)?> _queryFirstSuccess(
+    String pubkeyHex,
+  ) async {
+    final completer = Completer<(List<DiscoveredRelay>, String)?>();
+    var pendingCount = _indexerRelays.length;
+
+    for (final indexerUrl in _indexerRelays) {
+      unawaited(
+        queryIndexerDirect(indexerUrl, pubkeyHex)
+            .then((relays) {
+              if (!completer.isCompleted && relays.isNotEmpty) {
+                completer.complete((relays, indexerUrl));
+              } else {
+                pendingCount--;
+                if (pendingCount == 0 && !completer.isCompleted) {
+                  completer.complete(null);
+                }
+              }
+            })
+            .catchError((Object e) {
+              Log.warning(
+                '⚠️ Failed to query indexer $indexerUrl: $e',
+                name: 'RelayDiscoveryService',
+                category: LogCategory.auth,
+              );
+              pendingCount--;
+              if (pendingCount == 0 && !completer.isCompleted) {
+                completer.complete(null);
+              }
+            }),
+      );
+    }
+
+    return completer.future;
+  }
+
   /// Query a specific indexer relay for kind 10002 event via direct WebSocket.
   ///
   /// Opens a direct WebSocket connection to the indexer, sends a REQ for the
   /// user's kind 10002 event, waits for EVENT/EOSE, and disconnects.
   /// This is self-contained - no NostrClient or relay pool needed.
-  Future<List<DiscoveredRelay>> _queryIndexerDirect(
+  @visibleForTesting
+  Future<List<DiscoveredRelay>> queryIndexerDirect(
     String indexerUrl,
     String pubkeyHex,
   ) async {

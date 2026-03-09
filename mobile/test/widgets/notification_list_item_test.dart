@@ -266,6 +266,23 @@ void main() {
         expect(foundBoldActor, isTrue);
       });
 
+      testWidgets('handles multi-word actor names without duplicating text', (
+        WidgetTester tester,
+      ) async {
+        final notification = makeNotification(
+          actorName: 'Scary Guy',
+          message: 'Scary Guy liked your video',
+        );
+
+        await tester.pumpWidget(buildTestWidget(notification: notification));
+
+        expect(_richTextContains(tester, 'Scary Guy liked your video'), isTrue);
+        expect(
+          _richTextContains(tester, 'Scary Guy Guy liked your video'),
+          isFalse,
+        );
+      });
+
       testWidgets('renders plain text when actor name is null', (
         WidgetTester tester,
       ) async {
@@ -324,6 +341,26 @@ void main() {
         expect(find.text('📱'), findsOneWidget);
         expect(find.text('System notification'), findsOneWidget);
       });
+
+      testWidgets(
+        'renders plain text when message does not start with actor name',
+        (
+          WidgetTester tester,
+        ) async {
+          final notification = NotificationModel(
+            id: 'sys-2',
+            type: NotificationType.system,
+            actorPubkey: testPubkey,
+            actorName: 'Scary Guy',
+            message: 'You have a new update',
+            timestamp: DateTime.now(),
+          );
+
+          await tester.pumpWidget(buildTestWidget(notification: notification));
+
+          expect(find.text('You have a new update'), findsOneWidget);
+        },
+      );
     });
 
     group('timestamp', () {

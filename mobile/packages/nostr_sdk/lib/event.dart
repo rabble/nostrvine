@@ -48,7 +48,9 @@ class Event {
     final pubkey = data['pubkey'] as String;
     final createdAt = data['created_at'] as int;
     final kind = data['kind'] as int;
-    final tags = data['tags'];
+    final tags = (data['tags'] as List<dynamic>)
+        .map((tag) => (tag as List<dynamic>).map((e) => e as String).toList())
+        .toList();
     final content = data['content'] as String;
     final sig = data['sig'] == null ? "" : data['sig'] as String;
 
@@ -68,7 +70,7 @@ class Event {
   final int kind;
 
   /// A JSON array of event tags.
-  List<dynamic> tags; // Modified by proof-of-work
+  List<List<String>> tags;
 
   /// Event content.
   String content;
@@ -101,11 +103,11 @@ class Event {
     }
     if (difficulty > 0) {
       final difficultyInBytes = (difficulty / 8).ceil();
-      List<dynamic> result = [];
-      for (List<dynamic> tag in tags) {
+      final result = <List<String>>[];
+      for (final tag in tags) {
         result.add(tag);
       }
-      result.add(["nonce", "0", difficulty.toString()]);
+      result.add(['nonce', '0', difficulty.toString()]);
       tags = result;
       int nonce = 0;
       do {
@@ -149,8 +151,8 @@ class Event {
   /// Returns empty string if no d-tag is found (per NIP-01 spec).
   String get dTagValue {
     for (final tag in tags) {
-      if (tag is List && tag.isNotEmpty && tag[0] == 'd') {
-        return tag.length > 1 ? tag[1].toString() : '';
+      if (tag.isNotEmpty && tag[0] == 'd') {
+        return tag.length > 1 ? tag[1] : '';
       }
     }
     return '';
@@ -175,7 +177,7 @@ class Event {
     String publicKey,
     int createdAt,
     int kind,
-    List<dynamic> tags,
+    List<List<String>> tags,
     String content,
   ) {
     final jsonData = json.encode([

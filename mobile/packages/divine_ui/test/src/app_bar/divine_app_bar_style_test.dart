@@ -77,6 +77,52 @@ void main() {
       });
     });
 
+    group('solidStyle', () {
+      test('has surfaceContainer background color', () {
+        expect(
+          DiVineAppBarStyle.solidStyle.iconButtonBackgroundColor,
+          VineTheme.surfaceContainer,
+        );
+      });
+
+      test('has primary icon color', () {
+        expect(
+          DiVineAppBarStyle.solidStyle.iconColor,
+          VineTheme.primary,
+        );
+      });
+
+      test('has outlineMuted border with width 2', () {
+        expect(
+          DiVineAppBarStyle.solidStyle.iconButtonBorderSide,
+          const BorderSide(color: VineTheme.outlineMuted, width: 2),
+        );
+      });
+    });
+
+    group('transparentStyle', () {
+      test('has 15% black scrim background color', () {
+        expect(
+          DiVineAppBarStyle.transparentStyle.iconButtonBackgroundColor,
+          const Color(0x26000000),
+        );
+      });
+
+      test('has white icon color', () {
+        expect(
+          DiVineAppBarStyle.transparentStyle.iconColor,
+          VineTheme.whiteText,
+        );
+      });
+
+      test('has no border', () {
+        expect(
+          DiVineAppBarStyle.transparentStyle.iconButtonBorderSide,
+          isNull,
+        );
+      });
+    });
+
     group('copyWith', () {
       test('returns new instance with updated values', () {
         const original = DiVineAppBarStyle(

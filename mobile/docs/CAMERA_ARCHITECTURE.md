@@ -180,12 +180,12 @@ if (Platform.isMacOS) {
 ### Platform-Specific Testing
 
 **iOS**:
-- Settings → Privacy & Security → Camera → divine (toggle off/on)
+- Settings → Privacy & Security → Camera → Divine (toggle off/on)
 - Test both front and back cameras
 - Test camera switching during recording
 
 **Android**:
-- Settings → Apps → divine → Permissions → Camera (toggle off/on)
+- Settings → Apps → Divine → Permissions → Camera (toggle off/on)
 - Test enhanced camera features (zoom, focus, flash)
 - Verify fallback to basic camera if enhanced fails
 

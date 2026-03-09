@@ -54,17 +54,13 @@ void main() {
         });
 
         test('uses provided config', () async {
-          await PlayerPool.init(
-            config: const VideoPoolConfig(maxPlayers: 10),
-          );
+          await PlayerPool.init(config: const VideoPoolConfig(maxPlayers: 10));
 
           expect(PlayerPool.instance.maxPlayers, equals(10));
         });
 
         test('disposes existing instance when re-initializing', () async {
-          await PlayerPool.init(
-            config: const VideoPoolConfig(maxPlayers: 3),
-          );
+          await PlayerPool.init(config: const VideoPoolConfig(maxPlayers: 3));
           final oldInstance = PlayerPool.instance;
 
           await PlayerPool.init();
@@ -105,10 +101,7 @@ void main() {
             instances.add(PlayerPool.instance);
           }
 
-          expect(
-            instances.every((i) => identical(i, instances.first)),
-            isTrue,
-          );
+          expect(instances.every((i) => identical(i, instances.first)), isTrue);
         });
       });
 
@@ -142,13 +135,9 @@ void main() {
         });
 
         test('allows re-initialization after reset', () async {
-          await PlayerPool.init(
-            config: const VideoPoolConfig(maxPlayers: 3),
-          );
+          await PlayerPool.init(config: const VideoPoolConfig(maxPlayers: 3));
           await PlayerPool.reset();
-          await PlayerPool.init(
-            config: const VideoPoolConfig(maxPlayers: 7),
-          );
+          await PlayerPool.init(config: const VideoPoolConfig(maxPlayers: 7));
 
           expect(PlayerPool.instance.maxPlayers, equals(7));
         });
@@ -272,9 +261,7 @@ void main() {
           await pool.getPlayer('https://example.com/v1.mp4');
 
           // The cached player should have been muted before returning.
-          verify(
-            () => createdPlayers[0].player.setVolume(0),
-          ).called(1);
+          verify(() => createdPlayers[0].player.setVolume(0)).called(1);
         });
 
         test('evicts LRU player when at capacity', () async {
@@ -341,9 +328,7 @@ void main() {
         test('returns player for known URL', () async {
           final created = await pool.getPlayer('https://example.com/v1.mp4');
 
-          final existing = pool.getExistingPlayer(
-            'https://example.com/v1.mp4',
-          );
+          final existing = pool.getExistingPlayer('https://example.com/v1.mp4');
 
           expect(identical(created, existing), isTrue);
         });
@@ -516,9 +501,9 @@ void main() {
         test('handles exception during stop gracefully', () async {
           await pool.getPlayer('https://example.com/v1.mp4');
 
-          when(() => createdPlayers[0].player.stop()).thenThrow(
-            Exception('stop failed'),
-          );
+          when(
+            () => createdPlayers[0].player.stop(),
+          ).thenThrow(Exception('stop failed'));
 
           expect(() => pool.stopAll(), returnsNormally);
         });
@@ -599,5 +584,69 @@ void main() {
         );
       });
     });
+
+    group('serialized getPlayer', () {
+      test('concurrent getPlayer calls do not over-evict', () async {
+        final createdCount = <int>[0];
+        final serializedPool = _SerializedTestPool(
+          maxPlayers: 3,
+          onCreatePlayer: () {
+            createdCount[0]++;
+            return _createMockPooledPlayer();
+          },
+        );
+        addTearDown(serializedPool.dispose);
+
+        // Fire 5 concurrent getPlayer calls (exceeds maxPlayers=3).
+        // With serialization, the pool should evict exactly 2 LRU
+        // players (to make room for URLs 4 and 5), ending at exactly
+        // maxPlayers=3.
+        final futures = [
+          serializedPool.getPlayer('https://example.com/v1.mp4'),
+          serializedPool.getPlayer('https://example.com/v2.mp4'),
+          serializedPool.getPlayer('https://example.com/v3.mp4'),
+          serializedPool.getPlayer('https://example.com/v4.mp4'),
+          serializedPool.getPlayer('https://example.com/v5.mp4'),
+        ];
+
+        await Future.wait(futures);
+
+        expect(serializedPool.playerCount, equals(3));
+      });
+
+      test('serialization does not deadlock on same-URL calls', () async {
+        final serializedPool = _SerializedTestPool(
+          maxPlayers: 3,
+          onCreatePlayer: _createMockPooledPlayer,
+        );
+        addTearDown(serializedPool.dispose);
+
+        // Two concurrent calls for the same URL should not deadlock.
+        final futures = [
+          serializedPool.getPlayer('https://example.com/v1.mp4'),
+          serializedPool.getPlayer('https://example.com/v1.mp4'),
+        ];
+
+        // This should complete without hanging.
+        final results = await Future.wait(futures);
+
+        // Both should return the same player instance.
+        expect(identical(results[0], results[1]), isTrue);
+        expect(serializedPool.playerCount, equals(1));
+      });
+    });
   });
+}
+
+/// A [PlayerPool] subclass that uses mock players but inherits
+/// the real [getPlayer] serialization logic.
+class _SerializedTestPool extends PlayerPool {
+  _SerializedTestPool({required this.onCreatePlayer, super.maxPlayers});
+
+  final _MockPooledPlayer Function() onCreatePlayer;
+
+  @override
+  Future<PooledPlayer> createPlayer() async {
+    return onCreatePlayer();
+  }
 }

@@ -44,7 +44,7 @@ void main() {
 
     Widget buildTestWidget({
       required CommentsState commentsState,
-      bool isOriginalVine = false,
+      bool showClassicVineNotice = false,
       ScrollController? scrollController,
     }) {
       final sc = scrollController ?? ScrollController();
@@ -60,7 +60,7 @@ void main() {
             body: BlocProvider<CommentsBloc>.value(
               value: mockCommentsBloc,
               child: CommentsList(
-                isOriginalVine: isOriginalVine,
+                showClassicVineNotice: showClassicVineNotice,
                 scrollController: sc,
               ),
             ),
@@ -110,7 +110,7 @@ void main() {
       expect(find.byType(CommentsEmptyState), findsOneWidget);
     });
 
-    testWidgets('shows Classic Vine notice when isOriginalVine', (
+    testWidgets('shows Classic Vine notice when requested', (
       tester,
     ) async {
       const state = CommentsState(
@@ -120,7 +120,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        buildTestWidget(commentsState: state, isOriginalVine: true),
+        buildTestWidget(commentsState: state, showClassicVineNotice: true),
       );
       await tester.pump();
 

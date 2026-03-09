@@ -5,8 +5,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio, NativeProofData;
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
@@ -25,9 +25,9 @@ void main() {
       final proofJson = jsonEncode(proofData.toJson());
 
       // Create draft with proofManifestJson
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 6),
@@ -56,16 +56,16 @@ void main() {
       final json = draft.toJson();
       expect(json['proofManifestJson'], proofJson);
 
-      final deserialized = VineDraft.fromJson(json, '/path/to');
+      final deserialized = DivineVideoDraft.fromJson(json, '/path/to');
       expect(deserialized.hasProofMode, true);
       expect(deserialized.nativeProof, isNotNull);
       expect(deserialized.nativeProof!.videoHash, 'abc123def456');
     });
 
     test('should handle drafts without proofManifestJson', () {
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 6),
@@ -86,7 +86,7 @@ void main() {
 
       // Verify JSON serialization handles null
       final json = draft.toJson();
-      final deserialized = VineDraft.fromJson(json, '/path/to');
+      final deserialized = DivineVideoDraft.fromJson(json, '/path/to');
       expect(deserialized.hasProofMode, false);
       expect(deserialized.nativeProof, null);
     });
@@ -107,7 +107,7 @@ void main() {
         // proofManifestJson missing
       };
 
-      final draft = VineDraft.fromJson(json, '/path/to');
+      final draft = DivineVideoDraft.fromJson(json, '/path/to');
 
       expect(draft.hasProofMode, false);
       expect(draft.nativeProof, null);
@@ -122,9 +122,9 @@ void main() {
 
       final proofJson = jsonEncode(proofData.toJson());
 
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'test_clip',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 6),

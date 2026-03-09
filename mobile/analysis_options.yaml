@@ -10,7 +10,6 @@ analyzer:
     - "**/l10n/**"
     - "**/packages/**"
   errors:
-    argument_type_not_assignable: ignore
     avoid_catches_without_on_clauses: ignore
     avoid_equals_and_hash_code_on_mutable_classes: ignore
     avoid_positional_boolean_parameters: ignore
@@ -38,9 +37,6 @@ analyzer:
     list_element_type_not_assignable: ignore
     map_value_type_not_assignable: ignore
     matching_super_parameters: ignore
-    non_bool_condition: ignore
-    non_bool_negation_expression: ignore
-    non_bool_operand: ignore
     non_constant_identifier_names: ignore
     only_throw_errors: ignore
     prefer_asserts_with_message: ignore
@@ -52,7 +48,6 @@ analyzer:
     strict_top_level_inference: ignore
     type_annotate_public_apis: ignore
     unawaited_futures: ignore
-    unchecked_use_of_nullable_value: ignore
 
 linter:
   rules:

@@ -1,16 +1,19 @@
 // ABOUTME: Integration test for complete auto-draft flow from recording to publish
 // ABOUTME: Validates end-to-end behavior: record → auto-draft → edit → publish → retry
 
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('Auto-draft complete flow integration', () {
+    late AppDatabase database;
+
     setUp(() {
       TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -34,11 +37,19 @@ void main() {
                 return null;
             }
           });
+
+      database = AppDatabase.test(NativeDatabase.memory());
+    });
+
+    tearDown(() async {
+      await database.close();
     });
 
     test('record → auto-draft → edit → publish flow', () async {
-      SharedPreferences.setMockInitialValues({});
-      final draftStorage = DraftStorageService();
+      final draftStorage = DraftStorageService(
+        draftsDao: database.draftsDao,
+        clipsDao: database.clipsDao,
+      );
 
       // Simulate recording completion with auto-draft
       // (This test documents the expected flow)
@@ -47,9 +58,9 @@ void main() {
       // (Tested in VineRecordingProvider tests)
 
       // 2. Preview screen loads draft by ID
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'id',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 4),
@@ -95,13 +106,15 @@ void main() {
     });
 
     test('record → auto-draft → failed publish → retry flow', () async {
-      SharedPreferences.setMockInitialValues({});
-      final draftStorage = DraftStorageService();
+      final draftStorage = DraftStorageService(
+        draftsDao: database.draftsDao,
+        clipsDao: database.clipsDao,
+      );
 
       // 1. Auto-draft created
-      final draft = VineDraft.create(
+      final draft = DivineVideoDraft.create(
         clips: [
-          RecordingClip(
+          DivineVideoClip(
             id: 'id',
             video: EditorVideo.file('/path/to/video.mp4'),
             duration: const Duration(seconds: 4),

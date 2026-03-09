@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
@@ -42,7 +42,7 @@ void main() {
 
     testWidgets('displays clips as colored segments', (tester) async {
       final testClips = [
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip1',
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
@@ -50,7 +50,7 @@ void main() {
           targetAspectRatio: .vertical,
           originalAspectRatio: 9 / 16,
         ),
-        RecordingClip(
+        DivineVideoClip(
           id: 'clip2',
           video: EditorVideo.file('/test/clip2.mp4'),
           duration: const Duration(seconds: 3),
@@ -96,7 +96,7 @@ void main() {
 class _TestClipManagerNotifier extends ClipManagerNotifier {
   _TestClipManagerNotifier(this._clips);
 
-  final List<RecordingClip> _clips;
+  final List<DivineVideoClip> _clips;
 
   @override
   ClipManagerState build() {

@@ -27,6 +27,9 @@ import 'package:url_launcher/url_launcher.dart';
 // Key for persisted authentication source
 const _kAuthSourceKey = 'authentication_source';
 
+// Key for the last-used account npub (used to restore the correct identity on restart)
+const _kLastUsedNpubKey = 'last_used_npub';
+
 // Keys for bunker connection persistence
 const _kBunkerInfoKey = 'bunker_info';
 
@@ -135,7 +138,7 @@ typedef PreFetchFollowingCallback = Future<void> Function(String pubkeyHex);
 /// blocking app startup.
 typedef UserRelaysDiscoveredCallback = void Function(List<String> relayUrls);
 
-/// Main authentication service for the divine app
+/// Main authentication service for the Divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
 /// Riverpod
 class AuthService implements BackgroundAwareService {
@@ -168,6 +171,7 @@ class AuthService implements BackgroundAwareService {
   UserProfile? _currentProfile;
   String? _lastError;
   bool _storageErrorOccurred = false;
+  bool _hasExpiredOAuthSession = false;
   KeycastRpc? _keycastSigner;
 
   // NIP-46 bunker signer state
@@ -233,12 +237,17 @@ class AuthService implements BackgroundAwareService {
   /// Get the current authentication source
   AuthenticationSource get authenticationSource => _authSource;
 
-  /// Check if user has registered with divine (email/password)
-  /// Returns true if authenticated via divine OAuth, false for anonymous/imported keys
+  /// Check if user has registered with Divine (email/password)
+  /// Returns true if authenticated via Divine OAuth, false for anonymous/imported keys
   bool get isRegistered => _authSource == AuthenticationSource.divineOAuth;
 
   /// Check if user is using an anonymous auto-generated identity
   bool get isAnonymous => _authSource == AuthenticationSource.automatic;
+
+  /// True when a divineOAuth user's session expired and refresh failed.
+  /// The user's identity is intact but remote signing is unavailable.
+  /// UI should prompt re-login instead of "Secure Your Account".
+  bool get hasExpiredOAuthSession => _hasExpiredOAuthSession;
 
   /// Get discovered user relays (NIP-65)
   List<DiscoveredRelay> get userRelays => List.unmodifiable(_userRelays);
@@ -368,11 +377,57 @@ class AuthService implements BackgroundAwareService {
             await signInWithDivineOAuth(session);
             return;
           }
-          // session not restored — fall back to unauthenticated
-          Log.warning(
-            'initialize: Divine OAuth session not restored '
+          // Session expired or missing — attempt token refresh
+          Log.info(
+            'initialize: Divine OAuth session expired or missing '
             '(session=${session != null}, '
-            'hasRpcAccess=${session?.hasRpcAccess})',
+            'hasRpcAccess=${session?.hasRpcAccess}), '
+            'attempting refresh...',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          if (_oauthClient != null) {
+            final refreshed = await _oauthClient.refreshSession();
+            if (refreshed != null && refreshed.hasRpcAccess) {
+              Log.info(
+                'initialize: refresh succeeded, restoring session',
+                name: 'AuthService',
+                category: LogCategory.auth,
+              );
+              await refreshed.save(_flutterSecureStorage);
+              await signInWithDivineOAuth(refreshed);
+              return;
+            }
+          }
+          // Refresh failed — mark expired session so UI shows
+          // "Session Expired" instead of "Secure Your Account"
+          _hasExpiredOAuthSession = true;
+          // Try to fall back to local keys while preserving
+          // divineOAuth source so future launches can retry refresh
+          try {
+            final hasKeys = await _keyStorage.hasKeys();
+            if (hasKeys) {
+              final keyContainer = await _keyStorage.getKeyContainer();
+              if (keyContainer != null) {
+                Log.info(
+                  'initialize: refresh failed, using local keys '
+                  'with divineOAuth source preserved',
+                  name: 'AuthService',
+                  category: LogCategory.auth,
+                );
+                await _setupUserSession(
+                  keyContainer,
+                  AuthenticationSource.divineOAuth,
+                );
+                return;
+              }
+            }
+          } catch (e, stack) {
+            _reportStorageError(e, stack, 'divineOAuth fallback to local keys');
+          }
+          Log.info(
+            'initialize: refresh failed, no local keys — '
+            'unauthenticated with expired session flag',
             name: 'AuthService',
             category: LogCategory.auth,
           );
@@ -380,62 +435,14 @@ class AuthService implements BackgroundAwareService {
           return;
 
         case AuthenticationSource.importedKeys:
-          // Only restore if secure keys exist
-          Log.info(
-            'initialize: restoring imported keys...',
-            name: 'AuthService',
-            category: LogCategory.auth,
+          await _restoreLastUsedAccountOrFallback(
+            AuthenticationSource.importedKeys,
           );
-          try {
-            final hasKeys = await _keyStorage.hasKeys();
-            if (hasKeys) {
-              final keyContainer = await _keyStorage.getKeyContainer();
-              if (keyContainer != null) {
-                Log.info(
-                  'initialize: imported keys found — '
-                  'pubkey=${keyContainer.publicKeyHex}',
-                  name: 'AuthService',
-                  category: LogCategory.auth,
-                );
-                await _setupUserSession(
-                  keyContainer,
-                  AuthenticationSource.importedKeys,
-                );
-                return;
-              }
-              Log.error(
-                'Imported keys: hasKeys() true but getKeyContainer() '
-                'returned null — possible storage corruption',
-                name: 'AuthService',
-                category: LogCategory.auth,
-              );
-              _reportStorageError(
-                StateError(
-                  'hasKeys() true but getKeyContainer() returned null',
-                ),
-                StackTrace.current,
-                'importedKeys storage inconsistency',
-              );
-            }
-          } catch (e, stack) {
-            Log.error(
-              'Secure storage error loading imported keys: $e. '
-              'User will need to re-import their key.',
-              name: 'AuthService',
-              category: LogCategory.auth,
-            );
-            _reportStorageError(e, stack, 'importedKeys load');
-            _lastError =
-                "Couldn't load your saved identity from this device. "
-                'Sign in with your existing account, or continue '
-                'to create a new one.';
-          }
-          _setAuthState(AuthState.unauthenticated);
-          return;
 
         case AuthenticationSource.automatic:
-          // Default behavior: check for keys and auto-create if needed
-          await _checkExistingAuth();
+          await _restoreLastUsedAccountOrFallback(
+            AuthenticationSource.automatic,
+          );
 
         case AuthenticationSource.bunker:
           // Try to restore bunker connection from secure storage
@@ -1050,9 +1057,14 @@ class AuthService implements BackgroundAwareService {
         case AuthenticationSource.automatic:
         case AuthenticationSource.importedKeys:
         case AuthenticationSource.none:
+          // Clear any stale global signer keys so they don't hijack signing
+          // operations for the non-bunker/non-keycast account.
+          await _clearBunkerInfo();
+          await _clearAmberInfo();
+          await KeycastSession.clear(_flutterSecureStorage);
           Log.debug(
             '_restoreSignerInfo: local key-based auth — '
-            'no signer info to restore',
+            'cleared stale signer keys',
             name: 'AuthService',
             category: LogCategory.auth,
           );
@@ -1171,6 +1183,13 @@ class AuthService implements BackgroundAwareService {
         final session = await KeycastSession.load(_flutterSecureStorage);
         if (session != null && session.hasRpcAccess) {
           await signInWithDivineOAuth(session);
+        } else if (session != null && session.isExpired) {
+          Log.warning(
+            'signInForAccount: OAuth session expired for $pubkeyHex',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          throw SessionExpiredException();
         } else {
           Log.error(
             'signInForAccount: no archived OAuth session for $pubkeyHex '
@@ -1666,6 +1685,32 @@ class AuthService implements BackgroundAwareService {
     }
   }
 
+  /// Import identity from an ncryptsec1 encrypted private key (NIP-49).
+  ///
+  /// Decrypts [ncryptsec] with [password] using scrypt + XChaCha20-Poly1305,
+  /// then imports the recovered private key via [importFromHex].
+  ///
+  /// Returns [AuthResult.failure] with message 'Incorrect password' if the
+  /// password is wrong or the ciphertext is corrupted.
+  Future<AuthResult> importFromNcryptsec(
+    String ncryptsec,
+    String password,
+  ) async {
+    Log.debug(
+      'Importing identity from ncryptsec1 (NIP-49)',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    try {
+      final privateKeyHex = await Nip49.decode(ncryptsec, password);
+      return importFromHex(privateKeyHex);
+    } on Nip49Exception {
+      _setAuthState(AuthState.unauthenticated);
+      return AuthResult.failure('Incorrect password');
+    }
+  }
+
   /// Import identity from hex private key
   Future<AuthResult> importFromHex(
     String privateKeyHex, {
@@ -1909,7 +1954,7 @@ class AuthService implements BackgroundAwareService {
     // Create the session
     _nostrConnectSession = NostrConnectSession(
       relays: relays,
-      appName: 'diVine',
+      appName: 'Divine',
       appUrl: 'https://divine.video',
       appIcon: 'https://divine.video/icon.png',
       callback: 'divine://nostrconnect',
@@ -2105,6 +2150,7 @@ class AuthService implements BackgroundAwareService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
+    _hasExpiredOAuthSession = false;
 
     try {
       _keycastSigner = KeycastRpc.fromSession(_oauthConfig, session);
@@ -2117,7 +2163,7 @@ class AuthService implements BackgroundAwareService {
       _currentProfile = UserProfile(
         npub: NostrKeyUtils.encodePubKey(publicKeyHex),
         publicKeyHex: publicKeyHex,
-        displayName: 'diVine User',
+        displayName: 'Divine User',
       );
 
       final prefs = await SharedPreferences.getInstance();
@@ -2250,6 +2296,7 @@ class AuthService implements BackgroundAwareService {
       // returns.
       if (deleteKeys) {
         await prefs.remove(_kAuthSourceKey);
+        await prefs.remove(_kLastUsedNpubKey);
       }
       await prefs.remove('age_verified_16_plus');
       await prefs.remove('terms_accepted_at');
@@ -2480,7 +2527,7 @@ class AuthService implements BackgroundAwareService {
 
     try {
       // 1. Prepare event metadata and tags
-      // CRITICAL: divine relays require specific tags for storage
+      // CRITICAL: Divine relays require specific tags for storage
       final eventTags = List<List<String>>.from(tags ?? []);
 
       // CRITICAL: Kind 0 events require expiration tag FIRST (matching Python
@@ -2580,6 +2627,61 @@ class AuthService implements BackgroundAwareService {
       );
       return null;
     }
+  }
+
+  /// Restores the last-used account's per-identity key, falling back to
+  /// [_checkExistingAuth] when the pref is absent or the key is missing.
+  Future<void> _restoreLastUsedAccountOrFallback(
+    AuthenticationSource source,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastNpub = prefs.getString(_kLastUsedNpubKey);
+
+      if (lastNpub != null && lastNpub.isNotEmpty) {
+        Log.info(
+          '_restoreLastUsedAccountOrFallback: '
+          'found last-used npub, loading identity key...',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        final container = await _keyStorage.getIdentityKeyContainer(lastNpub);
+        if (container != null) {
+          Log.info(
+            '_restoreLastUsedAccountOrFallback: '
+            'identity key found — pubkey=${container.publicKeyHex}',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+          await _setupUserSession(container, source);
+          return;
+        }
+        Log.warning(
+          '_restoreLastUsedAccountOrFallback: '
+          'identity key absent for last-used npub — falling back',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      } else {
+        Log.info(
+          '_restoreLastUsedAccountOrFallback: '
+          'no last-used npub stored — falling back to _checkExistingAuth',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+    } catch (e, stack) {
+      Log.warning(
+        '_restoreLastUsedAccountOrFallback: error reading last-used npub: $e '
+        '— falling back to _checkExistingAuth',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _reportStorageError(e, stack, '_restoreLastUsedAccountOrFallback');
+    }
+
+    // Fall back to the original behaviour (load primary key, or create new).
+    await _checkExistingAuth();
   }
 
   /// Check for existing authentication
@@ -2755,7 +2857,7 @@ class AuthService implements BackgroundAwareService {
     _authSource = source;
 
     // Clear any stale remote signers that don't match the new auth source.
-    // This prevents a Keycast RPC signer from a previous divine OAuth session
+    // This prevents a Keycast RPC signer from a previous Divine OAuth session
     // from being used when signing events for an anonymous/imported-key account.
     if (source != AuthenticationSource.divineOAuth) {
       if (_keycastSigner != null) {
@@ -2832,6 +2934,8 @@ class AuthService implements BackgroundAwareService {
       );
 
       await prefs.setString(_kAuthSourceKey, source.code);
+
+      await prefs.setString(_kLastUsedNpubKey, keyContainer.npub);
 
       // Pre-fetch following list from REST API BEFORE setting auth state.
       // The router redirect fires synchronously on auth state change and reads
@@ -3014,7 +3118,7 @@ class AuthService implements BackgroundAwareService {
       _userRelays = [];
 
       Log.error(
-        '❌ Relay discovery failed: $e - falling back to diVine relay only',
+        '❌ Relay discovery failed: $e - falling back to Divine relay only',
         name: 'AuthService',
         category: LogCategory.auth,
       );

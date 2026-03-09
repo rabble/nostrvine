@@ -139,7 +139,7 @@ Store gateway preference in SharedPreferences alongside relay config.
 
 ### 4. UI Toggle
 
-Section in `RelaySettingsScreen` (only visible when divine relay configured):
+Section in `RelaySettingsScreen` (only visible when Divine relay configured):
 
 ```
 ┌─────────────────────────────────────────┐
@@ -184,7 +184,7 @@ bool _shouldUseGateway(SubscriptionType type) {
   // Only for cacheable, shared content
   if (type == SubscriptionType.homeFeed) return false;
 
-  // Only when using divine relay
+  // Only when using Divine relay
   if (!_isUsingDivineRelay()) return false;
 
   // Only if user has gateway enabled
@@ -234,7 +234,7 @@ test/integration/gateway_sqlite_integration_test.dart
 
 ```
 test/screens/relay_settings_gateway_test.dart
-├── gateway toggle visible when divine relay configured
+├── gateway toggle visible when Divine relay configured
 ├── gateway toggle hidden when using other relay
 ├── toggle state persists across app restart
 ├── toggle disabled state shows explanation

@@ -14,9 +14,9 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:sound_service/sound_service.dart';
 
 import '../helpers/go_router.dart';
 
@@ -190,7 +190,7 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+        expect(find.byType(DiVineAppBarIconButton), findsOneWidget);
       });
 
       testWidgets('has dark background', (tester) async {
@@ -1012,7 +1012,7 @@ void main() {
           expect(find.byType(SoundDetailScreen), findsOneWidget);
 
           // Tap back button (which now uses context.pop() from go_router)
-          await tester.tap(find.byIcon(Icons.arrow_back));
+          await tester.tap(find.byType(DiVineAppBarIconButton));
           await tester.pumpAndSettle();
 
           // Verify GoRouter.pop() was called
@@ -1083,7 +1083,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap back button to trigger dispose
-        await tester.tap(find.byIcon(Icons.arrow_back));
+        await tester.tap(find.byType(DiVineAppBarIconButton));
         await tester.pumpAndSettle();
 
         // Verify GoRouter.pop() was called (preview stops in dispose)

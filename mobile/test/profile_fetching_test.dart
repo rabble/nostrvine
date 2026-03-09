@@ -142,9 +142,7 @@ void main() {
 
       // Assert - Verify batch fetch was called
       verify(
-        () => mockProfileRepository.fetchBatchProfiles(
-          pubkeys: testPubkeys,
-        ),
+        () => mockProfileRepository.fetchBatchProfiles(pubkeys: testPubkeys),
       ).called(1);
     });
 

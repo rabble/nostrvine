@@ -4,7 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -648,7 +648,7 @@ void main() {
 
       test('returns true when finalRenderedClip is set and not processing', () {
         final state = VideoEditorProviderState(
-          finalRenderedClip: RecordingClip(
+          finalRenderedClip: DivineVideoClip(
             id: 'rendered',
             video: EditorVideo.file('/docs/rendered.mp4'),
             duration: const Duration(seconds: 3),
@@ -664,7 +664,7 @@ void main() {
       test('returns false when metadataLimitReached even with clip', () {
         final state = VideoEditorProviderState(
           metadataLimitReached: true,
-          finalRenderedClip: RecordingClip(
+          finalRenderedClip: DivineVideoClip(
             id: 'rendered',
             video: EditorVideo.file('/docs/rendered.mp4'),
             duration: const Duration(seconds: 3),
@@ -680,7 +680,7 @@ void main() {
       test('returns false when isProcessing even with clip', () {
         final state = VideoEditorProviderState(
           isProcessing: true,
-          finalRenderedClip: RecordingClip(
+          finalRenderedClip: DivineVideoClip(
             id: 'rendered',
             video: EditorVideo.file('/docs/rendered.mp4'),
             duration: const Duration(seconds: 3),

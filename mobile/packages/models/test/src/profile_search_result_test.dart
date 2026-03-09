@@ -298,10 +298,10 @@ void main() {
         expect(result.bestDisplayName, equals('username'));
       });
 
-      test('falls back to pubkey prefix when both are null', () {
+      test('returns full pubkey when both displayName and name are null', () {
         const result = ProfileSearchResult(pubkey: testPubkey);
 
-        expect(result.bestDisplayName, equals('12345678'));
+        expect(result.bestDisplayName, equals(testPubkey));
       });
     });
 
