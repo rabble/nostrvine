@@ -32,6 +32,7 @@ class VideoStats {
     this.authorName,
     this.authorAvatar,
     this.blurhash,
+    this.dimensions,
     this.trendingScore,
     this.loops,
     this.views,
@@ -149,6 +150,15 @@ class VideoStats {
       textTrackContent = null;
     }
 
+    var dimensions =
+        eventData['dimensions']?.toString() ??
+        eventData['dim']?.toString() ??
+        json['dimensions']?.toString() ??
+        json['dim']?.toString() ??
+        statsData['dimensions']?.toString() ??
+        statsData['dim']?.toString();
+    if (dimensions != null && dimensions.isEmpty) dimensions = null;
+
     // Also check for blurhash and summary in tags (NIP-71 standard)
     // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
     String? blurhashFromTag;
@@ -178,6 +188,9 @@ class VideoStats {
           }
           if (tagName == 'blurhash' && blurhashFromTag == null) {
             blurhashFromTag = tagValue;
+          }
+          if ((tagName == 'dim' || tagName == 'size') && dimensions == null) {
+            dimensions = tagValue;
           }
           if (tagName == 'summary' && summaryFromTag == null) {
             summaryFromTag = tagValue;
@@ -271,6 +284,7 @@ class VideoStats {
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
+      dimensions: dimensions,
       reactions: _parseInt(reactions),
       comments: _parseInt(comments),
       reposts: _parseInt(reposts),
@@ -333,6 +347,9 @@ class VideoStats {
   /// Blurhash for placeholder thumbnail.
   final String? blurhash;
 
+  /// Video dimensions from REST or Nostr `dim`/`size` metadata.
+  final String? dimensions;
+
   /// Reaction/like count.
   final int reactions;
 
@@ -391,6 +408,7 @@ class VideoStats {
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
+      dimensions: dimensions,
       originalLikes: reactions,
       // When from Funnelcake, Nostr likes are added to originalLikes by default
       // Setting to 0 here ensures VideoInteractionsBloc seeds the correct count

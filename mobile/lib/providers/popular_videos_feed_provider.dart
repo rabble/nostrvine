@@ -61,7 +61,9 @@ class PopularVideosFeed extends _$PopularVideosFeed {
 
     try {
       final videosRepository = ref.read(videosRepositoryProvider);
-      final videos = await videosRepository.getPopularVideos(limit: 100);
+      final videos = await videosRepository.getPopularVideos(
+        limit: AppConstants.paginationBatchSize,
+      );
 
       if (!ref.mounted) {
         return const VideoFeedState(videos: [], hasMoreContent: true);
@@ -205,9 +207,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     return videoEventService.filterVideoList(
       videos
           .where((v) => v.isSupportedOnCurrentPlatform)
-          .where(
-            (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-          )
+          .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
           .toList(),
     );
   }
