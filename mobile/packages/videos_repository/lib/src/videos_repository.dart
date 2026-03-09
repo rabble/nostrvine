@@ -119,25 +119,18 @@ class VideosRepository {
 
     // 2. If no list refs, return following-only result
     if (videoRefs.isEmpty) {
-      return HomeFeedResult(
-        videos: videos,
-        rawResponseBody: rawBody,
-      );
+      return HomeFeedResult(videos: videos, rawResponseBody: rawBody);
     }
 
     // 3. Merge list videos with following videos
-    return _mergeListVideos(
-      followingVideos: videos,
-      videoRefs: videoRefs,
-    );
+    return _mergeListVideos(followingVideos: videos, videoRefs: videoRefs);
   }
 
   /// Fetches videos from followed users via Funnelcake API or Nostr relays.
   ///
   /// Returns a record with the videos and the raw JSON response body
   /// (when available from Funnelcake initial page) for cache-first loading.
-  Future<({List<VideoEvent> videos, String? rawBody})>
-      _fetchFollowingVideos({
+  Future<({List<VideoEvent> videos, String? rawBody})> _fetchFollowingVideos({
     required List<String> authors,
     String? userPubkey,
     int limit = _defaultLimit,
@@ -352,9 +345,7 @@ class VideosRepository {
     }
 
     // Return in ref order, omitting unresolved refs
-    return [
-      for (final ref in videoRefs) ?refToVideo[ref],
-    ];
+    return [for (final ref in videoRefs) ?refToVideo[ref]];
   }
 
   /// Fetches videos published by a specific author.
@@ -423,11 +414,7 @@ class VideosRepository {
     }
 
     // 2. Nostr fallback
-    final filter = Filter(
-      kinds: [_videoKind],
-      limit: limit,
-      until: until,
-    );
+    final filter = Filter(kinds: [_videoKind], limit: limit, until: until);
 
     final events = await _nostrClient.queryEvents([filter]);
 
@@ -470,10 +457,7 @@ class VideosRepository {
         );
 
         // Preserve API order (sorted by trending score)
-        final videos = _transformVideoStats(
-          videoStats,
-          sortByCreatedAt: false,
-        );
+        final videos = _transformVideoStats(videoStats, sortByCreatedAt: false);
         if (videos.isNotEmpty) return videos;
       } on FunnelcakeException {
         // Fall through to NIP-50
@@ -509,9 +493,7 @@ class VideosRepository {
       until: until,
     );
 
-    final events = await _nostrClient.queryEvents(
-      [fallbackFilter],
-    );
+    final events = await _nostrClient.queryEvents([fallbackFilter]);
 
     final videos = _transformAndFilter(events)
       // Sort by engagement score (uses VideoEvent's built-in comparator)
@@ -887,16 +869,12 @@ class VideosRepository {
   ///
   /// Returns a list of matching [VideoEvent]s (unsorted — call
   /// [deduplicateAndSortVideos] to rank).
-  Future<List<VideoEvent>> searchVideosLocally({
-    required String query,
-  }) async {
+  Future<List<VideoEvent>> searchVideosLocally({required String query}) async {
     final trimmed = query.trim();
     if (trimmed.isEmpty || _localStorage == null) return [];
 
     // Phase 1: SQL-level content search (fast, reduces event count)
-    final contentMatches = await _localStorage.searchEvents(
-      query: trimmed,
-    );
+    final contentMatches = await _localStorage.searchEvents(query: trimmed);
 
     // Phase 2: Hashtag search (tags stored as JSON, need separate query)
     final hashtagMatches = await _localStorage.getEventsByHashtags(
@@ -932,9 +910,7 @@ class VideosRepository {
   ///
   /// This still relies on local cache search, but avoids the remote API and
   /// relay phases when a tab only needs a badge count.
-  Future<int> countVideosLocally({
-    required String query,
-  }) async {
+  Future<int> countVideosLocally({required String query}) async {
     final matches = await searchVideosLocally(query: query);
     return matches.length;
   }
@@ -961,10 +937,7 @@ class VideosRepository {
     try {
       final events = await _nostrClient
           .searchVideos(trimmed, limit: limit)
-          .timeout(
-            _relaySearchTimeout,
-            onTimeout: (sink) => sink.close(),
-          )
+          .timeout(_relaySearchTimeout, onTimeout: (sink) => sink.close())
           .toList();
       return _transformAndFilter(events, sortByCreatedAt: false);
     } on Exception catch (e, stackTrace) {
@@ -1060,15 +1033,9 @@ class VideosRepository {
 
     // Phase 2: Funnelcake API (fast)
     try {
-      final apiResults = await searchVideosViaApi(
-        query: trimmed,
-        limit: limit,
-      );
+      final apiResults = await searchVideosViaApi(query: trimmed, limit: limit);
       if (apiResults.isNotEmpty) {
-        accumulated = deduplicateAndSortVideos([
-          ...accumulated,
-          ...apiResults,
-        ]);
+        accumulated = deduplicateAndSortVideos([...accumulated, ...apiResults]);
         yield accumulated;
       }
     } on Exception catch (e, stackTrace) {
@@ -1088,10 +1055,7 @@ class VideosRepository {
       limit: limit,
     );
     if (relayResults.isNotEmpty) {
-      accumulated = deduplicateAndSortVideos([
-        ...accumulated,
-        ...relayResults,
-      ]);
+      accumulated = deduplicateAndSortVideos([...accumulated, ...relayResults]);
       yield accumulated;
     }
   }
