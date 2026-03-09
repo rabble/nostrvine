@@ -671,6 +671,119 @@ void main() {
     });
   });
 
+  group('getRecentVideos', () {
+    test('returns videos from API', () async {
+      final mockResponse = jsonEncode([
+        {
+          'id': 'recent1',
+          'pubkey': 'pub1',
+          'created_at': 1767316187,
+          'kind': 34236,
+          'd_tag': 'dtag1',
+          'title': 'Recent Video',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 5,
+          'comments': 1,
+          'reposts': 0,
+          'engagement_score': 7,
+        },
+      ]);
+
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/api/videos');
+        expect(request.url.queryParameters['sort'], 'recent');
+        expect(request.url.queryParameters['limit'], '10');
+        return http.Response(mockResponse, 200);
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      final videos = await service.getRecentVideos(limit: 10);
+
+      expect(videos.length, 1);
+      expect(videos.first.id, 'recent1');
+      expect(videos.first.title, 'Recent Video');
+    });
+
+    test('returns empty list when not available', () async {
+      final service = AnalyticsApiService(baseUrl: null);
+      final videos = await service.getRecentVideos();
+      expect(videos, isEmpty);
+    });
+
+    test('uses custom timeout when provided', () async {
+      final mockClient = MockClient((request) async {
+        // Simulate a slow response that exceeds the custom timeout
+        await Future<void>.delayed(const Duration(seconds: 4));
+        return http.Response('[]', 200);
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      // With a 1-second timeout, the 4-second delay should cause a timeout
+      final videos = await service.getRecentVideos(
+        limit: 1,
+        timeout: const Duration(seconds: 1),
+      );
+
+      // Should return empty list due to timeout (caught internally)
+      expect(videos, isEmpty);
+    });
+
+    test('uses default 15s timeout when no timeout specified', () async {
+      final mockResponse = jsonEncode([
+        {
+          'id': 'vid1',
+          'pubkey': 'pub1',
+          'created_at': 1767316187,
+          'kind': 34236,
+          'd_tag': '',
+          'title': 'Video',
+          'thumbnail': '',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        },
+      ]);
+
+      final mockClient = MockClient((request) async {
+        return http.Response(mockResponse, 200);
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      // Should work fine with default timeout
+      final videos = await service.getRecentVideos(limit: 1);
+      expect(videos.length, 1);
+    });
+
+    test('handles API error response', () async {
+      final mockClient = MockClient((request) async {
+        return http.Response('Internal Server Error', 500);
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      final videos = await service.getRecentVideos();
+      expect(videos, isEmpty);
+    });
+  });
+
   group('getUserProfile', () {
     test('returns profile data when user has a Kind 0 profile', () async {
       final mockClient = MockClient((request) async {

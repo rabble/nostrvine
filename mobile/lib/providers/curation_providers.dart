@@ -79,7 +79,11 @@ class FunnelcakeAvailable extends _$FunnelcakeAvailable {
       );
       // Use recent endpoint with limit=1 as lightweight probe
       // (trending endpoint may 500 on staging due to scoring query issues)
-      await analyticsService.getRecentVideos(limit: 1);
+      // Use a short 3s timeout so the probe doesn't block startup
+      await analyticsService.getRecentVideos(
+        limit: 1,
+        timeout: const Duration(seconds: 3),
+      );
       Log.info(
         '✅ Funnelcake: API available',
         name: 'FunnelcakeAvailable',
