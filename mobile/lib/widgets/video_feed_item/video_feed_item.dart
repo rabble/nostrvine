@@ -3,7 +3,6 @@
 
 import 'dart:ui' as ui;
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,6 +46,7 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
@@ -1598,63 +1598,12 @@ class VideoOverlayActions extends ConsumerWidget {
                                 clipBehavior: Clip.none,
                                 children: [
                                   // Avatar (tappable to go to profile)
-                                  GestureDetector(
+                                  UserAvatar(
+                                    imageUrl: avatarUrl,
+                                    name: displayName,
+                                    size: 48,
+                                    semanticLabel: 'Author avatar',
                                     onTap: navigateToProfile,
-                                    child: Container(
-                                      width: 48,
-                                      height: 48,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: VineTheme.whiteText,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(14),
-                                        child:
-                                            avatarUrl != null &&
-                                                avatarUrl.isNotEmpty
-                                            ? CachedNetworkImage(
-                                                imageUrl: avatarUrl,
-                                                width: 44,
-                                                height: 44,
-                                                fit: BoxFit.cover,
-                                                placeholder: (context, url) =>
-                                                    const ColoredBox(
-                                                      color: VineTheme
-                                                          .cardBackground,
-                                                      child: Icon(
-                                                        Icons.person,
-                                                        color: VineTheme
-                                                            .onSurfaceMuted,
-                                                        size: 24,
-                                                      ),
-                                                    ),
-                                                errorWidget:
-                                                    (context, url, error) =>
-                                                        const ColoredBox(
-                                                          color: VineTheme
-                                                              .cardBackground,
-                                                          child: Icon(
-                                                            Icons.person,
-                                                            color: VineTheme
-                                                                .onSurfaceMuted,
-                                                            size: 24,
-                                                          ),
-                                                        ),
-                                              )
-                                            : const ColoredBox(
-                                                color: VineTheme.cardBackground,
-                                                child: Icon(
-                                                  Icons.person,
-                                                  color:
-                                                      VineTheme.onSurfaceMuted,
-                                                  size: 24,
-                                                ),
-                                              ),
-                                      ),
-                                    ),
                                   ),
                                   // Follow button positioned at bottom-right of avatar
                                   Positioned(

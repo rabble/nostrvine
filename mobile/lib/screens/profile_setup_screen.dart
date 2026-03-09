@@ -23,6 +23,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileSetupScreen extends ConsumerWidget {
@@ -444,25 +445,13 @@ class _ProfileSetupScreenViewState
                                     clipBehavior: Clip.none,
                                     children: [
                                       // Profile picture preview
-                                      Container(
-                                        width: 144,
-                                        height: 144,
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            33,
-                                          ),
-                                          color: VineTheme.cardBackground,
-                                          border: Border.all(
-                                            color: VineTheme.onSurfaceDisabled,
-                                            width: 1.64,
-                                          ),
-                                        ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            31.36,
-                                          ),
-                                          child: _buildProfilePicturePreview(),
-                                        ),
+                                      UserAvatar(
+                                        imageProvider:
+                                            _buildProfilePictureProvider(),
+                                        name: _nameController.text.trim(),
+                                        size: 144,
+                                        semanticLabel:
+                                            'Profile picture preview',
                                       ),
                                       // Upload progress indicator
                                       if (_isUploadingImage)
@@ -474,11 +463,9 @@ class _ProfileSetupScreenViewState
                                           child: DecoratedBox(
                                             decoration: BoxDecoration(
                                               borderRadius:
-                                                  BorderRadius.circular(33),
+                                                  BorderRadius.circular(56),
                                               color: VineTheme.backgroundColor
-                                                  .withValues(
-                                                    alpha: 0.7,
-                                                  ),
+                                                  .withValues(alpha: 0.7),
                                             ),
                                             child: const Center(
                                               child: CircularProgressIndicator(
@@ -1058,49 +1045,21 @@ class _ProfileSetupScreenViewState
     );
   }
 
-  Widget _buildProfilePicturePreview() {
+  ImageProvider<Object>? _buildProfilePictureProvider() {
     // Priority: selected image > uploaded URL > manual URL > placeholder
     if (_selectedImage != null) {
-      return Image.file(
-        _selectedImage!,
-        fit: BoxFit.cover,
-        width: 144,
-        height: 144,
-      );
-    } else if (_uploadedImageUrl != null) {
-      return Image.network(
-        _uploadedImageUrl!,
-        fit: BoxFit.cover,
-        width: 144,
-        height: 144,
-        errorBuilder: (context, error, stackTrace) => Image.asset(
-          'assets/icon/acid_avatar.png',
-          width: 144,
-          height: 144,
-          fit: BoxFit.cover,
-        ),
-      );
-    } else if (_pictureController.text.isNotEmpty) {
-      return Image.network(
-        _pictureController.text,
-        fit: BoxFit.cover,
-        width: 144,
-        height: 144,
-        errorBuilder: (context, error, stackTrace) => Image.asset(
-          'assets/icon/acid_avatar.png',
-          width: 144,
-          height: 144,
-          fit: BoxFit.cover,
-        ),
-      );
-    } else {
-      return Image.asset(
-        'assets/icon/acid_avatar.png',
-        width: 144,
-        height: 144,
-        fit: BoxFit.cover,
-      );
+      return FileImage(_selectedImage!);
     }
+
+    if (_uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty) {
+      return NetworkImage(_uploadedImageUrl!);
+    }
+
+    if (_pictureController.text.isNotEmpty) {
+      return NetworkImage(_pictureController.text);
+    }
+
+    return null;
   }
 
   /// Platform-aware image selection
@@ -1841,9 +1800,7 @@ class _CustomColorButton extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: VineTheme.whiteText.withValues(alpha: 0.3),
-          ),
+          border: Border.all(color: VineTheme.whiteText.withValues(alpha: 0.3)),
         ),
         child: const Icon(Icons.colorize, color: VineTheme.whiteText, size: 20),
       ),
