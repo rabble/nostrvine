@@ -9,6 +9,7 @@ import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -40,6 +41,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     SharedPreferences? sharedPreferences,
     Duration autoRefreshMinInterval = _defaultAutoRefreshMinInterval,
     FeedPerformanceTracker? feedTracker,
+    HomeFeedCache? homeFeedCache,
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
        _curatedListRepository = curatedListRepository,
@@ -47,6 +49,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
        _sharedPreferences = sharedPreferences,
        _autoRefreshMinInterval = autoRefreshMinInterval,
        _feedTracker = feedTracker,
+       _homeFeedCache = homeFeedCache ?? const HomeFeedCache(),
        super(const VideoFeedState()) {
     on<VideoFeedStarted>(_onStarted);
     on<VideoFeedModeChanged>(_onModeChanged);
@@ -67,6 +70,13 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   final SharedPreferences? _sharedPreferences;
   final Duration _autoRefreshMinInterval;
   final FeedPerformanceTracker? _feedTracker;
+  final HomeFeedCache _homeFeedCache;
+
+  /// Whether the cache has already been served for this BLoC instance.
+  ///
+  /// Prevents serving stale cached data on subsequent loads (e.g.,
+  /// follow list changes or mode switches).
+  bool _cacheServed = false;
 
   /// Tracks when the last successful load completed, used by
   /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
@@ -346,12 +356,46 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
   /// Load videos for the specified mode.
   ///
+  /// For the home feed on cold start, serves cached data instantly while
+  /// fresh data loads in the background. The cache is only served once
+  /// per BLoC instance to avoid showing stale data on subsequent loads.
+  ///
   /// For the home feed, does NOT wait for the follow list to initialize.
   /// Instead, the follow-list stream subscription (set up in [_onStarted])
   /// drives recovery: when the follow list arrives via
   /// [VideoFeedFollowingListChanged], the handler decides whether to show
   /// the `noFollowedUsers` CTA or refresh the feed.
   Future<void> _loadVideos(FeedMode mode, Emitter<VideoFeedState> emit) async {
+    // Serve cached home feed on first load for instant startup.
+    if (!_cacheServed &&
+        (mode == FeedMode.home || mode == FeedMode.forYou) &&
+        _sharedPreferences != null) {
+      _cacheServed = true;
+      final cached = _homeFeedCache.read(_sharedPreferences);
+      if (cached != null) {
+        final cachedValid = cached.videos
+            .where((v) => v.videoUrl != null)
+            .toList();
+        if (cachedValid.isNotEmpty) {
+          _feedTracker?.markFirstVideosReceived(
+            mode.name,
+            cachedValid.length,
+          );
+          emit(
+            state.copyWith(
+              status: VideoFeedStatus.success,
+              videos: cachedValid,
+              hasMore: true,
+              clearError: true,
+            ),
+          );
+          _feedTracker?.markFeedDisplayed(mode.name, cachedValid.length);
+          // Continue to fetch fresh data below — the emit will update
+          // the UI when the network result arrives.
+        }
+      }
+    }
+
     try {
       final result = await _fetchVideosForMode(mode);
 
@@ -378,6 +422,15 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       );
 
       _feedTracker?.markFeedDisplayed(mode.name, validVideos.length);
+
+      // Cache the raw response for next cold start (fire-and-forget).
+      if ((mode == FeedMode.home || mode == FeedMode.forYou) &&
+          _sharedPreferences != null &&
+          result.rawResponseBody != null) {
+        unawaited(
+          _homeFeedCache.write(_sharedPreferences, result.rawResponseBody!),
+        );
+      }
     } catch (e) {
       Log.error(
         'VideoFeedBloc: Failed to load videos - $e',
@@ -391,12 +444,15 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         errorMessage: e.toString(),
       );
 
-      emit(
-        state.copyWith(
-          status: VideoFeedStatus.failure,
-          error: VideoFeedError.loadFailed,
-        ),
-      );
+      // Only show failure if we don't have cached data already displayed.
+      if (state.status != VideoFeedStatus.success || state.videos.isEmpty) {
+        emit(
+          state.copyWith(
+            status: VideoFeedStatus.failure,
+            error: VideoFeedError.loadFailed,
+          ),
+        );
+      }
     }
   }
 

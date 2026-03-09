@@ -110,7 +110,7 @@ class VideosRepository {
     }
 
     // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
-    final followingVideos = await _fetchFollowingVideos(
+    final (:videos, :rawBody) = await _fetchFollowingVideos(
       authors: authors,
       userPubkey: userPubkey,
       limit: limit,
@@ -119,18 +119,25 @@ class VideosRepository {
 
     // 2. If no list refs, return following-only result
     if (videoRefs.isEmpty) {
-      return HomeFeedResult(videos: followingVideos);
+      return HomeFeedResult(
+        videos: videos,
+        rawResponseBody: rawBody,
+      );
     }
 
     // 3. Merge list videos with following videos
     return _mergeListVideos(
-      followingVideos: followingVideos,
+      followingVideos: videos,
       videoRefs: videoRefs,
     );
   }
 
   /// Fetches videos from followed users via Funnelcake API or Nostr relays.
-  Future<List<VideoEvent>> _fetchFollowingVideos({
+  ///
+  /// Returns a record with the videos and the raw JSON response body
+  /// (when available from Funnelcake initial page) for cache-first loading.
+  Future<({List<VideoEvent> videos, String? rawBody})>
+      _fetchFollowingVideos({
     required List<String> authors,
     String? userPubkey,
     int limit = _defaultLimit,
@@ -152,7 +159,9 @@ class VideosRepository {
         );
 
         final videos = _transformVideoStats(response.videos);
-        if (videos.isNotEmpty) return videos;
+        if (videos.isNotEmpty) {
+          return (videos: videos, rawBody: response.rawBody);
+        }
       } on FunnelcakeException {
         // Fall through to Nostr
       }
@@ -160,7 +169,7 @@ class VideosRepository {
 
     // Nostr fallback — skip when authors list is empty (fast-path startup
     // before follow list is ready).
-    if (authors.isEmpty) return [];
+    if (authors.isEmpty) return (videos: <VideoEvent>[], rawBody: null);
 
     final filter = Filter(
       kinds: [_videoKind],
@@ -171,7 +180,7 @@ class VideosRepository {
 
     final events = await _nostrClient.queryEvents([filter]);
 
-    return _transformAndFilter(events);
+    return (videos: _transformAndFilter(events), rawBody: null);
   }
 
   /// Merges list videos with following videos and builds attribution.

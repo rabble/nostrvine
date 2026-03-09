@@ -333,6 +333,7 @@ class FunnelcakeApiClient {
           videos: videos,
           nextCursor: nextCursor,
           hasMore: hasMore,
+          rawBody: before == null ? response.body : null,
         );
       } else if (response.statusCode == 404) {
         throw FunnelcakeNotFoundException(

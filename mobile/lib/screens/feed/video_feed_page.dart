@@ -9,6 +9,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/providers/page_context_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -95,6 +96,7 @@ class VideoFeedPage extends ConsumerWidget {
     final followRepository = ref.watch(followRepositoryProvider);
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
+    final sharedPreferences = ref.watch(sharedPreferencesProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -107,6 +109,7 @@ class VideoFeedPage extends ConsumerWidget {
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
         userPubkey: authService.currentPublicKeyHex,
+        sharedPreferences: sharedPreferences,
         feedTracker: FeedPerformanceTracker(),
       )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),
