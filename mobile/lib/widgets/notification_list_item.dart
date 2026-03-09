@@ -41,7 +41,7 @@ class NotificationListItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Main message
-                    _buildMessage(context),
+                    _buildMessage(),
                     const SizedBox(height: 4),
 
                     // Additional content (comment text, etc.)
@@ -169,26 +169,25 @@ class NotificationListItem extends StatelessWidget {
     ),
   );
 
-  Widget _buildMessage(BuildContext context) {
+  Widget _buildMessage() {
     const textStyle = TextStyle(
       fontSize: 14,
       color: VineTheme.whiteText,
     );
 
-    if (notification.actorName != null) {
+    final actorName = notification.actorName;
+    if (_messageStartsWithActorName(actorName)) {
       // Build rich text with bold actor name
       return RichText(
         text: TextSpan(
           style: textStyle,
           children: [
             TextSpan(
-              text: notification.actorName,
+              text: actorName,
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             TextSpan(
-              text: notification.message.substring(
-                notification.message.indexOf(' '),
-              ),
+              text: notification.message.substring(actorName!.length),
             ),
           ],
         ),
@@ -196,6 +195,12 @@ class NotificationListItem extends StatelessWidget {
     }
 
     return Text(notification.message, style: textStyle);
+  }
+
+  bool _messageStartsWithActorName(String? actorName) {
+    if (actorName == null) return false;
+    return notification.message == actorName ||
+        notification.message.startsWith('$actorName ');
   }
 
   bool _hasAdditionalContent() {

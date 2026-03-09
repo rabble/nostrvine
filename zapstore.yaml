@@ -1,6 +1,5 @@
 repository: https://github.com/divinevideo/divine-mobile
 release_source: https://github.com/divinevideo/divine-mobile/releases/tag/1.0.6
-match: .*arm64.*\.apk$
 name: Divine
 description: |
   Divine is a new 6-second looping video app, inspired by Vine, with a

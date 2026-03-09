@@ -194,6 +194,8 @@ dependency_overrides:
   rxdart: ^0.28.0
   cryptography_flutter:
     path: overrides/cryptography_flutter-2.3.2
+  app_device_integrity:
+    path: overrides/app_device_integrity-1.1.0
 
 dev_dependencies:
   flutter_test:

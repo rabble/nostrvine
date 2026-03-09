@@ -1,0 +1,118 @@
+// ABOUTME: Tests for relay notification conversion into app-facing models
+// ABOUTME: Covers fallback type mapping, user-facing copy, and metadata
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
+import 'package:openvine/services/notification_model_converter.dart';
+import 'package:openvine/services/relay_notification_api_service.dart';
+
+void main() {
+  group('notificationModelFromRelayApi', () {
+    RelayNotification makeRelayNotification({
+      String notificationType = 'reaction',
+      int sourceKind = 7,
+      String? referencedEventId = 'video-event-1',
+      String? content,
+    }) {
+      return RelayNotification(
+        id: 'notif-1',
+        sourcePubkey:
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        sourceEventId:
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+        sourceKind: sourceKind,
+        referencedEventId: referencedEventId,
+        notificationType: notificationType,
+        createdAt: DateTime.utc(2026, 3, 9, 10),
+        read: false,
+        content: content,
+      );
+    }
+
+    test('maps unknown relay type to like using source kind fallback', () {
+      final relay = makeRelayNotification(
+        notificationType: 'notification',
+      );
+
+      final model = notificationModelFromRelayApi(relay, actorName: 'Alice');
+
+      expect(model.type, NotificationType.like);
+      expect(model.message, 'Alice liked your video');
+      expect(model.metadata?['relayNotificationType'], 'notification');
+    });
+
+    test(
+      'maps unknown relay type to comment and preserves comment metadata',
+      () {
+        final relay = makeRelayNotification(
+          notificationType: 'notification',
+          sourceKind: 1111,
+          content: 'Great video!',
+        );
+
+        final model = notificationModelFromRelayApi(relay, actorName: 'Alice');
+
+        expect(model.type, NotificationType.comment);
+        expect(model.message, 'Alice commented: Great video!');
+        expect(model.metadata?['comment'], 'Great video!');
+        expect(model.metadata?['content'], 'Great video!');
+      },
+    );
+
+    test('maps common relay aliases to their app notification types', () {
+      final cases = <String, NotificationType>{
+        'like': NotificationType.like,
+        'comment': NotificationType.comment,
+        'reposted': NotificationType.repost,
+        'followed': NotificationType.follow,
+        'mentioned': NotificationType.mention,
+        'zapped': NotificationType.like,
+      };
+
+      for (final entry in cases.entries) {
+        final relay = makeRelayNotification(
+          notificationType: entry.key,
+          sourceKind: 9999,
+        );
+
+        final model = notificationModelFromRelayApi(relay, actorName: 'Alice');
+
+        expect(model.type, entry.value, reason: 'failed for ${entry.key}');
+      }
+    });
+
+    test('avoids surfacing raw generic notification copy to users', () {
+      final relay = makeRelayNotification(
+        notificationType: 'notification',
+        sourceKind: 9999,
+        content: 'Scary Guy notification',
+      );
+
+      final model = notificationModelFromRelayApi(
+        relay,
+        actorName: 'Scary Guy',
+      );
+
+      expect(model.type, NotificationType.system);
+      expect(model.message, 'Scary Guy interacted with your video');
+      expect(model.message.toLowerCase(), isNot(contains('notification')));
+    });
+
+    test(
+      'uses a neutral update fallback for unknown system activity without actor',
+      () {
+        final relay = makeRelayNotification(
+          notificationType: 'notification',
+          sourceKind: 9999,
+          referencedEventId: null,
+          content: 'notification',
+        );
+
+        final model = notificationModelFromRelayApi(relay);
+
+        expect(model.type, NotificationType.system);
+        expect(model.message, 'You have a new update');
+      },
+    );
+  });
+}

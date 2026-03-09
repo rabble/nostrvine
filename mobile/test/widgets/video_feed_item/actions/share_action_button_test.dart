@@ -5,7 +5,9 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
@@ -141,9 +143,36 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Save'), findsOneWidget);
+        expect(find.text('Save Video'), findsOneWidget);
         expect(find.text('Copy'), findsOneWidget);
         expect(find.text('Share via'), findsOneWidget);
         expect(find.text('Report'), findsOneWidget);
+      });
+
+      testWidgets('shows own-video download actions for owned content', (
+        tester,
+      ) async {
+        final mockAuth = createMockAuthService();
+        final mockProfile = createMockUserProfileService();
+        when(() => mockAuth.isAuthenticated).thenReturn(true);
+        when(() => mockAuth.currentPublicKeyHex).thenReturn(ownPubkey);
+
+        await tester.pumpWidget(
+          testMaterialApp(
+            home: Scaffold(body: ShareActionButton(video: testVideo)),
+            additionalOverrides: [
+              followRepositoryProvider.overrideWithValue(null),
+            ],
+            mockAuthService: mockAuth,
+            mockUserProfileService: mockProfile,
+          ),
+        );
+
+        await tester.tap(find.byType(IconButton));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Save to Gallery'), findsOneWidget);
+        expect(find.text('Save with Watermark'), findsOneWidget);
       });
     });
   });

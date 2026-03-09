@@ -3,6 +3,7 @@
 
 import 'package:models/models.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Convert a [RelayNotification] from the Divine Relay API to a
 /// [NotificationModel] suitable for display in the app.
@@ -13,8 +14,13 @@ NotificationModel notificationModelFromRelayApi(
   String? targetVideoUrl,
   String? targetVideoThumbnail,
 }) {
-  final type = _mapNotificationType(relay.notificationType);
-  final message = _generateMessage(type, actorName, relay.content);
+  final type = _mapNotificationType(relay.notificationType, relay.sourceKind);
+  final message = _generateMessage(
+    type,
+    actorName,
+    relay.content,
+    hasTargetEvent: relay.referencedEventId != null,
+  );
 
   return NotificationModel(
     id: relay.id,
@@ -28,31 +34,66 @@ NotificationModel notificationModelFromRelayApi(
     targetEventId: relay.referencedEventId,
     targetVideoUrl: targetVideoUrl,
     targetVideoThumbnail: targetVideoThumbnail,
-    metadata: {
-      'sourceEventId': relay.sourceEventId,
-      'sourceKind': relay.sourceKind,
-      if (relay.content != null) 'content': relay.content,
-    },
+    metadata: _buildMetadata(relay, type),
   );
 }
 
 /// Map relay notification type string to [NotificationType] enum
-NotificationType _mapNotificationType(String relayType) {
-  switch (relayType.toLowerCase()) {
+NotificationType _mapNotificationType(String relayType, int sourceKind) {
+  switch (relayType.trim().toLowerCase()) {
     case 'reaction':
+    case 'like':
+    case 'liked':
+    case 'zap':
+    case 'zapped':
       return NotificationType.like;
     case 'reply':
+    case 'comment':
+    case 'commented':
       return NotificationType.comment;
     case 'repost':
+    case 'reposted':
       return NotificationType.repost;
     case 'follow':
+    case 'followed':
       return NotificationType.follow;
     case 'mention':
+    case 'mentioned':
       return NotificationType.mention;
-    case 'zap':
-      return NotificationType.like; // Treat zaps as likes for now
     default:
+      final fallbackType = _mapNotificationTypeFromSourceKind(sourceKind);
+      if (fallbackType != null) {
+        Log.warning(
+          'Unknown relay notification type "$relayType"; '
+          'using source_kind=$sourceKind fallback to $fallbackType',
+          name: 'NotificationModelConverter',
+          category: LogCategory.system,
+        );
+        return fallbackType;
+      }
+      Log.warning(
+        'Unknown relay notification type "$relayType"; '
+        'falling back to system (source_kind=$sourceKind)',
+        name: 'NotificationModelConverter',
+        category: LogCategory.system,
+      );
       return NotificationType.system;
+  }
+}
+
+NotificationType? _mapNotificationTypeFromSourceKind(int sourceKind) {
+  switch (sourceKind) {
+    case 3:
+      return NotificationType.follow;
+    case 6:
+    case 16:
+      return NotificationType.repost;
+    case 7:
+      return NotificationType.like;
+    case 1111:
+      return NotificationType.comment;
+    default:
+      return null;
   }
 }
 
@@ -60,8 +101,9 @@ NotificationType _mapNotificationType(String relayType) {
 String _generateMessage(
   NotificationType type,
   String? actorName,
-  String? content,
-) {
+  String? content, {
+  required bool hasTargetEvent,
+}) {
   final name = actorName ?? 'Someone';
   switch (type) {
     case NotificationType.like:
@@ -82,6 +124,84 @@ String _generateMessage(
     case NotificationType.repost:
       return '$name reposted your video';
     case NotificationType.system:
-      return content ?? 'System notification';
+      return _generateSystemMessage(
+        actorName: actorName,
+        content: content,
+        hasTargetEvent: hasTargetEvent,
+      );
   }
 }
+
+Map<String, dynamic> _buildMetadata(
+  RelayNotification relay,
+  NotificationType type,
+) {
+  final metadata = <String, dynamic>{
+    'sourceEventId': relay.sourceEventId,
+    'sourceKind': relay.sourceKind,
+    'relayNotificationType': relay.notificationType,
+  };
+
+  final trimmedContent = relay.content?.trim();
+  if (trimmedContent == null || trimmedContent.isEmpty) {
+    return metadata;
+  }
+
+  metadata['content'] = relay.content;
+  switch (type) {
+    case NotificationType.comment:
+      metadata['comment'] = trimmedContent;
+    case NotificationType.mention:
+      metadata['text'] = trimmedContent;
+    case NotificationType.like:
+    case NotificationType.follow:
+    case NotificationType.repost:
+    case NotificationType.system:
+      break;
+  }
+
+  return metadata;
+}
+
+String _generateSystemMessage({
+  required String? actorName,
+  required String? content,
+  required bool hasTargetEvent,
+}) {
+  final trimmedContent = content?.trim();
+  if (_isMeaningfulSystemContent(trimmedContent, actorName: actorName)) {
+    return trimmedContent!;
+  }
+
+  if (actorName != null) {
+    if (hasTargetEvent) {
+      return '$actorName interacted with your video';
+    }
+    return '$actorName sent you an update';
+  }
+
+  return 'You have a new update';
+}
+
+bool _isMeaningfulSystemContent(String? content, {required String? actorName}) {
+  if (content == null || content.isEmpty) return false;
+
+  final normalizedContent = _normalizeWhitespace(content);
+  if (<String>{
+    'notification',
+    'system notification',
+    'new notification',
+  }.contains(normalizedContent)) {
+    return false;
+  }
+
+  if (actorName != null &&
+      normalizedContent == '${_normalizeWhitespace(actorName)} notification') {
+    return false;
+  }
+
+  return true;
+}
+
+String _normalizeWhitespace(String value) =>
+    value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');

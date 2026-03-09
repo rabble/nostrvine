@@ -18,12 +18,15 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/watermark_text_resolver.dart';
 import 'package:openvine/widgets/add_to_list_dialog.dart';
 import 'package:openvine/widgets/find_people_sheet.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
+import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 
 part 'share_sheet_header.dart';
@@ -37,8 +40,8 @@ part 'share_sheet_more_actions.dart';
 /// - Video context/preview header
 /// - "Share with" horizontal contact row with "Find people" search
 /// - Optional message input when a recipient is selected
-/// - "More actions" horizontal row (Save, Add to List, Copy, Share via,
-///   Report, Mute, Block, Event JSON, Event ID)
+/// - "More actions" horizontal row (Save, download, Add to List, Copy,
+///   Share via, Report, debug tools)
 class ShareActionButton extends StatelessWidget {
   const ShareActionButton({required this.video, super.key});
 
@@ -46,9 +49,8 @@ class ShareActionButton extends StatelessWidget {
 
   /// Opens the unified share sheet for the given [video].
   ///
-  /// This is exposed as a static method so that other widgets (e.g.
-  /// [MoreActionButton]) can open the same share sheet without duplicating
-  /// the bottom-sheet wiring.
+  /// This is exposed as a static method so share entry points can reuse the
+  /// same bottom-sheet wiring without duplicating setup logic.
   static void showShareSheet(BuildContext context, VideoEvent video) {
     context.showVideoPausingVineBottomSheet<void>(
       builder: (context) => _UnifiedShareSheet(video: video),
@@ -157,6 +159,8 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isOwnContent = _isUserOwnContent();
+
     return BlocProvider.value(
       value: _bloc,
       child: BlocListener<ShareSheetBloc, ShareSheetState>(
@@ -166,9 +170,12 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
         child: _UnifiedShareSheetView(
           video: widget.video,
           messageController: _messageController,
+          isOwnContent: isOwnContent,
           onFindPeople: _handleFindPeople,
           onAddToList: _handleAddToList,
           onReport: _handleReport,
+          onSaveOriginal: isOwnContent ? _handleSaveOriginal : null,
+          onSaveWithWatermark: _handleSaveWithWatermark,
         ),
       ),
     );
@@ -222,21 +229,78 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   void _handleAddToList() {
-    _safePop(context);
-
-    if (!context.mounted) return;
-    showDialog<void>(
-      context: context,
-      builder: (context) => SelectListDialog(video: widget.video),
-    );
+    _presentAfterDismiss<void>((hostContext) {
+      return showDialog<void>(
+        context: hostContext,
+        builder: (context) => SelectListDialog(video: widget.video),
+      );
+    });
   }
 
   void _handleReport() {
-    _safePop(context);
-    showDialog<void>(
-      context: context,
-      builder: (context) => ReportContentDialog(video: widget.video),
+    _presentAfterDismiss<void>((hostContext) {
+      return showDialog<void>(
+        context: hostContext,
+        builder: (context) => ReportContentDialog(video: widget.video),
+      );
+    });
+  }
+
+  bool _isUserOwnContent() {
+    try {
+      final authService = ref.read(authServiceProvider);
+      if (!authService.isAuthenticated) return false;
+
+      final userPubkey = authService.currentPublicKeyHex;
+      if (userPubkey == null) return false;
+
+      return widget.video.pubkey == userPubkey;
+    } catch (e) {
+      Log.error(
+        'Error checking content ownership: $e',
+        name: 'ShareActionButton',
+        category: LogCategory.ui,
+      );
+      return false;
+    }
+  }
+
+  Future<void> _handleSaveOriginal() async {
+    await _presentAfterDismiss<void>((hostContext) {
+      return showSaveOriginalSheet(
+        context: hostContext,
+        ref: ref,
+        video: widget.video,
+      );
+    });
+  }
+
+  Future<void> _handleSaveWithWatermark() async {
+    final profileService = ref.read(userProfileServiceProvider);
+    final profile = profileService.getCachedProfile(widget.video.pubkey);
+    final watermarkText = resolveWatermarkText(
+      profile: profile,
+      fallbackAuthorName: widget.video.authorName,
     );
+
+    await _presentAfterDismiss<void>((hostContext) {
+      return showWatermarkDownloadSheet(
+        context: hostContext,
+        ref: ref,
+        video: widget.video,
+        watermarkText: watermarkText,
+      );
+    });
+  }
+
+  Future<T?> _presentAfterDismiss<T>(
+    Future<T?> Function(BuildContext hostContext) presenter,
+  ) async {
+    final hostContext = Navigator.of(context, rootNavigator: true).context;
+    _safePop(context);
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted || !hostContext.mounted) return null;
+    return presenter(hostContext);
   }
 }
 
@@ -248,16 +312,22 @@ class _UnifiedShareSheetView extends StatelessWidget {
   const _UnifiedShareSheetView({
     required this.video,
     required this.messageController,
+    required this.isOwnContent,
     required this.onFindPeople,
     required this.onAddToList,
     required this.onReport,
+    required this.onSaveWithWatermark,
+    this.onSaveOriginal,
   });
 
   final VideoEvent video;
   final TextEditingController messageController;
+  final bool isOwnContent;
   final VoidCallback onFindPeople;
   final VoidCallback onAddToList;
   final VoidCallback onReport;
+  final Future<void> Function()? onSaveOriginal;
+  final Future<void> Function() onSaveWithWatermark;
 
   @override
   Widget build(BuildContext context) {
@@ -301,7 +371,10 @@ class _UnifiedShareSheetView extends StatelessWidget {
                     const Divider(color: VineTheme.cardBackground, height: 1),
                     _MoreActionsSection(
                       video: video,
+                      isOwnContent: isOwnContent,
                       onSave: () => bloc.add(const ShareSheetSaveRequested()),
+                      onSaveOriginal: onSaveOriginal,
+                      onSaveWithWatermark: onSaveWithWatermark,
                       onAddToList: onAddToList,
                       onCopyLink: () =>
                           bloc.add(const ShareSheetCopyLinkRequested()),
