@@ -212,21 +212,11 @@ class _SoundDetailScreenState extends ConsumerState<SoundDetailScreen> {
       backgroundColor: VineTheme.backgroundColor,
       appBar: _showingVideoFeed
           ? null
-          : AppBar(
+          : DiVineAppBar(
+              title: 'Sound',
+              showBackButton: true,
+              onBackPressed: context.pop,
               backgroundColor: VineTheme.cardBackground,
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-                onPressed: context.pop,
-              ),
-              title: const Text(
-                'Sound',
-                style: TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              centerTitle: true,
             ),
       body: Stack(
         children: [

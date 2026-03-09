@@ -267,9 +267,10 @@ All code files must start with a 2-line comment:
 
 ### State Management
 
-- Uses **Riverpod** for state management
-- Follow the provider pattern established in the codebase
-- See existing providers in `mobile/lib/providers/` for examples
+- Current direction is **incremental BLoC/Cubit migration for UI state**
+- Prefer BLoC/Cubit for new UI state logic
+- Riverpod remains in some existing paths during migration; avoid adding new long-lived Riverpod UI providers
+- Source of truth: `docs/BLOC_UI_MIGRATION_PRD.md`
 
 ## Submitting Changes
 
@@ -360,7 +361,7 @@ flutter pub run build_runner build --delete-conflicting-outputs
 
 - **Flutter** (Dart-Code.flutter)
 - **Dart** (Dart-Code.dart-code)
-- **Flutter Riverpod Snippets**
+- **BLoC / Cubit snippets** (or equivalent productivity tooling)
 - **Error Lens** (for inline error display)
 - **GitLens** (for Git integration)
 

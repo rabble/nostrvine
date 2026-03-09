@@ -1,6 +1,6 @@
 #!/bin/bash
 # Hook: PostToolUse (Edit|Write)
-# Ensure edited Dart files have 0 analyzer errors
+# Ensure edited Dart files have 0 analyzer diagnostics (error/warning/info)
 #
 # Input: JSON with tool_input.file_path
 # Output: JSON with decision: "block" if errors found
@@ -26,13 +26,10 @@ fi
 # Run analyzer on the specific file
 ANALYSIS_OUTPUT=$(dart analyze "$FILE_PATH" 2>&1 || true)
 
-# Count errors (not warnings or infos)
-ERROR_COUNT=$(echo "$ANALYSIS_OUTPUT" | grep -c " - " | grep -v "info" || echo "0")
-
-# Check if there are any errors or warnings
-if echo "$ANALYSIS_OUTPUT" | grep -q " error \| warning "; then
-  # Extract just the error/warning lines
-  ERRORS=$(echo "$ANALYSIS_OUTPUT" | grep " error \| warning " | head -10)
+# Check if there are any errors, warnings, or info diagnostics
+if echo "$ANALYSIS_OUTPUT" | grep -q " error \| warning \| info "; then
+  # Extract just the diagnostic lines
+  ERRORS=$(echo "$ANALYSIS_OUTPUT" | grep " error \| warning \| info " | head -10)
 
   cat << EOF
 {

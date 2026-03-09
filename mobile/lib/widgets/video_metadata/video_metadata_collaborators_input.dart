@@ -141,7 +141,6 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
 
     // Verify mutual follow
     final followRepo = ref.read(followRepositoryProvider);
-    if (followRepo == null) return;
     final isMutual = await followRepo.isMutualFollow(profile.pubkey);
 
     if (!isMutual) {

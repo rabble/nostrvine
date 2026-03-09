@@ -97,7 +97,7 @@ class NostrService extends _$NostrService {
 
     // Capture client reference for disposal - can't access state inside onDispose
     ref.onDispose(() {
-      ref.read(authServiceProvider).registerUserRelaysDiscoveredCallback(null);
+      authService.registerUserRelaysDiscoveredCallback(null);
       _authSubscription?.cancel();
       client.dispose();
     });

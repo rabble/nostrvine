@@ -238,7 +238,7 @@ dart format lib/ test/         # Format code
 - **Framework**: Flutter with Dart
 - **Protocol**: Nostr for decentralized social networking
 - **Platforms**: iOS, Android, macOS
-- **State Management**: Riverpod with reactive data flow
+- **State Management**: Incremental BLoC-first UI migration (hybrid during transition)
 - **Storage**: Hive for local data persistence
 
 **Nostr Integration:**

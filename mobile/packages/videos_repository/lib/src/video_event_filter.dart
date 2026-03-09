@@ -15,3 +15,7 @@ import 'package:videos_repository/videos_repository.dart';
 /// For pubkey-based filtering (blocklists), use [BlockedVideoFilter] instead
 /// which runs before parsing for efficiency.
 typedef VideoContentFilter = bool Function(VideoEvent video);
+
+/// Resolver for content-warning labels that should remain visible behind
+/// a warning overlay rather than being hidden outright.
+typedef VideoWarningLabelsResolver = List<String> Function(VideoEvent video);

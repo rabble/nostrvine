@@ -7,17 +7,20 @@ import 'dart:async';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_font_selector.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockVideoEditorTextBloc
     extends MockBloc<VideoEditorTextEvent, VideoEditorTextState>
@@ -81,8 +84,11 @@ void main() {
   group('VideoTextEditorScreen', () {
     late MockVideoEditorTextBloc mockBloc;
     late MockGoRouter mockGoRouter;
+    late SharedPreferences sharedPreferences;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockBloc = MockVideoEditorTextBloc();
       mockGoRouter = MockGoRouter();
 
@@ -97,12 +103,17 @@ void main() {
         when(() => mockBloc.state).thenReturn(state);
       }
 
-      return MaterialApp(
-        home: InheritedGoRouter(
-          goRouter: mockGoRouter,
-          child: BlocProvider<VideoEditorTextBloc>.value(
-            value: mockBloc,
-            child: Scaffold(body: VideoTextEditorScreen(layer: layer)),
+      return ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        ],
+        child: MaterialApp(
+          home: InheritedGoRouter(
+            goRouter: mockGoRouter,
+            child: BlocProvider<VideoEditorTextBloc>.value(
+              value: mockBloc,
+              child: Scaffold(body: VideoTextEditorScreen(layer: layer)),
+            ),
           ),
         ),
       );

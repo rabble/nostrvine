@@ -118,6 +118,51 @@ void main() {
       );
     });
 
+    group('reset', () {
+      blocTest<EmailVerificationCubit, EmailVerificationState>(
+        'resets from success state to initial',
+        build: buildCubit,
+        seed: () => const EmailVerificationState(
+          status: EmailVerificationStatus.success,
+        ),
+        act: (cubit) => cubit.reset(),
+        expect: () => [const EmailVerificationState()],
+        verify: (cubit) {
+          expect(cubit.state.status, EmailVerificationStatus.initial);
+        },
+      );
+
+      blocTest<EmailVerificationCubit, EmailVerificationState>(
+        'resets from polling state to initial',
+        build: buildCubit,
+        seed: () => const EmailVerificationState(
+          status: EmailVerificationStatus.polling,
+          pendingEmail: testEmail,
+        ),
+        act: (cubit) => cubit.reset(),
+        expect: () => [const EmailVerificationState()],
+        verify: (cubit) {
+          expect(cubit.state.status, EmailVerificationStatus.initial);
+          expect(cubit.state.pendingEmail, isNull);
+        },
+      );
+
+      blocTest<EmailVerificationCubit, EmailVerificationState>(
+        'resets from failure state to initial',
+        build: buildCubit,
+        seed: () => const EmailVerificationState(
+          status: EmailVerificationStatus.failure,
+          error: 'some error',
+        ),
+        act: (cubit) => cubit.reset(),
+        expect: () => [const EmailVerificationState()],
+        verify: (cubit) {
+          expect(cubit.state.status, EmailVerificationStatus.initial);
+          expect(cubit.state.error, isNull);
+        },
+      );
+    });
+
     group('zombie cubit detection', () {
       const testCode = 'auth-code-from-server';
 

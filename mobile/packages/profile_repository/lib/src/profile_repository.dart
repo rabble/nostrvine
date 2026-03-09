@@ -94,6 +94,28 @@ class ProfileRepository {
     return _userProfilesDao.getProfile(pubkey);
   }
 
+  /// Persists a profile to local storage (SQLite).
+  ///
+  /// Use this to cache profiles obtained from relay events or REST APIs.
+  /// If a profile with the same pubkey already exists, it is updated.
+  Future<void> cacheProfile(UserProfile profile) {
+    return _userProfilesDao.upsertProfile(profile);
+  }
+
+  /// Deletes a cached profile from local storage.
+  ///
+  /// Returns the number of rows deleted (0 or 1).
+  Future<int> deleteCachedProfile({required String pubkey}) {
+    return _userProfilesDao.deleteProfile(pubkey);
+  }
+
+  /// Returns all cached profiles from local storage.
+  ///
+  /// Used for bulk-loading profiles into memory on startup.
+  Future<List<UserProfile>> getAllCachedProfiles() {
+    return _userProfilesDao.getAllProfiles();
+  }
+
   /// Fetches a fresh profile from Nostr relays and updates the local cache.
   ///
   /// Always fetches from relay, ignoring any cached data. Use this to ensure
@@ -131,7 +153,9 @@ class ProfileRepository {
   ///
   /// If both [nip05] and [username] are provided, [nip05] takes precedence.
   /// When neither is provided and a [currentProfile] is supplied, the existing
-  /// NIP-05 value is preserved from `currentProfile.rawData`.
+  /// NIP-05 value is preserved from `currentProfile.rawData`. Pass
+  /// [clearNip05] as `true` to explicitly remove the NIP-05 from the profile
+  /// (overriding any value in `currentProfile.rawData`).
   ///
   /// After successful publish, the profile is cached locally for immediate
   /// subsequent reads.
@@ -142,6 +166,7 @@ class ProfileRepository {
     String? about,
     String? username,
     String? nip05,
+    bool clearNip05 = false,
     String? picture,
     String? banner,
     UserProfile? currentProfile,
@@ -159,6 +184,13 @@ class ProfileRepository {
       'picture': ?picture,
       'banner': ?banner,
     };
+
+    // When the user explicitly removes their NIP-05 (no username, no external
+    // NIP-05), remove the key so the rawData spread does not preserve the old
+    // value.
+    if (clearNip05 && resolvedNip05 == null) {
+      profileContent.remove('nip05');
+    }
 
     final profileEvent = await _nostrClient.sendProfile(
       profileContent: profileContent,

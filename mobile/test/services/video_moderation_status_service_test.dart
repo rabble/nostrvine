@@ -64,6 +64,24 @@ void main() {
       expect(parsed, hash);
     });
 
+    test('extracts sha256 from Divine variant and HLS URLs', () {
+      const hash =
+          'fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210';
+
+      expect(
+        VideoModerationStatusService.extractSha256FromVideoUrl(
+          'https://media.divine.video/$hash/720p',
+        ),
+        hash,
+      );
+      expect(
+        VideoModerationStatusService.extractSha256FromVideoUrl(
+          'https://media.divine.video/$hash/hls/master.m3u8',
+        ),
+        hash,
+      );
+    });
+
     test('checks moderation only for known hosts', () {
       expect(
         VideoModerationStatusService.shouldCheckModeration(
@@ -81,6 +99,35 @@ void main() {
   });
 
   group('VideoModerationStatusService.fetchStatus', () {
+    test('uses moderation-api host by default', () async {
+      const hash =
+          'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';
+
+      late Uri requestedUri;
+      final client = MockClient((request) async {
+        requestedUri = request.url;
+        return http.Response(
+          jsonEncode({
+            'moderated': true,
+            'blocked': false,
+            'age_restricted': false,
+            'needs_review': false,
+            'action': 'SAFE',
+            'categories': ['safe'],
+            'scores': {'safe': 0.99},
+          }),
+          200,
+        );
+      });
+
+      final service = VideoModerationStatusService(httpClient: client);
+      final status = await service.fetchStatus(hash);
+
+      expect(status, isNotNull);
+      expect(requestedUri.host, 'moderation-api.divine.video');
+      expect(requestedUri.path, '/check-result/$hash');
+    });
+
     test('falls back across endpoints and caches result', () async {
       const hash =
           'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd';

@@ -2,24 +2,39 @@
 // ABOUTME: Validates color grid rendering, selection, and callbacks.
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoEditorColorPickerSheet', () {
+    late SharedPreferences sharedPreferences;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
+    });
+
     Widget buildWidget({
       Color selectedColor = Colors.white,
       ValueChanged<Color>? onColorSelected,
     }) {
-      return MaterialApp(
-        home: Scaffold(
-          body: VideoEditorColorPickerSheet(
-            selectedColor: selectedColor,
-            onColorSelected: onColorSelected ?? (_) {},
+      return ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: VideoEditorColorPickerSheet(
+              selectedColor: selectedColor,
+              onColorSelected: onColorSelected ?? (_) {},
+            ),
           ),
         ),
       );
@@ -87,6 +102,15 @@ void main() {
       testWidgets('does not call onColorSelected when color picker is tapped', (
         tester,
       ) async {
+        // Suppress overflow errors from the third-party ColorPicker widget
+        // that opens inside the bottom sheet in constrained test environments.
+        final origOnError = FlutterError.onError;
+        FlutterError.onError = (details) {
+          if (details.toString().contains('overflowed')) return;
+          origOnError?.call(details);
+        };
+        addTearDown(() => FlutterError.onError = origOnError);
+
         Color? tappedColor;
         await tester.pumpWidget(
           buildWidget(onColorSelected: (color) => tappedColor = color),

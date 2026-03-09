@@ -43,9 +43,9 @@ class _DebugVideoTestScreenState extends ConsumerState<DebugVideoTestScreen> {
 
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
+      appBar: const DiVineAppBar(
+        title: 'Debug Video Test',
         backgroundColor: VineTheme.vineGreen,
-        title: const Text('Debug Video Test'),
       ),
       body: Center(
         child: Column(

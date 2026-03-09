@@ -1,10 +1,64 @@
 // ABOUTME: Unit tests for AudioExtractionService
-// ABOUTME: Tests audio extraction result model, exceptions, and cleanup logic
+// ABOUTME: Tests audio extraction result model, exceptions, cleanup, and
+// ABOUTME: core extraction path with ProVideoEditor mock.
 
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/audio_extraction_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
+
+/// Mock ProVideoEditor that provides controllable behavior for testing
+/// the core audio extraction path.
+class _MockProVideoEditor extends ProVideoEditor {
+  bool hasAudio = true;
+  Duration videoDuration = const Duration(seconds: 6);
+  bool shouldThrowOnExtract = false;
+  bool shouldThrowNoTrack = false;
+  bool shouldThrowOnHasAudio = false;
+  bool shouldThrowOnGetMetadata = false;
+
+  @override
+  void initializeStream() {
+    // No-op for testing
+  }
+
+  @override
+  Future<bool> hasAudioTrack(EditorVideo value) async {
+    if (shouldThrowOnHasAudio) throw Exception('hasAudioTrack failed');
+    return hasAudio;
+  }
+
+  @override
+  Future<VideoMetadata> getMetadata(
+    EditorVideo value, {
+    bool checkStreamingOptimization = false,
+  }) async {
+    if (shouldThrowOnGetMetadata) throw Exception('getMetadata failed');
+    return VideoMetadata(
+      duration: videoDuration,
+      extension: 'mp4',
+      fileSize: 1024000,
+      resolution: const Size(1920, 1080),
+      rotation: 0,
+      bitrate: 3000000,
+    );
+  }
+
+  @override
+  Future<String> extractAudioToFile(
+    String filePath,
+    AudioExtractConfigs value,
+  ) async {
+    if (shouldThrowNoTrack) throw const AudioNoTrackException();
+    if (shouldThrowOnExtract) throw Exception('extraction failed');
+    // Create a small file to simulate extraction
+    final file = File(filePath);
+    await file.writeAsBytes([0x00, 0x01, 0x02, 0x03]);
+    return filePath;
+  }
+}
 
 void main() {
   group('AudioExtractionResult', () {
@@ -112,24 +166,30 @@ void main() {
     });
 
     test('cleanupTemporaryFiles handles empty list', () async {
-      // Should not throw
-      await service.cleanupTemporaryFiles([]);
+      await expectLater(
+        service.cleanupTemporaryFiles([]),
+        completes,
+      );
     });
 
     test(
       'cleanupTemporaryFiles handles non-existent files gracefully',
       () async {
-        // Should not throw even for non-existent files
-        await service.cleanupTemporaryFiles([
-          '/non/existent/file1.aac',
-          '/non/existent/file2.aac',
-        ]);
+        await expectLater(
+          service.cleanupTemporaryFiles([
+            '/non/existent/file1.aac',
+            '/non/existent/file2.aac',
+          ]),
+          completes,
+        );
       },
     );
 
     test('cleanupAudioFile delegates to cleanupTemporaryFiles', () async {
-      // Should not throw for non-existent file
-      await service.cleanupAudioFile('/non/existent/audio.aac');
+      await expectLater(
+        service.cleanupAudioFile('/non/existent/audio.aac'),
+        completes,
+      );
     });
 
     group('with temporary files', () {
@@ -168,55 +228,57 @@ void main() {
     });
   });
 
-  group('AudioExtractionService integration', () {
-    // These tests require FFmpeg and actual video files
-    // They are skipped by default but can be enabled for local testing
+  group('AudioExtractionService with ProVideoEditor mock', () {
+    late AudioExtractionService service;
+    late _MockProVideoEditor mockEditor;
+    late Directory tempDir;
+    late File fakeVideoFile;
+
+    setUp(() async {
+      service = AudioExtractionService();
+      mockEditor = _MockProVideoEditor();
+      ProVideoEditor.instance = mockEditor;
+
+      tempDir = await Directory.systemTemp.createTemp('extraction_test_');
+      fakeVideoFile = File('${tempDir.path}/test_video.mp4');
+      await fakeVideoFile.writeAsBytes([0xFF, 0xD8, 0xFF, 0xE0]);
+    });
+
+    tearDown(() async {
+      try {
+        await tempDir.delete(recursive: true);
+      } catch (_) {
+        // Intentional no-op: ignore cleanup errors in teardown.
+      }
+    });
 
     test(
-      'extracts audio from video file',
+      'extractAudio returns result when video has audio',
       () async {
-        // This test requires a real video file with audio
-        // Skip in CI, only run locally when test video is available
-        const testVideoPath = 'test/fixtures/test_video_with_audio.mp4';
-        final testVideo = File(testVideoPath);
-
-        if (!testVideo.existsSync()) {
-          // Skip if test video is not available
-          return;
-        }
-
-        final service = AudioExtractionService();
-
-        final result = await service.extractAudio(testVideoPath);
+        final result = await service.extractAudio(fakeVideoFile.path);
 
         expect(result.audioFilePath, endsWith('.aac'));
-        expect(result.duration, greaterThan(0));
+        expect(result.duration, equals(6));
         expect(result.fileSize, greaterThan(0));
         expect(result.sha256Hash, isNotEmpty);
-        expect(result.sha256Hash.length, equals(64)); // SHA-256 hex length
-        expect(result.mimeType, equals('audio/aac'));
+        expect(result.sha256Hash.length, equals(64));
+        expect(result.mimeType, equals('audio/m4a'));
 
-        // Cleanup
-        await service.cleanupAudioFile(result.audioFilePath);
+        // Cleanup extraction output
+        final outputFile = File(result.audioFilePath);
+        if (outputFile.existsSync()) {
+          await outputFile.delete();
+        }
       },
-      skip: 'Requires test video file with audio track',
     );
 
     test(
-      'throws exception for video without audio',
+      'extractAudio throws when video has no audio track',
       () async {
-        // This test requires a video file without audio
-        const testVideoPath = 'test/fixtures/test_video_no_audio.mp4';
-        final testVideo = File(testVideoPath);
-
-        if (!testVideo.existsSync()) {
-          return;
-        }
-
-        final service = AudioExtractionService();
+        mockEditor.hasAudio = false;
 
         expect(
-          () => service.extractAudio(testVideoPath),
+          () => service.extractAudio(fakeVideoFile.path),
           throwsA(
             isA<AudioExtractionException>().having(
               (e) => e.message,
@@ -226,7 +288,116 @@ void main() {
           ),
         );
       },
-      skip: 'Requires test video file without audio track',
+    );
+
+    test(
+      'extractAudio throws when hasAudioTrack check fails',
+      () async {
+        mockEditor.shouldThrowOnHasAudio = true;
+
+        expect(
+          () => service.extractAudio(fakeVideoFile.path),
+          throwsA(
+            isA<AudioExtractionException>().having(
+              (e) => e.message,
+              'message',
+              'Video has no audio track',
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'extractAudio throws when getMetadata fails',
+      () async {
+        mockEditor.shouldThrowOnGetMetadata = true;
+
+        expect(
+          () => service.extractAudio(fakeVideoFile.path),
+          throwsA(
+            isA<AudioExtractionException>().having(
+              (e) => e.message,
+              'message',
+              'Could not determine audio duration',
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'extractAudio throws when duration is zero',
+      () async {
+        mockEditor.videoDuration = Duration.zero;
+
+        expect(
+          () => service.extractAudio(fakeVideoFile.path),
+          throwsA(
+            isA<AudioExtractionException>().having(
+              (e) => e.message,
+              'message',
+              'Could not determine audio duration',
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'extractAudio handles AudioNoTrackException from extraction',
+      () async {
+        mockEditor.shouldThrowNoTrack = true;
+
+        expect(
+          () => service.extractAudio(fakeVideoFile.path),
+          throwsA(
+            isA<AudioExtractionException>().having(
+              (e) => e.message,
+              'message',
+              'Video has no audio track',
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'extractAudio handles generic extraction failure',
+      () async {
+        mockEditor.shouldThrowOnExtract = true;
+
+        expect(
+          () => service.extractAudio(fakeVideoFile.path),
+          throwsA(
+            isA<AudioExtractionException>().having(
+              (e) => e.message,
+              'message',
+              'Failed to extract audio',
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'extractAudio uses correct duration from video metadata',
+      () async {
+        mockEditor.videoDuration = const Duration(
+          seconds: 3,
+          milliseconds: 500,
+        );
+
+        final result = await service.extractAudio(fakeVideoFile.path);
+
+        expect(result.duration, equals(3.5));
+
+        // Cleanup extraction output
+        final outputFile = File(result.audioFilePath);
+        if (outputFile.existsSync()) {
+          await outputFile.delete();
+        }
+      },
     );
   });
 }

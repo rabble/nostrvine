@@ -162,6 +162,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
         _videosStreamController.add(next.value!.videos);
       }
     });
+    final forYouFeedNotifier = ref.read(forYouFeedProvider.notifier);
 
     measureHeaderHeight();
 
@@ -193,8 +194,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                       videoList,
                     ),
                     initialIndex: index,
-                    onLoadMore: () =>
-                        ref.read(forYouFeedProvider.notifier).loadMore(),
+                    onLoadMore: forYouFeedNotifier.loadMore,
                     contextTitle: 'For You',
                     trafficSource: ViewTrafficSource.discoveryForYou,
                   ),
@@ -206,7 +206,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                   name: 'ForYouTab',
                   category: LogCategory.video,
                 );
-                await ref.read(forYouFeedProvider.notifier).refresh();
+                await forYouFeedNotifier.refresh();
               },
               emptyBuilder: () => const _ForYouEmptyState(),
             ),

@@ -382,6 +382,29 @@ void main() {
     });
 
     testWidgets(
+      'does not show DivineSnackbarContainer when upload succeeded',
+      (tester) async {
+        fakeBloc = _FakeBackgroundPublishBloc(
+          initialState: BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(
+                draft: mockDraft,
+                result: const PublishSuccess(), // Success, not error
+                progress: 1.0,
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(buildTestWidget(fakeBloc));
+        await tester.pumpAndSettle();
+
+        // Should NOT show the error snackbar for successful uploads
+        expect(find.byType(DivineSnackbarContainer), findsNothing);
+      },
+    );
+
+    testWidgets(
       'retry button dispatches BackgroundPublishRetryRequested event',
       (tester) async {
         fakeBloc = _FakeBackgroundPublishBloc(

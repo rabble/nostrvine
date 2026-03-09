@@ -167,6 +167,9 @@ class UploadManager {
       // Clean up any problematic uploads first
       await cleanupProblematicUploads();
 
+      // Clean up old completed/published uploads to prevent accumulation
+      await cleanupCompletedUploads();
+
       // Resume any interrupted uploads
       await _resumeInterruptedUploads();
     } catch (e, stackTrace) {
@@ -1446,28 +1449,53 @@ class UploadManager {
     );
   }
 
-  /// Remove completed or failed uploads
+  /// Remove completed, published, or unrecoverable failed uploads
   Future<void> cleanupCompletedUploads() async {
     if (_uploadsBox == null) return;
 
-    final completedUploads = pendingUploads
-        .where((upload) => upload.isCompleted)
-        .where((upload) => upload.completedAt != null)
-        .where(
-          (upload) => DateTime.now().difference(upload.completedAt!).inDays > 7,
-        ) // Keep for 7 days
-        .toList();
+    final uploadsToClean = <PendingUpload>[];
 
-    for (final upload in completedUploads) {
+    for (final upload in pendingUploads) {
+      // Clean up published uploads immediately - they're done
+      if (upload.status == UploadStatus.published) {
+        uploadsToClean.add(upload);
+        continue;
+      }
+
+      // Clean up completed uploads after 1 day
+      if (upload.isCompleted &&
+          upload.completedAt != null &&
+          DateTime.now().difference(upload.completedAt!).inDays >= 1) {
+        uploadsToClean.add(upload);
+        continue;
+      }
+
+      // Clean up failed uploads with missing video files (unrecoverable)
+      if (upload.status == UploadStatus.failed && !kIsWeb) {
+        final videoFile = File(upload.localVideoPath);
+        if (!videoFile.existsSync()) {
+          uploadsToClean.add(upload);
+          continue;
+        }
+      }
+    }
+
+    for (final upload in uploadsToClean) {
       await _uploadsBox!.delete(upload.id);
       Log.debug(
-        '📱️ Cleaned up old upload: ${upload.id}',
+        '🗑️ Cleaned up upload: ${upload.id} (${upload.status.name})',
         name: 'UploadManager',
         category: LogCategory.video,
       );
     }
 
-    if (completedUploads.isNotEmpty) {}
+    if (uploadsToClean.isNotEmpty) {
+      Log.info(
+        '🧹 Cleaned up ${uploadsToClean.length} old/unrecoverable uploads',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Resume any uploads that were interrupted or never started
@@ -1527,17 +1555,12 @@ class UploadManager {
         final videoFile = File(upload.localVideoPath);
         if (!videoFile.existsSync()) {
           Log.warning(
-            '⚠️ Skipping upload ${upload.id} - video file no longer exists: ${upload.localVideoPath}',
+            '🗑️ Deleting upload ${upload.id} - video file no longer exists: ${upload.localVideoPath}',
             name: 'UploadManager',
             category: LogCategory.video,
           );
-          // Mark as failed with clear message
-          await _updateUpload(
-            upload.copyWith(
-              status: UploadStatus.failed,
-              errorMessage: 'Video file was deleted. Please record again.',
-            ),
-          );
+          // Delete unrecoverable upload permanently
+          await _uploadsBox?.delete(upload.id);
           continue;
         }
       }

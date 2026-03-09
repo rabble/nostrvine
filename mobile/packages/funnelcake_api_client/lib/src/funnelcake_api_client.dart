@@ -333,6 +333,7 @@ class FunnelcakeApiClient {
           videos: videos,
           nextCursor: nextCursor,
           hasMore: hasMore,
+          rawBody: before == null ? response.body : null,
         );
       } else if (response.statusCode == 404) {
         throw FunnelcakeNotFoundException(
@@ -599,9 +600,7 @@ class FunnelcakeApiClient {
         final data = jsonDecode(response.body) as List<dynamic>;
 
         return data
-            .map(
-              (v) => VideoStats.fromJson(v as Map<String, dynamic>),
-            )
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
       } else {
@@ -616,9 +615,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch videos by loops: $e',
-      );
+      throw FunnelcakeException('Failed to fetch videos by loops: $e');
     }
   }
 
@@ -670,9 +667,7 @@ class FunnelcakeApiClient {
         final data = jsonDecode(response.body) as List<dynamic>;
 
         return data
-            .map(
-              (v) => VideoStats.fromJson(v as Map<String, dynamic>),
-            )
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
       } else {
@@ -687,9 +682,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch videos by hashtag: $e',
-      );
+      throw FunnelcakeException('Failed to fetch videos by hashtag: $e');
     }
   }
 
@@ -722,16 +715,13 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Hashtag cannot be empty');
     }
 
-    final uri =
-        Uri.parse(
-          '$_baseUrl/api/videos',
-        ).replace(
-          queryParameters: {
-            'tag': normalizedTag,
-            'sort': 'loops',
-            'limit': limit.toString(),
-          },
-        );
+    final uri = Uri.parse('$_baseUrl/api/videos').replace(
+      queryParameters: {
+        'tag': normalizedTag,
+        'sort': 'loops',
+        'limit': limit.toString(),
+      },
+    );
 
     try {
       final response = await _get(uri);
@@ -740,9 +730,7 @@ class FunnelcakeApiClient {
         final data = jsonDecode(response.body) as List<dynamic>;
 
         return data
-            .map(
-              (v) => VideoStats.fromJson(v as Map<String, dynamic>),
-            )
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
       } else {
@@ -786,17 +774,12 @@ class FunnelcakeApiClient {
 
     final trimmedQuery = query.trim();
     if (trimmedQuery.isEmpty) {
-      throw const FunnelcakeException(
-        'Search query cannot be empty',
-      );
+      throw const FunnelcakeException('Search query cannot be empty');
     }
 
-    final uri = Uri.parse('$_baseUrl/api/search').replace(
-      queryParameters: {
-        'q': trimmedQuery,
-        'limit': limit.toString(),
-      },
-    );
+    final uri = Uri.parse(
+      '$_baseUrl/api/search',
+    ).replace(queryParameters: {'q': trimmedQuery, 'limit': limit.toString()});
 
     try {
       final response = await _get(uri);
@@ -805,9 +788,7 @@ class FunnelcakeApiClient {
         final data = jsonDecode(response.body) as List<dynamic>;
 
         return data
-            .map(
-              (v) => VideoStats.fromJson(v as Map<String, dynamic>),
-            )
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
       } else {
@@ -888,9 +869,7 @@ class FunnelcakeApiClient {
         }
 
         return data
-            .map(
-              (v) => VideoStats.fromJson(v as Map<String, dynamic>),
-            )
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
       } else {
@@ -905,9 +884,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch classic vines: $e',
-      );
+      throw FunnelcakeException('Failed to fetch classic vines: $e');
     }
   }
 
@@ -925,16 +902,14 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<List<TrendingHashtag>> fetchTrendingHashtags({
-    int limit = 20,
-  }) async {
+  Future<List<TrendingHashtag>> fetchTrendingHashtags({int limit = 20}) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
 
-    final uri = Uri.parse('$_baseUrl/api/hashtags').replace(
-      queryParameters: {'limit': limit.toString()},
-    );
+    final uri = Uri.parse(
+      '$_baseUrl/api/hashtags',
+    ).replace(queryParameters: {'limit': limit.toString()});
 
     try {
       final response = await _get(uri);
@@ -943,11 +918,7 @@ class FunnelcakeApiClient {
         final data = jsonDecode(response.body) as List<dynamic>;
 
         return data
-            .map(
-              (h) => TrendingHashtag.fromJson(
-                h as Map<String, dynamic>,
-              ),
-            )
+            .map((h) => TrendingHashtag.fromJson(h as Map<String, dynamic>))
             .where((h) => h.tag.isNotEmpty)
             .toList();
       } else {
@@ -962,9 +933,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch trending hashtags: $e',
-      );
+      throw FunnelcakeException('Failed to fetch trending hashtags: $e');
     }
   }
 
@@ -987,14 +956,10 @@ class FunnelcakeApiClient {
     }
 
     if (eventId.isEmpty) {
-      throw const FunnelcakeException(
-        'Event ID cannot be empty',
-      );
+      throw const FunnelcakeException('Event ID cannot be empty');
     }
 
-    final uri = Uri.parse(
-      '$_baseUrl/api/videos/$eventId/stats',
-    );
+    final uri = Uri.parse('$_baseUrl/api/videos/$eventId/stats');
 
     try {
       final response = await _get(uri);
@@ -1016,9 +981,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch video stats: $e',
-      );
+      throw FunnelcakeException('Failed to fetch video stats: $e');
     }
   }
 
@@ -1042,14 +1005,10 @@ class FunnelcakeApiClient {
     }
 
     if (eventId.isEmpty) {
-      throw const FunnelcakeException(
-        'Event ID cannot be empty',
-      );
+      throw const FunnelcakeException('Event ID cannot be empty');
     }
 
-    final uri = Uri.parse(
-      '$_baseUrl/api/videos/$eventId/views',
-    );
+    final uri = Uri.parse('$_baseUrl/api/videos/$eventId/views');
 
     try {
       final response = await _get(uri);
@@ -1074,9 +1033,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch video views: $e',
-      );
+      throw FunnelcakeException('Failed to fetch video views: $e');
     }
   }
 
@@ -1093,9 +1050,7 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<Map<String, dynamic>?> getUserProfile(
-    String pubkey,
-  ) async {
+  Future<Map<String, dynamic>?> getUserProfile(String pubkey) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
@@ -1141,9 +1096,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch user profile: $e',
-      );
+      throw FunnelcakeException('Failed to fetch user profile: $e');
     }
   }
 
@@ -1169,9 +1122,7 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Pubkey cannot be empty');
     }
 
-    final uri = Uri.parse(
-      '$_baseUrl/api/users/$pubkey/social',
-    );
+    final uri = Uri.parse('$_baseUrl/api/users/$pubkey/social');
 
     try {
       final response = await _get(uri);
@@ -1193,9 +1144,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch social counts: $e',
-      );
+      throw FunnelcakeException('Failed to fetch social counts: $e');
     }
   }
 
@@ -1228,9 +1177,7 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Pubkey cannot be empty');
     }
 
-    final queryParams = <String, String>{
-      'limit': limit.toString(),
-    };
+    final queryParams = <String, String>{'limit': limit.toString()};
     if (offset > 0) {
       queryParams['offset'] = offset.toString();
     }
@@ -1262,9 +1209,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch followers: $e',
-      );
+      throw FunnelcakeException('Failed to fetch followers: $e');
     }
   }
 
@@ -1297,9 +1242,7 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Pubkey cannot be empty');
     }
 
-    final queryParams = <String, String>{
-      'limit': limit.toString(),
-    };
+    final queryParams = <String, String>{'limit': limit.toString()};
     if (offset > 0) {
       queryParams['offset'] = offset.toString();
     }
@@ -1331,9 +1274,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch following: $e',
-      );
+      throw FunnelcakeException('Failed to fetch following: $e');
     }
   }
 
@@ -1390,18 +1331,13 @@ class FunnelcakeApiClient {
 
         final videosData = data['videos'] as List<dynamic>? ?? [];
         final videos = videosData
-            .map(
-              (v) => VideoStats.fromJson(v as Map<String, dynamic>),
-            )
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
 
         final source = data['source'] as String? ?? 'unknown';
 
-        return RecommendationsResponse(
-          videos: videos,
-          source: source,
-        );
+        return RecommendationsResponse(videos: videos, source: source);
       } else if (response.statusCode == 404) {
         throw FunnelcakeNotFoundException(
           resource: 'Recommendations',
@@ -1419,9 +1355,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch recommendations: $e',
-      );
+      throw FunnelcakeException('Failed to fetch recommendations: $e');
     }
   }
 
@@ -1439,26 +1373,19 @@ class FunnelcakeApiClient {
   /// - [FunnelcakeApiException] if the request fails.
   /// - [FunnelcakeTimeoutException] if the request times out.
   /// - [FunnelcakeException] for other errors.
-  Future<BulkProfilesResponse> getBulkProfiles(
-    List<String> pubkeys,
-  ) async {
+  Future<BulkProfilesResponse> getBulkProfiles(List<String> pubkeys) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
     }
 
     if (pubkeys.isEmpty) {
-      throw const FunnelcakeException(
-        'Pubkeys list cannot be empty',
-      );
+      throw const FunnelcakeException('Pubkeys list cannot be empty');
     }
 
     final uri = Uri.parse('$_baseUrl/api/users/bulk');
 
     try {
-      final response = await _post(
-        uri,
-        body: {'pubkeys': pubkeys},
-      );
+      final response = await _post(uri, body: {'pubkeys': pubkeys});
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1488,9 +1415,7 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch bulk profiles: $e',
-      );
+      throw FunnelcakeException('Failed to fetch bulk profiles: $e');
     }
   }
 
@@ -1516,18 +1441,13 @@ class FunnelcakeApiClient {
     }
 
     if (eventIds.isEmpty) {
-      throw const FunnelcakeException(
-        'Event IDs list cannot be empty',
-      );
+      throw const FunnelcakeException('Event IDs list cannot be empty');
     }
 
     final uri = Uri.parse('$_baseUrl/api/videos/stats/bulk');
 
     try {
-      final response = await _post(
-        uri,
-        body: {'event_ids': eventIds},
-      );
+      final response = await _post(uri, body: {'event_ids': eventIds});
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -1574,9 +1494,135 @@ class FunnelcakeApiClient {
     } on FunnelcakeException {
       rethrow;
     } catch (e) {
-      throw FunnelcakeException(
-        'Failed to fetch bulk video stats: $e',
-      );
+      throw FunnelcakeException('Failed to fetch bulk video stats: $e');
+    }
+  }
+
+  /// Fetches content categories with video counts.
+  ///
+  /// [limit] is the maximum number of categories (defaults to 50).
+  /// [offset] is the pagination offset (defaults to 0).
+  /// [query] is an optional case-insensitive substring filter.
+  ///
+  /// Returns a list of maps with `name` and `video_count` fields.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<Map<String, dynamic>>> getCategories({
+    int limit = 50,
+    int offset = 0,
+    String? query,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final queryParams = <String, String>{
+      'limit': limit.toString(),
+      'offset': offset.toString(),
+    };
+    if (query != null && query.isNotEmpty) {
+      queryParams['q'] = query;
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/categories',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch categories',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch categories: $e');
+    }
+  }
+
+  /// Fetches videos filtered by category.
+  ///
+  /// [category] is the category name (e.g., "music", "comedy").
+  /// [limit] is the maximum number of videos (defaults to 50).
+  /// [before] is an optional Unix timestamp cursor for pagination.
+  /// [sort] is the sort order (defaults to "trending").
+  ///
+  /// Returns a list of [VideoStats] objects.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeException] if the category is empty.
+  /// - [FunnelcakeApiException] if the request fails.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<VideoStats>> getVideosByCategory({
+    required String category,
+    int limit = 50,
+    int? before,
+    String sort = 'trending',
+    String? platform,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    if (category.isEmpty) {
+      throw const FunnelcakeException('Category cannot be empty');
+    }
+
+    final queryParams = <String, String>{
+      'category': category.toLowerCase(),
+      'sort': sort,
+      'limit': limit.toString(),
+    };
+    if (before != null) {
+      queryParams['before'] = before.toString();
+    }
+    if (platform != null) {
+      queryParams['platform'] = platform;
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/videos',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+
+        return data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch videos by category',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch videos by category: $e');
     }
   }
 

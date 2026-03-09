@@ -537,6 +537,175 @@ void main() {
     });
   });
 
+  group('$AudioPlaybackService loading interrupted retry', () {
+    late AudioPlaybackService service;
+    late _MockAudioPlayer mockPlayer;
+    late _MockAudioSessionWrapper mockSessionWrapper;
+
+    setUp(() {
+      mockPlayer = _MockAudioPlayer();
+      mockSessionWrapper = _MockAudioSessionWrapper();
+
+      when(
+        () => mockPlayer.positionStream,
+      ).thenAnswer((_) => const Stream<Duration>.empty());
+      when(
+        () => mockPlayer.durationStream,
+      ).thenAnswer((_) => const Stream<Duration?>.empty());
+      when(
+        () => mockPlayer.playingStream,
+      ).thenAnswer((_) => const Stream<bool>.empty());
+      when(() => mockPlayer.playing).thenReturn(false);
+      when(() => mockPlayer.duration).thenReturn(null);
+      when(() => mockPlayer.dispose()).thenAnswer((_) async {});
+
+      when(
+        () => mockSessionWrapper.getDevices(),
+      ).thenAnswer((_) async => <audio_session.AudioDevice>{});
+      when(
+        () => mockSessionWrapper.devicesChangedEventStream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(() => mockSessionWrapper.configure(any())).thenAnswer((_) async {});
+    });
+
+    tearDown(() async {
+      await service.dispose();
+    });
+
+    test(
+      'play retries and succeeds after Loading interrupted with URL source',
+      () async {
+        when(
+          () => mockPlayer.setUrl(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 10));
+
+        var playCallCount = 0;
+        when(() => mockPlayer.play()).thenAnswer((_) async {
+          if (playCallCount++ == 0) {
+            throw Exception('Loading interrupted');
+          }
+        });
+
+        service = AudioPlaybackService(
+          audioPlayer: mockPlayer,
+          audioSessionWrapper: mockSessionWrapper,
+        );
+        await service.loadAudio('https://example.com/audio.mp3');
+        await service.play();
+
+        verify(() => mockPlayer.play()).called(2);
+      },
+    );
+
+    test(
+      'play rethrows after Loading interrupted when reload also fails',
+      () async {
+        when(
+          () => mockPlayer.setUrl(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 10));
+
+        var playCallCount = 0;
+        when(() => mockPlayer.play()).thenAnswer((_) async {
+          if (playCallCount++ == 0) {
+            throw Exception('Loading interrupted');
+          }
+        });
+
+        // Reload (setUrl) throws on the second call
+        var setUrlCallCount = 0;
+        when(() => mockPlayer.setUrl(any())).thenAnswer((_) async {
+          if (setUrlCallCount++ > 0) throw Exception('Reload failed');
+          return const Duration(seconds: 10);
+        });
+
+        service = AudioPlaybackService(
+          audioPlayer: mockPlayer,
+          audioSessionWrapper: mockSessionWrapper,
+        );
+        await service.loadAudio('https://example.com/audio.mp3');
+
+        await expectLater(service.play(), throwsException);
+      },
+    );
+
+    test(
+      'play retries and succeeds after Loading interrupted with file source',
+      () async {
+        when(
+          () => mockPlayer.setFilePath(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 10));
+
+        var playCallCount = 0;
+        when(() => mockPlayer.play()).thenAnswer((_) async {
+          if (playCallCount++ == 0) {
+            throw Exception('Loading interrupted');
+          }
+        });
+
+        service = AudioPlaybackService(
+          audioPlayer: mockPlayer,
+          audioSessionWrapper: mockSessionWrapper,
+        );
+        await service.loadAudioFromFile('/local/audio.mp3');
+        await service.play();
+
+        verify(() => mockPlayer.play()).called(2);
+      },
+    );
+
+    test(
+      'play retries and succeeds after Loading interrupted with audio source',
+      () async {
+        when(
+          () => mockPlayer.setAudioSource(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 10));
+
+        var playCallCount = 0;
+        when(() => mockPlayer.play()).thenAnswer((_) async {
+          if (playCallCount++ == 0) {
+            throw Exception('Loading interrupted');
+          }
+        });
+
+        service = AudioPlaybackService(
+          audioPlayer: mockPlayer,
+          audioSessionWrapper: mockSessionWrapper,
+        );
+        await service.setAudioSource(
+          const AudioSourceConfig.network('https://example.com/audio.mp3'),
+        );
+        await service.play();
+
+        verify(() => mockPlayer.play()).called(2);
+      },
+    );
+
+    test(
+      'seek retries and succeeds after Loading interrupted',
+      () async {
+        when(
+          () => mockPlayer.setUrl(any()),
+        ).thenAnswer((_) async => const Duration(seconds: 10));
+
+        var seekCallCount = 0;
+        when(() => mockPlayer.seek(any())).thenAnswer((_) async {
+          if (seekCallCount++ == 0) {
+            throw Exception('Loading interrupted');
+          }
+        });
+
+        service = AudioPlaybackService(
+          audioPlayer: mockPlayer,
+          audioSessionWrapper: mockSessionWrapper,
+        );
+        await service.loadAudio('https://example.com/audio.mp3');
+        await service.seek(const Duration(seconds: 5));
+
+        verify(() => mockPlayer.seek(any())).called(2);
+      },
+    );
+  });
+
   group('AudioPlaybackService headphone detection', () {
     late AudioPlaybackService service;
     late _MockAudioPlayer mockPlayer;

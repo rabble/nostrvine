@@ -1,19 +1,25 @@
 // ABOUTME: Safe wrapper around JsonCacheInfoRepository that handles corrupted cache files
-// ABOUTME: Prevents app crashes when cache JSON is empty or malformed by catching FormatException
+// ABOUTME: Intercepts FlutterError.reportError during open() since upstream swallows exceptions
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
-/// A safe wrapper around JsonCacheInfoRepository that handles corrupted JSON files.
+/// A safe wrapper around [JsonCacheInfoRepository] that handles corrupted
+/// JSON files.
 ///
-/// The standard JsonCacheInfoRepository crashes with FormatException when the
-/// cache JSON file is empty or corrupted (e.g., due to app crash during write).
-/// This wrapper catches those errors and deletes the corrupted file so a fresh
-/// cache can be created.
+/// The upstream [JsonCacheInfoRepository._readFile] catches all exceptions
+/// internally (`on Object`) and reports them via [FlutterError.reportError]
+/// instead of rethrowing. This means a standard try/catch around [open] never
+/// sees the error. Instead, the error flows to [FlutterError.onError], which
+/// Crashlytics records as a fatal crash.
+///
+/// This wrapper temporarily intercepts [FlutterError.onError] during [open] to
+/// detect corruption, deletes the bad file, and retries cleanly.
 class SafeJsonCacheInfoRepository extends JsonCacheInfoRepository {
   SafeJsonCacheInfoRepository({required String databaseName})
     : _databaseName = databaseName,
@@ -23,35 +29,41 @@ class SafeJsonCacheInfoRepository extends JsonCacheInfoRepository {
 
   @override
   Future<bool> open() async {
+    // Temporarily intercept FlutterError.onError to catch errors that the
+    // upstream _readFile reports internally instead of rethrowing.
+    Object? caughtException;
+    final previousHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      if (details.library == 'flutter cache manager') {
+        caughtException = details.exception;
+        return;
+      }
+      // Forward non-cache errors to the previous handler
+      previousHandler?.call(details);
+    };
+
     try {
-      return await super.open();
-    } on FormatException catch (e) {
-      // JSON file is corrupted - delete it and retry
-      Log.warning(
-        '⚠️ Cache JSON corrupted for $_databaseName, clearing cache: $e',
-        name: 'SafeJsonCacheRepository',
-        category: LogCategory.system,
-      );
-      await _deleteCacheFile();
-      return super.open();
-    } catch (e) {
-      // Handle other errors (null content, type errors, etc.)
-      if (e.toString().contains('Unexpected end of input') ||
-          e.toString().contains("type 'Null'")) {
+      final result = await super.open();
+
+      if (caughtException != null) {
         Log.warning(
-          '⚠️ Cache JSON empty/null for $_databaseName, clearing cache: $e',
+          'Cache JSON corrupted for $_databaseName, '
+          'clearing cache: $caughtException',
           name: 'SafeJsonCacheRepository',
           category: LogCategory.system,
         );
         await _deleteCacheFile();
+        // Restore handler before retry so any further errors propagate normally
+        FlutterError.onError = previousHandler;
         return super.open();
       }
-      rethrow;
+
+      return result;
+    } finally {
+      FlutterError.onError = previousHandler;
     }
   }
 
-  /// Delete the corrupted cache JSON file
-  /// Note: JsonCacheInfoRepository stores its JSON in getApplicationSupportDirectory()
   Future<void> _deleteCacheFile() async {
     try {
       final directory = await getApplicationSupportDirectory();
@@ -60,14 +72,14 @@ class SafeJsonCacheInfoRepository extends JsonCacheInfoRepository {
       if (file.existsSync()) {
         await file.delete();
         Log.info(
-          '🗑️ Deleted corrupted cache file: $filePath',
+          'Deleted corrupted cache file: $filePath',
           name: 'SafeJsonCacheRepository',
           category: LogCategory.system,
         );
       }
     } catch (e) {
       Log.error(
-        '❌ Failed to delete corrupted cache file: $e',
+        'Failed to delete corrupted cache file: $e',
         name: 'SafeJsonCacheRepository',
         category: LogCategory.system,
       );

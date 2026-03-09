@@ -120,6 +120,17 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     }
   }
 
+  /// Reset to initial state unconditionally.
+  ///
+  /// Called when a new verification screen opens to clear stale state from
+  /// a previous verification (e.g., User A verified, now User B's deep link
+  /// arrives). Without this, the builder would render success UI from the
+  /// previous verification instead of the new verification flow.
+  void reset() {
+    _cleanup();
+    emit(const EmailVerificationState());
+  }
+
   void _onTimeout() {
     Log.warning(
       'Email verification polling timed out after '

@@ -10,6 +10,7 @@ import 'package:models/models.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
@@ -18,6 +19,8 @@ import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dar
 import '../helpers/test_provider_overrides.dart';
 
 class _MockBookmarkService extends Mock implements BookmarkService {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockVideoSharingService extends Mock implements VideoSharingService {}
 
@@ -293,6 +296,14 @@ void main() {
           '1111111111111111111111111111111111111111111111111111111111111111',
       displayName: 'Alice',
     );
+    late _MockFollowRepository mockFollowRepository;
+
+    setUp(() {
+      mockFollowRepository = _MockFollowRepository();
+      when(
+        () => mockFollowRepository.followingPubkeys,
+      ).thenReturn([]);
+    });
 
     Widget buildSubjectWithContacts() {
       when(
@@ -302,7 +313,7 @@ void main() {
       return testProviderScope(
         mockUserProfileService: createMockUserProfileService(),
         additionalOverrides: [
-          followRepositoryProvider.overrideWithValue(null),
+          followRepositoryProvider.overrideWithValue(mockFollowRepository),
           bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
           videoSharingServiceProvider.overrideWith(
             (ref) => mockVideoSharingService,

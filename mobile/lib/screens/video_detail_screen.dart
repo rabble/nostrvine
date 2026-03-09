@@ -28,9 +28,14 @@ class VideoDetailScreen extends ConsumerStatefulWidget {
   /// Build path for a specific video ID.
   static String pathForId(String id) => '$basePath/$id';
 
-  const VideoDetailScreen({required this.videoId, super.key});
+  const VideoDetailScreen({
+    required this.videoId,
+    this.videoFeedBuilder,
+    super.key,
+  });
 
   final String videoId;
+  final Widget Function(VideoEvent video)? videoFeedBuilder;
 
   @override
   ConsumerState<VideoDetailScreen> createState() => _VideoDetailScreenState();
@@ -145,7 +150,10 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     if (_error != null) {
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        appBar: AppBar(backgroundColor: Colors.transparent, elevation: 0),
+        appBar: const DiVineAppBar(
+          title: '',
+          backgroundMode: DiVineAppBarBackgroundMode.transparent,
+        ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -183,17 +191,12 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     if (blocklistService.shouldFilterFromFeeds(_video!.pubkey)) {
       return Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back,
-              color: VineTheme.whiteText,
-              semanticLabel: 'Close video player',
-            ),
-            onPressed: context.pop,
-          ),
+        appBar: DiVineAppBar(
+          title: '',
+          showBackButton: true,
+          onBackPressed: context.pop,
+          backButtonSemanticLabel: 'Close video player',
+          backgroundMode: DiVineAppBarBackgroundMode.transparent,
         ),
         body: const Center(
           child: Text(
@@ -208,11 +211,12 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
     }
 
     // Display video in full-screen pooled player
-    return PooledFullscreenVideoFeedScreen(
-      videosStream: Stream.value([_video!]),
-      initialIndex: 0,
-      contextTitle: 'Shared Video',
-      trafficSource: ViewTrafficSource.share,
-    );
+    return widget.videoFeedBuilder?.call(_video!) ??
+        PooledFullscreenVideoFeedScreen(
+          videosStream: Stream.value([_video!]),
+          initialIndex: 0,
+          contextTitle: 'Shared Video',
+          trafficSource: ViewTrafficSource.share,
+        );
   }
 }

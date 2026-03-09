@@ -202,6 +202,9 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
         _videosStreamController.add(next.value!.videos);
       }
     });
+    final classicVinesFeedNotifier = ref.read(
+      classicVinesFeedProvider.notifier,
+    );
 
     return RefreshIndicator(
       color: VineTheme.onPrimary,
@@ -213,7 +216,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
           category: LogCategory.video,
         );
         // Only refresh classics feed (roulette to next page)
-        await ref.read(classicVinesFeedProvider.notifier).refresh();
+        await classicVinesFeedNotifier.refresh();
       },
       child: CustomScrollView(
         controller: _scrollController,
@@ -236,8 +239,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
                     videos,
                   ),
                   initialIndex: index,
-                  onLoadMore: () =>
-                      ref.read(classicVinesFeedProvider.notifier).loadMore(),
+                  onLoadMore: classicVinesFeedNotifier.loadMore,
                   contextTitle: 'Classics',
                   trafficSource: ViewTrafficSource.discoveryClassic,
                 ),

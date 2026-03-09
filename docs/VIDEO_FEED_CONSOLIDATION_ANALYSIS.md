@@ -577,7 +577,6 @@ The consolidation is **complete and production-ready**. The existing `VideoFeedI
 
 This consolidation is independent from but complementary to:
 - **video_playback_cleanup_tdd_plan.md**: Per-item controller architecture (completed)
-- **RIVERPOD_3_MIGRATION_PLAN.md**: Riverpod 3 upgrade (in progress)
-- **RIVERPOD_3_TEST_MIGRATION_GUIDE.md**: Test patterns for Riverpod 3
+- **BLOC_UI_MIGRATION_PRD.md**: Current UI state-management direction and migration model
 
-Those dealt with the video player controller layer. This deals with the feed presentation layer.
+Those dealt with architecture and player controller layers. This document focuses on feed presentation consolidation.

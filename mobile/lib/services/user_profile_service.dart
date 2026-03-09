@@ -12,9 +12,9 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/signer/pubkey_only_nostr_signer.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
-import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 /// Service for managing user profiles from Nostr kind 0 events
 /// Reactive service that notifies listeners when profiles are updated
@@ -89,56 +89,44 @@ class UserProfileService extends ChangeNotifier {
   bool _prefetchActive = false;
   DateTime? _lastPrefetchAt;
 
-  // Background refresh rate limiting
-  DateTime? _lastBackgroundRefresh;
-
   final SubscriptionManager _subscriptionManager;
-  ProfileCacheService? _persistentCache;
+  ProfileRepository? _profileRepository;
 
-  /// Set persistent cache service for profile storage
-  void setPersistentCache(ProfileCacheService cacheService) {
-    _persistentCache = cacheService;
-    Log.debug(
-      '📱 ProfileCacheService attached to UserProfileService',
-      name: 'UserProfileService',
-      category: LogCategory.system,
-    );
+  /// Set profile repository and preload cached profiles into memory.
+  Future<void> setProfileRepository(ProfileRepository repository) async {
+    _profileRepository = repository;
+
+    // Preload all Drift-cached profiles into the in-memory cache
+    // so that sync methods (getCachedProfile, hasProfile) work
+    // without an async fallback.
+    try {
+      final cached = await repository.getAllCachedProfiles();
+      for (final profile in cached) {
+        _profileCache.putIfAbsent(profile.pubkey, () => profile);
+      }
+      Log.debug(
+        'ProfileRepository attached, preloaded ${cached.length} profiles',
+        name: 'UserProfileService',
+        category: LogCategory.system,
+      );
+    } on Exception catch (e) {
+      Log.error(
+        'Failed to preload profiles from repository: $e',
+        name: 'UserProfileService',
+        category: LogCategory.system,
+      );
+    }
   }
 
   /// Get cached profile for a user
   UserProfile? getCachedProfile(String pubkey) {
-    // First check in-memory cache
-    var profile = _profileCache[pubkey];
-    if (profile != null) {
-      return profile;
-    }
-
-    // If not in memory, check persistent cache
-    if (_persistentCache?.isInitialized == true) {
-      profile = _persistentCache!.getCachedProfile(pubkey);
-      if (profile != null) {
-        // Load into memory cache for faster access
-        _profileCache[pubkey] = profile;
-        // Notify listeners that profile is now available
-        notifyListeners();
-        return profile;
-      }
-    }
-
-    return null;
+    return _profileCache[pubkey];
   }
 
   /// Check if profile is cached
   bool hasProfile(String? pubkey) {
     if (pubkey == null || pubkey.isEmpty) return false;
-    if (_profileCache.containsKey(pubkey)) return true;
-
-    // Also check persistent cache
-    if (_persistentCache?.isInitialized == true) {
-      return _persistentCache!.getCachedProfile(pubkey) != null;
-    }
-
-    return false;
+    return _profileCache.containsKey(pubkey);
   }
 
   /// Check if we should skip fetching this profile
@@ -168,10 +156,8 @@ class UserProfileService extends ChangeNotifier {
     _gaveUpProfiles.remove(profile.pubkey);
     _fetchAttempts.remove(profile.pubkey);
 
-    // Update persistent cache
-    if (_persistentCache?.isInitialized == true) {
-      await _persistentCache!.updateCachedProfile(profile);
-    }
+    // Persist to repository
+    await _profileRepository?.cacheProfile(profile);
 
     // Notify listeners that profile was updated
     notifyListeners();
@@ -238,9 +224,7 @@ class UserProfileService extends ChangeNotifier {
 
       // Clear cached profile
       _profileCache.remove(pubkey);
-      if (_persistentCache?.isInitialized == true) {
-        _persistentCache!.removeCachedProfile(pubkey);
-      }
+      unawaited(_profileRepository?.deleteCachedProfile(pubkey: pubkey));
 
       // Notify listeners that profile was removed for refresh
       notifyListeners();
@@ -258,18 +242,6 @@ class UserProfileService extends ChangeNotifier {
     // Return cached profile if available and not forcing refresh
     if (!forceRefresh && hasProfile(pubkey)) {
       final cachedProfile = getCachedProfile(pubkey);
-
-      // Check if we should do a soft refresh (background update)
-      if (cachedProfile != null &&
-          _persistentCache?.shouldRefreshProfile(pubkey) == true) {
-        Log.debug(
-          'Profile cached but stale for $pubkey... - will refresh in background',
-          name: 'UserProfileService',
-          category: LogCategory.system,
-        );
-        // Do a background refresh without blocking the UI
-        Future.microtask(() => _backgroundRefreshProfile(pubkey));
-      }
 
       return cachedProfile;
     }
@@ -349,9 +321,7 @@ class UserProfileService extends ChangeNotifier {
 
           // Cache the profile
           _profileCache[pubkey] = profile;
-          if (_persistentCache?.isInitialized == true) {
-            _persistentCache!.cacheProfile(profile);
-          }
+          unawaited(_profileRepository?.cacheProfile(profile));
 
           _pendingRequests.remove(pubkey);
           notifyListeners();
@@ -447,10 +417,8 @@ class UserProfileService extends ChangeNotifier {
       // Cache the profile in memory
       _profileCache[event.pubkey] = profile;
 
-      // Also save to persistent cache
-      if (_persistentCache?.isInitialized == true) {
-        _persistentCache!.cacheProfile(profile);
-      }
+      // Persist to repository
+      unawaited(_profileRepository?.cacheProfile(profile));
 
       // Notify listeners that profile is now available
       notifyListeners();
@@ -594,9 +562,7 @@ class UserProfileService extends ChangeNotifier {
                 eventId: 'rest-bulk-$pubkey',
               );
               _profileCache[pubkey] = profile;
-              if (_persistentCache?.isInitialized == true) {
-                _persistentCache!.cacheProfile(profile);
-              }
+              unawaited(_profileRepository?.cacheProfile(profile));
               _pendingRequests.remove(pubkey);
               realProfiles++;
             }
@@ -1067,46 +1033,6 @@ class UserProfileService extends ChangeNotifier {
 
       Log.debug(
         '📱️ Removed profile from cache: $pubkey...',
-        name: 'UserProfileService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Background refresh for stale profiles
-  Future<void> _backgroundRefreshProfile(String pubkey) async {
-    // Don't refresh if already pending
-    if (_pendingRequests.contains(pubkey) ||
-        _activeSubscriptionIds.containsKey(pubkey)) {
-      return;
-    }
-
-    // Rate limit background refreshes to avoid overwhelming the UI
-    final now = DateTime.now();
-    if (_lastBackgroundRefresh != null &&
-        now.difference(_lastBackgroundRefresh!).inSeconds < 30) {
-      Log.debug(
-        'Rate limiting background refresh for $pubkey...',
-        name: 'UserProfileService',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    try {
-      Log.debug(
-        'Background refresh for stale profile $pubkey...',
-        name: 'UserProfileService',
-        category: LogCategory.system,
-      );
-
-      _lastBackgroundRefresh = now;
-
-      // Use a longer timeout for background refreshes to reduce urgency
-      await fetchProfile(pubkey, forceRefresh: true);
-    } catch (e) {
-      Log.error(
-        'Background refresh failed for $pubkey: $e',
         name: 'UserProfileService',
         category: LogCategory.system,
       );

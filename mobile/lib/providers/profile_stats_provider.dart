@@ -3,9 +3,10 @@
 
 import 'dart:async';
 
+import 'package:db_client/db_client.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:openvine/services/profile_stats_cache_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -51,40 +52,49 @@ class ProfileStats {
       'ProfileStats(videos: $videoCount, likes: $totalLikes, followers: $followers, following: $following, views: $totalViews)';
 }
 
-// SQLite-based persistent cache
-final _cacheService = ProfileStatsCacheService();
+/// Get cached stats from Drift if available and not expired.
+Future<ProfileStats?> _getCachedProfileStats(
+  ProfileStatsDao dao,
+  String pubkey,
+) async {
+  final row = await dao.getStats(pubkey);
+  if (row == null) return null;
 
-/// Get cached stats if available and not expired
-Future<ProfileStats?> _getCachedProfileStats(String pubkey) async {
-  final stats = await _cacheService.getCachedStats(pubkey);
+  final stats = ProfileStats(
+    videoCount: row.videoCount ?? 0,
+    totalLikes: row.totalLikes ?? 0,
+    followers: row.followerCount ?? 0,
+    following: row.followingCount ?? 0,
+    totalViews: row.totalViews ?? 0,
+    lastUpdated: row.cachedAt,
+  );
 
-  if (stats != null) {
-    final age = DateTime.now().difference(stats.lastUpdated);
-    Log.debug(
-      '📱 Using cached stats for $pubkey (age: ${age.inMinutes}min)',
-      name: 'ProfileStatsProvider',
-      category: LogCategory.ui,
-    );
-  }
+  final age = DateTime.now().difference(stats.lastUpdated);
+  Log.debug(
+    'Using cached stats for $pubkey (age: ${age.inMinutes}min)',
+    name: 'ProfileStatsProvider',
+    category: LogCategory.ui,
+  );
 
   return stats;
 }
 
-/// Cache stats for a user
-Future<void> _cacheProfileStats(String pubkey, ProfileStats stats) async {
-  await _cacheService.saveStats(pubkey, stats);
-  Log.debug(
-    '📱 Cached stats for $pubkey',
-    name: 'ProfileStatsProvider',
-    category: LogCategory.ui,
+/// Cache stats to Drift.
+Future<void> _cacheProfileStats(
+  ProfileStatsDao dao,
+  String pubkey,
+  ProfileStats stats,
+) async {
+  await dao.upsertStats(
+    pubkey: pubkey,
+    videoCount: stats.videoCount,
+    followerCount: stats.followers,
+    followingCount: stats.following,
+    totalViews: stats.totalViews,
+    totalLikes: stats.totalLikes,
   );
-}
-
-/// Clear all cached stats
-Future<void> clearAllProfileStatsCache() async {
-  await _cacheService.clearAll();
   Log.debug(
-    '📱️ Cleared all stats cache',
+    'Cached stats for $pubkey',
     name: 'ProfileStatsProvider',
     category: LogCategory.ui,
   );
@@ -96,6 +106,7 @@ Future<void> clearAllProfileStatsCache() async {
 /// and proper waiting for relay events.
 @riverpod
 Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
+  final statsDao = ref.watch(databaseProvider).profileStatsDao;
   // Get the social service from app providers
   final socialService = ref.read(socialServiceProvider);
 
@@ -104,7 +115,7 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
   final followerStatsFuture = socialService.getFollowerStats(pubkey);
 
   // Check cache for video data (video counts change rarely)
-  final cached = await _getCachedProfileStats(pubkey);
+  final cached = await _getCachedProfileStats(statsDao, pubkey);
   if (cached != null && cached.videoCount > 0) {
     // Use cached video/likes data but always get fresh follower stats
     final followerStats = await followerStatsFuture;
@@ -122,7 +133,7 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
     // Update cache if follower counts changed
     if (freshFollowers != cached.followers ||
         freshFollowing != cached.following) {
-      await _cacheProfileStats(pubkey, stats);
+      await _cacheProfileStats(statsDao, pubkey, stats);
     }
 
     return stats;
@@ -168,7 +179,7 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
 
     // Cache the results (only if video count > 0 to avoid caching timing issues)
     if (videoCount > 0) {
-      await _cacheProfileStats(pubkey, stats);
+      await _cacheProfileStats(statsDao, pubkey, stats);
     }
 
     Log.info(

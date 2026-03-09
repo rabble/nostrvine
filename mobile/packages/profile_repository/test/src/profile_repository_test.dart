@@ -129,6 +129,71 @@ void main() {
       });
     });
 
+    group('cacheProfile', () {
+      test('delegates to userProfilesDao.upsertProfile', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+
+        await profileRepository.cacheProfile(profile);
+
+        verify(() => mockUserProfilesDao.upsertProfile(profile)).called(1);
+      });
+    });
+
+    group('deleteCachedProfile', () {
+      test('delegates to userProfilesDao.deleteProfile', () async {
+        when(
+          () => mockUserProfilesDao.deleteProfile(any()),
+        ).thenAnswer((_) async => 1);
+
+        final result = await profileRepository.deleteCachedProfile(
+          pubkey: testPubkey,
+        );
+
+        expect(result, equals(1));
+        verify(
+          () => mockUserProfilesDao.deleteProfile(testPubkey),
+        ).called(1);
+      });
+
+      test('returns 0 when profile does not exist', () async {
+        when(
+          () => mockUserProfilesDao.deleteProfile(any()),
+        ).thenAnswer((_) async => 0);
+
+        final result = await profileRepository.deleteCachedProfile(
+          pubkey: testPubkey,
+        );
+
+        expect(result, equals(0));
+      });
+    });
+
+    group('getAllCachedProfiles', () {
+      test('returns all profiles from dao', () async {
+        final profiles = [
+          UserProfile.fromNostrEvent(mockProfileEvent),
+        ];
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => profiles);
+
+        final result = await profileRepository.getAllCachedProfiles();
+
+        expect(result, equals(profiles));
+        verify(() => mockUserProfilesDao.getAllProfiles()).called(1);
+      });
+
+      test('returns empty list when no profiles cached', () async {
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => []);
+
+        final result = await profileRepository.getAllCachedProfiles();
+
+        expect(result, isEmpty);
+      });
+    });
+
     group('fetchFreshProfile', () {
       test('fetches from relay and caches profile', () async {
         final result = await profileRepository.fetchFreshProfile(
@@ -383,6 +448,89 @@ void main() {
                 profileContent: {
                   'display_name': 'New Name',
                   'about': 'Preserved bio',
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'preserves existing nip05 from rawData when clearNip05 is false',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'nip05': 'alice@example.com',
+            });
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'nip05': 'alice@example.com',
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'removes nip05 from rawData when clearNip05 is true',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'nip05': 'alice@example.com',
+              'about': 'Bio',
+            });
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              clearNip05: true,
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'about': 'Bio',
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'clearNip05 is a no-op when a new nip05 is also provided',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'nip05': 'old@example.com',
+            });
+
+            when(() => mockProfileEvent.content).thenReturn(
+              jsonEncode({
+                'display_name': 'New Name',
+                'nip05': 'new@example.com',
+              }),
+            );
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              nip05: 'new@example.com',
+              clearNip05: true,
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'nip05': 'new@example.com',
                 },
               ),
             ).called(1);

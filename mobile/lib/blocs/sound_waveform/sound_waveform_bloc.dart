@@ -3,6 +3,7 @@
 
 import 'dart:typed_data';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -19,7 +20,7 @@ part 'sound_waveform_state.dart';
 /// - Caching results until cleared
 class SoundWaveformBloc extends Bloc<SoundWaveformEvent, SoundWaveformState> {
   SoundWaveformBloc() : super(const SoundWaveformInitial()) {
-    on<SoundWaveformExtract>(_onExtract);
+    on<SoundWaveformExtract>(_onExtract, transformer: restartable());
     on<SoundWaveformClear>(_onClear);
   }
 

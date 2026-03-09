@@ -27,6 +27,24 @@ VideoContentFilter createNsfwFilter(ContentFilterService contentFilterService) {
   };
 }
 
+/// Creates a [VideoWarningLabelsResolver] that returns matched labels whose
+/// preference is [ContentFilterPreference.warn].
+VideoWarningLabelsResolver createNsfwWarnLabels(
+  ContentFilterService contentFilterService,
+) {
+  return (VideoEvent video) {
+    final labels = _getContentLabels(video);
+    if (labels.isEmpty) return const <String>[];
+
+    return labels.where((value) {
+      final label = ContentLabel.fromValue(value);
+      return label != null &&
+          contentFilterService.getPreference(label) ==
+              ContentFilterPreference.warn;
+    }).toList();
+  };
+}
+
 /// Extracts content label values from a [VideoEvent].
 ///
 /// Uses the already-parsed [VideoEvent.contentWarningLabels] (from NIP-36

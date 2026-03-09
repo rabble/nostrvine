@@ -143,9 +143,10 @@ class VideoPublishService {
         inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
         inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
         inspiredByNpub: draft.inspiredByNpub,
-        selectedAudioEventId: draft.selectedAudioEventId,
-        selectedAudioRelay: draft.selectedAudioRelay,
+        selectedAudioEventId: draft.selectedSound?.id,
+        selectedAudioRelay: draft.selectedSound?.sourceVideoRelay,
         language: languagePreferenceService?.contentLanguage,
+        contentWarning: draft.contentWarning,
       );
 
       if (!published) {

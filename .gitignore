@@ -9,6 +9,7 @@
 # Claude Code
 .claude/settings.local.json
 .claude/*.local.md
+**/.private-journal/
 
 # Git worktrees
 .worktrees/

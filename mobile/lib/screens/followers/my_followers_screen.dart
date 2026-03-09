@@ -5,13 +5,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
@@ -31,11 +29,6 @@ class MyFollowersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
-
-    // Show loading until NostrClient has keys
-    if (followRepository == null) {
-      return const BrandedLoadingScaffold();
-    }
 
     return MultiBlocProvider(
       providers: [
@@ -76,44 +69,16 @@ class _MyFollowersView extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.whiteText,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-          tooltip: 'Back',
-        ),
-        title: FollowerCountTitle<MyFollowersBloc, MyFollowersState>(
+      appBar: DiVineAppBar(
+        titleWidget: FollowerCountTitle<MyFollowersBloc, MyFollowersState>(
           title: appBarTitle,
           selector: (state) => state.status == MyFollowersStatus.success
               ? state.followersPubkeys.length
               : 0,
         ),
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).pop(),
+        backButtonSemanticLabel: 'Back',
       ),
       body: MultiBlocListener(
         listeners: [

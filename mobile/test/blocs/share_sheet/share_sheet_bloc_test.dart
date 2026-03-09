@@ -804,6 +804,7 @@ void main() {
           relayUrl: 'wss://relay.test.example',
           videoSharingService: mockSharingService,
           userProfileService: mockProfileService,
+          followRepository: mockFollowRepository,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventJsonRequested()),
         expect: () => [
@@ -851,6 +852,7 @@ void main() {
           relayUrl: 'wss://relay.test.example',
           videoSharingService: mockSharingService,
           userProfileService: mockProfileService,
+          followRepository: mockFollowRepository,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventIdRequested()),
         expect: () => [

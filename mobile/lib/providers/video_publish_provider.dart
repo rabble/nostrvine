@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +16,6 @@ import 'package:openvine/models/video_publish/video_publish_provider_state.dart'
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -63,7 +63,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
   /// Resets all video-related providers.
   ///
-  /// Clears recorder, editor, clip manager, sound selection, and publish state.
+  /// Clears recorder, editor, clip manager, and publish state.
   Future<void> clearAll() async {
     Log.debug(
       '🧹 Clearing all video providers',
@@ -72,7 +72,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     );
     try {
       ref.read(videoRecorderProvider.notifier).reset();
-      ref.read(selectedSoundProvider.notifier).clear();
       reset();
 
       await Future.wait([
@@ -130,6 +129,32 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
 
     for (final draft in pendingDrafts) {
+      // Check if video file still exists before attempting resume
+      if (!kIsWeb && draft.clips.isNotEmpty) {
+        try {
+          final videoPath = await draft.clips.first.video.safeFilePath();
+          final videoFile = File(videoPath);
+          if (!videoFile.existsSync()) {
+            Log.warning(
+              '🗑️ Deleting draft ${draft.id} - video file no longer exists: $videoPath',
+              name: 'VideoPublishNotifier',
+              category: LogCategory.video,
+            );
+            await _draftService.deleteDraft(draft.id);
+            continue;
+          }
+        } catch (e) {
+          Log.warning(
+            '⚠️ Could not verify video file for draft ${draft.id}: $e',
+            name: 'VideoPublishNotifier',
+            category: LogCategory.video,
+          );
+          // Delete draft if we can't verify the video
+          await _draftService.deleteDraft(draft.id);
+          continue;
+        }
+      }
+
       Log.info(
         '📤 Resuming upload for draft: ${draft.id}',
         name: 'VideoPublishNotifier',

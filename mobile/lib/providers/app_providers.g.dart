@@ -1313,7 +1313,7 @@ final class OauthConfigProvider
   }
 }
 
-String _$oauthConfigHash() => r'dff26778d76d10a89d836aa97cef2bb1eb8e6ba1';
+String _$oauthConfigHash() => r'b11c3df3f54b22165844d498c073e779b2b88815';
 
 @ProviderFor(flutterSecureStorage)
 const flutterSecureStorageProvider = FlutterSecureStorageProvider._();
@@ -1689,62 +1689,6 @@ final class NostrKeyManagerProvider
 }
 
 String _$nostrKeyManagerHash() => r'a0d67b6d79af5ecdc42bc6616542249200a24b64';
-
-/// Profile cache service for persistent profile storage
-/// keepAlive to avoid expensive Hive reinitialization on auth state changes
-
-@ProviderFor(profileCacheService)
-const profileCacheServiceProvider = ProfileCacheServiceProvider._();
-
-/// Profile cache service for persistent profile storage
-/// keepAlive to avoid expensive Hive reinitialization on auth state changes
-
-final class ProfileCacheServiceProvider
-    extends
-        $FunctionalProvider<
-          ProfileCacheService,
-          ProfileCacheService,
-          ProfileCacheService
-        >
-    with $Provider<ProfileCacheService> {
-  /// Profile cache service for persistent profile storage
-  /// keepAlive to avoid expensive Hive reinitialization on auth state changes
-  const ProfileCacheServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'profileCacheServiceProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$profileCacheServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<ProfileCacheService> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  ProfileCacheService create(Ref ref) {
-    return profileCacheService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ProfileCacheService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<ProfileCacheService>(value),
-    );
-  }
-}
-
-String _$profileCacheServiceHash() =>
-    r'66b2a6162123caf14e5938459bbc11c9fcaa35cf';
 
 /// Hashtag cache service for persistent hashtag storage
 
@@ -2568,12 +2512,12 @@ final class HashtagServiceProvider
 
 String _$hashtagServiceHash() => r'5cd38d3c2e8d78a6f7b74a72b650d79e28938fe4';
 
-/// User profile service depends on Nostr service, SubscriptionManager, and ProfileCacheService
+/// User profile service depends on Nostr service, SubscriptionManager, and ProfileRepository
 
 @ProviderFor(userProfileService)
 const userProfileServiceProvider = UserProfileServiceProvider._();
 
-/// User profile service depends on Nostr service, SubscriptionManager, and ProfileCacheService
+/// User profile service depends on Nostr service, SubscriptionManager, and ProfileRepository
 
 final class UserProfileServiceProvider
     extends
@@ -2583,7 +2527,7 @@ final class UserProfileServiceProvider
           UserProfileService
         >
     with $Provider<UserProfileService> {
-  /// User profile service depends on Nostr service, SubscriptionManager, and ProfileCacheService
+  /// User profile service depends on Nostr service, SubscriptionManager, and ProfileRepository
   const UserProfileServiceProvider._()
     : super(
         from: null,
@@ -2619,7 +2563,7 @@ final class UserProfileServiceProvider
 }
 
 String _$userProfileServiceHash() =>
-    r'696503297dba9448097faf7932bd5090580c1406';
+    r'897be9977ae70ea8d8340ef20b1f0e1f3873dad8';
 
 /// Social service depends on Nostr service, Auth service, and Analytics API
 
@@ -2729,7 +2673,8 @@ String _$cachedFollowingListHash() =>
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.
-/// Requires authentication.
+/// Non-nullable: the repository works without keys at construction time.
+/// Read operations return cached/empty data; write operations check keys.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -2741,7 +2686,8 @@ const followRepositoryProvider = FollowRepositoryProvider._();
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.
-/// Requires authentication.
+/// Non-nullable: the repository works without keys at construction time.
+/// Read operations return cached/empty data; write operations check keys.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -2750,15 +2696,16 @@ const followRepositoryProvider = FollowRepositoryProvider._();
 final class FollowRepositoryProvider
     extends
         $FunctionalProvider<
-          FollowRepository?,
-          FollowRepository?,
-          FollowRepository?
+          FollowRepository,
+          FollowRepository,
+          FollowRepository
         >
-    with $Provider<FollowRepository?> {
+    with $Provider<FollowRepository> {
   /// Provider for FollowRepository instance
   ///
   /// Creates a FollowRepository for managing follow relationships.
-  /// Requires authentication.
+  /// Non-nullable: the repository works without keys at construction time.
+  /// Read operations return cached/empty data; write operations check keys.
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
@@ -2779,25 +2726,24 @@ final class FollowRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<FollowRepository?> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
+  $ProviderElement<FollowRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  FollowRepository? create(Ref ref) {
+  FollowRepository create(Ref ref) {
     return followRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(FollowRepository? value) {
+  Override overrideWithValue(FollowRepository value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<FollowRepository?>(value),
+      providerOverride: $SyncValueProvider<FollowRepository>(value),
     );
   }
 }
 
-String _$followRepositoryHash() => r'17bafcf05abcb8edd40ce2e2ce054ae43ed9e136';
+String _$followRepositoryHash() => r'b26951609811714d4830b2c8388b1f168d66b516';
 
 /// Provider for [CuratedListRepository] instance.
 ///
@@ -3405,7 +3351,7 @@ final class VideoEventPublisherProvider
 }
 
 String _$videoEventPublisherHash() =>
-    r'b14b2c63806aa23370d43e14d9a047b36dcde180';
+    r'31a9147e1c9779180518fe8f4d8ee5527f5861d2';
 
 /// View event publisher for kind 22236 ephemeral analytics events
 ///
@@ -4342,7 +4288,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'35b31c2f62a0eb9a1714422439060ef6229d725d';
+String _$videosRepositoryHash() => r'f7b97d2e4dee86201dcad641f980be7c56f51d57';
 
 /// Provider for LikesRepository instance
 ///

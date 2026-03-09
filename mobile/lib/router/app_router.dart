@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -407,9 +408,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final listId = st.pathParameters['listId'];
           if (listId == null || listId.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid list ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid list ID')),
             );
           }
           // Extra data contains listName, videoIds, authorPubkey
@@ -626,9 +627,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
           if (pubkey == null || pubkey.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid user ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid user ID')),
             );
           }
           return FollowersScreenRouter(
@@ -645,9 +646,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
           if (pubkey == null || pubkey.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid user ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid user ID')),
             );
           }
           return FollowingScreenRouter(
@@ -663,9 +664,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final videoId = st.pathParameters['id'];
           if (videoId == null || videoId.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid video ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid video ID')),
             );
           }
           return VideoDetailScreen(videoId: videoId);
@@ -679,9 +680,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final soundId = st.pathParameters['id'];
           final sound = st.extra as AudioEvent?;
           if (soundId == null || soundId.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid sound ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid sound ID')),
             );
           }
           // If sound was passed via extra, use it directly
@@ -743,9 +744,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final args = st.extra as FullscreenVideoFeedArgs?;
           if (args == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('No videos to display')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('No videos to display')),
             );
           }
           return FullscreenVideoFeedScreen(
@@ -763,9 +764,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final args = st.extra as PooledFullscreenVideoFeedArgs?;
           if (args == null) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('No videos to display')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('No videos to display')),
             );
           }
           return PooledFullscreenVideoFeedScreen(
@@ -786,9 +787,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (ctx, st) {
           final npub = st.pathParameters['npub'];
           if (npub == null || npub.isEmpty) {
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('Invalid profile ID')),
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid profile ID')),
             );
           }
           // Extract profile hints from extra (for users without Kind 0 profiles)

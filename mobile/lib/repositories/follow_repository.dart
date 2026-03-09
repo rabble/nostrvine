@@ -515,11 +515,16 @@ class FollowRepository {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    Log.debug(
-      'Initializing FollowRepository',
-      name: 'FollowRepository',
-      category: LogCategory.system,
-    );
+    // Guard: Skip initialization if user is not authenticated.
+    // Don't set _isInitialized = true so we can retry when keys are available.
+    if (!_nostrClient.hasKeys) {
+      Log.debug(
+        'FollowRepository.initialize() skipped - no keys yet',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
 
     try {
       // 1. Load from local storage first for immediate UI display
@@ -555,12 +560,6 @@ class FollowRepository {
       if (_followingPubkeys.isEmpty && !_followingSubject.isClosed) {
         _followingSubject.add(const []);
       }
-
-      Log.info(
-        'FollowRepository initialized: ${_followingPubkeys.length} following',
-        name: 'FollowRepository',
-        category: LogCategory.system,
-      );
     } catch (e) {
       Log.error(
         'FollowRepository initialization error: $e',

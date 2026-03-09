@@ -22,6 +22,7 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -71,6 +72,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   /// Whether a refresh is currently in progress.
   bool _isRefreshing = false;
+
+  /// Key used to open the drawer from the AppBar leading button.
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void _fetchProfileIfNeeded(String userIdHex, bool isOwnProfile) {
     if (isOwnProfile) return; // Own profile loads automatically
@@ -187,125 +191,40 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       final profileColor = profileAsync?.value?.profileBackgroundColor;
 
       return Scaffold(
+        key: _scaffoldKey,
         backgroundColor: VineTheme.backgroundColor,
         onDrawerChanged: (isOpen) {
           ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
         },
-        appBar: AppBar(
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          toolbarHeight: 72,
-          leadingWidth: 80,
-          centerTitle: false,
-          titleSpacing: 0,
+        appBar: DiVineAppBar(
+          title: 'My Profile',
           backgroundColor:
               profileColor ?? getEnvironmentAppBarColor(environment),
-          leading: Builder(
-            builder: (context) => IconButton(
-              key: const Key('menu-icon-button'),
-              tooltip: 'Menu',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Container(
-                width: 48,
-                height: 48,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: VineTheme.iconButtonBackground,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SvgPicture.asset(
-                  'assets/icon/menu.svg',
-                  width: 32,
-                  height: 32,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.whiteText,
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-              onPressed: () {
-                Log.info(
-                  '👆 User tapped menu button',
-                  name: 'Navigation',
-                  category: LogCategory.ui,
-                );
-                Scaffold.of(context).openDrawer();
-              },
-            ),
-          ),
-          title: Text(
-            'My Profile',
-            style: VineTheme.titleFont(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          showMenuButton: true,
+          onMenuPressed: () {
+            Log.info(
+              '👆 User tapped menu button',
+              name: 'Navigation',
+              category: LogCategory.ui,
+            );
+            _scaffoldKey.currentState?.openDrawer();
+          },
           actions: [
-            // Refresh button
-            IconButton(
-              key: const Key('refresh-icon-button'),
-              tooltip: 'Refresh',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Container(
-                width: 48,
-                height: 48,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: VineTheme.iconButtonBackground,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: _isRefreshing
-                    ? const SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: CircularProgressIndicator(
-                          color: VineTheme.whiteText,
-                          strokeWidth: 2,
-                        ),
-                      )
-                    : SvgPicture.asset(
-                        'assets/icon/refresh.svg',
-                        width: 28,
-                        height: 28,
-                        colorFilter: const ColorFilter.mode(
-                          VineTheme.whiteText,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-              ),
+            DiVineAppBarAction(
+              icon: _isRefreshing
+                  ? const MaterialIconSource(Icons.refresh)
+                  : const SvgIconSource('assets/icon/refresh.svg'),
               onPressed: userIdHex != null && !_isRefreshing
                   ? () => _refreshProfile(userIdHex)
                   : null,
+              tooltip: 'Refresh',
+              semanticLabel: 'Refresh profile',
             ),
-            const SizedBox(width: 8),
-            // More button
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: IconButton(
-                tooltip: 'More',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Container(
-                  width: 48,
-                  height: 48,
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: VineTheme.iconButtonBackground,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: SvgPicture.asset(
-                    'assets/icon/DotsThree.svg',
-                    width: 28,
-                    height: 28,
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.whiteText,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                ),
-                onPressed: userIdHex != null ? () => _more(userIdHex) : null,
-              ),
+            DiVineAppBarAction(
+              icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+              onPressed: userIdHex != null ? () => _more(userIdHex) : null,
+              tooltip: 'More',
+              semanticLabel: 'More options',
             ),
           ],
         ),
@@ -821,8 +740,9 @@ class ProfileViewSwitcher extends StatelessWidget {
             refreshNotifier: refreshNotifier,
           );
 
+    // Filter for uploads that explicitly failed (PublishError), not all completed
     final completedWithErrorUploads = backgroundPublishBloc.state.uploads
-        .where((upload) => upload.result != null)
+        .where((upload) => upload.result is PublishError)
         .toList();
 
     if (completedWithErrorUploads.isNotEmpty) {

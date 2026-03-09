@@ -34,7 +34,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     required this.pubkey,
     required ContentBlocklistService contentBlocklistService,
     required String currentUserPubkey,
-    FollowRepository? followRepository,
+    required FollowRepository followRepository,
     BlocklistVersionIncrementer? onBlocklistChanged,
   }) : _profileRepository = profileRepository,
        _blocklistService = contentBlocklistService,
@@ -51,7 +51,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   final ProfileRepository _profileRepository;
   final ContentBlocklistService _blocklistService;
   final String _currentUserPubkey;
-  final FollowRepository? _followRepository;
+  final FollowRepository _followRepository;
   final BlocklistVersionIncrementer? _onBlocklistChanged;
 
   /// The pubkey of the profile being viewed.
@@ -61,7 +61,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   bool get isBlocked => _blocklistService.isBlocked(pubkey);
 
   /// Whether the current user is following the viewed profile.
-  bool get isFollowing => _followRepository?.isFollowing(pubkey) ?? false;
+  bool get isFollowing => _followRepository.isFollowing(pubkey);
 
   Future<void> _onLoadRequested(
     OtherProfileLoadRequested event,
@@ -145,10 +145,9 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     _blocklistService.blockUser(pubkey, ourPubkey: _currentUserPubkey);
 
     // Unfollow the user if we're currently following them
-    final followRepo = _followRepository;
-    if (followRepo != null && followRepo.isFollowing(pubkey)) {
+    if (_followRepository.isFollowing(pubkey)) {
       try {
-        await followRepo.toggleFollow(pubkey);
+        await _followRepository.toggleFollow(pubkey);
       } catch (e, s) {
         Log.error(
           'Failed to unfollow blocked user $pubkey',

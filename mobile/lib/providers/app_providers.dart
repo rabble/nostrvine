@@ -67,7 +67,6 @@ import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
-import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
 import 'package:openvine/services/seen_videos_service.dart';
@@ -570,25 +569,6 @@ NostrKeyManager nostrKeyManager(Ref ref) {
   return NostrKeyManager();
 }
 
-/// Profile cache service for persistent profile storage
-/// keepAlive to avoid expensive Hive reinitialization on auth state changes
-@Riverpod(keepAlive: true)
-ProfileCacheService profileCacheService(Ref ref) {
-  final service = ProfileCacheService();
-  // Initialize asynchronously to avoid blocking UI
-  service.initialize().catchError((e) {
-    Log.error(
-      'Failed to initialize ProfileCacheService',
-      name: 'AppProviders',
-      error: e,
-    );
-  });
-
-  ref.onDispose(service.dispose);
-
-  return service;
-}
-
 /// Hashtag cache service for persistent hashtag storage
 @riverpod
 HashtagCacheService hashtagCacheService(Ref ref) {
@@ -661,10 +641,7 @@ class BlocklistVersion extends _$BlocklistVersion {
 @riverpod
 DraftStorageService draftStorageService(Ref ref) {
   final db = ref.watch(databaseProvider);
-  return DraftStorageService(
-    draftsDao: db.draftsDao,
-    clipsDao: db.clipsDao,
-  );
+  return DraftStorageService(draftsDao: db.draftsDao, clipsDao: db.clipsDao);
 }
 
 /// Clip library service for persisting individual video clips
@@ -913,12 +890,12 @@ HashtagService hashtagService(Ref ref) {
   return HashtagService(videoEventService, cacheService);
 }
 
-/// User profile service depends on Nostr service, SubscriptionManager, and ProfileCacheService
+/// User profile service depends on Nostr service, SubscriptionManager, and ProfileRepository
 @Riverpod(keepAlive: true)
 UserProfileService userProfileService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final subscriptionManager = ref.watch(subscriptionManagerProvider);
-  final profileCache = ref.watch(profileCacheServiceProvider);
+  final profileRepository = ref.watch(profileRepositoryProvider);
   final analyticsService = ref.watch(analyticsApiServiceProvider);
 
   // Use centralized funnelcake availability check (capability detection)
@@ -934,7 +911,9 @@ UserProfileService userProfileService(Ref ref) {
     funnelcakeAvailable: funnelcakeAvailable,
     profileIndexerRelays: env.indexerRelays,
   );
-  service.setPersistentCache(profileCache);
+  if (profileRepository != null) {
+    unawaited(service.setProfileRepository(profileRepository));
+  }
 
   // Inject profile cache lookup into SubscriptionManager to avoid redundant relay requests
   subscriptionManager.setCacheLookup(hasProfileCached: service.hasProfile);
@@ -996,21 +975,14 @@ List<String> cachedFollowingList(Ref ref) {
 /// Provider for FollowRepository instance
 ///
 /// Creates a FollowRepository for managing follow relationships.
-/// Requires authentication.
+/// Non-nullable: the repository works without keys at construction time.
+/// Read operations return cached/empty data; write operations check keys.
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalEventCacheService (for caching contact list events)
 @Riverpod(keepAlive: true)
-FollowRepository? followRepository(Ref ref) {
-  // Return null if NostrClient is not ready yet
-  // This prevents race conditions during auth where auth state is 'authenticated'
-  // but NostrClient hasn't yet rebuilt with the new keys.
-  // The provider will rebuild when isNostrReady becomes true.
-  if (!ref.watch(isNostrReadyProvider)) {
-    return null;
-  }
-
+FollowRepository followRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
@@ -1078,6 +1050,25 @@ FollowRepository? followRepository(Ref ref) {
     );
   });
 
+  // Listen for isNostrReady changes to re-initialize when keys become available.
+  // This handles the case where the provider was created before keys were loaded.
+  ref.listen<bool>(isNostrReadyProvider, (previous, next) {
+    if (previous == false && next && !repository.isInitialized) {
+      Log.info(
+        'NostrClient became ready, re-initializing FollowRepository',
+        name: 'AppProviders',
+        category: LogCategory.system,
+      );
+      repository.initialize().catchError((e) {
+        Log.error(
+          'Failed to re-initialize FollowRepository after keys ready',
+          name: 'AppProviders',
+          error: e,
+        );
+      });
+    }
+  });
+
   ref.onDispose(repository.dispose);
 
   return repository;
@@ -1125,10 +1116,7 @@ HashtagRepository hashtagRepository(Ref ref) {
       addMatches(hashtagService.searchHashtags(query));
       if (results.length < limit) {
         addMatches(
-          TopHashtagsService.instance.searchHashtags(
-            query,
-            limit: limit,
-          ),
+          TopHashtagsService.instance.searchHashtags(query, limit: limit),
         );
       }
 
@@ -1300,6 +1288,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   final videoEventService = ref.watch(videoEventServiceProvider);
   final blossomUploadService = ref.watch(blossomUploadServiceProvider);
   final userProfileService = ref.watch(userProfileServiceProvider);
+  final profileStatsDao = ref.watch(databaseProvider).profileStatsDao;
 
   return VideoEventPublisher(
     uploadManager: uploadManager,
@@ -1309,6 +1298,7 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     videoEventService: videoEventService,
     blossomUploadService: blossomUploadService,
     userProfileService: userProfileService,
+    profileStatsDao: profileStatsDao,
   );
 }
 
@@ -1647,6 +1637,7 @@ VideosRepository videosRepository(Ref ref) {
     localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(contentFilterService),
+    warningLabelsResolver: createNsfwWarnLabels(contentFilterService),
     funnelcakeApiClient: funnelcakeClient,
   );
 }

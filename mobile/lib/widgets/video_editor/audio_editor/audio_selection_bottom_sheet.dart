@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -24,32 +23,32 @@ class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
 
 class _AudioSelectionBottomSheetState
     extends ConsumerState<AudioSelectionBottomSheet> {
+  // Note: Temporarily final until search is reimplemented.
+  // Using final to satisfy lint rules (prefer_final_locals).
   final String _searchQuery = '';
   AudioSortOption _sortOption = AudioSortOption.newest;
   String? _playingSoundId;
-  AudioPlaybackService? _audioService;
+  final _audioService = AudioPlaybackService();
 
   @override
   void dispose() {
     _stopPlayback();
+    _audioService.dispose();
     super.dispose();
   }
 
   Future<void> _stopPlayback() async {
-    if (_playingSoundId != null && _audioService != null) {
-      await _audioService!.stop();
+    if (_playingSoundId != null) {
+      await _audioService.stop();
       _playingSoundId = null;
     }
   }
 
   Future<void> _togglePlayPause(AudioEvent sound) async {
-    _audioService ??= ref.read(audioPlaybackServiceProvider);
-    final audioService = _audioService!;
-
     // If tapping the same sound, toggle play/stop
     if (_playingSoundId == sound.id) {
-      if (audioService.isPlaying) {
-        await audioService.stop();
+      if (_audioService.isPlaying) {
+        await _audioService.stop();
 
         if (mounted) setState(() => _playingSoundId = null);
 
@@ -63,7 +62,7 @@ class _AudioSelectionBottomSheetState
     }
 
     // Stop any currently playing audio
-    await audioService.stop();
+    await _audioService.stop();
 
     if (sound.url == null || sound.url!.isEmpty) {
       Log.warning(
@@ -81,11 +80,11 @@ class _AudioSelectionBottomSheetState
     );
 
     try {
-      await audioService.loadAudio(sound.url!);
+      await _audioService.loadAudio(sound.url!);
       if (mounted) {
         setState(() => _playingSoundId = sound.id);
       }
-      await audioService.play();
+      await _audioService.play();
     } catch (e) {
       Log.error(
         'Failed to preview sound: $e',
@@ -154,57 +153,61 @@ class _AudioSelectionBottomSheetState
         ) ??
         <AudioEvent>[];
 
-    return nostrSoundsAsync.when(
-      data: (nostrSounds) {
-        final allSounds = [...bundledSounds, ...nostrSounds];
-        final filteredBundled = _filterSounds(bundledSounds);
-        final filteredNostr = _filterSounds(nostrSounds);
-        final filteredAll = [...filteredBundled, ...filteredNostr];
+    return SafeArea(
+      child: nostrSoundsAsync.when(
+        data: (nostrSounds) {
+          final allSounds = [...bundledSounds, ...nostrSounds];
+          final filteredBundled = _filterSounds(bundledSounds);
+          final filteredNostr = _filterSounds(nostrSounds);
+          final filteredAll = [...filteredBundled, ...filteredNostr];
 
-        final soundsToShow = _searchQuery.isNotEmpty ? filteredAll : allSounds;
-        final sortedSounds = _sortSounds(soundsToShow);
+          final soundsToShow = _searchQuery.isNotEmpty
+              ? filteredAll
+              : allSounds;
+          final sortedSounds = _sortSounds(soundsToShow);
 
-        return _SoundsContent(
-          scrollController: widget.scrollController,
-          allSounds: allSounds,
-          filteredSounds: sortedSounds,
-          searchQuery: _searchQuery,
-          hasSearchResults: filteredAll.isNotEmpty,
-          sortOption: _sortOption,
-          onSortChanged: (option) => setState(() => _sortOption = option),
-          playingSoundId: _playingSoundId,
-          onPlayPause: _togglePlayPause,
-          onSelect: _selectSound,
-        );
-      },
-      loading: () => bundledSounds.isNotEmpty
-          ? _SoundsContent(
-              scrollController: widget.scrollController,
-              allSounds: bundledSounds,
-              filteredSounds: _sortSounds(bundledSounds),
-              searchQuery: _searchQuery,
-              hasSearchResults: true,
-              sortOption: _sortOption,
-              onSortChanged: (option) => setState(() => _sortOption = option),
-              playingSoundId: _playingSoundId,
-              onPlayPause: _togglePlayPause,
-              onSelect: _selectSound,
-            )
-          : const Center(child: BrandedLoadingIndicator()),
-      error: (error, stack) => bundledSounds.isNotEmpty
-          ? _SoundsContent(
-              scrollController: widget.scrollController,
-              allSounds: bundledSounds,
-              filteredSounds: _sortSounds(bundledSounds),
-              searchQuery: _searchQuery,
-              hasSearchResults: true,
-              sortOption: _sortOption,
-              onSortChanged: (option) => setState(() => _sortOption = option),
-              playingSoundId: _playingSoundId,
-              onPlayPause: _togglePlayPause,
-              onSelect: _selectSound,
-            )
-          : _ErrorState(error: error),
+          return _SoundsContent(
+            scrollController: widget.scrollController,
+            allSounds: allSounds,
+            filteredSounds: sortedSounds,
+            searchQuery: _searchQuery,
+            hasSearchResults: filteredAll.isNotEmpty,
+            sortOption: _sortOption,
+            onSortChanged: (option) => setState(() => _sortOption = option),
+            playingSoundId: _playingSoundId,
+            onPlayPause: _togglePlayPause,
+            onSelect: _selectSound,
+          );
+        },
+        loading: () => bundledSounds.isNotEmpty
+            ? _SoundsContent(
+                scrollController: widget.scrollController,
+                allSounds: bundledSounds,
+                filteredSounds: _sortSounds(bundledSounds),
+                searchQuery: _searchQuery,
+                hasSearchResults: true,
+                sortOption: _sortOption,
+                onSortChanged: (option) => setState(() => _sortOption = option),
+                playingSoundId: _playingSoundId,
+                onPlayPause: _togglePlayPause,
+                onSelect: _selectSound,
+              )
+            : const Center(child: BrandedLoadingIndicator()),
+        error: (error, stack) => bundledSounds.isNotEmpty
+            ? _SoundsContent(
+                scrollController: widget.scrollController,
+                allSounds: bundledSounds,
+                filteredSounds: _sortSounds(bundledSounds),
+                searchQuery: _searchQuery,
+                hasSearchResults: true,
+                sortOption: _sortOption,
+                onSortChanged: (option) => setState(() => _sortOption = option),
+                playingSoundId: _playingSoundId,
+                onPlayPause: _togglePlayPause,
+                onSelect: _selectSound,
+              )
+            : _ErrorState(error: error),
+      ),
     );
   }
 }

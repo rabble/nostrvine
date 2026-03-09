@@ -6,6 +6,8 @@ import 'package:db_client/db_client.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -35,8 +37,8 @@ class DivineVideoDraft {
     this.collaboratorPubkeys = const [],
     this.inspiredByVideo,
     this.inspiredByNpub,
-    this.selectedAudioEventId,
-    this.selectedAudioRelay,
+    this.selectedSound,
+    this.contentWarning,
   });
 
   factory DivineVideoDraft.create({
@@ -55,8 +57,8 @@ class DivineVideoDraft {
     List<String> collaboratorPubkeys = const [],
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
-    String? selectedAudioEventId,
-    String? selectedAudioRelay,
+    AudioEvent? selectedSound,
+    String? contentWarning,
   }) {
     final now = DateTime.now();
     return DivineVideoDraft(
@@ -79,8 +81,8 @@ class DivineVideoDraft {
       collaboratorPubkeys: collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
-      selectedAudioEventId: selectedAudioEventId,
-      selectedAudioRelay: selectedAudioRelay,
+      selectedSound: selectedSound,
+      contentWarning: contentWarning,
     );
   }
 
@@ -168,8 +170,13 @@ class DivineVideoDraft {
             )
           : null,
       inspiredByNpub: json['inspiredByNpub'] as String?,
-      selectedAudioEventId: json['selectedAudioEventId'] as String?,
-      selectedAudioRelay: json['selectedAudioRelay'] as String?,
+      // New format: full AudioEvent object
+      // Old format (selectedAudioEventId/selectedAudioRelay) is ignored -
+      // user must re-select sound if loading old draft
+      selectedSound: json['selectedSound'] != null
+          ? AudioEvent.fromJson(json['selectedSound'] as Map<String, dynamic>)
+          : null,
+      contentWarning: json['contentWarning'] as String?,
     );
   }
 
@@ -221,11 +228,13 @@ class DivineVideoDraft {
   /// NIP-27 npub reference for general "Inspired By" a creator.
   final String? inspiredByNpub;
 
-  /// Event ID of a selected existing audio event to reference.
-  final String? selectedAudioEventId;
+  /// Currently selected audio event for the video.
+  /// Contains the full AudioEvent data including URL, title, and start offset.
+  /// Persisted to drafts so the sound selection survives app restarts.
+  final AudioEvent? selectedSound;
 
-  /// Relay hint for the selected audio event.
-  final String? selectedAudioRelay;
+  /// Comma-separated NIP-32 content warning labels for this video.
+  final String? contentWarning;
 
   /// Check if this draft has ProofMode data
   bool get hasProofMode => proofManifestJson != null;
@@ -258,19 +267,23 @@ class DivineVideoDraft {
     String? description,
     Set<String>? hashtags,
     PublishStatus? publishStatus,
-    Object? publishError = _sentinel,
+    String? publishError,
+    bool clearPublishError = false,
     Duration? expireTime,
     bool? allowAudioReuse,
     int? publishAttempts,
-    Object? proofManifestJson = _sentinel,
+    String? proofManifestJson,
+    bool clearProofManifestJson = false,
     Map<String, dynamic>? editorStateHistory,
     Map<String, dynamic>? editorEditingParameters,
-    Object? finalRenderedClip = _sentinel,
+    DivineVideoClip? finalRenderedClip,
+    bool clearFinalRenderedClip = false,
     List<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
-    Object? selectedAudioEventId = _sentinel,
-    Object? selectedAudioRelay = _sentinel,
+    AudioEvent? selectedSound,
+    bool clearSelectedSound = false,
+    Object? contentWarning = _sentinel,
     bool skipUpdateLastModified = false,
   }) => DivineVideoDraft(
     id: id ?? this.id,
@@ -284,28 +297,28 @@ class DivineVideoDraft {
     expireTime: expireTime ?? this.expireTime,
     allowAudioReuse: allowAudioReuse ?? this.allowAudioReuse,
     publishStatus: publishStatus ?? this.publishStatus,
-    publishError: publishError == _sentinel
-        ? this.publishError
-        : publishError as String?,
+    publishError: clearPublishError
+        ? null
+        : (publishError ?? this.publishError),
     publishAttempts: publishAttempts ?? this.publishAttempts,
-    proofManifestJson: proofManifestJson == _sentinel
-        ? this.proofManifestJson
-        : proofManifestJson as String?,
+    proofManifestJson: clearProofManifestJson
+        ? null
+        : (proofManifestJson ?? this.proofManifestJson),
     editorStateHistory: editorStateHistory ?? this.editorStateHistory,
     editorEditingParameters:
         editorEditingParameters ?? this.editorEditingParameters,
-    finalRenderedClip: finalRenderedClip == _sentinel
-        ? this.finalRenderedClip
-        : finalRenderedClip as DivineVideoClip?,
+    finalRenderedClip: clearFinalRenderedClip
+        ? null
+        : (finalRenderedClip ?? this.finalRenderedClip),
     collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
     inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
     inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
-    selectedAudioEventId: selectedAudioEventId == _sentinel
-        ? this.selectedAudioEventId
-        : selectedAudioEventId as String?,
-    selectedAudioRelay: selectedAudioRelay == _sentinel
-        ? this.selectedAudioRelay
-        : selectedAudioRelay as String?,
+    selectedSound: clearSelectedSound
+        ? null
+        : (selectedSound ?? this.selectedSound),
+    contentWarning: contentWarning == _sentinel
+        ? this.contentWarning
+        : contentWarning as String?,
   );
 
   static const _sentinel = Object();
@@ -334,10 +347,11 @@ class DivineVideoDraft {
       'collaboratorPubkeys': collaboratorPubkeys,
     if (inspiredByVideo != null) 'inspiredByVideo': inspiredByVideo!.toJson(),
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
-    if (selectedAudioEventId != null)
-      'selectedAudioEventId': selectedAudioEventId,
-    if (selectedAudioRelay != null) 'selectedAudioRelay': selectedAudioRelay,
+    if (selectedSound != null) 'selectedSound': selectedSound!.toJson(),
+    if (contentWarning != null) 'contentWarning': contentWarning,
   };
+
+  Set<ContentLabel> get contentWarnings => ContentLabel.fromCsv(contentWarning);
 
   String get displayDuration {
     final duration = DateTime.now().difference(createdAt);

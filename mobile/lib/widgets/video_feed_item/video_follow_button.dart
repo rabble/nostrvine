@@ -56,7 +56,7 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
     _isOwnVideo = nostrClient.publicKey == widget.pubkey;
 
     // Only create BLoC if we actually need to show the button
-    if (followRepository != null && !_isOwnVideo) {
+    if (!_isOwnVideo) {
       // Check if already following and should hide
       final isFollowing = followRepository.isFollowing(widget.pubkey);
       if (!(widget.hideIfFollowing && isFollowing)) {
@@ -88,13 +88,8 @@ class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
       return const SizedBox.shrink();
     }
 
-    // Fast path: no repository available
-    final followRepository = ref.read(followRepositoryProvider);
-    if (followRepository == null) {
-      return const SizedBox.shrink();
-    }
-
     // Check current follow state for hide logic
+    final followRepository = ref.read(followRepositoryProvider);
     // Use read() since we only need the value, not reactivity here
     // The BlocSelector below handles reactivity for the actual button
     if (widget.hideIfFollowing) {

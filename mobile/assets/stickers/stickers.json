@@ -1,0 +1,357 @@
+[
+  {
+    "assetPath": "assets/stickers/adjustable_dumbbell.png",
+    "description": "Adjustable dumbbell",
+    "tags": ["dumbbell", "fitness", "gym", "workout", "exercise", "weight"]
+  },
+  {
+    "assetPath": "assets/stickers/alert.png",
+    "description": "Alert",
+    "tags": ["alert", "warning", "attention", "notification", "danger", "exclamation"]
+  },
+  {
+    "assetPath": "assets/stickers/angry_cat.png",
+    "description": "Angry cat",
+    "tags": ["cat", "angry", "pet", "animal", "mad", "grumpy"]
+  },
+  {
+    "assetPath": "assets/stickers/avocado.png",
+    "description": "Avocado",
+    "tags": ["avocado", "food", "healthy", "green", "fruit", "vegetable"]
+  },
+  {
+    "assetPath": "assets/stickers/ballon_dog.png",
+    "description": "Balloon dog",
+    "tags": ["balloon", "dog", "party", "art", "fun", "colorful"]
+  },
+  {
+    "assetPath": "assets/stickers/bicep.png",
+    "description": "Bicep muscle",
+    "tags": ["bicep", "muscle", "strong", "fitness", "arm", "flex"]
+  },
+  {
+    "assetPath": "assets/stickers/blocked.png",
+    "description": "Blocked",
+    "tags": ["blocked", "stop", "forbidden", "no", "prohibited", "ban"]
+  },
+  {
+    "assetPath": "assets/stickers/boom.png",
+    "description": "Boom explosion",
+    "tags": ["boom", "explosion", "bang", "comic", "action", "pow"]
+  },
+  {
+    "assetPath": "assets/stickers/broken_heart.png",
+    "description": "Broken heart",
+    "tags": ["heart", "broken", "sad", "love", "heartbreak", "emotion"]
+  },
+  {
+    "assetPath": "assets/stickers/chattering_teeth.png",
+    "description": "Chattering teeth",
+    "tags": ["teeth", "chattering", "cold", "funny", "toy", "nervous"]
+  },
+  {
+    "assetPath": "assets/stickers/clover.png",
+    "description": "Four-leaf clover",
+    "tags": ["clover", "luck", "lucky", "irish", "green", "nature"]
+  },
+  {
+    "assetPath": "assets/stickers/confetti.png",
+    "description": "Confetti",
+    "tags": ["confetti", "party", "celebration", "birthday", "festive", "fun"]
+  },
+  {
+    "assetPath": "assets/stickers/cracked_phone_screen.png",
+    "description": "Cracked phone screen",
+    "tags": ["phone", "cracked", "broken", "screen", "shattered", "damage"]
+  },
+  {
+    "assetPath": "assets/stickers/disco_ball.png",
+    "description": "Disco ball",
+    "tags": ["disco", "ball", "party", "dance", "music", "club", "70s"]
+  },
+  {
+    "assetPath": "assets/stickers/disco_helmet.png",
+    "description": "Disco helmet",
+    "tags": ["disco", "helmet", "party", "dance", "music", "daft punk", "retro"]
+  },
+  {
+    "assetPath": "assets/stickers/donut.png",
+    "description": "Donut",
+    "tags": ["donut", "food", "sweet", "dessert", "yummy", "snack"]
+  },
+  {
+    "assetPath": "assets/stickers/double_cheeseburger.png",
+    "description": "Double cheeseburger",
+    "tags": ["burger", "cheeseburger", "food", "fast food", "meal", "yummy"]
+  },
+  {
+    "assetPath": "assets/stickers/eggplant.png",
+    "description": "Eggplant",
+    "tags": ["eggplant", "vegetable", "food", "purple", "emoji", "aubergine"]
+  },
+  {
+    "assetPath": "assets/stickers/email.png",
+    "description": "Email",
+    "tags": ["email", "mail", "message", "envelope", "communication", "inbox"]
+  },
+  {
+    "assetPath": "assets/stickers/espresso_martini.png",
+    "description": "Espresso martini",
+    "tags": ["espresso", "martini", "cocktail", "drink", "coffee", "alcohol"]
+  },
+  {
+    "assetPath": "assets/stickers/finger_pointing.png",
+    "description": "Finger pointing",
+    "tags": ["finger", "pointing", "hand", "gesture", "direction", "you"]
+  },
+  {
+    "assetPath": "assets/stickers/floating_lilo.png",
+    "description": "Floating lilo",
+    "tags": ["lilo", "float", "pool", "summer", "water", "relaxation"]
+  },
+  {
+    "assetPath": "assets/stickers/foam_finger.png",
+    "description": "Foam finger",
+    "tags": ["foam", "finger", "sports", "fan", "number one", "cheer"]
+  },
+  {
+    "assetPath": "assets/stickers/forgot_password.png",
+    "description": "Forgot password",
+    "tags": ["password", "forgot", "security", "lock", "login", "key"]
+  },
+  {
+    "assetPath": "assets/stickers/forgot_password_alt.png",
+    "description": "Forgot password alternative",
+    "tags": ["password", "forgot", "security", "lock", "login", "reset"]
+  },
+  {
+    "assetPath": "assets/stickers/glitter_donut.png",
+    "description": "Glitter donut",
+    "tags": ["donut", "glitter", "sparkle", "food", "sweet", "fancy"]
+  },
+  {
+    "assetPath": "assets/stickers/grandfather.png",
+    "description": "Grandfather",
+    "tags": ["grandfather", "grandpa", "old", "family", "elder", "man"]
+  },
+  {
+    "assetPath": "assets/stickers/hang_loose.png",
+    "description": "Hang loose",
+    "tags": ["hang loose", "shaka", "hand", "gesture", "surf", "chill"]
+  },
+  {
+    "assetPath": "assets/stickers/heart.png",
+    "description": "Heart",
+    "tags": ["heart", "love", "romance", "emotion", "red", "valentine"]
+  },
+  {
+    "assetPath": "assets/stickers/hibiscus_flower.png",
+    "description": "Hibiscus flower",
+    "tags": ["hibiscus", "flower", "tropical", "hawaii", "nature", "pink"]
+  },
+  {
+    "assetPath": "assets/stickers/holographic_jacket.png",
+    "description": "Holographic jacket",
+    "tags": ["holographic", "jacket", "fashion", "futuristic", "shiny", "iridescent"]
+  },
+  {
+    "assetPath": "assets/stickers/id_license.png",
+    "description": "ID license",
+    "tags": ["id", "license", "identity", "card", "document", "verification"]
+  },
+  {
+    "assetPath": "assets/stickers/index_finger_pointing_up.png",
+    "description": "Index finger pointing up",
+    "tags": ["finger", "pointing", "up", "hand", "gesture", "number one"]
+  },
+  {
+    "assetPath": "assets/stickers/inflatable_flamingo_pool_float.png",
+    "description": "Inflatable flamingo pool float",
+    "tags": ["flamingo", "pool", "float", "summer", "inflatable", "pink"]
+  },
+  {
+    "assetPath": "assets/stickers/knight_in_armor.png",
+    "description": "Knight in armor",
+    "tags": ["knight", "armor", "medieval", "warrior", "shield", "sword"]
+  },
+  {
+    "assetPath": "assets/stickers/lip_piercing.png",
+    "description": "Lip piercing",
+    "tags": ["lip", "piercing", "jewelry", "mouth", "style", "punk"]
+  },
+  {
+    "assetPath": "assets/stickers/maple_leaf.png",
+    "description": "Maple leaf",
+    "tags": ["maple", "leaf", "canada", "autumn", "fall", "nature", "red"]
+  },
+  {
+    "assetPath": "assets/stickers/matrix_message_sign.png",
+    "description": "Matrix message sign",
+    "tags": ["matrix", "sign", "led", "digital", "message", "display"]
+  },
+  {
+    "assetPath": "assets/stickers/nail_polish.png",
+    "description": "Nail polish",
+    "tags": ["nail", "polish", "beauty", "makeup", "manicure", "cosmetics"]
+  },
+  {
+    "assetPath": "assets/stickers/nokia_3310.png",
+    "description": "Nokia 3310",
+    "tags": ["nokia", "phone", "retro", "vintage", "mobile", "classic"]
+  },
+  {
+    "assetPath": "assets/stickers/old_fashion_mic.png",
+    "description": "Old fashion microphone",
+    "tags": ["microphone", "mic", "vintage", "retro", "music", "singing"]
+  },
+  {
+    "assetPath": "assets/stickers/password.png",
+    "description": "Password",
+    "tags": ["password", "security", "lock", "login", "key", "protect"]
+  },
+  {
+    "assetPath": "assets/stickers/pause.png",
+    "description": "Pause",
+    "tags": ["pause", "stop", "break", "media", "control", "wait"]
+  },
+  {
+    "assetPath": "assets/stickers/peach.png",
+    "description": "Peach",
+    "tags": ["peach", "fruit", "food", "emoji", "butt", "pink"]
+  },
+  {
+    "assetPath": "assets/stickers/peeled_banana.png",
+    "description": "Peeled banana",
+    "tags": ["banana", "fruit", "food", "yellow", "peeled", "healthy"]
+  },
+  {
+    "assetPath": "assets/stickers/police_siren.png",
+    "description": "Police siren",
+    "tags": ["police", "siren", "emergency", "light", "alarm", "cop"]
+  },
+  {
+    "assetPath": "assets/stickers/poop_emoji.png",
+    "description": "Poop emoji",
+    "tags": ["poop", "emoji", "funny", "silly", "humor", "gross"]
+  },
+  {
+    "assetPath": "assets/stickers/profile.png",
+    "description": "Profile",
+    "tags": ["profile", "user", "account", "avatar", "person", "identity"]
+  },
+  {
+    "assetPath": "assets/stickers/programmer.png",
+    "description": "Programmer",
+    "tags": ["programmer", "coding", "developer", "computer", "tech", "nerd"]
+  },
+  {
+    "assetPath": "assets/stickers/purple_diamond.png",
+    "description": "Purple diamond",
+    "tags": ["diamond", "purple", "gem", "jewel", "luxury", "precious"]
+  },
+  {
+    "assetPath": "assets/stickers/radar.png",
+    "description": "Radar",
+    "tags": ["radar", "scan", "detect", "signal", "technology", "search"]
+  },
+  {
+    "assetPath": "assets/stickers/raised_hand.png",
+    "description": "Raised hand",
+    "tags": ["hand", "raised", "stop", "wave", "gesture", "hello"]
+  },
+  {
+    "assetPath": "assets/stickers/samoyed_dog.png",
+    "description": "Samoyed dog",
+    "tags": ["dog", "samoyed", "pet", "animal", "cute", "fluffy", "white"]
+  },
+  {
+    "assetPath": "assets/stickers/shrimp.png",
+    "description": "Shrimp",
+    "tags": ["shrimp", "seafood", "food", "prawn", "ocean", "fish"]
+  },
+  {
+    "assetPath": "assets/stickers/skeleton_key.png",
+    "description": "Skeleton key",
+    "tags": ["key", "skeleton", "lock", "vintage", "antique", "unlock"]
+  },
+  {
+    "assetPath": "assets/stickers/sparkle.png",
+    "description": "Sparkle",
+    "tags": ["sparkle", "shine", "glitter", "magic", "star", "bright"]
+  },
+  {
+    "assetPath": "assets/stickers/storyboard.png",
+    "description": "Storyboard",
+    "tags": ["storyboard", "film", "movie", "planning", "video", "production"]
+  },
+  {
+    "assetPath": "assets/stickers/teeth.png",
+    "description": "Teeth",
+    "tags": ["teeth", "smile", "dental", "mouth", "grin", "white"]
+  },
+  {
+    "assetPath": "assets/stickers/traffic_cone.png",
+    "description": "Traffic cone",
+    "tags": ["traffic", "cone", "construction", "warning", "road", "orange"]
+  },
+  {
+    "assetPath": "assets/stickers/trail_sign.png",
+    "description": "Trail sign",
+    "tags": ["trail", "sign", "hiking", "direction", "nature", "path"]
+  },
+  {
+    "assetPath": "assets/stickers/troll_face.png",
+    "description": "Troll face",
+    "tags": ["troll", "meme", "funny", "internet", "joke", "face"]
+  },
+  {
+    "assetPath": "assets/stickers/under_construction_sign.png",
+    "description": "Under construction sign",
+    "tags": ["construction", "sign", "warning", "work", "building", "caution"]
+  },
+  {
+    "assetPath": "assets/stickers/verified.png",
+    "description": "Verified",
+    "tags": ["verified", "check", "approved", "authentic", "badge", "confirmed"]
+  },
+  {
+    "assetPath": "assets/stickers/videogame.png",
+    "description": "Video game",
+    "tags": ["videogame", "gaming", "controller", "play", "console", "arcade"]
+  },
+  {
+    "assetPath": "assets/stickers/video_camera.png",
+    "description": "Video camera",
+    "tags": ["video", "camera", "film", "recording", "movie", "camcorder"]
+  },
+  {
+    "assetPath": "assets/stickers/video_clap_board.png",
+    "description": "Video clap board",
+    "tags": ["clapboard", "film", "movie", "action", "director", "cinema"]
+  },
+  {
+    "assetPath": "assets/stickers/vintage_tv_test_pattern.png",
+    "description": "Vintage TV test pattern",
+    "tags": ["tv", "vintage", "test", "pattern", "retro", "television"]
+  },
+  {
+    "assetPath": "assets/stickers/vinyl_record.png",
+    "description": "Vinyl record",
+    "tags": ["vinyl", "record", "music", "retro", "dj", "turntable"]
+  },
+  {
+    "assetPath": "assets/stickers/wave_pool.png",
+    "description": "Wave pool",
+    "tags": ["wave", "pool", "water", "summer", "swim", "fun"]
+  },
+  {
+    "assetPath": "assets/stickers/world_map.png",
+    "description": "World map",
+    "tags": ["world", "map", "globe", "travel", "earth", "geography"]
+  },
+  {
+    "assetPath": "assets/stickers/x.png",
+    "description": "X mark",
+    "tags": ["x", "cross", "close", "delete", "cancel", "no"]
+  }
+]

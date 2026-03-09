@@ -1,10 +1,12 @@
 // ABOUTME: Service for publishing videos directly to Nostr without backend processing
 // ABOUTME: Handles event creation, signing, and relay broadcasting for direct uploads
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:db_client/db_client.dart';
 import 'package:models/models.dart'
     hide LogCategory, NIP71VideoKinds, PendingUpload, UploadStatus;
 import 'package:nostr_client/nostr_client.dart';
@@ -16,10 +18,8 @@ import 'package:openvine/services/audio_extraction_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/blurhash_service.dart';
-//adding c2pa support for publishing c2pa manifest data into nostr
 import 'package:openvine/services/c2pa_signing_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
-import 'package:openvine/services/profile_stats_cache_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -39,6 +39,7 @@ class VideoEventPublisher {
     BlossomUploadService? blossomUploadService,
     UserProfileService? userProfileService,
     AudioExtractionService? audioExtractionService,
+    ProfileStatsDao? profileStatsDao,
   }) : _uploadManager = uploadManager,
        _nostrService = nostrService,
        _authService = authService,
@@ -46,7 +47,8 @@ class VideoEventPublisher {
        _videoEventService = videoEventService,
        _blossomUploadService = blossomUploadService,
        _userProfileService = userProfileService,
-       _audioExtractionService = audioExtractionService;
+       _audioExtractionService = audioExtractionService,
+       _profileStatsDao = profileStatsDao;
   final UploadManager _uploadManager;
   final NostrClient _nostrService;
   final AuthService? _authService;
@@ -55,6 +57,7 @@ class VideoEventPublisher {
   final BlossomUploadService? _blossomUploadService;
   final UserProfileService? _userProfileService;
   final AudioExtractionService? _audioExtractionService;
+  final ProfileStatsDao? _profileStatsDao;
 
   // Statistics
   int _totalEventsPublished = 0;
@@ -253,6 +256,7 @@ class VideoEventPublisher {
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
+    String? contentWarning,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -272,6 +276,7 @@ class VideoEventPublisher {
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
       language: language,
+      contentWarning: contentWarning,
     );
   }
 
@@ -287,6 +292,7 @@ class VideoEventPublisher {
     String? selectedAudioEventId,
     String? selectedAudioRelay,
     String? language,
+    String? contentWarning,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
@@ -570,6 +576,16 @@ class VideoEventPublisher {
       if (language != null && language.isNotEmpty) {
         tags.add(['L', 'ISO-639-1']);
         tags.add(['l', language, 'ISO-639-1']);
+      }
+
+      // Add NIP-32 content-warning self-labeling tags (NIP-36).
+      if (contentWarning != null && contentWarning.isNotEmpty) {
+        final warnings = contentWarning.split(',').map((value) => value.trim());
+        tags.add(['content-warning', warnings.first]);
+        tags.add(['L', 'content-warning']);
+        for (final warning in warnings) {
+          tags.add(['l', warning, 'content-warning']);
+        }
       }
 
       // Add client tag
@@ -909,7 +925,7 @@ class VideoEventPublisher {
         // Invalidate profile stats cache so video count updates immediately
         final currentPubkey = _nostrService.publicKey;
         if (currentPubkey.isNotEmpty) {
-          ProfileStatsCacheService().clearStats(currentPubkey);
+          unawaited(_profileStatsDao?.deleteStats(currentPubkey));
           Log.debug(
             'Invalidated profile stats cache for new video',
             name: 'VideoEventPublisher',

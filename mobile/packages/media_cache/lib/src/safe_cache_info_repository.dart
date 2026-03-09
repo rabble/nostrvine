@@ -12,10 +12,14 @@ typedef DirectoryProvider = Future<Directory> Function();
 /// A safe wrapper around [CacheInfoRepository] that handles corrupted
 /// JSON files.
 ///
-/// The standard [JsonCacheInfoRepository] crashes with [FormatException] when
-/// the cache JSON file is empty or corrupted (e.g., due to app crash during
-/// write). This wrapper catches those errors and deletes the corrupted file
-/// so a fresh cache can be created.
+/// The upstream [JsonCacheInfoRepository._readFile] catches all exceptions
+/// internally (`on Object`) and reports them via [FlutterError.reportError]
+/// instead of rethrowing. This means a standard try/catch around [open] never
+/// sees the error. Instead, the error flows to [FlutterError.onError], which
+/// Crashlytics records as a fatal crash.
+///
+/// This wrapper temporarily intercepts [FlutterError.onError] during [open] to
+/// detect corruption, deletes the bad file, and retries cleanly.
 ///
 /// Uses composition to wrap a [CacheInfoRepository] (defaults to
 /// [JsonCacheInfoRepository]), making it fully testable via dependency
@@ -48,20 +52,44 @@ class SafeCacheInfoRepository implements CacheInfoRepository {
 
   @override
   Future<bool> open() async {
+    // The upstream JsonCacheInfoRepository._readFile catches all exceptions
+    // internally (`on Object`) and reports via FlutterError.reportError instead
+    // of rethrowing. We must intercept FlutterError.onError to detect this.
+    // We also keep a try/catch for repositories that throw directly.
+    Object? caughtException;
+    final previousHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      if (details.library == 'flutter cache manager') {
+        caughtException = details.exception;
+        return;
+      }
+      previousHandler?.call(details);
+    };
+
     try {
-      return await _repository.open();
+      final result = await _repository.open();
+
+      if (caughtException != null) {
+        await deleteCacheFile();
+        FlutterError.onError = previousHandler;
+        return _repository.open();
+      }
+
+      return result;
     } on FormatException {
-      // JSON file is corrupted - delete it and retry
       await deleteCacheFile();
+      FlutterError.onError = previousHandler;
       return _repository.open();
     } on Exception catch (e) {
-      // Handle other errors (null content, type errors, etc.)
       if (e.toString().contains('Unexpected end of input') ||
           e.toString().contains("type 'Null'")) {
         await deleteCacheFile();
+        FlutterError.onError = previousHandler;
         return _repository.open();
       }
       rethrow;
+    } finally {
+      FlutterError.onError = previousHandler;
     }
   }
 
