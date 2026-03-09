@@ -283,19 +283,13 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
           // Profile Header
           SliverToBoxAdapter(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: ProfileHeaderWidget(
-                  userIdHex: widget.userIdHex,
-                  isOwnProfile: widget.isOwnProfile,
-                  videoCount: widget.videos.length,
-                  onSetupProfile: widget.onSetupProfile,
-                  displayNameHint: widget.displayNameHint,
-                  avatarUrlHint: widget.avatarUrlHint,
-                ),
-              ),
+            child: ProfileHeaderWidget(
+              userIdHex: widget.userIdHex,
+              isOwnProfile: widget.isOwnProfile,
+              videoCount: widget.videos.length,
+              onSetupProfile: widget.onSetupProfile,
+              displayNameHint: widget.displayNameHint,
+              avatarUrlHint: widget.avatarUrlHint,
             ),
           ),
 
