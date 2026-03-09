@@ -2600,11 +2600,10 @@ void main() {
       test('reuses existing pool player without re-opening media', () async {
         // Use preloadBehind=1, preloadAhead=1 so swiping to index 2
         // releases index 0.
-        final videos = createTestVideos(count: 5);
+        final videos = createTestVideos();
         final controller = VideoFeedController(
           videos: videos,
           pool: pool,
-          preloadBehind: 1,
           preloadAhead: 1,
         );
         addTearDown(controller.dispose);
@@ -2648,11 +2647,10 @@ void main() {
       });
 
       test('plays reused player immediately when it is current', () async {
-        final videos = createTestVideos(count: 5);
+        final videos = createTestVideos();
         final controller = VideoFeedController(
           videos: videos,
           pool: pool,
-          preloadBehind: 1,
           preloadAhead: 1,
         );
         addTearDown(controller.dispose);
@@ -2689,11 +2687,10 @@ void main() {
       });
 
       test('pauses and rewinds reused player when it is a preload', () async {
-        final videos = createTestVideos(count: 5);
+        final videos = createTestVideos();
         final controller = VideoFeedController(
           videos: videos,
           pool: pool,
-          preloadBehind: 1,
           preloadAhead: 1,
         );
         addTearDown(controller.dispose);
@@ -2742,11 +2739,10 @@ void main() {
       test(
         'falls through to full load when reused player has no duration',
         () async {
-          final videos = createTestVideos(count: 5);
+          final videos = createTestVideos();
           final controller = VideoFeedController(
             videos: videos,
             pool: pool,
-            preloadBehind: 1,
             preloadAhead: 1,
           );
           addTearDown(controller.dispose);
