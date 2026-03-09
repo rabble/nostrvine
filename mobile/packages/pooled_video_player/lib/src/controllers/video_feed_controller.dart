@@ -339,22 +339,40 @@ class VideoFeedController extends ChangeNotifier {
 
   /// Set whether this feed is active.
   ///
-  /// When `active: false`, pauses and releases ALL loaded players to free
-  /// memory (e.g., when navigating to a detail page).
+  /// When `active: false`, pauses playback and optionally releases players:
+  /// - If [retainCurrentPlayer] is `false` (default), ALL players are released
+  ///   to free memory (e.g., when navigating to a detail page).
+  /// - If [retainCurrentPlayer] is `true`, only the current player is paused
+  ///   but retained for instant resume (e.g., when opening a bottom sheet).
   ///
-  /// When `active: true`, reloads the preload window and resumes playback.
-  void setActive({required bool active}) {
+  /// When `active: true`, resumes playback. If players were retained, playback
+  /// resumes instantly. Otherwise, the preload window is reloaded.
+  void setActive({required bool active, bool retainCurrentPlayer = false}) {
     if (_isActive == active) return;
     _isActive = active;
 
     if (!active) {
-      // Pause and release all players to free memory
       _pauseVideo(_currentIndex);
-      _releaseAllPlayers();
+      if (retainCurrentPlayer) {
+        // Only pause current, release other players outside current index
+        for (final idx in _loadedPlayers.keys.toList()) {
+          if (idx != _currentIndex) {
+            _releasePlayer(idx);
+          }
+        }
+      } else {
+        // Release all players to free memory
+        _releaseAllPlayers();
+      }
     } else {
       // Clear any manual pause so playback resumes with audio
       _isPaused = false;
-      // Reload preload window and play current video
+      // If the current player is still loaded, play it immediately.
+      if (isVideoReady(_currentIndex)) {
+        _playVideo(_currentIndex);
+      }
+      // Always reload preload window to restore neighbor videos that may
+      // have been released during deactivation.
       _updatePreloadWindow(_currentIndex);
     }
 

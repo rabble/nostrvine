@@ -329,12 +329,28 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       controller?.setActive(active: isHome);
     });
 
-    // Pause/resume for overlays (drawer, modals), but only when on
-    // the home tab. Without this guard, closing an overlay while on
+    // Pause/resume for overlays (drawer, pages, bottom sheets), but only when
+    // on the home tab. Without this guard, closing an overlay while on
     // another tab would incorrectly resume the home feed audio.
-    ref.listen(hasVisibleOverlayProvider, (_, hasOverlay) {
+    //
+    // Bottom sheets retain the current player for instant resume.
+    // Pages/drawer release all players to free memory.
+    ref.listen(overlayVisibilityProvider, (previous, current) {
       if (!_isOnHomeTab) return;
-      controller?.setActive(active: !hasOverlay);
+
+      final hadOverlay = previous?.hasVisibleOverlay ?? false;
+      final hasOverlay = current.hasVisibleOverlay;
+
+      if (hasOverlay && !hadOverlay) {
+        // Overlay opened - pause with retention based on overlay type
+        controller?.setActive(
+          active: false,
+          retainCurrentPlayer: current.shouldRetainPlayer,
+        );
+      } else if (!hasOverlay && hadOverlay) {
+        // All overlays closed - resume playback
+        controller?.setActive(active: true);
+      }
     });
 
     return ColoredBox(

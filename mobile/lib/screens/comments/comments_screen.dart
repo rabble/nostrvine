@@ -119,7 +119,8 @@ class CommentsScreen extends ConsumerWidget {
   }) {
     final container = ProviderScope.containerOf(context, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
-    overlayNotifier.setModalOpen(true);
+    // Use setBottomSheetOpen to retain current player for instant resume.
+    overlayNotifier.setBottomSheetOpen(true);
 
     return showModalBottomSheet<void>(
       context: context,
@@ -146,7 +147,7 @@ class CommentsScreen extends ConsumerWidget {
         );
       },
     ).whenComplete(() {
-      overlayNotifier.setModalOpen(false);
+      overlayNotifier.setBottomSheetOpen(false);
     });
   }
 
