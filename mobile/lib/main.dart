@@ -395,6 +395,26 @@ Future<void> _startOpenVineApp() async {
       return;
     }
 
+    // Downgrade cache manager errors from FATAL to non-fatal.
+    // The flutter_cache_manager library reports corrupted JSON via
+    // FlutterError.reportError, which Crashlytics records as fatal. The app
+    // can function fine without cached thumbnails — it will re-download them.
+    // SafeJsonCacheInfoRepository handles recovery, but this is a safety net.
+    if (details.library == 'flutter cache manager') {
+      Log.warning(
+        'Cache manager error (non-fatal): ${details.exception}',
+        name: 'Main',
+      );
+      try {
+        FirebaseCrashlytics.instance.recordError(
+          details.exception,
+          details.stack,
+          reason: 'Cache manager JSON corruption',
+        );
+      } catch (_) {}
+      return;
+    }
+
     // Downgrade "No active player with ID" errors from FATAL to non-fatal.
     // This is a known race condition where the native video player
     // (AVFoundation/ExoPlayer) is disposed during tab switches or feed

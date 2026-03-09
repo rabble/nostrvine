@@ -2,6 +2,8 @@
 // ABOUTME: Displays videos with swipe navigation using managed player pool
 // ABOUTME: Uses FullscreenFeedBloc for state management
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,6 +20,8 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/utils/scroll_driven_opacity.dart';
+import 'package:openvine/utils/video_presentation.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
@@ -164,6 +168,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     with RouteAware {
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
+  late final ValueNotifier<double> _pagePosition;
 
   @override
   void didChangeDependencies() {
@@ -178,9 +183,17 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   }
 
   @override
+  void initState() {
+    super.initState();
+    final initialIndex = context.read<FullscreenFeedBloc>().state.currentIndex;
+    _pagePosition = ValueNotifier<double>(initialIndex.toDouble());
+  }
+
+  @override
   void dispose() {
     routeObserver.unsubscribe(this);
     _controller?.dispose();
+    _pagePosition.dispose();
     super.dispose();
   }
 
@@ -327,18 +340,30 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         builder: (context, state) {
           if (state.status == FullscreenFeedStatus.initial ||
               !state.hasVideos) {
-            return const Scaffold(
+            return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
-              appBar: _FullscreenAppBar(),
-              body: Center(child: BrandedLoadingIndicator(size: 60)),
+              appBar: DiVineAppBar(
+                title: '',
+                showBackButton: true,
+                onBackPressed: context.pop,
+                backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                forceMaterialTransparency: true,
+              ),
+              body: const Center(child: BrandedLoadingIndicator(size: 60)),
             );
           }
 
           if (!state.hasPooledVideos) {
-            return const Scaffold(
+            return Scaffold(
               backgroundColor: VineTheme.backgroundColor,
-              appBar: _FullscreenAppBar(),
-              body: Center(
+              appBar: DiVineAppBar(
+                title: '',
+                showBackButton: true,
+                onBackPressed: context.pop,
+                backgroundMode: DiVineAppBarBackgroundMode.transparent,
+                forceMaterialTransparency: true,
+              ),
+              body: const Center(
                 child: Text(
                   'No videos available',
                   style: TextStyle(color: VineTheme.whiteText),
@@ -353,12 +378,33 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               currentUserPubkey != null &&
               currentUserPubkey == state.currentVideo?.pubkey;
 
+          final featureFlagService = ref.watch(featureFlagServiceProvider);
+          final isEditorEnabled = featureFlagService.isEnabled(
+            FeatureFlag.enableVideoEditorV1,
+          );
+          final currentVideo = state.currentVideo;
+          final editAction =
+              isEditorEnabled && isOwnVideo && currentVideo != null
+              ? DiVineAppBarAction(
+                  icon: SvgIconSource(
+                    'assets/icon/${DivineIconName.pencilSimpleLine.fileName}.svg',
+                  ),
+                  onPressed: () =>
+                      showEditDialogForVideo(context, currentVideo),
+                  semanticLabel: 'Edit video',
+                )
+              : null;
+
           return Scaffold(
             backgroundColor: VineTheme.backgroundColor,
             extendBodyBehindAppBar: true,
-            appBar: _FullscreenAppBar(
-              currentVideo: state.currentVideo,
-              isOwnVideo: isOwnVideo,
+            appBar: DiVineAppBar(
+              title: '',
+              showBackButton: true,
+              onBackPressed: context.pop,
+              backgroundMode: DiVineAppBarBackgroundMode.transparent,
+              forceMaterialTransparency: true,
+              actions: [?editAction],
             ),
             body: PooledVideoFeed(
               videos: state.pooledVideos,
@@ -372,6 +418,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               },
               onNearEnd: (index) => _onNearEnd(state, index),
               nearEndThreshold: 0,
+              onScrollOffsetChanged: (page) => _pagePosition.value = page,
               itemBuilder: (context, video, index, {required isActive}) {
                 // Look up by video ID instead of index, because
                 // pooledVideos filters out null-URL entries and indices
@@ -401,6 +448,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
                   video: originalEvent,
                   index: index,
                   isActive: isActive,
+                  pagePosition: _pagePosition,
                   contextTitle: widget.contextTitle,
                   trafficSource: widget.trafficSource,
                   sourceDetail: widget.sourceDetail,
@@ -415,71 +463,13 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
   }
 }
 
-class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
-  const _FullscreenAppBar({this.isOwnVideo = false, this.currentVideo});
-
-  final VideoEvent? currentVideo;
-  final bool isOwnVideo;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(72);
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.only(top: 8, left: 16, right: 16),
-        child: Row(
-          mainAxisAlignment: .spaceBetween,
-          crossAxisAlignment: .start,
-          children: [
-            DiVineAppBarIconButton(
-              icon: SvgIconSource(
-                'assets/icon/${DivineIconName.caretLeft.fileName}.svg',
-              ),
-              onPressed: context.pop,
-              iconSize: 24,
-              semanticLabel: 'Go back',
-              backgroundColor: VineTheme.scrim30,
-            ),
-
-            ?_buildEditAction(context, ref),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // TODO(any) : update to use bloc instead of riverpod
-  Widget? _buildEditAction(BuildContext context, WidgetRef ref) {
-    final video = currentVideo;
-    if (video == null) return null;
-
-    final featureFlagService = ref.watch(featureFlagServiceProvider);
-    final isEditorEnabled = featureFlagService.isEnabled(
-      FeatureFlag.enableVideoEditorV1,
-    );
-    if (!isEditorEnabled || !isOwnVideo) return null;
-
-    return DiVineAppBarIconButton(
-      icon: SvgIconSource(
-        'assets/icon/${DivineIconName.pencilSimpleLine.fileName}.svg',
-      ),
-      onPressed: () => showEditDialogForVideo(context, video),
-      iconSize: 24,
-      semanticLabel: 'Edit video',
-      backgroundColor: VineTheme.scrim30,
-    );
-  }
-}
-
 class _PooledFullscreenItem extends ConsumerWidget {
   const _PooledFullscreenItem({
     required this.video,
     required this.index,
     required this.isActive,
     required this.isOwnVideo,
+    required this.pagePosition,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -489,6 +479,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
   final int index;
   final bool isActive;
   final bool isOwnVideo;
+  final ValueNotifier<double> pagePosition;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -520,6 +511,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
         video: video,
         index: index,
         isActive: isActive,
+        pagePosition: pagePosition,
         contextTitle: contextTitle,
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
@@ -535,6 +527,7 @@ class _PooledFullscreenItemContent extends StatefulWidget {
     required this.index,
     required this.isActive,
     required this.isOwnVideo,
+    required this.pagePosition,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
     this.sourceDetail,
@@ -544,6 +537,7 @@ class _PooledFullscreenItemContent extends StatefulWidget {
   final int index;
   final bool isActive;
   final bool isOwnVideo;
+  final ValueNotifier<double> pagePosition;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
   final String? sourceDetail;
@@ -561,6 +555,7 @@ class _PooledFullscreenItemContentState
   Widget build(BuildContext context) {
     final video = widget.video;
     final isPortrait = video.dimensions != null && video.isPortrait;
+    final alignment = videoAlignmentForDimensions(video.width, video.height);
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
@@ -579,11 +574,13 @@ class _PooledFullscreenItemContentState
               child: _FittedVideoPlayer(
                 videoController: videoController,
                 isPortrait: isPortrait,
+                alignment: alignment,
               ),
             ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
+          alignment: alignment,
         ),
         overlayBuilder: (context, videoController, player) {
           if (video.shouldShowWarning && !_contentWarningRevealed) {
@@ -598,24 +595,38 @@ class _PooledFullscreenItemContentState
             data: MediaQueryData.fromView(View.of(context)),
             child: Stack(
               children: [
-                PausedVideoPlayOverlay(
-                  player: player,
-                  firstFrameFuture: videoController.waitUntilFirstFrameRendered,
-                  isVisible: widget.isActive,
-                ),
+                if (player != null)
+                  PausedVideoPlayOverlay(
+                    player: player,
+                    firstFrameFuture:
+                        videoController?.waitUntilFirstFrameRendered,
+                    isVisible: widget.isActive,
+                  ),
                 // Subtitle overlay — needs player position stream
-                if (video.hasSubtitles)
+                if (video.hasSubtitles && player != null)
                   Positioned.fill(
                     child: _SubtitleLayer(video: video, player: player),
                   ),
-                VideoOverlayActions(
-                  video: video,
-                  isVisible: widget.isActive,
-                  isActive: widget.isActive,
-                  hasBottomNavigation: false,
-                  contextTitle: widget.contextTitle,
-                  isFullscreen: true,
-                  topOffset: widget.isOwnVideo ? 64 : 8,
+                ValueListenableBuilder<double>(
+                  valueListenable: widget.pagePosition,
+                  builder: (context, page, _) {
+                    final distance = (page - widget.index).abs().clamp(
+                      0.0,
+                      1.0,
+                    );
+                    return VideoOverlayActions(
+                      video: video,
+                      // isVisible:true — scroll opacity handles fading;
+                      // the hard-cut guard is not needed in fullscreen.
+                      isVisible: true,
+                      isActive: widget.isActive,
+                      overlayOpacity: scrollDrivenOpacity(distance),
+                      hasBottomNavigation: false,
+                      contextTitle: widget.contextTitle,
+                      isFullscreen: true,
+                      topOffset: widget.isOwnVideo ? 64 : 8,
+                    );
+                  },
                 ),
               ],
             ),
@@ -630,10 +641,12 @@ class _FittedVideoPlayer extends StatelessWidget {
   const _FittedVideoPlayer({
     required this.videoController,
     this.isPortrait = true,
+    this.alignment = Alignment.center,
   });
 
   final VideoController videoController;
   final bool isPortrait;
+  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -642,6 +655,7 @@ class _FittedVideoPlayer extends StatelessWidget {
     return Video(
       controller: videoController,
       fit: boxFit,
+      alignment: alignment,
       filterQuality: FilterQuality.high,
       controls: null,
     );
@@ -649,10 +663,15 @@ class _FittedVideoPlayer extends StatelessWidget {
 }
 
 class _VideoLoadingPlaceholder extends StatelessWidget {
-  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
+  const _VideoLoadingPlaceholder({
+    this.thumbnailUrl,
+    this.isPortrait = true,
+    this.alignment = Alignment.center,
+  });
 
   final String? thumbnailUrl;
   final bool isPortrait;
+  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -667,6 +686,7 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
           Image.network(
             url,
             fit: boxFit,
+            alignment: alignment,
             errorBuilder: (_, _, _) =>
                 const ColoredBox(color: VineTheme.backgroundColor),
           )
@@ -679,12 +699,44 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
   }
 }
 
-class _LoadingIndicator extends StatelessWidget {
+class _LoadingIndicator extends StatefulWidget {
   const _LoadingIndicator();
 
   @override
+  State<_LoadingIndicator> createState() => _LoadingIndicatorState();
+}
+
+class _LoadingIndicatorState extends State<_LoadingIndicator> {
+  // Delay before the indicator becomes visible. Suppresses sub-threshold
+  // flashes that occur during play/pause and loop-enforcement seeks without
+  // hiding the indicator during genuine long loads.
+  static const _delay = Duration(milliseconds: 100);
+  static const _fadeDuration = Duration(milliseconds: 150);
+
+  bool _visible = false;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(_delay, () {
+      if (mounted) setState(() => _visible = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(child: BrandedLoadingIndicator(size: 60));
+    return AnimatedOpacity(
+      duration: _fadeDuration,
+      opacity: _visible ? 1.0 : 0.0,
+      child: const Center(child: BrandedLoadingIndicator(size: 60)),
+    );
   }
 }
 

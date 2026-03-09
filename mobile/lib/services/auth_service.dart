@@ -1686,6 +1686,32 @@ class AuthService implements BackgroundAwareService {
     }
   }
 
+  /// Import identity from an ncryptsec1 encrypted private key (NIP-49).
+  ///
+  /// Decrypts [ncryptsec] with [password] using scrypt + XChaCha20-Poly1305,
+  /// then imports the recovered private key via [importFromHex].
+  ///
+  /// Returns [AuthResult.failure] with message 'Incorrect password' if the
+  /// password is wrong or the ciphertext is corrupted.
+  Future<AuthResult> importFromNcryptsec(
+    String ncryptsec,
+    String password,
+  ) async {
+    Log.debug(
+      'Importing identity from ncryptsec1 (NIP-49)',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    try {
+      final privateKeyHex = await Nip49.decode(ncryptsec, password);
+      return importFromHex(privateKeyHex);
+    } on Nip49Exception {
+      _setAuthState(AuthState.unauthenticated);
+      return AuthResult.failure('Incorrect password');
+    }
+  }
+
   /// Import identity from hex private key
   Future<AuthResult> importFromHex(
     String privateKeyHex, {

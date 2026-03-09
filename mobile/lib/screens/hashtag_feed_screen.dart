@@ -462,21 +462,11 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
+      appBar: DiVineAppBar(
+        title: '#${widget.hashtag}',
+        showBackButton: true,
+        onBackPressed: context.pop,
         backgroundColor: VineTheme.vineGreen,
-        elevation: 0,
-        title: Text(
-          '#${widget.hashtag}',
-          style: const TextStyle(
-            color: VineTheme.whiteText,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-          onPressed: context.pop,
-        ),
       ),
       body: body,
     );

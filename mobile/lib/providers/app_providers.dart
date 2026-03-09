@@ -1638,6 +1638,7 @@ VideosRepository videosRepository(Ref ref) {
     localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(contentFilterService),
+    warningLabelsResolver: createNsfwWarnLabels(contentFilterService),
     funnelcakeApiClient: funnelcakeClient,
   );
 }

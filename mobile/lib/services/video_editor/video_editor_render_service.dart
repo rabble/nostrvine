@@ -194,6 +194,14 @@ class VideoEditorRenderService {
   }) async {
     if (clips.isEmpty) return null;
 
+    Log.debug(
+      '🎬 renderVideoToClip: clips=${clips.length}, '
+      'enableAudio=$enableAudio, '
+      'parameters=${parameters?.toMap()}',
+      name: _logName,
+      category: LogCategory.video,
+    );
+
     final outputPath = await renderVideo(
       clips: clips,
       aspectRatio: clips.first.targetAspectRatio,
@@ -266,7 +274,6 @@ class VideoEditorRenderService {
   /// the rendered video should persist across app restarts.
   static Future<String?> renderVideo({
     required List<DivineVideoClip> clips,
-    String? customAudioPath,
     double? originalAudioVolume,
     double? customAudioVolume,
     Uint8List? imageBytes,
@@ -310,7 +317,6 @@ class VideoEditorRenderService {
         enableAudio: enableAudio,
         outputDir: outputDir,
         globalTransform: result.globalTransform,
-        customAudioPath: customAudioPath,
         originalAudioVolume: originalAudioVolume,
         customAudioVolume: customAudioVolume,
         imageBytes: imageBytes,
@@ -615,8 +621,7 @@ class VideoEditorRenderService {
   /// Concatenates all video segments into a final output file.
   ///
   /// If [globalTransform] is provided, applies it to all segments in a single
-  /// pass. When [customAudioPath] is set, the custom audio track is mixed in
-  /// at the given volume levels. When [imageBytes] is provided, the image is
+  /// pass. When [imageBytes] is provided, the image is
   /// composited as an overlay (e.g. watermark).
   static Future<String> _concatenateSegments({
     required List<VideoSegment> segments,
@@ -625,7 +630,6 @@ class VideoEditorRenderService {
     required Directory outputDir,
     required CompleteParameters? parameters,
     _CropParameters? globalTransform,
-    String? customAudioPath,
     double? originalAudioVolume,
     double? customAudioVolume,
     Uint8List? imageBytes,
@@ -641,7 +645,10 @@ class VideoEditorRenderService {
       endTime: VideoEditorConstants.maxDuration,
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
-      customAudioPath: customAudioPath,
+      customAudioPath: await _getAudioFilePath(
+        parameters?.customAudioTrack?.audio,
+      ),
+      loopCustomAudio: false,
       originalAudioVolume: originalAudioVolume,
       customAudioVolume: customAudioVolume,
       imageBytes: parameters?.layers.isNotEmpty == true
@@ -693,5 +700,24 @@ class VideoEditorRenderService {
         );
       }
     }
+  }
+
+  /// Returns a file path for the given [EditorAudio], writing bytes to a
+  /// temp file if necessary. Equivalent to `EditorAudio.safeFilePath()` which
+  /// was added in pro_image_editor 12.0.5.
+  static Future<String?> _getAudioFilePath(EditorAudio? audio) async {
+    if (audio == null) return null;
+    if (audio.file != null) return audio.file!.path;
+    if (audio.assetPath != null) return audio.assetPath;
+    if (audio.networkUrl != null) return audio.networkUrl;
+    if (audio.bytes != null) {
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File(
+        '${tempDir.path}/${DateTime.now().millisecondsSinceEpoch}.mp3',
+      );
+      await tempFile.writeAsBytes(audio.bytes!);
+      return tempFile.path;
+    }
+    return null;
   }
 }

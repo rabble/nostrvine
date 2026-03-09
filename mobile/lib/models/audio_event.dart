@@ -33,6 +33,7 @@ class AudioEvent {
     this.source,
     this.sourceVideoReference,
     this.sourceVideoRelay,
+    this.startOffset = Duration.zero,
   });
 
   /// Parse an AudioEvent from a Nostr Event.
@@ -181,6 +182,11 @@ class AudioEvent {
   /// Optional relay hint for the source video.
   final String? sourceVideoRelay;
 
+  /// Start offset within the audio track.
+  /// This is the point from which the audio will start playing during video playback.
+  /// Default is [Duration.zero] (start from beginning). Only used locally, not published to Nostr.
+  final Duration startOffset;
+
   /// Get the kind number from the source video reference.
   /// Returns null if no source video reference is set.
   int? get sourceVideoKind {
@@ -284,6 +290,7 @@ class AudioEvent {
     String? source,
     String? sourceVideoReference,
     String? sourceVideoRelay,
+    Duration? startOffset,
   }) {
     return AudioEvent(
       id: id ?? this.id,
@@ -298,6 +305,7 @@ class AudioEvent {
       source: source ?? this.source,
       sourceVideoReference: sourceVideoReference ?? this.sourceVideoReference,
       sourceVideoRelay: sourceVideoRelay ?? this.sourceVideoRelay,
+      startOffset: startOffset ?? this.startOffset,
     );
   }
 
@@ -317,5 +325,43 @@ class AudioEvent {
         'title: $title, '
         'duration: $duration'
         ')';
+  }
+
+  /// Serialize to JSON for draft persistence.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'pubkey': pubkey,
+    'createdAt': createdAt,
+    'url': ?url,
+    'mimeType': ?mimeType,
+    'sha256': ?sha256,
+    'fileSize': ?fileSize,
+    'duration': ?duration,
+    'title': ?title,
+    'source': ?source,
+    'sourceVideoReference': ?sourceVideoReference,
+    'sourceVideoRelay': ?sourceVideoRelay,
+    if (startOffset != .zero) 'startOffsetMs': startOffset.inMilliseconds,
+  };
+
+  /// Deserialize from JSON for draft restoration.
+  static AudioEvent fromJson(Map<String, dynamic> json) {
+    return AudioEvent(
+      id: json['id'] as String,
+      pubkey: json['pubkey'] as String,
+      createdAt: json['createdAt'] as int,
+      url: json['url'] as String?,
+      mimeType: json['mimeType'] as String?,
+      sha256: json['sha256'] as String?,
+      fileSize: json['fileSize'] as int?,
+      duration: json['duration'] as double?,
+      title: json['title'] as String?,
+      source: json['source'] as String?,
+      sourceVideoReference: json['sourceVideoReference'] as String?,
+      sourceVideoRelay: json['sourceVideoRelay'] as String?,
+      startOffset: json['startOffsetMs'] != null
+          ? Duration(milliseconds: json['startOffsetMs'] as int)
+          : Duration.zero,
+    );
   }
 }

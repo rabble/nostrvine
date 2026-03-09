@@ -35,8 +35,9 @@ mixin VideoPrefetchMixin {
   DateTime? _lastPrefetchCall;
 
   /// Tracks video IDs that we've pre-initialized controllers for.
-  /// Maps videoId -> videoUrl to enable disposal without full video data.
-  final Map<String, String> _preInitializedControllers = {};
+  /// Maps videoId -> exact provider params so invalidation targets the same
+  /// family instance that was originally created.
+  final Map<String, VideoControllerParams> _preInitializedControllers = {};
 
   /// Override this to provide the cache manager instance
   /// Default uses the global singleton
@@ -44,6 +45,14 @@ mixin VideoPrefetchMixin {
 
   /// Override this to customize throttle duration (useful for testing)
   int get prefetchThrottleSeconds => 2;
+
+  /// Build the controller params for a video.
+  ///
+  /// Tests can override this to simulate provider key changes without relying
+  /// on platform-specific URL selection.
+  @visibleForTesting
+  VideoControllerParams videoControllerParamsFor(VideoEvent video) =>
+      VideoControllerParams.fromVideoEvent(video);
 
   /// Check if videos should be prefetched and trigger prefetch if appropriate
   ///
@@ -89,24 +98,25 @@ mixin VideoPrefetchMixin {
     );
 
     final videosToPreFetch = <VideoEvent>[];
+    final prefetchItems = <({String url, String key})>[];
     for (int i = startIndex; i < endIndex; i++) {
       // Skip current video and videos without URLs
       if (i != currentIndex && i >= 0 && i < videos.length) {
         final video = videos[i];
         if (video.videoUrl != null && video.videoUrl!.isNotEmpty) {
+          final params = videoControllerParamsFor(video);
+          if (!params.allowCaching) {
+            continue;
+          }
           videosToPreFetch.add(video);
+          prefetchItems.add((url: params.effectiveCacheUrl, key: video.id));
         }
       }
     }
 
-    if (videosToPreFetch.isEmpty) {
+    if (prefetchItems.isEmpty) {
       return;
     }
-
-    // Convert to list of (url, key) records for preCacheFiles
-    final items = videosToPreFetch
-        .map((v) => (url: v.videoUrl!, key: v.id))
-        .toList();
 
     Log.info(
       '🎬 Prefetching ${videosToPreFetch.length} videos around index $currentIndex '
@@ -117,7 +127,7 @@ mixin VideoPrefetchMixin {
 
     // Fire and forget - don't block on prefetch
     try {
-      videoCacheManager.preCacheFiles(items).catchError((error) {
+      videoCacheManager.preCacheFiles(prefetchItems).catchError((error) {
         Log.error(
           '❌ Error prefetching videos: $error',
           name: 'VideoPrefetchMixin',
@@ -179,18 +189,32 @@ mixin VideoPrefetchMixin {
 
       // Trigger controller creation by reading the provider
       // This is fire-and-forget - we just want to start initialization
-      final params = VideoControllerParams(
-        videoId: video.id,
-        videoUrl: video.videoUrl!,
-        videoEvent: video,
-      );
+      final params = videoControllerParamsFor(video);
+      final existingParams = _preInitializedControllers[video.id];
+
+      if (existingParams == params) {
+        continue;
+      }
+
+      if (existingParams != null) {
+        try {
+          ref.invalidate(individualVideoControllerProvider(existingParams));
+        } catch (error) {
+          Log.debug(
+            '⚠️ Failed to replace pre-initialized controller for ${video.id}: '
+            '$error',
+            name: 'VideoPrefetchMixin',
+            category: LogCategory.video,
+          );
+        }
+      }
 
       // Reading the provider triggers controller creation + initialize()
       // The controller will stay alive due to keepAlive() + 5-min cache
       ref.read(individualVideoControllerProvider(params));
 
       // Track this controller for potential disposal later
-      _preInitializedControllers[video.id] = video.videoUrl!;
+      _preInitializedControllers[video.id] = params;
     }
   }
 
@@ -249,23 +273,8 @@ mixin VideoPrefetchMixin {
 
     // Invalidate providers for videos outside the range
     for (final videoId in idsToDispose) {
-      final videoUrl = _preInitializedControllers[videoId];
-      if (videoUrl == null) continue;
-
-      // Find the video event in the list for the params
-      VideoEvent? videoEvent;
-      for (final v in videos) {
-        if (v.id == videoId) {
-          videoEvent = v;
-          break;
-        }
-      }
-
-      final params = VideoControllerParams(
-        videoId: videoId,
-        videoUrl: videoUrl,
-        videoEvent: videoEvent,
-      );
+      final params = _preInitializedControllers[videoId];
+      if (params == null) continue;
 
       // Invalidate triggers disposal via Riverpod's autoDispose
       ref.invalidate(individualVideoControllerProvider(params));

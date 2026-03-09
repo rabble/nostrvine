@@ -232,27 +232,15 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
               borderRadius: .circular(16),
               border: .all(
                 color: isOverDeleteZone
-                    ? VineTheme
-                          .error // Red when over delete zone
+                    // Red when over delete zone
+                    ? VineTheme.error
                     : widget.isReordering
-                    ? const Color(0xFFEBDE3B) // Yellow when reordering
+                    // Yellow when reordering
+                    ? VineTheme.accentYellow
                     : Colors.transparent, // Transparent otherwise
                 width: 6,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x51000000),
-                  blurRadius: 3,
-                  offset: Offset(0, 1),
-                ),
-                BoxShadow(
-                  color: Color(0x28000000),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                  spreadRadius: 3,
-                ),
-              ],
             ),
             child: ClipRRect(
               borderRadius: .circular(16),

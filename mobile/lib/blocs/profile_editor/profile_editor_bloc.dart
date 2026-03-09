@@ -299,6 +299,11 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         !isExternal || (event.externalNip05?.trim().isEmpty ?? true)
         ? null
         : event.externalNip05?.trim().toLowerCase();
+
+    // Explicitly clear NIP-05 when in divine mode with no username. Without
+    // this flag, saveProfileEvent would silently preserve the existing NIP-05
+    // from currentProfile.rawData even though the user opted out of both modes.
+    final clearNip05 = !isExternal && username == null;
     final picture = (event.picture?.trim().isEmpty ?? true)
         ? null
         : event.picture;
@@ -323,6 +328,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         about: about,
         username: username,
         nip05: externalNip05,
+        clearNip05: clearNip05,
         picture: picture,
         banner: banner,
         currentProfile: currentProfile,

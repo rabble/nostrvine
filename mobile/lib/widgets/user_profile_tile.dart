@@ -1,7 +1,6 @@
 // ABOUTME: Reusable tile widget for displaying user profile information in lists
 // ABOUTME: Shows avatar, name, and follow button with tap handling for navigation
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,10 +8,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 /// A tile widget for displaying user profile information in lists.
 ///
@@ -94,44 +93,10 @@ class UserProfileTile extends ConsumerWidget {
               child: Row(
                 children: [
                   // Avatar with border (matching video player style)
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: VineTheme.onSurfaceDisabled),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child:
-                          profile?.picture != null &&
-                              profile!.picture!.isNotEmpty
-                          ? CachedNetworkImage(
-                              imageUrl: profile.picture!,
-                              width: 46,
-                              height: 46,
-                              fit: BoxFit.cover,
-                              cacheManager: openVineImageCache,
-                              placeholder: (context, url) => Image.asset(
-                                'assets/icon/acid_avatar.png',
-                                width: 46,
-                                height: 46,
-                                fit: BoxFit.cover,
-                              ),
-                              errorWidget: (context, url, error) => Image.asset(
-                                'assets/icon/acid_avatar.png',
-                                width: 46,
-                                height: 46,
-                                fit: BoxFit.cover,
-                              ),
-                            )
-                          : Image.asset(
-                              'assets/icon/acid_avatar.png',
-                              width: 46,
-                              height: 46,
-                              fit: BoxFit.cover,
-                            ),
-                    ),
+                  UserAvatar(
+                    imageUrl: profile?.picture,
+                    name: displayName,
+                    size: 48,
                   ),
                   const SizedBox(width: 12),
 

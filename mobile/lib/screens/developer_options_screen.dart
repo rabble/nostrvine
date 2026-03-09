@@ -5,7 +5,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -47,43 +46,10 @@ class DeveloperOptionsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.whiteText,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'Developer Options',
-          style: VineTheme.titleFont(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+      appBar: DiVineAppBar(
+        title: 'Developer Options',
+        showBackButton: true,
+        onBackPressed: context.pop,
       ),
       body: ListView(
         children: [

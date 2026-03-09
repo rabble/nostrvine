@@ -11,13 +11,20 @@ class AudioDevicePreferenceService {
   /// SharedPreferences key for the preferred audio device ID
   static const String prefsKey = 'preferred_audio_device_id';
 
+  bool _initialized = false;
+
   String? _preferredDeviceId;
 
-  /// The user's preferred audio device ID, or null if none set (use auto-select)
+  /// The user's preferred audio device ID, or null if none set (use
+  /// auto-select).
   String? get preferredDeviceId => _preferredDeviceId;
 
-  /// Initialize the service by loading the saved preference
+  /// Initialize the service by loading the saved preference.
+  ///
+  /// Idempotent — subsequent calls are no-ops.
   Future<void> initialize() async {
+    if (_initialized) return;
+    _initialized = true;
     await _loadPreference();
   }
 

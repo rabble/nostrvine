@@ -7,17 +7,23 @@ part of 'share_action_button.dart';
 class _MoreActionsSection extends ConsumerWidget {
   const _MoreActionsSection({
     required this.video,
+    required this.isOwnContent,
     required this.onSave,
+    required this.onSaveWithWatermark,
     required this.onAddToList,
     required this.onCopyLink,
     required this.onShareVia,
     required this.onReport,
     required this.onCopyEventJson,
     required this.onCopyEventId,
+    this.onSaveOriginal,
   });
 
   final VideoEvent video;
+  final bool isOwnContent;
   final VoidCallback onSave;
+  final Future<void> Function()? onSaveOriginal;
+  final Future<void> Function() onSaveWithWatermark;
   final VoidCallback onAddToList;
   final VoidCallback onCopyLink;
   final VoidCallback onShareVia;
@@ -39,6 +45,17 @@ class _MoreActionsSection extends ConsumerWidget {
         icon: DivineIconName.bookmarkSimple,
         label: 'Save',
         onTap: onSave,
+      ),
+      if (onSaveOriginal != null)
+        _ActionData(
+          icon: DivineIconName.downloadSimple,
+          label: 'Save to Gallery',
+          onTap: () => onSaveOriginal!.call(),
+        ),
+      _ActionData(
+        icon: DivineIconName.downloadSimple,
+        label: isOwnContent ? 'Save with Watermark' : 'Save Video',
+        onTap: onSaveWithWatermark,
       ),
       if (showCuratedLists)
         _ActionData(

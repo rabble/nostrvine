@@ -23,6 +23,7 @@ class DiVineAppBarIconButton extends StatelessWidget {
     this.tooltip,
     this.semanticLabel,
     this.backgroundColor,
+    this.borderSide,
     this.iconColor,
     this.size = 48,
     this.iconSize = 32,
@@ -46,6 +47,11 @@ class DiVineAppBarIconButton extends StatelessWidget {
   ///
   /// Defaults to [VineTheme.iconButtonBackground].
   final Color? backgroundColor;
+
+  /// Optional border for the button container.
+  ///
+  /// When null, no border is shown
+  final BorderSide? borderSide;
 
   /// Color of the icon.
   ///
@@ -79,6 +85,7 @@ class DiVineAppBarIconButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: effectiveBackgroundColor,
         borderRadius: BorderRadius.circular(borderRadius),
+        border: borderSide != null ? Border.fromBorderSide(borderSide!) : null,
       ),
       child: Center(
         child: switch (icon) {
@@ -113,9 +120,11 @@ class DiVineAppBarIconButton extends StatelessWidget {
       button: true,
       enabled: onPressed != null,
       label: semanticLabel,
-      child: GestureDetector(
-        onTap: onPressed,
-        child: buttonContent,
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints(),
+        onPressed: onPressed,
+        icon: buttonContent,
       ),
     );
   }

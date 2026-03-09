@@ -343,20 +343,13 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                           )
                         : Scaffold(
                             backgroundColor: VineTheme.backgroundColor,
-                            appBar: AppBar(
+                            appBar: DiVineAppBar(
+                              title: '',
+                              titleWidget: searchBar,
+                              showBackButton: true,
+                              onBackPressed: context.pop,
+                              backButtonSemanticLabel: 'search_back_button',
                               backgroundColor: VineTheme.cardBackground,
-                              leading: Semantics(
-                                identifier: 'search_back_button',
-                                button: true,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.arrow_back,
-                                    color: VineTheme.whiteText,
-                                  ),
-                                  onPressed: context.pop,
-                                ),
-                              ),
-                              title: searchBar,
                               bottom: PreferredSize(
                                 preferredSize: const Size.fromHeight(48),
                                 child: tabBar,

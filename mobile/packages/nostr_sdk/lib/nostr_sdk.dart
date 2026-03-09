@@ -20,6 +20,7 @@ export 'nip05/nip05_validor.dart';
 export 'nip07/nip07_signer.dart';
 export 'nip19/hrps.dart';
 export 'nip19/nip19.dart';
+export 'nip49/nip49.dart';
 export 'nip23/long_form_info.dart';
 export 'nip29/group_identifier.dart';
 export 'nip29/nip29.dart';

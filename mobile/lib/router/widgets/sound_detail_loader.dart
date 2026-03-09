@@ -22,13 +22,10 @@ class SoundDetailLoader extends ConsumerWidget {
     return soundAsync.when(
       data: (sound) {
         if (sound == null) {
-          return Scaffold(
+          return const Scaffold(
             backgroundColor: VineTheme.backgroundColor,
-            appBar: AppBar(
-              backgroundColor: VineTheme.backgroundColor,
-              title: const Text('Sound Not Found'),
-            ),
-            body: const Center(
+            appBar: DiVineAppBar(title: 'Sound Not Found'),
+            body: Center(
               child: Text(
                 'This sound could not be found',
                 style: TextStyle(color: VineTheme.whiteText),
@@ -41,10 +38,7 @@ class SoundDetailLoader extends ConsumerWidget {
       loading: () => const BrandedLoadingScaffold(),
       error: (error, stack) => Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        appBar: AppBar(
-          backgroundColor: VineTheme.backgroundColor,
-          title: const Text('Error'),
-        ),
+        appBar: const DiVineAppBar(title: 'Error'),
         body: Center(
           child: Text(
             'Failed to load sound: $error',

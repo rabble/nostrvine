@@ -196,18 +196,36 @@ class VideoControllerParams {
     required this.videoUrl,
     this.cacheUrl,
     this.videoEvent,
+    this.allowCaching = true,
   });
+
+  factory VideoControllerParams.fromVideoEvent(VideoEvent video) {
+    final playbackUrl =
+        video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!;
+    final cacheUrl = video.getCacheableVideoUrlForPlatform();
+
+    return VideoControllerParams(
+      videoId: video.id,
+      videoUrl: playbackUrl,
+      cacheUrl: cacheUrl,
+      videoEvent: video,
+      allowCaching: cacheUrl != null,
+    );
+  }
 
   final String videoId;
 
   /// URL for playback (may be HLS on Android for codec compatibility)
   final String videoUrl;
 
-  /// URL for caching (original MP4 - HLS can't be cached as single file)
-  /// If null, uses videoUrl for caching.
+  /// URL for caching when a direct-file asset exists.
+  /// If null, uses videoUrl for caching unless [allowCaching] is false.
   final String? cacheUrl;
 
   final VideoEvent? videoEvent; // VideoEvent for enhanced error reporting
+
+  /// Whether background single-file caching should be attempted.
+  final bool allowCaching;
 
   /// Get the URL to use for caching (prefers cacheUrl, falls back to videoUrl)
   String get effectiveCacheUrl => cacheUrl ?? videoUrl;
@@ -218,14 +236,20 @@ class VideoControllerParams {
       other is VideoControllerParams &&
           runtimeType == other.runtimeType &&
           videoId == other.videoId &&
-          videoUrl == other.videoUrl;
+          videoUrl == other.videoUrl &&
+          cacheUrl == other.cacheUrl &&
+          allowCaching == other.allowCaching;
 
   @override
-  int get hashCode => videoId.hashCode ^ videoUrl.hashCode;
+  int get hashCode =>
+      videoId.hashCode ^
+      videoUrl.hashCode ^
+      cacheUrl.hashCode ^
+      allowCaching.hashCode;
 
   @override
   String toString() =>
-      'VideoControllerParams(videoId: $videoId, videoUrl: $videoUrl, cacheUrl: $cacheUrl, hasEvent: ${videoEvent != null})';
+      'VideoControllerParams(videoId: $videoId, videoUrl: $videoUrl, cacheUrl: $cacheUrl, allowCaching: $allowCaching, hasEvent: ${videoEvent != null})';
 }
 
 /// Loading state for individual videos
@@ -419,17 +443,26 @@ VideoPlayerController individualVideoController(
         httpHeaders: authHeaders ?? {},
       );
 
-      // Start caching in background for future use
-      unawaited(
-        _cacheVideoWithAuth(ref, videoCache, params).catchError((error) {
-          Log.warning(
-            '⚠️ Background video caching failed: $error',
-            name: 'IndividualVideoController',
-            category: LogCategory.video,
-          );
-          return null;
-        }),
-      );
+      if (params.allowCaching) {
+        // Start caching in background for future use
+        unawaited(
+          _cacheVideoWithAuth(ref, videoCache, params).catchError((error) {
+            Log.warning(
+              '⚠️ Background video caching failed: $error',
+              name: 'IndividualVideoController',
+              category: LogCategory.video,
+            );
+            return null;
+          }),
+        );
+      } else {
+        Log.debug(
+          '⏭️ Skipping background caching for video ${params.videoId} '
+          '(playback URL is not cacheable as a single file)',
+          name: 'IndividualVideoController',
+          category: LogCategory.video,
+        );
+      }
     }
   }
 
@@ -694,14 +727,14 @@ VideoPlayerController individualVideoController(
           }
         }
 
-        // Check if this was a quality variant URL (720p/480p) that failed
-        // If so, fall back to original MP4 (params.cacheUrl is always the original)
+        // Check if this was a quality variant URL (720p/480p) that failed.
+        // If so, fall back to the cacheable direct asset URL when available.
         final isQualityVariant =
             videoUrl.contains('/720p') || videoUrl.contains('/480p');
         if (isQualityVariant && params.cacheUrl != null) {
           Log.info(
             '📱 Quality variant failed for ${params.videoId} ($videoUrl) - '
-            'falling back to original MP4: ${params.cacheUrl}',
+            'falling back to direct asset: ${params.cacheUrl}',
             name: 'IndividualVideoController',
             category: LogCategory.video,
           );
@@ -894,6 +927,24 @@ VideoPlayerController individualVideoController(
             );
 
             if (!alreadyUsedFallback) {
+              if (params.videoEvent is VideoEvent) {
+                final videoEvent = params.videoEvent!;
+                final hlsFallback = videoEvent.hlsUrl;
+                if (hlsFallback != null && hlsFallback != params.videoUrl) {
+                  final newCache = {...currentFallbackCache};
+                  newCache[params.videoId] = hlsFallback;
+                  ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
+
+                  Log.info(
+                    '🔄 Stored HLS fallback URL for video $videoIdDisplay: '
+                    '$hlsFallback',
+                    name: 'IndividualVideoController',
+                    category: LogCategory.video,
+                  );
+                  return;
+                }
+              }
+
               // Try to generate a fallback URL using sha256
               String? sha256;
               if (params.videoEvent != null) {
@@ -1239,9 +1290,8 @@ Future<dynamic> _cacheVideoWithAuth(
     }
   }
 
-  // Cache video with optional auth headers
-  // Use effectiveCacheUrl (original MP4) not videoUrl (may be HLS on Android)
-  // HLS manifests can't be cached as single files
+  // Cache video with optional auth headers when a direct-file asset is available.
+  // HLS manifests are skipped because they are not useful as single-file cache entries.
   try {
     return await videoCache.cacheFile(
       params.effectiveCacheUrl,

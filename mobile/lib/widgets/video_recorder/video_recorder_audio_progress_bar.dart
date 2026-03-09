@@ -11,28 +11,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
-
-/// Constants for waveform bar rendering.
-abstract final class _WaveformConstants {
-  static const barWidth = 2.0;
-  static const barSpacing = 1.0;
-  static const double barStep = barWidth + barSpacing;
-  static const minBarHeight = 1.0;
-  static const emptyBarHeight = 4.0;
-  static const barRadius = Radius.circular(1);
-  static const waveformHeight = 72.0;
-
-  /// Scale factor for waveform amplitude (leaves headroom at edges).
-  static const amplitudeScale = 0.9;
-
-  /// Duration for waveform entrance animation.
-  static const animationDuration = Duration(milliseconds: 400);
-
-  /// Curve for waveform entrance animation.
-  static const Cubic animationCurve = Curves.easeOutCubic;
-}
+import 'package:openvine/widgets/stereo_waveform_painter.dart';
 
 /// Audio progress bar that displays waveform with recording progress.
 ///
@@ -50,7 +30,9 @@ class VideoRecorderAudioProgressBar extends ConsumerWidget {
     final isRecording = ref.watch(
       videoRecorderProvider.select((s) => s.isRecording),
     );
-    final selectedSound = ref.watch(selectedSoundProvider);
+    final selectedSound = ref.watch(
+      videoRecorderProvider.select((s) => s.selectedSound),
+    );
 
     return Positioned(
       top: 24,
@@ -101,7 +83,7 @@ class _EmptyWaveformPlaceholder extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
       ),
       child: CustomPaint(
-        size: const Size(double.infinity, _WaveformConstants.waveformHeight),
+        size: const Size(double.infinity, WaveformConstants.waveformHeight),
         painter: _EmptyWaveformPainter(
           barColor: VineTheme.whiteText.withValues(alpha: 0.32),
         ),
@@ -118,25 +100,25 @@ class _EmptyWaveformPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final barCount = (size.width / _WaveformConstants.barStep).floor();
+    final barCount = (size.width / WaveformConstants.barStep).floor();
     final halfHeight = size.height / 2;
-    const totalHeight = _WaveformConstants.emptyBarHeight * 2;
+    const totalHeight = WaveformConstants.emptyBarHeight * 2;
 
     final paint = Paint()
       ..color = barColor
       ..style = .fill;
 
     for (var i = 0; i < barCount; i++) {
-      final x = i * _WaveformConstants.barStep;
+      final x = i * WaveformConstants.barStep;
       canvas.drawRRect(
         .fromRectAndRadius(
           .fromLTWH(
             x,
-            halfHeight - _WaveformConstants.emptyBarHeight,
-            _WaveformConstants.barWidth,
+            halfHeight - WaveformConstants.emptyBarHeight,
+            WaveformConstants.barWidth,
             totalHeight,
           ),
-          _WaveformConstants.barRadius,
+          WaveformConstants.barRadius,
         ),
         paint,
       );
@@ -170,6 +152,11 @@ class _AudioWaveformProgress extends ConsumerWidget {
         (s) => (clips: s.clips, activeRecording: s.activeRecordingDuration),
       ),
     );
+    final startOffset =
+        ref.watch(
+          videoRecorderProvider.select((s) => s.selectedSound?.startOffset),
+        ) ??
+        Duration.zero;
 
     // Calculate total recorded duration
     var recordedDuration = Duration.zero;
@@ -185,8 +172,8 @@ class _AudioWaveformProgress extends ConsumerWidget {
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: _WaveformConstants.animationDuration,
-      curve: _WaveformConstants.animationCurve,
+      duration: WaveformConstants.animationDuration,
+      curve: WaveformConstants.animationCurve,
       builder: (context, heightFactor, child) {
         return DecoratedBox(
           decoration: BoxDecoration(
@@ -196,9 +183,9 @@ class _AudioWaveformProgress extends ConsumerWidget {
           child: CustomPaint(
             size: const Size(
               double.infinity,
-              _WaveformConstants.waveformHeight,
+              WaveformConstants.waveformHeight,
             ),
-            foregroundPainter: _WaveformProgressPainter(
+            foregroundPainter: StereoWaveformPainter(
               leftChannel: leftChannel,
               rightChannel: rightChannel,
               progress: progress.clamp(0.0, 1.0),
@@ -208,211 +195,11 @@ class _AudioWaveformProgress extends ConsumerWidget {
               audioDuration: audioDuration,
               maxDuration: _maxDuration,
               heightFactor: heightFactor,
+              startOffset: startOffset,
             ),
           ),
         );
       },
     );
-  }
-}
-
-/// Custom painter for stereo waveform with progress overlay.
-///
-/// The waveform is scaled to show only [maxDuration] worth of audio:
-/// - If audio is longer than maxDuration, only the first maxDuration is shown
-/// - If audio is shorter than maxDuration, waveform fills proportionally
-class _WaveformProgressPainter extends CustomPainter {
-  _WaveformProgressPainter({
-    required this.leftChannel,
-    required this.progress,
-    required this.activeColor,
-    required this.inactiveColor,
-    required this.audioDuration,
-    required this.maxDuration,
-    this.rightChannel,
-    this.activeBackgroundColor,
-    this.heightFactor = 1.0,
-  });
-
-  final Float32List leftChannel;
-  final Float32List? rightChannel;
-  final double progress;
-  final Color activeColor;
-  final Color inactiveColor;
-  final Color? activeBackgroundColor;
-  final Duration audioDuration;
-  final Duration maxDuration;
-
-  /// Multiplier for bar heights (0.0 to 1.0) used for entrance animation.
-  final double heightFactor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (leftChannel.isEmpty) return;
-
-    final halfHeight = size.height / 2;
-
-    // Calculate visible duration and ratios
-    final audioMs = audioDuration.inMilliseconds.toDouble();
-    final maxMs = maxDuration.inMilliseconds.toDouble();
-    final visibleMs = audioMs.clamp(0.0, maxMs);
-
-    // How much of the bar should be filled with waveform
-    // (1.0 if audio >= maxDuration, less if audio is shorter)
-    final barFillRatio = visibleMs / maxMs;
-
-    // How much of the samples we need to display
-    // (1.0 if audio <= maxDuration, less if audio is longer)
-    final sampleRatio = visibleMs / audioMs;
-
-    final waveformWidth = size.width * barFillRatio;
-    final visibleSampleCount = (leftChannel.length * sampleRatio).ceil();
-
-    // Calculate the x position where progress ends
-    final progressX = size.width * progress;
-
-    // Draw active background if provided
-    if (activeBackgroundColor != null && progressX > 0) {
-      final bgPaint = Paint()
-        ..color = activeBackgroundColor!
-        ..style = PaintingStyle.fill;
-      canvas.drawRect(Rect.fromLTWH(0, 0, progressX, size.height), bgPaint);
-    }
-
-    // Draw both channels as connected bars (no gap in center)
-    final rightSamples = rightChannel ?? leftChannel;
-    _drawStereoWaveform(
-      canvas: canvas,
-      leftSamples: leftChannel,
-      rightSamples: rightSamples,
-      centerY: halfHeight,
-      halfHeight: halfHeight,
-      waveformWidth: waveformWidth,
-      visibleSampleCount: visibleSampleCount,
-      progressX: progressX,
-    );
-
-    // Draw placeholder bars for remaining empty space (if audio < maxDuration)
-    if (barFillRatio < 1.0) {
-      final waveformBarCount = (waveformWidth / _WaveformConstants.barStep)
-          .floor();
-      final emptyStartX = waveformBarCount * _WaveformConstants.barStep;
-
-      _drawEmptyBars(
-        canvas: canvas,
-        startX: emptyStartX,
-        endX: size.width,
-        centerY: halfHeight,
-        progressX: progressX,
-      );
-    }
-  }
-
-  /// Draws minimal amplitude bars in the empty area where no waveform data.
-  void _drawEmptyBars({
-    required Canvas canvas,
-    required double startX,
-    required double endX,
-    required double centerY,
-    required double progressX,
-  }) {
-    const totalHeight = _WaveformConstants.minBarHeight * 2;
-
-    var x = startX;
-    while (x < endX) {
-      final isActive = x <= progressX;
-      final paint = Paint()
-        ..color = isActive ? activeColor : inactiveColor
-        ..style = PaintingStyle.fill;
-
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            x,
-            centerY - _WaveformConstants.minBarHeight,
-            _WaveformConstants.barWidth,
-            totalHeight,
-          ),
-          _WaveformConstants.barRadius,
-        ),
-        paint,
-      );
-      x += _WaveformConstants.barStep;
-    }
-  }
-
-  /// Draws both channels as connected vertical bars (no gap in center).
-  void _drawStereoWaveform({
-    required Canvas canvas,
-    required Float32List leftSamples,
-    required Float32List rightSamples,
-    required double centerY,
-    required double halfHeight,
-    required double waveformWidth,
-    required int visibleSampleCount,
-    required double progressX,
-  }) {
-    final barCount = (waveformWidth / _WaveformConstants.barStep).floor();
-
-    if (barCount <= 0 || visibleSampleCount <= 0) return;
-
-    final scaledHalfHeight =
-        halfHeight * _WaveformConstants.amplitudeScale * heightFactor;
-
-    for (var i = 0; i < barCount; i++) {
-      final x = i * _WaveformConstants.barStep;
-
-      // Map bar position to sample index within visible samples
-      final sampleIndex = ((i / barCount) * visibleSampleCount).floor();
-
-      // Get amplitudes (0.0-1.0)
-      final leftAmp = sampleIndex < leftSamples.length
-          ? leftSamples[sampleIndex].abs().clamp(0.0, 1.0)
-          : 0.0;
-      final rightAmp = sampleIndex < rightSamples.length
-          ? rightSamples[sampleIndex].abs().clamp(0.0, 1.0)
-          : 0.0;
-
-      // Calculate bar heights (minimum for visibility), scaled by animation
-      final topHeight = (leftAmp * scaledHalfHeight).clamp(
-        _WaveformConstants.minBarHeight,
-        halfHeight,
-      );
-      final bottomHeight = (rightAmp * scaledHalfHeight).clamp(
-        _WaveformConstants.minBarHeight,
-        halfHeight,
-      );
-
-      // Total height spans from top of left channel to bottom of right channel
-      final totalHeight = topHeight + bottomHeight;
-      final topY = centerY - topHeight;
-
-      // Determine color based on progress
-      final isActive = x <= progressX;
-      final paint = Paint()
-        ..color = isActive ? activeColor : inactiveColor
-        ..style = .fill;
-
-      // Draw single connected bar spanning both channels
-      canvas.drawRRect(
-        .fromRectAndRadius(
-          .fromLTWH(x, topY, _WaveformConstants.barWidth, totalHeight),
-          _WaveformConstants.barRadius,
-        ),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_WaveformProgressPainter oldDelegate) {
-    return oldDelegate.progress != progress ||
-        oldDelegate.activeColor != activeColor ||
-        oldDelegate.inactiveColor != inactiveColor ||
-        oldDelegate.leftChannel != leftChannel ||
-        oldDelegate.rightChannel != rightChannel ||
-        oldDelegate.audioDuration != audioDuration ||
-        oldDelegate.maxDuration != maxDuration ||
-        oldDelegate.heightFactor != heightFactor;
   }
 }

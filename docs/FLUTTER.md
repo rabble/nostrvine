@@ -169,90 +169,53 @@ linter:
 
 ### State Management
 
-**This project uses Riverpod 3 for all state management and reactive UI updates.**
+**Current direction: incremental UI migration from Riverpod to BLoC.**
 
-* **Riverpod 3:** Use `flutter_riverpod: ^3.0.0` and `riverpod_annotation: ^3.0.0`
-  for state management throughout the application.
-* **Code Generation:** Use `@riverpod` annotations with code generation via
-  `build_runner` to create type-safe providers.
-* **Provider Types:**
-  - `@riverpod Future<T>` for async data fetching with caching
-  - `@riverpod class` for `StateNotifier`-style state management with methods
-  - `@riverpod Stream<T>` for continuous streams of data (e.g., from NostrService)
-* **Reactive Architecture:** Services that emit updates should either:
-  1. Extend `ChangeNotifier` and be wrapped in Riverpod providers
-  2. Emit streams that are consumed by `@riverpod Stream<T>` providers
-  3. Update Riverpod state directly in `@riverpod class` notifiers
-* **UI Reactivity:** Widgets use `ref.watch()` to automatically rebuild when
-  provider state changes - never manually poll services for updates
-* **Dependency Injection:** Use Riverpod's built-in DI - services are provided
-  via `@riverpod` providers in `lib/providers/app_providers.dart`
-* **Caching Strategy:**
-  - Keep cached data indefinitely (months, not minutes)
-  - Always show cached data immediately
-  - Stream updates in background to refresh UI reactively
-  - Never block UI waiting for network requests to complete
+OpenVine currently runs a hybrid state-management model. Riverpod remains in parts
+of the codebase, but new and migrated UI flows should prefer BLoC/Cubit.
 
-**Example Patterns:**
+**Source of truth for migration status and rationale:**
+- `docs/BLOC_UI_MIGRATION_PRD.md`
+
+**Active migration PRs (examples):**
+- [#1908](https://github.com/divinevideo/divine-mobile/pull/1908) — Replace Riverpod profile providers with `ProfilesBloc` (Phase 6)
+- [#1894](https://github.com/divinevideo/divine-mobile/pull/1894) — Wire `MyProfileBloc` into main profile screen
+- [#1903](https://github.com/divinevideo/divine-mobile/pull/1903) — Retire `UserProfileService`; keep Riverpod bridges temporarily
+- [#1282](https://github.com/divinevideo/divine-mobile/pull/1282) — Migrate username validation from Riverpod to BLoC (merged)
+
+**Working rules:**
+- Prefer BLoC/Cubit for UI state in new code.
+- When touching Riverpod UI paths, migrate opportunistically to BLoC where practical.
+- Keep Riverpod only where migration is not yet complete or where non-UI/service-level usage is still stable.
+- Avoid introducing new long-lived Riverpod UI providers unless required for compatibility.
+
+**BLoC-first UI pattern (preferred):**
 
 ```dart
-// Service that extends ChangeNotifier (existing pattern in VideoEventService)
-class MyService extends ChangeNotifier {
-  final List<Item> _items = [];
-  List<Item> get items => List.unmodifiable(_items);
+class CounterCubit extends Cubit<int> {
+  CounterCubit() : super(0);
 
-  void addItem(Item item) {
-    _items.add(item);
-    notifyListeners(); // Triggers UI rebuild
-  }
+  void increment() => emit(state + 1);
+  void decrement() => emit(state - 1);
 }
 
-// Riverpod provider for the service
-@riverpod
-MyService myService(Ref ref) => MyService();
+class CounterView extends StatelessWidget {
+  const CounterView({super.key});
 
-// UI watches and rebuilds automatically
-class MyWidget extends ConsumerWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final items = ref.watch(myServiceProvider).items;
-    return ListView(children: items.map((i) => Text(i.name)).toList());
+  Widget build(BuildContext context) {
+    return BlocBuilder<CounterCubit, int>(
+      builder: (context, count) => Text('Count: $count'),
+    );
   }
-}
-
-// Streaming provider pattern (preferred for reactive data)
-@riverpod
-Stream<UserProfile> profileStream(Ref ref, String pubkey) {
-  final nostrService = ref.watch(nostrServiceProvider);
-  return nostrService.subscribeToEvents(
-    filters: [Filter(kinds: [0], authors: [pubkey])],
-  ).map((event) => UserProfile.fromNostrEvent(event));
-}
-
-// Async provider with caching
-@riverpod
-Future<List<VideoEvent>> fetchVideos(Ref ref, String pubkey) async {
-  final service = ref.watch(videoServiceProvider);
-  return service.getVideos(pubkey);
-}
-
-// State notifier pattern for complex state
-@riverpod
-class Counter extends _$Counter {
-  @override
-  int build() => 0;
-
-  void increment() => state++;
-  void decrement() => state--;
 }
 ```
 
-**Migration from Built-in State Management:**
-* **DO NOT** use `ValueNotifier`, `ChangeNotifier` alone, `StreamBuilder`,
-  `FutureBuilder`, or `InheritedWidget` directly
-* **DO** wrap existing `ChangeNotifier` services in Riverpod providers
-* **DO** use `@riverpod Stream<T>` instead of `StreamBuilder`
-* **DO** use `@riverpod Future<T>` instead of `FutureBuilder`
+**Migration guidance:**
+- Replace Riverpod bridge providers with feature-focused blocs.
+- Inject repositories/services once at app/screen boundary; pass events to blocs.
+- Use `BlocBuilder`/`BlocSelector`/`context.select` for targeted rebuilds.
+- Keep migrations phased and test-backed to avoid broad regressions.
 
 ### Data Flow
 * **Data Structures:** Define data structures (classes) to represent the data

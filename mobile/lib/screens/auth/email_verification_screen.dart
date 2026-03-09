@@ -74,6 +74,10 @@ class _EmailVerificationScreenState
     super.initState();
     _cubit = context.read<EmailVerificationCubit>();
 
+    // Clear any stale state from a previous verification (e.g., User A
+    // verified successfully, now User B's deep link opens this screen).
+    _cubit.reset();
+
     // Use post-frame callback to access context safely
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeVerification();

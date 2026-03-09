@@ -170,6 +170,13 @@ class SelectedSound extends _$SelectedSound {
     state = sound;
   }
 
+  /// Update the start offset of the currently selected sound.
+  void setStartOffset(Duration offset) {
+    if (state != null) {
+      state = state!.copyWith(startOffset: offset);
+    }
+  }
+
   /// Clear the current sound selection.
   void clear() {
     state = null;

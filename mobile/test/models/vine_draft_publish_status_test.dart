@@ -225,7 +225,7 @@ void main() {
       // Explicitly set publishError to null
       final cleared = draft.copyWith(
         publishStatus: PublishStatus.draft,
-        publishError: null,
+        clearPublishError: true,
         publishAttempts: 0,
       );
 

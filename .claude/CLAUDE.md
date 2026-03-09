@@ -1,235 +1,48 @@
-# divine-mobile - AI Assistant Guidelines
+# divine-mobile assistant notes
 
-You are an AI coding assistant working on **divine-mobile**, a decentralized vine-like video sharing application powered by Nostr.
+Start with `/AGENTS.md` for repo workflow, worktree hygiene, verification, and commit expectations.
 
-## Core Principles
+## Standards Reference
 
-- **Quality First** - Write tests before implementation
-- **Consistency** - Follow established patterns across the codebase
-- **Simplicity** - Choose the simplest solution that works
-- **Maintainability** - Write code that's easy to change
+Generic Flutter and Dart standards live in `.claude/rules/`:
 
----
+- `rules/architecture.md`: layered flow, package boundaries, barrel files
+- `rules/state_management.md`: BLoC-first UI, Riverpod legacy rules, event transformers
+- `rules/code_style.md`: naming, widget composition, Effective Dart guidance
+- `rules/testing.md`: test structure, assertions, BLoC tests, goldens
+- `rules/routing.md`: `go_router` patterns
+- `rules/ui_theming.md`: theme usage, Page/View split, spacing and typography
+- `rules/error_handling.md`: exceptions and failure handling
 
-# Standards Reference
+## Project Rules
 
-All generic Flutter/Dart standards are organized in `.claude/rules/`:
+- Most app work happens in `mobile/`. Key entry points are `mobile/lib/main.dart` and `mobile/lib/router/app_router.dart`.
+- Use current code plus focused docs as source of truth: `docs/STATE_MANAGEMENT.md`, `docs/BLOC_UI_MIGRATION_PRD.md`, `docs/NOSTR_EVENT_TYPES.md`, `mobile/docs/NOSTR_VIDEO_EVENTS.md`, `mobile/docs/DESIGN_SYSTEM_COMPONENTS.md`, and `mobile/docs/GOLDEN_TESTING_GUIDE.md`.
+- Older docs can drift. If documentation disagrees with code, trust the current implementation, targeted tests, and the newest focused doc.
 
-| Topic | File | Key Content |
-|-------|------|-------------|
-| Architecture | `rules/architecture.md` | Layered architecture (UI→BLOC→REPOSITORY→CLIENT), barrel files |
-| State Management | `rules/state_management.md` | BLoC (new features) + Riverpod (legacy), event transformers |
-| Code Style | `rules/code_style.md` | Naming, widgets over methods, Dart best practices |
-| Testing | `rules/testing.md` | Test organization, isolation, golden files, BLoC testing |
-| Routing | `rules/routing.md` | GoRouter patterns, type-safe routes, redirects |
-| UI/Theming | `rules/ui_theming.md` | ThemeData, typography, spacing, accessibility |
-| Error Handling | `rules/error_handling.md` | Exceptions, documentation, security basics |
+## Architecture And State
 
----
+- Prefer `UI -> BLoC/Cubit -> Repository -> Client` for new work.
+- New UI state should use BLoC/Cubit. Riverpod is legacy and compatibility glue while the migration is ongoing.
+- Keep migrations incremental, test-backed, and small enough to review.
+- Prefer constructor injection and small widget classes over hidden dependencies and widget-building helper methods.
 
-# Tool Preferences
+## UI And Product Constraints
 
-## Dart MCP Server
-**ALWAYS** use the **Dart MCP Server** (`mcp__dart__*`) for Flutter/Dart operations:
-- Running tests (`mcp__dart__run_tests`)
-- Running pub commands (`mcp__dart__pub`)
-- Launching/debugging apps (`mcp__dart__launch_app`, `mcp__dart__hot_reload`)
-- Searching pub.dev (`mcp__dart__pub_dev_search`)
+- Divine is dark-mode only.
+- Use `VineTheme` and shared components from `mobile/packages/divine_ui` before adding one-off styling or raw `Colors.*`.
+- Prefer full-screen flows over introducing new dialogs or bottom sheets unless the task explicitly asks for one or the existing UX already uses that pattern.
+- For user-facing copy, follow `brand-guidelines/AGENT_QUICK_REFERENCE.md` and `brand-guidelines/TONE_OF_VOICE.md`.
 
-**Do NOT run `dart format`, `dart analyze`, or `flutter analyze` manually or via MCP.** PostToolUse hooks in `.claude/settings.json` automatically format and analyze every Dart file after each `Edit` or `Write` tool use. Let the hooks do their job.
+## Nostr And Async Rules
 
-**Fallback**: Use shell commands (`flutter test`, etc.) only if MCP unavailable.
+- Never truncate Nostr IDs in code, logs, tests, analytics, or debug output.
+- Verify protocol changes against current code and the Nostr docs in this repo. Some historical docs are stale on specific kinds and flows.
+- Avoid introducing arbitrary `Future.delayed()` calls in app code; prefer explicit async coordination.
 
-## Nostr MCP Server
-**ALWAYS** use the **Nostr MCP Server** (`mcp__nostr__*`) for all Nostr-related lookups:
-- Reading NIPs (`mcp__nostr__read_nip`)
-- Looking up event kinds (`mcp__nostr__read_kind`)
-- Looking up tags (`mcp__nostr__read_tag`)
-- Reading protocol basics (`mcp__nostr__read_protocol`)
-- Browsing NIPs index (`mcp__nostr__read_nips_index`)
+## Verification
 
-**Fallback**: `https://nostrbook.dev/llms.txt` (only if MCP unavailable)
-
----
-
-# Project-Specific Rules
-
-## CRITICAL - Nostr ID Rule
-
-**YOU MUST NEVER TRUNCATE NOSTR IDS.** This applies EVERYWHERE:
-
-- ❌ FORBIDDEN: `eventId.substring(0, 8)`, `pubkey.substring(0, 8)`, `id.take(8)`, etc.
-- ❌ FORBIDDEN in logging: `Log.info('Video: ${video.id.substring(0, 8)}')`
-- ❌ FORBIDDEN in production code: displaying shortened IDs in UI
-- ❌ FORBIDDEN in debug output: console logs, error messages, analytics
-- ❌ FORBIDDEN in tests: test descriptions, assertions, mock data
-- ✅ REQUIRED: ALWAYS use full Nostr IDs (64-character hex event IDs, npub/nsec formats)
-- ✅ If display space is limited, use UI truncation (ellipsis in middle) NOT string manipulation
-
-**Rationale**: Truncated IDs are useless for debugging, searching logs, and correlating events across systems.
-
----
-
-## UI/UX Requirements
-
-**CRITICAL**: divine-mobile is a **DARK MODE ONLY** application.
-
-### VineTheme Color Usage
-
-**RULE**: Always use `VineTheme` color constants instead of raw `Colors.*` values.
-
-| Instead of | Use |
-|------------|-----|
-| `Colors.white` | `VineTheme.whiteText` or `VineTheme.primaryText` |
-| `Colors.black` | `VineTheme.backgroundColor` |
-| `Colors.grey` | `VineTheme.secondaryText` or `VineTheme.lightText` |
-| `Colors.white.withOpacity(0.7)` | `VineTheme.onSurfaceVariant` (75% white) |
-| `Colors.white.withOpacity(0.5)` | `VineTheme.onSurfaceMuted` (50% white) |
-
-**Exception**: `Colors.transparent` is acceptable (universal constant like `EdgeInsets.zero`).
-
-### Theme Colors
-
-- **Background**: `VineTheme.backgroundColor`
-- **Text**: `VineTheme.whiteText`, `VineTheme.primaryText`, `VineTheme.secondaryText`
-- **Accent**: `VineTheme.vineGreen` for primary accents
-- **Cards**: `VineTheme.cardBackground` for elevated surfaces
-- **Icons**: `VineTheme.iconButtonBackground` for button containers
-- **NO LIGHT MODE**: Do not implement light mode themes, auto-switching, or light color schemes
-
-**Rationale**: The dark mode aesthetic is core to the app's visual identity.
-
----
-
-## Nostr Event Requirements
-
-divine-mobile requires specific Nostr event types:
-- **Kind 0**: User profiles (NIP-01) - display names and avatars
-- **Kind 3**: Contact lists (NIP-02) - follow/following relationships
-- **Kind 6**: Reposts (NIP-18) - video repost/reshare functionality
-- **Kind 7**: Reactions (NIP-25) - like/heart interactions
-- **Kind 34236**: Addressable short looping videos (NIP-71) - primary video content
-
-See `mobile/docs/NOSTR_EVENT_TYPES.md` for complete documentation.
-
----
-
-## Project Architecture
-
-### Technology Stack
-- **Frontend**: Flutter (Dart) with Camera plugin
-- **Backend**: Cloudflare Workers + R2 Storage
-- **Protocol**: Nostr (decentralized social network)
-- **Media Processing**: Real-time frame capture → GIF creation
-
-### Upload Architecture
-```
-Flutter App → Blossom Server → Nostr Event
-```
-
-Benefits:
-- User-configurable Blossom media servers
-- Fully decentralized media hosting
-- No centralized backend dependencies
-
-### Share URL Formats
-- Profile URLs: `https://divine.video/profile/{npub}`
-- Video URLs: `https://divine.video/video/{videoId}`
-
----
-
-## Video Feed Architecture
-
-divine-mobile uses a **Riverpod-based reactive architecture** for managing video feeds.
-
-### Core Components
-
-**VideoEventService** (`lib/services/video_event_service.dart`):
-- Manages Nostr video event subscriptions by type
-- Maintains separate event lists per `SubscriptionType`
-- Provides type-safe getters: `homeFeedVideos`, `discoveryVideos`, `getVideos(subscriptionType)`
-- Handles pagination, deduplication, and real-time streaming
-
-**Feed Providers**:
-
-| Provider | File | Purpose |
-|----------|------|---------|
-| `videoEventsProvider` | `lib/providers/video_events_providers.dart` | Discovery/explore feed (all public videos) |
-| `homeFeedProvider` | `lib/providers/home_feed_provider.dart` | Personalized feed (followed users only) |
-
-### Feed Types
-
-- **Home Feed**: Videos from followed users, auto-refreshes every 10 minutes
-- **Discovery/Explore**: All public videos, Popular Now and Trending tabs
-- **Hashtag Feeds**: Videos filtered by specific hashtag
-- **Profile Feeds**: Videos from a specific user
-
----
-
-## Pre-Commit Workflow (MANDATORY)
-
-This project uses code generation (Riverpod, Freezed, JSON serializable, Mockito).
-
-**ALWAYS** run these steps before committing:
-
-1. **Regenerate code** (if modified `@riverpod`, `@freezed`, `@JsonSerializable`, or `@GenerateMocks`):
-   ```bash
-   dart run build_runner build --delete-conflicting-outputs
-   ```
-
-2. **Format and analyze**: Handled automatically by PostToolUse hooks (`.claude/settings.json`) after every `Edit`/`Write` on Dart files. Do NOT run these manually or via MCP.
-
-3. **Stage specific files** (NEVER use `git add -A` or `git add .`):
-   ```bash
-   git add lib/path/to/file.dart lib/path/to/file.g.dart
-   ```
-
-**Why build_runner is critical**: Riverpod providers generate `.g.dart` files. If you don't regenerate, CI will fail with "Generated files are out of date".
-
----
-
-## API Documentation
-
-- **Backend Reference**: `docs/BACKEND_API_REFERENCE.md`
-- **Nostr Events**: `mobile/docs/NOSTR_EVENT_TYPES.md`
-
----
-
-# Communication Style
-
-## Be Constructive
-- Focus on improvement, not criticism
-- Explain the "why" behind recommendations
-- Provide specific, actionable feedback
-- Recognize good practices
-
-## Be Educational
-- Teach patterns and principles
-- Explain trade-offs
-- Share best practices
-- Link to documentation when helpful
-
-## Be Practical
-- Prioritize actionable advice
-- Consider team context
-- Balance ideal vs pragmatic
-- Respect existing codebase patterns
-
-## Be Concise
-- Get to the point quickly
-- Use clear, simple language
-- Avoid unnecessary jargon
-- Format for scannability
-
----
-
-# Quality Checklist
-
-Before considering any task complete:
-
-- [ ] Code follows VGE patterns (see `rules/architecture.md`)
-- [ ] New code is 100% tested (see `rules/testing.md`)
-- [ ] Lint rules pass (`very_good_analysis`)
-- [ ] Uses VineTheme colors (no raw `Colors.*`)
-- [ ] Full Nostr IDs (never truncated)
-- [ ] Pre-commit workflow completed
+- Run Flutter commands from `mobile/`.
+- If dependencies change, run `flutter pub get`.
+- If you touch generated-code inputs such as Riverpod, Freezed, JSON, Mockito, or Drift, run `dart run build_runner build --delete-conflicting-outputs` and commit the generated files.
+- Add or update tests with the change. For UI changes, update goldens when appropriate.

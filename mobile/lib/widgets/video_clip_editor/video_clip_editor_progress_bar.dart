@@ -42,10 +42,10 @@ class VideoClipEditorProgressBar extends ConsumerWidget {
 
         // Determine color based on state
         final segmentColor = isReorderingClip
-            ? VineTheme.tabIndicatorGreen
+            ? VineTheme.primary
             : isCompleted
-            ? const Color(0xFF146346) // Dark-Green for completed
-            : const Color(0xFF404040); // Gray for uncompleted
+            ? VineTheme.primary.withAlpha(128)
+            : VineTheme.onSurfaceDisabled;
 
         return Expanded(
           flex: clip.duration.inMilliseconds,
@@ -61,7 +61,7 @@ class VideoClipEditorProgressBar extends ConsumerWidget {
                   color: segmentColor,
                   border: isReorderingClip
                       ? Border.all(
-                          color: const Color(0xFFEBDE3B),
+                          color: VineTheme.accentYellow,
                           width: 3,
                           strokeAlign: BorderSide.strokeAlignOutside,
                         )

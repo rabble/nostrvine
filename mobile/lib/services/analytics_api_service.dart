@@ -297,6 +297,7 @@ class AnalyticsApiService {
     int limit = 50,
     int? before,
     bool forceRefresh = false,
+    Duration? timeout,
   }) async {
     if (!isAvailable) return [];
 
@@ -336,7 +337,7 @@ class AnalyticsApiService {
               'User-Agent': 'OpenVine-Mobile/1.0',
             },
           )
-          .timeout(const Duration(seconds: 15));
+          .timeout(timeout ?? const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);

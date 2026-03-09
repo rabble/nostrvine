@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -140,288 +139,215 @@ class _BlossomSettingsScreenState extends ConsumerState<BlossomSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          toolbarHeight: 72,
-          leadingWidth: 80,
-          centerTitle: false,
-          titleSpacing: 0,
-          backgroundColor: VineTheme.navGreen,
-          leading: IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: Container(
-              width: 48,
-              height: 48,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: VineTheme.iconButtonBackground,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: SvgPicture.asset(
-                'assets/icon/CaretLeft.svg',
-                width: 32,
-                height: 32,
-                colorFilter: const ColorFilter.mode(
-                  VineTheme.whiteText,
-                  BlendMode.srcIn,
-                ),
-              ),
-            ),
-            onPressed: context.pop,
-            tooltip: 'Back',
-          ),
-          title: Text('Media Servers', style: VineTheme.titleFont()),
-        ),
-        backgroundColor: VineTheme.backgroundColor,
-        body: const Center(
-          child: CircularProgressIndicator(color: VineTheme.vineGreen),
-        ),
-      );
-    }
-
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: context.pop,
-          tooltip: 'Back',
-        ),
-        title: Text('Media Servers', style: VineTheme.titleFont()),
-        actions: [
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            onPressed: _isSaving ? null : _saveSettings,
-            tooltip: 'Save',
-            icon: Container(
-              width: 48,
-              height: 48,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: VineTheme.iconButtonBackground,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : SvgPicture.asset(
-                      'assets/icon/Check.svg',
-                      width: 32,
-                      height: 32,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(width: 16),
-        ],
+      appBar: DiVineAppBar(
+        title: 'Media Servers',
+        showBackButton: true,
+        onBackPressed: context.pop,
+        actions: _isLoading
+            ? const []
+            : [
+                DiVineAppBarAction(
+                  icon: const SvgIconSource('assets/icon/Check.svg'),
+                  onPressed: _isSaving ? null : _saveSettings,
+                  tooltip: 'Save',
+                ),
+              ],
       ),
       backgroundColor: VineTheme.backgroundColor,
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              // Info card
-              Card(
-                color: VineTheme.backgroundColor.withValues(alpha: 0.7),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: VineTheme.vineGreen.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Padding(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            )
+          : Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: ListView(
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                  children: [
+                    // Info card
+                    Card(
+                      color: VineTheme.backgroundColor.withValues(alpha: 0.7),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: VineTheme.vineGreen.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: VineTheme.vineGreen.withValues(
+                                    alpha: 0.8,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'About Blossom',
+                                  style: TextStyle(
+                                    color: VineTheme.vineGreen,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. '
+                              "By default, videos are uploaded to Divine's Blossom server. Enable the option below to use a custom server instead.",
+                              style: TextStyle(
+                                color: VineTheme.onSurface,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Enable/Disable toggle
+                    SwitchListTile(
+                      title: const Text(
+                        'Use Custom Blossom Server',
+                        style: TextStyle(
+                          color: VineTheme.whiteText,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Text(
+                        _isBlossomEnabled
+                            ? 'Videos will be uploaded to your custom Blossom server'
+                            : "Your videos are currently being uploaded to Divine's Blossom server",
+                        style: const TextStyle(
+                          color: VineTheme.onSurfaceMuted,
+                        ),
+                      ),
+                      value: _isBlossomEnabled,
+                      onChanged: (value) {
+                        setState(() {
+                          _isBlossomEnabled = value;
+                        });
+                      },
+                      activeThumbColor: VineTheme.vineGreen,
+                      inactiveThumbColor: VineTheme.lightText,
+                      inactiveTrackColor: VineTheme.lightText.withValues(
+                        alpha: 0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Server URL input (only shown when custom server is enabled)
+                    if (_isBlossomEnabled) ...[
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: VineTheme.vineGreen.withValues(alpha: 0.8),
-                          ),
-                          const SizedBox(width: 8),
                           const Text(
-                            'About Blossom',
+                            'Custom Blossom Server URL',
                             style: TextStyle(
-                              color: VineTheme.vineGreen,
+                              color: VineTheme.whiteText,
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _serverController,
+                            style: const TextStyle(color: VineTheme.whiteText),
+                            decoration: InputDecoration(
+                              hintText: 'https://blossom.band',
+                              hintStyle: const TextStyle(
+                                color: VineTheme.onSurfaceDisabled,
+                              ),
+                              filled: true,
+                              fillColor: VineTheme.whiteText.withValues(
+                                alpha: 0.1,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: VineTheme.vineGreen.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: VineTheme.vineGreen.withValues(
+                                    alpha: 0.3,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: const BorderSide(
+                                  color: VineTheme.vineGreen,
+                                ),
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.cloud_upload,
+                                color: VineTheme.vineGreen,
+                              ),
+                            ),
+                            keyboardType: TextInputType.url,
+                            autocorrect: false,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Enter the URL of your custom Blossom server',
+                            style: TextStyle(
+                              color: VineTheme.onSurfaceMuted,
+                              fontSize: 12,
+                            ),
+                          ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 30),
+
+                      // Popular Blossom servers section
                       const Text(
-                        'Blossom is a decentralized media storage protocol that allows you to upload videos to any compatible server. '
-                        "By default, videos are uploaded to Divine's Blossom server. Enable the option below to use a custom server instead.",
+                        'Popular Blossom Servers',
                         style: TextStyle(
-                          color: VineTheme.onSurface,
-                          fontSize: 14,
+                          color: VineTheme.whiteText,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildServerOption(
+                        'https://blossom.band',
+                        'Blossom Band',
+                      ),
+                      _buildServerOption(
+                        'https://cdn.satellite.earth',
+                        'Satellite Earth',
+                      ),
+                      _buildServerOption(
+                        'https://blossom.primal.net',
+                        'Primal',
+                      ),
+                      _buildServerOption(
+                        'https://nostr.download',
+                        'Nostr Download',
+                      ),
+                      _buildServerOption(
+                        'https://cdn.nostrcheck.me',
+                        'NostrCheck',
                       ),
                     ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Enable/Disable toggle
-              SwitchListTile(
-                title: const Text(
-                  'Use Custom Blossom Server',
-                  style: TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 16,
-                  ),
-                ),
-                subtitle: Text(
-                  _isBlossomEnabled
-                      ? 'Videos will be uploaded to your custom Blossom server'
-                      : "Your videos are currently being uploaded to Divine's Blossom server",
-                  style: const TextStyle(
-                    color: VineTheme.onSurfaceMuted,
-                  ),
-                ),
-                value: _isBlossomEnabled,
-                onChanged: (value) {
-                  setState(() {
-                    _isBlossomEnabled = value;
-                  });
-                },
-                activeThumbColor: VineTheme.vineGreen,
-                inactiveThumbColor: VineTheme.lightText,
-                inactiveTrackColor: VineTheme.lightText.withValues(alpha: 0.3),
-              ),
-              const SizedBox(height: 20),
-
-              // Server URL input (only shown when custom server is enabled)
-              if (_isBlossomEnabled) ...[
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Custom Blossom Server URL',
-                      style: TextStyle(
-                        color: VineTheme.whiteText,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _serverController,
-                      style: const TextStyle(color: VineTheme.whiteText),
-                      decoration: InputDecoration(
-                        hintText: 'https://blossom.band',
-                        hintStyle: const TextStyle(
-                          color: VineTheme.onSurfaceDisabled,
-                        ),
-                        filled: true,
-                        fillColor: VineTheme.whiteText.withValues(alpha: 0.1),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: VineTheme.vineGreen.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: VineTheme.vineGreen.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: VineTheme.vineGreen,
-                          ),
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.cloud_upload,
-                          color: VineTheme.vineGreen,
-                        ),
-                      ),
-                      keyboardType: TextInputType.url,
-                      autocorrect: false,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Enter the URL of your custom Blossom server',
-                      style: TextStyle(
-                        color: VineTheme.onSurfaceMuted,
-                        fontSize: 12,
-                      ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 30),
-
-                // Popular Blossom servers section
-                const Text(
-                  'Popular Blossom Servers',
-                  style: TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildServerOption('https://blossom.band', 'Blossom Band'),
-                _buildServerOption(
-                  'https://cdn.satellite.earth',
-                  'Satellite Earth',
-                ),
-                _buildServerOption('https://blossom.primal.net', 'Primal'),
-                _buildServerOption('https://nostr.download', 'Nostr Download'),
-                _buildServerOption('https://cdn.nostrcheck.me', 'NostrCheck'),
-              ],
-            ],
-          ),
-        ),
-      ),
+              ),
+            ),
     );
   }
 

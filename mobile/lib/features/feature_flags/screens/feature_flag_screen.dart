@@ -1,6 +1,7 @@
 // ABOUTME: Settings screen for managing feature flag states and overrides
 // ABOUTME: Provides UI for toggling flags, viewing descriptions, and resetting to defaults
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,15 +18,18 @@ class FeatureFlagScreen extends ConsumerWidget {
     final state = ref.watch(featureFlagStateProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Feature Flags'),
+      appBar: DiVineAppBar(
+        title: 'Feature Flags',
+        showBackButton: true,
+        onBackPressed: context.pop,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.restore),
-            tooltip: 'Reset all flags to defaults',
+          DiVineAppBarAction(
+            icon: const MaterialIconSource(Icons.restore),
             onPressed: () async {
               await service.resetAllFlags();
             },
+            tooltip: 'Reset all flags to defaults',
+            semanticLabel: 'Reset all flags to defaults',
           ),
         ],
       ),

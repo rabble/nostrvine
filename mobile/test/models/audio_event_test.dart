@@ -611,6 +611,250 @@ void main() {
         expect(audioEvent.fileSizeKB, closeTo(100.0, 0.001));
       });
     });
+
+    group('toJson', () {
+      test('serializes all fields', () {
+        const audioEvent = AudioEvent(
+          id: 'test-id-123456789012345678901234567890123456789012345678901234',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          url: 'https://blossom.example/audio.aac',
+          mimeType: 'audio/aac',
+          sha256: 'hash123',
+          fileSize: 98765,
+          duration: 6.2,
+          title: 'Test Sound',
+          source: 'Original Sound',
+          sourceVideoReference: '34236:pubkey:vine-id',
+          sourceVideoRelay: 'wss://relay.example',
+          startOffset: Duration(milliseconds: 1500),
+        );
+
+        final json = audioEvent.toJson();
+
+        expect(
+          json['id'],
+          equals(
+            'test-id-123456789012345678901234567890123456789012345678901234',
+          ),
+        );
+        expect(json['pubkey'], equals(testPubkey));
+        expect(json['createdAt'], equals(1700000000));
+        expect(json['url'], equals('https://blossom.example/audio.aac'));
+        expect(json['mimeType'], equals('audio/aac'));
+        expect(json['sha256'], equals('hash123'));
+        expect(json['fileSize'], equals(98765));
+        expect(json['duration'], equals(6.2));
+        expect(json['title'], equals('Test Sound'));
+        expect(json['source'], equals('Original Sound'));
+        expect(json['sourceVideoReference'], equals('34236:pubkey:vine-id'));
+        expect(json['sourceVideoRelay'], equals('wss://relay.example'));
+        expect(json['startOffsetMs'], equals(1500));
+      });
+
+      test('omits null optional fields', () {
+        const audioEvent = AudioEvent(
+          id: 'minimal-id-123456789012345678901234567890123456789012345678',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+        );
+
+        final json = audioEvent.toJson();
+
+        expect(json.containsKey('url'), isFalse);
+        expect(json.containsKey('mimeType'), isFalse);
+        expect(json.containsKey('sha256'), isFalse);
+        expect(json.containsKey('fileSize'), isFalse);
+        expect(json.containsKey('duration'), isFalse);
+        expect(json.containsKey('title'), isFalse);
+        expect(json.containsKey('source'), isFalse);
+        expect(json.containsKey('sourceVideoReference'), isFalse);
+        expect(json.containsKey('sourceVideoRelay'), isFalse);
+      });
+
+      test('omits startOffsetMs when offset is zero', () {
+        const audioEvent = AudioEvent(
+          id: 'zero-offset-123456789012345678901234567890123456789012345678',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+        );
+
+        final json = audioEvent.toJson();
+
+        expect(json.containsKey('startOffsetMs'), isFalse);
+      });
+    });
+
+    group('fromJson', () {
+      test('deserializes all fields', () {
+        final json = <String, dynamic>{
+          'id':
+              'test-id-123456789012345678901234567890123456789012345678901234',
+          'pubkey': testPubkey,
+          'createdAt': 1700000000,
+          'url': 'https://blossom.example/audio.aac',
+          'mimeType': 'audio/aac',
+          'sha256': 'hash123',
+          'fileSize': 98765,
+          'duration': 6.2,
+          'title': 'Test Sound',
+          'source': 'Original Sound',
+          'sourceVideoReference': '34236:pubkey:vine-id',
+          'sourceVideoRelay': 'wss://relay.example',
+          'startOffsetMs': 1500,
+        };
+
+        final audioEvent = AudioEvent.fromJson(json);
+
+        expect(
+          audioEvent.id,
+          equals(
+            'test-id-123456789012345678901234567890123456789012345678901234',
+          ),
+        );
+        expect(audioEvent.pubkey, equals(testPubkey));
+        expect(audioEvent.createdAt, equals(1700000000));
+        expect(audioEvent.url, equals('https://blossom.example/audio.aac'));
+        expect(audioEvent.mimeType, equals('audio/aac'));
+        expect(audioEvent.sha256, equals('hash123'));
+        expect(audioEvent.fileSize, equals(98765));
+        expect(audioEvent.duration, equals(6.2));
+        expect(audioEvent.title, equals('Test Sound'));
+        expect(audioEvent.source, equals('Original Sound'));
+        expect(
+          audioEvent.sourceVideoReference,
+          equals('34236:pubkey:vine-id'),
+        );
+        expect(audioEvent.sourceVideoRelay, equals('wss://relay.example'));
+        expect(
+          audioEvent.startOffset,
+          equals(const Duration(milliseconds: 1500)),
+        );
+      });
+
+      test('handles missing optional fields', () {
+        final json = <String, dynamic>{
+          'id': 'minimal-id-123456789012345678901234567890123456789012345678',
+          'pubkey': testPubkey,
+          'createdAt': 1700000000,
+        };
+
+        final audioEvent = AudioEvent.fromJson(json);
+
+        expect(audioEvent.url, isNull);
+        expect(audioEvent.mimeType, isNull);
+        expect(audioEvent.sha256, isNull);
+        expect(audioEvent.fileSize, isNull);
+        expect(audioEvent.duration, isNull);
+        expect(audioEvent.title, isNull);
+        expect(audioEvent.source, isNull);
+        expect(audioEvent.sourceVideoReference, isNull);
+        expect(audioEvent.sourceVideoRelay, isNull);
+        expect(audioEvent.startOffset, equals(Duration.zero));
+      });
+
+      test('defaults startOffset to Duration.zero when missing', () {
+        final json = <String, dynamic>{
+          'id': 'no-offset-123456789012345678901234567890123456789012345678',
+          'pubkey': testPubkey,
+          'createdAt': 1700000000,
+        };
+
+        final audioEvent = AudioEvent.fromJson(json);
+
+        expect(audioEvent.startOffset, equals(Duration.zero));
+      });
+    });
+
+    group('toJson/fromJson roundtrip', () {
+      test('roundtrips complete AudioEvent preserving all data', () {
+        const original = AudioEvent(
+          id: 'roundtrip-1234567890123456789012345678901234567890123456789',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          url: 'https://blossom.example/audio.aac',
+          mimeType: 'audio/aac',
+          sha256: 'hash123abc',
+          fileSize: 54321,
+          duration: 12.5,
+          title: 'Roundtrip Sound',
+          source: 'SoundCloud',
+          sourceVideoReference: '34236:creator:vine-abc',
+          sourceVideoRelay: 'wss://relay.example',
+          startOffset: Duration(milliseconds: 3200),
+        );
+
+        final restored = AudioEvent.fromJson(original.toJson());
+
+        expect(restored.id, equals(original.id));
+        expect(restored.pubkey, equals(original.pubkey));
+        expect(restored.createdAt, equals(original.createdAt));
+        expect(restored.url, equals(original.url));
+        expect(restored.mimeType, equals(original.mimeType));
+        expect(restored.sha256, equals(original.sha256));
+        expect(restored.fileSize, equals(original.fileSize));
+        expect(restored.duration, equals(original.duration));
+        expect(restored.title, equals(original.title));
+        expect(restored.source, equals(original.source));
+        expect(
+          restored.sourceVideoReference,
+          equals(original.sourceVideoReference),
+        );
+        expect(restored.sourceVideoRelay, equals(original.sourceVideoRelay));
+        expect(restored.startOffset, equals(original.startOffset));
+      });
+
+      test('roundtrips minimal AudioEvent', () {
+        const original = AudioEvent(
+          id: 'minimal-rt-12345678901234567890123456789012345678901234567',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+        );
+
+        final restored = AudioEvent.fromJson(original.toJson());
+
+        expect(restored.id, equals(original.id));
+        expect(restored.pubkey, equals(original.pubkey));
+        expect(restored.createdAt, equals(original.createdAt));
+        expect(restored.url, isNull);
+        expect(restored.startOffset, equals(Duration.zero));
+      });
+    });
+
+    group('copyWith startOffset', () {
+      test('updates startOffset', () {
+        const original = AudioEvent(
+          id: 'offset-id-12345678901234567890123456789012345678901234567890',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          url: 'https://example.com/audio.aac',
+        );
+
+        final updated = original.copyWith(
+          startOffset: const Duration(milliseconds: 2500),
+        );
+
+        expect(
+          updated.startOffset,
+          equals(const Duration(milliseconds: 2500)),
+        );
+        expect(original.startOffset, equals(Duration.zero));
+      });
+
+      test('preserves startOffset when not specified in copyWith', () {
+        const original = AudioEvent(
+          id: 'preserve-id-1234567890123456789012345678901234567890123456789',
+          pubkey: testPubkey,
+          createdAt: 1700000000,
+          startOffset: Duration(seconds: 5),
+        );
+
+        final updated = original.copyWith(title: 'New Title');
+
+        expect(updated.startOffset, equals(const Duration(seconds: 5)));
+        expect(updated.title, equals('New Title'));
+      });
+    });
   });
 }
 

@@ -1,6 +1,7 @@
 // ABOUTME: Widget tests for VideoClipEditorProgressBar widget
 // ABOUTME: Tests progress bar segments, colors, and animations
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -141,15 +142,15 @@ void main() {
           .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
           .toList();
 
-      // First two clips should be green (completed)
+      // First two clips should be green with alpha (completed)
       final firstClipDecoration = containers[0].decoration as BoxDecoration?;
       final secondClipDecoration = containers[1].decoration as BoxDecoration?;
-      expect(firstClipDecoration?.color, const Color(0xFF146346));
-      expect(secondClipDecoration?.color, const Color(0xFF146346));
+      expect(firstClipDecoration?.color, VineTheme.primary.withAlpha(128));
+      expect(secondClipDecoration?.color, VineTheme.primary.withAlpha(128));
 
-      // Current clip (index 2) should be gray
+      // Current clip (index 2) should be disabled color
       final currentClipDecoration = containers[2].decoration as BoxDecoration?;
-      expect(currentClipDecoration?.color, const Color(0xFF404040));
+      expect(currentClipDecoration?.color, VineTheme.onSurfaceDisabled);
     });
 
     testWidgets('reordering clip shows special styling', (tester) async {
@@ -190,13 +191,13 @@ void main() {
       );
       final decoration = container.decoration as BoxDecoration?;
 
-      // Should have green color
-      expect(decoration?.color, const Color(0xFF27C58B));
+      // Should have primary green color
+      expect(decoration?.color, VineTheme.primary);
 
       // Should have yellow border
       expect(decoration?.border, isNotNull);
       final border = decoration?.border as Border?;
-      expect(border?.top.color, const Color(0xFFEBDE3B));
+      expect(border?.top.color, VineTheme.accentYellow);
       expect(border?.top.width, 3);
     });
 

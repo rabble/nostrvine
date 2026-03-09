@@ -26,7 +26,6 @@ class AudioClipPlayer {
 
   final AudioPlayer _audioPlayer;
 
-  /// Stream that emits an event each time the current clip finishes
   /// playing (i.e. reaches the end without being stopped manually).
   ///
   /// Consumers can use this to implement looping or transition logic

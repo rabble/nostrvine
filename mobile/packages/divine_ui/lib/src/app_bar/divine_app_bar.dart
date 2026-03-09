@@ -1,5 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Background rendering mode for [DiVineAppBar].
 enum DiVineAppBarBackgroundMode {
@@ -58,6 +59,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.showBackButton = false,
     this.onBackPressed,
     this.backButtonSemanticLabel,
+    this.backButtonHeroTag,
     this.showMenuButton = false,
     this.onMenuPressed,
     this.leadingIcon,
@@ -67,6 +69,11 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.gradient,
     this.backgroundColor,
     this.style,
+    this.bottom,
+    this.shape,
+    this.surfaceTintColor,
+    this.forceMaterialTransparency = false,
+    this.systemOverlayStyle,
     super.key,
   }) : assert(
          title != null || titleWidget != null,
@@ -91,6 +98,10 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
        assert(
          titleMode != DiVineAppBarTitleMode.dropdown || onTitleTap != null,
          'onTitleTap required when titleMode is dropdown',
+       ),
+       assert(
+         !(titleMode == DiVineAppBarTitleMode.dropdown && subtitle != null),
+         'subtitle cannot be used with dropdown title mode',
        ),
        assert(
          backgroundMode != DiVineAppBarBackgroundMode.gradient ||
@@ -145,6 +156,12 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// tooltip to avoid iOS merging both into the accessibility text.
   final String? backButtonSemanticLabel;
 
+  /// Optional hero tag to wrap the back button in a [Hero] animation.
+  ///
+  /// When provided, the back button leading widget is wrapped in a Hero
+  /// with this tag, enabling shared element transitions.
+  final Object? backButtonHeroTag;
+
   /// Whether to show a menu button as the leading widget.
   ///
   /// Cannot be true if [showBackButton] or [leadingIcon] is set.
@@ -185,17 +202,45 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// Style configuration for child widgets.
   final DiVineAppBarStyle? style;
 
+  /// Optional widget displayed at the bottom of the app bar (e.g., TabBar).
+  final PreferredSizeWidget? bottom;
+
+  /// Custom shape/border for the app bar.
+  final ShapeBorder? shape;
+
+  /// Overrides the surface tint color applied by Material 3.
+  final Color? surfaceTintColor;
+
+  /// Whether to force material transparency (disables ink splash scrim).
+  ///
+  /// Required for overlay on video content.
+  final bool forceMaterialTransparency;
+
+  /// Controls the status bar icon brightness.
+  ///
+  /// Use [SystemUiOverlayStyle.light] for white icons over dark content.
+  final SystemUiOverlayStyle? systemOverlayStyle;
+
   @override
-  Size get preferredSize => Size.fromHeight(
-    style?.height ?? DiVineAppBarStyle.defaultStyle.height,
-  );
+  Size get preferredSize {
+    final toolbarHeight =
+        style?.height ?? DiVineAppBarStyle.defaultStyle.height;
+    final bottomHeight = bottom?.preferredSize.height ?? 0;
+    return Size.fromHeight(toolbarHeight + bottomHeight);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final effectiveStyle = style ?? DiVineAppBarStyle.defaultStyle;
+    final modeDefaultStyle = switch (backgroundMode) {
+      DiVineAppBarBackgroundMode.solid => DiVineAppBarStyle.solidStyle,
+      DiVineAppBarBackgroundMode.transparent ||
+      DiVineAppBarBackgroundMode.gradient => DiVineAppBarStyle.transparentStyle,
+    };
+    final effectiveStyle = modeDefaultStyle.merge(style);
 
     final appBarContent = AppBar(
       backgroundColor: _getBackgroundColor(),
+      surfaceTintColor: surfaceTintColor,
       elevation: 0,
       scrolledUnderElevation: 0,
       toolbarHeight: effectiveStyle.height,
@@ -203,10 +248,15 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: 0,
       centerTitle: false,
       automaticallyImplyLeading: false,
+      forceMaterialTransparency: forceMaterialTransparency,
+      systemOverlayStyle: systemOverlayStyle,
+      shape: shape,
+      bottom: bottom,
       leading: DiVineAppBarLeading(
         showBackButton: showBackButton,
         onBackPressed: onBackPressed,
         backButtonSemanticLabel: backButtonSemanticLabel,
+        backButtonHeroTag: backButtonHeroTag,
         showMenuButton: showMenuButton,
         onMenuPressed: onMenuPressed,
         leadingIcon: leadingIcon,

@@ -17,4 +17,8 @@
     <style name="NormalTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+
+    <!-- Keep Zendesk activities on an explicit AppCompat theme even if app-wide
+         theme resources change again in future splash-screen work. -->
+    <style name="ZendeskTheme" parent="Theme.AppCompat.DayNight.NoActionBar" />
 </resources>

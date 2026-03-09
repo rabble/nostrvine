@@ -30,6 +30,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
@@ -447,12 +448,37 @@ class VideoEventService extends ChangeNotifier {
     final service = _contentFilterService;
     if (service == null) return videos;
 
-    return videos.where((video) {
-      final labels = video.contentWarningLabels;
-      if (labels.isEmpty) return true;
-      final pref = service.getPreferenceForLabels(labels);
-      return pref != ContentFilterPreference.hide;
-    }).toList();
+    return videos
+        .map((video) {
+          final labels = video.contentWarningLabels;
+          if (labels.isEmpty) {
+            return video.warnLabels.isEmpty
+                ? video
+                : video.copyWith(warnLabels: const []);
+          }
+
+          final pref = service.getPreferenceForLabels(labels);
+          if (pref == ContentFilterPreference.warn) {
+            final matchedWarnLabels = labels.where((value) {
+              final label = ContentLabel.fromValue(value);
+              return label != null &&
+                  service.getPreference(label) == ContentFilterPreference.warn;
+            }).toList();
+            return video.copyWith(warnLabels: matchedWarnLabels);
+          }
+
+          return pref == ContentFilterPreference.show &&
+                  video.warnLabels.isNotEmpty
+              ? video.copyWith(warnLabels: const [])
+              : video;
+        })
+        .where((video) {
+          final labels = video.contentWarningLabels;
+          if (labels.isEmpty) return true;
+          final pref = service.getPreferenceForLabels(labels);
+          return pref != ContentFilterPreference.hide;
+        })
+        .toList();
   }
 
   /// Check if a VideoEvent contains adult content based on hashtags and tags

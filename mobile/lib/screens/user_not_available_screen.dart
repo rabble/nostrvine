@@ -13,43 +13,10 @@ class UserNotAvailableScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.whiteText,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: onBack,
-        ),
-        title: Text(
-          'Profile',
-          style: VineTheme.titleFont(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
+      appBar: DiVineAppBar(
+        title: 'Profile',
+        showBackButton: true,
+        onBackPressed: onBack,
       ),
       body: Center(
         child: Padding(

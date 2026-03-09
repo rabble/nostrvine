@@ -17,7 +17,6 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -90,12 +89,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
           },
           onAutoStopped: stopRecording,
         );
-
-    // Listen for sound selection changes to pause/resume remote control
-    ref.listen<AudioEvent?>(
-      selectedSoundProvider,
-      _handleSoundSelectionChanged,
-    );
 
     // Setup cleanup when provider is disposed
     ref.onDispose(() async {
@@ -273,15 +266,22 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     }
   }
 
-  /// Handle sound selection changes to enable/disable volume keys.
+  /// Select a sound for recording.
   ///
-  /// When a sound is selected, volume buttons should adjust volume for preview.
-  /// Bluetooth media buttons continue to work for recording control.
-  /// When sound is cleared, re-enable volume key interception.
-  void _handleSoundSelectionChanged(AudioEvent? previous, AudioEvent? next) {
-    if (next != null && previous == null) {
-      // Sound was selected - disable volume key interception only
-      // Bluetooth media buttons still work for recording control
+  /// Updates local state. The sound will be played during recording.
+  /// Also manages volume key interception - disables it when sound is selected
+  /// so volume buttons control audio preview instead of camera recording.
+  void selectSound(AudioEvent? sound) {
+    if (sound == null) {
+      clearSound();
+      return;
+    }
+
+    final hadNoSoundBefore = state.selectedSound == null;
+    state = state.copyWith(selectedSound: sound);
+
+    // If this is the first sound selection, disable volume key interception
+    if (hadNoSoundBefore) {
       _remoteRecordPausedForSound = true;
       _cameraService.setVolumeKeysEnabled(enabled: false);
       Log.debug(
@@ -289,14 +289,33 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         name: 'VideoRecorderNotifier',
         category: .video,
       );
-    } else if (next == null && previous != null) {
-      // Sound was cleared - re-enable volume key interception
+    }
+  }
+
+  /// Clear the currently selected sound.
+  ///
+  /// Re-enables volume key interception for camera recording control.
+  void clearSound() {
+    final hadSoundBefore = state.selectedSound != null;
+    state = state.copyWith(clearSelectedSound: true);
+
+    // If clearing a previously selected sound, re-enable volume key interception
+    if (hadSoundBefore) {
       _remoteRecordPausedForSound = false;
       _cameraService.setVolumeKeysEnabled(enabled: true);
       Log.debug(
         '🎵 Sound cleared - volume keys re-enabled',
         name: 'VideoRecorderNotifier',
         category: .video,
+      );
+    }
+  }
+
+  /// Update the start offset of the currently selected sound.
+  void updateSoundStartOffset(Duration offset) {
+    if (state.selectedSound != null) {
+      state = state.copyWith(
+        selectedSound: state.selectedSound!.copyWith(startOffset: offset),
       );
     }
   }
@@ -961,6 +980,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
+
     await Future.wait([
       context.push(VideoClipEditorScreen.path),
       // We delay camera dispose so that the screen animation can finish
@@ -1003,6 +1023,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       isCameraInitialized: _cameraService.isInitialized,
       hasFlash: _cameraService.hasFlash,
       canSwitchCamera: _cameraService.canSwitchCamera,
+      selectedSound: state.selectedSound,
     );
   }
 
@@ -1041,8 +1062,12 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Call [_playSoundPlayback] after recording starts to begin playback.
   /// Failures are logged but do not prevent recording from continuing.
   Future<void> _prepareSoundForPlayback() async {
-    final selectedSound = ref.read(selectedSoundProvider);
-    if (selectedSound == null || selectedSound.url == null) return;
+    final selectedSound = state.selectedSound;
+    if (selectedSound == null || selectedSound.url == null) {
+      _audioPlaybackService?.dispose();
+      _audioPlaybackService = null;
+      return;
+    }
 
     try {
       _audioPlaybackService ??= AudioPlaybackService();
@@ -1053,14 +1078,17 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       // Load the audio from the sound's Blossom URL
       await _audioPlaybackService!.loadAudio(selectedSound.url!);
 
-      // Seek to correct position based on existing clips
+      // Seek to correct position based on existing clips + audio start offset
       final clipManager = ref.read(clipManagerProvider.notifier);
-      final startPosition = clipManager.totalDuration;
+      final startPosition =
+          clipManager.totalDuration + selectedSound.startOffset;
       if (startPosition > Duration.zero) {
         await _audioPlaybackService!.seek(startPosition);
         Log.debug(
           'Seeking sound to position: '
-          '${startPosition.inMilliseconds}ms',
+          '${startPosition.inMilliseconds}ms '
+          '(clips: ${clipManager.totalDuration.inMilliseconds}ms, '
+          'offset: ${selectedSound.startOffset.inMilliseconds}ms)',
           name: 'VideoRecorderNotifier',
           category: LogCategory.video,
         );
