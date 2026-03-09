@@ -33,8 +33,13 @@ void main() {
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
 
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(MaterialApp)),
+        );
+        final authService = container.read(authServiceProvider);
+
         // ════════════════════════════════════════════════════════════
-        // Phase 1: Register + Verify (establish a valid OAuth session)
+        // Phase 1: Register + Verify (create OAuth session)
         // ════════════════════════════════════════════════════════════
 
         await navigateToCreateAccount(tester);
@@ -53,9 +58,6 @@ void main() {
         final verifyToken = await getVerificationToken(testEmail);
         expect(verifyToken, isNotEmpty);
 
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(MaterialApp)),
-        );
         final emailListener = container.read(
           emailVerificationListenerProvider,
         );
@@ -72,7 +74,6 @@ void main() {
         expect(leftVerifyScreen, isTrue);
         await pumpUntilSettled(tester);
 
-        final authService = container.read(authServiceProvider);
         expect(authService.isAuthenticated, isTrue);
         expect(
           authService.authenticationSource,
@@ -80,6 +81,22 @@ void main() {
         );
 
         logPhase('Phase 1 complete: user registered and authenticated');
+
+        // ════════════════════════════════════════════════════════════
+        // Phase 1b: Plant local private keys for fallback
+        // ════════════════════════════════════════════════════════════
+        // OAuth-only users have no local private keys (only a
+        // public-key container). When the OAuth session expires and
+        // refresh fails, initialize() falls back to
+        // _keyStorage.hasKeys() → getKeyContainer(). Without local
+        // private keys, the user becomes fully unauthenticated.
+        // Real users who started anonymous before upgrading to OAuth
+        // already have local keys. We simulate this by generating
+        // and storing keys after OAuth registration.
+
+        final keyStorage = container.read(secureKeyStorageProvider);
+        await keyStorage.generateAndStoreKeys();
+        logPhase('Phase 1b: planted local private keys for fallback');
 
         // ════════════════════════════════════════════════════════════
         // Phase 2: Kill both tokens to trigger expired session state
@@ -150,10 +167,10 @@ void main() {
         // Phase 5: Assert user reaches login options (not bounced home)
         // ════════════════════════════════════════════════════════════
 
-        // Login options screen shows "Email & Password" option
+        // Login options screen shows "Forgot password?" and auth fields
         final foundLoginScreen = await waitForText(
           tester,
-          'Email & Password',
+          'Forgot password?',
           maxSeconds: 10,
         );
         expect(

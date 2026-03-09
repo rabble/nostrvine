@@ -472,12 +472,26 @@ void main() {
             await tapSemantic(tester, 'send_comment_button');
             await tester.pump(const Duration(seconds: 2));
 
-            // Dismiss the comment sheet
-            final navigator = Navigator.of(
-              tester.element(find.byType(MaterialApp)),
+            // Dismiss the comment sheet: keyboard may still be open
+            // from entering text, so first dismiss keyboard, then the
+            // sheet. Using Navigator.pop on the root navigator because
+            // the sheet is opened with useRootNavigator: true and
+            // tapAt on scrim is unreliable when keyboard shifts layout.
+            await tester.testTextInput.receiveAction(
+              TextInputAction.done,
             );
-            navigator.pop();
-            await tester.pump(const Duration(seconds: 1));
+            await tester.pump(const Duration(milliseconds: 500));
+
+            // Pop the modal bottom sheet route from root navigator
+            final rootNav = tester.state<NavigatorState>(
+              find.byType(Navigator).first,
+            );
+            rootNav.pop();
+
+            // Wait for the bottom sheet dismiss animation to complete
+            for (var i = 0; i < 20; i++) {
+              await tester.pump(const Duration(milliseconds: 250));
+            }
             logPhase('Phase 3f complete -- comment posted');
           } else {
             logPhase(
@@ -491,11 +505,17 @@ void main() {
 
           logPhase('── Phase 3g: Reposting the video ──');
           await tapSemantic(tester, 'repost_button');
-          await tester.pump(const Duration(seconds: 2));
-
-          final removeRepost = find.bySemanticsLabel('Remove repost');
+          // Wait for relay round-trip to confirm repost
+          var reposted = false;
+          for (var i = 0; i < 15; i++) {
+            await tester.pump(const Duration(seconds: 1));
+            if (find.bySemanticsLabel('Remove repost').evaluate().isNotEmpty) {
+              reposted = true;
+              break;
+            }
+          }
           expect(
-            removeRepost.evaluate().isNotEmpty,
+            reposted,
             isTrue,
             reason:
                 'Repost button should show "Remove repost" label '
