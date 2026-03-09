@@ -150,18 +150,18 @@ void main() {
         );
       }
 
-      testWidgets('shows "No videos available" when videoIndex is set but '
+      testWidgets('shows loading indicator when videoIndex is set but '
           'no videos', (tester) async {
         await tester.pumpWidget(createFeedModeWidget(videoIndex: 0));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        expect(find.text('No videos available'), findsOneWidget);
-        expect(find.text('Videos (0)'), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text('No videos available'), findsNothing);
       });
 
       testWidgets('hides tabs when in feed mode', (tester) async {
         await tester.pumpWidget(createFeedModeWidget(videoIndex: 0));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(TabBar), findsNothing);
         expect(find.byType(TextField), findsNothing);

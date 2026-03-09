@@ -529,10 +529,10 @@ class _SearchFeedModeContent extends ConsumerWidget {
         pageContext.whenOrNull(data: (ctx) => ctx.videoIndex ?? 0) ?? 0;
 
     if (videos.isEmpty || startIndex >= videos.length) {
-      return const Center(
-        child: Text(
-          'No videos available',
-          style: TextStyle(color: VineTheme.whiteText),
+      return const ColoredBox(
+        color: VineTheme.backgroundColor,
+        child: Center(
+          child: CircularProgressIndicator(color: VineTheme.vineGreen),
         ),
       );
     }
