@@ -508,6 +508,91 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
+        test('applies warning labels from REST content labels', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                  contentLabels: ['violence'],
+                ),
+              ],
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            warningLabelsResolver: (video) => video.contentWarningLabels
+                .where((label) => label == 'violence')
+                .toList(),
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: ['followed-user'],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(
+            result.videos.first.contentWarningLabels,
+            equals(['violence']),
+          );
+          expect(result.videos.first.warnLabels, equals(['violence']));
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
+        test('filters hidden labels from REST content labels', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                  contentLabels: ['nudity'],
+                ),
+              ],
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            contentFilter: (video) =>
+                video.contentWarningLabels.contains('nudity'),
+          );
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => <Event>[],
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: ['followed-user'],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, isEmpty);
+          verify(() => mockNostrClient.queryEvents(any())).called(1);
+        });
+
         test('passes params to Funnelcake API', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
@@ -5838,6 +5923,7 @@ VideoStats _createVideoStats({
   String title = 'Test Video',
   String thumbnail = 'https://example.com/thumb.jpg',
   int? loops,
+  List<String> contentLabels = const [],
 }) {
   return VideoStats(
     id: id,
@@ -5853,5 +5939,6 @@ VideoStats _createVideoStats({
     reposts: 0,
     engagementScore: 0,
     loops: loops,
+    contentLabels: contentLabels,
   );
 }

@@ -32,12 +32,14 @@ class VideoStats {
     this.authorName,
     this.authorAvatar,
     this.blurhash,
+    this.dimensions,
     this.trendingScore,
     this.loops,
     this.views,
     this.rawTags = const {},
     this.textTrackRef,
     this.textTrackContent,
+    this.contentLabels = const [],
   });
 
   /// Creates a [VideoStats] from JSON response.
@@ -149,6 +151,21 @@ class VideoStats {
       textTrackContent = null;
     }
 
+    var dimensions =
+        eventData['dimensions']?.toString() ??
+        eventData['dim']?.toString() ??
+        json['dimensions']?.toString() ??
+        json['dim']?.toString() ??
+        statsData['dimensions']?.toString() ??
+        statsData['dim']?.toString();
+    if (dimensions != null && dimensions.isEmpty) dimensions = null;
+
+    final contentLabels = _parseContentLabels(
+      json['content_labels'] ??
+          eventData['content_labels'] ??
+          statsData['content_labels'],
+    );
+
     // Also check for blurhash and summary in tags (NIP-71 standard)
     // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
     String? blurhashFromTag;
@@ -178,6 +195,9 @@ class VideoStats {
           }
           if (tagName == 'blurhash' && blurhashFromTag == null) {
             blurhashFromTag = tagValue;
+          }
+          if ((tagName == 'dim' || tagName == 'size') && dimensions == null) {
+            dimensions = tagValue;
           }
           if (tagName == 'summary' && summaryFromTag == null) {
             summaryFromTag = tagValue;
@@ -271,6 +291,7 @@ class VideoStats {
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
+      dimensions: dimensions,
       reactions: _parseInt(reactions),
       comments: _parseInt(comments),
       reposts: _parseInt(reposts),
@@ -285,6 +306,7 @@ class VideoStats {
       rawTags: rawTags,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
+      contentLabels: contentLabels,
     );
   }
 
@@ -333,6 +355,9 @@ class VideoStats {
   /// Blurhash for placeholder thumbnail.
   final String? blurhash;
 
+  /// Video dimensions from Nostr `dim`/`size` tags as `WIDTHxHEIGHT`.
+  final String? dimensions;
+
   /// Reaction/like count.
   final int reactions;
 
@@ -365,6 +390,13 @@ class VideoStats {
   /// Embedded VTT content from API (saves client a relay round-trip).
   final String? textTrackContent;
 
+  /// Recognized moderation labels extracted from REST `content_labels`.
+  ///
+  /// The relay currently mixes moderation and generic classifier labels inside
+  /// `content_labels`. Only the moderation subset is promoted into
+  /// [VideoEvent.contentWarningLabels].
+  final List<String> contentLabels;
+
   /// Converts this [VideoStats] to a [VideoEvent] for use in the app.
   ///
   /// Maps the Funnelcake API response fields to the corresponding
@@ -391,6 +423,7 @@ class VideoStats {
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
+      dimensions: dimensions,
       originalLikes: reactions,
       // When from Funnelcake, Nostr likes are added to originalLikes by default
       // Setting to 0 here ensures VideoInteractionsBloc seeds the correct count
@@ -400,6 +433,7 @@ class VideoStats {
       originalLoops: loops,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
+      contentWarningLabels: contentLabels,
       rawTags: {
         ...rawTags,
         // Note: Do NOT inject engagement `loops` here — rawTags['loops']
@@ -423,6 +457,53 @@ class VideoStats {
   @override
   String toString() => 'VideoStats(id: $id, title: $title)';
 }
+
+List<String> _parseContentLabels(dynamic value) {
+  if (value is! List) return const [];
+
+  final labels = <String>[];
+  for (final item in value) {
+    final normalized = _normalizeContentLabel(item.toString().trim());
+    if (normalized != null && !labels.contains(normalized)) {
+      labels.add(normalized);
+    }
+  }
+  return labels;
+}
+
+String? _normalizeContentLabel(String value) {
+  if (value.isEmpty) return null;
+
+  switch (value) {
+    case 'pornography':
+      return 'porn';
+    case 'graphic-violence':
+      return 'graphic-media';
+  }
+
+  return _recognizedModerationLabels.contains(value) ? value : null;
+}
+
+const Set<String> _recognizedModerationLabels = {
+  'nudity',
+  'sexual',
+  'porn',
+  'graphic-media',
+  'violence',
+  'self-harm',
+  'drugs',
+  'alcohol',
+  'tobacco',
+  'gambling',
+  'profanity',
+  'hate',
+  'harassment',
+  'flashing-lights',
+  'ai-generated',
+  'spoiler',
+  'misleading',
+  'content-warning',
+};
 
 /// Safely parses a dynamic value to double.
 double? _parseDouble(dynamic value) {

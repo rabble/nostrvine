@@ -289,6 +289,7 @@ void main() {
             ['d', 'dtag-from-tag'],
             ['x', 'sha256-from-tag'],
             ['blurhash', 'LEHV6nWB'],
+            ['dim', '720x1280'],
             ['summary', 'Summary from tag'],
             ['loops', '5000'],
           ],
@@ -312,8 +313,52 @@ void main() {
         expect(stats.dTag, equals('dtag-from-tag'));
         expect(stats.sha256, equals('sha256-from-tag'));
         expect(stats.blurhash, equals('LEHV6nWB'));
+        expect(stats.dimensions, equals('720x1280'));
         expect(stats.description, equals('Summary from tag'));
         expect(stats.loops, equals(5000));
+      });
+
+      test('extracts dimensions from size tag when dim tag is absent', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'tags': [
+            ['size', '480x480'],
+          ],
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.dimensions, equals('480x480'));
+      });
+
+      test('parses dimensions from direct REST fields', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'dimensions': '1080x1920',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.dimensions, equals('1080x1920'));
       });
 
       test('prefers content over summary tag for description', () {
@@ -706,6 +751,38 @@ void main() {
         expect(stats.textTrackContent, isNull);
       });
 
+      test(
+        'promotes only recognized moderation labels from REST responses',
+        () {
+          final json = {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'd_tag': 'video-1',
+            'title': 'Test',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'video_url': 'https://example.com/video.mp4',
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+            'content_labels': [
+              'nudity',
+              'violence',
+              'topic:music',
+              'archive.divine.video:vine-archive',
+            ],
+          };
+
+          final stats = VideoStats.fromJson(json);
+          final event = stats.toVideoEvent();
+
+          expect(stats.contentLabels, equals(['nudity', 'violence']));
+          expect(event.contentWarningLabels, equals(['nudity', 'violence']));
+        },
+      );
+
       test('passes textTrackRef and textTrackContent to toVideoEvent', () {
         final stats = VideoStats(
           id: 'test-id',
@@ -750,6 +827,7 @@ void main() {
           authorName: 'Test Author',
           authorAvatar: 'https://example.com/avatar.jpg',
           blurhash: 'LEHV6nWB2yk8',
+          dimensions: '720x1280',
           reactions: 100,
           comments: 20,
           reposts: 5,
@@ -777,6 +855,7 @@ void main() {
           equals('https://example.com/avatar.jpg'),
         );
         expect(videoEvent.blurhash, equals('LEHV6nWB2yk8'));
+        expect(videoEvent.dimensions, equals('720x1280'));
         expect(videoEvent.originalLikes, equals(100));
         expect(videoEvent.originalComments, equals(20));
         expect(videoEvent.originalReposts, equals(5));
