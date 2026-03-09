@@ -1532,7 +1532,6 @@ void main() {
             videos: videos,
             pool: bufferingPool,
             preloadBehind: 0,
-            preloadAhead: 2,
           );
           addTearDown(controller.dispose);
 
@@ -1553,8 +1552,7 @@ void main() {
           expect(
             controller.getLoadState(2),
             equals(LoadState.none),
-            reason:
-                'non-current buffering preloads should yield to the new current item',
+            reason: 'buffering preloads should yield to the new current item',
           );
         },
       );
