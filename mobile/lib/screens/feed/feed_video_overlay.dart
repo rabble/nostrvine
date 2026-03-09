@@ -17,6 +17,7 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
@@ -42,6 +43,8 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
   const FeedVideoOverlay({
     required this.video,
     required this.isActive,
+    required this.pagePosition,
+    required this.index,
     this.player,
     this.firstFrameFuture,
     this.listSources,
@@ -50,6 +53,14 @@ class FeedVideoOverlay extends ConsumerStatefulWidget {
 
   final VideoEvent video;
   final bool isActive;
+
+  /// Fractional page position from [PooledVideoFeed.onScrollOffsetChanged].
+  /// Used to compute scroll-driven overlay opacity matching the fullscreen feed.
+  final ValueNotifier<double> pagePosition;
+
+  /// The index of this item in the feed, used with [pagePosition] to compute
+  /// the scroll distance for opacity.
+  final int index;
   final Player? player;
   final Future<void>? firstFrameFuture;
   final Set<String>? listSources;
@@ -89,9 +100,12 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
         video.content.isNotEmpty ||
         (video.title != null && video.title!.isNotEmpty);
 
+    final safeAreaBottom = MediaQuery.viewPaddingOf(context).bottom;
+
     return Stack(
       children: [
-        // Bottom gradient overlay
+        // Bottom gradient overlay (not scroll-faded — keeps the gradient
+        // visible so the video edge is always readable).
         Positioned(
           left: 0,
           right: 0,
@@ -126,33 +140,53 @@ class _FeedVideoOverlayState extends ConsumerState<FeedVideoOverlay> {
           Positioned.fill(
             child: _SubtitleLayer(video: video, player: widget.player!),
           ),
-        // ProofMode and Vine badges (top-right)
-        Positioned(
-          top: MediaQuery.viewPaddingOf(context).top + 64,
-          right: 16,
-          child: GestureDetector(
-            onTap: () => context.showVideoPausingDialog<void>(
-              builder: (context) => BadgeExplanationModal(video: video),
-            ),
-            child: ProofModeBadgeRow(video: video),
+        // Scroll-faded overlay: author info, badges, and action buttons all
+        // fade together as the user swipes to the next video.
+        ValueListenableBuilder<double>(
+          valueListenable: widget.pagePosition,
+          builder: (context, page, child) {
+            final distance = (page - widget.index).abs().clamp(0.0, 1.0);
+            final opacity = scrollDrivenOpacity(distance);
+            return Opacity(
+              opacity: opacity,
+              child: IgnorePointer(
+                ignoring: opacity < 0.01,
+                child: child,
+              ),
+            );
+          },
+          child: Stack(
+            children: [
+              // ProofMode and Vine badges (top-right)
+              Positioned(
+                top: MediaQuery.viewPaddingOf(context).top + 64,
+                right: 16,
+                child: GestureDetector(
+                  onTap: () => context.showVideoPausingDialog<void>(
+                    builder: (context) => BadgeExplanationModal(video: video),
+                  ),
+                  child: ProofModeBadgeRow(video: video),
+                ),
+              ),
+              // Author info and description (bottom-left)
+              Positioned(
+                bottom: 14 + safeAreaBottom,
+                left: 16,
+                right: 80,
+                child: _AuthorInfoSection(
+                  video: video,
+                  hasTextContent: hasTextContent,
+                  listSources: widget.listSources,
+                ),
+              ),
+              // Action buttons column (bottom-right)
+              Positioned(
+                bottom: 14 + safeAreaBottom,
+                right: 16,
+                child: _ActionButtons(video: video),
+              ),
+            ],
           ),
-        ),
-        // Author info and description (bottom-left)
-        Positioned(
-          bottom: 14,
-          left: 16,
-          right: 80,
-          child: _AuthorInfoSection(
-            video: video,
-            hasTextContent: hasTextContent,
-            listSources: widget.listSources,
-          ),
-        ),
-        // Action buttons column (bottom-right)
-        Positioned(
-          bottom: 14,
-          right: 16,
-          child: SafeArea(child: _ActionButtons(video: video)),
         ),
       ],
     );
