@@ -152,6 +152,7 @@ class _CreatorAnalyticsScreenState
       backgroundColor: VineTheme.backgroundColor,
       appBar: DiVineAppBar(
         title: 'Creator Analytics',
+        showBackButton: true,
         actions: [
           DiVineAppBarAction(
             icon: MaterialIconSource(
