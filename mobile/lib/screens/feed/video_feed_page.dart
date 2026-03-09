@@ -150,6 +150,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// or injected via [VideoFeedView.controller] for testing.
   VideoFeedController? controller;
 
+  /// Tracks the current fractional page position for scroll-driven overlay opacity.
+  late final ValueNotifier<double> _pagePosition;
+
   /// Tracks the last set of pooled videos to detect new additions.
   List<VideoItem>? lastPooledVideos;
 
@@ -162,6 +165,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   @override
   void initState() {
     super.initState();
+    _pagePosition = ValueNotifier<double>(0);
     WidgetsBinding.instance.addObserver(this);
     // Use injected controller if provided (for testing)
     if (!ownsController) controller = widget.controller;
@@ -177,6 +181,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   @override
   void dispose() {
     if (ownsController) controller?.dispose();
+    _pagePosition.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -406,6 +411,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                   key: ValueKey(state.mode),
                   videos: pooledVideos,
                   controller: controller,
+                  onScrollOffsetChanged: (page) => _pagePosition.value = page,
                   itemBuilder: (context, video, index, {required isActive}) {
                     final originalEvent = eventsById[video.id];
                     if (originalEvent == null) {
@@ -437,6 +443,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       video: originalEvent,
                       index: index,
                       isActive: isActive,
+                      pagePosition: _pagePosition,
                       contextTitle: state.mode.name,
                       listSources: listSources,
                     );
@@ -579,6 +586,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     required this.video,
     required this.index,
     required this.isActive,
+    required this.pagePosition,
     this.contextTitle,
     this.listSources,
   });
@@ -586,6 +594,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
   final VideoEvent video;
   final int index;
   final bool isActive;
+  final ValueNotifier<double> pagePosition;
   final String? contextTitle;
   final Set<String>? listSources;
 
@@ -617,6 +626,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
         video: video,
         index: index,
         isActive: isActive,
+        pagePosition: pagePosition,
         contextTitle: contextTitle,
         listSources: listSources,
       ),
@@ -629,6 +639,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
     required this.video,
     required this.index,
     required this.isActive,
+    required this.pagePosition,
     this.contextTitle,
     this.listSources,
   });
@@ -636,6 +647,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
   final VideoEvent video;
   final int index;
   final bool isActive;
+  final ValueNotifier<double> pagePosition;
   final String? contextTitle;
   final Set<String>? listSources;
 
@@ -668,6 +680,8 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
         overlayBuilder: (context, videoController, player) => FeedVideoOverlay(
           video: video,
           isActive: isActive,
+          pagePosition: pagePosition,
+          index: index,
           player: player,
           firstFrameFuture: videoController?.waitUntilFirstFrameRendered,
           listSources: listSources,

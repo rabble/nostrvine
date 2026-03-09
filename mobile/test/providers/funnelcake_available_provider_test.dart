@@ -69,7 +69,12 @@ void main() {
 
         expect(result, isTrue);
         // Verify no HTTP probe was made
-        verifyNever(() => mockAnalyticsService.getRecentVideos(limit: 1));
+        verifyNever(
+          () => mockAnalyticsService.getRecentVideos(
+            limit: 1,
+            timeout: const Duration(seconds: 3),
+          ),
+        );
       },
     );
 
@@ -87,7 +92,12 @@ void main() {
         final result = await container.read(funnelcakeAvailableProvider.future);
 
         expect(result, isTrue);
-        verifyNever(() => mockAnalyticsService.getRecentVideos(limit: 1));
+        verifyNever(
+          () => mockAnalyticsService.getRecentVideos(
+            limit: 1,
+            timeout: const Duration(seconds: 3),
+          ),
+        );
       },
     );
 
@@ -99,7 +109,10 @@ void main() {
           <String>['wss://relay.custom-server.com'],
         );
         when(
-          () => mockAnalyticsService.getRecentVideos(limit: 1),
+          () => mockAnalyticsService.getRecentVideos(
+            limit: 1,
+            timeout: const Duration(seconds: 3),
+          ),
         ).thenAnswer((_) async => <VideoEvent>[]);
 
         // Use a non-divine environment fallback
@@ -113,7 +126,12 @@ void main() {
         final result = await container.read(funnelcakeAvailableProvider.future);
 
         expect(result, isTrue);
-        verify(() => mockAnalyticsService.getRecentVideos(limit: 1)).called(1);
+        verify(
+          () => mockAnalyticsService.getRecentVideos(
+            limit: 1,
+            timeout: const Duration(seconds: 3),
+          ),
+        ).called(1);
       },
     );
 
@@ -125,7 +143,10 @@ void main() {
           <String>['wss://relay.custom-server.com'],
         );
         when(
-          () => mockAnalyticsService.getRecentVideos(limit: 1),
+          () => mockAnalyticsService.getRecentVideos(
+            limit: 1,
+            timeout: const Duration(seconds: 3),
+          ),
         ).thenThrow(Exception('Connection refused'));
 
         const customEnv = EnvironmentConfig(
@@ -138,7 +159,12 @@ void main() {
         final result = await container.read(funnelcakeAvailableProvider.future);
 
         expect(result, isFalse);
-        verify(() => mockAnalyticsService.getRecentVideos(limit: 1)).called(1);
+        verify(
+          () => mockAnalyticsService.getRecentVideos(
+            limit: 1,
+            timeout: const Duration(seconds: 3),
+          ),
+        ).called(1);
       },
     );
 

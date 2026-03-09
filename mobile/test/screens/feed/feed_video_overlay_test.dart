@@ -1,5 +1,5 @@
-// ABOUTME: Tests for FeedVideoOverlay list attribution integration
-// ABOUTME: Verifies ListAttributionChip display for curated list videos
+// ABOUTME: Tests for FeedVideoOverlay — list attribution integration and
+// ABOUTME: scroll-driven opacity behavior.
 
 import 'dart:async';
 
@@ -14,6 +14,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
+import 'package:openvine/utils/scroll_driven_opacity.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 
@@ -48,6 +49,7 @@ void main() {
     late VideoEvent testVideo;
     late StreamController<bool> playingController;
     late StreamController<bool> bufferingController;
+    late ValueNotifier<double> pagePosition;
 
     setUpAll(() {
       registerFallbackValue(const VideoInteractionsSubscriptionRequested());
@@ -61,6 +63,7 @@ void main() {
       mockCuratedListRepository = _MockCuratedListRepository();
       playingController = StreamController<bool>.broadcast();
       bufferingController = StreamController<bool>.broadcast();
+      pagePosition = ValueNotifier<double>(0);
 
       // Stub Player.stream for subtitle layer and paused-play overlay.
       when(() => mockPlayer.stream).thenReturn(mockStream);
@@ -95,6 +98,7 @@ void main() {
     tearDown(() async {
       await playingController.close();
       await bufferingController.close();
+      pagePosition.dispose();
     });
 
     Widget buildSubject({
@@ -103,6 +107,8 @@ void main() {
       bool isActive = true,
       Player? player,
       bool includePlayer = true,
+      ValueNotifier<double>? pagePositionOverride,
+      int index = 0,
     }) {
       return testMaterialApp(
         additionalOverrides: [
@@ -119,6 +125,8 @@ void main() {
             child: FeedVideoOverlay(
               video: testVideo,
               isActive: isActive,
+              pagePosition: pagePositionOverride ?? pagePosition,
+              index: index,
               player: includePlayer ? (player ?? mockPlayer) : null,
               firstFrameFuture: firstFrameFuture,
               listSources: listSources,
@@ -268,6 +276,104 @@ void main() {
         expect(find.byType(ListAttributionChip), findsOneWidget);
         expect(find.byIcon(Icons.playlist_play), findsNWidgets(2));
       });
+    });
+
+    group('scroll-driven opacity', () {
+      double overlayOpacity(WidgetTester tester) {
+        // Find the Opacity widget wrapping the scroll-faded overlay Stack.
+        // The gradient Positioned is outside the fade, so we look for the
+        // outermost Opacity whose child is an IgnorePointer.
+        final opacityWidgets = tester
+            .widgetList<Opacity>(find.byType(Opacity))
+            .toList();
+        // The scroll-faded Opacity is the one built by ValueListenableBuilder.
+        // It is the only Opacity that wraps an IgnorePointer directly.
+        for (final widget in opacityWidgets) {
+          final element = tester.element(
+            find.byWidget(widget, skipOffstage: false),
+          );
+          bool hasIgnorePointerChild = false;
+          element.visitChildren((child) {
+            if (child.widget is IgnorePointer) {
+              hasIgnorePointerChild = true;
+            }
+          });
+          if (hasIgnorePointerChild) return widget.opacity;
+        }
+        throw StateError('Scroll-faded Opacity widget not found in tree');
+      }
+
+      testWidgets(
+        'overlay is fully opaque when pagePosition matches index',
+        (tester) async {
+          // index=0, pagePosition=0.0 → distance=0 → opacity=1.0
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
+          pagePosition.value = 0.0;
+          await tester.pump();
+
+          expect(overlayOpacity(tester), equals(1.0));
+        },
+      );
+
+      testWidgets(
+        'overlay is fully hidden when scrolled a full page away',
+        (tester) async {
+          // index=0, pagePosition=1.0 → distance=1.0 → opacity=0.0
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
+          pagePosition.value = 1.0;
+          await tester.pump();
+
+          expect(overlayOpacity(tester), equals(0.0));
+        },
+      );
+
+      testWidgets(
+        'overlay uses dimmed opacity in the middle of the scroll band',
+        (tester) async {
+          // index=0, pagePosition=0.3 → distance=0.3 (between thresholds)
+          // → opacity == kOverlayDimmedOpacity
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
+          pagePosition.value = 0.3;
+          await tester.pump();
+
+          expect(
+            overlayOpacity(tester),
+            closeTo(kOverlayDimmedOpacity, 1e-9),
+          );
+        },
+      );
+
+      testWidgets(
+        'overlay opacity updates when pagePosition changes',
+        (tester) async {
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
+
+          pagePosition.value = 0.0;
+          await tester.pump();
+          expect(overlayOpacity(tester), equals(1.0));
+
+          pagePosition.value = 1.0;
+          await tester.pump();
+          expect(overlayOpacity(tester), equals(0.0));
+        },
+      );
+
+      testWidgets(
+        'overlay is fully opaque for a non-zero index when pagePosition matches',
+        (tester) async {
+          // index=2, pagePosition=2.0 → distance=0 → opacity=1.0
+          await tester.pumpWidget(buildSubject(index: 2));
+          await tester.pump();
+          pagePosition.value = 2.0;
+          await tester.pump();
+
+          expect(overlayOpacity(tester), equals(1.0));
+        },
+      );
     });
   });
 }
