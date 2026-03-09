@@ -70,7 +70,24 @@ class FunnelcakeAvailable extends _$FunnelcakeAvailable {
     // Access relayStatuses to establish dependency (triggers rebuild on change)
     final relayCount = nostrService.relayStatuses.length;
 
-    // Capability detection: try a lightweight API call
+    // Fast path: our relay is always Funnelcake - skip the network probe
+    final environmentConfig = ref.watch(currentEnvironmentProvider);
+    final baseUrl = resolveApiBaseUrlFromRelays(
+      configuredRelays: nostrService.configuredRelays,
+      fallbackBaseUrl: environmentConfig.apiBaseUrl,
+    );
+
+    if (baseUrl.contains('divine.video')) {
+      Log.debug(
+        '🔌 Funnelcake: Known Divine relay - skipping probe '
+        '(relays: $relayCount)',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      return true;
+    }
+
+    // Fallback: probe unknown relays to check Funnelcake compatibility
     try {
       Log.debug(
         '🔌 Funnelcake: Probing API availability (relays: $relayCount)',
