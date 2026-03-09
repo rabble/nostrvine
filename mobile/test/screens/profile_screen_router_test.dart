@@ -1,6 +1,7 @@
 // ABOUTME: Tests for router-driven ProfileScreen implementation
 // ABOUTME: Verifies URL ↔ PageView synchronization for profile feeds
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -76,6 +77,9 @@ class _MockNostrClient extends Mock implements NostrClient {
 class _MockUserProfileService extends Mock implements UserProfileService {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
+    implements MyProfileBloc {}
 
 void main() {
   Widget shell(ProviderContainer c) => UncontrolledProviderScope(
@@ -233,6 +237,7 @@ void main() {
     late _MockNostrClient mockNostrClient;
     late _MockUserProfileService mockUserProfileService;
     late _MockVideoEventService mockVideoEventService;
+    late _MockMyProfileBloc mockMyProfileBloc;
 
     setUp(() {
       mockDraft = _MockVineDraft();
@@ -288,6 +293,9 @@ void main() {
       ).thenAnswer((_) async {});
       when(() => mockUserProfileService.addListener(any())).thenReturn(null);
       when(() => mockUserProfileService.removeListener(any())).thenReturn(null);
+
+      mockMyProfileBloc = _MockMyProfileBloc();
+      when(() => mockMyProfileBloc.state).thenReturn(const MyProfileInitial());
     });
 
     tearDown(() {
@@ -313,9 +321,7 @@ void main() {
           home: MultiBlocProvider(
             providers: [
               BlocProvider<BackgroundPublishBloc>.value(value: bloc),
-              BlocProvider<MyProfileBloc>(
-                create: (_) => _FakeMyProfileBloc(),
-              ),
+              BlocProvider<MyProfileBloc>.value(value: mockMyProfileBloc),
             ],
             child: Scaffold(
               body: ProfileViewSwitcher(
@@ -387,28 +393,27 @@ void main() {
       expect(find.byType(DivineSnackbarContainer), findsNothing);
     });
 
-    testWidgets(
-      'does not show DivineSnackbarContainer when upload succeeded',
-      (tester) async {
-        fakeBloc = _FakeBackgroundPublishBloc(
-          initialState: BackgroundPublishState(
-            uploads: [
-              BackgroundUpload(
-                draft: mockDraft,
-                result: const PublishSuccess(), // Success, not error
-                progress: 1.0,
-              ),
-            ],
-          ),
-        );
+    testWidgets('does not show DivineSnackbarContainer when upload succeeded', (
+      tester,
+    ) async {
+      fakeBloc = _FakeBackgroundPublishBloc(
+        initialState: BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: mockDraft,
+              result: const PublishSuccess(), // Success, not error
+              progress: 1.0,
+            ),
+          ],
+        ),
+      );
 
-        await tester.pumpWidget(buildTestWidget(fakeBloc));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(buildTestWidget(fakeBloc));
+      await tester.pumpAndSettle();
 
-        // Should NOT show the error snackbar for successful uploads
-        expect(find.byType(DivineSnackbarContainer), findsNothing);
-      },
-    );
+      // Should NOT show the error snackbar for successful uploads
+      expect(find.byType(DivineSnackbarContainer), findsNothing);
+    });
 
     testWidgets(
       'retry button dispatches BackgroundPublishRetryRequested event',
@@ -484,19 +489,6 @@ class FakeUserProfileNotifier extends UserProfileNotifier {
   Future<void> prefetchProfilesImmediately(List<String> pubkeys) async {
     onPrefetch(pubkeys);
   }
-}
-
-/// Fake MyProfileBloc that emits [MyProfileInitial] and ignores all events.
-class _FakeMyProfileBloc extends Bloc<MyProfileEvent, MyProfileState>
-    implements MyProfileBloc {
-  _FakeMyProfileBloc() : super(const MyProfileInitial()) {
-    on<MyProfileLoadRequested>((_, __) {});
-    on<MyProfileSubscriptionRequested>((_, __) {});
-    on<MyProfileFetchRequested>((_, __) {});
-  }
-
-  @override
-  String get pubkey => _MockNostrClient.testPubkeyHex;
 }
 
 /// Fake BackgroundPublishBloc for testing error snackbar display and retry
