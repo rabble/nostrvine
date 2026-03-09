@@ -409,7 +409,6 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
               ctx.go(VideoFeedPage.pathForIndex(0));
             }
           },
-          style: const DiVineAppBarStyle(leadingWidth: 64),
           actions: hasSelection
               ? [
                   DiVineAppBarAction(
