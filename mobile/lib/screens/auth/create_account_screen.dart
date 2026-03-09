@@ -226,7 +226,12 @@ class _SkipConfirmationSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+      padding: .fromLTRB(
+        24,
+        24,
+        24,
+        32 + MediaQuery.viewPaddingOf(context).bottom,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

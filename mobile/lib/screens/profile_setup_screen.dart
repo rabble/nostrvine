@@ -903,13 +903,16 @@ class _ProfileSetupScreenViewState
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              _ProfileColorPicker(
-                                selectedColor: _selectedProfileColor,
-                                onColorChanged: (color) {
-                                  setState(() {
-                                    _selectedProfileColor = color;
-                                  });
-                                },
+                              Padding(
+                                padding: const .symmetric(horizontal: 16),
+                                child: _ProfileColorPicker(
+                                  selectedColor: _selectedProfileColor,
+                                  onColorChanged: (color) {
+                                    setState(() {
+                                      _selectedProfileColor = color;
+                                    });
+                                  },
+                                ),
                               ),
                             ],
                           ),
