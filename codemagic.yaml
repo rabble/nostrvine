@@ -75,9 +75,7 @@ definitions:
         # This workflow packages a DMG for direct download. It does not provision
         # a macOS signing identity/profile in Codemagic, so disable signing for
         # the CI build and handle signing/notarization separately when needed.
-        export CODE_SIGNING_ALLOWED=NO
-        export CODE_SIGNING_REQUIRED=NO
-        flutter build macos --release \
+        env CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO flutter build macos --release \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
