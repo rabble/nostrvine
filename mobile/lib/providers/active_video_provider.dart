@@ -4,7 +4,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_foreground_provider.dart';
-import 'package:openvine/providers/hashtag_feed_providers.dart';
 import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
@@ -76,7 +75,9 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.profile:
       videosAsync = ref.watch(videosForProfileRouteProvider);
     case RouteType.hashtag:
-      videosAsync = ref.watch(hashtagFeedProvider);
+      // Hashtag feed uses PooledFullscreenVideoFeedScreen pushed as overlay,
+      // which manages its own playback. Return null to let it handle internally.
+      return null;
     case RouteType.explore:
       videosAsync = ref.watch(videosForExploreRouteProvider);
     case RouteType.search:
@@ -109,6 +110,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.contentFilters:
     case RouteType.editProfile:
     case RouteType.clips:
+    case RouteType.drafts:
     case RouteType.importKey:
     case RouteType.welcome:
     case RouteType.developerOptions:

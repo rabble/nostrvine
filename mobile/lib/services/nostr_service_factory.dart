@@ -40,7 +40,7 @@ class NostrServiceFactory {
         environmentConfig?.relayUrl ?? AppConstants.defaultRelayUrl;
 
     UnifiedLogger.info(
-      'Creating NostrClient via factory with diVine relay: $divineRelayUrl',
+      'Creating NostrClient via factory with Divine relay: $divineRelayUrl',
       name: 'NostrServiceFactory',
     );
 
@@ -53,7 +53,7 @@ class NostrServiceFactory {
     final config = NostrClientConfig(signer: signer);
 
     // Create relay manager config with persistent storage
-    // The diVine relay is always the default relay (cannot be removed)
+    // The Divine relay is always the default relay (cannot be removed)
     final relayManagerConfig = RelayManagerConfig(
       defaultRelayUrl: divineRelayUrl,
       storage: SharedPreferencesRelayStorage(),

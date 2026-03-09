@@ -64,7 +64,7 @@ https://divine.video/search/{search-term}
 3. **Tap the link or press Enter**
 
 4. **Expected behavior**:
-   - iOS: Shows banner at top "Open in divine" → tap to open
+   - iOS: Shows banner at top "Open in Divine" → tap to open
    - Android: App opens automatically (if verified correctly)
 
 ### Method 3: Using ADB (Android Only)
@@ -152,7 +152,7 @@ adb logcat | grep -i "assetlinks"
 
 **Fix**:
 1. Long-press the link
-2. Select "Open in divine" from the context menu
+2. Select "Open in Divine" from the context menu
 3. iOS will remember this choice
 
 ### Issue: Android shows "Open with" dialog

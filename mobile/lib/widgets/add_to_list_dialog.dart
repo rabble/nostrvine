@@ -86,6 +86,15 @@ class SelectListDialog extends StatelessWidget {
               ),
             ),
             actions: [
+              TextButton(
+                onPressed: () {
+                  showDialog<void>(
+                    context: context,
+                    builder: (_) => CreateListDialog(video: video),
+                  );
+                },
+                child: const Text('New List'),
+              ),
               TextButton(onPressed: context.pop, child: const Text('Done')),
             ],
           );

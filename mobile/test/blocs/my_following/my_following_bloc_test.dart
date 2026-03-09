@@ -8,12 +8,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
 void main() {
   group('MyFollowingBloc', () {
     late _MockFollowRepository mockFollowRepository;
+    late _MockContentBlocklistService mockBlocklistService;
     late StreamController<List<String>> followingStreamController;
 
     // Helper to create valid hex pubkeys (64 hex characters)
@@ -26,20 +31,26 @@ void main() {
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
+      mockBlocklistService = _MockContentBlocklistService();
       followingStreamController = StreamController<List<String>>.broadcast();
 
       when(
         () => mockFollowRepository.followingStream,
       ).thenAnswer((_) => followingStreamController.stream);
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+
+      // Default: nothing is blocked
+      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
     });
 
     tearDown(() {
       followingStreamController.close();
     });
 
-    MyFollowingBloc createBloc() =>
-        MyFollowingBloc(followRepository: mockFollowRepository);
+    MyFollowingBloc createBloc() => MyFollowingBloc(
+      followRepository: mockFollowRepository,
+      contentBlocklistService: mockBlocklistService,
+    );
 
     test('initial state is success with cached data', () {
       when(
@@ -63,9 +74,7 @@ void main() {
       final bloc = createBloc();
       expect(
         bloc.state,
-        const MyFollowingState(
-          status: MyFollowingStatus.success,
-        ),
+        const MyFollowingState(status: MyFollowingStatus.success),
       );
       bloc.close();
     });
@@ -145,7 +154,7 @@ void main() {
       );
 
       blocTest<MyFollowingBloc, MyFollowingState>(
-        'handles toggleFollow error gracefully',
+        'handles toggleFollow error by emitting toggleFailure status',
         setUp: () {
           when(
             () => mockFollowRepository.toggleFollow(any()),
@@ -154,8 +163,56 @@ void main() {
         build: createBloc,
         act: (bloc) =>
             bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
-        // Should not throw or emit error state - just logs
-        expect: () => <MyFollowingState>[],
+        expect: () => [
+          const MyFollowingState(status: MyFollowingStatus.toggleFailure),
+        ],
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        'clears toggleFailure before new toggle attempt',
+        setUp: () {
+          when(
+            () => mockFollowRepository.toggleFollow(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: createBloc,
+        seed: () =>
+            const MyFollowingState(status: MyFollowingStatus.toggleFailure),
+        act: (bloc) =>
+            bloc.add(MyFollowingToggleRequested(validPubkey('user'))),
+        expect: () => [
+          const MyFollowingState(status: MyFollowingStatus.success),
+        ],
+      );
+
+      blocTest<MyFollowingBloc, MyFollowingState>(
+        'uses droppable transformer to prevent concurrent toggles',
+        setUp: () {
+          // First call takes time, second should be dropped
+          var callCount = 0;
+          when(() => mockFollowRepository.toggleFollow(any())).thenAnswer((
+            _,
+          ) async {
+            callCount++;
+            if (callCount == 1) {
+              await Future<void>.delayed(const Duration(milliseconds: 50));
+            }
+          });
+        },
+        build: createBloc,
+        act: (bloc) async {
+          // Fire two events rapidly
+          bloc
+            ..add(MyFollowingToggleRequested(validPubkey('user')))
+            ..add(MyFollowingToggleRequested(validPubkey('user')));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        },
+        verify: (_) {
+          // With droppable, second event is dropped while first processes
+          verify(
+            () => mockFollowRepository.toggleFollow(validPubkey('user')),
+          ).called(1);
+        },
       );
     });
   });

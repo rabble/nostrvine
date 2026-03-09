@@ -13,6 +13,7 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_content_warning_selector.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_inspired_by_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_tags_input.dart';
@@ -82,35 +83,19 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
             const Positioned.fill(child: _BackgroundGradient()),
             Scaffold(
               backgroundColor: Colors.transparent,
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
+              appBar: DiVineAppBar(
+                title: 'Post details',
+                backgroundMode: DiVineAppBarBackgroundMode.transparent,
                 surfaceTintColor: Colors.transparent,
-                leading: Hero(
-                  tag: VideoEditorConstants.heroBackButtonId,
-                  child: IconButton(
-                    padding: const .all(8),
-                    icon: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: const Color(0x33000000),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: VineTheme.outlineVariant),
-                      ),
-                      child: const Padding(
-                        padding: .all(4.0),
-                        child: DivineIcon(
-                          size: 32,
-                          icon: .caretLeft,
-                          color: VineTheme.whiteText,
-                        ),
-                      ),
-                    ),
-                    onPressed: () => context.pop(),
-                    tooltip: 'Back',
+                showBackButton: true,
+                onBackPressed: context.pop,
+                backButtonHeroTag: VideoEditorConstants.heroBackButtonId,
+                style: const DiVineAppBarStyle(
+                  iconButtonBackgroundColor: Color(0x33000000),
+                  iconButtonBorderRadius: 14,
+                  iconButtonBorderSide: BorderSide(
+                    color: VineTheme.outlineVariant,
                   ),
-                ),
-                title: Text(
-                  'Post details',
-                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
                 ),
               ),
               body: Column(
@@ -235,6 +220,8 @@ class _FormData extends ConsumerWidget {
         const _MetadataLimitWarning(),
         const _SectionCard(child: VideoMetadataExpirationSelector()),
         const SizedBox(height: 12),
+        const _SectionCard(child: VideoMetadataContentWarningSelector()),
+        const SizedBox(height: 12),
         const _SectionCard(child: VideoMetadataCollaboratorsInput()),
         const SizedBox(height: 12),
         const _SectionCard(child: VideoMetadataInspiredByInput()),
@@ -310,7 +297,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF4A1C00),
         border: Border.all(
-          color: const Color(0xFFFFB84D).withValues(alpha: 0.6),
+          color: VineTheme.contentWarningAmber.withValues(alpha: 0.6),
         ),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -318,7 +305,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            color: Color(0xFFFFB84D),
+            color: VineTheme.contentWarningAmber,
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -328,7 +315,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
               // added.
               '64KB limit reached. Remove some content to continue.',
               style: VineTheme.bodyFont(
-                color: const Color(0xFFFFB84D),
+                color: VineTheme.contentWarningAmber,
                 fontSize: 14,
                 fontWeight: .w600,
                 height: 1.43,

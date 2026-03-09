@@ -66,13 +66,13 @@ mixin AsyncValueUIHelpersMixin {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const Icon(Icons.error_outline, color: VineTheme.error, size: 48),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               'Error: $error',
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: VineTheme.whiteText),
               textAlign: TextAlign.center,
             ),
           ),

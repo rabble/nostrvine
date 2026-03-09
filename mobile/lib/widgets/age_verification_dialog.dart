@@ -19,7 +19,7 @@ class AgeVerificationDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Dialog(
-    backgroundColor: Colors.black,
+    backgroundColor: VineTheme.backgroundColor,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
       side: const BorderSide(color: VineTheme.vineGreen, width: 2),
@@ -41,7 +41,7 @@ class AgeVerificationDialog extends StatelessWidget {
                 ? 'Content Warning'
                 : 'Age Verification',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Colors.white,
+              color: VineTheme.whiteText,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -52,7 +52,7 @@ class AgeVerificationDialog extends StatelessWidget {
                 : 'To use the camera and create content, you must be at least 16 years old.',
             style: Theme.of(
               context,
-            ).textTheme.bodyLarge?.copyWith(color: Colors.white70),
+            ).textTheme.bodyLarge?.copyWith(color: VineTheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -61,7 +61,7 @@ class AgeVerificationDialog extends StatelessWidget {
                 ? 'Are you 18 years of age or older?'
                 : 'Are you 16 years of age or older?',
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Colors.white,
+              color: VineTheme.whiteText,
               fontWeight: FontWeight.w600,
             ),
             textAlign: TextAlign.center,
@@ -74,8 +74,8 @@ class AgeVerificationDialog extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => context.pop(false),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white54),
+                    foregroundColor: VineTheme.whiteText,
+                    side: const BorderSide(color: VineTheme.onSurfaceMuted),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 12,
@@ -90,7 +90,7 @@ class AgeVerificationDialog extends StatelessWidget {
                   onPressed: () => context.pop(true),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: Colors.white,
+                    foregroundColor: VineTheme.whiteText,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 12,

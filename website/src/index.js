@@ -1,4 +1,4 @@
-// ABOUTME: Cloudflare Workers entry point for diVine website
+// ABOUTME: Cloudflare Workers entry point for Divine website
 // ABOUTME: Serves static HTML files and handles routing
 
 export default {

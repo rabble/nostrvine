@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service to listen for Password Reset redirects (deeplinks)
@@ -23,14 +25,15 @@ class PasswordResetListener {
 
     // Handle link that launches the app from a closed state
     _appLinks.getInitialLink().then((uri) {
-      if (uri != null) _handleUri(uri);
+      if (uri != null) handleUri(uri);
     });
 
     // Handle links while app is running in background
-    _subscription = _appLinks.uriLinkStream.listen(_handleUri);
+    _subscription = _appLinks.uriLinkStream.listen(handleUri);
   }
 
-  Future<void> _handleUri(Uri uri) async {
+  @visibleForTesting
+  Future<void> handleUri(Uri uri) async {
     Log.info(
       '🔑 callback from host ${uri.host} path: ${uri.path}',
       name: '$PasswordResetListener',
@@ -51,7 +54,7 @@ class PasswordResetListener {
     if (params.containsKey('token')) {
       final token = params['token'];
       final router = ref.read(goRouterProvider);
-      router.go('${ResetPasswordScreen.path}?token=$token');
+      router.go('${WelcomeScreen.resetPasswordPath}?token=$token');
     }
   }
 

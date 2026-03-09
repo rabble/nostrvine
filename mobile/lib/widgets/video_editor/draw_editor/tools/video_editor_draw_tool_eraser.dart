@@ -1,6 +1,7 @@
 // ABOUTME: Button for selecting the eraser tool.
 // ABOUTME: Displays a pink-tipped eraser icon.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item_button.dart';
 
@@ -68,7 +69,7 @@ class _EraserPainter extends CustomPainter {
 
     // Part 2: Body (white) - rounded rectangle (only top corners)
     final bodyPaint = Paint()
-      ..color = Colors.white
+      ..color = VineTheme.whiteText
       ..style = PaintingStyle.fill;
 
     final bodyRect = RRect.fromRectAndCorners(

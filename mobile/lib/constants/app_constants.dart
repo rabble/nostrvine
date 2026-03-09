@@ -1,7 +1,7 @@
-// ABOUTME: System-wide constants and configuration values for divine
+// ABOUTME: System-wide constants and configuration values for Divine
 // ABOUTME: Centralized place for all app constants to avoid magic numbers and scattered values
 
-/// System-wide constants for divine application
+/// System-wide constants for Divine application
 class AppConstants {
   // ============================================================================
   // NOSTR PUBKEYS

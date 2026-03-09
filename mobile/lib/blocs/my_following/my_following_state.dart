@@ -11,6 +11,9 @@ enum MyFollowingStatus {
   /// Data loaded successfully
   success,
 
+  /// Follow toggle failed (list data remains available)
+  toggleFailure,
+
   /// An error occurred while loading data
   failure,
 }

@@ -1,6 +1,8 @@
 // ABOUTME: Screen displaying videos filtered by a specific hashtag
 // ABOUTME: Allows users to explore all videos with a particular hashtag
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,13 +10,14 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:rxdart/rxdart.dart';
 
 class HashtagFeedScreen extends ConsumerStatefulWidget {
   const HashtagFeedScreen({
@@ -42,15 +45,25 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   /// When available, these provide engagement-based sorting.
   List<VideoEvent>? _popularVideos;
 
+  /// Stream controller for pushing video list updates to the fullscreen feed.
+  late final StreamController<List<VideoEvent>> _videosStreamController;
+
   @override
   void initState() {
     super.initState();
+    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
     // Subscribe to videos with this hashtag
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return; // Safety check: don't use ref if widget is disposed
 
       _loadHashtagVideos();
     });
+  }
+
+  @override
+  void dispose() {
+    _videosStreamController.close();
+    super.dispose();
   }
 
   /// Load videos from both Funnelcake REST API and WebSocket in parallel.
@@ -102,9 +115,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           hashtag: widget.hashtag,
           forceRefresh: forceRefresh,
         ),
-        analyticsService.getClassicVideosByHashtag(
-          hashtag: widget.hashtag,
-        ),
+        analyticsService.getClassicVideosByHashtag(hashtag: widget.hashtag),
       ]).timeout(const Duration(seconds: 5));
 
       if (!mounted) return;
@@ -242,6 +253,30 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     return [..._popularVideos!, ...additionalVideos];
   }
 
+  /// Navigate to fullscreen video feed, passing the grid's video list directly.
+  /// This ensures the feed shows the same order as the grid (fixes #1751).
+  void _navigateToFullscreenFeed(
+    BuildContext context,
+    List<VideoEvent> videoList,
+    int index,
+  ) {
+    Log.info(
+      '🏷️ HashtagFeedScreen TAP: gridIndex=$index, '
+      'videoId=${videoList[index].id}',
+      category: LogCategory.video,
+    );
+    context.push(
+      PooledFullscreenVideoFeedScreen.path,
+      extra: PooledFullscreenVideoFeedArgs(
+        videosStream: _videosStreamController.stream.startWith(videoList),
+        initialIndex: index,
+        contextTitle: '#${widget.hashtag}',
+        trafficSource: ViewTrafficSource.search,
+        sourceDetail: widget.hashtag,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final body = Builder(
@@ -258,6 +293,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           hashtagService.getVideosByHashtags([widget.hashtag]),
         );
         final videos = _combineAndSortVideos(webSocketVideos);
+
+        // Push updated video list to stream so any open fullscreen feed
+        // receives the latest ordering (keeps grid and feed in sync).
+        if (videos.isNotEmpty) {
+          _videosStreamController.add(videos);
+        }
 
         Log.debug(
           '🏷️ Found ${videos.length} videos for #${widget.hashtag} '
@@ -338,14 +379,8 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
             useMasonryLayout: true,
             onVideoTap:
                 widget.onVideoTap ??
-                (videos, index) {
-                  // Default behavior: navigate to hashtag feed mode using GoRouter
-                  context.go(
-                    HashtagScreenRouter.pathForTag(
-                      widget.hashtag,
-                      index: index,
-                    ),
-                  );
+                (videoList, index) {
+                  _navigateToFullscreenFeed(context, videoList, index);
                 },
             onRefresh: () => _loadHashtagVideos(forceRefresh: true),
           );
@@ -399,13 +434,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
               final video = videos[index];
               return GestureDetector(
                 onTap: () {
-                  // Navigate to hashtag feed mode using GoRouter
-                  context.go(
-                    HashtagScreenRouter.pathForTag(
-                      widget.hashtag,
-                      index: index,
-                    ),
-                  );
+                  _navigateToFullscreenFeed(context, videos, index);
                 },
                 child: SizedBox(
                   height: MediaQuery.of(context).size.height,
@@ -433,21 +462,11 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
+      appBar: DiVineAppBar(
+        title: '#${widget.hashtag}',
+        showBackButton: true,
+        onBackPressed: context.pop,
         backgroundColor: VineTheme.vineGreen,
-        elevation: 0,
-        title: Text(
-          '#${widget.hashtag}',
-          style: const TextStyle(
-            color: VineTheme.whiteText,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-          onPressed: context.pop,
-        ),
       ),
       body: body,
     );

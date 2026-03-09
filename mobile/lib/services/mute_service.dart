@@ -93,12 +93,12 @@ class MuteItem {
   };
 
   static MuteItem fromJson(Map<String, dynamic> json) => MuteItem(
-    type: MuteTypeExtension.fromString(json['type']),
-    value: json['value'],
-    reason: json['reason'],
-    createdAt: DateTime.parse(json['createdAt']),
+    type: MuteTypeExtension.fromString(json['type'] as String),
+    value: json['value'] as String,
+    reason: json['reason'] as String?,
+    createdAt: DateTime.parse(json['createdAt'] as String),
     expireAt: json['expireAt'] != null
-        ? DateTime.parse(json['expireAt'])
+        ? DateTime.parse(json['expireAt'] as String)
         : null,
   );
 
@@ -522,7 +522,7 @@ class MuteService {
 
       final event = await _authService.createAndSignEvent(
         kind: 10000, // NIP-51 mute list
-        content: 'divine mute list',
+        content: 'Divine mute list',
         tags: tags,
       );
 

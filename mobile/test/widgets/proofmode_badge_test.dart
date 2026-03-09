@@ -11,9 +11,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedMobile,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
         ),
       );
@@ -32,45 +30,39 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedWeb,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedWeb),
           ),
         ),
       );
 
-      // Should display shield icon
-      expect(find.byIcon(Icons.shield_outlined), findsOneWidget);
+      // Should display verified outlined icon (silver tier)
+      expect(find.byIcon(Icons.verified_outlined), findsOneWidget);
 
       // Should display correct text
-      expect(find.text('Verified'), findsOneWidget);
+      expect(find.text('Human Made'), findsOneWidget);
     });
 
     testWidgets('renders Basic Proof badge correctly', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.basicProof,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.basicProof),
           ),
         ),
       );
 
-      // Should display info icon
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      // Should display verified outlined icon (bronze tier)
+      expect(find.byIcon(Icons.verified_outlined), findsOneWidget);
 
       // Should display correct text
-      expect(find.text('Basic Proof'), findsOneWidget);
+      expect(find.text('Human Made'), findsOneWidget);
     });
 
     testWidgets('renders Unverified badge correctly', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.unverified,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.unverified),
           ),
         ),
       );
@@ -87,9 +79,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedMobile,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
         ),
       );
@@ -132,9 +122,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ProofModeBadge(
-              level: VerificationLevel.verifiedMobile,
-            ),
+            body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
           ),
         ),
       );
@@ -149,33 +137,103 @@ void main() {
       expect(find.byType(Icon), findsOneWidget);
       expect(find.byType(Text), findsOneWidget);
     });
+
+    testWidgets(
+      'human made badge keeps a neutral shell and uses tier color on the icon',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: ProofModeBadge(level: VerificationLevel.verifiedMobile),
+            ),
+          ),
+        );
+
+        final container = tester.widget<Container>(
+          find
+              .descendant(
+                of: find.byType(ProofModeBadge),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+        final decoration = container.decoration! as BoxDecoration;
+        final border = decoration.border! as Border;
+        final icon = tester.widget<Icon>(find.byType(Icon));
+        final text = tester.widget<Text>(find.text('Human Made'));
+
+        expect(decoration.color, const Color(0xFF161A1D));
+        expect(border.top.color, const Color(0xFF434A52));
+        expect(icon.color, const Color(0xFFFFD700));
+        expect(text.style?.color, const Color(0xFFF5F7FA));
+      },
+    );
+
+    testWidgets('human made tiers share the same badge shell', (tester) async {
+      Future<BoxDecoration> pumpAndGetDecoration(
+        VerificationLevel level,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: ProofModeBadge(level: level)),
+          ),
+        );
+
+        final container = tester.widget<Container>(
+          find
+              .descendant(
+                of: find.byType(ProofModeBadge),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+
+        return container.decoration! as BoxDecoration;
+      }
+
+      final mobileDecoration = await pumpAndGetDecoration(
+        VerificationLevel.verifiedMobile,
+      );
+      final webDecoration = await pumpAndGetDecoration(
+        VerificationLevel.verifiedWeb,
+      );
+      final basicDecoration = await pumpAndGetDecoration(
+        VerificationLevel.basicProof,
+      );
+
+      expect(webDecoration.color, mobileDecoration.color);
+      expect(
+        (webDecoration.border! as Border).top.color,
+        (mobileDecoration.border! as Border).top.color,
+      );
+      expect(basicDecoration.color, mobileDecoration.color);
+      expect(
+        (basicDecoration.border! as Border).top.color,
+        (mobileDecoration.border! as Border).top.color,
+      );
+    });
   });
 
   group('OriginalVineBadge Widget', () {
     testWidgets('renders Original Vine badge correctly', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge()),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       // Should display 'V' text
       expect(find.text('V'), findsOneWidget);
 
-      // Should display 'Original Vine' text
-      expect(find.text('Original Vine'), findsOneWidget);
+      // Should display 'Original' text
+      expect(find.text('Original'), findsOneWidget);
 
       // Check the badge container exists
       expect(find.byType(Container), findsWidgets);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
+    });
 
     testWidgets('renders different Vine badge sizes correctly', (tester) async {
       // Test small size
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge()),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       var badge = tester.widget<OriginalVineBadge>(
@@ -206,9 +264,7 @@ void main() {
 
     testWidgets('Vine badge has proper visual structure', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge()),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       // Should have Container for styling
@@ -223,9 +279,7 @@ void main() {
 
     testWidgets('Vine badge has teal background color', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(body: OriginalVineBadge()),
-        ),
+        const MaterialApp(home: Scaffold(body: OriginalVineBadge())),
       );
 
       final container = tester.widget<Container>(
@@ -244,7 +298,8 @@ void main() {
 
   group('Badge Enum Values', () {
     test('VerificationLevel has all expected values', () {
-      expect(VerificationLevel.values, hasLength(4));
+      expect(VerificationLevel.values, hasLength(5));
+      expect(VerificationLevel.values, contains(VerificationLevel.platinum));
       expect(
         VerificationLevel.values,
         contains(VerificationLevel.verifiedMobile),

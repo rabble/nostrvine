@@ -90,6 +90,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).thenAnswer((_) async => createTestProfile());
           },
@@ -120,6 +121,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).called(1);
             verifyNever(
@@ -144,6 +146,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
                 currentProfile: existingProfile,
               ),
             ).thenAnswer((_) async => createTestProfile());
@@ -182,6 +185,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).thenAnswer((_) async => createTestProfile());
           },
@@ -213,6 +217,43 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
+              ),
+            ).called(1);
+          },
+        );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'passes clearNip05: true when no username in divine mode',
+          setUp: () {
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                clearNip05: true,
+              ),
+            ).thenAnswer((_) async => createTestProfile());
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+            ),
+          ),
+          verify: (_) {
+            verify(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                clearNip05: true,
               ),
             ).called(1);
           },
@@ -274,6 +315,94 @@ void main() {
             ).called(1);
           },
         );
+
+        blocTest<ProfileEditorBloc, ProfileEditorState>(
+          'supports admin-assigned username for current user through '
+          'availability check then save/claim success',
+          setUp: () {
+            when(
+              () => mockProfileRepository.checkUsernameAvailability(
+                username: testUsername,
+                currentUserPubkey: testPubkey,
+              ),
+            ).thenAnswer((_) async => const UsernameAvailable());
+            when(
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
+            ).thenAnswer((_) async => null);
+            when(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                username: testUsername,
+                picture: testPicture,
+              ),
+            ).thenAnswer((_) async => createTestProfile());
+            when(
+              () => mockProfileRepository.claimUsername(username: testUsername),
+            ).thenAnswer((_) async => const UsernameClaimSuccess());
+          },
+          build: () => ProfileEditorBloc(
+            profileRepository: mockProfileRepository,
+            userProfileService: mockUserProfileService,
+            hasExistingProfile: true,
+            currentUserPubkey: testPubkey,
+          ),
+          act: (bloc) async {
+            bloc.add(const UsernameChanged(testUsername));
+            await Future<void>.delayed(const Duration(milliseconds: 700));
+            bloc.add(
+              const ProfileSaved(
+                pubkey: testPubkey,
+                displayName: testDisplayName,
+                about: testAbout,
+                picture: testPicture,
+                username: testUsername,
+              ),
+            );
+          },
+          wait: const Duration(milliseconds: 700),
+          expect: () => [
+            isA<ProfileEditorState>().having(
+              (s) => s.usernameStatus,
+              'usernameStatus',
+              UsernameStatus.checking,
+            ),
+            isA<ProfileEditorState>().having(
+              (s) => s.usernameStatus,
+              'usernameStatus',
+              UsernameStatus.available,
+            ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.loading,
+            ),
+            isA<ProfileEditorState>().having(
+              (s) => s.status,
+              'status',
+              ProfileEditorStatus.success,
+            ),
+          ],
+          verify: (_) {
+            verify(
+              () => mockProfileRepository.checkUsernameAvailability(
+                username: testUsername,
+                currentUserPubkey: testPubkey,
+              ),
+            ).called(1);
+            verify(
+              () => mockProfileRepository.saveProfileEvent(
+                displayName: testDisplayName,
+                about: testAbout,
+                username: testUsername,
+                picture: testPicture,
+              ),
+            ).called(1);
+            verify(
+              () => mockProfileRepository.claimUsername(username: testUsername),
+            ).called(1);
+          },
+        );
       });
 
       group('profile publish failure', () {
@@ -288,6 +417,7 @@ void main() {
                 displayName: testDisplayName,
                 about: testAbout,
                 picture: testPicture,
+                clearNip05: any(named: 'clearNip05'),
               ),
             ).thenThrow(const ProfilePublishFailedException('Network error'));
           },
@@ -922,6 +1052,51 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits [checking, available] when username is admin-assigned to '
+        'current user',
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+              currentUserPubkey: testPubkey,
+            ),
+          ).thenAnswer((_) async => const UsernameAvailable());
+        },
+        build: () => ProfileEditorBloc(
+          profileRepository: mockProfileRepository,
+          userProfileService: mockUserProfileService,
+          hasExistingProfile: true,
+          currentUserPubkey: testPubkey,
+        ),
+        act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
+        wait: debounceDuration,
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.checking,
+              ),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.available,
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+              currentUserPubkey: testPubkey,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'emits [checking, error] when check fails',
         setUp: () {
           when(
@@ -1423,9 +1598,7 @@ void main() {
       });
 
       test('returns false when no initial username and status is idle', () {
-        const state = ProfileEditorState(
-          username: 'someuser',
-        );
+        const state = ProfileEditorState(username: 'someuser');
         expect(state.isUsernameSaveReady, isFalse);
       });
     });

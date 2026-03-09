@@ -1,6 +1,7 @@
 // ABOUTME: Instruction text widget for clip gallery
 // ABOUTME: Animated fade and size transitions based on editing/reordering state
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -35,7 +36,7 @@ class ClipGalleryInstructionText extends ConsumerWidget {
               opacity: state.isReordering ? 0 : 1,
               child: const Align(
                 child: Padding(
-                  padding: .only(top: 25),
+                  padding: EdgeInsets.only(top: 25),
                   child: Text(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     'Tap to edit. Hold and drag to reorder.',
@@ -44,9 +45,9 @@ class ClipGalleryInstructionText extends ConsumerWidget {
                       height: 1.33,
                       letterSpacing: 0.4,
                       fontSize: 12,
-                      color: Color(0x80FFFFFF),
+                      color: VineTheme.onSurfaceMuted,
                     ),
-                    textAlign: .center,
+                    textAlign: TextAlign.center,
                   ),
                 ),
               ),

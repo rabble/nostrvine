@@ -1,97 +1,145 @@
-// ABOUTME: Service for persisting vine drafts using shared_preferences
-// ABOUTME: Handles save, load, delete, and clear operations with JSON serialization
+// ABOUTME: Service for persisting vine drafts using Drift database
+// ABOUTME: Handles save, load, delete, clear, and migration from SharedPreferences
 
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:db_client/db_client.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
-import 'package:openvine/utils/android_path_migration.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DraftStorageService {
-  DraftStorageService();
+  DraftStorageService({
+    required DraftsDao draftsDao,
+    required ClipsDao clipsDao,
+  }) : _draftsDao = draftsDao,
+       _clipsDao = clipsDao;
 
-  SharedPreferences? _prefs;
+  final DraftsDao _draftsDao;
+  final ClipsDao _clipsDao;
+
   static const String _storageKey = 'vine_drafts';
 
-  Future<SharedPreferences> get _prefsAsync async =>
-      _prefs ??= await SharedPreferences.getInstance();
-
-  /// Migrate drafts from old Android /files/ path to /app_flutter/
+  /// Migrate drafts from SharedPreferences to Drift database.
+  ///
+  /// TODO(hm21): Remove migration in the future.
+  /// That migration was created at 03.03.2026.
   Future<void> migrateOldDrafts() async {
-    final prefs = await _prefsAsync;
-    final String? jsonString = prefs.getString(_storageKey);
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_storageKey);
     if (jsonString == null || jsonString.isEmpty) return;
 
     final documentsPath = await getDocumentsPath();
-    final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
+    final jsonList = json.decode(jsonString) as List<dynamic>;
 
-    // Parse with useOriginalPath to get the raw paths from JSON
-    final draftsWithOriginalPaths = jsonList
-        .map(
-          (json) => VineDraft.fromJson(
-            json as Map<String, dynamic>,
-            documentsPath,
-            useOriginalPath: true,
-          ),
-        )
-        .toList();
+    final failedDrafts = <dynamic>[];
+    var successCount = 0;
 
-    // Collect all file paths that need migration
-    final pathsToMigrate = <String?>[
-      for (final draft in draftsWithOriginalPaths) ...[
-        for (final clip in draft.clips) ...[
-          clip.video.file?.path,
-          clip.thumbnailPath,
-        ],
-        // Include finalRenderedClip paths
-        draft.finalRenderedClip?.video.file?.path,
-        draft.finalRenderedClip?.thumbnailPath,
-      ],
-    ];
+    for (final rawJson in jsonList) {
+      try {
+        final draftMap = rawJson as Map<String, dynamic>;
+        final draft = DivineVideoDraft.fromJson(draftMap, documentsPath);
 
-    // Run the migration
-    final migrated = await migrateAndroidPaths(
-      documentsPath: documentsPath,
-      filePaths: pathsToMigrate,
-    );
+        // Upsert draft row (clips stripped from JSON blob)
+        final draftJson = draft.toJson();
+        draftJson.remove('clips');
+        await _draftsDao.upsertDraft(
+          id: draft.id,
+          title: draft.title,
+          description: draft.description,
+          publishStatus: draft.publishStatus.name,
+          createdAt: draft.createdAt,
+          lastModified: draft.lastModified,
+          publishAttempts: draft.publishAttempts,
+          publishError: draft.publishError,
+          data: json.encode(draftJson),
+          renderedFilePath: draft.finalRenderedClip?.video.file?.path != null
+              ? p.basename(
+                  draft.finalRenderedClip!.video.file!.path,
+                )
+              : null,
+          renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
+              ? p.basename(
+                  draft.finalRenderedClip!.thumbnailPath!,
+                )
+              : null,
+        );
 
-    if (migrated) {
+        // Insert clips with composite IDs so draft clips
+        // don't collide with library clips sharing the same
+        // clip.id primary key.
+        for (var i = 0; i < draft.clips.length; i++) {
+          final clip = draft.clips[i];
+          await _clipsDao.upsertClip(
+            id: '${draft.id}:${clip.id}',
+            draftId: draft.id,
+            orderIndex: i,
+            durationMs: clip.duration.inMilliseconds,
+            recordedAt: clip.recordedAt,
+            data: json.encode(clip.toJson()),
+            filePath: clip.video.file?.path != null
+                ? p.basename(clip.video.file!.path)
+                : null,
+            thumbnailPath: clip.thumbnailPath != null
+                ? p.basename(clip.thumbnailPath!)
+                : null,
+          );
+        }
+        successCount++;
+      } catch (e) {
+        Log.error(
+          'Failed to migrate draft: $e',
+          name: 'DraftStorageService',
+          category: LogCategory.video,
+        );
+        failedDrafts.add(rawJson);
+      }
+    }
+
+    if (failedDrafts.isEmpty) {
+      // All drafts migrated successfully - remove the legacy key
+      await prefs.remove(_storageKey);
       Log.info(
-        '📂 Migrated drafts from old Android paths',
+        '📂 Migrated $successCount drafts from SharedPreferences to Drift',
         name: 'DraftStorageService',
+      );
+    } else {
+      // Keep only failed drafts for retry on next app launch
+      await prefs.setString(_storageKey, json.encode(failedDrafts));
+      Log.warning(
+        '⚠️ Migrated $successCount drafts, ${failedDrafts.length} failed and '
+        'will be retried on next launch',
+        name: 'DraftStorageService',
+        category: LogCategory.video,
       );
     }
   }
 
-  /// Save a draft to storage. If a draft with the same ID exists, it will be updated.
-  /// When updating, orphaned clip files (video/thumbnail) from the old draft are deleted.
-  Future<void> saveDraft(VineDraft draft) async {
+  /// Save a draft to storage. If a draft with the same ID exists, it will be
+  /// updated. When updating, orphaned clip files (video/thumbnail) from the
+  /// old draft are deleted.
+  Future<void> saveDraft(DivineVideoDraft draft) async {
     Log.debug(
       '💾 Saving draft: ${draft.id}',
       name: 'DraftStorageService',
       category: LogCategory.video,
     );
-    final drafts = await getAllDrafts();
 
-    // Check if draft with same ID exists
-    final existingIndex = drafts.indexWhere((d) => d.id == draft.id);
-
-    if (existingIndex != -1) {
-      final existingDraft = drafts[existingIndex];
-
-      // Find orphaned files (in old draft but not in new draft)
+    // Check for orphaned files before overwriting
+    final existingDraft = await getDraftById(draft.id);
+    if (existingDraft != null) {
       final newFilePaths = <String?>{
         for (final clip in draft.clips) ...[
           clip.video.file?.path,
           clip.thumbnailPath,
         ],
-        // Include new finalRenderedClip paths
         draft.finalRenderedClip?.video.file?.path,
         draft.finalRenderedClip?.thumbnailPath,
       };
@@ -102,7 +150,6 @@ class DraftStorageService {
             clip.video.file?.path,
           if (!newFilePaths.contains(clip.thumbnailPath)) clip.thumbnailPath,
         ],
-        // Check if old finalRenderedClip is orphaned
         if (existingDraft.finalRenderedClip != null) ...[
           if (!newFilePaths.contains(
             existingDraft.finalRenderedClip?.video.file?.path,
@@ -116,33 +163,81 @@ class DraftStorageService {
       ];
 
       // Delete orphaned files (only if not referenced by clip library)
-      await FileCleanupService.deleteFilesIfUnreferenced(orphanedFiles);
-
-      // Update existing draft
-      drafts[existingIndex] = draft;
-    } else {
-      // Add new draft
-      drafts.add(draft);
+      await FileCleanupService.deleteFilesIfUnreferenced(
+        orphanedFiles,
+        draftsDao: _draftsDao,
+        clipsDao: _clipsDao,
+      );
     }
 
-    await _saveDrafts(drafts);
+    // Upsert draft and clips atomically in a single transaction
+    final draftJson = draft.toJson();
+    // Remove clips from JSON blob – they live in their own table
+    draftJson.remove('clips');
+
+    final clipDataList = <DraftClipData>[];
+    for (var i = 0; i < draft.clips.length; i++) {
+      final clip = draft.clips[i];
+      clipDataList.add(
+        DraftClipData(
+          id: clip.id,
+          orderIndex: i,
+          durationMs: clip.duration.inMilliseconds,
+          recordedAt: clip.recordedAt,
+          data: json.encode(clip.toJson()),
+          filePath: clip.video.file?.path != null
+              ? p.basename(clip.video.file!.path)
+              : null,
+          thumbnailPath: clip.thumbnailPath != null
+              ? p.basename(clip.thumbnailPath!)
+              : null,
+        ),
+      );
+    }
+
+    await _draftsDao.saveDraftWithClips(
+      id: draft.id,
+      title: draft.title,
+      description: draft.description,
+      publishStatus: draft.publishStatus.name,
+      createdAt: draft.createdAt,
+      lastModified: draft.lastModified,
+      publishAttempts: draft.publishAttempts,
+      publishError: draft.publishError,
+      data: json.encode(draftJson),
+      renderedFilePath: draft.finalRenderedClip?.video.file?.path != null
+          ? p.basename(draft.finalRenderedClip!.video.file!.path)
+          : null,
+      renderedThumbnailPath: draft.finalRenderedClip?.thumbnailPath != null
+          ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
+          : null,
+      clipDataList: clipDataList,
+    );
   }
 
-  Future<VineDraft?> getDraftById(String id) async {
-    final drafts = await getAllDrafts();
+  /// Get total count of drafts without loading their data.
+  Future<int> getDraftCount() => _draftsDao.getCount();
 
-    final index = drafts.indexWhere((d) => d.id == id);
+  Future<DivineVideoDraft?> getDraftById(String id) async {
+    final row = await _draftsDao.getDraftById(id);
+    if (row == null) {
+      Log.error('📝 Draft not found: $id', category: LogCategory.video);
+      return null;
+    }
 
-    if (index >= 0) return drafts[index];
-
-    Log.error('📝 Draft not found: $id', category: LogCategory.video);
-    return null;
+    final clipRows = await _clipsDao.getClipsByDraftId(id);
+    final documentsPath = await getDocumentsPath();
+    return DivineVideoDraft.fromDriftRow(
+      row: row,
+      clipRows: clipRows,
+      documentsPath: documentsPath,
+    );
   }
 
   /// Get draft by ID with validation - filters out clips with missing video files.
   ///
   /// Returns null if draft not found or all clips are invalid.
-  Future<VineDraft?> getValidatedDraftById(String id) async {
+  Future<DivineVideoDraft?> getValidatedDraftById(String id) async {
     final draft = await getDraftById(id);
     if (draft == null) return null;
 
@@ -169,7 +264,7 @@ class DraftStorageService {
   /// Get the autosaved draft with validation.
   ///
   /// Returns null if no autosave exists or all clips are invalid.
-  Future<VineDraft?> getAutosaveDraft() async {
+  Future<DivineVideoDraft?> getAutosaveDraft() async {
     return getValidatedDraftById(VideoEditorConstants.autoSaveId);
   }
 
@@ -180,7 +275,7 @@ class DraftStorageService {
   }
 
   /// Filter clips to only include those with existing video files.
-  List<RecordingClip> _filterValidClips(List<RecordingClip> clips) {
+  List<DivineVideoClip> _filterValidClips(List<DivineVideoClip> clips) {
     return clips.where((clip) {
       final videoPath = clip.video.file?.path;
       if (videoPath == null) return false;
@@ -189,34 +284,55 @@ class DraftStorageService {
   }
 
   /// Get all drafts from storage
-  Future<List<VineDraft>> getAllDrafts() async {
+  Future<List<DivineVideoDraft>> getAllDrafts() async {
     try {
-      final prefs = await _prefsAsync;
-      final String? jsonString = prefs.getString(_storageKey);
+      final rows = await _draftsDao.getAllDrafts();
+      final documentsPath = await getDocumentsPath();
+      final drafts = <DivineVideoDraft>[];
+      final corruptedDraftIds = <String>[];
 
-      if (jsonString == null || jsonString.isEmpty) {
-        return [];
+      for (final row in rows) {
+        final clipRows = await _clipsDao.getClipsByDraftId(row.id);
+
+        if (clipRows.isEmpty) {
+          corruptedDraftIds.add(row.id);
+          continue;
+        }
+
+        final draft = DivineVideoDraft.fromDriftRow(
+          row: row,
+          clipRows: clipRows,
+          documentsPath: documentsPath,
+        );
+        drafts.add(draft);
       }
 
-      final documentsPath = await getDocumentsPath();
-      final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
-
-      final drafts = jsonList
-          .map(
-            (json) =>
-                VineDraft.fromJson(json as Map<String, dynamic>, documentsPath),
-          )
-          .toList();
+      // Clean up corrupted drafts (0 clips) in the background
+      if (corruptedDraftIds.isNotEmpty) {
+        Log.warning(
+          '🧹 Removing ${corruptedDraftIds.length} corrupted '
+          'draft(s) with 0 clips: $corruptedDraftIds',
+          name: 'DraftStorageService',
+          category: LogCategory.video,
+        );
+        for (final id in corruptedDraftIds) {
+          await _draftsDao.deleteDraft(id);
+        }
+      }
 
       return drafts;
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
-        '❌ Failed to load drafts: $e',
+        'Failed to load drafts: $e',
         name: 'DraftStorageService',
         category: LogCategory.video,
       );
-      // If storage is corrupted, return empty list
-      return [];
+      await CrashReportingService.instance.recordError(
+        e,
+        stackTrace,
+        reason: 'Failed to load drafts from database',
+      );
+      rethrow;
     }
   }
 
@@ -227,29 +343,29 @@ class DraftStorageService {
       name: 'DraftStorageService',
       category: LogCategory.video,
     );
-    final drafts = await getAllDrafts();
-    final draftIndex = drafts.indexWhere((draft) => draft.id == id);
 
-    if (draftIndex != -1) {
-      final draft = drafts[draftIndex];
-      drafts.removeAt(draftIndex);
+    // Fetch draft before deleting so we can clean up files
+    final draft = await getDraftById(id);
+    if (draft == null) return;
 
-      // Save first, then delete files (so reference check sees updated state)
-      await _saveDrafts(drafts);
+    // Delete from DB first (clips cascade via FK), then delete files
+    await _draftsDao.deleteDraft(id);
 
-      // Delete clip files only if not referenced by clip library
-      await FileCleanupService.deleteRecordingClipsFiles(draft.clips);
+    // Delete clip files only if not referenced by clip library
+    await FileCleanupService.deleteRecordingClipsFiles(
+      draft.clips,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
 
-      // Delete final rendered clip if present
-      if (draft.finalRenderedClip != null) {
-        await FileCleanupService.deleteRecordingClipFiles(
-          draft.finalRenderedClip!,
-        );
-      }
-      return;
+    // Delete final rendered clip if present
+    if (draft.finalRenderedClip != null) {
+      await FileCleanupService.deleteRecordingClipFiles(
+        draft.finalRenderedClip!,
+        draftsDao: _draftsDao,
+        clipsDao: _clipsDao,
+      );
     }
-
-    await _saveDrafts(drafts);
   }
 
   /// Clear all drafts from storage and delete associated files
@@ -263,23 +379,22 @@ class DraftStorageService {
     final allClips = drafts.expand((draft) => draft.clips).toList();
     final allFinalRenderedClips = drafts
         .map((draft) => draft.finalRenderedClip)
-        .whereType<RecordingClip>()
+        .whereType<DivineVideoClip>()
         .toList();
 
-    // Clear storage first, then delete files (so reference check sees updated state)
-    final prefs = await _prefsAsync;
-    await prefs.remove(_storageKey);
+    // Clear DB first (clips cascade via FK), then delete files
+    await _draftsDao.clearAll();
 
     // Delete clip files only if not referenced by clip library
-    await FileCleanupService.deleteRecordingClipsFiles(allClips);
-    await FileCleanupService.deleteRecordingClipsFiles(allFinalRenderedClips);
-  }
-
-  /// Internal helper to save drafts list to storage
-  Future<void> _saveDrafts(List<VineDraft> drafts) async {
-    final prefs = await _prefsAsync;
-    final jsonList = drafts.map((draft) => draft.toJson()).toList();
-    final jsonString = json.encode(jsonList);
-    await prefs.setString(_storageKey, jsonString);
+    await FileCleanupService.deleteRecordingClipsFiles(
+      allClips,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
+    await FileCleanupService.deleteRecordingClipsFiles(
+      allFinalRenderedClips,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
   }
 }

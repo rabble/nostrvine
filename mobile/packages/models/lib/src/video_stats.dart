@@ -32,10 +32,14 @@ class VideoStats {
     this.authorName,
     this.authorAvatar,
     this.blurhash,
+    this.dimensions,
     this.trendingScore,
     this.loops,
     this.views,
     this.rawTags = const {},
+    this.textTrackRef,
+    this.textTrackContent,
+    this.contentLabels = const [],
   });
 
   /// Creates a [VideoStats] from JSON response.
@@ -131,6 +135,36 @@ class VideoStats {
       views = int.tryParse(directViews);
     }
 
+    // Parse text-track fields from API response (text_track_ref,
+    // text_track_content are top-level fields on video endpoints).
+    var textTrackRef =
+        json['text_track_ref']?.toString() ??
+        eventData['text_track_ref']?.toString() ??
+        statsData['text_track_ref']?.toString();
+    if (textTrackRef != null && textTrackRef.isEmpty) textTrackRef = null;
+
+    var textTrackContent =
+        json['text_track_content']?.toString() ??
+        eventData['text_track_content']?.toString() ??
+        statsData['text_track_content']?.toString();
+    if (textTrackContent != null && textTrackContent.isEmpty) {
+      textTrackContent = null;
+    }
+
+    var dimensions =
+        eventData['dimensions']?.toString() ??
+        eventData['dim']?.toString() ??
+        json['dimensions']?.toString() ??
+        json['dim']?.toString() ??
+        statsData['dimensions']?.toString() ??
+        statsData['dim']?.toString();
+    if (dimensions != null && dimensions.isEmpty) dimensions = null;
+
+    final contentLabels = _parseContentLabels(
+      json['content_labels'] ??
+          eventData['content_labels'] ??
+          statsData['content_labels'],
+    );
     // Also check for blurhash and summary in tags (NIP-71 standard)
     // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
     String? blurhashFromTag;
@@ -161,6 +195,9 @@ class VideoStats {
           if (tagName == 'blurhash' && blurhashFromTag == null) {
             blurhashFromTag = tagValue;
           }
+          if ((tagName == 'dim' || tagName == 'size') && dimensions == null) {
+            dimensions = tagValue;
+          }
           if (tagName == 'summary' && summaryFromTag == null) {
             summaryFromTag = tagValue;
           }
@@ -169,6 +206,9 @@ class VideoStats {
           }
           if (tagName == 'views' && views == null) {
             views = int.tryParse(tagValue);
+          }
+          if (tagName == 'text-track' && textTrackRef == null) {
+            textTrackRef = tagValue;
           }
         }
       }
@@ -227,6 +267,14 @@ class VideoStats {
         json['embedded_reposts'] ??
         0;
 
+    // Parse platform from Funnelcake (server-controlled, not user-settable).
+    // "vine" indicates a genuine Vine archive import.
+    final platform =
+        json['platform']?.toString() ?? eventData['platform']?.toString();
+    if (platform != null && platform.isNotEmpty) {
+      rawTags['platform'] = platform;
+    }
+
     return VideoStats(
       id: id,
       pubkey: pubkey,
@@ -242,6 +290,7 @@ class VideoStats {
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
+      dimensions: dimensions,
       reactions: _parseInt(reactions),
       comments: _parseInt(comments),
       reposts: _parseInt(reposts),
@@ -254,6 +303,9 @@ class VideoStats {
       loops: loops,
       views: views,
       rawTags: rawTags,
+      textTrackRef: textTrackRef,
+      textTrackContent: textTrackContent,
+      contentLabels: contentLabels,
     );
   }
 
@@ -302,6 +354,9 @@ class VideoStats {
   /// Blurhash for placeholder thumbnail.
   final String? blurhash;
 
+  /// Video dimensions from REST or Nostr `dim`/`size` metadata.
+  final String? dimensions;
+
   /// Reaction/like count.
   final int reactions;
 
@@ -326,6 +381,20 @@ class VideoStats {
   /// All Nostr event tags as a flat map, preserving tags (like ProofMode,
   /// C2PA, verification) that don't have dedicated fields on this model.
   final Map<String, String> rawTags;
+
+  /// Addressable coordinates for subtitle event (from `text-track` tag or
+  /// API `text_track_ref` field).
+  final String? textTrackRef;
+
+  /// Embedded VTT content from API (saves client a relay round-trip).
+  final String? textTrackContent;
+
+  /// Recognized moderation labels extracted from REST `content_labels`.
+  ///
+  /// The relay currently mixes moderation and generic classifier labels inside
+  /// `content_labels`. Only the moderation subset is promoted into
+  /// [VideoEvent.contentWarningLabels].
+  final List<String> contentLabels;
 
   /// Converts this [VideoStats] to a [VideoEvent] for use in the app.
   ///
@@ -353,6 +422,7 @@ class VideoStats {
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
+      dimensions: dimensions,
       originalLikes: reactions,
       // When from Funnelcake, Nostr likes are added to originalLikes by default
       // Setting to 0 here ensures VideoInteractionsBloc seeds the correct count
@@ -360,9 +430,15 @@ class VideoStats {
       originalComments: comments,
       originalReposts: reposts,
       originalLoops: loops,
+      textTrackRef: textTrackRef,
+      textTrackContent: textTrackContent,
+      contentWarningLabels: contentLabels,
       rawTags: {
         ...rawTags,
-        if (loops != null) 'loops': loops.toString(),
+        // Note: Do NOT inject engagement `loops` here — rawTags['loops']
+        // must only exist when the original Nostr event contains a
+        // ['loops', ...] tag (i.e., genuine Vine archive imports).
+        // The engagement loop count is stored in `originalLoops` instead.
         if (views != null) 'views': views.toString(),
       },
     );
@@ -380,6 +456,53 @@ class VideoStats {
   @override
   String toString() => 'VideoStats(id: $id, title: $title)';
 }
+
+List<String> _parseContentLabels(dynamic value) {
+  if (value is! List) return const [];
+
+  final labels = <String>[];
+  for (final item in value) {
+    final normalized = _normalizeContentLabel(item.toString().trim());
+    if (normalized != null && !labels.contains(normalized)) {
+      labels.add(normalized);
+    }
+  }
+  return labels;
+}
+
+String? _normalizeContentLabel(String value) {
+  if (value.isEmpty) return null;
+
+  switch (value) {
+    case 'pornography':
+      return 'porn';
+    case 'graphic-violence':
+      return 'graphic-media';
+  }
+
+  return _recognizedModerationLabels.contains(value) ? value : null;
+}
+
+const Set<String> _recognizedModerationLabels = {
+  'nudity',
+  'sexual',
+  'porn',
+  'graphic-media',
+  'violence',
+  'self-harm',
+  'drugs',
+  'alcohol',
+  'tobacco',
+  'gambling',
+  'profanity',
+  'hate',
+  'harassment',
+  'flashing-lights',
+  'ai-generated',
+  'spoiler',
+  'misleading',
+  'content-warning',
+};
 
 /// Safely parses a dynamic value to double.
 double? _parseDouble(dynamic value) {

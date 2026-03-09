@@ -10,4 +10,5 @@ class Hrps {
   static const String nevent = "nevent";
   static const String nrelay = "nrelay";
   static const String naddr = "naddr";
+  static const String encryptedPrivateKey = "ncryptsec";
 }

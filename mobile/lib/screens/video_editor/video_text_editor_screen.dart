@@ -137,58 +137,63 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
                 children: [
                   // TextEditor with padding when panel is shown
                   Expanded(
-                    child: TextEditor(
-                      key: _textEditorKey,
-                      layer: widget.layer,
-                      theme: Theme.of(context),
-                      heroTag: widget.layer?.id,
-                      callbacks: ProImageEditorCallbacks(
-                        textEditorCallbacks: TextEditorCallbacks(
-                          onBackgroundModeChanged: (value) {
-                            context.read<VideoEditorTextBloc>().add(
-                              VideoEditorTextBackgroundStyleChanged(value),
-                            );
-                          },
-                          onTextAlignChanged: (value) {
-                            context.read<VideoEditorTextBloc>().add(
-                              VideoEditorTextAlignmentChanged(value),
-                            );
-                          },
-                        ),
-                      ),
-                      configs: ProImageEditorConfigs(
-                        i18n: const I18n(
-                          textEditor: I18nTextEditor(inputHintText: ''),
-                        ),
-                        textEditor: TextEditorConfigs(
-                          style: const TextEditorStyle(
-                            inputCursorColor: VineTheme.whiteText,
-                            inputTextFieldPadding: .only(left: 16, right: 48),
+                    child: MediaQuery.removeViewPadding(
+                      context: context,
+                      removeBottom: true,
+                      child: TextEditor(
+                        key: _textEditorKey,
+                        layer: widget.layer,
+                        theme: Theme.of(context),
+                        heroTag: widget.layer?.id,
+                        callbacks: ProImageEditorCallbacks(
+                          textEditorCallbacks: TextEditorCallbacks(
+                            onBackgroundModeChanged: (value) {
+                              context.read<VideoEditorTextBloc>().add(
+                                VideoEditorTextBackgroundStyleChanged(value),
+                              );
+                            },
+                            onTextAlignChanged: (value) {
+                              context.read<VideoEditorTextBloc>().add(
+                                VideoEditorTextAlignmentChanged(value),
+                              );
+                            },
                           ),
-                          resizeToAvoidBottomInset: false,
-                          minFontScale: VideoEditorConstants.minFontScale,
-                          maxFontScale: VideoEditorConstants.maxFontScale,
-                          initFontScale: _getFontScale(fontSize),
-                          initialBackgroundColorMode: backgroundStyle,
-                          initialTextAlign: alignment,
-                          initialPrimaryColor: state.color,
-                          defaultTextStyle: VideoEditorConstants
-                              .textFonts[state.selectedFontIndex](),
-                          inputTextFieldAlign: _getInputAlignment(alignment),
-                          enableAutoOverflow: false,
-                          widgets: TextEditorWidgets(
-                            appBar: (_, _) => null,
-                            bottomBar: (_, _) => null,
-                            colorPicker: (_, _, _, _) => null,
-                            bodyItemsOverlay: (editor, rebuildStream) => [
-                              ReactiveWidget(
-                                stream: rebuildStream,
-                                builder: (_) => VideoTextEditorScope(
-                                  editor: editor,
-                                  child: const VideoEditorTextOverlayControls(),
+                        ),
+                        configs: ProImageEditorConfigs(
+                          i18n: const I18n(
+                            textEditor: I18nTextEditor(inputHintText: ''),
+                          ),
+                          textEditor: TextEditorConfigs(
+                            style: const TextEditorStyle(
+                              inputCursorColor: VineTheme.whiteText,
+                              inputTextFieldPadding: .only(left: 16, right: 48),
+                            ),
+                            resizeToAvoidBottomInset: false,
+                            minFontScale: VideoEditorConstants.minFontScale,
+                            maxFontScale: VideoEditorConstants.maxFontScale,
+                            initFontScale: _getFontScale(fontSize),
+                            initialBackgroundColorMode: backgroundStyle,
+                            initialTextAlign: alignment,
+                            initialPrimaryColor: state.color,
+                            defaultTextStyle: VideoEditorConstants
+                                .textFonts[state.selectedFontIndex](),
+                            inputTextFieldAlign: _getInputAlignment(alignment),
+                            enableAutoOverflow: false,
+                            widgets: TextEditorWidgets(
+                              appBar: (_, _) => null,
+                              bottomBar: (_, _) => null,
+                              colorPicker: (_, _, _, _) => null,
+                              bodyItemsOverlay: (editor, rebuildStream) => [
+                                ReactiveWidget(
+                                  stream: rebuildStream,
+                                  builder: (_) => VideoTextEditorScope(
+                                    editor: editor,
+                                    child:
+                                        const VideoEditorTextOverlayControls(),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),

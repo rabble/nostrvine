@@ -12,6 +12,9 @@ class TokenResponse {
   /// Handle for silent re-authentication (pass to next authorize request)
   final String? authorizationHandle;
 
+  /// Refresh token for obtaining new access tokens without re-authentication
+  final String? refreshToken;
+
   const TokenResponse({
     required this.bunkerUrl,
     this.accessToken,
@@ -20,6 +23,7 @@ class TokenResponse {
     this.scope,
     this.policy,
     this.authorizationHandle,
+    this.refreshToken,
   });
 
   factory TokenResponse.fromJson(Map<String, dynamic> json) {
@@ -33,6 +37,7 @@ class TokenResponse {
           ? PolicyInfo.fromJson(json['policy'] as Map<String, dynamic>)
           : null,
       authorizationHandle: json['authorization_handle'] as String?,
+      refreshToken: json['refresh_token'] as String?,
     );
   }
 }

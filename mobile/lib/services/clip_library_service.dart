@@ -3,127 +3,140 @@
 
 import 'dart:convert';
 
-import 'package:openvine/models/saved_clip.dart';
+import 'package:db_client/db_client.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
-import 'package:openvine/utils/android_path_migration.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ClipLibraryService {
-  ClipLibraryService();
+  ClipLibraryService({
+    required ClipsDao clipsDao,
+    required DraftsDao draftsDao,
+  }) : _clipsDao = clipsDao,
+       _draftsDao = draftsDao;
 
-  SharedPreferences? _prefs;
+  final ClipsDao _clipsDao;
+  final DraftsDao _draftsDao;
+
   static const String _storageKey = 'clip_library';
 
-  Future<SharedPreferences> get _prefsAsync async =>
-      _prefs ??= await SharedPreferences.getInstance();
-
-  /// Migrate clips from old Android /files/ path to /app_flutter/
+  /// Migrate clips from SharedPreferences to Drift database.
+  ///
+  /// TODO(hm21): Remove migration in the future.
+  /// That migration was created at 03.03.2026.
   Future<void> migrateOldClips() async {
-    final prefs = await _prefsAsync;
-    final String? jsonString = prefs.getString(_storageKey);
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(_storageKey);
     if (jsonString == null || jsonString.isEmpty) return;
 
     final documentsPath = await getDocumentsPath();
-    final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
+    final jsonList = json.decode(jsonString) as List<dynamic>;
 
-    // Parse with useOriginalPath to get the raw paths from JSON
-    final clipsWithOriginalPaths = jsonList
-        .map(
-          (json) => SavedClip.fromJson(
-            json as Map<String, dynamic>,
-            documentsPath,
-            useOriginalPath: true,
-          ),
-        )
-        .toList();
+    final failedClips = <dynamic>[];
+    var successCount = 0;
 
-    // Collect all file paths that need migration
-    final pathsToMigrate = <String?>[
-      for (final clip in clipsWithOriginalPaths) ...[
-        clip.filePath,
-        clip.thumbnailPath,
-      ],
-    ];
+    for (final rawJson in jsonList) {
+      try {
+        final clipMap = rawJson as Map<String, dynamic>;
+        final clip = DivineVideoClip.fromJson(clipMap, documentsPath);
 
-    // Run the migration
-    final migrated = await migrateAndroidPaths(
-      documentsPath: documentsPath,
-      filePaths: pathsToMigrate,
-    );
+        await _clipsDao.upsertClip(
+          id: clip.id,
+          orderIndex: 0,
+          durationMs: clip.duration.inMilliseconds,
+          recordedAt: clip.recordedAt,
+          data: json.encode(clip.toJson()),
+          filePath: clip.video.file?.path != null
+              ? p.basename(clip.video.file!.path)
+              : null,
+          thumbnailPath: clip.thumbnailPath != null
+              ? p.basename(clip.thumbnailPath!)
+              : null,
+        );
+        successCount++;
+      } catch (e) {
+        Log.error(
+          'Failed to migrate clip: $e',
+          name: 'ClipLibraryService',
+          category: LogCategory.video,
+        );
+        failedClips.add(rawJson);
+      }
+    }
 
-    if (migrated) {
+    if (failedClips.isEmpty) {
+      // All clips migrated successfully - remove the legacy key
+      await prefs.remove(_storageKey);
       Log.info(
-        '📂 Migrated clips from old Android paths',
+        '📂 Migrated $successCount clips from SharedPreferences to Drift',
         name: 'ClipLibraryService',
+      );
+    } else {
+      // Keep only failed clips for retry on next app launch
+      await prefs.setString(_storageKey, json.encode(failedClips));
+      Log.warning(
+        '⚠️ Migrated $successCount clips, ${failedClips.length} failed and '
+        'will be retried on next launch',
+        name: 'ClipLibraryService',
+        category: LogCategory.video,
       );
     }
   }
 
   /// Save a clip to the library. Updates existing clip if ID matches.
-  Future<void> saveClip(SavedClip clip) async {
+  Future<void> saveClip(DivineVideoClip clip) async {
     Log.debug(
       '💾 Saving clip to library: ${clip.id}',
       name: 'ClipLibraryService',
       category: LogCategory.video,
     );
-    final clips = await getAllClips();
 
-    final existingIndex = clips.indexWhere((c) => c.id == clip.id);
-
-    if (existingIndex != -1) {
-      clips[existingIndex] = clip;
-    } else {
-      clips.add(clip);
-    }
-
-    await _saveClips(clips);
+    await _clipsDao.upsertClip(
+      id: clip.id,
+      orderIndex: 0,
+      durationMs: clip.duration.inMilliseconds,
+      recordedAt: clip.recordedAt,
+      data: json.encode(clip.toJson()),
+      filePath: clip.video.file?.path != null
+          ? p.basename(clip.video.file!.path)
+          : null,
+      thumbnailPath: clip.thumbnailPath != null
+          ? p.basename(clip.thumbnailPath!)
+          : null,
+    );
   }
 
   /// Get all clips from the library, sorted by creation date (newest first)
-  Future<List<SavedClip>> getAllClips() async {
+  Future<List<DivineVideoClip>> getAllClips() async {
     try {
-      final prefs = await _prefsAsync;
-      final String? jsonString = prefs.getString(_storageKey);
-
-      if (jsonString == null || jsonString.isEmpty) {
-        return [];
-      }
-
+      final rows = await _clipsDao.getLibraryClips();
       final documentsPath = await getDocumentsPath();
-      final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
 
-      final clips = jsonList
-          .map(
-            (json) =>
-                SavedClip.fromJson(json as Map<String, dynamic>, documentsPath),
-          )
-          .toList();
-
-      // Sort by creation date, newest first
-      clips.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-      return clips;
+      return rows.map((row) {
+        final clipJson = json.decode(row.data) as Map<String, dynamic>;
+        return DivineVideoClip.fromJson(clipJson, documentsPath);
+      }).toList();
     } catch (e) {
       Log.error(
         '❌ Failed to load clips: $e',
         name: 'ClipLibraryService',
         category: LogCategory.video,
       );
-      // If storage is corrupted, return empty list
       return [];
     }
   }
 
   /// Get a single clip by ID
-  Future<SavedClip?> getClipById(String id) async {
-    final clips = await getAllClips();
-    try {
-      return clips.firstWhere((c) => c.id == id);
-    } catch (_) {
-      return null;
-    }
+  Future<DivineVideoClip?> getClipById(String id) async {
+    final row = await _clipsDao.getClipById(id);
+    if (row == null) return null;
+
+    final documentsPath = await getDocumentsPath();
+    final clipJson = json.decode(row.data) as Map<String, dynamic>;
+    return DivineVideoClip.fromJson(clipJson, documentsPath);
   }
 
   /// Delete a clip by ID and remove associated files if not referenced
@@ -133,22 +146,20 @@ class ClipLibraryService {
       name: 'ClipLibraryService',
       category: LogCategory.video,
     );
-    final clips = await getAllClips();
-    final clipIndex = clips.indexWhere((clip) => clip.id == id);
 
-    if (clipIndex != -1) {
-      final clip = clips[clipIndex];
-      clips.removeAt(clipIndex);
+    // Fetch clip before deleting so we can clean up files
+    final clip = await getClipById(id);
+    if (clip == null) return;
 
-      // Save first, then delete files (so reference check sees updated state)
-      await _saveClips(clips);
+    // Delete from DB, then clean up files
+    await _clipsDao.deleteClip(id);
 
-      // Delete files only if not referenced by drafts
-      await FileCleanupService.deleteSavedClipFiles(clip);
-      return;
-    }
-
-    await _saveClips(clips);
+    // Delete files only if not referenced by drafts
+    await FileCleanupService.deleteRecordingClipFiles(
+      clip,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
   }
 
   /// Clear all clips from the library and delete associated files
@@ -160,50 +171,14 @@ class ClipLibraryService {
     );
     final clips = await getAllClips();
 
-    // Clear storage first, then delete files (so reference check sees updated state)
-    final prefs = await _prefsAsync;
-    await prefs.remove(_storageKey);
+    // Clear DB first, then delete files
+    await _clipsDao.clearLibraryClips();
 
     // Delete files only if not referenced by drafts
-    await FileCleanupService.deleteSavedClipsFiles(clips);
-  }
-
-  /// Internal helper to save clips list to storage
-  Future<void> _saveClips(List<SavedClip> clips) async {
-    final prefs = await _prefsAsync;
-    final jsonList = clips.map((clip) => clip.toJson()).toList();
-    final jsonString = json.encode(jsonList);
-    await prefs.setString(_storageKey, jsonString);
-  }
-
-  /// Get all clips grouped by session ID
-  /// Returns Map<sessionId, List<SavedClip>>
-  /// Clips without sessionId are grouped under 'ungrouped'
-  Future<Map<String, List<SavedClip>>> getClipsGroupedBySession() async {
-    final clips = await getAllClips();
-    final grouped = <String, List<SavedClip>>{};
-
-    for (final clip in clips) {
-      final key = clip.sessionId ?? 'ungrouped';
-      grouped.putIfAbsent(key, () => []);
-      grouped[key]!.add(clip);
-    }
-
-    return grouped;
-  }
-
-  /// Get clips for a specific session
-  /// Use 'ungrouped' to retrieve clips with null sessionId
-  Future<List<SavedClip>> getClipsBySession(String sessionId) async {
-    final clips = await getAllClips();
-    if (sessionId == 'ungrouped') {
-      return clips.where((c) => c.sessionId == null).toList();
-    }
-    return clips.where((c) => c.sessionId == sessionId).toList();
-  }
-
-  /// Generate a unique session ID for grouping clips
-  static String generateSessionId() {
-    return 'session_${DateTime.now().millisecondsSinceEpoch}';
+    await FileCleanupService.deleteSavedClipsFiles(
+      clips,
+      draftsDao: _draftsDao,
+      clipsDao: _clipsDao,
+    );
   }
 }

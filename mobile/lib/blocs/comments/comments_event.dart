@@ -66,23 +66,64 @@ final class CommentDeleteRequested extends CommentsEvent {
   final String commentId;
 }
 
-/// Toggle like on a comment (optimistic update + relay publish)
-final class CommentLikeToggled extends CommentsEvent {
-  const CommentLikeToggled({
+/// Enter edit mode for a comment (pre-populates input)
+final class CommentEditModeEntered extends CommentsEvent {
+  const CommentEditModeEntered({
+    required this.commentId,
+    required this.originalContent,
+  });
+
+  /// The ID of the comment being edited
+  final String commentId;
+
+  /// The original content to pre-populate in the input
+  final String originalContent;
+}
+
+/// Cancel edit mode
+final class CommentEditModeCancelled extends CommentsEvent {
+  const CommentEditModeCancelled();
+}
+
+/// Submit edited comment (delete old + post new).
+///
+/// Uses [CommentsState.activeEditCommentId] to identify the comment being
+/// edited, so no parameters are needed.
+final class CommentEditSubmitted extends CommentsEvent {
+  const CommentEditSubmitted();
+}
+
+/// Toggle upvote on a comment (optimistic update + relay publish)
+final class CommentUpvoteToggled extends CommentsEvent {
+  const CommentUpvoteToggled({
     required this.commentId,
     required this.authorPubkey,
   });
 
-  /// The ID of the comment to like/unlike
+  /// The ID of the comment to upvote/un-upvote
   final String commentId;
 
   /// The pubkey of the comment author
   final String authorPubkey;
 }
 
-/// Request to batch-fetch like counts for all loaded comments
-final class CommentLikeCountsFetchRequested extends CommentsEvent {
-  const CommentLikeCountsFetchRequested();
+/// Toggle downvote on a comment (optimistic update + relay publish)
+final class CommentDownvoteToggled extends CommentsEvent {
+  const CommentDownvoteToggled({
+    required this.commentId,
+    required this.authorPubkey,
+  });
+
+  /// The ID of the comment to downvote/un-downvote
+  final String commentId;
+
+  /// The pubkey of the comment author
+  final String authorPubkey;
+}
+
+/// Request to batch-fetch vote counts for all loaded comments
+final class CommentVoteCountsFetchRequested extends CommentsEvent {
+  const CommentVoteCountsFetchRequested();
 }
 
 /// Change the sort order for comments

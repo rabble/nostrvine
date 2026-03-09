@@ -4,7 +4,7 @@
 
 **Goal:** Integrate REST gateway as an optimization layer for loading cacheable Nostr content faster, while keeping WebSocket as the foundation.
 
-**Architecture:** Gateway fetches events via REST, imports them into embedded relay's SQLite, then normal WebSocket flow continues. Gateway is optional, only for divine relay users, and always falls back to WebSocket on failure.
+**Architecture:** Gateway fetches events via REST, imports them into embedded relay's SQLite, then normal WebSocket flow continues. Gateway is optional, only for Divine relay users, and always falls back to WebSocket on failure.
 
 **Tech Stack:** Flutter/Dart, http package, flutter_embedded_nostr_relay, SharedPreferences
 
@@ -798,7 +798,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    test('defaults to enabled when using divine relay', () async {
+    test('defaults to enabled when using Divine relay', () async {
       final prefs = await SharedPreferences.getInstance();
       final settings = RelayGatewaySettings(prefs);
 
@@ -842,7 +842,7 @@ void main() {
       expect(settings.gatewayUrl, 'https://custom.gateway');
     });
 
-    test('shouldUseGateway returns true when enabled and using divine relay', () async {
+    test('shouldUseGateway returns true when enabled and using Divine relay', () async {
       final prefs = await SharedPreferences.getInstance();
       final settings = RelayGatewaySettings(prefs);
 
@@ -866,7 +866,7 @@ void main() {
       );
     });
 
-    test('shouldUseGateway returns false when not using divine relay', () async {
+    test('shouldUseGateway returns false when not using Divine relay', () async {
       final prefs = await SharedPreferences.getInstance();
       final settings = RelayGatewaySettings(prefs);
 
@@ -876,7 +876,7 @@ void main() {
       );
     });
 
-    test('shouldUseGateway returns true when divine relay is one of many', () async {
+    test('shouldUseGateway returns true when Divine relay is one of many', () async {
       final prefs = await SharedPreferences.getInstance();
       final settings = RelayGatewaySettings(prefs);
 
@@ -945,11 +945,11 @@ class RelayGatewaySettings {
   bool shouldUseGateway({required List<String> configuredRelays}) {
     if (!isEnabled) return false;
 
-    // Only use gateway when divine relay is configured
+    // Only use gateway when Divine relay is configured
     return configuredRelays.any((relay) => relay.contains('relay.divine.video'));
   }
 
-  /// Check if divine relay is in the configured relays list
+  /// Check if Divine relay is in the configured relays list
   static bool isDivineRelayConfigured(List<String> relays) {
     return relays.any((relay) => relay.contains('relay.divine.video'));
   }
@@ -1002,7 +1002,7 @@ void main() {
       SharedPreferences.setMockInitialValues({});
     });
 
-    testWidgets('shows gateway section when divine relay configured', (tester) async {
+    testWidgets('shows gateway section when Divine relay configured', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: createMockProvidersWithRelays(['wss://relay.divine.video']),
@@ -1017,7 +1017,7 @@ void main() {
       expect(find.byType(Switch), findsWidgets);
     });
 
-    testWidgets('hides gateway section when divine relay not configured', (tester) async {
+    testWidgets('hides gateway section when Divine relay not configured', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: createMockProvidersWithRelays(['wss://other.relay']),
@@ -1099,7 +1099,7 @@ Future<void> _initGatewaySettings() async {
 
 // Add this widget method to build the gateway section
 Widget _buildGatewaySection(List<String> relays) {
-  // Only show when divine relay is configured
+  // Only show when Divine relay is configured
   if (!RelayGatewaySettings.isDivineRelayConfigured(relays)) {
     return const SizedBox.shrink();
   }
@@ -1467,7 +1467,7 @@ void main() {
       verify(mockNostrService.subscribe(any, any)).called(1);
     });
 
-    test('skips gateway when not using divine relay', () async {
+    test('skips gateway when not using Divine relay', () async {
       var gatewayCalled = false;
       final mockClient = MockClient((request) async {
         gatewayCalled = true;

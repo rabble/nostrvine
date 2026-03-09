@@ -25,6 +25,9 @@ class ForYouFeed extends _$ForYouFeed {
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
 
+    // Watch blocklist version — rebuilds when block/unblock actions occur.
+    ref.watch(blocklistVersionProvider);
+
     // Watch appReady gate
     final isAppReady = ref.watch(appReadyProvider);
 
@@ -52,10 +55,7 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     // Get current user pubkey
@@ -68,10 +68,7 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     final analyticsService = ref.read(analyticsApiServiceProvider);
@@ -90,10 +87,7 @@ class ForYouFeed extends _$ForYouFeed {
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );
-      return const VideoFeedState(
-        videos: [],
-        hasMoreContent: false,
-      );
+      return const VideoFeedState(videos: [], hasMoreContent: false);
     }
 
     try {
@@ -108,10 +102,17 @@ class ForYouFeed extends _$ForYouFeed {
         category: LogCategory.video,
       );
 
-      // Filter for platform compatibility and content preferences
+      // Filter for platform compatibility, content preferences,
+      // and blocked users
       final videoEventService = ref.read(videoEventServiceProvider);
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
       final filteredVideos = videoEventService.filterVideoList(
-        result.videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+        result.videos
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .where(
+              (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+            )
+            .toList(),
       );
 
       return VideoFeedState(
@@ -168,8 +169,14 @@ class ForYouFeed extends _$ForYouFeed {
       if (!ref.mounted) return;
 
       final videoEventService = ref.read(videoEventServiceProvider);
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
       final filteredVideos = videoEventService.filterVideoList(
-        result.videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+        result.videos
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .where(
+              (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
+            )
+            .toList(),
       );
       final newEventsLoaded =
           filteredVideos.length - currentState.videos.length;

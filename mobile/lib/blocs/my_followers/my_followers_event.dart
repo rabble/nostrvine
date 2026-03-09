@@ -12,3 +12,8 @@ sealed class MyFollowersEvent {
 final class MyFollowersListLoadRequested extends MyFollowersEvent {
   const MyFollowersListLoadRequested();
 }
+
+/// Notification that the blocklist has changed, requiring re-filtering.
+final class MyFollowersBlocklistChanged extends MyFollowersEvent {
+  const MyFollowersBlocklistChanged();
+}

@@ -4,6 +4,7 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -181,6 +182,9 @@ class VideoLoadingMetrics {
         '▶️ PLAYBACK STARTED for $videoId... in ${totalDuration}ms total';
     UnifiedLogger.info(message, name: 'VideoLoadingMetrics');
     print(message);
+
+    // Bridge to feed-level swipe tracking
+    FeedPerformanceTracker().markVideoSwipeComplete(videoId);
 
     // Send complete metrics to Firebase Analytics
     _recordCompleteMetrics(session);

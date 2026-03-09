@@ -12,11 +12,10 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/clip_manager_state.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
@@ -79,7 +78,7 @@ void main() {
       VideoRecorderState recordingState = VideoRecorderState.idle,
       AudioEvent? selectedSound,
       SoundWaveformState? waveformState,
-      List<RecordingClip>? clips,
+      List<DivineVideoClip>? clips,
       Duration activeRecordingDuration = Duration.zero,
     }) {
       when(
@@ -92,6 +91,7 @@ void main() {
             () => _TestVideoRecorderNotifier(
               mockCamera,
               recordingState: recordingState,
+              selectedSound: selectedSound,
             ),
           ),
           clipManagerProvider.overrideWith(
@@ -101,34 +101,17 @@ void main() {
             ),
           ),
         ],
-        child: Builder(
-          builder: (context) {
-            // Set selected sound after build if provided
-            return MaterialApp(
-              home: Scaffold(
-                body: Stack(
-                  children: [
-                    BlocProvider<SoundWaveformBloc>.value(
-                      value: mockBloc,
-                      child: Consumer(
-                        builder: (context, ref, child) {
-                          // Set the selected sound in the provider
-                          if (selectedSound != null) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              ref
-                                  .read(selectedSoundProvider.notifier)
-                                  .select(selectedSound);
-                            });
-                          }
-                          return const VideoRecorderAudioProgressBar();
-                        },
-                      ),
-                    ),
-                  ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                BlocProvider<SoundWaveformBloc>.value(
+                  value: mockBloc,
+                  child: const VideoRecorderAudioProgressBar(),
                 ),
-              ),
-            );
-          },
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -136,9 +119,7 @@ void main() {
     group('Visibility', () {
       testWidgets('shows SizedBox.shrink when not recording', (tester) async {
         await tester.pumpWidget(
-          buildWidget(
-            selectedSound: _createTestAudioEvent(),
-          ),
+          buildWidget(selectedSound: _createTestAudioEvent()),
         );
         await tester.pumpAndSettle();
 
@@ -153,9 +134,7 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(
-          buildWidget(
-            recordingState: VideoRecorderState.recording,
-          ),
+          buildWidget(recordingState: VideoRecorderState.recording),
         );
         await tester.pumpAndSettle();
 
@@ -168,9 +147,7 @@ void main() {
       testWidgets('shows SizedBox.shrink when not recording and no sound', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          buildWidget(),
-        );
+        await tester.pumpWidget(buildWidget());
         await tester.pumpAndSettle();
 
         expect(
@@ -278,7 +255,7 @@ void main() {
     group('Progress tracking', () {
       testWidgets('renders with existing clips progress', (tester) async {
         final clips = [
-          RecordingClip(
+          DivineVideoClip(
             id: 'clip1',
             video: EditorVideo.file('/test/clip1.mp4'),
             duration: const Duration(seconds: 2),
@@ -375,13 +352,18 @@ class _TestVideoRecorderNotifier extends VideoRecorderNotifier {
   _TestVideoRecorderNotifier(
     super.cameraService, {
     this.recordingState = VideoRecorderState.idle,
+    this.selectedSound,
   });
 
   final VideoRecorderState recordingState;
+  final AudioEvent? selectedSound;
 
   @override
   VideoRecorderProviderState build() {
-    return VideoRecorderProviderState(recordingState: recordingState);
+    return VideoRecorderProviderState(
+      recordingState: recordingState,
+      selectedSound: selectedSound,
+    );
   }
 }
 
@@ -393,7 +375,7 @@ class _TestClipManagerNotifier extends ClipManagerNotifier {
   });
 
   @override
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
   final Duration activeRecordingDuration;
 
   @override

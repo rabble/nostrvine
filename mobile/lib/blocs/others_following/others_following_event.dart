@@ -15,3 +15,8 @@ final class OthersFollowingListLoadRequested extends OthersFollowingEvent {
   /// The public key of the user whose following list to load
   final String targetPubkey;
 }
+
+/// Notification that the blocklist has changed, requiring re-filtering.
+final class OthersFollowingBlocklistChanged extends OthersFollowingEvent {
+  const OthersFollowingBlocklistChanged();
+}

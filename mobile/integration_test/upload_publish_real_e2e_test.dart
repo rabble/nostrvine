@@ -102,7 +102,7 @@ void main() {
     });
 
     tearDown(() async {
-      if (await testVideoFile.exists()) {
+      if (testVideoFile.existsSync()) {
         await testVideoFile.delete();
       }
 

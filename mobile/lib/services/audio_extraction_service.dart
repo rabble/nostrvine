@@ -117,7 +117,7 @@ class AudioExtractionService {
 
     // Verify video file exists
     final videoFile = File(videoPath);
-    if (!await videoFile.exists()) {
+    if (!videoFile.existsSync()) {
       Log.error(
         'Video file not found: $videoPath',
         name: _logName,
@@ -181,7 +181,7 @@ class AudioExtractionService {
 
     // Verify output file exists
     final audioFile = File(outputPath);
-    if (!await audioFile.exists()) {
+    if (!audioFile.existsSync()) {
       Log.error(
         'Audio file was not created: $outputPath',
         name: _logName,
@@ -282,7 +282,7 @@ class AudioExtractionService {
     for (final path in filesToDelete) {
       try {
         final file = File(path);
-        if (await file.exists()) {
+        if (file.existsSync()) {
           await file.delete();
           Log.debug(
             'Deleted temporary file: $path',

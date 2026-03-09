@@ -6,7 +6,7 @@ class HashtagExtractor {
   static const int maxHashtagLength = 50;
   static const int maxHashtagCount = 20;
 
-  // Common hashtags for divine content
+  // Common hashtags for Divine content
   static const List<String> suggestedHashtags = [
     'openvine',
     'nostr',

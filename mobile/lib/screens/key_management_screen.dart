@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -40,41 +39,12 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     final profileService = ref.watch(userProfileServiceProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: context.pop,
-          tooltip: 'Back',
-        ),
-        title: Text('Nostr Keys', style: VineTheme.titleFont()),
+      appBar: DiVineAppBar(
+        title: 'Nostr Keys',
+        showBackButton: true,
+        onBackPressed: context.pop,
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -130,7 +100,11 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
             '• Your public key (npub) is like your username - share it freely\n'
             '• Your private key (nsec) is like your password - keep it secret!\n\n'
             'Your nsec lets you access your account on any Nostr app.',
-            style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.5),
+            style: TextStyle(
+              color: VineTheme.onSurfaceVariant,
+              fontSize: 14,
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -148,7 +122,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         const Text(
           'Import Existing Key',
           style: TextStyle(
-            color: Colors.white,
+            color: VineTheme.whiteText,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -156,14 +130,18 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         const SizedBox(height: 8),
         const Text(
           'Already have a Nostr account? Paste your private key (nsec) to access it here.',
-          style: TextStyle(color: Colors.white60, fontSize: 14, height: 1.4),
+          style: TextStyle(
+            color: VineTheme.onSurfaceMuted,
+            fontSize: 14,
+            height: 1.4,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
             color: VineTheme.cardBackground,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade800),
+            border: Border.all(color: VineTheme.cardBackground),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -171,26 +149,36 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
             children: [
               TextField(
                 controller: _importController,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: const TextStyle(
+                  color: VineTheme.whiteText,
+                  fontSize: 14,
+                ),
                 decoration: InputDecoration(
                   hintText: 'nsec1...',
-                  hintStyle: TextStyle(color: Colors.grey.shade600),
+                  hintStyle: const TextStyle(color: VineTheme.lightText),
                   filled: true,
-                  fillColor: Colors.black,
+                  fillColor: VineTheme.backgroundColor,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey.shade700),
+                    borderSide: const BorderSide(
+                      color: VineTheme.cardBackground,
+                    ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey.shade700),
+                    borderSide: const BorderSide(
+                      color: VineTheme.cardBackground,
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: const BorderSide(color: VineTheme.vineGreen),
                   ),
                   suffixIcon: IconButton(
-                    icon: Icon(Icons.paste, color: Colors.grey.shade400),
+                    icon: const Icon(
+                      Icons.paste,
+                      color: VineTheme.secondaryText,
+                    ),
                     onPressed: () async {
                       final data = await Clipboard.getData('text/plain');
                       if (data?.text != null) {
@@ -211,7 +199,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                       : () => _importKey(context, nostrService, profileService),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: Colors.white,
+                    foregroundColor: VineTheme.whiteText,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -223,7 +211,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: VineTheme.whiteText,
                           ),
                         )
                       : const Text(
@@ -239,24 +227,27 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade900.withValues(alpha: 0.3),
+                  color: VineTheme.warning.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.orange.shade700.withValues(alpha: 0.5),
+                    color: VineTheme.warning.withValues(alpha: 0.5),
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(
                       Icons.warning_amber,
-                      color: Colors.orange.shade300,
+                      color: VineTheme.warning,
                       size: 20,
                     ),
-                    const SizedBox(width: 8),
-                    const Expanded(
+                    SizedBox(width: 8),
+                    Expanded(
                       child: Text(
                         'This will replace your current key!',
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                        style: TextStyle(
+                          color: VineTheme.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -276,7 +267,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         const Text(
           'Backup Your Key',
           style: TextStyle(
-            color: Colors.white,
+            color: VineTheme.whiteText,
             fontSize: 20,
             fontWeight: FontWeight.bold,
           ),
@@ -284,14 +275,18 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         const SizedBox(height: 8),
         const Text(
           'Save your private key (nsec) to use your account in other Nostr apps.',
-          style: TextStyle(color: Colors.white60, fontSize: 14, height: 1.4),
+          style: TextStyle(
+            color: VineTheme.onSurfaceMuted,
+            fontSize: 14,
+            height: 1.4,
+          ),
         ),
         const SizedBox(height: 16),
         Container(
           decoration: BoxDecoration(
             color: VineTheme.cardBackground,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade800),
+            border: Border.all(color: VineTheme.cardBackground),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -307,7 +302,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.vineGreen,
-                    foregroundColor: Colors.white,
+                    foregroundColor: VineTheme.whiteText,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -319,21 +314,21 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.shade900.withValues(alpha: 0.3),
+                  color: VineTheme.error.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Colors.red.shade700.withValues(alpha: 0.5),
+                    color: VineTheme.error.withValues(alpha: 0.5),
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    Icon(Icons.security, color: Colors.red.shade300, size: 20),
-                    const SizedBox(width: 8),
-                    const Expanded(
+                    Icon(Icons.security, color: VineTheme.error, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(
                       child: Text(
                         'Never share your nsec with anyone!',
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: VineTheme.onSurfaceVariant,
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
                         ),
@@ -360,7 +355,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please paste your private key'),
-          backgroundColor: Colors.orange,
+          backgroundColor: VineTheme.warning,
         ),
       );
       return;
@@ -370,7 +365,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Invalid key format. Must start with "nsec1"'),
-          backgroundColor: Colors.red,
+          backgroundColor: VineTheme.error,
         ),
       );
       return;
@@ -383,12 +378,12 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
           'Import This Key?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: VineTheme.whiteText),
         ),
         content: const Text(
           'This will replace your current identity with the imported one.\n\n'
           'Your current key will be lost unless you backed it up first.',
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: VineTheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
@@ -452,7 +447,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to import key: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -490,7 +485,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to export key: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }

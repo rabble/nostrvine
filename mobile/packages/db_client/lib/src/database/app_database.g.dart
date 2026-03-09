@@ -6723,6 +6723,1259 @@ class Nip05VerificationsCompanion
   }
 }
 
+class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DraftsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _publishStatusMeta = const VerificationMeta(
+    'publishStatus',
+  );
+  @override
+  late final GeneratedColumn<String> publishStatus = GeneratedColumn<String>(
+    'publish_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('draft'),
+  );
+  static const VerificationMeta _publishAttemptsMeta = const VerificationMeta(
+    'publishAttempts',
+  );
+  @override
+  late final GeneratedColumn<int> publishAttempts = GeneratedColumn<int>(
+    'publish_attempts',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _publishErrorMeta = const VerificationMeta(
+    'publishError',
+  );
+  @override
+  late final GeneratedColumn<String> publishError = GeneratedColumn<String>(
+    'publish_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastModifiedMeta = const VerificationMeta(
+    'lastModified',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastModified = GeneratedColumn<DateTime>(
+    'last_modified',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<String> data = GeneratedColumn<String>(
+    'data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _renderedFilePathMeta = const VerificationMeta(
+    'renderedFilePath',
+  );
+  @override
+  late final GeneratedColumn<String> renderedFilePath = GeneratedColumn<String>(
+    'rendered_file_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _renderedThumbnailPathMeta =
+      const VerificationMeta('renderedThumbnailPath');
+  @override
+  late final GeneratedColumn<String> renderedThumbnailPath =
+      GeneratedColumn<String>(
+        'rendered_thumbnail_path',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    description,
+    publishStatus,
+    publishAttempts,
+    publishError,
+    createdAt,
+    lastModified,
+    data,
+    renderedFilePath,
+    renderedThumbnailPath,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'drafts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DraftRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('publish_status')) {
+      context.handle(
+        _publishStatusMeta,
+        publishStatus.isAcceptableOrUnknown(
+          data['publish_status']!,
+          _publishStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('publish_attempts')) {
+      context.handle(
+        _publishAttemptsMeta,
+        publishAttempts.isAcceptableOrUnknown(
+          data['publish_attempts']!,
+          _publishAttemptsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('publish_error')) {
+      context.handle(
+        _publishErrorMeta,
+        publishError.isAcceptableOrUnknown(
+          data['publish_error']!,
+          _publishErrorMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('last_modified')) {
+      context.handle(
+        _lastModifiedMeta,
+        lastModified.isAcceptableOrUnknown(
+          data['last_modified']!,
+          _lastModifiedMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastModifiedMeta);
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    if (data.containsKey('rendered_file_path')) {
+      context.handle(
+        _renderedFilePathMeta,
+        renderedFilePath.isAcceptableOrUnknown(
+          data['rendered_file_path']!,
+          _renderedFilePathMeta,
+        ),
+      );
+    }
+    if (data.containsKey('rendered_thumbnail_path')) {
+      context.handle(
+        _renderedThumbnailPathMeta,
+        renderedThumbnailPath.isAcceptableOrUnknown(
+          data['rendered_thumbnail_path']!,
+          _renderedThumbnailPathMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DraftRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DraftRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      publishStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}publish_status'],
+      )!,
+      publishAttempts: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}publish_attempts'],
+      )!,
+      publishError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}publish_error'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      lastModified: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_modified'],
+      )!,
+      data: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data'],
+      )!,
+      renderedFilePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rendered_file_path'],
+      ),
+      renderedThumbnailPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}rendered_thumbnail_path'],
+      ),
+    );
+  }
+
+  @override
+  $DraftsTable createAlias(String alias) {
+    return $DraftsTable(attachedDatabase, alias);
+  }
+}
+
+class DraftRow extends DataClass implements Insertable<DraftRow> {
+  /// Unique draft identifier (e.g. "draft_1700000000000")
+  final String id;
+
+  /// User-provided title (may be empty)
+  final String title;
+
+  /// User-provided description (may be empty)
+  final String description;
+
+  /// Current publish status: draft, publishing, failed, published
+  final String publishStatus;
+
+  /// Number of publish attempts
+  final int publishAttempts;
+
+  /// Last publish error message
+  final String? publishError;
+
+  /// When the draft was originally created
+  final DateTime createdAt;
+
+  /// When the draft was last modified
+  final DateTime lastModified;
+
+  /// Full JSON-serialized draft payload (clips, hashtags, editor state, etc.)
+  final String data;
+
+  /// Basename of the final rendered video file (for indexed lookups)
+  final String? renderedFilePath;
+
+  /// Basename of the final rendered thumbnail (for indexed lookups)
+  final String? renderedThumbnailPath;
+  const DraftRow({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.publishStatus,
+    required this.publishAttempts,
+    this.publishError,
+    required this.createdAt,
+    required this.lastModified,
+    required this.data,
+    this.renderedFilePath,
+    this.renderedThumbnailPath,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['title'] = Variable<String>(title);
+    map['description'] = Variable<String>(description);
+    map['publish_status'] = Variable<String>(publishStatus);
+    map['publish_attempts'] = Variable<int>(publishAttempts);
+    if (!nullToAbsent || publishError != null) {
+      map['publish_error'] = Variable<String>(publishError);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['last_modified'] = Variable<DateTime>(lastModified);
+    map['data'] = Variable<String>(data);
+    if (!nullToAbsent || renderedFilePath != null) {
+      map['rendered_file_path'] = Variable<String>(renderedFilePath);
+    }
+    if (!nullToAbsent || renderedThumbnailPath != null) {
+      map['rendered_thumbnail_path'] = Variable<String>(renderedThumbnailPath);
+    }
+    return map;
+  }
+
+  DraftsCompanion toCompanion(bool nullToAbsent) {
+    return DraftsCompanion(
+      id: Value(id),
+      title: Value(title),
+      description: Value(description),
+      publishStatus: Value(publishStatus),
+      publishAttempts: Value(publishAttempts),
+      publishError: publishError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(publishError),
+      createdAt: Value(createdAt),
+      lastModified: Value(lastModified),
+      data: Value(data),
+      renderedFilePath: renderedFilePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(renderedFilePath),
+      renderedThumbnailPath: renderedThumbnailPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(renderedThumbnailPath),
+    );
+  }
+
+  factory DraftRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DraftRow(
+      id: serializer.fromJson<String>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      description: serializer.fromJson<String>(json['description']),
+      publishStatus: serializer.fromJson<String>(json['publishStatus']),
+      publishAttempts: serializer.fromJson<int>(json['publishAttempts']),
+      publishError: serializer.fromJson<String?>(json['publishError']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      lastModified: serializer.fromJson<DateTime>(json['lastModified']),
+      data: serializer.fromJson<String>(json['data']),
+      renderedFilePath: serializer.fromJson<String?>(json['renderedFilePath']),
+      renderedThumbnailPath: serializer.fromJson<String?>(
+        json['renderedThumbnailPath'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'title': serializer.toJson<String>(title),
+      'description': serializer.toJson<String>(description),
+      'publishStatus': serializer.toJson<String>(publishStatus),
+      'publishAttempts': serializer.toJson<int>(publishAttempts),
+      'publishError': serializer.toJson<String?>(publishError),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'lastModified': serializer.toJson<DateTime>(lastModified),
+      'data': serializer.toJson<String>(data),
+      'renderedFilePath': serializer.toJson<String?>(renderedFilePath),
+      'renderedThumbnailPath': serializer.toJson<String?>(
+        renderedThumbnailPath,
+      ),
+    };
+  }
+
+  DraftRow copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? publishStatus,
+    int? publishAttempts,
+    Value<String?> publishError = const Value.absent(),
+    DateTime? createdAt,
+    DateTime? lastModified,
+    String? data,
+    Value<String?> renderedFilePath = const Value.absent(),
+    Value<String?> renderedThumbnailPath = const Value.absent(),
+  }) => DraftRow(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    description: description ?? this.description,
+    publishStatus: publishStatus ?? this.publishStatus,
+    publishAttempts: publishAttempts ?? this.publishAttempts,
+    publishError: publishError.present ? publishError.value : this.publishError,
+    createdAt: createdAt ?? this.createdAt,
+    lastModified: lastModified ?? this.lastModified,
+    data: data ?? this.data,
+    renderedFilePath: renderedFilePath.present
+        ? renderedFilePath.value
+        : this.renderedFilePath,
+    renderedThumbnailPath: renderedThumbnailPath.present
+        ? renderedThumbnailPath.value
+        : this.renderedThumbnailPath,
+  );
+  DraftRow copyWithCompanion(DraftsCompanion data) {
+    return DraftRow(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      publishStatus: data.publishStatus.present
+          ? data.publishStatus.value
+          : this.publishStatus,
+      publishAttempts: data.publishAttempts.present
+          ? data.publishAttempts.value
+          : this.publishAttempts,
+      publishError: data.publishError.present
+          ? data.publishError.value
+          : this.publishError,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastModified: data.lastModified.present
+          ? data.lastModified.value
+          : this.lastModified,
+      data: data.data.present ? data.data.value : this.data,
+      renderedFilePath: data.renderedFilePath.present
+          ? data.renderedFilePath.value
+          : this.renderedFilePath,
+      renderedThumbnailPath: data.renderedThumbnailPath.present
+          ? data.renderedThumbnailPath.value
+          : this.renderedThumbnailPath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DraftRow(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('publishStatus: $publishStatus, ')
+          ..write('publishAttempts: $publishAttempts, ')
+          ..write('publishError: $publishError, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastModified: $lastModified, ')
+          ..write('data: $data, ')
+          ..write('renderedFilePath: $renderedFilePath, ')
+          ..write('renderedThumbnailPath: $renderedThumbnailPath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    description,
+    publishStatus,
+    publishAttempts,
+    publishError,
+    createdAt,
+    lastModified,
+    data,
+    renderedFilePath,
+    renderedThumbnailPath,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DraftRow &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.description == this.description &&
+          other.publishStatus == this.publishStatus &&
+          other.publishAttempts == this.publishAttempts &&
+          other.publishError == this.publishError &&
+          other.createdAt == this.createdAt &&
+          other.lastModified == this.lastModified &&
+          other.data == this.data &&
+          other.renderedFilePath == this.renderedFilePath &&
+          other.renderedThumbnailPath == this.renderedThumbnailPath);
+}
+
+class DraftsCompanion extends UpdateCompanion<DraftRow> {
+  final Value<String> id;
+  final Value<String> title;
+  final Value<String> description;
+  final Value<String> publishStatus;
+  final Value<int> publishAttempts;
+  final Value<String?> publishError;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> lastModified;
+  final Value<String> data;
+  final Value<String?> renderedFilePath;
+  final Value<String?> renderedThumbnailPath;
+  final Value<int> rowid;
+  const DraftsCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.publishStatus = const Value.absent(),
+    this.publishAttempts = const Value.absent(),
+    this.publishError = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastModified = const Value.absent(),
+    this.data = const Value.absent(),
+    this.renderedFilePath = const Value.absent(),
+    this.renderedThumbnailPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DraftsCompanion.insert({
+    required String id,
+    this.title = const Value.absent(),
+    this.description = const Value.absent(),
+    this.publishStatus = const Value.absent(),
+    this.publishAttempts = const Value.absent(),
+    this.publishError = const Value.absent(),
+    required DateTime createdAt,
+    required DateTime lastModified,
+    required String data,
+    this.renderedFilePath = const Value.absent(),
+    this.renderedThumbnailPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       createdAt = Value(createdAt),
+       lastModified = Value(lastModified),
+       data = Value(data);
+  static Insertable<DraftRow> custom({
+    Expression<String>? id,
+    Expression<String>? title,
+    Expression<String>? description,
+    Expression<String>? publishStatus,
+    Expression<int>? publishAttempts,
+    Expression<String>? publishError,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? lastModified,
+    Expression<String>? data,
+    Expression<String>? renderedFilePath,
+    Expression<String>? renderedThumbnailPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (description != null) 'description': description,
+      if (publishStatus != null) 'publish_status': publishStatus,
+      if (publishAttempts != null) 'publish_attempts': publishAttempts,
+      if (publishError != null) 'publish_error': publishError,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastModified != null) 'last_modified': lastModified,
+      if (data != null) 'data': data,
+      if (renderedFilePath != null) 'rendered_file_path': renderedFilePath,
+      if (renderedThumbnailPath != null)
+        'rendered_thumbnail_path': renderedThumbnailPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DraftsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? title,
+    Value<String>? description,
+    Value<String>? publishStatus,
+    Value<int>? publishAttempts,
+    Value<String?>? publishError,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? lastModified,
+    Value<String>? data,
+    Value<String?>? renderedFilePath,
+    Value<String?>? renderedThumbnailPath,
+    Value<int>? rowid,
+  }) {
+    return DraftsCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      publishStatus: publishStatus ?? this.publishStatus,
+      publishAttempts: publishAttempts ?? this.publishAttempts,
+      publishError: publishError ?? this.publishError,
+      createdAt: createdAt ?? this.createdAt,
+      lastModified: lastModified ?? this.lastModified,
+      data: data ?? this.data,
+      renderedFilePath: renderedFilePath ?? this.renderedFilePath,
+      renderedThumbnailPath:
+          renderedThumbnailPath ?? this.renderedThumbnailPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (publishStatus.present) {
+      map['publish_status'] = Variable<String>(publishStatus.value);
+    }
+    if (publishAttempts.present) {
+      map['publish_attempts'] = Variable<int>(publishAttempts.value);
+    }
+    if (publishError.present) {
+      map['publish_error'] = Variable<String>(publishError.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (lastModified.present) {
+      map['last_modified'] = Variable<DateTime>(lastModified.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<String>(data.value);
+    }
+    if (renderedFilePath.present) {
+      map['rendered_file_path'] = Variable<String>(renderedFilePath.value);
+    }
+    if (renderedThumbnailPath.present) {
+      map['rendered_thumbnail_path'] = Variable<String>(
+        renderedThumbnailPath.value,
+      );
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DraftsCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('description: $description, ')
+          ..write('publishStatus: $publishStatus, ')
+          ..write('publishAttempts: $publishAttempts, ')
+          ..write('publishError: $publishError, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastModified: $lastModified, ')
+          ..write('data: $data, ')
+          ..write('renderedFilePath: $renderedFilePath, ')
+          ..write('renderedThumbnailPath: $renderedThumbnailPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ClipsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _draftIdMeta = const VerificationMeta(
+    'draftId',
+  );
+  @override
+  late final GeneratedColumn<String> draftId = GeneratedColumn<String>(
+    'draft_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _orderIndexMeta = const VerificationMeta(
+    'orderIndex',
+  );
+  @override
+  late final GeneratedColumn<int> orderIndex = GeneratedColumn<int>(
+    'order_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _durationMsMeta = const VerificationMeta(
+    'durationMs',
+  );
+  @override
+  late final GeneratedColumn<int> durationMs = GeneratedColumn<int>(
+    'duration_ms',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _recordedAtMeta = const VerificationMeta(
+    'recordedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> recordedAt = GeneratedColumn<DateTime>(
+    'recorded_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _dataMeta = const VerificationMeta('data');
+  @override
+  late final GeneratedColumn<String> data = GeneratedColumn<String>(
+    'data',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _filePathMeta = const VerificationMeta(
+    'filePath',
+  );
+  @override
+  late final GeneratedColumn<String> filePath = GeneratedColumn<String>(
+    'file_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _thumbnailPathMeta = const VerificationMeta(
+    'thumbnailPath',
+  );
+  @override
+  late final GeneratedColumn<String> thumbnailPath = GeneratedColumn<String>(
+    'thumbnail_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    draftId,
+    orderIndex,
+    durationMs,
+    recordedAt,
+    data,
+    filePath,
+    thumbnailPath,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'clips';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ClipRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('draft_id')) {
+      context.handle(
+        _draftIdMeta,
+        draftId.isAcceptableOrUnknown(data['draft_id']!, _draftIdMeta),
+      );
+    }
+    if (data.containsKey('order_index')) {
+      context.handle(
+        _orderIndexMeta,
+        orderIndex.isAcceptableOrUnknown(data['order_index']!, _orderIndexMeta),
+      );
+    }
+    if (data.containsKey('duration_ms')) {
+      context.handle(
+        _durationMsMeta,
+        durationMs.isAcceptableOrUnknown(data['duration_ms']!, _durationMsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_durationMsMeta);
+    }
+    if (data.containsKey('recorded_at')) {
+      context.handle(
+        _recordedAtMeta,
+        recordedAt.isAcceptableOrUnknown(data['recorded_at']!, _recordedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_recordedAtMeta);
+    }
+    if (data.containsKey('data')) {
+      context.handle(
+        _dataMeta,
+        this.data.isAcceptableOrUnknown(data['data']!, _dataMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_dataMeta);
+    }
+    if (data.containsKey('file_path')) {
+      context.handle(
+        _filePathMeta,
+        filePath.isAcceptableOrUnknown(data['file_path']!, _filePathMeta),
+      );
+    }
+    if (data.containsKey('thumbnail_path')) {
+      context.handle(
+        _thumbnailPathMeta,
+        thumbnailPath.isAcceptableOrUnknown(
+          data['thumbnail_path']!,
+          _thumbnailPathMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ClipRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ClipRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      draftId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}draft_id'],
+      ),
+      orderIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}order_index'],
+      )!,
+      durationMs: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}duration_ms'],
+      )!,
+      recordedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}recorded_at'],
+      )!,
+      data: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}data'],
+      )!,
+      filePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_path'],
+      ),
+      thumbnailPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thumbnail_path'],
+      ),
+    );
+  }
+
+  @override
+  $ClipsTable createAlias(String alias) {
+    return $ClipsTable(attachedDatabase, alias);
+  }
+}
+
+class ClipRow extends DataClass implements Insertable<ClipRow> {
+  /// Unique clip identifier
+  final String id;
+
+  /// Foreign key to the parent draft (null for library clips)
+  final String? draftId;
+
+  /// Position of this clip within the draft (0-based)
+  final int orderIndex;
+
+  /// Duration in milliseconds
+  final int durationMs;
+
+  /// When the clip was recorded
+  final DateTime recordedAt;
+
+  /// Full JSON-serialized clip payload (file path, thumbnail, lens metadata,
+  /// aspect ratio, etc.)
+  final String data;
+
+  /// Basename of the video file (for indexed lookups)
+  final String? filePath;
+
+  /// Basename of the thumbnail file (for indexed lookups)
+  final String? thumbnailPath;
+  const ClipRow({
+    required this.id,
+    this.draftId,
+    required this.orderIndex,
+    required this.durationMs,
+    required this.recordedAt,
+    required this.data,
+    this.filePath,
+    this.thumbnailPath,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    if (!nullToAbsent || draftId != null) {
+      map['draft_id'] = Variable<String>(draftId);
+    }
+    map['order_index'] = Variable<int>(orderIndex);
+    map['duration_ms'] = Variable<int>(durationMs);
+    map['recorded_at'] = Variable<DateTime>(recordedAt);
+    map['data'] = Variable<String>(data);
+    if (!nullToAbsent || filePath != null) {
+      map['file_path'] = Variable<String>(filePath);
+    }
+    if (!nullToAbsent || thumbnailPath != null) {
+      map['thumbnail_path'] = Variable<String>(thumbnailPath);
+    }
+    return map;
+  }
+
+  ClipsCompanion toCompanion(bool nullToAbsent) {
+    return ClipsCompanion(
+      id: Value(id),
+      draftId: draftId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(draftId),
+      orderIndex: Value(orderIndex),
+      durationMs: Value(durationMs),
+      recordedAt: Value(recordedAt),
+      data: Value(data),
+      filePath: filePath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(filePath),
+      thumbnailPath: thumbnailPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailPath),
+    );
+  }
+
+  factory ClipRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ClipRow(
+      id: serializer.fromJson<String>(json['id']),
+      draftId: serializer.fromJson<String?>(json['draftId']),
+      orderIndex: serializer.fromJson<int>(json['orderIndex']),
+      durationMs: serializer.fromJson<int>(json['durationMs']),
+      recordedAt: serializer.fromJson<DateTime>(json['recordedAt']),
+      data: serializer.fromJson<String>(json['data']),
+      filePath: serializer.fromJson<String?>(json['filePath']),
+      thumbnailPath: serializer.fromJson<String?>(json['thumbnailPath']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'draftId': serializer.toJson<String?>(draftId),
+      'orderIndex': serializer.toJson<int>(orderIndex),
+      'durationMs': serializer.toJson<int>(durationMs),
+      'recordedAt': serializer.toJson<DateTime>(recordedAt),
+      'data': serializer.toJson<String>(data),
+      'filePath': serializer.toJson<String?>(filePath),
+      'thumbnailPath': serializer.toJson<String?>(thumbnailPath),
+    };
+  }
+
+  ClipRow copyWith({
+    String? id,
+    Value<String?> draftId = const Value.absent(),
+    int? orderIndex,
+    int? durationMs,
+    DateTime? recordedAt,
+    String? data,
+    Value<String?> filePath = const Value.absent(),
+    Value<String?> thumbnailPath = const Value.absent(),
+  }) => ClipRow(
+    id: id ?? this.id,
+    draftId: draftId.present ? draftId.value : this.draftId,
+    orderIndex: orderIndex ?? this.orderIndex,
+    durationMs: durationMs ?? this.durationMs,
+    recordedAt: recordedAt ?? this.recordedAt,
+    data: data ?? this.data,
+    filePath: filePath.present ? filePath.value : this.filePath,
+    thumbnailPath: thumbnailPath.present
+        ? thumbnailPath.value
+        : this.thumbnailPath,
+  );
+  ClipRow copyWithCompanion(ClipsCompanion data) {
+    return ClipRow(
+      id: data.id.present ? data.id.value : this.id,
+      draftId: data.draftId.present ? data.draftId.value : this.draftId,
+      orderIndex: data.orderIndex.present
+          ? data.orderIndex.value
+          : this.orderIndex,
+      durationMs: data.durationMs.present
+          ? data.durationMs.value
+          : this.durationMs,
+      recordedAt: data.recordedAt.present
+          ? data.recordedAt.value
+          : this.recordedAt,
+      data: data.data.present ? data.data.value : this.data,
+      filePath: data.filePath.present ? data.filePath.value : this.filePath,
+      thumbnailPath: data.thumbnailPath.present
+          ? data.thumbnailPath.value
+          : this.thumbnailPath,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClipRow(')
+          ..write('id: $id, ')
+          ..write('draftId: $draftId, ')
+          ..write('orderIndex: $orderIndex, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('data: $data, ')
+          ..write('filePath: $filePath, ')
+          ..write('thumbnailPath: $thumbnailPath')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    draftId,
+    orderIndex,
+    durationMs,
+    recordedAt,
+    data,
+    filePath,
+    thumbnailPath,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ClipRow &&
+          other.id == this.id &&
+          other.draftId == this.draftId &&
+          other.orderIndex == this.orderIndex &&
+          other.durationMs == this.durationMs &&
+          other.recordedAt == this.recordedAt &&
+          other.data == this.data &&
+          other.filePath == this.filePath &&
+          other.thumbnailPath == this.thumbnailPath);
+}
+
+class ClipsCompanion extends UpdateCompanion<ClipRow> {
+  final Value<String> id;
+  final Value<String?> draftId;
+  final Value<int> orderIndex;
+  final Value<int> durationMs;
+  final Value<DateTime> recordedAt;
+  final Value<String> data;
+  final Value<String?> filePath;
+  final Value<String?> thumbnailPath;
+  final Value<int> rowid;
+  const ClipsCompanion({
+    this.id = const Value.absent(),
+    this.draftId = const Value.absent(),
+    this.orderIndex = const Value.absent(),
+    this.durationMs = const Value.absent(),
+    this.recordedAt = const Value.absent(),
+    this.data = const Value.absent(),
+    this.filePath = const Value.absent(),
+    this.thumbnailPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ClipsCompanion.insert({
+    required String id,
+    this.draftId = const Value.absent(),
+    this.orderIndex = const Value.absent(),
+    required int durationMs,
+    required DateTime recordedAt,
+    required String data,
+    this.filePath = const Value.absent(),
+    this.thumbnailPath = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       durationMs = Value(durationMs),
+       recordedAt = Value(recordedAt),
+       data = Value(data);
+  static Insertable<ClipRow> custom({
+    Expression<String>? id,
+    Expression<String>? draftId,
+    Expression<int>? orderIndex,
+    Expression<int>? durationMs,
+    Expression<DateTime>? recordedAt,
+    Expression<String>? data,
+    Expression<String>? filePath,
+    Expression<String>? thumbnailPath,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (draftId != null) 'draft_id': draftId,
+      if (orderIndex != null) 'order_index': orderIndex,
+      if (durationMs != null) 'duration_ms': durationMs,
+      if (recordedAt != null) 'recorded_at': recordedAt,
+      if (data != null) 'data': data,
+      if (filePath != null) 'file_path': filePath,
+      if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ClipsCompanion copyWith({
+    Value<String>? id,
+    Value<String?>? draftId,
+    Value<int>? orderIndex,
+    Value<int>? durationMs,
+    Value<DateTime>? recordedAt,
+    Value<String>? data,
+    Value<String?>? filePath,
+    Value<String?>? thumbnailPath,
+    Value<int>? rowid,
+  }) {
+    return ClipsCompanion(
+      id: id ?? this.id,
+      draftId: draftId ?? this.draftId,
+      orderIndex: orderIndex ?? this.orderIndex,
+      durationMs: durationMs ?? this.durationMs,
+      recordedAt: recordedAt ?? this.recordedAt,
+      data: data ?? this.data,
+      filePath: filePath ?? this.filePath,
+      thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (draftId.present) {
+      map['draft_id'] = Variable<String>(draftId.value);
+    }
+    if (orderIndex.present) {
+      map['order_index'] = Variable<int>(orderIndex.value);
+    }
+    if (durationMs.present) {
+      map['duration_ms'] = Variable<int>(durationMs.value);
+    }
+    if (recordedAt.present) {
+      map['recorded_at'] = Variable<DateTime>(recordedAt.value);
+    }
+    if (data.present) {
+      map['data'] = Variable<String>(data.value);
+    }
+    if (filePath.present) {
+      map['file_path'] = Variable<String>(filePath.value);
+    }
+    if (thumbnailPath.present) {
+      map['thumbnail_path'] = Variable<String>(thumbnailPath.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ClipsCompanion(')
+          ..write('id: $id, ')
+          ..write('draftId: $draftId, ')
+          ..write('orderIndex: $orderIndex, ')
+          ..write('durationMs: $durationMs, ')
+          ..write('recordedAt: $recordedAt, ')
+          ..write('data: $data, ')
+          ..write('filePath: $filePath, ')
+          ..write('thumbnailPath: $thumbnailPath, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6741,6 +7994,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PendingActionsTable pendingActions = $PendingActionsTable(this);
   late final $Nip05VerificationsTable nip05Verifications =
       $Nip05VerificationsTable(this);
+  late final $DraftsTable drafts = $DraftsTable(this);
+  late final $ClipsTable clips = $ClipsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -6773,6 +8028,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final Nip05VerificationsDao nip05VerificationsDao =
       Nip05VerificationsDao(this as AppDatabase);
+  late final DraftsDao draftsDao = DraftsDao(this as AppDatabase);
+  late final ClipsDao clipsDao = ClipsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6789,6 +8046,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     personalReposts,
     pendingActions,
     nip05Verifications,
+    drafts,
+    clips,
   ];
 }
 
@@ -10063,6 +11322,586 @@ typedef $$Nip05VerificationsTableProcessedTableManager =
       Nip05VerificationRow,
       PrefetchHooks Function()
     >;
+typedef $$DraftsTableCreateCompanionBuilder =
+    DraftsCompanion Function({
+      required String id,
+      Value<String> title,
+      Value<String> description,
+      Value<String> publishStatus,
+      Value<int> publishAttempts,
+      Value<String?> publishError,
+      required DateTime createdAt,
+      required DateTime lastModified,
+      required String data,
+      Value<String?> renderedFilePath,
+      Value<String?> renderedThumbnailPath,
+      Value<int> rowid,
+    });
+typedef $$DraftsTableUpdateCompanionBuilder =
+    DraftsCompanion Function({
+      Value<String> id,
+      Value<String> title,
+      Value<String> description,
+      Value<String> publishStatus,
+      Value<int> publishAttempts,
+      Value<String?> publishError,
+      Value<DateTime> createdAt,
+      Value<DateTime> lastModified,
+      Value<String> data,
+      Value<String?> renderedFilePath,
+      Value<String?> renderedThumbnailPath,
+      Value<int> rowid,
+    });
+
+class $$DraftsTableFilterComposer
+    extends Composer<_$AppDatabase, $DraftsTable> {
+  $$DraftsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get publishStatus => $composableBuilder(
+    column: $table.publishStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get publishAttempts => $composableBuilder(
+    column: $table.publishAttempts,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get publishError => $composableBuilder(
+    column: $table.publishError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get renderedFilePath => $composableBuilder(
+    column: $table.renderedFilePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get renderedThumbnailPath => $composableBuilder(
+    column: $table.renderedThumbnailPath,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DraftsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DraftsTable> {
+  $$DraftsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get publishStatus => $composableBuilder(
+    column: $table.publishStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get publishAttempts => $composableBuilder(
+    column: $table.publishAttempts,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get publishError => $composableBuilder(
+    column: $table.publishError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get renderedFilePath => $composableBuilder(
+    column: $table.renderedFilePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get renderedThumbnailPath => $composableBuilder(
+    column: $table.renderedThumbnailPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DraftsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DraftsTable> {
+  $$DraftsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get publishStatus => $composableBuilder(
+    column: $table.publishStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get publishAttempts => $composableBuilder(
+    column: $table.publishAttempts,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get publishError => $composableBuilder(
+    column: $table.publishError,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastModified => $composableBuilder(
+    column: $table.lastModified,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+
+  GeneratedColumn<String> get renderedFilePath => $composableBuilder(
+    column: $table.renderedFilePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get renderedThumbnailPath => $composableBuilder(
+    column: $table.renderedThumbnailPath,
+    builder: (column) => column,
+  );
+}
+
+class $$DraftsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DraftsTable,
+          DraftRow,
+          $$DraftsTableFilterComposer,
+          $$DraftsTableOrderingComposer,
+          $$DraftsTableAnnotationComposer,
+          $$DraftsTableCreateCompanionBuilder,
+          $$DraftsTableUpdateCompanionBuilder,
+          (DraftRow, BaseReferences<_$AppDatabase, $DraftsTable, DraftRow>),
+          DraftRow,
+          PrefetchHooks Function()
+        > {
+  $$DraftsTableTableManager(_$AppDatabase db, $DraftsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DraftsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DraftsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DraftsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<String> publishStatus = const Value.absent(),
+                Value<int> publishAttempts = const Value.absent(),
+                Value<String?> publishError = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> lastModified = const Value.absent(),
+                Value<String> data = const Value.absent(),
+                Value<String?> renderedFilePath = const Value.absent(),
+                Value<String?> renderedThumbnailPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DraftsCompanion(
+                id: id,
+                title: title,
+                description: description,
+                publishStatus: publishStatus,
+                publishAttempts: publishAttempts,
+                publishError: publishError,
+                createdAt: createdAt,
+                lastModified: lastModified,
+                data: data,
+                renderedFilePath: renderedFilePath,
+                renderedThumbnailPath: renderedThumbnailPath,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String> title = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<String> publishStatus = const Value.absent(),
+                Value<int> publishAttempts = const Value.absent(),
+                Value<String?> publishError = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime lastModified,
+                required String data,
+                Value<String?> renderedFilePath = const Value.absent(),
+                Value<String?> renderedThumbnailPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DraftsCompanion.insert(
+                id: id,
+                title: title,
+                description: description,
+                publishStatus: publishStatus,
+                publishAttempts: publishAttempts,
+                publishError: publishError,
+                createdAt: createdAt,
+                lastModified: lastModified,
+                data: data,
+                renderedFilePath: renderedFilePath,
+                renderedThumbnailPath: renderedThumbnailPath,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DraftsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DraftsTable,
+      DraftRow,
+      $$DraftsTableFilterComposer,
+      $$DraftsTableOrderingComposer,
+      $$DraftsTableAnnotationComposer,
+      $$DraftsTableCreateCompanionBuilder,
+      $$DraftsTableUpdateCompanionBuilder,
+      (DraftRow, BaseReferences<_$AppDatabase, $DraftsTable, DraftRow>),
+      DraftRow,
+      PrefetchHooks Function()
+    >;
+typedef $$ClipsTableCreateCompanionBuilder =
+    ClipsCompanion Function({
+      required String id,
+      Value<String?> draftId,
+      Value<int> orderIndex,
+      required int durationMs,
+      required DateTime recordedAt,
+      required String data,
+      Value<String?> filePath,
+      Value<String?> thumbnailPath,
+      Value<int> rowid,
+    });
+typedef $$ClipsTableUpdateCompanionBuilder =
+    ClipsCompanion Function({
+      Value<String> id,
+      Value<String?> draftId,
+      Value<int> orderIndex,
+      Value<int> durationMs,
+      Value<DateTime> recordedAt,
+      Value<String> data,
+      Value<String?> filePath,
+      Value<String?> thumbnailPath,
+      Value<int> rowid,
+    });
+
+class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
+  $$ClipsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get draftId => $composableBuilder(
+    column: $table.draftId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get orderIndex => $composableBuilder(
+    column: $table.orderIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get thumbnailPath => $composableBuilder(
+    column: $table.thumbnailPath,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ClipsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ClipsTable> {
+  $$ClipsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get draftId => $composableBuilder(
+    column: $table.draftId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get orderIndex => $composableBuilder(
+    column: $table.orderIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get data => $composableBuilder(
+    column: $table.data,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get filePath => $composableBuilder(
+    column: $table.filePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get thumbnailPath => $composableBuilder(
+    column: $table.thumbnailPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ClipsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ClipsTable> {
+  $$ClipsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get draftId =>
+      $composableBuilder(column: $table.draftId, builder: (column) => column);
+
+  GeneratedColumn<int> get orderIndex => $composableBuilder(
+    column: $table.orderIndex,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get durationMs => $composableBuilder(
+    column: $table.durationMs,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get recordedAt => $composableBuilder(
+    column: $table.recordedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get data =>
+      $composableBuilder(column: $table.data, builder: (column) => column);
+
+  GeneratedColumn<String> get filePath =>
+      $composableBuilder(column: $table.filePath, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbnailPath => $composableBuilder(
+    column: $table.thumbnailPath,
+    builder: (column) => column,
+  );
+}
+
+class $$ClipsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ClipsTable,
+          ClipRow,
+          $$ClipsTableFilterComposer,
+          $$ClipsTableOrderingComposer,
+          $$ClipsTableAnnotationComposer,
+          $$ClipsTableCreateCompanionBuilder,
+          $$ClipsTableUpdateCompanionBuilder,
+          (ClipRow, BaseReferences<_$AppDatabase, $ClipsTable, ClipRow>),
+          ClipRow,
+          PrefetchHooks Function()
+        > {
+  $$ClipsTableTableManager(_$AppDatabase db, $ClipsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ClipsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ClipsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ClipsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String?> draftId = const Value.absent(),
+                Value<int> orderIndex = const Value.absent(),
+                Value<int> durationMs = const Value.absent(),
+                Value<DateTime> recordedAt = const Value.absent(),
+                Value<String> data = const Value.absent(),
+                Value<String?> filePath = const Value.absent(),
+                Value<String?> thumbnailPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ClipsCompanion(
+                id: id,
+                draftId: draftId,
+                orderIndex: orderIndex,
+                durationMs: durationMs,
+                recordedAt: recordedAt,
+                data: data,
+                filePath: filePath,
+                thumbnailPath: thumbnailPath,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                Value<String?> draftId = const Value.absent(),
+                Value<int> orderIndex = const Value.absent(),
+                required int durationMs,
+                required DateTime recordedAt,
+                required String data,
+                Value<String?> filePath = const Value.absent(),
+                Value<String?> thumbnailPath = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ClipsCompanion.insert(
+                id: id,
+                draftId: draftId,
+                orderIndex: orderIndex,
+                durationMs: durationMs,
+                recordedAt: recordedAt,
+                data: data,
+                filePath: filePath,
+                thumbnailPath: thumbnailPath,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ClipsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ClipsTable,
+      ClipRow,
+      $$ClipsTableFilterComposer,
+      $$ClipsTableOrderingComposer,
+      $$ClipsTableAnnotationComposer,
+      $$ClipsTableCreateCompanionBuilder,
+      $$ClipsTableUpdateCompanionBuilder,
+      (ClipRow, BaseReferences<_$AppDatabase, $ClipsTable, ClipRow>),
+      ClipRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -10089,4 +11928,8 @@ class $AppDatabaseManager {
       $$PendingActionsTableTableManager(_db, _db.pendingActions);
   $$Nip05VerificationsTableTableManager get nip05Verifications =>
       $$Nip05VerificationsTableTableManager(_db, _db.nip05Verifications);
+  $$DraftsTableTableManager get drafts =>
+      $$DraftsTableTableManager(_db, _db.drafts);
+  $$ClipsTableTableManager get clips =>
+      $$ClipsTableTableManager(_db, _db.clips);
 }

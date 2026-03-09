@@ -3,14 +3,14 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('RecordingClip', () {
     test('creates clip with required fields', () async {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
@@ -27,7 +27,7 @@ void main() {
     });
 
     test('creates clip with optional fields', () {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
@@ -42,7 +42,7 @@ void main() {
     });
 
     test('durationInSeconds returns correct value', () {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(milliseconds: 2500),
@@ -55,7 +55,7 @@ void main() {
     });
 
     test('copyWith creates new instance with updated id', () {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
@@ -71,7 +71,7 @@ void main() {
     });
 
     test('copyWith creates new instance with updated duration', () async {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
@@ -88,7 +88,7 @@ void main() {
     });
 
     test('copyWith creates new instance with updated thumbnailPath', () {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
@@ -104,7 +104,7 @@ void main() {
     });
 
     test('copyWith creates new instance with updated aspectRatio', () {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
@@ -122,7 +122,7 @@ void main() {
     });
 
     test('toJson serializes all fields correctly', () {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(milliseconds: 2500),
@@ -145,7 +145,7 @@ void main() {
     });
 
     test('toJson handles null optional fields', () {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(milliseconds: 2500),
@@ -173,7 +173,7 @@ void main() {
         'aspectRatio': 'square',
       };
 
-      final clip = RecordingClip.fromJson(json, '/path/to');
+      final clip = DivineVideoClip.fromJson(json, '/path/to');
 
       expect(clip.id, equals('clip_001'));
       // Path resolution uses platform separator, so check it ends with the filename
@@ -194,14 +194,14 @@ void main() {
         'recordedAt': '2025-12-13T10:00:00.000',
       };
 
-      final clip = RecordingClip.fromJson(json, '/path/to');
+      final clip = DivineVideoClip.fromJson(json, '/path/to');
 
       expect(clip.thumbnailPath, isNull);
       expect(clip.targetAspectRatio, model.AspectRatio.square);
     });
 
     test('toJson and fromJson roundtrip preserves data', () async {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(milliseconds: 2500),
@@ -213,7 +213,7 @@ void main() {
 
       final json = clip.toJson();
       // Roundtrip: use same base path as original file
-      final restored = RecordingClip.fromJson(json, '/path/to');
+      final restored = DivineVideoClip.fromJson(json, '/path/to');
 
       expect(restored.id, equals(clip.id));
       // Both should end with same filename
@@ -228,7 +228,7 @@ void main() {
     });
 
     test('toString returns formatted string', () {
-      final clip = RecordingClip(
+      final clip = DivineVideoClip(
         id: 'clip_001',
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(milliseconds: 2500),
@@ -252,7 +252,7 @@ void main() {
         'aspectRatio': 'unknown_ratio',
       };
 
-      final clip = RecordingClip.fromJson(json, '/path/to');
+      final clip = DivineVideoClip.fromJson(json, '/path/to');
 
       expect(clip.targetAspectRatio, equals(model.AspectRatio.square));
     });
@@ -263,7 +263,7 @@ void main() {
         final documentsPath = p.join('var', 'mobile', 'Documents');
         final videoPath = p.join(documentsPath, 'divine_123456.mp4');
         final thumbPath = p.join(documentsPath, 'thumb.jpg');
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'rendered-clip',
           video: EditorVideo.file(videoPath),
           duration: const Duration(seconds: 3),
@@ -274,7 +274,7 @@ void main() {
         );
 
         final json = clip.toJson();
-        final restored = RecordingClip.fromJson(json, documentsPath);
+        final restored = DivineVideoClip.fromJson(json, documentsPath);
 
         final originalPath = await clip.video.safeFilePath();
         final restoredPath = await restored.video.safeFilePath();
@@ -289,7 +289,7 @@ void main() {
         // but deserialize with the documents path, causing a mismatch.
         final tempPath = p.join('tmp');
         final documentsPath = p.join('var', 'mobile', 'Documents');
-        final clip = RecordingClip(
+        final clip = DivineVideoClip(
           id: 'rendered-clip',
           video: EditorVideo.file(p.join(tempPath, 'divine_123456.mp4')),
           duration: const Duration(seconds: 3),
@@ -300,7 +300,7 @@ void main() {
 
         final json = clip.toJson();
         // fromJson resolves against documentsPath, not tempPath
-        final restored = RecordingClip.fromJson(json, documentsPath);
+        final restored = DivineVideoClip.fromJson(json, documentsPath);
 
         final originalPath = await clip.video.safeFilePath();
         final restoredPath = await restored.video.safeFilePath();

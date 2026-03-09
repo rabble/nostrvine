@@ -20,19 +20,13 @@ const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
 /// Keycast NIP-05 endpoint for checking username availability on login server.
 const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 
-/// Callback to check if a user should be filtered from results.
-typedef UserBlockFilter = bool Function(String pubkey);
-
 // TODO(search): Move ProfileSearchFilter to a shared package
 // (e.g., search_utils) when we need to reuse search logic across
 // multiple repositories.
 /// Callback to filter and sort profiles by search relevance.
 /// Takes a query and list of profiles, returns filtered/sorted profiles.
 typedef ProfileSearchFilter =
-    List<UserProfile> Function(
-      String query,
-      List<UserProfile> profiles,
-    );
+    List<UserProfile> Function(String query, List<UserProfile> profiles);
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
@@ -43,14 +37,12 @@ class ProfileRepository {
     required Client httpClient,
     ProfileStatsDao? profileStatsDao,
     FunnelcakeApiClient? funnelcakeApiClient,
-    UserBlockFilter? userBlockFilter,
     ProfileSearchFilter? profileSearchFilter,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
        _httpClient = httpClient,
        _profileStatsDao = profileStatsDao,
        _funnelcakeApiClient = funnelcakeApiClient,
-       _userBlockFilter = userBlockFilter,
        _profileSearchFilter = profileSearchFilter;
 
   final NostrClient _nostrClient;
@@ -58,8 +50,43 @@ class ProfileRepository {
   final Client _httpClient;
   final ProfileStatsDao? _profileStatsDao;
   final FunnelcakeApiClient? _funnelcakeApiClient;
-  final UserBlockFilter? _userBlockFilter;
   final ProfileSearchFilter? _profileSearchFilter;
+
+  /// Searches cached profiles from local storage only.
+  ///
+  /// This avoids remote work and is suitable for lightweight tab counts
+  /// or instant local-first suggestions.
+  Future<List<UserProfile>> searchUsersLocally({
+    required String query,
+    int? limit,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    final cachedProfiles = await _userProfilesDao.getAllProfiles();
+
+    final filtered = _profileSearchFilter != null
+        ? _profileSearchFilter(trimmed, cachedProfiles)
+        : cachedProfiles.where((profile) {
+            final queryLower = trimmed.toLowerCase();
+            return profile.bestDisplayName.toLowerCase().contains(
+                  queryLower,
+                ) ||
+                (profile.about?.toLowerCase().contains(queryLower) ?? false);
+          }).toList();
+
+    if (limit != null && filtered.length > limit) {
+      return filtered.sublist(0, limit);
+    }
+
+    return filtered;
+  }
+
+  /// Counts cached profiles matching [query] without performing remote search.
+  Future<int> countUsersLocally({required String query}) async {
+    final matches = await searchUsersLocally(query: query);
+    return matches.length;
+  }
 
   /// Returns the cached profile from local storage (SQLite) only.
   ///
@@ -166,7 +193,9 @@ class ProfileRepository {
   ///
   /// If both [nip05] and [username] are provided, [nip05] takes precedence.
   /// When neither is provided and a [currentProfile] is supplied, the existing
-  /// NIP-05 value is preserved from `currentProfile.rawData`.
+  /// NIP-05 value is preserved from `currentProfile.rawData`. Pass
+  /// [clearNip05] as `true` to explicitly remove the NIP-05 from the profile
+  /// (overriding any value in `currentProfile.rawData`).
   ///
   /// After successful publish, the profile is cached locally for immediate
   /// subsequent reads.
@@ -177,6 +206,7 @@ class ProfileRepository {
     String? about,
     String? username,
     String? nip05,
+    bool clearNip05 = false,
     String? picture,
     String? banner,
     UserProfile? currentProfile,
@@ -194,6 +224,13 @@ class ProfileRepository {
       'picture': ?picture,
       'banner': ?banner,
     };
+
+    // When the user explicitly removes their NIP-05 (no username, no external
+    // NIP-05), remove the key so the rawData spread does not preserve the old
+    // value.
+    if (clearNip05 && resolvedNip05 == null) {
+      profileContent.remove('nip05');
+    }
 
     final profileEvent = await _nostrClient.sendProfile(
       profileContent: profileContent,
@@ -217,13 +254,9 @@ class ProfileRepository {
   /// server.
   ///
   /// Returns a [UsernameClaimResult] indicating success or the type of failure.
-  Future<UsernameClaimResult> claimUsername({
-    required String username,
-  }) async {
+  Future<UsernameClaimResult> claimUsername({required String username}) async {
     final normalizedUsername = username.toLowerCase();
-    final payload = jsonEncode({
-      'name': normalizedUsername,
-    });
+    final payload = jsonEncode({'name': normalizedUsername});
     final authHeader = await _nostrClient.createNip98AuthHeader(
       url: _usernameClaimUrl,
       method: 'POST',
@@ -258,9 +291,7 @@ class ProfileRepository {
 
       return switch (response.statusCode) {
         200 || 201 => const UsernameClaimSuccess(),
-        400 => UsernameClaimError(
-          serverError ?? 'Invalid username format',
-        ),
+        400 => UsernameClaimError(serverError ?? 'Invalid username format'),
         403 => const UsernameClaimReserved(),
         409 => const UsernameClaimTaken(),
         _ => UsernameClaimError(
@@ -285,6 +316,7 @@ class ProfileRepository {
   ///   an unexpected response
   Future<UsernameAvailabilityResult> checkUsernameAvailability({
     required String username,
+    String? currentUserPubkey,
   }) async {
     final normalizedUsername = username.toLowerCase().trim();
 
@@ -295,9 +327,7 @@ class ProfileRepository {
       return const UsernameInvalidFormat('Username is required');
     }
     if (normalizedUsername.length > 63) {
-      return const UsernameInvalidFormat(
-        'Usernames must be 1–63 characters',
-      );
+      return const UsernameInvalidFormat('Usernames must be 1–63 characters');
     }
     if (normalizedUsername.startsWith('-') ||
         normalizedUsername.endsWith('-')) {
@@ -316,9 +346,7 @@ class ProfileRepository {
     // and checks availability in one call.
     try {
       final response = await _httpClient.get(
-        Uri.parse(
-          '$_usernameCheckUrl/$normalizedUsername',
-        ),
+        Uri.parse('$_usernameCheckUrl/$normalizedUsername'),
       );
 
       if (response.statusCode == 200) {
@@ -331,9 +359,7 @@ class ProfileRepository {
           // available on both the name server and the login server.
           try {
             final keycastResponse = await _httpClient.get(
-              Uri.parse(
-                '$_keycastNip05Url?name=$normalizedUsername',
-              ),
+              Uri.parse('$_keycastNip05Url?name=$normalizedUsername'),
             );
             if (keycastResponse.statusCode == 200) {
               final keycastData =
@@ -352,6 +378,15 @@ class ProfileRepository {
             );
           }
           return const UsernameAvailable();
+        }
+
+        // Name is taken, but check if it's assigned to the current user
+        // (e.g. admin-reserved name assigned to this pubkey).
+        if (currentUserPubkey != null) {
+          final ownerPubkey = data['pubkey'] as String?;
+          if (ownerPubkey != null && ownerPubkey == currentUserPubkey) {
+            return const UsernameAvailable();
+          }
         }
 
         // Server told us it's not available — return appropriate type
@@ -391,7 +426,6 @@ class ProfileRepository {
   ///
   /// Filters using [ProfileSearchFilter] if provided (only when no server-side
   /// sort is active), otherwise falls back to simple bestDisplayName matching.
-  /// If a [UserBlockFilter] was provided, blocked users are excluded.
   /// Returns list of [UserProfile] matching the search query.
   /// Returns empty list if query is empty or no results found.
   Future<List<UserProfile>> searchUsers({
@@ -436,19 +470,26 @@ class ProfileRepository {
     // Phase 2: NIP-50 WebSocket search (comprehensive, first page only)
     // Skip on paginated requests since NIP-50 doesn't support offset.
     if (offset == 0) {
-      final events = await _nostrClient.queryUsers(query, limit: limit);
-      for (final event in events) {
-        final profile = UserProfile.fromNostrEvent(event);
-        // Don't overwrite REST results - they may have more complete data
-        resultMap.putIfAbsent(profile.pubkey, () => profile);
+      try {
+        final events = await _nostrClient.queryUsers(query, limit: limit);
+        for (final event in events) {
+          final profile = UserProfile.fromNostrEvent(event);
+          // Don't overwrite REST results - they may have more complete data
+          resultMap.putIfAbsent(profile.pubkey, () => profile);
+        }
+        final wsProfiles = resultMap.values.toList();
+        final wsWithPic = wsProfiles.where((p) => p.picture != null).length;
+        developer.log(
+          'Phase 2 (WS): ${events.length} events, '
+          'merged total: ${wsProfiles.length}, $wsWithPic with picture',
+          name: 'ProfileRepository.searchUsers',
+        );
+      } on Object catch (e) {
+        developer.log(
+          'Phase 2 (WebSocket NIP-50) failed: $e',
+          name: 'ProfileRepository.searchUsers',
+        );
       }
-      final wsProfiles = resultMap.values.toList();
-      final wsWithPic = wsProfiles.where((p) => p.picture != null).length;
-      developer.log(
-        'Phase 2 (WS): ${events.length} events, '
-        'merged total: ${wsProfiles.length}, $wsWithPic with picture',
-        name: 'ProfileRepository.searchUsers',
-      );
     }
 
     final profiles = resultMap.values.toList();
@@ -456,23 +497,22 @@ class ProfileRepository {
     // Enrich profiles from local SQLite cache (fill in missing pictures, etc.)
     final enrichedProfiles = await _enrichFromCache(profiles);
 
-    // Filter out blocked users
-    final unblockedProfiles = enrichedProfiles.where((profile) {
-      return !(_userBlockFilter?.call(profile.pubkey) ?? false);
-    }).toList();
+    // Note: blocked users are NOT filtered from search results.
+    // Users need to find blocked profiles in search to unblock them.
+    // Block filtering is applied in video feeds (VideoEventService) instead.
 
     // When server-side sorting is active, trust server order
     if (useServerSort) {
-      return unblockedProfiles;
+      return enrichedProfiles;
     }
 
     // Use custom search filter if provided, otherwise simple contains match
     if (_profileSearchFilter != null) {
-      return _profileSearchFilter(query, unblockedProfiles);
+      return _profileSearchFilter(query, enrichedProfiles);
     }
 
     final queryLower = query.toLowerCase();
-    return unblockedProfiles.where((profile) {
+    return enrichedProfiles.where((profile) {
       return profile.bestDisplayName.toLowerCase().contains(queryLower);
     }).toList();
   }
@@ -512,9 +552,7 @@ class ProfileRepository {
   ///
   /// For each profile, fills in null fields (picture, about, etc.) from
   /// the cached version without overwriting data from search results.
-  Future<List<UserProfile>> _enrichFromCache(
-    List<UserProfile> profiles,
-  ) async {
+  Future<List<UserProfile>> _enrichFromCache(List<UserProfile> profiles) async {
     final enriched = <UserProfile>[];
     var cacheHits = 0;
     var pictureEnriched = 0;

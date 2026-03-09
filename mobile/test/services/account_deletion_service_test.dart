@@ -153,7 +153,7 @@ void main() {
         tags: [
           ['relay', 'ALL_RELAYS'],
         ],
-        content: 'User requested account deletion via diVine app',
+        content: 'User requested account deletion via Divine app',
       );
 
       when(
@@ -185,7 +185,7 @@ void main() {
           tags: [
             ['relay', 'ALL_RELAYS'],
           ],
-          content: 'User requested account deletion via diVine app',
+          content: 'User requested account deletion via Divine app',
         );
 
         when(
@@ -217,7 +217,7 @@ void main() {
         tags: [
           ['relay', 'ALL_RELAYS'],
         ],
-        content: 'User requested account deletion via diVine app',
+        content: 'User requested account deletion via Divine app',
       );
 
       when(
@@ -290,7 +290,7 @@ void main() {
           tags: [
             ['relay', 'ALL_RELAYS'],
           ],
-          content: 'User requested account deletion via diVine app',
+          content: 'User requested account deletion via Divine app',
         );
 
         when(
@@ -333,7 +333,7 @@ void main() {
               ['e', 'video_event_1'],
               ['k', '34236'],
             ],
-            content: 'User requested account deletion via diVine app',
+            content: 'User requested account deletion via Divine app',
           );
 
           final nip62Event = createTestEvent(
@@ -342,7 +342,7 @@ void main() {
             tags: [
               ['relay', 'ALL_RELAYS'],
             ],
-            content: 'User requested account deletion via diVine app',
+            content: 'User requested account deletion via Divine app',
           );
 
           when(

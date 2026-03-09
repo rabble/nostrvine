@@ -197,13 +197,13 @@ Future<void> main() async {
 
     // Add Editor's Picks first (priority)
     for (final video in editorPicksVideos) {
-      selectedVideos[video['id']] = video;
+      selectedVideos[video['id'] as String] = video;
     }
 
     // Fill remaining slots with popular videos
     for (final video in videosWithLoops) {
       if (selectedVideos.length >= targetVideoCount) break;
-      selectedVideos[video['id']] = video;
+      selectedVideos[video['id'] as String] = video;
     }
 
     final finalVideos = selectedVideos.values.toList();
@@ -293,7 +293,7 @@ Future<void> main() async {
     print(
       '[SEED GEN]    Total size: ${(mediaResult['totalSize'] / (1024 * 1024)).toStringAsFixed(2)} MB',
     );
-    if (mediaResult['failures'].isNotEmpty) {
+    if ((mediaResult['failures'] as String).isNotEmpty) {
       print(
         '[SEED GEN]    ⚠️ Failed downloads: ${mediaResult['failures'].length}',
       );
@@ -524,7 +524,7 @@ Future<Map<String, dynamic>> _downloadMediaFiles(
       videosAttempted++;
       final videoFile = File('${videosDir.path}/$eventId.mp4');
 
-      if (await videoFile.exists()) {
+      if (videoFile.existsSync()) {
         print(
           '[SEED GEN]      ✓ Video already exists (${await videoFile.length()} bytes)',
         );
@@ -544,7 +544,7 @@ Future<Map<String, dynamic>> _downloadMediaFiles(
             videoUrl,
             videoFile,
           );
-          if (downloadResult['success']) {
+          if (downloadResult['success'] == true) {
             videosDownloaded++;
             final size = downloadResult['size'] as int;
             totalSize += size;
@@ -582,7 +582,7 @@ Future<Map<String, dynamic>> _downloadMediaFiles(
           : 'jpg';
       final thumbnailFile = File('${thumbnailsDir.path}/$eventId.$ext');
 
-      if (await thumbnailFile.exists()) {
+      if (thumbnailFile.existsSync()) {
         print(
           '[SEED GEN]      ✓ Thumbnail already exists (${await thumbnailFile.length()} bytes)',
         );
@@ -602,7 +602,7 @@ Future<Map<String, dynamic>> _downloadMediaFiles(
             thumbnailUrl,
             thumbnailFile,
           );
-          if (downloadResult['success']) {
+          if (downloadResult['success'] == true) {
             thumbnailsDownloaded++;
             final size = downloadResult['size'] as int;
             totalSize += size;

@@ -78,7 +78,7 @@ void main() {
     ) async {
       await tester.pumpWidget(buildTestWidget(label: 'Test message'));
 
-      expect(find.byType(TextButton), findsNothing);
+      expect(find.text('Retry'), findsNothing);
     });
 
     testWidgets('does not render action button when onActionPressed is null', (
@@ -88,7 +88,7 @@ void main() {
         buildTestWidget(label: 'Test message', actionLabel: 'Retry'),
       );
 
-      expect(find.byType(TextButton), findsNothing);
+      expect(find.text('Retry'), findsNothing);
     });
 
     testWidgets('renders action button when both actionLabel and '
@@ -101,7 +101,6 @@ void main() {
         ),
       );
 
-      expect(find.byType(TextButton), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
     });
 
@@ -117,7 +116,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(TextButton));
+      await tester.tap(find.text('Retry'));
       expect(actionPressed, isTrue);
     });
 
@@ -132,9 +131,8 @@ void main() {
         ),
       );
 
-      final textButton = tester.widget<TextButton>(find.byType(TextButton));
-      final textWidget = textButton.child as Text?;
-      expect(textWidget?.style?.color, VineTheme.vineGreen);
+      final actionText = tester.widget<Text>(find.text('Retry'));
+      expect(actionText.style?.color, VineTheme.vineGreen);
     });
 
     testWidgets('action button has red color in error state', (tester) async {
@@ -147,9 +145,48 @@ void main() {
         ),
       );
 
-      final textButton = tester.widget<TextButton>(find.byType(TextButton));
-      final textWidget = textButton.child as Text?;
-      expect(textWidget?.style?.color, VineTheme.likeRed);
+      final actionText = tester.widget<Text>(find.text('Retry'));
+      expect(actionText.style?.color, VineTheme.likeRed);
+    });
+
+    group('snackBar factory', () {
+      testWidgets('returns a $SnackBar wrapping $DivineSnackbarContainer', (
+        tester,
+      ) async {
+        final snackBar = DivineSnackbarContainer.snackBar('Hello');
+
+        expect(snackBar, isA<SnackBar>());
+        expect(snackBar.backgroundColor, Colors.transparent);
+        expect(snackBar.elevation, 0);
+        expect(snackBar.behavior, SnackBarBehavior.floating);
+        expect(snackBar.padding, EdgeInsets.zero);
+        expect(snackBar.content, isA<DivineSnackbarContainer>());
+
+        final container = snackBar.content as DivineSnackbarContainer;
+        expect(container.label, 'Hello');
+        expect(container.error, isFalse);
+        expect(container.actionLabel, isNull);
+        expect(container.onActionPressed, isNull);
+      });
+
+      testWidgets('passes error and action parameters through', (
+        tester,
+      ) async {
+        void onAction() {}
+
+        final snackBar = DivineSnackbarContainer.snackBar(
+          'Error occurred',
+          error: true,
+          actionLabel: 'Retry',
+          onActionPressed: onAction,
+        );
+
+        final container = snackBar.content as DivineSnackbarContainer;
+        expect(container.label, 'Error occurred');
+        expect(container.error, isTrue);
+        expect(container.actionLabel, 'Retry');
+        expect(container.onActionPressed, equals(onAction));
+      });
     });
 
     testWidgets('has correct padding', (tester) async {

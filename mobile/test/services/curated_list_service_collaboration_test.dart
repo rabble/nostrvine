@@ -126,9 +126,7 @@ void main() {
       });
 
       test('returns false when adding to non-collaborative list', () async {
-        final list = await service.createList(
-          name: 'Test List',
-        );
+        final list = await service.createList(name: 'Test List');
 
         final result = await service.addCollaborator(
           list!.id,
@@ -316,9 +314,7 @@ void main() {
       });
 
       test('returns false for non-collaborative list', () async {
-        final list = await service.createList(
-          name: 'Test List',
-        );
+        final list = await service.createList(name: 'Test List');
 
         final result = service.canCollaborate(list!.id, 'random_user');
 
@@ -334,9 +330,7 @@ void main() {
 
     group('Collaboration - Edge Cases', () {
       test('converting non-collaborative list to collaborative', () async {
-        final list = await service.createList(
-          name: 'Test List',
-        );
+        final list = await service.createList(name: 'Test List');
 
         await service.updateList(listId: list!.id, isCollaborative: true);
 

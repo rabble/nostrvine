@@ -150,20 +150,21 @@ class _CreatorAnalyticsScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Creator Analytics', style: VineTheme.titleFont()),
-        backgroundColor: VineTheme.navGreen,
+      appBar: DiVineAppBar(
+        title: 'Creator Analytics',
+        showBackButton: true,
         actions: [
-          IconButton(
-            tooltip: 'Diagnostics',
+          DiVineAppBarAction(
+            icon: MaterialIconSource(
+              _showDiagnostics ? Icons.bug_report : Icons.bug_report_outlined,
+            ),
             onPressed: () {
               setState(() {
                 _showDiagnostics = !_showDiagnostics;
               });
             },
-            icon: Icon(
-              _showDiagnostics ? Icons.bug_report : Icons.bug_report_outlined,
-            ),
+            tooltip: 'Diagnostics',
+            semanticLabel: 'Toggle diagnostics',
           ),
         ],
       ),
@@ -196,7 +197,14 @@ class _CreatorAnalyticsScreenState
             onRefresh: _refresh,
             child: ListView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                12,
+                16,
+                // Important on Android to ensure content is not behind the
+                // device navigation bar.
+                24 + MediaQuery.viewPaddingOf(context).bottom,
+              ),
               children: [
                 _RangeSelector(
                   selected: _selectedWindow,
@@ -213,7 +221,9 @@ class _CreatorAnalyticsScreenState
                     useFixture: useFixture,
                     onToggleFixture: (enabled) async {
                       ref
-                              .read(useFixtureCreatorAnalyticsProvider.notifier)
+                              .read(
+                                useFixtureCreatorAnalyticsProvider.notifier,
+                              )
                               .state =
                           enabled;
                       await _refresh();
@@ -823,9 +833,10 @@ class _PostAnalyticsDetailScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Post Analytics', style: VineTheme.titleFont()),
-        backgroundColor: VineTheme.navGreen,
+      appBar: DiVineAppBar(
+        title: 'Post Analytics',
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).pop(),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),

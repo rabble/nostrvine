@@ -9,14 +9,19 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/vine_sound.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/repositories/sounds_repository.dart';
+import 'package:openvine/services/sound_library_service.dart';
 
 // Mock classes
 class MockNostrClient extends Mock implements NostrClient {}
 
 class MockSoundsRepository extends Mock implements SoundsRepository {}
+
+class MockSoundLibraryService extends Mock implements SoundLibraryService {}
 
 /// Helper to create test AudioEvent instances
 AudioEvent createTestAudioEvent({
@@ -269,6 +274,109 @@ void main() {
         );
 
         expect(result, isNull);
+      });
+
+      test('returns AudioEvent for existing bundled sound', () async {
+        final mockSoundService = MockSoundLibraryService();
+        final testVineSound = VineSound(
+          id: 'classic-vine-beat',
+          title: 'Classic Vine Beat',
+          assetPath: 'assets/sounds/classic_vine_beat.mp3',
+          duration: const Duration(seconds: 6),
+        );
+
+        when(
+          () => mockSoundService.getSoundById('classic-vine-beat'),
+        ).thenReturn(testVineSound);
+
+        final container = ProviderContainer(
+          overrides: [
+            soundsRepositoryProvider.overrideWithValue(mockRepository),
+            soundLibraryServiceProvider.overrideWith(
+              (ref) async => mockSoundService,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final result = await container.read(
+          soundByIdProvider(
+            '${AudioEvent.bundledMarker}_classic-vine-beat',
+          ).future,
+        );
+
+        expect(result, isNotNull);
+        expect(
+          result!.id,
+          equals('${AudioEvent.bundledMarker}_classic-vine-beat'),
+        );
+        expect(result.pubkey, equals(AudioEvent.bundledMarker));
+        expect(result.title, equals('Classic Vine Beat'));
+        expect(result.isBundled, isTrue);
+        verifyNever(() => mockRepository.fetchSoundById(any()));
+      });
+
+      test('returns null for nonexistent bundled sound', () async {
+        final mockSoundService = MockSoundLibraryService();
+
+        when(
+          () => mockSoundService.getSoundById('nonexistent-sound'),
+        ).thenReturn(null);
+
+        final container = ProviderContainer(
+          overrides: [
+            soundsRepositoryProvider.overrideWithValue(mockRepository),
+            soundLibraryServiceProvider.overrideWith(
+              (ref) async => mockSoundService,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final result = await container.read(
+          soundByIdProvider(
+            '${AudioEvent.bundledMarker}_nonexistent-sound',
+          ).future,
+        );
+
+        expect(result, isNull);
+        verifyNever(() => mockRepository.fetchSoundById(any()));
+        verify(
+          () => mockSoundService.getSoundById('nonexistent-sound'),
+        ).called(1);
+      });
+
+      test('does not query repository for bundled sound IDs', () async {
+        final mockSoundService = MockSoundLibraryService();
+        final testVineSound = VineSound(
+          id: 'test-sound',
+          title: 'Test Sound',
+          assetPath: 'assets/sounds/test.mp3',
+          duration: const Duration(seconds: 3),
+        );
+
+        when(
+          () => mockSoundService.getSoundById('test-sound'),
+        ).thenReturn(testVineSound);
+
+        final container = ProviderContainer(
+          overrides: [
+            soundsRepositoryProvider.overrideWithValue(mockRepository),
+            soundLibraryServiceProvider.overrideWith(
+              (ref) async => mockSoundService,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final result = await container.read(
+          soundByIdProvider('${AudioEvent.bundledMarker}_test-sound').future,
+        );
+
+        expect(result, isNotNull);
+        expect(result!.isBundled, isTrue);
+        verifyNever(() => mockRepository.fetchSoundById(any()));
+        verify(() => mockSoundService.getSoundById('test-sound')).called(1);
       });
     });
 

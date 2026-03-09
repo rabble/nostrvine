@@ -73,7 +73,7 @@ void main() {
       // Reset helper state
       UploadInitializationHelper.reset();
 
-      if (await testDir.exists()) {
+      if (testDir.existsSync()) {
         await testDir.delete(recursive: true);
       }
     } catch (e) {

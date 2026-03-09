@@ -4,6 +4,8 @@
 // ABOUTME: Returns Future<List<VideoEvent>>, not streams -
 // ABOUTME: loading is pagination-based.
 
+import 'dart:developer' as developer;
+
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -21,6 +23,12 @@ const int _videoKind = EventKind.videoVertical;
 /// Default number of videos to fetch per page.
 /// Kept small to stay "a couple videos ahead" in the buffer.
 const int _defaultLimit = 5;
+
+/// Timeout for relay search queries.
+///
+/// Set higher than the app-wide 5s default to accommodate slower
+/// user-configured personal relays.
+const Duration _relaySearchTimeout = Duration(seconds: 15);
 
 /// {@template videos_repository}
 /// Repository for video operations with Nostr.
@@ -45,17 +53,20 @@ class VideosRepository {
     VideoLocalStorage? localStorage,
     BlockedVideoFilter? blockFilter,
     VideoContentFilter? contentFilter,
+    VideoWarningLabelsResolver? warningLabelsResolver,
     FunnelcakeApiClient? funnelcakeApiClient,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _blockFilter = blockFilter,
        _contentFilter = contentFilter,
+       _warningLabelsResolver = warningLabelsResolver,
        _funnelcakeApiClient = funnelcakeApiClient;
 
   final NostrClient _nostrClient;
   final VideoLocalStorage? _localStorage;
   final BlockedVideoFilter? _blockFilter;
   final VideoContentFilter? _contentFilter;
+  final VideoWarningLabelsResolver? _warningLabelsResolver;
   final FunnelcakeApiClient? _funnelcakeApiClient;
 
   /// Fetches videos from followed users for the home feed, optionally
@@ -84,7 +95,9 @@ class VideosRepository {
   ///
   /// Returns a [HomeFeedResult] containing videos sorted by creation time
   /// (newest first) plus attribution metadata mapping videos to their
-  /// source curated lists. Returns empty result if [authors] is empty.
+  /// source curated lists. Returns empty result if both [authors] is empty
+  /// and [userPubkey] is null. When [userPubkey] is provided, the Funnelcake
+  /// API is attempted even with an empty [authors] list (fast-path startup).
   Future<HomeFeedResult> getHomeFeedVideos({
     required List<String> authors,
     Map<String, List<String>> videoRefs = const {},
@@ -92,10 +105,12 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
   }) async {
-    if (authors.isEmpty) return const HomeFeedResult(videos: []);
+    if (authors.isEmpty && userPubkey == null) {
+      return const HomeFeedResult(videos: []);
+    }
 
     // 1. Fetch following videos (Funnelcake API → Nostr relay waterfall)
-    final followingVideos = await _fetchFollowingVideos(
+    final (:videos, :rawBody) = await _fetchFollowingVideos(
       authors: authors,
       userPubkey: userPubkey,
       limit: limit,
@@ -104,42 +119,51 @@ class VideosRepository {
 
     // 2. If no list refs, return following-only result
     if (videoRefs.isEmpty) {
-      return HomeFeedResult(videos: followingVideos);
+      return HomeFeedResult(videos: videos, rawResponseBody: rawBody);
     }
 
     // 3. Merge list videos with following videos
-    return _mergeListVideos(
-      followingVideos: followingVideos,
-      videoRefs: videoRefs,
-    );
+    return _mergeListVideos(followingVideos: videos, videoRefs: videoRefs);
   }
 
   /// Fetches videos from followed users via Funnelcake API or Nostr relays.
-  Future<List<VideoEvent>> _fetchFollowingVideos({
+  ///
+  /// Returns a record with the videos and the raw JSON response body
+  /// (when available from Funnelcake initial page) for cache-first loading.
+  Future<({List<VideoEvent> videos, String? rawBody})> _fetchFollowingVideos({
     required List<String> authors,
     String? userPubkey,
     int limit = _defaultLimit,
     int? until,
   }) async {
+    final effectiveUserPubkey =
+        userPubkey ??
+        (_nostrClient.publicKey.isNotEmpty ? _nostrClient.publicKey : null);
+
     // Try Funnelcake API first (if user pubkey provided)
-    if (userPubkey != null &&
+    if (effectiveUserPubkey != null &&
         _funnelcakeApiClient != null &&
         _funnelcakeApiClient.isAvailable) {
       try {
         final response = await _funnelcakeApiClient.getHomeFeed(
-          pubkey: userPubkey,
+          pubkey: effectiveUserPubkey,
           limit: limit,
           before: until,
         );
 
         final videos = _transformVideoStats(response.videos);
-        if (videos.isNotEmpty) return videos;
+        if (videos.isNotEmpty) {
+          return (videos: videos, rawBody: response.rawBody);
+        }
       } on FunnelcakeException {
         // Fall through to Nostr
       }
     }
 
-    // Nostr fallback
+    // Nostr fallback — skip when authors list is empty (fast-path startup
+    // before follow list is ready).
+    if (authors.isEmpty) return (videos: <VideoEvent>[], rawBody: null);
+
     final filter = Filter(
       kinds: [_videoKind],
       authors: authors,
@@ -149,7 +173,7 @@ class VideosRepository {
 
     final events = await _nostrClient.queryEvents([filter]);
 
-    return _transformAndFilter(events);
+    return (videos: _transformAndFilter(events), rawBody: null);
   }
 
   /// Merges list videos with following videos and builds attribution.
@@ -321,9 +345,7 @@ class VideosRepository {
     }
 
     // Return in ref order, omitting unresolved refs
-    return [
-      for (final ref in videoRefs) ?refToVideo[ref],
-    ];
+    return [for (final ref in videoRefs) ?refToVideo[ref]];
   }
 
   /// Fetches videos published by a specific author.
@@ -392,11 +414,7 @@ class VideosRepository {
     }
 
     // 2. Nostr fallback
-    final filter = Filter(
-      kinds: [_videoKind],
-      limit: limit,
-      until: until,
-    );
+    final filter = Filter(kinds: [_videoKind], limit: limit, until: until);
 
     final events = await _nostrClient.queryEvents([filter]);
 
@@ -439,10 +457,7 @@ class VideosRepository {
         );
 
         // Preserve API order (sorted by trending score)
-        final videos = _transformVideoStats(
-          videoStats,
-          sortByCreatedAt: false,
-        );
+        final videos = _transformVideoStats(videoStats, sortByCreatedAt: false);
         if (videos.isNotEmpty) return videos;
       } on FunnelcakeException {
         // Fall through to NIP-50
@@ -478,9 +493,7 @@ class VideosRepository {
       until: until,
     );
 
-    final events = await _nostrClient.queryEvents(
-      [fallbackFilter],
-    );
+    final events = await _nostrClient.queryEvents([fallbackFilter]);
 
     final videos = _transformAndFilter(events)
       // Sort by engagement score (uses VideoEvent's built-in comparator)
@@ -714,9 +727,11 @@ class VideosRepository {
             if (_blockFilter?.call(video.pubkey) ?? false) continue;
             if (!video.hasVideo) continue;
             if (video.isExpired) continue;
-            if (_contentFilter?.call(video) ?? false) continue;
 
-            foundVideos[videoAddressableId] = video;
+            final processed = _applyContentPreferences(video);
+            if (processed == null) continue;
+
+            foundVideos[videoAddressableId] = processed;
           }
         }
       } on FunnelcakeException {
@@ -756,10 +771,10 @@ class VideosRepository {
       // Skip expired videos (NIP-40)
       if (video.isExpired) continue;
 
-      // Content filter - check parsed video (NSFW, etc.)
-      if (_contentFilter?.call(video) ?? false) continue;
-
-      videos.add(video);
+      final processed = _applyContentPreferences(video);
+      if (processed != null) {
+        videos.add(processed);
+      }
     }
 
     if (sortByCreatedAt) {
@@ -792,10 +807,20 @@ class VideosRepository {
     // Skip expired videos (NIP-40)
     if (video.isExpired) return null;
 
-    // Content filter - check parsed video (NSFW, etc.)
+    return _applyContentPreferences(video);
+  }
+
+  VideoEvent? _applyContentPreferences(VideoEvent video) {
     if (_contentFilter?.call(video) ?? false) return null;
 
-    return video;
+    final warnLabels = _warningLabelsResolver?.call(video) ?? const <String>[];
+    if (warnLabels.isEmpty) {
+      return video.warnLabels.isEmpty
+          ? video
+          : video.copyWith(warnLabels: const <String>[]);
+    }
+
+    return video.copyWith(warnLabels: warnLabels);
   }
 
   /// Transforms raw Nostr events to VideoEvents and filters invalid ones.
@@ -831,6 +856,208 @@ class VideosRepository {
     }
 
     return videos;
+  }
+
+  /// Searches local cache for videos matching [query].
+  ///
+  /// Text-matches cached events by title, content, and hashtags (instant,
+  /// no network). Returns empty if [query] is blank or no local storage
+  /// is configured.
+  ///
+  /// Parameters:
+  /// - [query]: The search query string. Returns empty if blank.
+  ///
+  /// Returns a list of matching [VideoEvent]s (unsorted — call
+  /// [deduplicateAndSortVideos] to rank).
+  Future<List<VideoEvent>> searchVideosLocally({required String query}) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty || _localStorage == null) return [];
+
+    // Phase 1: SQL-level content search (fast, reduces event count)
+    final contentMatches = await _localStorage.searchEvents(query: trimmed);
+
+    // Phase 2: Hashtag search (tags stored as JSON, need separate query)
+    final hashtagMatches = await _localStorage.getEventsByHashtags(
+      hashtags: [trimmed],
+      limit: 100,
+    );
+
+    // Merge and deduplicate by event ID
+    final allMatches = <String, Event>{};
+    for (final event in contentMatches) {
+      allMatches[event.id] = event;
+    }
+    for (final event in hashtagMatches) {
+      allMatches[event.id] = event;
+    }
+
+    // Transform to VideoEvent (now on ~20-50 events instead of 500)
+    final localVideos = _transformAndFilter(allMatches.values.toList());
+
+    // Precise in-memory refinement on parsed fields
+    final queryLower = trimmed.toLowerCase();
+    return localVideos
+        .where(
+          (v) =>
+              (v.title?.toLowerCase().contains(queryLower) ?? false) ||
+              v.content.toLowerCase().contains(queryLower) ||
+              v.hashtags.any((h) => h.toLowerCase().contains(queryLower)),
+        )
+        .toList();
+  }
+
+  /// Counts local video matches without remote search.
+  ///
+  /// This still relies on local cache search, but avoids the remote API and
+  /// relay phases when a tab only needs a badge count.
+  Future<int> countVideosLocally({required String query}) async {
+    final matches = await searchVideosLocally(query: query);
+    return matches.length;
+  }
+
+  /// Searches NIP-50 relays for videos matching [query].
+  ///
+  /// Full-text search via [NostrClient.searchVideos] with a 5-second
+  /// timeout to avoid blocking the caller. Returns empty on timeout or
+  /// failure.
+  ///
+  /// Parameters:
+  /// - [query]: The search query string. Returns empty if blank.
+  /// - [limit]: Maximum number of results (default 100).
+  ///
+  /// Returns a list of matching [VideoEvent]s (unsorted — call
+  /// [deduplicateAndSortVideos] to rank).
+  Future<List<VideoEvent>> searchVideosOnRelays({
+    required String query,
+    int limit = 100,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+
+    try {
+      final events = await _nostrClient
+          .searchVideos(trimmed, limit: limit)
+          .timeout(_relaySearchTimeout, onTimeout: (sink) => sink.close())
+          .toList();
+      return _transformAndFilter(events, sortByCreatedAt: false);
+    } on Exception catch (e, stackTrace) {
+      developer.log(
+        'searchVideosOnRelays failed for "$trimmed"',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
+  /// Searches videos via the Funnelcake REST API.
+  ///
+  /// Returns empty list if the query is blank, the API client is null,
+  /// or the API is unavailable. Results are converted from [VideoStats]
+  /// to [VideoEvent] via [_transformVideoStats].
+  ///
+  /// Parameters:
+  /// - [query]: The search query string. Returns empty if blank.
+  /// - [limit]: Maximum number of results (default 50).
+  ///
+  /// Returns a list of matching [VideoEvent]s (unsorted — call
+  /// [deduplicateAndSortVideos] to rank).
+  Future<List<VideoEvent>> searchVideosViaApi({
+    required String query,
+    int limit = 50,
+  }) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return [];
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return [];
+    }
+
+    try {
+      final stats = await _funnelcakeApiClient.searchVideos(
+        query: trimmed,
+        limit: limit,
+      );
+      return _transformVideoStats(stats, sortByCreatedAt: false);
+    } on FunnelcakeException catch (e, stackTrace) {
+      developer.log(
+        'searchVideosViaApi failed for "$trimmed"',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
+  }
+
+  /// Deduplicates videos by ID and sorts by popularity (loops then time).
+  ///
+  /// Use this to combine results from [searchVideosLocally] and
+  /// [searchVideosOnRelays] into a single ranked list.
+  List<VideoEvent> deduplicateAndSortVideos(List<VideoEvent> videos) {
+    final seenIds = <String>{};
+    final unique = videos.where((v) {
+      if (seenIds.contains(v.id)) return false;
+      seenIds.add(v.id);
+      return true;
+    }).toList()..sort(VideoEvent.compareByLoopsThenTime);
+    return unique;
+  }
+
+  /// Searches videos across all sources, yielding progressively.
+  ///
+  /// Returns a [Stream] that emits accumulated [VideoEvent] lists as each
+  /// source completes:
+  /// 1. Local cache results (instant)
+  /// 2. Funnelcake API results (fast, ~1s)
+  /// 3. NIP-50 relay results (slower, ~5s)
+  ///
+  /// Each emission contains the full deduplicated+sorted result set so far.
+  /// Each phase is isolated — a failure in one phase does not prevent
+  /// subsequent phases from yielding results.
+  ///
+  /// Parameters:
+  /// - [query]: The search query string. Returns empty stream if blank.
+  /// - [limit]: Maximum results per remote source (default 50).
+  Stream<List<VideoEvent>> searchVideos({
+    required String query,
+    int limit = 50,
+  }) async* {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) return;
+
+    // Phase 1: Local cache (instant)
+    final local = await searchVideosLocally(query: trimmed);
+    var accumulated = deduplicateAndSortVideos(local);
+    yield accumulated;
+
+    // Phase 2: Funnelcake API (fast)
+    try {
+      final apiResults = await searchVideosViaApi(query: trimmed, limit: limit);
+      if (apiResults.isNotEmpty) {
+        accumulated = deduplicateAndSortVideos([...accumulated, ...apiResults]);
+        yield accumulated;
+      }
+    } on Exception catch (e, stackTrace) {
+      developer.log(
+        'searchVideos API phase failed for "$trimmed"',
+        name: 'VideosRepository',
+        error: e,
+        stackTrace: stackTrace,
+      );
+    }
+
+    // Phase 3: NIP-50 relay search (slower)
+    // Note: searchVideosOnRelays handles exceptions internally and returns []
+    // on failure, so no outer try-catch is needed.
+    final relayResults = await searchVideosOnRelays(
+      query: trimmed,
+      limit: limit,
+    );
+    if (relayResults.isNotEmpty) {
+      accumulated = deduplicateAndSortVideos([...accumulated, ...relayResults]);
+      yield accumulated;
+    }
   }
 
   /// Fetches videos where [taggedPubkey] appears in a p-tag.
@@ -932,25 +1159,6 @@ class VideosRepository {
     }
     final stats = await _funnelcakeApiClient.getClassicVideosByHashtag(
       hashtag: hashtag,
-      limit: limit,
-    );
-    return _transformVideoStats(stats, sortByCreatedAt: false);
-  }
-
-  /// Searches videos by text query.
-  ///
-  /// Returns empty list if Funnelcake API is unavailable.
-  ///
-  /// Throws [FunnelcakeException] subtypes on API errors.
-  Future<List<VideoEvent>> searchVideos({
-    required String query,
-    int limit = 20,
-  }) async {
-    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
-      return [];
-    }
-    final stats = await _funnelcakeApiClient.searchVideos(
-      query: query,
       limit: limit,
     );
     return _transformVideoStats(stats, sortByCreatedAt: false);

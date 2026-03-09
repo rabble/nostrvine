@@ -41,7 +41,7 @@ void main() {
       expect(state.totalDuration, equals(const Duration(seconds: 2)));
     });
 
-    test('deleteClip removes clip from state', () {
+    test('deleteClip removes clip from state', () async {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
@@ -58,7 +58,7 @@ void main() {
       );
 
       final clipId = container.read(clipManagerProvider).clips[0].id;
-      notifier.removeClipById(clipId);
+      await notifier.removeClipById(clipId);
 
       final state = container.read(clipManagerProvider);
       expect(state.clips.length, equals(1));
@@ -145,7 +145,7 @@ void main() {
       expect(state.clips.length, equals(1));
     });
 
-    test('clearAll removes all clips and resets state', () {
+    test('clearAll removes all clips and resets state', () async {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
@@ -161,7 +161,7 @@ void main() {
         originalAspectRatio: 9 / 16,
       );
 
-      notifier.clearAll();
+      await notifier.clearAll();
 
       final state = container.read(clipManagerProvider);
       expect(state.clips, isEmpty);

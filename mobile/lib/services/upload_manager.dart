@@ -11,8 +11,8 @@ import 'package:flutter/foundation.dart' show ValueChanged, kIsWeb;
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
@@ -113,7 +113,7 @@ class UploadManager {
   @Deprecated('Only Blossom uploads are supported')
   Future<void> setUploadTarget(dynamic target) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_uploadTargetKey, target.index);
+    await prefs.setInt(_uploadTargetKey, target.index as int);
     Log.info(
       'Upload target set to: ${target.name}',
       name: 'UploadManager',
@@ -166,6 +166,9 @@ class UploadManager {
 
       // Clean up any problematic uploads first
       await cleanupProblematicUploads();
+
+      // Clean up old completed/published uploads to prevent accumulation
+      await cleanupCompletedUploads();
 
       // Resume any interrupted uploads
       await _resumeInterruptedUploads();
@@ -270,7 +273,7 @@ class UploadManager {
 
   /// Start upload from VineDraft (preferred method - single source of truth)
   Future<PendingUpload> startUploadFromDraft({
-    required VineDraft draft,
+    required DivineVideoDraft draft,
     required String nostrPubkey,
     Duration? videoDuration,
     ValueChanged<double>? onProgress,
@@ -294,14 +297,13 @@ class UploadManager {
       );
     }
 
-    // Use single clip (already processed) directly, or merge multiple clips
-    // with 6.3s max duration.
-    String videoFilePath;
-    if (draft.clips.length == 1) {
-      videoFilePath = await draft.clips.first.video.safeFilePath();
-    } else {
+    Future<String> prepareUploadFromSourceClips() async {
+      if (draft.clips.length == 1) {
+        return draft.clips.first.video.safeFilePath();
+      }
+
       final tempDir = await getTemporaryDirectory();
-      videoFilePath = path.join(
+      final mergedPath = path.join(
         tempDir.path,
         'merged_${DateTime.now().microsecondsSinceEpoch}.mp4',
       );
@@ -312,7 +314,7 @@ class UploadManager {
         category: .video,
       );
       await ProVideoEditor.instance.renderVideoToFile(
-        videoFilePath,
+        mergedPath,
         VideoRenderData(
           videoSegments: draft.clips
               .map((clip) => VideoSegment(video: clip.video))
@@ -322,10 +324,37 @@ class UploadManager {
         ),
       );
       Log.info(
-        '✅ Video merge completed: $videoFilePath',
+        '✅ Video merge completed: $mergedPath',
         name: 'UploadManager',
         category: .video,
       );
+      return mergedPath;
+    }
+
+    // Prefer the persisted final render when available. It preserves editor
+    // overlays and gives retries/background uploads a stable file path.
+    String videoFilePath;
+    final renderedClip = draft.finalRenderedClip;
+    if (renderedClip != null) {
+      final renderedPath = await renderedClip.video.safeFilePath();
+      if (File(renderedPath).existsSync()) {
+        videoFilePath = renderedPath;
+        videoDuration ??= renderedClip.duration;
+        Log.info(
+          '🎬 Using final rendered clip for upload: $videoFilePath',
+          name: 'UploadManager',
+          category: .video,
+        );
+      } else {
+        Log.warning(
+          '⚠️ Final rendered clip missing at $renderedPath - falling back to source clips',
+          name: 'UploadManager',
+          category: .video,
+        );
+        videoFilePath = await prepareUploadFromSourceClips();
+      }
+    } else {
+      videoFilePath = await prepareUploadFromSourceClips();
     }
 
     int? videoWidth;
@@ -801,7 +830,7 @@ class UploadManager {
         category: LogCategory.video,
       );
 
-      // Check if custom server is enabled, otherwise use default diVine server
+      // Check if custom server is enabled, otherwise use default Divine server
       final isCustomServerEnabled = await _blossomService.isBlossomEnabled();
       String blossomServer;
 
@@ -821,7 +850,7 @@ class UploadManager {
       } else {
         blossomServer = BlossomUploadService.defaultBlossomServer;
         Log.info(
-          '🌸 Uploading to default diVine Blossom server: $blossomServer',
+          '🌸 Uploading to default Divine Blossom server: $blossomServer',
           name: 'UploadManager',
           category: LogCategory.video,
         );
@@ -1345,9 +1374,7 @@ class UploadManager {
     );
 
     // Reset status and error
-    final resetUpload = upload.copyWith(
-      status: UploadStatus.pending,
-    );
+    final resetUpload = upload.copyWith(status: UploadStatus.pending);
 
     await _updateUpload(resetUpload);
 
@@ -1422,28 +1449,53 @@ class UploadManager {
     );
   }
 
-  /// Remove completed or failed uploads
+  /// Remove completed, published, or unrecoverable failed uploads
   Future<void> cleanupCompletedUploads() async {
     if (_uploadsBox == null) return;
 
-    final completedUploads = pendingUploads
-        .where((upload) => upload.isCompleted)
-        .where((upload) => upload.completedAt != null)
-        .where(
-          (upload) => DateTime.now().difference(upload.completedAt!).inDays > 7,
-        ) // Keep for 7 days
-        .toList();
+    final uploadsToClean = <PendingUpload>[];
 
-    for (final upload in completedUploads) {
+    for (final upload in pendingUploads) {
+      // Clean up published uploads immediately - they're done
+      if (upload.status == UploadStatus.published) {
+        uploadsToClean.add(upload);
+        continue;
+      }
+
+      // Clean up completed uploads after 1 day
+      if (upload.isCompleted &&
+          upload.completedAt != null &&
+          DateTime.now().difference(upload.completedAt!).inDays >= 1) {
+        uploadsToClean.add(upload);
+        continue;
+      }
+
+      // Clean up failed uploads with missing video files (unrecoverable)
+      if (upload.status == UploadStatus.failed && !kIsWeb) {
+        final videoFile = File(upload.localVideoPath);
+        if (!videoFile.existsSync()) {
+          uploadsToClean.add(upload);
+          continue;
+        }
+      }
+    }
+
+    for (final upload in uploadsToClean) {
       await _uploadsBox!.delete(upload.id);
       Log.debug(
-        '📱️ Cleaned up old upload: ${upload.id}',
+        '🗑️ Cleaned up upload: ${upload.id} (${upload.status.name})',
         name: 'UploadManager',
         category: LogCategory.video,
       );
     }
 
-    if (completedUploads.isNotEmpty) {}
+    if (uploadsToClean.isNotEmpty) {
+      Log.info(
+        '🧹 Cleaned up ${uploadsToClean.length} old/unrecoverable uploads',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Resume any uploads that were interrupted or never started
@@ -1503,17 +1555,12 @@ class UploadManager {
         final videoFile = File(upload.localVideoPath);
         if (!videoFile.existsSync()) {
           Log.warning(
-            '⚠️ Skipping upload ${upload.id} - video file no longer exists: ${upload.localVideoPath}',
+            '🗑️ Deleting upload ${upload.id} - video file no longer exists: ${upload.localVideoPath}',
             name: 'UploadManager',
             category: LogCategory.video,
           );
-          // Mark as failed with clear message
-          await _updateUpload(
-            upload.copyWith(
-              status: UploadStatus.failed,
-              errorMessage: 'Video file was deleted. Please record again.',
-            ),
-          );
+          // Delete unrecoverable upload permanently
+          await _uploadsBox?.delete(upload.id);
           continue;
         }
       }
@@ -1525,9 +1572,7 @@ class UploadManager {
       );
 
       // Reset to pending and restart
-      final resetUpload = upload.copyWith(
-        status: UploadStatus.pending,
-      );
+      final resetUpload = upload.copyWith(status: UploadStatus.pending);
 
       await _updateUpload(resetUpload);
       // Intentional fire-and-forget for parallel processing of interrupted uploads

@@ -1,16 +1,17 @@
 // ABOUTME: Integration tests for complete feature flag system end-to-end functionality
 // ABOUTME: Validates flag service, providers, widgets, and screen working together
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/features/feature_flags/screens/feature_flag_screen.dart';
 import 'package:openvine/features/feature_flags/widgets/feature_flag_widget.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/screens/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockSharedPreferences extends Mock implements SharedPreferences {}
@@ -39,13 +40,24 @@ void main() {
       tester,
     ) async {
       // Create a complete app with both settings screen and feature-gated content
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const TestHomeScreen(),
+            routes: [
+              GoRoute(
+                path: 'settings',
+                builder: (context, state) => const FeatureFlagScreen(),
+              ),
+            ],
+          ),
+        ],
+      );
       await tester.pumpWidget(
         ProviderScope(
           overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
-          child: MaterialApp(
-            home: const TestHomeScreen(),
-            routes: {'/settings': (context) => const FeatureFlagScreen()},
-          ),
+          child: MaterialApp.router(routerConfig: router),
         ),
       );
 
@@ -86,7 +98,7 @@ void main() {
       verify(() => mockPrefs.setBool('ff_newCameraUI', true)).called(1);
 
       // Navigate back to home
-      await tester.pageBack();
+      await tester.tap(find.byType(DiVineAppBarIconButton).first);
       await tester.pumpAndSettle();
 
       // Verify feature is now enabled
@@ -320,11 +332,11 @@ void main() {
         () => mockPrefs.setBool(any(), any()),
       ).thenThrow(Exception('Storage error'));
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
-          child: MaterialApp(
-            home: Scaffold(
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
               body: Column(
                 children: [
                   const FeatureFlagWidget(
@@ -334,19 +346,26 @@ void main() {
                   ),
                   Builder(
                     builder: (context) => ElevatedButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FeatureFlagScreen(),
-                        ),
-                      ),
+                      onPressed: () => context.go('/settings'),
                       child: const Text('Open Settings'),
                     ),
                   ),
                 ],
               ),
             ),
+            routes: [
+              GoRoute(
+                path: 'settings',
+                builder: (context, state) => const FeatureFlagScreen(),
+              ),
+            ],
           ),
+        ],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [sharedPreferencesProvider.overrideWithValue(mockPrefs)],
+          child: MaterialApp.router(routerConfig: router),
         ),
       );
 
@@ -376,7 +395,7 @@ void main() {
       expect(find.text('Feature Flags'), findsOneWidget);
 
       // Navigate back to see if in-memory state was updated despite storage error
-      await tester.pageBack();
+      await tester.tap(find.byType(DiVineAppBarIconButton).first);
       await tester.pumpAndSettle();
 
       // Should show enhanced camera (in-memory state updated despite storage error)
@@ -402,7 +421,7 @@ class TestHomeScreen extends ConsumerWidget {
             child: Text('Enhanced Camera UI'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, SettingsScreen.path),
+            onPressed: () => context.go('/settings'),
             child: const Text('Settings'),
           ),
         ],

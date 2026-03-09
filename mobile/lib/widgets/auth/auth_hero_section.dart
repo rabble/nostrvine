@@ -1,5 +1,5 @@
 // ABOUTME: Shared hero section widget for auth/invite screens
-// ABOUTME: Large tagline text with decorative 3D emoji stickers and divine logo
+// ABOUTME: Large tagline text with decorative 3D emoji stickers and Divine logo
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 /// Hero section with large tagline text and decorative 3D emoji stickers.
 ///
 /// Displays "Authentic moments." in green and "Human creativity." in white,
-/// with positioned sticker images and the divine wordmark logo.
+/// with positioned sticker images and the Divine wordmark logo.
 class AuthHeroSection extends StatelessWidget {
   const AuthHeroSection({super.key});
 

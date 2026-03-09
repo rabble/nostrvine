@@ -5,7 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/library_screen.dart';
 
 void main() {
   group('Profile menu drafts widget', () {
@@ -41,8 +41,7 @@ void main() {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ClipLibraryScreen(),
+                                  builder: (context) => const LibraryScreen(),
                                 ),
                               );
                             },
@@ -100,8 +99,7 @@ void main() {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ClipLibraryScreen(),
+                                  builder: (context) => const LibraryScreen(),
                                 ),
                               );
                             },
@@ -127,7 +125,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should navigate to ClipLibraryScreen
-      expect(find.byType(ClipLibraryScreen), findsOneWidget);
+      expect(find.byType(LibraryScreen), findsOneWidget);
       expect(find.text('Drafts'), findsWidgets); // App bar title
       // TODO(Any): Fix and re-enable these tests
     }, skip: true);
@@ -174,8 +172,7 @@ void main() {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) =>
-                                        const ClipLibraryScreen(),
+                                    builder: (context) => const LibraryScreen(),
                                   ),
                                 );
                               },
@@ -204,7 +201,7 @@ void main() {
 
       // Menu should be closed - Settings should not be visible
       expect(find.text('Settings'), findsNothing);
-      expect(find.byType(ClipLibraryScreen), findsOneWidget);
+      expect(find.byType(LibraryScreen), findsOneWidget);
     });
   });
 }

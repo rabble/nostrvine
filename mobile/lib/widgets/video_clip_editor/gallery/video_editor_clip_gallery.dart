@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/haptic_service.dart';
@@ -186,17 +186,32 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     PointerMoveEvent event,
     BoxConstraints constraints,
   ) async {
-    // Check delete zone and exit early if needed
-    if (_updateDeleteZoneState(event, constraints)) {
-      _resetDragOffsetIfNeeded();
-      return;
-    }
+    // Compensate deltas for the AnimatedScale(reorderScale) wrapper so the
+    // clip center follows the finger 1:1 in screen space.
+    final contentScale = VideoEditorGalleryConstants.reorderScale;
 
-    // Update visual drag offset (for rotation effect)
+    // Always track Y — clip follows finger vertically toward delete zone.
+    _reorderController.updateVisualDragY(
+      event.delta.dy,
+      contentScale: contentScale,
+    );
+
+    // Always track X — clip follows finger horizontally even in delete zone.
     _reorderController.updateVisualDragOffset(
       event.delta.dx,
       constraints.maxWidth,
+      contentScale: contentScale,
     );
+
+    // Check delete zone — block only page-switching reorder logic.
+    if (_updateDeleteZoneState(event, constraints)) {
+      // Only reset X offset when directly over the delete button,
+      // not when simply dragging below the clip area.
+      if (_isPointerOverDeleteButton(event.position)) {
+        _resetDragOffsetIfNeeded();
+      }
+      return;
+    }
 
     // Accumulate drag offset for page switching
     _reorderController.addDragOffset(event.delta.dx);
@@ -225,13 +240,15 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
   /// Otherwise, the drag offset animates back to zero and reorder mode ends.
   Future<void> _handleReorderCancel() async {
     final isOverDeleteZone = ref.read(videoEditorProvider).isOverDeleteZone;
-    final targetIndex = _reorderController.targetIndex;
+    // Use startIndex for deletion - the clip list hasn't been reordered yet,
+    // so the original clip is still at its starting position
+    final startIndex = _reorderController.startIndex;
 
     if (isOverDeleteZone) {
       // Delete the clip if released over delete zone
       final clips = ref.read(clipManagerProvider).clips;
-      if (targetIndex >= 0 && targetIndex < clips.length) {
-        final clipToDelete = clips[targetIndex];
+      if (startIndex >= 0 && startIndex < clips.length) {
+        final clipToDelete = clips[startIndex];
         unawaited(
           ref
               .read(clipManagerProvider.notifier)
@@ -244,23 +261,36 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
           return;
         }
 
-        // Update selected index after deletion
+        // Update selected index after deletion - based on startIndex since
+        // that's where the deleted clip was
         final remainingClips = ref.read(clipManagerProvider).clips;
         final newIndex = _reorderController.calculateIndexAfterDeletion(
           remainingClips.length,
         );
         _reorderController.updateTargetIndex(newIndex);
         ref.read(videoEditorProvider.notifier).selectClipByIndex(newIndex);
+
+        // Skip reorder since we deleted instead
+        _reorderController.completeReorder();
+        ref.read(videoEditorProvider.notifier).stopClipReordering();
+        _wasOverDeleteZone = false;
+
+        Future.delayed(VideoEditorGalleryConstants.scaleAnimationDuration, () {
+          if (mounted) _reorderController.disableTweenOffset();
+          setState(() {});
+        });
+        return;
       }
     }
 
     // Animate drag offset back to 0 and wait for completion
-    _reorderController.prepareForDragReset();
+    _reorderController.prepareForFullDragReset();
     if (_reorderController.shouldAnimateReset) {
       await _dragResetController.forward(from: 0).orCancel;
     }
     _reorderController.completeReorder();
 
+    // Only reorder if we didn't delete
     ref
         .read(clipManagerProvider.notifier)
         .reorderClip(
@@ -323,7 +353,7 @@ class _GalleryViewer extends ConsumerWidget {
   });
 
   final PageController pageController;
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
   final ClipReorderController reorderController;
 
   @override
@@ -415,7 +445,7 @@ class _GalleryStack extends ConsumerStatefulWidget {
   final ClipReorderController reorderController;
   final BoxConstraints constraints;
 
-  final List<RecordingClip> clips;
+  final List<DivineVideoClip> clips;
 
   final int activeClipIndex;
   final int selectedClipIndex;
@@ -526,6 +556,7 @@ class _GalleryStackState extends ConsumerState<_GalleryStack> {
               pageWidth: pageWidth,
               isReordering: widget.isReordering,
               dragOffsetNotifier: widget.reorderController.dragOffsetNotifier,
+              dragYOffsetNotifier: widget.reorderController.dragYOffsetNotifier,
               scale: _calculator.calculateScale(widget.activeClipIndex),
               xOffset: _calculator.calculateXOffset(widget.activeClipIndex),
             ),

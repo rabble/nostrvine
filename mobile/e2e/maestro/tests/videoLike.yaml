@@ -20,7 +20,7 @@ tags:
 - tapOn:
     id: like_button
 - runFlow: "../asserts/assertVideoLiked.yaml"
-
+# Back button on iOS devices
 - runFlow:
     when:
       visible: |-
@@ -34,6 +34,7 @@ tags:
           Go back
           Back
 
+# Back button on Android devices
 - runFlow:
     when:
       visible: Go back

@@ -68,7 +68,7 @@ class GallerySaveService {
   Future<GallerySaveResult> saveVideoToGallery(
     EditorVideo video, {
     model.AspectRatio? aspectRatio,
-    String albumName = 'diVine',
+    String albumName = 'Divine',
     VideoMetadata? metadata,
   }) async {
     // Declare filePath outside try so catch blocks can access it.
@@ -206,7 +206,7 @@ class GallerySaveService {
         return const GallerySaveFailure('Downloads folder not found');
       }
 
-      final fileName = 'diVine_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      final fileName = 'Divine_${DateTime.now().millisecondsSinceEpoch}.mp4';
       final destPath = p.join(downloadsDir.path, fileName);
       await File(filePath).copy(destPath);
 

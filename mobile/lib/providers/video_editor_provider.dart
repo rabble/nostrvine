@@ -8,18 +8,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/models/content_label.dart';
+import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
-import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
-import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -56,9 +58,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       ref.read(clipManagerProvider.notifier);
 
   /// Get clips from clip manager.
-  List<RecordingClip> get _clips => ref.read(clipManagerProvider).clips;
+  List<DivineVideoClip> get _clips => ref.read(clipManagerProvider).clips;
 
-  final _draftService = DraftStorageService();
+  late final DraftStorageService _draftService = ref.read(
+    draftStorageServiceProvider,
+  );
+
+  bool get isAutosavedDraft => draftId == VideoEditorConstants.autoSaveId;
 
   // === LIFECYCLE ===
 
@@ -96,7 +102,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(clearFinalRenderedClip: true);
 
     // Delete the old rendered file from disk to free up space
-    unawaited(FileCleanupService.deleteRecordingClipFiles(clip));
+    final db = ref.read(databaseProvider);
+    unawaited(
+      FileCleanupService.deleteRecordingClipFiles(
+        clip,
+        draftsDao: db.draftsDao,
+        clipsDao: db.clipsDao,
+      ),
+    );
   }
 
   /// Initialize the video editor with an optional draft.
@@ -126,6 +139,18 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: .video,
       );
+      final accountLabelService = ref.read(accountLabelServiceProvider);
+      await accountLabelService.initialized;
+      final accountLabels = accountLabelService.defaultVideoLabels;
+      if (accountLabels.isNotEmpty) {
+        state = state.copyWith(contentWarnings: accountLabels);
+        Log.info(
+          '⚠️ Auto-selected content warnings from account labels: '
+          '${accountLabels.map((label) => label.value).join(", ")}',
+          name: 'VideoEditorNotifier',
+          category: LogCategory.video,
+        );
+      }
     }
     this.draftId = draftId ?? 'Draft_${DateTime.now().microsecondsSinceEpoch}';
   }
@@ -538,6 +563,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  /// Set NIP-32 content warning labels for the current video.
+  void setContentWarnings(Set<ContentLabel> labels) {
+    state = state.copyWith(contentWarnings: Set<ContentLabel>.of(labels));
+    triggerAutosave();
+  }
+
   // === COLLABORATORS & INSPIRED BY ===
 
   /// Maximum number of collaborators allowed per video.
@@ -587,6 +618,39 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  // === SOUND MANAGEMENT ===
+
+  /// Select a sound for the video.
+  ///
+  /// This updates the editor's local state. The sound is persisted
+  /// in drafts and used for audio playback during editing.
+  void selectSound(AudioEvent? sound) {
+    state = state.copyWith(
+      selectedSound: sound,
+      clearSelectedSound: sound == null,
+    );
+    invalidateFinalRenderedClip();
+    triggerAutosave();
+  }
+
+  /// Clear the currently selected sound.
+  void clearSound() {
+    state = state.copyWith(clearSelectedSound: true);
+    invalidateFinalRenderedClip();
+    triggerAutosave();
+  }
+
+  /// Update the start offset of the currently selected sound.
+  void updateSoundStartOffset(Duration offset) {
+    if (state.selectedSound != null) {
+      state = state.copyWith(
+        selectedSound: state.selectedSound!.copyWith(startOffset: offset),
+      );
+      invalidateFinalRenderedClip();
+      triggerAutosave();
+    }
+  }
+
   /// Create a VineDraft from the rendered clip with metadata.
   ///
   /// When a sound is selected via [selectedSoundProvider], automatically
@@ -594,12 +658,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// publisher to add an `["e", ..., "audio"]` tag. Also auto-populates
   /// [inspiredByVideo] from the sound's [sourceVideoReference] if not
   /// already set.
-  VineDraft getActiveDraft({
+  DivineVideoDraft getActiveDraft({
     bool isAutosave = false,
     bool enforceSeparatedClips = false,
   }) {
-    // Read selected sound for audio reference and auto-attribution
-    final selectedSound = ref.read(selectedSoundProvider);
+    // Read selected sound from local state
+    final selectedSound = state.selectedSound;
 
     // Auto-populate inspired-by from selected sound's source video
     var inspiredByVideo = state.inspiredByVideo;
@@ -611,7 +675,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
     }
 
-    return VineDraft.create(
+    return DivineVideoDraft.create(
       id: isAutosave ? VideoEditorConstants.autoSaveId : draftId,
       clips:
           state.finalRenderedClip == null || isAutosave || enforceSeparatedClips
@@ -628,9 +692,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       collaboratorPubkeys: state.collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: state.inspiredByNpub,
-      selectedAudioEventId: selectedSound?.id,
-      selectedAudioRelay: selectedSound?.sourceVideoRelay,
+      selectedSound: selectedSound,
+      contentWarning: ContentLabel.toCsv(state.contentWarnings),
       finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
+      proofManifestJson: state.proofManifestJson,
     );
   }
 
@@ -805,7 +870,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     }
 
     // Regenerate missing thumbnails
-    final clipsWithThumbnails = <RecordingClip>[];
+    final clipsWithThumbnails = <DivineVideoClip>[];
     for (final clip in draft.clips) {
       final thumbnailPath = clip.thumbnailPath;
       final thumbnailExists =
@@ -844,7 +909,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     _clipManager.clearClips();
 
     // Validate finalRenderedClip - only restore if file still exists
-    RecordingClip? validFinalRenderedClip;
+    DivineVideoClip? validFinalRenderedClip;
     final finalClip = draft.finalRenderedClip;
     if (finalClip != null) {
       final videoPath = finalClip.video.file?.path;
@@ -877,8 +942,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       collaboratorPubkeys: draft.collaboratorPubkeys,
       inspiredByVideo: draft.inspiredByVideo,
       inspiredByNpub: draft.inspiredByNpub,
-      selectedAudioEventId: draft.selectedAudioEventId,
-      selectedAudioRelay: draft.selectedAudioRelay,
+      selectedSound: draft.selectedSound,
+      contentWarnings: draft.contentWarnings,
       finalRenderedClip: validFinalRenderedClip,
       clearFinalRenderedClip: validFinalRenderedClip == null,
     );
@@ -929,10 +994,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Render all clips into final video and prepare for publishing.
   ///
-  /// Combines all clips, applies audio settings, generates proofmode
-  /// attestation, and creates the final rendered clip for publishing.
+  /// Combines all clips, applies audio settings, and creates the final
+  /// rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    if (state.isProcessing || state.finalRenderedClip != null) return;
+    if (state.finalRenderedClip != null) return;
 
     Log.info(
       '🎬 Starting final video render',
@@ -941,48 +1006,37 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
     setProcessing(true);
 
-    // Render video and get proofmode data
-    final (outputPath, proofManifestJson) = await _renderVideo();
+    final renderParameters = _buildRenderParameters();
 
-    final validToPublish = outputPath != null;
+    final result = await VideoEditorRenderService.renderVideoToClip(
+      clips: _clips,
+      enableAudio: !state.isMuted,
+      parameters: renderParameters,
+    );
 
-    // Extract metadata from rendered video
-    final metaData = validToPublish
-        ? await ProVideoEditor.instance.getMetadata(
-            EditorVideo.file(outputPath),
-          )
-        : null;
-
-    if (!validToPublish) {
+    if (result == null) {
       Log.warning(
         '⚠️ Video render cancelled or failed',
         name: 'VideoEditorNotifier',
         category: .video,
       );
+      state = state.copyWith(isProcessing: false);
       return;
     }
 
+    final (finalRenderedClip, proofManifestJson) = result;
+
     Log.info(
       '✅ Video rendered successfully - duration: '
-      '${metaData!.duration.inSeconds}s',
+      '${finalRenderedClip.duration.inSeconds}s',
       name: 'VideoEditorNotifier',
       category: .video,
-    );
-
-    // Create final clip for publishing
-    final finalRenderedClip = RecordingClip(
-      id: 'clip-${DateTime.now()}',
-      video: EditorVideo.file(outputPath),
-      duration: metaData.duration,
-      recordedAt: .now(),
-      originalAspectRatio: _clips.first.originalAspectRatio,
-      targetAspectRatio: _clips.first.targetAspectRatio,
-      thumbnailPath: _clips.first.thumbnailPath,
     );
 
     state = state.copyWith(
       isProcessing: false,
       finalRenderedClip: finalRenderedClip,
+      proofManifestJson: proofManifestJson,
     );
     autosaveChanges();
   }
@@ -1047,78 +1101,33 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         .publishVideo(context, getActiveDraft());
   }
 
-  /// Render all clips into a single video file with aspect ratio cropping.
+  // === PRIVATE HELPERS ===
+
+  /// Build render parameters for video export.
   ///
-  /// Applies center cropping based on target aspect ratio (square or vertical).
-  Future<(String? filePath, String? proof)> _renderVideo() async {
-    Log.info(
-      '🎥 Rendering ${_clips.length} clip(s) into final video',
-      name: 'VideoEditorNotifier',
-      category: .video,
+  /// Combines editor editing parameters with custom audio track if selected.
+  /// Returns null if no parameters or sound track are configured.
+  CompleteParameters? _buildRenderParameters() {
+    final hasEditorParams = state.editorEditingParameters != null;
+    final soundTrack = state.selectedSound;
+
+    if (!hasEditorParams && soundTrack == null) return null;
+
+    final baseParams =
+        state.editorEditingParameters ?? CompleteParameters.fromMap({});
+
+    if (soundTrack == null) return baseParams;
+
+    return baseParams.copyWith(
+      customAudioTrack: AudioTrack(
+        id: soundTrack.id,
+        title: soundTrack.title ?? '',
+        subtitle: soundTrack.source ?? '',
+        duration: Duration(seconds: soundTrack.duration?.toInt() ?? 0),
+        audio: soundTrack.isBundled
+            ? EditorAudio.asset(soundTrack.assetPath!)
+            : EditorAudio.network(soundTrack.url!),
+      ),
     );
-
-    try {
-      // Render clips into single video file
-      final outputPath = await VideoEditorRenderService.renderVideo(
-        clips: _clips,
-        aspectRatio: _clips.first.targetAspectRatio,
-        enableAudio: !state.isMuted,
-        usePersistentStorage: true,
-        parameters: state.editorEditingParameters,
-      );
-      String? proofManifestJson;
-
-      // Generate proofmode attestation if render successful
-      if (outputPath != null) {
-        Log.info(
-          '✅ Video rendered to: $outputPath',
-          name: 'VideoEditorNotifier',
-          category: .video,
-        );
-
-        Log.debug(
-          '🔐 Generating proofmode attestation for video',
-          name: 'VideoEditorNotifier',
-          category: .video,
-        );
-        final proofData = await NativeProofModeService.proofFile(
-          File(outputPath),
-        );
-
-        if (proofData != null) {
-          proofManifestJson = jsonEncode(proofData);
-          Log.info(
-            '✅ Proofmode attestation generated',
-            name: 'VideoEditorNotifier',
-            category: .video,
-          );
-        } else {
-          Log.warning(
-            '⚠️ No proofmode data available',
-            name: 'VideoEditorNotifier',
-            category: .video,
-          );
-        }
-      } else {
-        Log.error(
-          '❌ Video rendering failed',
-          name: 'VideoEditorNotifier',
-          category: .video,
-        );
-      }
-
-      state = state.copyWith(isProcessing: false);
-      return (outputPath, proofManifestJson);
-    } catch (e, stackTrace) {
-      Log.error(
-        '❌ Video rendering error: $e',
-        name: 'VideoEditorNotifier',
-        category: .video,
-        error: e,
-        stackTrace: stackTrace,
-      );
-      state = state.copyWith(isProcessing: false);
-      return (null, null);
-    }
   }
 }

@@ -67,10 +67,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: VideoThumbnailWidget(
-              video: testVideo,
-              width: thumbnailWidth,
-            ),
+            body: VideoThumbnailWidget(video: testVideo, width: thumbnailWidth),
           ),
         ),
       );
@@ -119,10 +116,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: VideoThumbnailWidget(
-              video: testVideo,
-              showPlayIcon: true,
-            ),
+            body: VideoThumbnailWidget(video: testVideo, showPlayIcon: true),
           ),
         ),
       );
@@ -156,11 +150,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(
-            body: VideoThumbnailWidget(
-              video: videoWithBlurhash,
-            ),
-          ),
+          home: Scaffold(body: VideoThumbnailWidget(video: videoWithBlurhash)),
         ),
       );
 
@@ -195,11 +185,7 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
-              home: Scaffold(
-                body: VideoThumbnailWidget(
-                  video: portraitVideo,
-                ),
-              ),
+              home: Scaffold(body: VideoThumbnailWidget(video: portraitVideo)),
             ),
           );
 
@@ -243,9 +229,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
-            home: Scaffold(
-              body: VideoThumbnailWidget(video: squareVideo),
-            ),
+            home: Scaffold(body: VideoThumbnailWidget(video: squareVideo)),
           ),
         );
 
@@ -282,11 +266,7 @@ void main() {
 
           await tester.pumpWidget(
             MaterialApp(
-              home: Scaffold(
-                body: VideoThumbnailWidget(
-                  video: landscapeVideo,
-                ),
-              ),
+              home: Scaffold(body: VideoThumbnailWidget(video: landscapeVideo)),
             ),
           );
 
@@ -327,9 +307,7 @@ void main() {
           await tester.pumpWidget(
             MaterialApp(
               home: Scaffold(
-                body: VideoThumbnailWidget(
-                  video: noDimensionsVideo,
-                ),
+                body: VideoThumbnailWidget(video: noDimensionsVideo),
               ),
             ),
           );

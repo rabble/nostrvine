@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -81,41 +80,12 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-          onPressed: context.pop,
-          tooltip: 'Back',
-        ),
-        title: Text('Safety & Privacy', style: VineTheme.titleFont()),
+      appBar: DiVineAppBar(
+        title: 'Safety & Privacy',
+        showBackButton: true,
+        onBackPressed: context.pop,
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(color: VineTheme.vineGreen),
@@ -182,7 +152,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
             style: TextStyle(color: VineTheme.secondaryText),
           ),
           activeColor: VineTheme.vineGreen,
-          checkColor: Colors.black,
+          checkColor: VineTheme.backgroundColor,
           controlAffinity: ListTileControlAffinity.leading,
         ),
       ],
@@ -441,7 +411,6 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Future<void> _unblockUser(String pubkey) async {
     final blocklistService = ref.read(contentBlocklistServiceProvider);
     blocklistService.unblockUser(pubkey);
-    ref.read(blocklistVersionProvider.notifier).increment();
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -593,9 +562,7 @@ class _AccountLabelMultiSelectState extends State<_AccountLabelMultiSelect> {
                 children: [
                   Text(
                     'Account Content Labels',
-                    style: VineTheme.titleFont(
-                      fontSize: 18,
-                    ),
+                    style: VineTheme.titleFont(fontSize: 18),
                   ),
                   if (_selected.isNotEmpty)
                     TextButton(

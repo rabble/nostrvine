@@ -37,8 +37,6 @@ import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
-import 'package:openvine/services/draft_migration_service.dart';
-import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -177,7 +175,7 @@ Future<void> _startOpenVineApp() async {
             WindowSizeConstants.baseHeight,
           ),
           center: true,
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.backgroundColor,
           skipTaskbar: false,
           titleBarStyle: TitleBarStyle.normal,
         );
@@ -397,6 +395,26 @@ Future<void> _startOpenVineApp() async {
       return;
     }
 
+    // Downgrade cache manager errors from FATAL to non-fatal.
+    // The flutter_cache_manager library reports corrupted JSON via
+    // FlutterError.reportError, which Crashlytics records as fatal. The app
+    // can function fine without cached thumbnails — it will re-download them.
+    // SafeJsonCacheInfoRepository handles recovery, but this is a safety net.
+    if (details.library == 'flutter cache manager') {
+      Log.warning(
+        'Cache manager error (non-fatal): ${details.exception}',
+        name: 'Main',
+      );
+      try {
+        FirebaseCrashlytics.instance.recordError(
+          details.exception,
+          details.stack,
+          reason: 'Cache manager JSON corruption',
+        );
+      } catch (_) {}
+      return;
+    }
+
     // Downgrade "No active player with ID" errors from FATAL to non-fatal.
     // This is a known race condition where the native video player
     // (AVFoundation/ExoPlayer) is disposed during tab switches or feed
@@ -512,7 +530,7 @@ Future<void> _startOpenVineApp() async {
   await _initializeCoreServices(container);
   StartupPerformanceService.instance.completePhase('core_services');
 
-  Log.info('divine starting...', name: 'Main');
+  Log.info('Divine starting...', name: 'Main');
   Log.info('Log level: ${UnifiedLogger.currentLevel.name}', name: 'Main');
   // Configure audio session for media playback
   // This ensures audio plays even when iOS mute switch is on
@@ -670,7 +688,19 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             keyManager.publicKey!,
           );
           Log.info(
-            '[INIT] ✅ Mutual mute list sync started (background)',
+            '[INIT] Mutual mute list sync started (background)',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+
+          final authService = ref.read(authServiceProvider);
+          await blocklistService.syncBlockListsInBackground(
+            nostrService,
+            authService,
+            keyManager.publicKey!,
+          );
+          Log.info(
+            '[INIT] Block list sync started (background)',
             name: 'Main',
             category: LogCategory.system,
           );
@@ -678,43 +708,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       } catch (e) {
         Log.warning(
           '[INIT] Mutual mute sync failed (non-critical): $e',
-          name: 'Main',
-          category: LogCategory.system,
-        );
-      }
-    });
-
-    // Run draft-to-clip migration in background (one-time operation)
-    Future.microtask(() async {
-      try {
-        final prefs = ref.read(sharedPreferencesProvider);
-        final draftService = await ref.read(draftStorageServiceProvider.future);
-        final clipService = ref.read(clipLibraryServiceProvider);
-
-        final migrationService = DraftMigrationService(
-          draftService: draftService,
-          clipService: clipService,
-          prefs: prefs,
-        );
-
-        final result = await migrationService.migrate();
-
-        if (result.alreadyMigrated) {
-          Log.info(
-            '[INIT] ○ Draft migration already completed',
-            name: 'Main',
-            category: LogCategory.system,
-          );
-        } else {
-          Log.info(
-            '[INIT] ✅ Draft migration complete: ${result.migratedCount} migrated, ${result.skippedCount} skipped',
-            name: 'Main',
-            category: LogCategory.system,
-          );
-        }
-      } catch (e) {
-        Log.warning(
-          '[INIT] Draft migration failed (non-critical): $e',
           name: 'Main',
           category: LogCategory.system,
         );
@@ -822,10 +815,8 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               }
             case DeepLinkType.hashtag:
               if (deepLink.hashtag != null) {
-                // Include index if present, otherwise use grid view
                 final targetPath = HashtagScreenRouter.pathForTag(
                   deepLink.hashtag!,
-                  index: deepLink.index,
                 );
                 Log.info(
                   '📱 Navigating to hashtag: $targetPath',
@@ -918,9 +909,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       );
     });
 
-    const bool crashProbe = bool.fromEnvironment(
-      'CRASHLYTICS_PROBE',
-    );
+    const bool crashProbe = bool.fromEnvironment('CRASHLYTICS_PROBE');
 
     final router = ref.read(goRouterProvider);
 
@@ -1072,7 +1061,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // On iOS/macOS/Windows, use PopScope. On Android, platform channel handles it
     final app = (!kIsWeb && io.Platform.isAndroid)
         ? MaterialApp.router(
-            title: 'divine',
+            title: 'Divine',
             debugShowCheckedModeBanner: false,
             theme: VineTheme.theme,
             routerConfig: router,
@@ -1084,7 +1073,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               await handleBackNavigation(router, ref);
             },
             child: MaterialApp.router(
-              title: 'divine',
+              title: 'Divine',
               debugShowCheckedModeBanner: false,
               theme: VineTheme.theme,
               routerConfig: router,
@@ -1100,7 +1089,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
         authService: ref.read(authServiceProvider),
         videoEventPublisher: ref.read(videoEventPublisherProvider),
         blossomService: ref.read(blossomUploadServiceProvider),
-        draftService: DraftStorageService(),
+        draftService: ref.read(draftStorageServiceProvider),
         onProgressChanged:
             ({required String draftId, required double progress}) {
               onProgress(draftId: draftId, progress: progress);
@@ -1140,7 +1129,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             messenger.showSnackBar(
               SnackBar(
                 content: Text(state.error!),
-                backgroundColor: Colors.red[700],
+                backgroundColor: VineTheme.error,
                 behavior: SnackBarBehavior.floating,
                 duration: const Duration(seconds: 5),
               ),

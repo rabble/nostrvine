@@ -67,7 +67,7 @@ void main() {
 
     tearDownAll(() async {
       // Clean up test file
-      if (await testVideoFile.exists()) {
+      if (testVideoFile.existsSync()) {
         await testVideoFile.delete();
       }
     });

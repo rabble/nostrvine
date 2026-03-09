@@ -2,10 +2,10 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 
-class _MockVineDraft extends Mock implements VineDraft {}
+class _MockVineDraft extends Mock implements DivineVideoDraft {}
 
 class _MockVideoPublishService extends Mock implements VideoPublishService {}
 

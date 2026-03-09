@@ -133,8 +133,8 @@ class _VideoMetadataTagsInputState
     // Dynamic label color based on focus state
     final labelStyle = VineTheme.bodyFont(
       color: _focusNode.hasFocus
-          ? const Color(0xFF27C58B)
-          : const Color(0xB6FFFFFF),
+          ? VineTheme.primary
+          : VineTheme.onSurfaceVariant,
       fontSize: 11,
       fontWeight: .w600,
       height: 1.45,
@@ -163,7 +163,7 @@ class _VideoMetadataTagsInputState
                     Text(
                       '${tags.length}/${VideoEditorConstants.tagLimit}',
                       style: labelStyle.copyWith(
-                        color: const Color(0x80FFFFFF),
+                        color: VineTheme.onSurfaceMuted,
                       ),
                     ),
                 ],
@@ -233,7 +233,7 @@ class _TagChip extends ConsumerWidget {
       padding: const .symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: .circular(16),
-        color: const Color(0xFF032017),
+        color: VineTheme.surfaceContainer,
       ),
       child: Row(
         mainAxisSize: .min,
@@ -242,7 +242,7 @@ class _TagChip extends ConsumerWidget {
           Text(
             '#',
             style: VineTheme.bodyFont(
-              color: const Color(0xFF27C58B),
+              color: VineTheme.primary,
               height: 1.50,
               letterSpacing: 0.15,
             ),

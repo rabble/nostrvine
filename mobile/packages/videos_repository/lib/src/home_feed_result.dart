@@ -23,6 +23,7 @@ class HomeFeedResult extends Equatable {
     required this.videos,
     this.videoListSources = const {},
     this.listOnlyVideoIds = const {},
+    this.rawResponseBody,
   });
 
   /// All videos (following + list), sorted by createdAt descending.
@@ -41,6 +42,13 @@ class HomeFeedResult extends Equatable {
   /// Used by the UI to show list attribution — these videos need
   /// visual attribution since the user didn't follow the author.
   final Set<String> listOnlyVideoIds;
+
+  /// The raw JSON response body from the API, if available.
+  ///
+  /// Populated on initial (non-paginated) home feed fetches so the
+  /// BLoC can cache it for instant display on next cold start.
+  /// Excluded from equality checks.
+  final String? rawResponseBody;
 
   @override
   List<Object?> get props => [videos, videoListSources, listOnlyVideoIds];

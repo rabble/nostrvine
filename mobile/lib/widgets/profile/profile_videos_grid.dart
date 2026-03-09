@@ -98,7 +98,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     prefetchGridVideos(videos);
   }
 
-  void _onVideoTapped(int index) {
+  void _onVideoTapped(int index, {required VoidCallback onLoadMore}) {
     final videos = widget.videos;
     Log.info(
       '🎯 ProfileVideosGrid TAP: gridIndex=$index, '
@@ -114,8 +114,7 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       extra: PooledFullscreenVideoFeedArgs(
         videosStream: _videosStreamController.stream.startWith(videos),
         initialIndex: index,
-        onLoadMore: () =>
-            ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore(),
+        onLoadMore: onLoadMore,
         trafficSource: ViewTrafficSource.profile,
       ),
     );
@@ -132,9 +131,13 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       });
     });
 
+    final authService = ref.read(authServiceProvider);
+    final profileFeedNotifier = ref.read(
+      profileFeedProvider(widget.userIdHex).notifier,
+    );
+    Future<void> loadMoreProfileVideos() => profileFeedNotifier.loadMore();
     final backgroundPublish = context.watch<BackgroundPublishBloc>();
-    final isOwnProfile =
-        ref.read(authServiceProvider).currentPublicKeyHex == widget.userIdHex;
+    final isOwnProfile = authService.currentPublicKeyHex == widget.userIdHex;
 
     final allVideos = [
       // Only show uploading tiles on own profile
@@ -156,11 +159,8 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
       }
       return _ProfileVideosEmptyState(
         userIdHex: widget.userIdHex,
-        isOwnProfile:
-            ref.read(authServiceProvider).currentPublicKeyHex ==
-            widget.userIdHex,
-        onRefresh: () =>
-            ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore(),
+        isOwnProfile: isOwnProfile,
+        onRefresh: loadMoreProfileVideos,
       );
     }
 
@@ -194,7 +194,10 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
                     // Adjust index to account for uploading videos at the top
                     final publishedIndex = index - uploadingCount;
                     if (publishedIndex >= 0) {
-                      _onVideoTapped(publishedIndex);
+                      _onVideoTapped(
+                        publishedIndex,
+                        onLoadMore: loadMoreProfileVideos,
+                      );
                     }
                   },
                 ),
@@ -229,12 +232,16 @@ class _ProfileVideosEmptyState extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.videocam_outlined, color: Colors.grey, size: 64),
+              const Icon(
+                Icons.videocam_outlined,
+                color: VineTheme.lightText,
+                size: 64,
+              ),
               const SizedBox(height: 16),
               const Text(
                 'No Videos Yet',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: VineTheme.whiteText,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
@@ -244,7 +251,10 @@ class _ProfileVideosEmptyState extends StatelessWidget {
                 isOwnProfile
                     ? 'Share your first video to see it here'
                     : "This user hasn't shared any videos yet",
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
+                style: const TextStyle(
+                  color: VineTheme.lightText,
+                  fontSize: 14,
+                ),
               ),
               const SizedBox(height: 32),
               IconButton(

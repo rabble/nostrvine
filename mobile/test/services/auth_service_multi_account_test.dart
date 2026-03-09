@@ -7,6 +7,7 @@ import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/models/known_account.dart';
@@ -776,6 +777,66 @@ void main() {
         () => mockSecureStorage.read(key: 'keycast_session_$pubkeyHex'),
       );
     });
+
+    test(
+      'clears stale global signer keys when switching to automatic',
+      () async {
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInForAccount(
+            pubkeyHex,
+            AuthenticationSource.automatic,
+          ),
+        );
+
+        // Bunker global key must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'bunker_info'),
+        ).called(1);
+        // Amber global keys must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'amber_pubkey'),
+        ).called(1);
+        verify(
+          () => mockSecureStorage.delete(key: 'amber_package'),
+        ).called(1);
+        // Keycast session global key must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'keycast_session'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'clears stale global signer keys when switching to importedKeys',
+      () async {
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        await _ignoringDiscoveryErrors(
+          () => authService.signInForAccount(
+            pubkeyHex,
+            AuthenticationSource.importedKeys,
+          ),
+        );
+
+        // Bunker global key must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'bunker_info'),
+        ).called(1);
+        // Amber global keys must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'amber_pubkey'),
+        ).called(1);
+        verify(
+          () => mockSecureStorage.delete(key: 'amber_package'),
+        ).called(1);
+        // Keycast session global key must be cleared
+        verify(
+          () => mockSecureStorage.delete(key: 'keycast_session'),
+        ).called(1);
+      },
+    );
   });
 
   group('signInForAccount', () {
@@ -926,6 +987,33 @@ void main() {
       },
     );
 
+    test(
+      'throws $SessionExpiredException when OAuth session is expired',
+      () async {
+        final pubkeyHex = testKeyContainer.publicKeyHex;
+
+        // Store an expired session (expired 1 hour ago)
+        final expiredSession = KeycastSession(
+          bunkerUrl: 'wss://relay.example.com',
+          accessToken: 'expired-token',
+          expiresAt: DateTime.now().subtract(const Duration(hours: 1)),
+        );
+        when(
+          () => mockSecureStorage.read(key: 'keycast_session'),
+        ).thenAnswer((_) async => jsonEncode(expiredSession.toJson()));
+
+        await expectLater(
+          _ignoringDiscoveryErrors(
+            () => authService.signInForAccount(
+              pubkeyHex,
+              AuthenticationSource.divineOAuth,
+            ),
+          ),
+          throwsA(isA<SessionExpiredException>()),
+        );
+      },
+    );
+
     test('adds account to known accounts after successful sign-in', () async {
       final pubkeyHex = testKeyContainer.publicKeyHex;
 
@@ -1068,5 +1156,149 @@ void main() {
       expect(restored['bunker_url'], equals('wss://keycast.example.com'));
       expect(restored['access_token'], equals('my_token'));
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // _restoreLastUsedAccountOrFallback (via initialize)
+  // ---------------------------------------------------------------------------
+
+  group('initialize: restores last-used account (not primary key)', () {
+    late SecureKeyContainer accountBContainer;
+
+    setUp(() {
+      accountBContainer = SecureKeyContainer.fromNsec(
+        'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsmhltgl',
+      );
+    });
+
+    test(
+      'restores per-identity key when last_used_npub is present',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': accountBContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        when(
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => testKeyContainer);
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            accountBContainer.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => accountBContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(
+          authService.currentPublicKeyHex,
+          equals(accountBContainer.publicKeyHex),
+        );
+        verifyNever(() => mockKeyStorage.getKeyContainer());
+      },
+    );
+
+    test(
+      'falls back to _checkExistingAuth when last_used_npub is absent',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          kKnownAccountsKey: '[]',
+        });
+
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => testKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(
+          authService.currentPublicKeyHex,
+          equals(testKeyContainer.publicKeyHex),
+        );
+      },
+    );
+
+    test(
+      'falls back to _checkExistingAuth when identity key container is absent',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': accountBContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        when(
+          () => mockKeyStorage.getIdentityKeyContainer(
+            accountBContainer.npub,
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        ).thenAnswer((_) async => null);
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => testKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(
+          authService.currentPublicKeyHex,
+          equals(testKeyContainer.publicKeyHex),
+        );
+      },
+    );
+
+    test(
+      'destructive sign-out clears last_used_npub',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        await authService.signOut(deleteKeys: true);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('last_used_npub'), isNull);
+      },
+    );
+
+    test(
+      'non-destructive sign-out preserves last_used_npub',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+          'last_used_npub': testKeyContainer.npub,
+          kKnownAccountsKey: '[]',
+        });
+
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+        await authService.signOut();
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getString('last_used_npub'), isNotNull);
+      },
+    );
+
+    test(
+      '_setupUserSession persists last_used_npub',
+      () async {
+        await _ignoringDiscoveryErrors(authService.createNewIdentity);
+
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString('last_used_npub'),
+          equals(testKeyContainer.npub),
+        );
+      },
+    );
   });
 }

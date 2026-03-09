@@ -35,10 +35,7 @@ class ClassicVinersSlider extends ConsumerWidget {
               children: [
                 const Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  'OG Viners',
-                  style: VineTheme.titleSmallFont(),
-                ),
+                Text('OG Viners', style: VineTheme.titleSmallFont()),
               ],
             ),
           ),
@@ -235,12 +232,7 @@ class _VinerAvatar extends ConsumerWidget {
     // Handle 'me' special case - redirect to own profile tab instead
     if (identifier == 'me') {
       return context.go(
-        buildRoute(
-          RouteContext(
-            type: RouteType.profile,
-            npub: npub,
-          ),
-        ),
+        buildRoute(RouteContext(type: RouteType.profile, npub: npub)),
       );
     }
 

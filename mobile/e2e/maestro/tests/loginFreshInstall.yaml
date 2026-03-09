@@ -10,6 +10,7 @@ appId: co.openvine.app
 - launchApp:
     clearState: true
 - runFlow: "../asserts/assertSplash.yaml"
+
 - runFlow: "../asserts/assertLogin.yaml"
 
 #2. Tap on Create new Divine account
@@ -21,7 +22,7 @@ appId: co.openvine.app
       - tapOn: Create a new Divine account
       - tapOn: Use Divine with no backup
       - tapOn: Use this device only
-      
+
 # Commenting this until we have a better test implementation of signing in with keys
 # - runFlow:
 #    when:

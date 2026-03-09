@@ -47,9 +47,7 @@ class _BlurhashDisplayState extends State<BlurhashDisplay> {
 
   void _decodeBlurhash() {
     try {
-      final data = BlurhashService.decodeBlurhash(
-        widget.blurhash,
-      );
+      final data = BlurhashService.decodeBlurhash(widget.blurhash);
 
       if (mounted && data != null) {
         setState(() {

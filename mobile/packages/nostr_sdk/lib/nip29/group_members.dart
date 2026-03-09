@@ -17,17 +17,15 @@ class GroupMembers extends GroupObject {
     String? groupId;
     List<String> members = [];
     for (var tag in e.tags) {
-      if (tag is List) {
-        var length = tag.length;
-        if (length > 1) {
-          var key = tag[0];
-          var value = tag[1];
+      var length = tag.length;
+      if (length > 1) {
+        var key = tag[0];
+        var value = tag[1];
 
-          if (key == "p") {
-            members.add(value);
-          } else if (key == "d") {
-            groupId = value;
-          }
+        if (key == "p") {
+          members.add(value);
+        } else if (key == "d") {
+          groupId = value;
         }
       }
     }

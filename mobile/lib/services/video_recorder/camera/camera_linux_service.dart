@@ -67,6 +67,7 @@ class CameraLinuxService extends CameraService {
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     DivineCameraLens initialLens = DivineCameraLens.front,
+    bool enableAutoLensSwitch = false,
   }) async {
     Log.info(
       'Camera is not available on Linux - showing placeholder',

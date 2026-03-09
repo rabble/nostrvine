@@ -1,7 +1,10 @@
 // ABOUTME: Comprehensive widget test for UserAvatar covering image loading,
-// ABOUTME: fallbacks, and interactions
+// ABOUTME: generated placeholders, geometry, and interactions
+
+import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
@@ -9,10 +12,106 @@ import 'package:openvine/widgets/user_avatar.dart';
 
 import '../helpers/golden_test_devices.dart';
 
+const _transparentImageBytes = <int>[
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0xC4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x78,
+  0x9C,
+  0x63,
+  0xF8,
+  0xCF,
+  0xC0,
+  0x00,
+  0x00,
+  0x03,
+  0x01,
+  0x01,
+  0x00,
+  0x18,
+  0xDD,
+  0x8D,
+  0xB1,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
+];
+
+ClipRRect _clipRRect(WidgetTester tester) =>
+    tester.widget<ClipRRect>(find.byType(ClipRRect));
+
+Size _clipSize(WidgetTester tester) => tester.getSize(find.byType(ClipRRect));
+
+Finder _borderFinder() => find.byWidgetPredicate((widget) {
+  if (widget is! DecoratedBox) return false;
+  final decoration = widget.decoration;
+  return decoration is BoxDecoration && decoration.border != null;
+}, description: 'DecoratedBox with avatar border');
+
+Finder _gradientFinder() => find.byWidgetPredicate((widget) {
+  if (widget is! DecoratedBox) return false;
+  final decoration = widget.decoration;
+  return decoration is BoxDecoration && decoration.gradient != null;
+}, description: 'DecoratedBox with gradient placeholder');
+
+double _borderWidth(WidgetTester tester) {
+  final borderDecoration =
+      tester.widget<DecoratedBox>(_borderFinder()).decoration as BoxDecoration;
+  final border = borderDecoration.border! as Border;
+  return border.top.width;
+}
+
 void main() {
   group('UserAvatar - Comprehensive Tests', () {
     group('Basic Widget Structure', () {
-      testWidgets('creates correct widget structure with default values', (
+      testWidgets('creates default structure without tap wrapper', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -20,27 +119,30 @@ void main() {
         );
 
         expect(find.byType(Semantics), findsWidgets);
-        expect(find.byType(GestureDetector), findsOneWidget);
+        expect(find.byType(GestureDetector), findsNothing);
         expect(find.byType(ClipRRect), findsOneWidget);
-        expect(find.byType(SizedBox), findsWidgets);
-
-        // Verify default size of 44
-        final sizedBox = tester.widget<SizedBox>(
-          find.descendant(
-            of: find.byType(ClipRRect),
-            matching: find.byType(SizedBox),
-          ),
-        );
-        expect(sizedBox.width, 44);
-        expect(sizedBox.height, 44);
-
-        // Verify ClipRRect border radius
-        final clipRRect = tester.widget<ClipRRect>(find.byType(ClipRRect));
-        expect(clipRRect.borderRadius, BorderRadius.circular(44 * 0.286));
+        expect(_clipSize(tester), const Size.square(44));
+        expect(_clipRRect(tester).borderRadius, BorderRadius.circular(17.6));
+        expect(_borderFinder(), findsOneWidget);
+        expect(_borderWidth(tester), 1);
       });
 
-      testWidgets('applies custom size correctly', (tester) async {
-        const customSize = 80.0;
+      testWidgets('wraps avatar in GestureDetector when onTap is provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: UserAvatar(onTap: () {})),
+          ),
+        );
+
+        expect(find.byType(GestureDetector), findsOneWidget);
+      });
+
+      testWidgets('applies custom size and large-avatar border radius', (
+        tester,
+      ) async {
+        const customSize = 144.0;
 
         await tester.pumpWidget(
           const MaterialApp(
@@ -48,20 +150,9 @@ void main() {
           ),
         );
 
-        final sizedBox = tester.widget<SizedBox>(
-          find.descendant(
-            of: find.byType(ClipRRect),
-            matching: find.byType(SizedBox),
-          ),
-        );
-        expect(sizedBox.width, customSize);
-        expect(sizedBox.height, customSize);
-
-        final clipRRect = tester.widget<ClipRRect>(find.byType(ClipRRect));
-        expect(
-          clipRRect.borderRadius,
-          BorderRadius.circular(customSize * 0.286),
-        );
+        expect(_clipSize(tester), const Size.square(customSize));
+        expect(_clipRRect(tester).borderRadius, BorderRadius.circular(56));
+        expect(_borderWidth(tester), 3);
       });
     });
 
@@ -84,11 +175,12 @@ void main() {
         );
         expect(cachedImage.imageUrl, testImageUrl);
         expect(cachedImage.fit, BoxFit.cover);
-        expect(cachedImage.width, 44); // default size
-        expect(cachedImage.height, 44);
+        expect(_clipSize(tester), const Size.square(44));
       });
 
-      testWidgets('shows fallback when imageUrl is null', (tester) async {
+      testWidgets('shows generated placeholder when imageUrl is null', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(body: UserAvatar(name: 'Test User')),
@@ -96,11 +188,13 @@ void main() {
         );
 
         expect(find.byType(CachedNetworkImage), findsNothing);
-        // Should show fallback avatar image
-        expect(find.byType(Image), findsAtLeastNWidgets(1));
+        expect(find.byType(Image), findsNothing);
+        expect(_gradientFinder(), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('shows fallback when imageUrl is empty', (tester) async {
+      testWidgets('shows generated placeholder when imageUrl is empty', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(
@@ -110,68 +204,54 @@ void main() {
         );
 
         expect(find.byType(CachedNetworkImage), findsNothing);
+        expect(find.byType(Image), findsNothing);
+        expect(_gradientFinder(), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('shows default asset image fallback when name is provided', (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(body: UserAvatar(name: 'John Doe')),
-          ),
+      testWidgets('renders provided imageProvider directly', (tester) async {
+        final provider = MemoryImage(
+          Uint8List.fromList(_transparentImageBytes),
         );
 
-        // Should show fallback asset image, not initials
-        expect(find.byType(CachedNetworkImage), findsNothing);
-        expect(find.byType(Image), findsOneWidget);
-      });
-
-      testWidgets('shows default asset image when no name is provided', (
-        tester,
-      ) async {
         await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: UserAvatar())),
+          MaterialApp(
+            home: Scaffold(
+              body: UserAvatar(imageProvider: provider, name: 'Local User'),
+            ),
+          ),
         );
 
         expect(find.byType(CachedNetworkImage), findsNothing);
         expect(find.byType(Image), findsOneWidget);
+        final image = tester.widget<Image>(find.byType(Image));
+        expect(image.image, same(provider));
       });
 
-      testWidgets('shows same fallback regardless of name value', (
+      testWidgets('uses explicit placeholder tone when provided', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(body: UserAvatar(name: 'Madonna')),
-          ),
-        );
+        final blueGradientFinder = find.byWidgetPredicate((widget) {
+          if (widget is! DecoratedBox) return false;
+          final decoration = widget.decoration;
+          if (decoration is! BoxDecoration) return false;
+          final gradient = decoration.gradient;
+          if (gradient is! LinearGradient || gradient.colors.length != 3) {
+            return false;
+          }
+          return gradient.colors[1] == VineTheme.accentBlue;
+        }, description: 'blue placeholder background');
 
-        // Fallback is always the asset image, name is only for semantics
-        expect(find.byType(Image), findsOneWidget);
-      });
-
-      testWidgets('shows fallback for empty name', (tester) async {
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(body: UserAvatar(name: '')),
-          ),
-        );
-
-        expect(find.byType(Image), findsOneWidget);
-      });
-
-      testWidgets('shows fallback for long names', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(
               body: UserAvatar(
-                name: 'Very Long First Name And Very Long Last Name',
+                placeholderTone: UserAvatarPlaceholderTone.blue,
               ),
             ),
           ),
         );
 
-        expect(find.byType(Image), findsOneWidget);
+        expect(blueGradientFinder, findsOneWidget);
       });
     });
 
@@ -238,11 +318,8 @@ void main() {
           const MaterialApp(home: Scaffold(body: UserAvatar())),
         );
 
-        // Should not throw when tapped
         await tester.tap(find.byType(UserAvatar));
         await tester.pumpAndSettle();
-
-        // Test passes if no exception is thrown
       });
 
       testWidgets('onTap works with image avatar', (tester) async {
@@ -265,7 +342,7 @@ void main() {
         expect(tapped, isTrue);
       });
 
-      testWidgets('onTap works with fallback avatar', (tester) async {
+      testWidgets('onTap works with placeholder avatar', (tester) async {
         bool tapped = false;
 
         await tester.pumpWidget(
@@ -284,7 +361,9 @@ void main() {
     });
 
     group('Size Variations', () {
-      testWidgets('handles very small sizes', (tester) async {
+      testWidgets('uses compact corner radius for very small sizes', (
+        tester,
+      ) async {
         const smallSize = 16.0;
 
         await tester.pumpWidget(
@@ -295,17 +374,14 @@ void main() {
           ),
         );
 
-        final sizedBox = tester.widget<SizedBox>(
-          find.descendant(
-            of: find.byType(ClipRRect),
-            matching: find.byType(SizedBox),
-          ),
+        expect(_clipSize(tester), const Size.square(smallSize));
+        expect(
+          _clipRRect(tester).borderRadius,
+          BorderRadius.circular(smallSize / 3),
         );
-        expect(sizedBox.width, smallSize);
-        expect(sizedBox.height, smallSize);
       });
 
-      testWidgets('handles very large sizes', (tester) async {
+      testWidgets('caps corner radius for very large sizes', (tester) async {
         const largeSize = 200.0;
 
         await tester.pumpWidget(
@@ -316,17 +392,13 @@ void main() {
           ),
         );
 
-        final sizedBox = tester.widget<SizedBox>(
-          find.descendant(
-            of: find.byType(ClipRRect),
-            matching: find.byType(SizedBox),
-          ),
-        );
-        expect(sizedBox.width, largeSize);
-        expect(sizedBox.height, largeSize);
+        expect(_clipSize(tester), const Size.square(largeSize));
+        expect(_clipRRect(tester).borderRadius, BorderRadius.circular(56));
       });
 
-      testWidgets('CachedNetworkImage respects size parameter', (tester) async {
+      testWidgets('network avatar respects outer size parameter', (
+        tester,
+      ) async {
         const customSize = 60.0;
         const testImageUrl = 'https://example.com/avatar.jpg';
 
@@ -338,11 +410,7 @@ void main() {
           ),
         );
 
-        final cachedImage = tester.widget<CachedNetworkImage>(
-          find.byType(CachedNetworkImage),
-        );
-        expect(cachedImage.width, customSize);
-        expect(cachedImage.height, customSize);
+        expect(_clipSize(tester), const Size.square(customSize));
       });
     });
 
@@ -387,7 +455,6 @@ void main() {
           const MaterialApp(home: Scaffold(body: UserAvatar(size: 0))),
         );
 
-        // Should not crash
         expect(find.byType(UserAvatar), findsOneWidget);
       });
 
@@ -398,9 +465,9 @@ void main() {
           ),
         );
 
-        // Widget should render without crashing
         expect(find.byType(UserAvatar), findsOneWidget);
-        expect(find.byType(Image), findsOneWidget);
+        expect(find.byType(Image), findsNothing);
+        expect(_gradientFinder(), findsAtLeastNWidgets(1));
       });
 
       testWidgets('handles names with numbers', (tester) async {
@@ -411,7 +478,8 @@ void main() {
         );
 
         expect(find.byType(UserAvatar), findsOneWidget);
-        expect(find.byType(Image), findsOneWidget);
+        expect(find.byType(Image), findsNothing);
+        expect(_gradientFinder(), findsAtLeastNWidgets(1));
       });
 
       testWidgets('handles whitespace-only names', (tester) async {
@@ -421,9 +489,9 @@ void main() {
           ),
         );
 
-        // Widget should render with fallback image
         expect(find.byType(UserAvatar), findsOneWidget);
-        expect(find.byType(Image), findsOneWidget);
+        expect(find.byType(Image), findsNothing);
+        expect(_gradientFinder(), findsAtLeastNWidgets(1));
       });
 
       testWidgets('handles malformed URLs gracefully', (tester) async {
@@ -438,7 +506,6 @@ void main() {
           ),
         );
 
-        // Should fall back to initials without crashing
         await tester.pumpAndSettle();
         expect(find.byType(UserAvatar), findsOneWidget);
       });

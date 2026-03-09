@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -159,7 +160,7 @@ class _GridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xBEFFFFFF)
+      ..color = VineTheme.onSurfaceVariant
       ..strokeWidth = 1;
 
     // Vertical lines

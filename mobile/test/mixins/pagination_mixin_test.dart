@@ -23,9 +23,7 @@ void main() {
     testWidgets('calls onLoadMore when within threshold of end', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        _TestPaginationWidget(onLoadMore: onLoadMore),
-      );
+      await tester.pumpWidget(_TestPaginationWidget(onLoadMore: onLoadMore));
 
       final state = tester.state<_TestPaginationWidgetState>(
         find.byType(_TestPaginationWidget),
@@ -66,9 +64,7 @@ void main() {
     });
 
     testWidgets('throttles duplicate calls immediately', (tester) async {
-      await tester.pumpWidget(
-        _TestPaginationWidget(onLoadMore: onLoadMore),
-      );
+      await tester.pumpWidget(_TestPaginationWidget(onLoadMore: onLoadMore));
 
       final state = tester.state<_TestPaginationWidgetState>(
         find.byType(_TestPaginationWidget),
@@ -95,9 +91,7 @@ void main() {
     });
 
     testWidgets('resetPagination clears throttle', (tester) async {
-      await tester.pumpWidget(
-        _TestPaginationWidget(onLoadMore: onLoadMore),
-      );
+      await tester.pumpWidget(_TestPaginationWidget(onLoadMore: onLoadMore));
 
       final state = tester.state<_TestPaginationWidgetState>(
         find.byType(_TestPaginationWidget),

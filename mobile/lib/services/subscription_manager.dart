@@ -270,7 +270,7 @@ class SubscriptionManager {
       await subscription.cancel();
     }
 
-    final controllers = List.from(_controllers.values);
+    final controllers = List<StreamController>.from(_controllers.values);
     _controllers.clear();
 
     for (final controller in controllers) {

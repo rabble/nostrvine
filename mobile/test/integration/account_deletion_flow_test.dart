@@ -69,7 +69,7 @@ void main() {
         [
           ['relay', 'ALL_RELAYS'],
         ],
-        'User requested account deletion via diVine app',
+        'User requested account deletion via Divine app',
         createdAt: 1234567890,
       );
 

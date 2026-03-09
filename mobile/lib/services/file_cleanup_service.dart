@@ -1,93 +1,54 @@
 // ABOUTME: Central service for safe file deletion with reference checking
 // ABOUTME: Only deletes files when not referenced by drafts OR clip library
-// ABOUTME: Uses static methods - no Riverpod dependency
+// ABOUTME: Uses indexed file_path columns for efficient lookups
 
-import 'dart:convert';
-
-import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/saved_clip.dart';
-import 'package:openvine/models/vine_draft.dart';
+import 'package:db_client/db_client.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/platform_io.dart';
-import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
 
 /// Service for safely deleting clip files while respecting references.
 ///
 /// Files may be shared between drafts and the clip library. This service
 /// checks both storage locations before deleting to prevent data loss.
+///
+/// Uses indexed `file_path` / `thumbnail_path` columns on the clips table
+/// and `rendered_file_path` / `rendered_thumbnail_path` on the drafts table
+/// for efficient lookups without loading all rows.
 class FileCleanupService {
-  static const String _draftsKey = 'vine_drafts';
-  static const String _clipLibraryKey = 'clip_library';
-
-  /// Gets all file paths currently referenced by drafts and clip library
-  static Future<Set<String>> _getAllReferencedPaths() async {
-    final prefs = await SharedPreferences.getInstance();
-    final documentsPath = await getDocumentsPath();
-    final paths = <String>{};
-
-    // Collect paths from drafts
-    final draftsJson = prefs.getString(_draftsKey);
-    if (draftsJson != null && draftsJson.isNotEmpty) {
-      try {
-        final List<dynamic> jsonList = json.decode(draftsJson) as List<dynamic>;
-        for (final draftJson in jsonList) {
-          final draft = VineDraft.fromJson(
-            draftJson as Map<String, dynamic>,
-            documentsPath,
-          );
-          for (final clip in draft.clips) {
-            if (clip.video.file?.path != null) {
-              paths.add(clip.video.file!.path);
-            }
-            if (clip.thumbnailPath != null) {
-              paths.add(clip.thumbnailPath!);
-            }
-          }
-        }
-      } catch (e) {
-        Log.warning(
-          '⚠️ Failed to parse drafts for reference check: $e',
-          name: 'FileCleanupService',
-          category: LogCategory.video,
-        );
-      }
-    }
-
-    // Collect paths from clip library
-    final clipsJson = prefs.getString(_clipLibraryKey);
-    if (clipsJson != null && clipsJson.isNotEmpty) {
-      try {
-        final List<dynamic> jsonList = json.decode(clipsJson) as List<dynamic>;
-        for (final clipJson in jsonList) {
-          final clip = SavedClip.fromJson(
-            clipJson as Map<String, dynamic>,
-            documentsPath,
-          );
-          paths.add(clip.filePath);
-          if (clip.thumbnailPath != null) {
-            paths.add(clip.thumbnailPath!);
-          }
-        }
-      } catch (e) {
-        Log.warning(
-          '⚠️ Failed to parse clip library for reference check: $e',
-          name: 'FileCleanupService',
-          category: LogCategory.video,
-        );
-      }
-    }
-
-    return paths;
+  /// Checks if a file is referenced by any clip or draft.
+  ///
+  /// Extracts the basename from [filePath] and queries the indexed
+  /// columns in both the clips and drafts tables.
+  static Future<bool> _isFileReferenced(
+    String filePath, {
+    required DraftsDao draftsDao,
+    required ClipsDao clipsDao,
+  }) async {
+    final filename = p.basename(filePath);
+    if (await clipsDao.isFileReferenced(filename)) return true;
+    if (await draftsDao.isRenderedFileReferenced(filename)) return true;
+    return false;
   }
 
-  /// Deletes a file only if it's not referenced elsewhere
-  static Future<void> deleteFileIfUnreferenced(String? filePath) async {
+  /// Deletes a file only if it's not referenced elsewhere.
+  ///
+  /// Throws:
+  ///
+  /// * No exceptions – errors are logged and silently handled.
+  static Future<void> deleteFileIfUnreferenced(
+    String? filePath, {
+    required DraftsDao draftsDao,
+    required ClipsDao clipsDao,
+  }) async {
     if (filePath == null || filePath.isEmpty) return;
 
-    final referencedPaths = await _getAllReferencedPaths();
-
-    if (referencedPaths.contains(filePath)) {
+    if (await _isFileReferenced(
+      filePath,
+      draftsDao: draftsDao,
+      clipsDao: clipsDao,
+    )) {
       Log.info(
         '🔗 File still referenced, skipping delete: $filePath',
         name: 'FileCleanupService',
@@ -99,50 +60,74 @@ class FileCleanupService {
     await _deleteFile(filePath);
   }
 
-  /// Deletes multiple files, only those not referenced elsewhere
-  static Future<void> deleteFilesIfUnreferenced(List<String?> filePaths) async {
-    final referencedPaths = await _getAllReferencedPaths();
-
-    final filesToDelete = filePaths
+  /// Deletes multiple files, only those not referenced elsewhere.
+  static Future<void> deleteFilesIfUnreferenced(
+    List<String?> filePaths, {
+    required DraftsDao draftsDao,
+    required ClipsDao clipsDao,
+  }) async {
+    final validPaths = filePaths
         .where((path) => path != null && path.isNotEmpty)
-        .where((path) => !referencedPaths.contains(path))
         .cast<String>()
         .toList();
 
-    await Future.wait(filesToDelete.map(_deleteFile));
+    for (final path in validPaths) {
+      await deleteFileIfUnreferenced(
+        path,
+        draftsDao: draftsDao,
+        clipsDao: clipsDao,
+      );
+    }
   }
 
   /// Deletes files for a RecordingClip if not referenced
-  static Future<void> deleteRecordingClipFiles(RecordingClip clip) async {
-    await deleteFilesIfUnreferenced([
-      clip.video.file?.path,
-      clip.thumbnailPath,
-    ]);
+  static Future<void> deleteRecordingClipFiles(
+    DivineVideoClip clip, {
+    required DraftsDao draftsDao,
+    required ClipsDao clipsDao,
+  }) async {
+    await deleteFilesIfUnreferenced(
+      [clip.video.file?.path, clip.thumbnailPath],
+      draftsDao: draftsDao,
+      clipsDao: clipsDao,
+    );
   }
 
   /// Deletes files for multiple RecordingClips if not referenced
   static Future<void> deleteRecordingClipsFiles(
-    List<RecordingClip> clips,
-  ) async {
+    List<DivineVideoClip> clips, {
+    required DraftsDao draftsDao,
+    required ClipsDao clipsDao,
+  }) async {
     final paths = clips
         .expand((clip) => [clip.video.file?.path, clip.thumbnailPath])
         .toList();
 
-    await deleteFilesIfUnreferenced(paths);
-  }
-
-  /// Deletes files for a SavedClip if not referenced
-  static Future<void> deleteSavedClipFiles(SavedClip clip) async {
-    await deleteFilesIfUnreferenced([clip.filePath, clip.thumbnailPath]);
+    await deleteFilesIfUnreferenced(
+      paths,
+      draftsDao: draftsDao,
+      clipsDao: clipsDao,
+    );
   }
 
   /// Deletes files for multiple SavedClips if not referenced
-  static Future<void> deleteSavedClipsFiles(List<SavedClip> clips) async {
-    final paths = clips
-        .expand((clip) => [clip.filePath, clip.thumbnailPath])
-        .toList();
+  static Future<void> deleteSavedClipsFiles(
+    List<DivineVideoClip> clips, {
+    required DraftsDao draftsDao,
+    required ClipsDao clipsDao,
+  }) async {
+    final paths = <String?>[
+      for (final clip in clips) ...[
+        await clip.video.safeFilePath(),
+        clip.thumbnailPath,
+      ],
+    ];
 
-    await deleteFilesIfUnreferenced(paths);
+    await deleteFilesIfUnreferenced(
+      paths,
+      draftsDao: draftsDao,
+      clipsDao: clipsDao,
+    );
   }
 
   /// Internal helper to delete a single file

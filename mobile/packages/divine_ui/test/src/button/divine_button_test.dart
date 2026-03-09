@@ -354,23 +354,64 @@ void main() {
     });
 
     group('expanded mode', () {
-      testWidgets('expands to fill width when expanded is true', (
+      testWidgets('expands to fill available width when expanded is true', (
         tester,
       ) async {
+        const containerWidth = 300.0;
         await tester.pumpWidget(
-          buildTestWidget(
-            expanded: true,
-            onPressed: () {},
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: containerWidth,
+                  child: DivineButton(
+                    label: 'Test',
+                    expanded: true,
+                    onPressed: () {},
+                  ),
+                ),
+              ),
+            ),
           ),
         );
 
-        final sizedBox = tester.widget<SizedBox>(
-          find.ancestor(
-            of: find.byType(AnimatedOpacity),
-            matching: find.byType(SizedBox),
+        final buttonSize = tester.getSize(find.byType(DivineButton));
+        expect(buttonSize.width, containerWidth);
+      });
+
+      testWidgets('works inside a Row with Expanded wrappers', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Row(
+                children: [
+                  Expanded(
+                    child: DivineButton(
+                      label: 'Cancel',
+                      expanded: true,
+                      type: DivineButtonType.secondary,
+                      onPressed: () {},
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: DivineButton(
+                      label: 'Confirm',
+                      expanded: true,
+                      onPressed: () {},
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
-        expect(sizedBox.width, double.infinity);
+
+        // Both buttons should render without overflow
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Confirm'), findsOneWidget);
       });
     });
 

@@ -10,6 +10,10 @@
 /featured-viners /featured-viners.html 200!
 /privacy /privacy.html 200!
 
+# Embed pages
+/embed /embed.html 200!
+/get-embed /get-embed.html 200!
+
 # Video pages - Vine-compatible URLs
 /v/* /watch.html 200
 

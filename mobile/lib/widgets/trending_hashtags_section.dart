@@ -76,10 +76,7 @@ class _HashtagChipList extends StatelessWidget {
           return Padding(
             padding: const EdgeInsets.only(right: 10),
             child: Center(
-              child: Text(
-                'Trending',
-                style: VineTheme.titleSmallFont(),
-              ),
+              child: Text('Trending', style: VineTheme.titleSmallFont()),
             ),
           );
         }

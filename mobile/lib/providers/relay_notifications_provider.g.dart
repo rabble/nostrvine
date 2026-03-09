@@ -73,7 +73,7 @@ final class RelayNotificationsProvider
 }
 
 String _$relayNotificationsHash() =>
-    r'3cc24717bf6523684d1b3f5c52be4f461037fb2e';
+    r'15ec9f4758ad8855e0ddf4349f6f76224f60f244';
 
 /// Provider for relay-based notifications with REST API pagination
 ///

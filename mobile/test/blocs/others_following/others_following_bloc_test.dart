@@ -7,12 +7,17 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' as nostr_sdk;
 import 'package:openvine/blocs/others_following/others_following_bloc.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
 void main() {
   group('OthersFollowingBloc', () {
     late _MockNostrClient mockNostrClient;
+    late _MockContentBlocklistService mockBlocklistService;
 
     // Helper to create valid hex pubkeys (64 hex characters)
     String validPubkey(String suffix) {
@@ -24,17 +29,24 @@ void main() {
 
     setUp(() {
       mockNostrClient = _MockNostrClient();
+      mockBlocklistService = _MockContentBlocklistService();
+
+      // Default: nothing is blocked
+      when(() => mockBlocklistService.isBlocked(any())).thenReturn(false);
+      when(
+        () => mockBlocklistService.isFollowSevered(any()),
+      ).thenReturn(false);
     });
 
-    OthersFollowingBloc createBloc() =>
-        OthersFollowingBloc(nostrClient: mockNostrClient);
+    OthersFollowingBloc createBloc() => OthersFollowingBloc(
+      nostrClient: mockNostrClient,
+      contentBlocklistService: mockBlocklistService,
+      currentUserPubkey: validPubkey('currentUser'),
+    );
 
     test('initial state is initial with empty list', () {
       final bloc = createBloc();
-      expect(
-        bloc.state,
-        const OthersFollowingState(),
-      );
+      expect(bloc.state, const OthersFollowingState());
       bloc.close();
     });
 
@@ -195,9 +207,7 @@ void main() {
     });
 
     test('copyWith creates copy with updated values', () {
-      const state = OthersFollowingState(
-        targetPubkey: 'target1',
-      );
+      const state = OthersFollowingState(targetPubkey: 'target1');
 
       final updated = state.copyWith(
         status: OthersFollowingStatus.loading,

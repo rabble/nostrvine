@@ -300,7 +300,7 @@ class AccountDeletionService {
 
       // Create NIP-62 event
       final event = await createNip62Event(
-        reason: customReason ?? 'User requested account deletion via diVine app',
+        reason: customReason ?? 'User requested account deletion via Divine app',
       );
 
       if (event == null) {
@@ -1229,7 +1229,7 @@ void main() {
         'test_pubkey',
         62,
         [['relay', 'ALL_RELAYS']],
-        'User requested account deletion via diVine app',
+        'User requested account deletion via Divine app',
         createdAt: 1234567890,
       );
 
@@ -1301,7 +1301,7 @@ void main() {
         'test_pubkey',
         62,
         [['relay', 'ALL_RELAYS']],
-        'User requested account deletion via diVine app',
+        'User requested account deletion via Divine app',
         createdAt: 1234567890,
       );
 

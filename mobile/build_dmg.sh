@@ -10,7 +10,7 @@ echo "🖥️  Building macOS DMG for Distribution..."
 cd "$(dirname "$0")"
 
 # Configuration
-APP_NAME="diVine"
+APP_NAME="Divine"
 BUNDLE_ID="com.openvine.divine"
 BUILD_DIR="build/macos/Build/Products/Release"
 DMG_DIR="build/dmg"

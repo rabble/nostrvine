@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' as models;
-import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+class _MockGallerySaveService extends Mock implements GallerySaveService {}
+
+class _FakeEditorVideo extends Fake implements EditorVideo {}
 
 /// Creates a test app with GoRouter for navigation tests.
 Widget _createTestApp(Widget child) {
@@ -17,13 +24,30 @@ Widget _createTestApp(Widget child) {
         path: '/',
         builder: (context, state) => Scaffold(body: child),
       ),
+      GoRoute(
+        path: '/home/:index',
+        builder: (context, state) => Scaffold(body: child),
+      ),
     ],
   );
   return MaterialApp.router(routerConfig: router);
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(_FakeEditorVideo());
+  });
+
   group('VideoMetadataBottomBar', () {
+    late _MockGallerySaveService mockGallerySaveService;
+
+    setUp(() {
+      mockGallerySaveService = _MockGallerySaveService();
+      when(
+        () => mockGallerySaveService.saveVideoToGallery(any()),
+      ).thenAnswer((_) async => const GallerySaveSuccess());
+    });
+
     testWidgets('renders both Save draft and Post buttons', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
@@ -63,7 +87,7 @@ void main() {
       // Create valid state with title and final rendered clip
       final validState = VideoEditorProviderState(
         title: 'Test Video',
-        finalRenderedClip: RecordingClip(
+        finalRenderedClip: DivineVideoClip(
           id: 'test-clip',
           video: EditorVideo.file('test.mp4'),
           duration: const Duration(seconds: 10),
@@ -78,6 +102,9 @@ void main() {
           overrides: [
             videoEditorProvider.overrideWith(
               () => _MockVideoEditorNotifier(validState),
+            ),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
             ),
           ],
           child: const MaterialApp(
@@ -102,7 +129,7 @@ void main() {
       final mockNotifier = _MockVideoEditorNotifier(
         VideoEditorProviderState(
           title: 'Test',
-          finalRenderedClip: RecordingClip(
+          finalRenderedClip: DivineVideoClip(
             id: 'test',
             video: EditorVideo.file('test.mp4'),
             duration: const Duration(seconds: 5),
@@ -116,17 +143,64 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
           child: _createTestApp(const VideoMetadataBottomBar()),
         ),
       );
 
-      await tester.tap(find.text('Save draft'));
+      await tester.tap(find.text('Save for Later'));
       await tester.pumpAndSettle();
 
       expect(saveAsDraftCalled, isTrue);
-      // TODO(@hm21): Once the Drafts library exists, remove skip below
-    }, skip: true);
+    });
+
+    testWidgets(
+      'save for later surfaces gallery permission errors instead of full success',
+      (tester) async {
+        var saveAsDraftCalled = false;
+        when(
+          () => mockGallerySaveService.saveVideoToGallery(any()),
+        ).thenAnswer((_) async => const GallerySavePermissionDenied());
+
+        final mockNotifier = _MockVideoEditorNotifier(
+          VideoEditorProviderState(
+            title: 'Test',
+            finalRenderedClip: DivineVideoClip(
+              id: 'test',
+              video: EditorVideo.file('test.mp4'),
+              duration: const Duration(seconds: 5),
+              recordedAt: DateTime.now(),
+              targetAspectRatio: models.AspectRatio.square,
+              originalAspectRatio: 9 / 16,
+            ),
+          ),
+          onSaveAsDraft: () => saveAsDraftCalled = true,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              videoEditorProvider.overrideWith(() => mockNotifier),
+              gallerySaveServiceProvider.overrideWith(
+                (ref) => mockGallerySaveService,
+              ),
+            ],
+            child: _createTestApp(const VideoMetadataBottomBar()),
+          ),
+        );
+
+        await tester.tap(find.text('Save for Later'));
+        await tester.pumpAndSettle();
+
+        expect(saveAsDraftCalled, isTrue);
+        expect(find.textContaining('permission denied'), findsOneWidget);
+      },
+    );
 
     testWidgets('tapping Post button calls postVideo when valid', (
       tester,
@@ -135,7 +209,7 @@ void main() {
       final mockNotifier = _MockVideoEditorNotifier(
         VideoEditorProviderState(
           title: 'Test',
-          finalRenderedClip: RecordingClip(
+          finalRenderedClip: DivineVideoClip(
             id: 'test',
             video: EditorVideo.file('test.mp4'),
             duration: const Duration(seconds: 5),
@@ -149,7 +223,12 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
           child: _createTestApp(const VideoMetadataBottomBar()),
         ),
       );
@@ -158,6 +237,48 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(postVideoCalled, isTrue);
+    });
+
+    testWidgets('post continues after gallery save permission denial', (
+      tester,
+    ) async {
+      var postVideoCalled = false;
+      when(
+        () => mockGallerySaveService.saveVideoToGallery(any()),
+      ).thenAnswer((_) async => const GallerySavePermissionDenied());
+
+      final mockNotifier = _MockVideoEditorNotifier(
+        VideoEditorProviderState(
+          title: 'Test',
+          finalRenderedClip: DivineVideoClip(
+            id: 'test',
+            video: EditorVideo.file('test.mp4'),
+            duration: const Duration(seconds: 5),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: models.AspectRatio.square,
+            originalAspectRatio: 9 / 16,
+          ),
+        ),
+        onPostVideo: () => postVideoCalled = true,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            videoEditorProvider.overrideWith(() => mockNotifier),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => mockGallerySaveService,
+            ),
+          ],
+          child: _createTestApp(const VideoMetadataBottomBar()),
+        ),
+      );
+
+      await tester.tap(find.text('Post'));
+      await tester.pumpAndSettle();
+
+      expect(postVideoCalled, isTrue);
+      expect(find.textContaining('permission denied'), findsOneWidget);
     });
   });
 }

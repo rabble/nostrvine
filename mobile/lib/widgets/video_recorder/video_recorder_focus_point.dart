@@ -4,6 +4,7 @@
 import 'dart:io' show Platform;
 
 import 'package:divine_camera/divine_camera.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -161,7 +162,7 @@ class _FocusPoint extends StatelessWidget {
       width: VideoRecorderFocusPoint.indicatorSize,
       height: VideoRecorderFocusPoint.indicatorSize,
       decoration: BoxDecoration(
-        border: .all(color: const Color(0xFFFFF140), width: 4),
+        border: .all(color: VineTheme.accentYellow, width: 4),
         borderRadius: .circular(32),
       ),
     );

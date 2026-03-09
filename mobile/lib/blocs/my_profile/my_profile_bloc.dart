@@ -75,7 +75,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       } else {
         emit(const MyProfileError(errorType: MyProfileErrorType.notFound));
       }
-    } on Exception catch (_) {
+    } on Exception {
       if (cachedProfile != null) {
         emit(
           MyProfileLoaded(

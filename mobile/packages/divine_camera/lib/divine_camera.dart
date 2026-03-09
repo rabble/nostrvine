@@ -105,6 +105,7 @@ class DivineCamera {
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
     bool mirrorFrontCameraOutput = false,
+    bool enableAutoLensSwitch = true,
   }) async {
     // Register auto-stop callback with platform
     _platform.onRecordingAutoStopped = _handleAutoStop;
@@ -120,6 +121,7 @@ class DivineCamera {
       videoQuality: videoQuality,
       enableScreenFlash: enableScreenFlash,
       mirrorFrontCameraOutput: mirrorFrontCameraOutput,
+      enableAutoLensSwitch: enableAutoLensSwitch,
     );
     _notifyStateChanged();
     return _state;

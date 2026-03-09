@@ -17,10 +17,7 @@ class ProfileBlockConfirmationDialog extends StatelessWidget {
       children: [
         Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 28),
         SizedBox(width: 12),
-        Text(
-          'User Blocked',
-          style: TextStyle(color: VineTheme.whiteText),
-        ),
+        Text('User Blocked', style: TextStyle(color: VineTheme.whiteText)),
       ],
     ),
     content: Column(

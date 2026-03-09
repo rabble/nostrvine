@@ -6,6 +6,7 @@ import 'dart:io' show Platform;
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,6 +62,10 @@ class _LoginOptionsView extends StatelessWidget {
       listenWhen: (prev, next) =>
           next is DivineAuthEmailVerification || next is DivineAuthSuccess,
       listener: (context, state) {
+        if (state is DivineAuthSuccess) {
+          // Signal password managers to save credentials.
+          TextInput.finishAutofillContext();
+        }
         if (state is DivineAuthEmailVerification) {
           final encodedEmail = Uri.encodeComponent(state.email);
           context.go(
@@ -73,7 +78,6 @@ class _LoginOptionsView extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: VineTheme.backgroundColor,
-        resizeToAvoidBottomInset: false,
         body: SafeArea(
           child: BlocBuilder<DivineAuthCubit, DivineAuthState>(
             builder: (context, state) {
@@ -104,6 +108,8 @@ class _SignInContent extends ConsumerStatefulWidget {
 class _SignInContentState extends ConsumerState<_SignInContent> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
+  late FocusNode _emailFocusNode;
+  late FocusNode _passwordFocusNode;
   bool _isConnectingAmber = false;
 
   @override
@@ -111,6 +117,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
     super.initState();
     _emailController = TextEditingController(text: widget.state.email);
     _passwordController = TextEditingController(text: widget.state.password);
+    _emailFocusNode = FocusNode();
+    _passwordFocusNode = FocusNode();
   }
 
   @override
@@ -128,6 +136,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _emailFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 
@@ -179,14 +189,19 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
       initialEmail: _emailController.text,
       onSendResetEmail: (email) async {
         await context.read<DivineAuthCubit>().sendPasswordResetEmail(email);
-        if (context.mounted) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text(
-                'If an account exists with that email, '
-                'a password reset link has been sent.',
+              padding: EdgeInsets.zero,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 3),
+              content: DivineSnackbarContainer(
+                label:
+                    'If an account exists with that email, '
+                    'a password reset link has been sent.',
               ),
-              backgroundColor: VineTheme.vineGreen,
             ),
           );
         }
@@ -244,29 +259,47 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
 
                 const SizedBox(height: 40),
 
-                // Email field
-                DivineAuthTextField(
-                  controller: _emailController,
-                  label: 'Email',
-                  keyboardType: TextInputType.emailAddress,
-                  errorText: widget.state.emailError,
-                  enabled: !isDisabled,
-                  autocorrect: false,
-                  onChanged: (value) =>
-                      context.read<DivineAuthCubit>().updateEmail(value),
-                ),
+                // Email + Password wrapped for password manager autofill.
+                AutofillGroup(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 16,
+                    children: [
+                      // Email field
+                      DivineAuthTextField(
+                        controller: _emailController,
+                        focusNode: _emailFocusNode,
+                        label: 'Email',
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        textInputAction: .next,
+                        errorText: widget.state.emailError,
+                        enabled: !isDisabled,
+                        autocorrect: false,
+                        onChanged: (value) =>
+                            context.read<DivineAuthCubit>().updateEmail(value),
+                        onSubmitted: (_) => _passwordFocusNode.requestFocus(),
+                      ),
 
-                const SizedBox(height: 16),
-
-                // Password field
-                DivineAuthTextField(
-                  controller: _passwordController,
-                  label: 'Password',
-                  obscureText: true,
-                  errorText: widget.state.passwordError,
-                  enabled: !isDisabled,
-                  onChanged: (value) =>
-                      context.read<DivineAuthCubit>().updatePassword(value),
+                      // Password field
+                      DivineAuthTextField(
+                        controller: _passwordController,
+                        focusNode: _passwordFocusNode,
+                        label: 'Password',
+                        obscureText: true,
+                        autofillHints: const [AutofillHints.password],
+                        textInputAction: .done,
+                        errorText: widget.state.passwordError,
+                        enabled: !isDisabled,
+                        onChanged: (value) => context
+                            .read<DivineAuthCubit>()
+                            .updatePassword(value),
+                        onSubmitted: isDisabled
+                            ? null
+                            : (_) => context.read<DivineAuthCubit>().submit(),
+                      ),
+                    ],
+                  ),
                 ),
 
                 // General error
@@ -303,6 +336,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 32),
 
                 // Push alternative methods to bottom
                 const Spacer(),
@@ -344,85 +378,45 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
 }
 
 void _showInfoSheet(BuildContext context) {
-  showModalBottomSheet<void>(
+  VineBottomSheet.show<void>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: VineTheme.surfaceContainer,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-    ),
-    builder: (_) => const _InfoSheet(),
-  );
-}
-
-/// Bottom sheet explaining the available sign-in options.
-class _InfoSheet extends StatelessWidget {
-  const _InfoSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: VineTheme.outlineMuted,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          const Text(
-            'Sign-in options',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: VineTheme.whiteText,
-            ),
-          ),
-          const SizedBox(height: 20),
-
-          const _InfoItem(
-            title: 'Email & Password',
-            description:
-                'Sign in with your Divine account. If you registered '
-                'with an email and password, use them here.',
-          ),
+    title: const Text('Sign-in options'),
+    buildScrollBody: (scrollController) => ListView(
+      controller: scrollController,
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      children: [
+        const _InfoItem(
+          title: 'Email & Password',
+          description:
+              'Sign in with your Divine account. If you registered '
+              'with an email and password, use them here.',
+        ),
+        const SizedBox(height: 16),
+        const _InfoItem(
+          title: 'Import Nostr key',
+          description:
+              'Already have a Nostr identity? Import your nsec '
+              'private key from another client.',
+        ),
+        const SizedBox(height: 16),
+        const _InfoItem(
+          title: 'Signer App',
+          description:
+              'Connect using a NIP-46 compatible remote signer '
+              'like nsecBunker for enhanced key security.',
+        ),
+        if (Platform.isAndroid) ...[
           const SizedBox(height: 16),
           const _InfoItem(
-            title: 'Import Nostr key',
+            title: 'Amber',
             description:
-                'Already have a Nostr identity? Import your nsec '
-                'private key from another client.',
+                'Use the Amber signer app on Android to manage '
+                'your Nostr keys securely.',
           ),
-          const SizedBox(height: 16),
-          const _InfoItem(
-            title: 'Signer App',
-            description:
-                'Connect using a NIP-46 compatible remote signer '
-                'like nsecBunker for enhanced key security.',
-          ),
-          if (Platform.isAndroid) ...[
-            const SizedBox(height: 16),
-            const _InfoItem(
-              title: 'Amber',
-              description:
-                  'Use the Amber signer app on Android to manage '
-                  'your Nostr keys securely.',
-            ),
-          ],
         ],
-      ),
-    );
-  }
+      ],
+    ),
+  );
 }
 
 /// Single info item in the info sheet.

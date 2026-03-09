@@ -353,7 +353,7 @@ void main() {
           find.byIcon(Icons.chevron_right),
         );
 
-        expect(chevronIcon.color, equals(Colors.grey));
+        expect(chevronIcon.color, equals(VineTheme.lightText));
       });
     });
   });

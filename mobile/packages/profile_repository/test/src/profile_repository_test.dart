@@ -33,6 +33,8 @@ void main() {
 
     const testPubkey =
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+    const otherPubkey =
+        'b1b2c3d4e5f6b1b2c3d4e5f6b1b2c3d4e5f6b1b2c3d4e5f6b1b2c3d4e5f6b1b2';
     const testEventId =
         'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2';
 
@@ -390,44 +392,41 @@ void main() {
     });
 
     group('saveProfileEvent', () {
-      test(
-        'sends all provided fields to nostrClient and caches and returns '
-        'user profile',
-        () async {
-          when(() => mockProfileEvent.content).thenReturn(
-            jsonEncode({
+      test('sends all provided fields to nostrClient and caches and returns '
+          'user profile', () async {
+        when(() => mockProfileEvent.content).thenReturn(
+          jsonEncode({
+            'display_name': 'New Name',
+            'about': 'New bio',
+            'nip05': '_@newuser.divine.video',
+            'picture': 'https://example.com/new.png',
+          }),
+        );
+
+        final profile = await profileRepository.saveProfileEvent(
+          displayName: 'New Name',
+          about: 'New bio',
+          username: 'newuser',
+          picture: 'https://example.com/new.png',
+        );
+
+        expect(profile.displayName, equals('New Name'));
+        expect(profile.about, equals('New bio'));
+        expect(profile.nip05, equals('_@newuser.divine.video'));
+        expect(profile.picture, equals('https://example.com/new.png'));
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
               'display_name': 'New Name',
               'about': 'New bio',
               'nip05': '_@newuser.divine.video',
               'picture': 'https://example.com/new.png',
-            }),
-          );
-
-          final profile = await profileRepository.saveProfileEvent(
-            displayName: 'New Name',
-            about: 'New bio',
-            username: 'newuser',
-            picture: 'https://example.com/new.png',
-          );
-
-          expect(profile.displayName, equals('New Name'));
-          expect(profile.about, equals('New bio'));
-          expect(profile.nip05, equals('_@newuser.divine.video'));
-          expect(profile.picture, equals('https://example.com/new.png'));
-
-          verify(
-            () => mockNostrClient.sendProfile(
-              profileContent: {
-                'display_name': 'New Name',
-                'about': 'New bio',
-                'nip05': '_@newuser.divine.video',
-                'picture': 'https://example.com/new.png',
-              },
-            ),
-          ).called(1);
-          verify(() => mockUserProfilesDao.upsertProfile(profile)).called(1);
-        },
-      );
+            },
+          ),
+        ).called(1);
+        verify(() => mockUserProfilesDao.upsertProfile(profile)).called(1);
+      });
 
       test('constructs nip05 identifier from username', () async {
         await profileRepository.saveProfileEvent(
@@ -463,10 +462,7 @@ void main() {
 
       test('uses external nip05 directly when provided', () async {
         when(() => mockProfileEvent.content).thenReturn(
-          jsonEncode({
-            'display_name': 'Test',
-            'nip05': 'alice@example.com',
-          }),
+          jsonEncode({'display_name': 'Test', 'nip05': 'alice@example.com'}),
         );
 
         await profileRepository.saveProfileEvent(
@@ -486,10 +482,7 @@ void main() {
 
       test('external nip05 takes precedence over username', () async {
         when(() => mockProfileEvent.content).thenReturn(
-          jsonEncode({
-            'display_name': 'Test',
-            'nip05': 'alice@example.com',
-          }),
+          jsonEncode({'display_name': 'Test', 'nip05': 'alice@example.com'}),
         );
 
         await profileRepository.saveProfileEvent(
@@ -520,10 +513,7 @@ void main() {
 
       test('includes banner when provided', () async {
         when(() => mockProfileEvent.content).thenReturn(
-          jsonEncode({
-            'display_name': 'Test User',
-            'banner': '0x33ccbf',
-          }),
+          jsonEncode({'display_name': 'Test User', 'banner': '0x33ccbf'}),
         );
 
         await profileRepository.saveProfileEvent(
@@ -533,10 +523,7 @@ void main() {
 
         verify(
           () => mockNostrClient.sendProfile(
-            profileContent: {
-              'display_name': 'Test User',
-              'banner': '0x33ccbf',
-            },
+            profileContent: {'display_name': 'Test User', 'banner': '0x33ccbf'},
           ),
         ).called(1);
       });
@@ -632,6 +619,89 @@ void main() {
             ).called(1);
           },
         );
+
+        test(
+          'preserves existing nip05 from rawData when clearNip05 is false',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'nip05': 'alice@example.com',
+            });
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'nip05': 'alice@example.com',
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'removes nip05 from rawData when clearNip05 is true',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'nip05': 'alice@example.com',
+              'about': 'Bio',
+            });
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              clearNip05: true,
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'about': 'Bio',
+                },
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'clearNip05 is a no-op when a new nip05 is also provided',
+          () async {
+            final currentProfile = await createCurrentProfile({
+              'display_name': 'Old Name',
+              'nip05': 'old@example.com',
+            });
+
+            when(() => mockProfileEvent.content).thenReturn(
+              jsonEncode({
+                'display_name': 'New Name',
+                'nip05': 'new@example.com',
+              }),
+            );
+
+            await profileRepository.saveProfileEvent(
+              displayName: 'New Name',
+              nip05: 'new@example.com',
+              clearNip05: true,
+              currentProfile: currentProfile,
+            );
+
+            verify(
+              () => mockNostrClient.sendProfile(
+                profileContent: {
+                  'display_name': 'New Name',
+                  'nip05': 'new@example.com',
+                },
+              ),
+            ).called(1);
+          },
+        );
       });
     });
 
@@ -691,21 +761,18 @@ void main() {
         verify(() => mockNostrClient.queryUsers('test', limit: 10)).called(1);
       });
 
-      test(
-        'returns empty list when NostrClient returns empty list',
-        () async {
-          // Arrange
-          when(
-            () => mockNostrClient.queryUsers('unknown', limit: 200),
-          ).thenAnswer((_) async => []);
+      test('returns empty list when NostrClient returns empty list', () async {
+        // Arrange
+        when(
+          () => mockNostrClient.queryUsers('unknown', limit: 200),
+        ).thenAnswer((_) async => []);
 
-          // Act
-          final result = await profileRepository.searchUsers(query: 'unknown');
+        // Act
+        final result = await profileRepository.searchUsers(query: 'unknown');
 
-          // Assert
-          expect(result, isEmpty);
-        },
-      );
+        // Assert
+        expect(result, isEmpty);
+      });
 
       test(
         'returns multiple profiles when NostrClient returns multiple events',
@@ -750,9 +817,7 @@ void main() {
 
           when(
             () => mockNostrClient.queryUsers('alice', limit: 200),
-          ).thenAnswer(
-            (_) async => [mockProfileEvent1, mockProfileEvent2],
-          );
+          ).thenAnswer((_) async => [mockProfileEvent1, mockProfileEvent2]);
 
           // Act
           final result = await profileRepository.searchUsers(query: 'alice');
@@ -764,302 +829,327 @@ void main() {
         },
       );
 
-      test(
-        'filters out blocked users when userBlockFilter is provided',
-        () async {
-          // Arrange
-          final mockProfileEvent1 = MockEvent();
-          final mockProfileEvent2 = MockEvent();
-          const blockedPubkey =
-              'blocked1e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-              'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const allowedPubkey =
-              'allowed2e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-              'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const testEventId1 =
-              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-              'd3c4b5a6f1e2d3c4b5a6f1e2';
-          const testEventId2 =
-              'e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-              'd3c4b5a6f1e2d3c4b5a6f1e2d3';
+      test('enriches profiles missing picture from local cache', () async {
+        // Arrange - search result has no picture
+        final mockSearchEvent = MockEvent();
+        const searchPubkey =
+            'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+            'c3d4e5f6a1b2c3d4e5f6a1b2';
+        const searchEventId =
+            'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+            'd3c4b5a6f1e2d3c4b5a6f1e2';
 
-          when(() => mockProfileEvent1.kind).thenReturn(0);
-          when(() => mockProfileEvent1.pubkey).thenReturn(blockedPubkey);
-          when(() => mockProfileEvent1.createdAt).thenReturn(1704067200);
-          when(() => mockProfileEvent1.id).thenReturn(testEventId1);
-          when(() => mockProfileEvent1.content).thenReturn(
-            jsonEncode({
-              'display_name': 'Alice Blocked',
-              'about': 'A blocked user',
-            }),
-          );
+        when(() => mockSearchEvent.kind).thenReturn(0);
+        when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
+        when(() => mockSearchEvent.createdAt).thenReturn(1704067200);
+        when(() => mockSearchEvent.id).thenReturn(searchEventId);
+        when(
+          () => mockSearchEvent.content,
+        ).thenReturn(jsonEncode({'display_name': 'Alice'}));
 
-          when(() => mockProfileEvent2.kind).thenReturn(0);
-          when(() => mockProfileEvent2.pubkey).thenReturn(allowedPubkey);
-          when(() => mockProfileEvent2.createdAt).thenReturn(1704067300);
-          when(() => mockProfileEvent2.id).thenReturn(testEventId2);
-          when(() => mockProfileEvent2.content).thenReturn(
-            jsonEncode({
-              'display_name': 'Alice Allowed',
-              'about': 'An allowed user',
-            }),
-          );
+        when(
+          () => mockNostrClient.queryUsers('alice', limit: 200),
+        ).thenAnswer((_) async => [mockSearchEvent]);
 
-          when(
-            () => mockNostrClient.queryUsers('alice', limit: 200),
-          ).thenAnswer(
-            (_) async => [mockProfileEvent1, mockProfileEvent2],
-          );
+        // Cache has a profile with a picture
+        when(() => mockUserProfilesDao.getProfile(searchPubkey)).thenAnswer(
+          (_) async => UserProfile(
+            pubkey: searchPubkey,
+            displayName: 'Alice Cached',
+            picture: 'https://example.com/alice.png',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: searchEventId,
+          ),
+        );
 
-          // Create repository with block filter
-          final repoWithFilter = ProfileRepository(
-            nostrClient: mockNostrClient,
-            userProfilesDao: mockUserProfilesDao,
-            httpClient: mockHttpClient,
-            userBlockFilter: (pubkey) => pubkey == blockedPubkey,
-          );
+        // Act
+        final result = await profileRepository.searchUsers(query: 'alice');
 
-          // Act
-          final result = await repoWithFilter.searchUsers(query: 'alice');
+        // Assert - picture enriched from cache
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Alice'));
+        expect(result.first.picture, equals('https://example.com/alice.png'));
+      });
 
-          // Assert
-          expect(result, hasLength(1));
-          expect(result.first.displayName, equals('Alice Allowed'));
-          expect(result.any((p) => p.pubkey == blockedPubkey), isFalse);
-        },
-      );
+      test('does not overwrite existing picture with cached version', () async {
+        // Arrange - search result already has a picture
+        final mockSearchEvent = MockEvent();
+        const searchPubkey =
+            'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+            'c3d4e5f6a1b2c3d4e5f6a1b2';
+        const searchEventId =
+            'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+            'd3c4b5a6f1e2d3c4b5a6f1e2';
 
-      test(
-        'enriches profiles missing picture from local cache',
-        () async {
-          // Arrange - search result has no picture
-          final mockSearchEvent = MockEvent();
-          const searchPubkey =
-              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-              'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const searchEventId =
-              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-              'd3c4b5a6f1e2d3c4b5a6f1e2';
+        when(() => mockSearchEvent.kind).thenReturn(0);
+        when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
+        when(() => mockSearchEvent.createdAt).thenReturn(1704067200);
+        when(() => mockSearchEvent.id).thenReturn(searchEventId);
+        when(() => mockSearchEvent.content).thenReturn(
+          jsonEncode({
+            'display_name': 'Alice',
+            'picture': 'https://example.com/fresh.png',
+          }),
+        );
 
-          when(() => mockSearchEvent.kind).thenReturn(0);
-          when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
-          when(() => mockSearchEvent.createdAt).thenReturn(1704067200);
-          when(() => mockSearchEvent.id).thenReturn(searchEventId);
-          when(() => mockSearchEvent.content).thenReturn(
-            jsonEncode({'display_name': 'Alice'}),
-          );
+        when(
+          () => mockNostrClient.queryUsers('alice', limit: 200),
+        ).thenAnswer((_) async => [mockSearchEvent]);
 
-          when(
-            () => mockNostrClient.queryUsers('alice', limit: 200),
-          ).thenAnswer((_) async => [mockSearchEvent]);
+        // Cache has a different (stale) picture
+        when(() => mockUserProfilesDao.getProfile(searchPubkey)).thenAnswer(
+          (_) async => UserProfile(
+            pubkey: searchPubkey,
+            picture: 'https://example.com/stale.png',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: searchEventId,
+          ),
+        );
 
-          // Cache has a profile with a picture
-          when(
-            () => mockUserProfilesDao.getProfile(searchPubkey),
-          ).thenAnswer(
-            (_) async => UserProfile(
-              pubkey: searchPubkey,
-              displayName: 'Alice Cached',
-              picture: 'https://example.com/alice.png',
-              rawData: const {},
-              createdAt: DateTime(2026),
-              eventId: searchEventId,
-            ),
-          );
+        // Act
+        final result = await profileRepository.searchUsers(query: 'alice');
 
-          // Act
-          final result = await profileRepository.searchUsers(query: 'alice');
+        // Assert - search result picture preserved, not overwritten
+        expect(result, hasLength(1));
+        expect(result.first.picture, equals('https://example.com/fresh.png'));
+      });
 
-          // Assert - picture enriched from cache
-          expect(result, hasLength(1));
-          expect(result.first.displayName, equals('Alice'));
-          expect(result.first.picture, equals('https://example.com/alice.png'));
-        },
-      );
+      test('enriches multiple null fields from cache', () async {
+        // Arrange - search result has minimal data
+        final mockSearchEvent = MockEvent();
+        const searchPubkey =
+            'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+            'c3d4e5f6a1b2c3d4e5f6a1b2';
+        const searchEventId =
+            'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+            'd3c4b5a6f1e2d3c4b5a6f1e2';
 
-      test(
-        'does not overwrite existing picture with cached version',
-        () async {
-          // Arrange - search result already has a picture
-          final mockSearchEvent = MockEvent();
-          const searchPubkey =
-              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-              'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const searchEventId =
-              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-              'd3c4b5a6f1e2d3c4b5a6f1e2';
+        when(() => mockSearchEvent.kind).thenReturn(0);
+        when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
+        when(() => mockSearchEvent.createdAt).thenReturn(1704067200);
+        when(() => mockSearchEvent.id).thenReturn(searchEventId);
+        when(
+          () => mockSearchEvent.content,
+        ).thenReturn(jsonEncode({'display_name': 'Alice'}));
 
-          when(() => mockSearchEvent.kind).thenReturn(0);
-          when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
-          when(() => mockSearchEvent.createdAt).thenReturn(1704067200);
-          when(() => mockSearchEvent.id).thenReturn(searchEventId);
-          when(() => mockSearchEvent.content).thenReturn(
-            jsonEncode({
-              'display_name': 'Alice',
-              'picture': 'https://example.com/fresh.png',
-            }),
-          );
+        when(
+          () => mockNostrClient.queryUsers('alice', limit: 200),
+        ).thenAnswer((_) async => [mockSearchEvent]);
 
-          when(
-            () => mockNostrClient.queryUsers('alice', limit: 200),
-          ).thenAnswer((_) async => [mockSearchEvent]);
+        // Cache has complete profile
+        when(() => mockUserProfilesDao.getProfile(searchPubkey)).thenAnswer(
+          (_) async => UserProfile(
+            pubkey: searchPubkey,
+            displayName: 'Alice Cached',
+            about: 'Bio from cache',
+            picture: 'https://example.com/alice.png',
+            nip05: 'alice@example.com',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: searchEventId,
+          ),
+        );
 
-          // Cache has a different (stale) picture
-          when(
-            () => mockUserProfilesDao.getProfile(searchPubkey),
-          ).thenAnswer(
-            (_) async => UserProfile(
-              pubkey: searchPubkey,
-              picture: 'https://example.com/stale.png',
-              rawData: const {},
-              createdAt: DateTime(2026),
-              eventId: searchEventId,
-            ),
-          );
+        // Act
+        final result = await profileRepository.searchUsers(query: 'alice');
 
-          // Act
-          final result = await profileRepository.searchUsers(query: 'alice');
+        // Assert - null fields enriched, non-null preserved
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Alice'));
+        expect(result.first.about, equals('Bio from cache'));
+        expect(result.first.picture, equals('https://example.com/alice.png'));
+        expect(result.first.nip05, equals('alice@example.com'));
+      });
 
-          // Assert - search result picture preserved, not overwritten
-          expect(result, hasLength(1));
-          expect(
-            result.first.picture,
-            equals('https://example.com/fresh.png'),
-          );
-        },
-      );
+      test('uses profileSearchFilter when provided', () async {
+        // Arrange
+        final mockProfileEvent1 = MockEvent();
+        final mockProfileEvent2 = MockEvent();
+        const testPubkey1 =
+            'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+            'c3d4e5f6a1b2c3d4e5f6a1b2';
+        const testPubkey2 =
+            'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+            'c3d4e5f6a1b2c3d4e5f6a1b2c3';
+        const testEventId1 =
+            'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+            'd3c4b5a6f1e2d3c4b5a6f1e2';
+        const testEventId2 =
+            'e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+            'd3c4b5a6f1e2d3c4b5a6f1e2d3';
 
-      test(
-        'enriches multiple null fields from cache',
-        () async {
-          // Arrange - search result has minimal data
-          final mockSearchEvent = MockEvent();
-          const searchPubkey =
-              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-              'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const searchEventId =
-              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-              'd3c4b5a6f1e2d3c4b5a6f1e2';
+        when(() => mockProfileEvent1.kind).thenReturn(0);
+        when(() => mockProfileEvent1.pubkey).thenReturn(testPubkey1);
+        when(() => mockProfileEvent1.createdAt).thenReturn(1704067200);
+        when(() => mockProfileEvent1.id).thenReturn(testEventId1);
+        when(() => mockProfileEvent1.content).thenReturn(
+          jsonEncode({'display_name': 'Bob Smith', 'about': 'First user'}),
+        );
 
-          when(() => mockSearchEvent.kind).thenReturn(0);
-          when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
-          when(() => mockSearchEvent.createdAt).thenReturn(1704067200);
-          when(() => mockSearchEvent.id).thenReturn(searchEventId);
-          when(() => mockSearchEvent.content).thenReturn(
-            jsonEncode({'display_name': 'Alice'}),
-          );
+        when(() => mockProfileEvent2.kind).thenReturn(0);
+        when(() => mockProfileEvent2.pubkey).thenReturn(testPubkey2);
+        when(() => mockProfileEvent2.createdAt).thenReturn(1704067300);
+        when(() => mockProfileEvent2.id).thenReturn(testEventId2);
+        when(() => mockProfileEvent2.content).thenReturn(
+          jsonEncode({'display_name': 'Alice Jones', 'about': 'Second user'}),
+        );
 
-          when(
-            () => mockNostrClient.queryUsers('alice', limit: 200),
-          ).thenAnswer((_) async => [mockSearchEvent]);
+        when(
+          () => mockNostrClient.queryUsers('test', limit: 200),
+        ).thenAnswer((_) async => [mockProfileEvent1, mockProfileEvent2]);
 
-          // Cache has complete profile
-          when(
-            () => mockUserProfilesDao.getProfile(searchPubkey),
-          ).thenAnswer(
-            (_) async => UserProfile(
-              pubkey: searchPubkey,
-              displayName: 'Alice Cached',
-              about: 'Bio from cache',
-              picture: 'https://example.com/alice.png',
-              nip05: 'alice@example.com',
-              rawData: const {},
-              createdAt: DateTime(2026),
-              eventId: searchEventId,
-            ),
-          );
+        // Track filter invocations
+        var filterCalled = false;
+        String? receivedQuery;
+        List<UserProfile>? receivedProfiles;
 
-          // Act
-          final result = await profileRepository.searchUsers(query: 'alice');
+        // Create repository with custom search filter that reverses the list
+        final repoWithFilter = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          profileSearchFilter: (query, profiles) {
+            filterCalled = true;
+            receivedQuery = query;
+            receivedProfiles = profiles;
+            // Return reversed list to prove custom filter was used
+            return profiles.reversed.toList();
+          },
+        );
 
-          // Assert - null fields enriched, non-null preserved
-          expect(result, hasLength(1));
-          expect(result.first.displayName, equals('Alice'));
-          expect(result.first.about, equals('Bio from cache'));
-          expect(result.first.picture, equals('https://example.com/alice.png'));
-          expect(result.first.nip05, equals('alice@example.com'));
-        },
-      );
+        // Act
+        final result = await repoWithFilter.searchUsers(query: 'test');
 
-      test(
-        'uses profileSearchFilter when provided',
-        () async {
-          // Arrange
-          final mockProfileEvent1 = MockEvent();
-          final mockProfileEvent2 = MockEvent();
-          const testPubkey1 =
-              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-              'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const testPubkey2 =
-              'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-              'c3d4e5f6a1b2c3d4e5f6a1b2c3';
-          const testEventId1 =
-              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-              'd3c4b5a6f1e2d3c4b5a6f1e2';
-          const testEventId2 =
-              'e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-              'd3c4b5a6f1e2d3c4b5a6f1e2d3';
+        // Assert
+        expect(filterCalled, isTrue);
+        expect(receivedQuery, equals('test'));
+        expect(receivedProfiles, hasLength(2));
+        // Verify the custom filter's reversal was applied
+        expect(result, hasLength(2));
+        expect(result[0].displayName, equals('Alice Jones'));
+        expect(result[1].displayName, equals('Bob Smith'));
+      });
+    });
 
-          when(() => mockProfileEvent1.kind).thenReturn(0);
-          when(() => mockProfileEvent1.pubkey).thenReturn(testPubkey1);
-          when(() => mockProfileEvent1.createdAt).thenReturn(1704067200);
-          when(() => mockProfileEvent1.id).thenReturn(testEventId1);
-          when(() => mockProfileEvent1.content).thenReturn(
-            jsonEncode({
-              'display_name': 'Bob Smith',
-              'about': 'First user',
-            }),
-          );
+    group('searchUsersLocally', () {
+      test('returns empty list when query is blank', () async {
+        final result = await profileRepository.searchUsersLocally(
+          query: '   ',
+        );
 
-          when(() => mockProfileEvent2.kind).thenReturn(0);
-          when(() => mockProfileEvent2.pubkey).thenReturn(testPubkey2);
-          when(() => mockProfileEvent2.createdAt).thenReturn(1704067300);
-          when(() => mockProfileEvent2.id).thenReturn(testEventId2);
-          when(() => mockProfileEvent2.content).thenReturn(
-            jsonEncode({
-              'display_name': 'Alice Jones',
-              'about': 'Second user',
-            }),
-          );
+        expect(result, isEmpty);
+        verifyNever(() => mockUserProfilesDao.getAllProfiles());
+      });
 
-          when(
-            () => mockNostrClient.queryUsers('test', limit: 200),
-          ).thenAnswer(
-            (_) async => [mockProfileEvent1, mockProfileEvent2],
-          );
+      test('filters cached profiles and applies limit', () async {
+        final cachedProfiles = [
+          UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Alice Example',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          ),
+          UserProfile(
+            pubkey: otherPubkey,
+            about: 'Talks about ALPHA builds',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'z' * 64,
+          ),
+          UserProfile(
+            pubkey: 'c' * 64,
+            displayName: 'Charlie',
+            about: 'No match here',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'd' * 64,
+          ),
+        ];
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => cachedProfiles);
 
-          // Track filter invocations
-          var filterCalled = false;
-          String? receivedQuery;
-          List<UserProfile>? receivedProfiles;
+        final result = await profileRepository.searchUsersLocally(
+          query: '  al  ',
+          limit: 1,
+        );
 
-          // Create repository with custom search filter that reverses the list
-          final repoWithFilter = ProfileRepository(
-            nostrClient: mockNostrClient,
-            userProfilesDao: mockUserProfilesDao,
-            httpClient: mockHttpClient,
-            profileSearchFilter: (query, profiles) {
-              filterCalled = true;
-              receivedQuery = query;
-              receivedProfiles = profiles;
-              // Return reversed list to prove custom filter was used
-              return profiles.reversed.toList();
-            },
-          );
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Alice Example'));
+        verify(() => mockUserProfilesDao.getAllProfiles()).called(1);
+      });
 
-          // Act
-          final result = await repoWithFilter.searchUsers(query: 'test');
+      test('uses custom profileSearchFilter when provided', () async {
+        final cachedProfiles = [
+          UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Alice Example',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          ),
+          UserProfile(
+            pubkey: otherPubkey,
+            displayName: 'Bob Example',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'e' * 64,
+          ),
+        ];
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => cachedProfiles);
 
-          // Assert
-          expect(filterCalled, isTrue);
-          expect(receivedQuery, equals('test'));
-          expect(receivedProfiles, hasLength(2));
-          // Verify the custom filter's reversal was applied
-          expect(result, hasLength(2));
-          expect(result[0].displayName, equals('Alice Jones'));
-          expect(result[1].displayName, equals('Bob Smith'));
-        },
-      );
+        var filterCalled = false;
+        final repoWithFilter = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          profileSearchFilter: (query, profiles) {
+            filterCalled = true;
+            expect(query, equals('alice'));
+            expect(profiles, same(cachedProfiles));
+            return [profiles.last];
+          },
+        );
+
+        final result = await repoWithFilter.searchUsersLocally(query: 'alice');
+
+        expect(filterCalled, isTrue);
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Bob Example'));
+      });
+
+      test('countUsersLocally returns number of cached matches', () async {
+        final cachedProfiles = [
+          UserProfile(
+            pubkey: testPubkey,
+            displayName: 'Alice Example',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: testEventId,
+          ),
+          UserProfile(
+            pubkey: otherPubkey,
+            about: 'Alice in bio only',
+            rawData: const {},
+            createdAt: DateTime(2026),
+            eventId: 'f' * 64,
+          ),
+        ];
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => cachedProfiles);
+
+        final count = await profileRepository.countUsersLocally(
+          query: 'alice',
+        );
+
+        expect(count, equals(2));
+      });
     });
 
     group('searchUsers with FunnelcakeApiClient', () {
@@ -1097,9 +1187,9 @@ void main() {
           when(() => mockWsEvent.pubkey).thenReturn('b' * 64);
           when(() => mockWsEvent.createdAt).thenReturn(1704067200);
           when(() => mockWsEvent.id).thenReturn('c' * 64);
-          when(() => mockWsEvent.content).thenReturn(
-            jsonEncode({'display_name': 'Alice WS'}),
-          );
+          when(
+            () => mockWsEvent.content,
+          ).thenReturn(jsonEncode({'display_name': 'Alice WS'}));
 
           when(
             () => mockNostrClient.queryUsers('alice', limit: 200),
@@ -1231,9 +1321,9 @@ void main() {
         when(() => mockWsEvent.pubkey).thenReturn(samePubkey);
         when(() => mockWsEvent.createdAt).thenReturn(1704067200);
         when(() => mockWsEvent.id).thenReturn('e' * 64);
-        when(() => mockWsEvent.content).thenReturn(
-          jsonEncode({'display_name': 'Alice WS'}),
-        );
+        when(
+          () => mockWsEvent.content,
+        ).thenReturn(jsonEncode({'display_name': 'Alice WS'}));
 
         when(
           () => mockNostrClient.queryUsers('alice', limit: 200),
@@ -1254,60 +1344,101 @@ void main() {
         expect(result.first.displayName, equals('Alice REST'));
       });
 
-      test(
-        'skips WebSocket on paginated request (offset > 0)',
-        () async {
-          // Arrange
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.searchProfiles(
-              query: 'alice',
-              limit: any(named: 'limit'),
-              offset: 50,
-              sortBy: 'followers',
-              hasVideos: true,
-            ),
-          ).thenAnswer(
-            (_) async => [
-              ProfileSearchResult(
-                pubkey: 'a' * 64,
-                displayName: 'Alice Page 2',
-                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
-              ),
-            ],
-          );
-
-          final repoWithFunnelcake = ProfileRepository(
-            nostrClient: mockNostrClient,
-            userProfilesDao: mockUserProfilesDao,
-            httpClient: mockHttpClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
-
-          // Act
-          final result = await repoWithFunnelcake.searchUsers(
+      test('skips WebSocket on paginated request (offset > 0)', () async {
+        // Arrange
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.searchProfiles(
             query: 'alice',
+            limit: any(named: 'limit'),
             offset: 50,
             sortBy: 'followers',
             hasVideos: true,
-          );
-
-          // Assert
-          expect(result, hasLength(1));
-          expect(result.first.displayName, equals('Alice Page 2'));
-
-          // WebSocket should NOT have been called for offset > 0
-          verifyNever(
-            () => mockNostrClient.queryUsers(
-              any(),
-              limit: any(named: 'limit'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            ProfileSearchResult(
+              pubkey: 'a' * 64,
+              displayName: 'Alice Page 2',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
             ),
-          );
-        },
-      );
+          ],
+        );
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        // Act
+        final result = await repoWithFunnelcake.searchUsers(
+          query: 'alice',
+          offset: 50,
+          sortBy: 'followers',
+          hasVideos: true,
+        );
+
+        // Assert
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Alice Page 2'));
+
+        // WebSocket should NOT have been called for offset > 0
+        verifyNever(
+          () => mockNostrClient.queryUsers(any(), limit: any(named: 'limit')),
+        );
+      });
+
+      test('skips client-side filter when sortBy is set', () async {
+        // Arrange
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.searchProfiles(
+            query: 'alice',
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: 'followers',
+            hasVideos: any(named: 'hasVideos'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            ProfileSearchResult(
+              pubkey: 'a' * 64,
+              displayName: 'Alice REST',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+            ),
+          ],
+        );
+
+        when(
+          () => mockNostrClient.queryUsers('alice', limit: 200),
+        ).thenAnswer((_) async => []);
+
+        var filterCalled = false;
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          profileSearchFilter: (query, profiles) {
+            filterCalled = true;
+            return profiles;
+          },
+        );
+
+        // Act
+        await repoWithFunnelcake.searchUsers(
+          query: 'alice',
+          sortBy: 'followers',
+        );
+
+        // Assert - filter should NOT be called when sortBy is set
+        expect(filterCalled, isFalse);
+      });
 
       test(
-        'skips client-side filter when sortBy is set',
+        'preserves Phase 1 REST results when Phase 2 WebSocket throws',
         () async {
           // Arrange
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
@@ -1316,7 +1447,7 @@ void main() {
               query: 'alice',
               limit: any(named: 'limit'),
               offset: any(named: 'offset'),
-              sortBy: 'followers',
+              sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
@@ -1329,32 +1460,57 @@ void main() {
             ],
           );
 
+          // Phase 2 WebSocket throws
           when(
             () => mockNostrClient.queryUsers('alice', limit: 200),
-          ).thenAnswer((_) async => []);
+          ).thenThrow(StateError('WebSocket connection failed'));
 
-          var filterCalled = false;
           final repoWithFunnelcake = ProfileRepository(
             nostrClient: mockNostrClient,
             userProfilesDao: mockUserProfilesDao,
             httpClient: mockHttpClient,
             funnelcakeApiClient: mockFunnelcakeClient,
-            profileSearchFilter: (query, profiles) {
-              filterCalled = true;
-              return profiles;
-            },
           );
 
           // Act
-          await repoWithFunnelcake.searchUsers(
-            query: 'alice',
-            sortBy: 'followers',
-          );
+          final result = await repoWithFunnelcake.searchUsers(query: 'alice');
 
-          // Assert - filter should NOT be called when sortBy is set
-          expect(filterCalled, isFalse);
+          // Assert - Phase 1 results preserved despite Phase 2 failure
+          expect(result, hasLength(1));
+          expect(result.first.displayName, equals('Alice REST'));
         },
       );
+
+      test('returns empty list when both phases fail', () async {
+        // Arrange
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.searchProfiles(
+            query: 'alice',
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+          ),
+        ).thenThrow(Exception('REST API error'));
+
+        when(
+          () => mockNostrClient.queryUsers('alice', limit: 200),
+        ).thenThrow(Exception('WebSocket error'));
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        // Act
+        final result = await repoWithFunnelcake.searchUsers(query: 'alice');
+
+        // Assert - empty list, no crash
+        expect(result, isEmpty);
+      });
     });
 
     group('exceptions', () {
@@ -1581,79 +1737,67 @@ void main() {
         },
       );
 
-      test(
-        'returns server error message when server returns '
-        'non-200 with JSON error body',
-        () async {
-          when(
-            () => mockNostrClient.createNip98AuthHeader(
-              url: any(named: 'url'),
-              method: any(named: 'method'),
-              payload: any(named: 'payload'),
-            ),
-          ).thenAnswer((_) => Future.value('authHeader'));
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer(
-            (_) => Future.value(
-              Response('{"error": "Username too short"}', 400),
-            ),
-          );
+      test('returns server error message when server returns '
+          'non-200 with JSON error body', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) => Future.value(Response('{"error": "Username too short"}', 400)),
+        );
 
-          final result = await profileRepository.claimUsername(
-            username: 'ab',
-          );
+        final result = await profileRepository.claimUsername(username: 'ab');
 
-          expect(
-            result,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              'Username too short',
-            ),
-          );
-        },
-      );
+        expect(
+          result,
+          isA<UsernameClaimError>().having(
+            (e) => e.message,
+            'message',
+            'Username too short',
+          ),
+        );
+      });
 
-      test(
-        'returns error with default message when server returns '
-        'non-200 with unparseable body',
-        () async {
-          when(
-            () => mockNostrClient.createNip98AuthHeader(
-              url: any(named: 'url'),
-              method: any(named: 'method'),
-              payload: any(named: 'payload'),
-            ),
-          ).thenAnswer((_) => Future.value('authHeader'));
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer(
-            (_) => Future.value(Response('not json at all', 400)),
-          );
+      test('returns error with default message when server returns '
+          'non-200 with unparseable body', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('not json at all', 400)));
 
-          final result = await profileRepository.claimUsername(
-            username: 'baduser',
-          );
+        final result = await profileRepository.claimUsername(
+          username: 'baduser',
+        );
 
-          expect(
-            result,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              'Invalid username format',
-            ),
-          );
-        },
-      );
+        expect(
+          result,
+          isA<UsernameClaimError>().having(
+            (e) => e.message,
+            'message',
+            'Invalid username format',
+          ),
+        );
+      });
     });
 
     group('UsernameClaimResult', () {
@@ -1679,10 +1823,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            jsonEncode({
-              'available': available,
-              'reason': ?reason,
-            }),
+            jsonEncode({'available': available, 'reason': ?reason}),
             statusCode,
           ),
         );
@@ -1814,13 +1955,9 @@ void main() {
       test('returns UsernameCheckError when name-server returns 500', () async {
         when(
           () => mockHttpClient.get(
-            Uri.parse(
-              'https://names.divine.video/api/username/check/testuser',
-            ),
+            Uri.parse('https://names.divine.video/api/username/check/testuser'),
           ),
-        ).thenAnswer(
-          (_) async => Response('Server error', 500),
-        );
+        ).thenAnswer((_) async => Response('Server error', 500));
 
         final result = await profileRepository.checkUsernameAvailability(
           username: 'testuser',
@@ -1839,9 +1976,7 @@ void main() {
       test('returns UsernameCheckError on network exception', () async {
         when(
           () => mockHttpClient.get(
-            Uri.parse(
-              'https://names.divine.video/api/username/check/testuser',
-            ),
+            Uri.parse('https://names.divine.video/api/username/check/testuser'),
           ),
         ).thenThrow(Exception('Connection timeout'));
 
@@ -1871,9 +2006,7 @@ void main() {
 
         verify(
           () => mockHttpClient.get(
-            Uri.parse(
-              'https://names.divine.video/api/username/check/alice',
-            ),
+            Uri.parse('https://names.divine.video/api/username/check/alice'),
           ),
         ).called(1);
       });
@@ -1935,6 +2068,102 @@ void main() {
         );
         expect(result, isA<UsernameInvalidFormat>());
       });
+
+      test(
+        'returns UsernameAvailable when name is taken but pubkey matches '
+        'current user (admin-assigned)',
+        () async {
+          // Simulate the name-server returning pubkey for an active name
+          when(
+            () => mockHttpClient.get(
+              Uri.parse(
+                'https://names.divine.video/api/username/check/vipuser',
+              ),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'ok': true,
+                'available': false,
+                'status': 'active',
+                'pubkey': testPubkey,
+                'reason': 'Username is already taken',
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'vipuser',
+            currentUserPubkey: testPubkey,
+          );
+
+          expect(result, equals(const UsernameAvailable()));
+        },
+      );
+
+      test(
+        'returns UsernameTaken when name is taken and pubkey does not match '
+        'current user',
+        () async {
+          when(
+            () => mockHttpClient.get(
+              Uri.parse(
+                'https://names.divine.video/api/username/check/vipuser',
+              ),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'ok': true,
+                'available': false,
+                'status': 'active',
+                'pubkey': otherPubkey,
+                'reason': 'Username is already taken',
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'vipuser',
+            currentUserPubkey: testPubkey,
+          );
+
+          expect(result, equals(const UsernameTaken()));
+        },
+      );
+
+      test(
+        'returns UsernameTaken when name is taken and no currentUserPubkey '
+        'provided (backwards compatible)',
+        () async {
+          when(
+            () => mockHttpClient.get(
+              Uri.parse(
+                'https://names.divine.video/api/username/check/vipuser',
+              ),
+            ),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'ok': true,
+                'available': false,
+                'status': 'active',
+                'pubkey': testPubkey,
+                'reason': 'Username is already taken',
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'vipuser',
+          );
+
+          expect(result, equals(const UsernameTaken()));
+        },
+      );
     });
 
     group('UsernameAvailabilityResult', () {
@@ -1953,9 +2182,7 @@ void main() {
 
       test('returns profile data on success', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-        when(
-          () => mockFunnelcakeClient.getUserProfile(testPubkey),
-        ).thenAnswer(
+        when(() => mockFunnelcakeClient.getUserProfile(testPubkey)).thenAnswer(
           (_) async => {
             'pubkey': testPubkey,
             'display_name': 'Test User',
@@ -2007,9 +2234,7 @@ void main() {
 
       test('propagates FunnelcakeApiException', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-        when(
-          () => mockFunnelcakeClient.getUserProfile(any()),
-        ).thenThrow(
+        when(() => mockFunnelcakeClient.getUserProfile(any())).thenThrow(
           const FunnelcakeApiException(
             message: 'Server error',
             statusCode: 500,
@@ -2079,9 +2304,9 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repoWithFunnelcake.getBulkProfilesFromApi(
-          [testPubkey],
-        );
+        final result = await repoWithFunnelcake.getBulkProfilesFromApi([
+          testPubkey,
+        ]);
 
         expect(result, isNotNull);
         expect(result!.profiles, hasLength(1));
@@ -2101,27 +2326,25 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repoWithFunnelcake.getBulkProfilesFromApi(
-          [testPubkey],
-        );
+        final result = await repoWithFunnelcake.getBulkProfilesFromApi([
+          testPubkey,
+        ]);
 
         expect(result, isNull);
         verifyNever(() => mockFunnelcakeClient.getBulkProfiles(any()));
       });
 
       test('returns null when client is null', () async {
-        final result = await profileRepository.getBulkProfilesFromApi(
-          [testPubkey],
-        );
+        final result = await profileRepository.getBulkProfilesFromApi([
+          testPubkey,
+        ]);
 
         expect(result, isNull);
       });
 
       test('propagates FunnelcakeApiException', () async {
         when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-        when(
-          () => mockFunnelcakeClient.getBulkProfiles(any()),
-        ).thenThrow(
+        when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenThrow(
           const FunnelcakeApiException(
             message: 'Server error',
             statusCode: 500,

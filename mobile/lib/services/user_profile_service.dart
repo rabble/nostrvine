@@ -81,8 +81,6 @@ class UserProfileService extends ChangeNotifier {
   bool _prefetchActive = false;
   DateTime? _lastPrefetchAt;
 
-  // Background refresh rate limiting
-
   final SubscriptionManager _subscriptionManager;
   ProfileRepository? _profileRepository;
 
@@ -284,6 +282,20 @@ class UserProfileService extends ChangeNotifier {
       if (_analyticsApiService != null && _funnelcakeAvailable) {
         final restProfile = await _analyticsApiService.getUserProfile(pubkey);
         if (restProfile != null) {
+          // Check for sentinel: FunnelCake knows this user but they have no
+          // Kind 0 profile. Short-circuit the relay/indexer fallback cascade.
+          if (restProfile['_noProfile'] == true) {
+            markProfileAsMissing(pubkey);
+            _pendingRequests.remove(pubkey);
+            Log.debug(
+              'FunnelCake confirmed no profile for $pubkey'
+              ' - skipping relay fallback',
+              name: 'UserProfileService',
+              category: LogCategory.system,
+            );
+            return null;
+          }
+
           // Create UserProfile from REST response
           final profile = UserProfile(
             pubkey: pubkey,
@@ -1050,7 +1062,7 @@ class UserProfileService extends ChangeNotifier {
           _profileCache[event.pubkey] = userEvent;
           foundUsers.add(userEvent);
         },
-        onError: (error) {
+        onError: (Object error) {
           Log.error(
             'Search error: $error',
             name: 'UserProfileService',

@@ -111,7 +111,7 @@ Settings Screen
   "tags": [
     ["relay", "ALL_RELAYS"]
   ],
-  "content": "User requested account deletion via diVine app",
+  "content": "User requested account deletion via Divine app",
   "id": "<event_id>",
   "sig": "<signature>"
 }
@@ -295,7 +295,7 @@ test('Create New Account flow works after deletion')
 
 1. **Local Data Cleanup**: Keys deleted from secure storage
 2. **Cache Cleanup**: AuthService clears session data
-3. **NIP-62 Event Content**: Minimal info ("User requested account deletion via diVine app")
+3. **NIP-62 Event Content**: Minimal info ("User requested account deletion via Divine app")
 4. **No Tracking**: No analytics event for account deletion
 
 ## Future Enhancements

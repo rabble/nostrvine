@@ -35,6 +35,7 @@ import SupportProvidersSDK
   }
 
   private func setupProofModeChannel() {
+
     guard let controller = window?.rootViewController as? FlutterViewController else {
       NSLog("❌ ProofMode: Could not get FlutterViewController")
       return
@@ -64,6 +65,7 @@ import SupportProvidersSDK
           // Create MediaItem from file URL
           let fileURL = URL(fileURLWithPath: mediaPath)
           guard FileManager.default.fileExists(atPath: mediaPath) else {
+            NSLog("🔐 ProofMode: FILE NOT FOUND: \(mediaPath)")
             result(FlutterError(
               code: "FILE_NOT_FOUND",
               message: "Media file does not exist: \(mediaPath)",
@@ -77,28 +79,28 @@ import SupportProvidersSDK
           // Configure proof generation options
           // Include device ID, location (if available), and network info
           let options = ProofGenerationOptions(
-            showDeviceIds: true,
-            showLocation: true,
-            showMobileNetwork: true,
+            showDeviceIds: false,
+            showLocation: false,
+            showMobileNetwork: false,
             notarizationProviders: []
           )
 
-          // Generate proof using LibProofMode
-          _ = Proof.shared.process(mediaItem: mediaItem, options: options)
+		Proof.shared.process(mediaItem: mediaItem, options: options, whenDone: { mediaItem in
+                    if let proofHash = mediaItem.mediaItemHash {
+          		NSLog("🔐 ProofMode: Proof generated successfully: \(proofHash)")
+          		result(proofHash)
+                    } else {
+            		NSLog("❌ ProofMode: Proof generation did not produce hash")
+            		result(FlutterError(
+              		code: "PROOF_HASH_MISSING",
+              		message: "LibProofMode did not generate video hash",
+              		details: nil
+            		))
+            		return
+                    }
+                })
 
-          // Return the SHA256 hash (used as proof identifier)
-          guard let proofHash = mediaItem.mediaItemHash, !proofHash.isEmpty else {
-            NSLog("❌ ProofMode: Proof generation did not produce hash")
-            result(FlutterError(
-              code: "PROOF_HASH_MISSING",
-              message: "LibProofMode did not generate video hash",
-              details: nil
-            ))
-            return
-          }
 
-          NSLog("🔐 ProofMode: Proof generated successfully: \(proofHash)")
-          result(proofHash)
 
         } catch {
           NSLog("❌ ProofMode: Proof generation failed: \(error.localizedDescription)")

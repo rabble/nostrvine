@@ -14,17 +14,25 @@ appId: co.openvine.app
 - runFlow: '../utils/openSettings.yaml'
 
 # 2. Tap on Remove Keys from Device: The modal Remove Keys from Device is displayed
-- scroll
+- scrollUntilVisible:
+    element:
+      text: |-
+        Remove Keys from Device
+        Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.
+# 3. Tap on cancel button: Validate Cancel button works
 - tapOn: |-
     Remove Keys from Device
     Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.
-- runFlow: ../asserts/assertRemoveKeysModal.yaml
-# 3. Tap on cancel button: Validate Cancel button works
+
 - tapOn: Cancel
 
-# 4. Reopen the Remove modal and tap on Remove Keys: Final confirmation modal is displayed
 - tapOn: |-
     Remove Keys from Device
     Delete your private key from this device only. Your content stays on relays, but you'll need your nsec backup to access your account again.
+
+# 4. Reopen the Remove modal and tap on Remove Keys: Final confirmation modal is displayed
+- assertVisible: Remove Keys
+
 - tapOn: Remove Keys
-# 5. To do... receiving yellow box on the display
+
+- runFlow: '../asserts/assertLogin.yaml'

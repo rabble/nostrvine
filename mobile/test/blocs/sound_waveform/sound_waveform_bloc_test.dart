@@ -251,6 +251,7 @@ void main() {
         duration: duration,
       );
       expect(state1, equals(state2));
+      expect(state1.hashCode, equals(state2.hashCode));
     });
 
     test(
@@ -265,6 +266,22 @@ void main() {
         final state2 = SoundWaveformLoaded(
           leftChannel: leftChannel,
           duration: const Duration(seconds: 10),
+        );
+        expect(state1, isNot(equals(state2)));
+      },
+    );
+
+    test(
+      '$SoundWaveformLoaded states with different waveform data '
+      'are not equal',
+      () {
+        final state1 = SoundWaveformLoaded(
+          leftChannel: Float32List.fromList([0.1, 0.5]),
+          duration: const Duration(seconds: 5),
+        );
+        final state2 = SoundWaveformLoaded(
+          leftChannel: Float32List.fromList([0.9, 0.3]),
+          duration: const Duration(seconds: 5),
         );
         expect(state1, isNot(equals(state2)));
       },

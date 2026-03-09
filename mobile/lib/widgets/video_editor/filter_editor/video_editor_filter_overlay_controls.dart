@@ -112,6 +112,7 @@ class _TopBarContent extends StatelessWidget {
             // Close button
             DivineIconButton(
               icon: .x,
+              // TODO(l10n): Replace with context.l10n when localization is added.
               semanticLabel: 'Close',
               type: .ghostSecondary,
               size: .small,
@@ -122,53 +123,18 @@ class _TopBarContent extends StatelessWidget {
             ),
 
             // Done button
-            _DoneButton(
-              onTap: () {
+            DivineIconButton(
+              icon: .check,
+              // TODO(l10n): Replace with context.l10n when localization is added.
+              semanticLabel: 'Done',
+              type: .tertiary,
+              size: .small,
+              onPressed: () {
+                bloc.add(const VideoEditorFilterCancelled());
                 scope.filterEditor?.done();
               },
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Done button with white background.
-class _DoneButton extends StatelessWidget {
-  const _DoneButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Done',
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const .symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: .circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A000000),
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-              BoxShadow(
-                color: Color(0x1A000000),
-                offset: Offset(0.4, 0.4),
-                blurRadius: 0.6,
-              ),
-            ],
-          ),
-          child: Text(
-            'Done',
-            style: VineTheme.titleMediumFont(color: const Color(0xFF00452D)),
-          ),
         ),
       ),
     );

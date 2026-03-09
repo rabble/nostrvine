@@ -21,7 +21,7 @@ void main() async {
     channel.stream.listen(
       (message) {
         Log.debug('\n📨 Received: $message');
-        final data = jsonDecode(message);
+        final data = jsonDecode(message as String);
 
         if (data is List && data.isNotEmpty) {
           final messageType = data[0];

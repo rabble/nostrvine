@@ -169,7 +169,7 @@ Error Counts:
     });
 
     tearDownAll(() async {
-      if (await testBugReportFile.exists()) {
+      if (testBugReportFile.existsSync()) {
         await testBugReportFile.delete();
       }
     });

@@ -41,9 +41,7 @@ void main() {
       );
 
       // unverified: minimal data (no sensor data or signature)
-      unverifiedData = const NativeProofData(
-        videoHash: 'video_hash_000',
-      );
+      unverifiedData = const NativeProofData(videoHash: 'video_hash_000');
     });
 
     group('getVerificationLevel', () {

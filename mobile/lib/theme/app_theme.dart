@@ -1,4 +1,4 @@
-// ABOUTME: divine application theme with purple accent colors
+// ABOUTME: Divine application theme with purple accent colors
 // ABOUTME: Defines color scheme and styling for the notification system
 
 import 'package:flutter/material.dart';

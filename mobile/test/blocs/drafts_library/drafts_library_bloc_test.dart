@@ -1,0 +1,257 @@
+// ABOUTME: Tests for DraftsLibraryBloc - managing draft video projects
+// ABOUTME: Tests loading and deletion of drafts
+
+import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_draft.dart';
+import 'package:openvine/services/draft_storage_service.dart';
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
+void main() {
+  group(DraftsLibraryBloc, () {
+    late _MockDraftStorageService mockDraftStorageService;
+
+    DivineVideoDraft createDraft({
+      String? id,
+      PublishStatus publishStatus = PublishStatus.draft,
+      DateTime? lastModified,
+    }) {
+      return DivineVideoDraft(
+        id: id ?? 'draft-${DateTime.now().millisecondsSinceEpoch}',
+        clips: const [],
+        title: 'Test Draft',
+        description: 'Test Description',
+        hashtags: const {},
+        selectedApproach: 'default',
+        createdAt: DateTime(2026),
+        lastModified: lastModified ?? DateTime(2026),
+        publishStatus: publishStatus,
+        publishAttempts: 0,
+      );
+    }
+
+    setUp(() {
+      mockDraftStorageService = _MockDraftStorageService();
+    });
+
+    DraftsLibraryBloc createBloc() => DraftsLibraryBloc(
+      draftStorageService: mockDraftStorageService,
+    );
+
+    test('initial state is $DraftsLibraryInitial', () {
+      final bloc = createBloc();
+      expect(bloc.state, const DraftsLibraryInitial());
+      bloc.close();
+    });
+
+    group('DraftsLibraryLoadRequested', () {
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'emits [loading, loaded] with drafts from service',
+        setUp: () {
+          when(() => mockDraftStorageService.getAllDrafts()).thenAnswer(
+            (_) async => [
+              createDraft(id: 'draft1'),
+              createDraft(id: 'draft2'),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryLoadRequested()),
+        expect: () => [
+          const DraftsLibraryLoading(),
+          isA<DraftsLibraryLoaded>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            2,
+          ),
+        ],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'filters out autosave drafts',
+        setUp: () {
+          when(() => mockDraftStorageService.getAllDrafts()).thenAnswer(
+            (_) async => [
+              createDraft(id: 'draft1'),
+              createDraft(id: VideoEditorConstants.autoSaveId),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryLoadRequested()),
+        expect: () => [
+          const DraftsLibraryLoading(),
+          isA<DraftsLibraryLoaded>()
+              .having((s) => s.drafts.length, 'drafts.length', 1)
+              .having((s) => s.drafts.first.id, 'first draft id', 'draft1'),
+        ],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'filters out published drafts',
+        setUp: () {
+          when(() => mockDraftStorageService.getAllDrafts()).thenAnswer(
+            (_) async => [
+              createDraft(id: 'draft1'),
+              createDraft(id: 'draft2', publishStatus: PublishStatus.published),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryLoadRequested()),
+        expect: () => [
+          const DraftsLibraryLoading(),
+          isA<DraftsLibraryLoaded>()
+              .having((s) => s.drafts.length, 'drafts.length', 1)
+              .having((s) => s.drafts.first.id, 'first draft id', 'draft1'),
+        ],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'filters out publishing drafts',
+        setUp: () {
+          when(() => mockDraftStorageService.getAllDrafts()).thenAnswer(
+            (_) async => [
+              createDraft(id: 'draft1'),
+              createDraft(
+                id: 'draft2',
+                publishStatus: PublishStatus.publishing,
+              ),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryLoadRequested()),
+        expect: () => [
+          const DraftsLibraryLoading(),
+          isA<DraftsLibraryLoaded>()
+              .having((s) => s.drafts.length, 'drafts.length', 1)
+              .having((s) => s.drafts.first.id, 'first draft id', 'draft1'),
+        ],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'sorts drafts by lastModified descending',
+        setUp: () {
+          when(() => mockDraftStorageService.getAllDrafts()).thenAnswer(
+            (_) async => [
+              createDraft(id: 'older', lastModified: DateTime(2026)),
+              createDraft(id: 'newer', lastModified: DateTime(2026, 2)),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryLoadRequested()),
+        expect: () => [
+          const DraftsLibraryLoading(),
+          isA<DraftsLibraryLoaded>()
+              .having((s) => s.drafts.length, 'drafts.length', 2)
+              .having((s) => s.drafts.first.id, 'first (newest)', 'newer')
+              .having((s) => s.drafts.last.id, 'last (oldest)', 'older'),
+        ],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'emits [loading, loaded] with empty list when no drafts',
+        setUp: () {
+          when(
+            () => mockDraftStorageService.getAllDrafts(),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryLoadRequested()),
+        expect: () => [
+          const DraftsLibraryLoading(),
+          const DraftsLibraryLoaded(drafts: []),
+        ],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'emits [loading, error] when service throws',
+        setUp: () {
+          when(
+            () => mockDraftStorageService.getAllDrafts(),
+          ).thenThrow(Exception('Load failed'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryLoadRequested()),
+        errors: () => [isA<Exception>()],
+        expect: () => [
+          const DraftsLibraryLoading(),
+          isA<DraftsLibraryError>().having(
+            (s) => s.message,
+            'message',
+            contains('Load failed'),
+          ),
+        ],
+      );
+    });
+
+    group('DraftsLibraryDeleteRequested', () {
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'does nothing when not in loaded state',
+        build: createBloc,
+        // Initial state is DraftsLibraryInitial
+        act: (bloc) => bloc.add(const DraftsLibraryDeleteRequested('draft1')),
+        expect: () => [],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'deletes draft and updates list with success result',
+        setUp: () {
+          when(
+            () => mockDraftStorageService.deleteDraft('draft1'),
+          ).thenAnswer((_) async {});
+        },
+        seed: () => DraftsLibraryLoaded(
+          drafts: [
+            createDraft(id: 'draft1'),
+            createDraft(id: 'draft2'),
+          ],
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryDeleteRequested('draft1')),
+        expect: () => [
+          isA<DraftsLibraryDraftDeleted>()
+              .having((s) => s.drafts.length, 'drafts.length', 1)
+              .having((s) => s.drafts.first.id, 'remaining draft', 'draft2'),
+          isA<DraftsLibraryLoaded>()
+              .having((s) => s.drafts.length, 'drafts.length', 1)
+              .having((s) => s.drafts.first.id, 'remaining draft', 'draft2'),
+        ],
+        verify: (_) {
+          verify(() => mockDraftStorageService.deleteDraft('draft1')).called(1);
+        },
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'emits failure result when deletion fails',
+        setUp: () {
+          when(
+            () => mockDraftStorageService.deleteDraft(any()),
+          ).thenThrow(Exception('Delete failed'));
+        },
+        seed: () => DraftsLibraryLoaded(drafts: [createDraft(id: 'draft1')]),
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryDeleteRequested('draft1')),
+        errors: () => [isA<Exception>()],
+        expect: () => [
+          isA<DraftsLibraryDeleteFailed>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            1,
+          ),
+          isA<DraftsLibraryLoaded>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            1,
+          ),
+        ],
+      );
+    });
+  });
+}
