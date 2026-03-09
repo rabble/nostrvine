@@ -13,7 +13,6 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
