@@ -12,9 +12,9 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/signer/pubkey_only_nostr_signer.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
-import 'package:profile_repository/profile_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 /// Service for managing user profiles from Nostr kind 0 events
 /// Reactive service that notifies listeners when profiles are updated
