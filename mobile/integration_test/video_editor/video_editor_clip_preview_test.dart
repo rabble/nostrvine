@@ -142,7 +142,7 @@ void main() {
 
 class _TestClipEditorBloc extends ClipEditorBloc {
   _TestClipEditorBloc({required ClipEditorState initialState})
-      : super(clipsGetter: () => []) {
+    : super(clipsGetter: () => []) {
     emit(initialState);
   }
 }
