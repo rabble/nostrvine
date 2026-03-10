@@ -1,53 +1,127 @@
-// ABOUTME: HTML5 video player widget for Flutter web platform
-// ABOUTME: Uses video_player package which renders via HTML5 video element on web
+// ABOUTME: Web-native video player using Flutter's video_player package
+// ABOUTME: Drop-in replacement for media_kit Video widget on web platforms
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
-/// A simple video player widget for Flutter web.
-///
-/// Uses the `video_player` package which renders via HTML5 `<video>` element
-/// on web. Supports autoplay, looping, and tap-to-pause.
+/// A simple video player widget for web that uses Flutter's video_player
+/// package (backed by HTML5 video element via video_player_web_hls).
 class WebVideoPlayer extends StatefulWidget {
+  /// Creates a web video player.
   const WebVideoPlayer({
-    required this.videoUrl,
-    this.thumbnailUrl,
-    this.autoplay = true,
+    required this.url,
+    this.autoPlay = false,
+    this.looping = true,
+    this.fit = BoxFit.cover,
+    this.headers = const {},
+    this.onInitialized,
+    this.onError,
     super.key,
   });
 
-  /// The URL of the video to play.
-  final String videoUrl;
+  /// The video URL to play.
+  final String url;
 
-  /// Optional thumbnail URL shown while loading.
-  final String? thumbnailUrl;
+  /// Whether to auto-play when initialized.
+  final bool autoPlay;
 
-  /// Whether to start playing automatically.
-  final bool autoplay;
+  /// Whether to loop the video.
+  final bool looping;
+
+  /// How the video should fit within its container.
+  final BoxFit fit;
+
+  /// HTTP headers for the video request.
+  final Map<String, String> headers;
+
+  /// Called when the video controller is initialized.
+  final ValueChanged<VideoPlayerController>? onInitialized;
+
+  /// Called when an error occurs.
+  final VoidCallback? onError;
 
   @override
   State<WebVideoPlayer> createState() => WebVideoPlayerState();
 }
 
+/// State for [WebVideoPlayer].
 class WebVideoPlayerState extends State<WebVideoPlayer> {
   VideoPlayerController? _controller;
-  bool _initialized = false;
+  bool _isInitialized = false;
   bool _hasError = false;
+
+  /// The video player controller for external access.
+  VideoPlayerController? get controller => _controller;
 
   @override
   void initState() {
     super.initState();
-    _initController();
+    _initializeController();
   }
 
   @override
   void didUpdateWidget(WebVideoPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.videoUrl != widget.videoUrl) {
+    if (oldWidget.url != widget.url) {
       _disposeController();
-      _initController();
+      _initializeController();
     }
+  }
+
+  Future<void> _initializeController() async {
+    final controller = VideoPlayerController.networkUrl(
+      Uri.parse(widget.url),
+      httpHeaders: widget.headers,
+    );
+    _controller = controller;
+
+    try {
+      await controller.initialize();
+      if (!mounted) {
+        controller.dispose();
+        return;
+      }
+
+      await controller.setLooping(widget.looping);
+      if (widget.autoPlay) {
+        await controller.play();
+      }
+
+      setState(() => _isInitialized = true);
+      widget.onInitialized?.call(controller);
+    } on Exception {
+      if (!mounted) return;
+      setState(() => _hasError = true);
+      widget.onError?.call();
+    }
+  }
+
+  void _disposeController() {
+    _controller?.dispose();
+    _controller = null;
+    _isInitialized = false;
+    _hasError = false;
+  }
+
+  /// Plays the video.
+  Future<void> play() async {
+    await _controller?.play();
+  }
+
+  /// Pauses the video.
+  Future<void> pause() async {
+    await _controller?.pause();
+  }
+
+  /// Seeks to the given position.
+  Future<void> seekTo(Duration position) async {
+    await _controller?.seekTo(position);
+  }
+
+  /// Sets the volume (0.0 to 1.0).
+  Future<void> setVolume(double volume) async {
+    await _controller?.setVolume(volume);
   }
 
   @override
@@ -56,111 +130,55 @@ class WebVideoPlayerState extends State<WebVideoPlayer> {
     super.dispose();
   }
 
-  void _initController() {
-    final uri = Uri.tryParse(widget.videoUrl);
-    if (uri == null) {
-      setState(() => _hasError = true);
-      return;
-    }
-
-    _controller = VideoPlayerController.networkUrl(uri)
-      ..setLooping(true)
-      ..initialize()
-          .then((_) {
-            if (!mounted) return;
-            setState(() => _initialized = true);
-            if (widget.autoplay) {
-              _controller?.play();
-            }
-          })
-          .catchError((Object error) {
-            if (!mounted) return;
-            setState(() => _hasError = true);
-            debugPrint(
-              'WebVideoPlayer: Failed to load ${widget.videoUrl}: $error',
-            );
-          });
-  }
-
-  void _disposeController() {
-    _controller?.dispose();
-    _controller = null;
-    _initialized = false;
-    _hasError = false;
-  }
-
-  /// Pause playback.
-  void pause() => _controller?.pause();
-
-  /// Resume playback.
-  void play() => _controller?.play();
-
   @override
   Widget build(BuildContext context) {
     if (_hasError) {
       return const ColoredBox(
         color: VineTheme.backgroundColor,
         child: Center(
-          child: Icon(
-            Icons.error_outline,
-            color: VineTheme.lightText,
-            size: 48,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: VineTheme.secondaryText,
+                size: 48,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Failed to load video',
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 16),
+              ),
+            ],
           ),
         ),
-      );
-    }
-
-    if (!_initialized) {
-      return ColoredBox(
-        color: VineTheme.backgroundColor,
-        child: _buildThumbnailOrLoading(),
       );
     }
 
     final controller = _controller;
-    if (controller == null) {
-      return const ColoredBox(color: VineTheme.backgroundColor);
-    }
-
-    return GestureDetector(
-      onTap: () {
-        if (controller.value.isPlaying) {
-          controller.pause();
-        } else {
-          controller.play();
-        }
-      },
-      child: ColoredBox(
+    if (!_isInitialized || controller == null) {
+      return const ColoredBox(
         color: VineTheme.backgroundColor,
         child: Center(
-          child: AspectRatio(
-            aspectRatio: controller.value.aspectRatio,
+          child: CircularProgressIndicator(color: VineTheme.whiteText),
+        ),
+      );
+    }
+
+    return ColoredBox(
+      color: VineTheme.backgroundColor,
+      child: FittedBox(
+        fit: widget.fit,
+        child: SizedBox(
+          width: controller.value.size.width,
+          height: controller.value.size.height,
+          // The underlying HTML video element can otherwise swallow taps that
+          // should go to the overlay action buttons.
+          child: IgnorePointer(
             child: VideoPlayer(controller),
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildThumbnailOrLoading() {
-    final thumb = widget.thumbnailUrl;
-    if (thumb != null && thumb.isNotEmpty) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          Image.network(
-            thumb,
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => const SizedBox.shrink(),
-          ),
-          const Center(
-            child: CircularProgressIndicator(color: VineTheme.lightText),
-          ),
-        ],
-      );
-    }
-    return const Center(
-      child: CircularProgressIndicator(color: VineTheme.lightText),
     );
   }
 }

@@ -1,32 +1,65 @@
-// ABOUTME: Web-specific video feed using PageView and video_player package
-// ABOUTME: Replacement for native PooledVideoFeed on Flutter web platform
+// ABOUTME: Web-native video feed using Flutter's video_player package
+// ABOUTME: Replaces PooledVideoFeed on web where media_kit is not available
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart';
 import 'package:openvine/widgets/web_video_player.dart';
+import 'package:video_player/video_player.dart';
 
-/// A simple vertical-swipe video feed for Flutter web.
+/// Builder for web video feed items.
 ///
-/// Uses [PageView] with [WebVideoPlayer] widgets. Only the active page
-/// plays; when the user swipes, the previous player is paused and the
-/// new one starts.
+/// Provides the video event, index, active state, and optionally the
+/// [VideoPlayerController] once initialized.
+typedef WebVideoFeedItemBuilder =
+    Widget Function(
+      BuildContext context,
+      VideoEvent video,
+      int index, {
+      required bool isActive,
+      VideoPlayerController? controller,
+    });
+
+/// Callback when active video changes in the web feed.
+typedef WebOnActiveVideoChanged = void Function(VideoEvent video, int index);
+
+/// A vertical-scrolling video feed for web platforms.
+///
+/// Uses Flutter's [video_player] package (HTML5 video via video_player_web_hls)
+/// instead of media_kit, which does not work on web.
 class WebVideoFeed extends StatefulWidget {
+  /// Creates a web video feed.
   const WebVideoFeed({
     required this.videos,
+    this.itemBuilder,
     this.initialIndex = 0,
     this.onActiveVideoChanged,
+    this.onNearEnd,
+    this.nearEndThreshold = 3,
+    this.headers = const {},
     super.key,
   });
 
-  /// The list of videos to display.
+  /// Videos to display.
   final List<VideoEvent> videos;
 
-  /// The initial page index.
+  /// Optional custom item builder for overlays and controls.
+  final WebVideoFeedItemBuilder? itemBuilder;
+
+  /// Initial video index to display.
   final int initialIndex;
 
-  /// Called when the active video changes.
-  final void Function(VideoEvent video, int index)? onActiveVideoChanged;
+  /// Called when active video changes.
+  final WebOnActiveVideoChanged? onActiveVideoChanged;
+
+  /// Called when near the end of the list for pagination.
+  final void Function(int index)? onNearEnd;
+
+  /// How many videos from the end should trigger [onNearEnd].
+  final int nearEndThreshold;
+
+  /// HTTP headers for video requests.
+  final Map<String, String> headers;
 
   @override
   State<WebVideoFeed> createState() => _WebVideoFeedState();
@@ -34,7 +67,9 @@ class WebVideoFeed extends StatefulWidget {
 
 class _WebVideoFeedState extends State<WebVideoFeed> {
   late PageController _pageController;
-  late int _currentIndex;
+  int _currentIndex = 0;
+
+  // Track web player keys to control playback
   final Map<int, GlobalKey<WebVideoPlayerState>> _playerKeys = {};
 
   @override
@@ -50,69 +85,72 @@ class _WebVideoFeedState extends State<WebVideoFeed> {
     super.dispose();
   }
 
-  GlobalKey<WebVideoPlayerState> _keyForIndex(int index) {
+  void _onPageChanged(int index) {
+    // Pause the old video
+    _playerKeys[_currentIndex]?.currentState?.pause();
+
+    setState(() => _currentIndex = index);
+
+    // Play the new video
+    _playerKeys[index]?.currentState?.play();
+
+    if (index < widget.videos.length) {
+      widget.onActiveVideoChanged?.call(widget.videos[index], index);
+    }
+
+    final distanceFromEnd = widget.videos.length - index - 1;
+    if (distanceFromEnd <= widget.nearEndThreshold) {
+      widget.onNearEnd?.call(index);
+    }
+  }
+
+  GlobalKey<WebVideoPlayerState> _getPlayerKey(int index) {
     return _playerKeys.putIfAbsent(
       index,
       GlobalKey<WebVideoPlayerState>.new,
     );
   }
 
-  void _onPageChanged(int index) {
-    // Pause previous
-    _playerKeys[_currentIndex]?.currentState?.pause();
-
-    _currentIndex = index;
-
-    // Play new
-    _playerKeys[_currentIndex]?.currentState?.play();
-
-    widget.onActiveVideoChanged?.call(widget.videos[index], index);
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (widget.videos.isEmpty) {
-      return const ColoredBox(
-        color: VineTheme.backgroundColor,
-        child: Center(
-          child: Text(
-            'No videos available',
-            style: TextStyle(color: VineTheme.lightText),
-          ),
-        ),
-      );
-    }
+    return PageView.builder(
+      controller: _pageController,
+      scrollDirection: Axis.vertical,
+      onPageChanged: _onPageChanged,
+      itemCount: widget.videos.length,
+      itemBuilder: (context, index) {
+        final video = widget.videos[index];
+        final videoUrl = video.videoUrl;
+        final isActive = index == _currentIndex;
 
-    return ColoredBox(
-      color: VineTheme.backgroundColor,
-      child: PageView.builder(
-        controller: _pageController,
-        scrollDirection: Axis.vertical,
-        itemCount: widget.videos.length,
-        onPageChanged: _onPageChanged,
-        itemBuilder: (context, index) {
-          final video = widget.videos[index];
-          final url = video.videoUrl;
-          if (url == null || url.isEmpty) {
-            return const ColoredBox(
-              color: VineTheme.backgroundColor,
-              child: Center(
-                child: Text(
-                  'Video unavailable',
-                  style: TextStyle(color: VineTheme.lightText),
-                ),
+        if (videoUrl == null || videoUrl.isEmpty) {
+          return const ColoredBox(color: VineTheme.backgroundColor);
+        }
+
+        final playerKey = _getPlayerKey(index);
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            // Video layer
+            WebVideoPlayer(
+              key: playerKey,
+              url: videoUrl,
+              autoPlay: isActive,
+              headers: widget.headers,
+            ),
+            // Custom overlay layer
+            if (widget.itemBuilder != null)
+              widget.itemBuilder!(
+                context,
+                video,
+                index,
+                isActive: isActive,
+                controller: playerKey.currentState?.controller,
               ),
-            );
-          }
-
-          return WebVideoPlayer(
-            key: _keyForIndex(index),
-            videoUrl: url,
-            thumbnailUrl: video.thumbnailUrl,
-            autoplay: index == _currentIndex,
-          );
-        },
-      ),
+          ],
+        );
+      },
     );
   }
 }
