@@ -1,0 +1,200 @@
+# ABOUTME: Deploys a trusted divine-mobile PR preview artifact to the openvine-app Cloudflare Pages project
+# ABOUTME: Uses workflow_run so fork PRs can build safely without exposing Cloudflare secrets to untrusted code
+
+name: Mobile PR Preview Deploy
+
+on:
+  workflow_run:
+    workflows: ["Mobile PR Preview Build"]
+    types: [completed]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-preview:
+    name: Deploy PR Preview To Cloudflare
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Download preview artifact
+        uses: actions/download-artifact@v5
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
+          name: mobile-pr-preview
+          path: artifact
+
+      - name: Extract preview metadata
+        id: metadata
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          metadata = json.loads(Path("artifact/pr-web-preview-metadata.json").read_text())
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+              output.write(f"pr_number={metadata['pr_number']}\n")
+              output.write(f"head_ref={metadata['head_ref']}\n")
+              output.write(f"head_sha={metadata['head_sha']}\n")
+              output.write(f"preview_branch=pr-{metadata['pr_number']}\n")
+          PY
+
+      - name: Check artifact freshness against current PR head
+        id: freshness
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number('${{ steps.metadata.outputs.pr_number }}');
+            const artifactSha = '${{ steps.metadata.outputs.head_sha }}';
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            const deployable = pr.state === 'open' && pr.head.sha === artifactSha;
+
+            core.setOutput('deployable', deployable ? 'true' : 'false');
+            core.setOutput('current_sha', pr.head.sha);
+            core.setOutput('pr_state', pr.state);
+
+      - name: Skip stale preview artifact
+        if: ${{ steps.freshness.outputs.deployable != 'true' }}
+        run: |
+          echo "Skipping stale preview artifact."
+          echo "PR state: ${{ steps.freshness.outputs.pr_state }}"
+          echo "Artifact SHA: ${{ steps.metadata.outputs.head_sha }}"
+          echo "Current PR SHA: ${{ steps.freshness.outputs.current_sha }}"
+
+      - name: Extract preview site
+        if: ${{ steps.freshness.outputs.deployable == 'true' }}
+        run: tar -xzf artifact/pr-web-preview-site.tar.gz -C artifact
+
+      - name: Check Cloudflare deployment secrets
+        if: ${{ steps.freshness.outputs.deployable == 'true' }}
+        id: secrets
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CLOUDFLARE_ACCOUNT_ID" ] && [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment missing preview configuration
+        if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured != 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number('${{ steps.metadata.outputs.pr_number }}');
+            const previewBranch = '${{ steps.metadata.outputs.preview_branch }}';
+
+            const body = `## Mobile PR Preview
+
+            Preview deployment is not configured for this repository yet.
+
+            Missing GitHub Actions secrets:
+            - \`CLOUDFLARE_API_TOKEN\`
+            - \`CLOUDFLARE_ACCOUNT_ID\`
+
+            Once those are added, this workflow will deploy this PR to the existing \`openvine-app\` Pages project on branch \`${previewBranch}\`.`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const existing = comments.find((comment) =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('## Mobile PR Preview')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
+
+      - name: Deploy preview to Cloudflare Pages
+        if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured == 'true' }}
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy artifact/web
+            --project-name=openvine-app
+            --branch=${{ steps.metadata.outputs.preview_branch }}
+
+      - name: Comment preview URL on PR
+        if: ${{ steps.freshness.outputs.deployable == 'true' && steps.secrets.outputs.configured == 'true' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number('${{ steps.metadata.outputs.pr_number }}');
+            const headRef = '${{ steps.metadata.outputs.head_ref }}';
+            const previewBranch = '${{ steps.metadata.outputs.preview_branch }}';
+            const sha = '${{ steps.metadata.outputs.head_sha }}'.slice(0, 7);
+            const deploymentUrl = '${{ steps.deploy.outputs.deployment-url }}';
+
+            const body = `## Mobile PR Preview
+
+            | Property | Value |
+            | --- | --- |
+            | Preview URL | ${deploymentUrl} |
+            | Pages project | \`openvine-app\` |
+            | Preview branch | \`${previewBranch}\` |
+            | PR branch | \`${headRef}\` |
+            | Commit | \`${sha}\` |`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+
+            const existing = comments.find((comment) =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('## Mobile PR Preview')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body,
+              });
+            }
