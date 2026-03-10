@@ -22,6 +22,12 @@ class UsernameReserved extends UsernameAvailabilityResult {
   const UsernameReserved();
 }
 
+/// Username has been permanently burned and cannot be recovered.
+class UsernameBurned extends UsernameAvailabilityResult {
+  /// Creates a burned result.
+  const UsernameBurned();
+}
+
 /// Username has an invalid format (e.g. contains dots, underscores, etc.).
 class UsernameInvalidFormat extends UsernameAvailabilityResult {
   /// Creates an invalid format result with the given [reason].

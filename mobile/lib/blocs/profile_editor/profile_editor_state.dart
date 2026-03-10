@@ -55,6 +55,9 @@ enum UsernameStatus {
   /// Username is reserved - user should contact support.
   reserved,
 
+  /// Username has been permanently burned and is no longer available.
+  burned,
+
   /// Username has invalid format (e.g. contains dots, underscores).
   invalidFormat,
 

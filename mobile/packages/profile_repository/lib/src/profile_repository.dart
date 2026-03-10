@@ -14,7 +14,8 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
 import 'package:profile_repository/profile_repository.dart';
 
-/// API endpoint for claiming usernames via NIP-98 auth.
+// TODO(e2e): Add divine-name-server to local_stack Docker dependencies
+// so username check/claim flows can be tested against it in E2E tests.
 const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
 
@@ -450,33 +451,24 @@ class ProfileRepository {
           }
         }
 
-        // Use machine-readable code when available, fall back to
-        // reason string-matching for older server versions.
-        if (code != null) {
-          return switch (code) {
-            'reserved' || 'burned' => const UsernameReserved(),
-            'invalid_format' => UsernameInvalidFormat(
-              reason ?? 'Invalid username format',
-            ),
-            // taken, pending_confirmation, or any unknown code
-            _ => const UsernameTaken(),
-          };
+        if (code == null) {
+          developer.log(
+            'Name server response missing required code field '
+            '(username: $normalizedUsername, reason: $reason)',
+            name: 'ProfileRepository.checkUsernameAvailability',
+            level: 1000,
+          );
+          return const UsernameTaken();
         }
-
-        // Fallback: string-match on reason for servers without code
-        if (reason != null) {
-          if (reason.contains('reserved')) {
-            return const UsernameReserved();
-          }
-          if (reason.contains('character') ||
-              reason.contains('hyphen') ||
-              reason.contains('invalid') ||
-              reason.contains('emoji') ||
-              reason.contains('DNS')) {
-            return UsernameInvalidFormat(reason);
-          }
-        }
-        return const UsernameTaken();
+        return switch (code) {
+          'reserved' => const UsernameReserved(),
+          'burned' => const UsernameBurned(),
+          'invalid_format' => UsernameInvalidFormat(
+            reason ?? 'Invalid username format',
+          ),
+          // taken, pending_confirmation, or any unknown code
+          _ => const UsernameTaken(),
+        };
       } else {
         return UsernameCheckError(
           'Server returned status ${response.statusCode}',

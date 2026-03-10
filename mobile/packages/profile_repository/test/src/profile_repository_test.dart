@@ -2097,65 +2097,7 @@ void main() {
         ).called(1);
       });
 
-      test('returns UsernameInvalidFormat with server reason for '
-          'validation failures', () async {
-        stubNameServerCheck(
-          'bad',
-          available: false,
-          reason: 'Username contains invalid characters',
-        );
-
-        final result = await profileRepository.checkUsernameAvailability(
-          username: 'bad',
-        );
-
-        expect(
-          result,
-          isA<UsernameInvalidFormat>().having(
-            (e) => e.reason,
-            'reason',
-            'Username contains invalid characters',
-          ),
-        );
-      });
-
-      test('returns UsernameInvalidFormat for hyphen reason', () async {
-        stubNameServerCheck(
-          'ok',
-          available: false,
-          reason: 'Cannot start with hyphen',
-        );
-        final result = await profileRepository.checkUsernameAvailability(
-          username: 'ok',
-        );
-        expect(result, isA<UsernameInvalidFormat>());
-      });
-
-      test('returns UsernameInvalidFormat for emoji reason', () async {
-        stubNameServerCheck(
-          'ok',
-          available: false,
-          reason: 'Username contains emoji',
-        );
-        final result = await profileRepository.checkUsernameAvailability(
-          username: 'ok',
-        );
-        expect(result, isA<UsernameInvalidFormat>());
-      });
-
-      test('returns UsernameInvalidFormat for DNS reason', () async {
-        stubNameServerCheck(
-          'ok',
-          available: false,
-          reason: 'Not a valid DNS label',
-        );
-        final result = await profileRepository.checkUsernameAvailability(
-          username: 'ok',
-        );
-        expect(result, isA<UsernameInvalidFormat>());
-      });
-
-      // --- code field tests (new name-server API) ---
+      // --- code field tests ---
 
       test('returns $UsernameReserved when code is reserved', () async {
         stubNameServerCheck(
@@ -2170,7 +2112,7 @@ void main() {
         expect(result, isA<UsernameReserved>());
       });
 
-      test('returns $UsernameReserved when code is burned', () async {
+      test('returns $UsernameBurned when code is burned', () async {
         stubNameServerCheck(
           'badname',
           available: false,
@@ -2180,7 +2122,7 @@ void main() {
         final result = await profileRepository.checkUsernameAvailability(
           username: 'badname',
         );
-        expect(result, isA<UsernameReserved>());
+        expect(result, isA<UsernameBurned>());
       });
 
       test('returns $UsernameTaken when code is taken', () async {
@@ -2241,30 +2183,15 @@ void main() {
         );
       });
 
-      test('returns $UsernameReserved via reason fallback '
-          'when no code field present', () async {
+      test('returns $UsernameTaken when code field is missing', () async {
         stubNameServerCheck(
-          'admin',
+          'mystery',
           available: false,
-          reason: 'Username is reserved',
+          reason: 'Something unexpected',
         );
         final result = await profileRepository.checkUsernameAvailability(
-          username: 'admin',
+          username: 'mystery',
         );
-        expect(result, isA<UsernameReserved>());
-      });
-
-      test('code field takes precedence over reason string-matching', () async {
-        stubNameServerCheck(
-          'reserved-word',
-          available: false,
-          code: 'taken',
-          reason: 'Username is reserved',
-        );
-        final result = await profileRepository.checkUsernameAvailability(
-          username: 'reserved-word',
-        );
-        // code says taken, even though reason says reserved
         expect(result, isA<UsernameTaken>());
       });
 
