@@ -4,8 +4,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:patrol/patrol.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:patrol/patrol.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

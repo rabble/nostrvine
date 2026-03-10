@@ -3,11 +3,11 @@
 
 export 'package:openvine/models/environment_config.dart'
     show
+        localApiPort,
+        localBlossomPort,
         localHost,
         localKeycastPort,
-        localRelayPort,
-        localApiPort,
-        localBlossomPort;
+        localRelayPort;
 
 /// Postgres port (mapped from docker-compose: 15432:5432)
 const pgPort = 15432;

@@ -87,7 +87,7 @@ Future<PublishedProfile> publishTestProfileEvent({
   final content = jsonEncode({
     'name': name,
     'display_name': displayName ?? name,
-    if (about != null) 'about': about,
+    'about': ?about,
   });
 
   final event = Event(pubKey, 0, [], content);

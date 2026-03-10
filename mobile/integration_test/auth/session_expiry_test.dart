@@ -6,11 +6,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:patrol/patrol.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:patrol/patrol.dart';
 
 import '../helpers/db_helpers.dart';
 import '../helpers/navigation_helpers.dart';

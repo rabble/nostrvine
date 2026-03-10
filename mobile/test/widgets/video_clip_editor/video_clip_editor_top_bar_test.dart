@@ -1,6 +1,7 @@
 // ABOUTME: Tests for VideoClipEditorTopBar widget
 // ABOUTME: Validates close button, clip counter, and done button
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -82,33 +83,35 @@ void main() {
       expect(find.text('2/5'), findsOneWidget);
     });
 
-    testWidgets('displays camera icon when not editing', (tester) async {
+    testWidgets('does not display close icon when not editing', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.bySemanticsLabel('Go back to camera'), findsOneWidget);
+      expect(find.byType(DivineIconButton), findsNothing);
     });
 
     testWidgets('displays close icon when editing', (tester) async {
       await tester.pumpWidget(buildTestWidget(isEditing: true));
 
-      expect(find.bySemanticsLabel('Close video editor'), findsOneWidget);
+      expect(find.byType(DivineIconButton), findsOneWidget);
     });
 
     testWidgets('displays done button when not editing', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.text('Next'), findsOneWidget);
+      expect(find.text('Done'), findsOneWidget);
     });
 
-    testWidgets('close button is tappable when editing', (tester) async {
+    testWidgets('close button stops editing when tapped', (tester) async {
       await tester.pumpWidget(buildTestWidget(isEditing: true));
 
-      final closeButton = find.bySemanticsLabel('Close video editor');
+      final closeButton = find.byType(DivineIconButton);
+      expect(closeButton, findsOneWidget);
 
       await tester.tap(closeButton);
       await tester.pumpAndSettle();
 
-      expect(closeButton, findsOneWidget);
+      // After tapping, editing is stopped and the button disappears
+      expect(closeButton, findsNothing);
     });
 
     testWidgets('displays correct clip counter for single clip', (
