@@ -232,16 +232,17 @@ extension VideoEventAppExtensions on VideoEvent {
 
   /// Whether playback should prefer HLS instead of direct asset URLs.
   ///
-  /// Bare `media.divine.video/{hash}` URLs can resolve to a valid HLS playlist
-  /// even when the direct file and `/720p` variants return 404.
-  bool get shouldPreferHlsPlayback => hasBareDivineHashPath;
+  /// Previously bare `media.divine.video/{hash}` URLs were routed to HLS,
+  /// but the direct MP4 URL loads significantly faster (no manifest + segment
+  /// overhead). If the direct URL 404s, the existing fallback logic in
+  /// [IndividualVideoController] retries with HLS automatically.
+  bool get shouldPreferHlsPlayback => false;
 
   /// Whether background file caching should be skipped for this video.
   ///
-  /// HLS manifests are not useful for the single-file disk cache path, and the
-  /// bare `media.divine.video/{hash}` URLs that require HLS frequently 404
-  /// when cached directly.
-  bool get shouldSkipFileCaching => shouldPreferHlsPlayback;
+  /// Now that we prefer direct MP4 playback for bare divine hash URLs,
+  /// single-file caching works normally.
+  bool get shouldSkipFileCaching => false;
 
   /// Get HLS URL with optional quality override.
   ///
@@ -264,9 +265,10 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Get the optimal video URL for initial playback.
   ///
   /// **Strategy**:
+  /// - Always try direct MP4 first (faster startup, no manifest overhead).
   /// - Android uses bandwidth-based Divine quality variants for startup speed.
-  /// - iOS/macOS/desktop stay on the original MP4 to avoid visible 404/fallback
-  ///   churn when variant URLs are not available yet.
+  /// - If direct URL fails, the [IndividualVideoController] error handler
+  ///   automatically retries with HLS fallback.
   ///
   /// Non-Divine videos always use original (no transcoded variants exist).
   /// On first Android launch (no samples), defaults to 720p (safe middle
@@ -277,17 +279,13 @@ extension VideoEventAppExtensions on VideoEvent {
     // Non-Divine videos: always use original (no transcoded variants)
     if (!isFromDivineServer) return videoUrl;
 
-    if (shouldPreferHlsPlayback) {
-      return hlsUrl ?? videoUrl;
-    }
-
     final hash = _extractVideoHash(videoUrl);
     if (hash == null) return videoUrl;
 
-    // Bare Blossom blob URLs are more reliably playable through the HLS
-    // manifest than through the raw object path.
+    // Bare Blossom blob URLs: try direct MP4 first for faster startup.
+    // HLS fallback is handled by IndividualVideoController on failure.
     if (_isCanonicalDivineBlobUrl(videoUrl)) {
-      return getHlsUrl() ?? videoUrl;
+      return videoUrl;
     }
 
     // Desktop and Apple platforms are more stable using the original MP4.
