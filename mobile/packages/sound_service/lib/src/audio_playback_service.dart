@@ -9,9 +9,8 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
-
 import 'package:audio_session/audio_session.dart' as audio_session;
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sound_service/src/audio_session_wrapper.dart';
