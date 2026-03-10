@@ -3,7 +3,14 @@ flutter = "3.41.2-stable"
 
 [tasks.local_up]
 description = "Start all local E2E services"
-run = "docker compose -f ../local_stack/docker-compose.yml up -d --wait"
+run = """
+docker compose -f ../local_stack/docker-compose.yml up -d
+docker compose -f ../local_stack/docker-compose.yml up -d --wait \
+  keycast keycast-postgres keycast-redis \
+  funnelcake-relay funnelcake-api funnelcake-redis funnelcake-clickhouse \
+  blossom
+docker compose -f ../local_stack/docker-compose.yml wait e2e-seed
+"""
 
 [tasks.local_down]
 description = "Stop all local E2E services"
