@@ -28,6 +28,10 @@ class _MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(createTestVideoEvent(id: 'fallback_video'));
+  });
+
   group(VideoDetailScreen, () {
     late _MockVideoEventService mockVideoEventService;
     late _MockContentBlocklistService mockBlocklistService;
@@ -60,6 +64,9 @@ void main() {
       // Default: no authors blocked
       when(
         () => mockBlocklistService.shouldFilterFromFeeds(any()),
+      ).thenReturn(false);
+      when(
+        () => mockVideoEventService.shouldHideVideo(any()),
       ).thenReturn(false);
     });
 

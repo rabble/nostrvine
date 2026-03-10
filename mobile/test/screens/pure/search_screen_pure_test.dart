@@ -27,6 +27,12 @@ class _FakeVideoEventService extends ChangeNotifier
     implements VideoEventService {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  List<VideoEvent> filterVideoList(List<VideoEvent> videos) => videos;
+
+  @override
+  bool shouldHideVideo(VideoEvent video) => false;
 }
 
 void main() {
