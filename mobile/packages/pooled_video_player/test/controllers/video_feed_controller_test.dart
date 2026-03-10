@@ -760,7 +760,7 @@ void main() {
           'but keeps current',
           () async {
             final controller = VideoFeedController(
-              videos: createTestVideos(count: 5),
+              videos: createTestVideos(),
               pool: pool,
               preloadBehind: 0,
             );
@@ -790,7 +790,7 @@ void main() {
           'retainCurrentPlayer: false releases all players',
           () async {
             final controller = VideoFeedController(
-              videos: createTestVideos(count: 5),
+              videos: createTestVideos(),
               pool: pool,
               preloadBehind: 0,
             );
@@ -805,7 +805,6 @@ void main() {
 
             controller.setActive(
               active: false,
-              retainCurrentPlayer: false,
             );
 
             // ALL players should be released
@@ -821,7 +820,7 @@ void main() {
           'retainCurrentPlayer defaults to false (releases all)',
           () async {
             final controller = VideoFeedController(
-              videos: createTestVideos(count: 5),
+              videos: createTestVideos(),
               pool: pool,
               preloadBehind: 0,
             );
@@ -849,7 +848,7 @@ void main() {
         test(
           'reactivating with retained player plays immediately',
           () async {
-            final videos = createTestVideos(count: 5);
+            final videos = createTestVideos();
             final controller = VideoFeedController(
               videos: videos,
               pool: pool,
@@ -885,7 +884,7 @@ void main() {
         test(
           'reactivating after full release reloads preload window',
           () async {
-            final videos = createTestVideos(count: 5);
+            final videos = createTestVideos();
             final controller = VideoFeedController(
               videos: videos,
               pool: pool,
