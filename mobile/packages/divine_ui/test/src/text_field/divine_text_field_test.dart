@@ -13,6 +13,8 @@ void main() {
       bool enabled = true,
       TextInputType? keyboardType,
       TextInputAction? textInputAction,
+      int? minLines,
+      int? maxLines,
       ValueChanged<String>? onChanged,
       ValueChanged<String>? onSubmitted,
       VoidCallback? onTap,
@@ -29,6 +31,8 @@ void main() {
             enabled: enabled,
             keyboardType: keyboardType,
             textInputAction: textInputAction,
+            minLines: minLines,
+            maxLines: maxLines,
             onChanged: onChanged,
             onSubmitted: onSubmitted,
             onTap: onTap,
@@ -120,6 +124,30 @@ void main() {
         await tester.pump();
 
         expect(find.text('Test Label'), findsOneWidget);
+      });
+
+      testWidgets('grows vertically for multiline input', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            keyboardType: TextInputType.multiline,
+            textInputAction: TextInputAction.newline,
+            minLines: 1,
+            maxLines: 10,
+          ),
+        );
+
+        final initialHeight = tester.getSize(find.byType(DivineTextField));
+
+        await tester.enterText(
+          find.byType(TextField),
+          'Line 1\nLine 2\nLine 3',
+        );
+        await tester.pumpAndSettle();
+
+        final expandedHeight = tester.getSize(find.byType(DivineTextField));
+        expect(expandedHeight.height, greaterThan(initialHeight.height));
       });
     });
 

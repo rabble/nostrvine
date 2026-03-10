@@ -134,6 +134,11 @@ class _DivineTextFieldState extends State<DivineTextField> {
 
   bool get _hasText => _controller.text.isNotEmpty;
   bool get _isFloating => _hasFocus || _hasText;
+  bool get _isMultiline {
+    final minLines = widget.minLines ?? 1;
+    final maxLines = widget.maxLines ?? 1;
+    return !widget.obscureText && (minLines > 1 || maxLines > 1);
+  }
 
   @override
   void initState() {
@@ -201,7 +206,10 @@ class _DivineTextFieldState extends State<DivineTextField> {
     final hasLabel = label != null && label.isNotEmpty;
 
     return Container(
-      height: _totalHeight,
+      height: _isMultiline ? null : _totalHeight,
+      constraints: _isMultiline
+          ? const BoxConstraints(minHeight: _totalHeight)
+          : null,
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
         borderRadius: BorderRadius.circular(24),
@@ -221,6 +229,7 @@ class _DivineTextFieldState extends State<DivineTextField> {
                   label: label,
                   hasLabel: hasLabel,
                   isFloating: _isFloating,
+                  isMultiline: _isMultiline,
                   child: _DivineTextFieldInput(
                     controller: _controller,
                     focusNode: _focusNode,
@@ -264,12 +273,14 @@ class _DivineTextFieldContent extends StatelessWidget {
     required this.label,
     required this.hasLabel,
     required this.isFloating,
+    required this.isMultiline,
     required this.child,
   });
 
   final String? label;
   final bool hasLabel;
   final bool isFloating;
+  final bool isMultiline;
   final Widget child;
 
   static const double _verticalPadding = 16;
@@ -296,6 +307,43 @@ class _DivineTextFieldContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final inputTop = hasLabel
+        ? (isFloating ? _inputTopFloating : _inputTopCentered)
+        : _verticalPadding;
+
+    if (isMultiline) {
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          if (hasLabel)
+            AnimatedPositioned(
+              duration: _animationDuration,
+              curve: Curves.easeOut,
+              top: isFloating ? _labelTopFloating : _labelTopCentered,
+              left: 0,
+              right: 0,
+              child: AnimatedDefaultTextStyle(
+                duration: _animationDuration,
+                curve: Curves.easeOut,
+                style: isFloating
+                    ? VineTheme.labelSmallFont(color: VineTheme.primary)
+                    : VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
+                child: Text(label!),
+              ),
+            ),
+          AnimatedPadding(
+            duration: _animationDuration,
+            curve: Curves.easeOut,
+            padding: EdgeInsets.only(top: inputTop, bottom: _verticalPadding),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: _inputLineHeight),
+              child: child,
+            ),
+          ),
+        ],
+      );
+    }
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -310,19 +358,15 @@ class _DivineTextFieldContent extends StatelessWidget {
               duration: _animationDuration,
               curve: Curves.easeOut,
               style: isFloating
-                  ? VineTheme.labelSmallFont(
-                      color: VineTheme.primary,
-                    )
-                  : VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurfaceMuted,
-                    ),
+                  ? VineTheme.labelSmallFont(color: VineTheme.primary)
+                  : VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
               child: Text(label!),
             ),
           ),
         AnimatedPositioned(
           duration: _animationDuration,
           curve: Curves.easeOut,
-          top: isFloating ? _inputTopFloating : _inputTopCentered,
+          top: inputTop,
           left: 0,
           right: 0,
           height: _inputLineHeight,
