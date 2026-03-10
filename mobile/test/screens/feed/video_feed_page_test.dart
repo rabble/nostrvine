@@ -109,7 +109,10 @@ void main() {
       videoFeedController = _MockVideoFeedController();
 
       when(
-        () => videoFeedController.setActive(active: any(named: 'active')),
+        () => videoFeedController.setActive(
+          active: any(named: 'active'),
+          retainCurrentPlayer: any(named: 'retainCurrentPlayer'),
+        ),
       ).thenReturn(null);
       when(() => videoFeedController.videoCount).thenReturn(0);
       when(() => videoFeedController.videos).thenReturn([]);
@@ -140,35 +143,76 @@ void main() {
       );
     }
 
-    testWidgets('calls setActive(active: false) when overlay becomes visible', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
+    testWidgets(
+      'calls setActive(active: false, retainCurrentPlayer: true) when drawer opens',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
 
-      final element = tester.element(find.byType(VideoFeedView));
-      final container = ProviderScope.containerOf(element);
+        final element = tester.element(find.byType(VideoFeedView));
+        final container = ProviderScope.containerOf(element);
 
-      container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
-      await tester.pump();
+        container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
+        await tester.pump();
 
-      verify(() => videoFeedController.setActive(active: false)).called(1);
-    });
+        // Drawer overlay retains current player for instant resume
+        verify(
+          () => videoFeedController.setActive(
+            active: false,
+            retainCurrentPlayer: true,
+          ),
+        ).called(1);
+      },
+    );
 
-    testWidgets('calls setActive(active: false) when modal overlay opens', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
+    testWidgets(
+      'calls setActive(active: false, retainCurrentPlayer: false) when page opens',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
 
-      final element = tester.element(find.byType(VideoFeedView));
-      final container = ProviderScope.containerOf(element);
+        final element = tester.element(find.byType(VideoFeedView));
+        final container = ProviderScope.containerOf(element);
 
-      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
-      await tester.pump();
+        // Page overlay releases all players to free memory
+        container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+        await tester.pump();
 
-      verify(() => videoFeedController.setActive(active: false)).called(1);
-    });
+        verify(
+          () => videoFeedController.setActive(
+            active: false,
+            // Specify explicitly to verify the expected behavior, despite
+            // being the default value.
+            // ignore: avoid_redundant_argument_values
+            retainCurrentPlayer: false,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'calls setActive(active: false, retainCurrentPlayer: true) when bottom sheet opens',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final element = tester.element(find.byType(VideoFeedView));
+        final container = ProviderScope.containerOf(element);
+
+        // Bottom sheet overlay retains current player for instant resume
+        container
+            .read(overlayVisibilityProvider.notifier)
+            .setBottomSheetOpen(true);
+        await tester.pump();
+
+        verify(
+          () => videoFeedController.setActive(
+            active: false,
+            retainCurrentPlayer: true,
+          ),
+        ).called(1);
+      },
+    );
 
     testWidgets('calls setActive(active: true) when overlay becomes hidden', (
       tester,
@@ -203,7 +247,10 @@ void main() {
       locationController = StreamController<String>();
 
       when(
-        () => videoFeedController.setActive(active: any(named: 'active')),
+        () => videoFeedController.setActive(
+          active: any(named: 'active'),
+          retainCurrentPlayer: any(named: 'retainCurrentPlayer'),
+        ),
       ).thenReturn(null);
       when(() => videoFeedController.videoCount).thenReturn(0);
       when(() => videoFeedController.videos).thenReturn([]);

@@ -40,6 +40,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
   Future<VideoFeedState> build() async {
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
+    ref.watch(divineHostFilterVersionProvider);
 
     // Watch blocklist version — rebuilds when block/unblock actions occur.
     ref.watch(blocklistVersionProvider);
@@ -87,9 +88,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         final filteredVideos = videoEventService.filterVideoList(
           videos
               .where((v) => v.isSupportedOnCurrentPlatform)
-              .where(
-                (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-              )
+              .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
               .toList(),
         )..shuffle(_random);
 
@@ -128,9 +127,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       allVideos
           .where((v) => v.isOriginalVine)
           .where((v) => v.isSupportedOnCurrentPlatform)
-          .where(
-            (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-          )
+          .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
           .toList(),
     )..sort((a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0));
 
@@ -180,9 +177,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       final filteredVideos = videoEventService.filterVideoList(
         videos
             .where((v) => v.isSupportedOnCurrentPlatform)
-            .where(
-              (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-            )
+            .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       )..shuffle(_random);
 
@@ -232,9 +227,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       final filteredVideos = videoEventService.filterVideoList(
         videos
             .where((v) => v.isSupportedOnCurrentPlatform)
-            .where(
-              (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-            )
+            .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       );
 

@@ -7,8 +7,10 @@ import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -19,9 +21,12 @@ void main() {
 
   group('PopularNowFeed Provider', () {
     late _MockVideoEventService mockService;
+    late SharedPreferences sharedPreferences;
     late ProviderContainer container;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockService = _MockVideoEventService();
 
       // Setup default behavior
@@ -38,6 +43,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockService),
           // Override appReadyProvider to return true so subscription proceeds
           appReadyProvider.overrideWithValue(true),
@@ -239,6 +245,7 @@ void main() {
       // Arrange - create container with appReady=false
       final notReadyContainer = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockService),
           appReadyProvider.overrideWithValue(false),
         ],

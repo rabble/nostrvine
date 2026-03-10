@@ -84,19 +84,25 @@ class VideoFeedPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(divineHostFilterVersionProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
     final sharedPreferences = ref.watch(sharedPreferencesProvider);
+    final showDivineHostedOnly = ref
+        .read(divineHostFilterServiceProvider)
+        .showDivineHostedOnly;
 
     return BlocProvider(
+      key: ValueKey('video-feed-$showDivineHostedOnly'),
       create: (_) => VideoFeedBloc(
         videosRepository: videosRepository,
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
         userPubkey: authService.currentPublicKeyHex,
         sharedPreferences: sharedPreferences,
+        serveCachedHomeFeed: !showDivineHostedOnly,
         feedTracker: FeedPerformanceTracker(),
       )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),
@@ -322,12 +328,28 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       controller?.setActive(active: isHome);
     });
 
-    // Pause/resume for overlays (drawer, modals), but only when on
-    // the home tab. Without this guard, closing an overlay while on
+    // Pause/resume for overlays (drawer, pages, bottom sheets), but only when
+    // on the home tab. Without this guard, closing an overlay while on
     // another tab would incorrectly resume the home feed audio.
-    ref.listen(hasVisibleOverlayProvider, (_, hasOverlay) {
+    //
+    // Bottom sheets retain the current player for instant resume.
+    // Pages/drawer release all players to free memory.
+    ref.listen(overlayVisibilityProvider, (previous, current) {
       if (!_isOnHomeTab) return;
-      controller?.setActive(active: !hasOverlay);
+
+      final hadOverlay = previous?.hasVisibleOverlay ?? false;
+      final hasOverlay = current.hasVisibleOverlay;
+
+      if (hasOverlay && !hadOverlay) {
+        // Overlay opened - pause with retention based on overlay type
+        controller?.setActive(
+          active: false,
+          retainCurrentPlayer: current.shouldRetainPlayer,
+        );
+      } else if (!hasOverlay && hadOverlay) {
+        // All overlays closed - resume playback
+        controller?.setActive(active: true);
+      }
     });
 
     return ColoredBox(

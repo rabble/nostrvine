@@ -13,9 +13,11 @@ import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -31,13 +33,17 @@ void main() {
   setUpAll(() {
     registerFallbackValue(SubscriptionType.discovery);
     registerFallbackValue(() {});
+    registerFallbackValue(<VideoEvent>[]);
   });
 
   group('VideoEvents Provider - Listener Attachment Fix', () {
     late _MockVideoEventService mockVideoEventService;
     late _MockNostrClient mockNostrService;
+    late SharedPreferences sharedPreferences;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockVideoEventService = _MockVideoEventService();
       mockNostrService = _MockNostrClient();
 
@@ -45,6 +51,12 @@ void main() {
       when(() => mockNostrService.isInitialized).thenReturn(true);
       when(() => mockVideoEventService.discoveryVideos).thenReturn([]);
       when(() => mockVideoEventService.isSubscribed(any())).thenReturn(false);
+      when(
+        () => mockVideoEventService.filterVideoList(any()),
+      ).thenAnswer(
+        (invocation) =>
+            invocation.positionalArguments.first as List<VideoEvent>,
+      );
       // ignore: invalid_use_of_protected_member
       when(() => mockVideoEventService.hasListeners).thenReturn(false);
     });
@@ -53,6 +65,7 @@ void main() {
       // Arrange
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           appForegroundProvider.overrideWith(_FakeAppForeground.new),
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
@@ -88,6 +101,7 @@ void main() {
       // Arrange
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           appForegroundProvider.overrideWith(_FakeAppForeground.new),
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
@@ -149,6 +163,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           appForegroundProvider.overrideWith(_FakeAppForeground.new),
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
@@ -188,6 +203,7 @@ void main() {
       // Arrange
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           appForegroundProvider.overrideWith(_FakeAppForeground.new),
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
@@ -219,6 +235,7 @@ void main() {
       // Arrange
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           appForegroundProvider.overrideWith(_FakeAppForeground.new),
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
@@ -281,6 +298,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           appForegroundProvider.overrideWith(_FakeAppForeground.new),
           nostrServiceProvider.overrideWithValue(mockNostrService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),

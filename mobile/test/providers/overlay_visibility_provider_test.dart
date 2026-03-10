@@ -22,10 +22,50 @@ void main() {
       expect(state.hasVisibleOverlay, isTrue);
     });
 
-    test('hasVisibleOverlay returns true when modal is open', () {
-      const state = OverlayVisibilityState(isModalOpen: true);
+    test('hasVisibleOverlay returns true when page is open', () {
+      const state = OverlayVisibilityState(isPageOpen: true);
       expect(state.hasVisibleOverlay, isTrue);
     });
+
+    test('hasVisibleOverlay returns true when bottom sheet is open', () {
+      const state = OverlayVisibilityState(isBottomSheetOpen: true);
+      expect(state.hasVisibleOverlay, isTrue);
+    });
+
+    test(
+      'shouldRetainPlayer returns true for drawer and bottom sheet overlays',
+      () {
+        // Only bottom sheet - retain player
+        const onlyBottomSheet = OverlayVisibilityState(isBottomSheetOpen: true);
+        expect(onlyBottomSheet.shouldRetainPlayer, isTrue);
+
+        // Only drawer - retain player
+        const onlyDrawer = OverlayVisibilityState(isDrawerOpen: true);
+        expect(onlyDrawer.shouldRetainPlayer, isTrue);
+
+        // Bottom sheet with drawer - retain player
+        const withDrawer = OverlayVisibilityState(
+          isBottomSheetOpen: true,
+          isDrawerOpen: true,
+        );
+        expect(withDrawer.shouldRetainPlayer, isTrue);
+
+        // Bottom sheet with page - do NOT retain (page takes precedence)
+        const withPage = OverlayVisibilityState(
+          isBottomSheetOpen: true,
+          isPageOpen: true,
+        );
+        expect(withPage.shouldRetainPlayer, isFalse);
+
+        // No overlays - do NOT retain
+        const noOverlays = OverlayVisibilityState();
+        expect(noOverlays.shouldRetainPlayer, isFalse);
+
+        // Only page - do NOT retain
+        const onlyPage = OverlayVisibilityState(isPageOpen: true);
+        expect(onlyPage.shouldRetainPlayer, isFalse);
+      },
+    );
 
     test('copyWith creates correct copy', () {
       const state = OverlayVisibilityState();
@@ -33,7 +73,8 @@ void main() {
 
       expect(state.isDrawerOpen, isFalse);
       expect(withDrawer.isDrawerOpen, isTrue);
-      expect(withDrawer.isModalOpen, isFalse);
+      expect(withDrawer.isPageOpen, isFalse);
+      expect(withDrawer.isBottomSheetOpen, isFalse);
     });
   });
 
@@ -51,14 +92,34 @@ void main() {
       expect(container.read(overlayVisibilityProvider).isDrawerOpen, isFalse);
     });
 
-    test('setModalOpen updates state', () {
+    test('setPageOpen updates state', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      expect(container.read(overlayVisibilityProvider).isModalOpen, isFalse);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isFalse);
 
-      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
-      expect(container.read(overlayVisibilityProvider).isModalOpen, isTrue);
+      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+      expect(container.read(overlayVisibilityProvider).isPageOpen, isTrue);
+    });
+
+    test('setBottomSheetOpen updates state', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isFalse,
+      );
+
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(
+            true,
+          );
+      expect(
+        container.read(overlayVisibilityProvider).isBottomSheetOpen,
+        isTrue,
+      );
     });
   });
 
@@ -78,27 +139,63 @@ void main() {
       expect(container.read(hasVisibleOverlayProvider), isTrue);
     });
 
-    test('returns true when modal is opened', () {
+    test('returns true when page is opened', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
+      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
     });
 
-    test('modal open/close cycle returns to false', () {
+    test('returns true when bottom sheet is opened', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(
+            true,
+          );
+      expect(container.read(hasVisibleOverlayProvider), isTrue);
+    });
+
+    test('page open/close cycle returns to false', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       // Initially no overlay
       expect(container.read(hasVisibleOverlayProvider), isFalse);
 
-      // Open modal (e.g., comments modal)
-      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
+      // Open page (e.g., settings page)
+      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
 
-      // Close modal
-      container.read(overlayVisibilityProvider.notifier).setModalOpen(false);
+      // Close page
+      container.read(overlayVisibilityProvider.notifier).setPageOpen(false);
+      expect(container.read(hasVisibleOverlayProvider), isFalse);
+    });
+
+    test('bottom sheet open/close cycle returns to false', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Initially no overlay
+      expect(container.read(hasVisibleOverlayProvider), isFalse);
+
+      // Open bottom sheet (e.g., comments)
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(
+            true,
+          );
+      expect(container.read(hasVisibleOverlayProvider), isTrue);
+
+      // Close bottom sheet
+      container
+          .read(overlayVisibilityProvider.notifier)
+          .setBottomSheetOpen(
+            false,
+          );
       expect(container.read(hasVisibleOverlayProvider), isFalse);
     });
   });
@@ -177,7 +274,7 @@ void main() {
       expect(container.read(activeVideoIdProvider), isNull);
     });
 
-    test('activeVideoIdProvider returns null when modal is open', () async {
+    test('activeVideoIdProvider returns null when page is open', () async {
       final container = createTestContainer(mockVideos);
       addTearDown(container.dispose);
 
@@ -186,10 +283,35 @@ void main() {
 
       await pumpEventQueue();
 
-      // Open modal - video should pause (return null)
-      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
+      // Open page - video should pause (return null)
+      container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
       expect(container.read(activeVideoIdProvider), isNull);
     });
+
+    test(
+      'activeVideoIdProvider returns null when bottom sheet is open',
+      () async {
+        final container = createTestContainer(mockVideos);
+        addTearDown(container.dispose);
+
+        // Create active subscription to force reactive chain evaluation
+        container.listen(
+          activeVideoIdProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+
+        await pumpEventQueue();
+
+        // Open bottom sheet - video should pause (return null)
+        container
+            .read(overlayVisibilityProvider.notifier)
+            .setBottomSheetOpen(
+              true,
+            );
+        expect(container.read(activeVideoIdProvider), isNull);
+      },
+    );
 
     test('video resumes when overlay is closed', () async {
       final container = createTestContainer(mockVideos);

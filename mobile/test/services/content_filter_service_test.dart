@@ -230,6 +230,21 @@ void main() {
         final result = service.getPreferenceForLabels(['drugs', 'nudity']);
         expect(result, equals(ContentFilterPreference.hide));
       });
+
+      test(
+        'always returns hide for ai-generated labels in feed filtering',
+        () async {
+          await service.initialize();
+
+          await service.setPreference(
+            ContentLabel.aiGenerated,
+            ContentFilterPreference.show,
+          );
+
+          final result = service.getPreferenceForLabels(['ai-generated']);
+          expect(result, equals(ContentFilterPreference.hide));
+        },
+      );
     });
 
     group('lockAdultCategories', () {

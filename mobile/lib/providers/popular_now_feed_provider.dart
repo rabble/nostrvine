@@ -42,6 +42,7 @@ class PopularNowFeed extends _$PopularNowFeed {
 
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
+    ref.watch(divineHostFilterVersionProvider);
 
     // Watch blocklist version — rebuilds when block/unblock actions occur.
     ref.watch(blocklistVersionProvider);
@@ -109,9 +110,7 @@ class PopularNowFeed extends _$PopularNowFeed {
           final filteredVideos = videoEventService.filterVideoList(
             apiVideos
                 .where((v) => v.isSupportedOnCurrentPlatform)
-                .where(
-                  (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-                )
+                .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
                 .toList(),
           );
 
@@ -159,9 +158,7 @@ class PopularNowFeed extends _$PopularNowFeed {
         return videoEventService.filterVideoList(
           videos
               .where((v) => v.isSupportedOnCurrentPlatform)
-              .where(
-                (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-              )
+              .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
               .toList(),
         );
       },
@@ -258,9 +255,7 @@ class PopularNowFeed extends _$PopularNowFeed {
 
         if (apiVideos.isNotEmpty) {
           // Deduplicate and merge (case-insensitive for Nostr IDs)
-          final blocklistService = ref.read(
-            contentBlocklistServiceProvider,
-          );
+          final blocklistService = ref.read(contentBlocklistServiceProvider);
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
@@ -268,9 +263,7 @@ class PopularNowFeed extends _$PopularNowFeed {
             apiVideos
                 .where((v) => !existingIds.contains(v.id.toLowerCase()))
                 .where((v) => v.isSupportedOnCurrentPlatform)
-                .where(
-                  (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-                )
+                .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
                 .toList(),
           );
 
@@ -384,9 +377,7 @@ class PopularNowFeed extends _$PopularNowFeed {
     updatedVideos = videoEventService.filterVideoList(
       updatedVideos
           .where((v) => v.isSupportedOnCurrentPlatform)
-          .where(
-            (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-          )
+          .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
           .toList(),
     );
 
@@ -433,15 +424,11 @@ class PopularNowFeed extends _$PopularNowFeed {
           // Reset cursor for pagination
           _nextCursor = _getOldestTimestamp(apiVideos);
 
-          final blocklistService = ref.read(
-            contentBlocklistServiceProvider,
-          );
+          final blocklistService = ref.read(contentBlocklistServiceProvider);
           final filteredVideos = videoEventService.filterVideoList(
             apiVideos
                 .where((v) => v.isSupportedOnCurrentPlatform)
-                .where(
-                  (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-                )
+                .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
                 .toList(),
           );
 

@@ -45,6 +45,7 @@ class ProfileFeed extends _$ProfileFeed {
 
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
+    ref.watch(divineHostFilterVersionProvider);
 
     Log.info(
       'ProfileFeed: BUILD START for user=$userId',

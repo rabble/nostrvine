@@ -57,7 +57,7 @@ class _BadgeModalTitle extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            isVineArchive ? 'Original Vine Archive' : 'Video Verification',
+            isVineArchive ? 'Original Vine Archive' : 'Camera Proof',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -255,7 +255,7 @@ class _ProofModeDetailsSection extends StatelessWidget {
       children: [
         const _SectionHeader(
           icon: Icons.verified_user,
-          title: 'ProofMode Verification',
+          title: 'Camera Proof',
         ),
         const SizedBox(height: 8),
         _VerificationLevelCard(video: video, aiResult: aiResult),

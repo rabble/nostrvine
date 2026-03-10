@@ -5,18 +5,43 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/services/video_event_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<VideoEvent>[]);
+  });
+
   group('Search Active Video Provider', () {
     // Create mock video data
     final now = DateTime.now();
     final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
+    late SharedPreferences sharedPreferences;
+    late _MockVideoEventService mockVideoEventService;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
+      mockVideoEventService = _MockVideoEventService();
+      when(
+        () => mockVideoEventService.filterVideoList(any()),
+      ).thenAnswer(
+        (invocation) =>
+            invocation.positionalArguments.first as List<VideoEvent>,
+      );
+    });
 
     final mockSearchResults = [
       VideoEvent(
@@ -53,6 +78,8 @@ void main() {
       () async {
         final container = ProviderContainer(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
             // Mock router location to /search/sexy/0
             routerLocationStreamProvider.overrideWith(
               (ref) => Stream.value(
@@ -111,6 +138,8 @@ void main() {
       () async {
         final container = ProviderContainer(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
             // Mock router location to /search/test/1
             routerLocationStreamProvider.overrideWith(
               (ref) => Stream.value(
@@ -171,11 +200,14 @@ void main() {
     test(
       'activeVideoIdProvider returns null in search grid mode (no videoIndex)',
       () async {
-        // This test verifies that when URL is /search/query (no index), no video is active
+        // This test verifies that when URL is /search/query (no index),
+        // no video is active
         final locationController = StreamController<String>();
 
         final container = ProviderContainer(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
             routerLocationStreamProvider.overrideWith(
               (ref) => locationController.stream,
             ),
@@ -187,7 +219,6 @@ void main() {
         // Listen for active video changes
         final activeVideoIds = <String?>[];
         container.listen(activeVideoIdProvider, (previous, next) {
-          print('ACTIVE VIDEO CHANGED: $previous → $next');
           activeVideoIds.add(next);
         }, fireImmediately: true);
 
@@ -206,9 +237,6 @@ void main() {
         await pumpEventQueue();
 
         // Active video should be null (grid mode)
-        print(
-          'Active video ID in search grid mode: ${container.read(activeVideoIdProvider)}',
-        );
         expect(container.read(activeVideoIdProvider), isNull);
 
         locationController.close();
@@ -221,6 +249,8 @@ void main() {
       () async {
         final container = ProviderContainer(
           overrides: [
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+            videoEventServiceProvider.overrideWithValue(mockVideoEventService),
             // Mock router location to /search/empty/0
             routerLocationStreamProvider.overrideWith(
               (ref) => Stream.value(

@@ -548,8 +548,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   }
 
   Widget _buildFeedModeContent() {
+    ref.watch(divineHostFilterVersionProvider);
+    final videoEventService = ref.read(videoEventServiceProvider);
     // Read videos from provider (survives widget recreation)
-    final videos = ref.watch(exploreTabVideosProvider) ?? const <VideoEvent>[];
+    final videos = videoEventService.filterVideoList(
+      ref.watch(exploreTabVideosProvider) ?? const <VideoEvent>[],
+    );
 
     // Derive starting index from URL
     final pageContext = ref.watch(pageContextProvider);

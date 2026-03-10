@@ -34,6 +34,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   bool _isAgeVerified = false;
   Set<ContentLabel> _accountLabels = {};
   bool _isDivineLabelerEnabled = true;
+  bool _showDivineHostedOnly = false;
 
   @override
   void initState() {
@@ -46,6 +47,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     await service.initialize();
     final accountLabelService = ref.read(accountLabelServiceProvider);
     final labelService = ref.read(moderationLabelServiceProvider);
+    final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
     if (mounted) {
       setState(() {
         _isAgeVerified = service.isAdultContentVerified;
@@ -53,6 +55,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         _isDivineLabelerEnabled = labelService.subscribedLabelers.contains(
           ModerationLabelService.divineModerationPubkeyHex,
         );
+        _showDivineHostedOnly = divineHostFilterService.showDivineHostedOnly;
         _isLoading = false;
       });
     }
@@ -73,6 +76,17 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
     if (mounted) {
       setState(() {
         _isAgeVerified = value;
+      });
+    }
+  }
+
+  Future<void> _setShowDivineHostedOnly(bool value) async {
+    final service = ref.read(divineHostFilterServiceProvider);
+    await service.setShowDivineHostedOnly(value);
+
+    if (mounted) {
+      setState(() {
+        _showDivineHostedOnly = value;
       });
     }
   }
@@ -100,6 +114,23 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                   title: 'Content Filters',
                   subtitle: 'Per-category Show, Warn, or Hide',
                   onTap: () => context.push(ContentFiltersScreen.path),
+                ),
+                SwitchListTile(
+                  value: _showDivineHostedOnly,
+                  onChanged: _setShowDivineHostedOnly,
+                  secondary: const Icon(
+                    Icons.verified,
+                    color: VineTheme.vineGreen,
+                  ),
+                  title: const Text(
+                    'Only show Divine-hosted videos',
+                    style: TextStyle(color: VineTheme.whiteText),
+                  ),
+                  subtitle: const Text(
+                    'Hide videos served from other media hosts',
+                    style: TextStyle(color: VineTheme.secondaryText),
+                  ),
+                  activeThumbColor: VineTheme.vineGreen,
                 ),
                 _buildNavigationTile(
                   icon: Icons.warning_amber_rounded,

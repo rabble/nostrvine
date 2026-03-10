@@ -417,8 +417,31 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
 
 /// Banner shown when a divineOAuth user's session expired and refresh failed.
 /// Prompts the user to sign in again instead of showing "Secure Your Account".
-class _SessionExpiredBanner extends StatelessWidget {
+/// Attempts a silent token refresh first; navigates to login only if that fails.
+class _SessionExpiredBanner extends ConsumerStatefulWidget {
   const _SessionExpiredBanner();
+
+  @override
+  ConsumerState<_SessionExpiredBanner> createState() =>
+      _SessionExpiredBannerState();
+}
+
+class _SessionExpiredBannerState extends ConsumerState<_SessionExpiredBanner> {
+  bool _isRefreshing = false;
+
+  Future<void> _onSignIn() async {
+    setState(() => _isRefreshing = true);
+    try {
+      final authService = ref.read(authServiceProvider);
+      final refreshed = await authService.tryRefreshExpiredSession();
+      if (!mounted) return;
+      if (!refreshed) {
+        context.go(WelcomeScreen.loginOptionsPath);
+      }
+    } finally {
+      if (mounted) setState(() => _isRefreshing = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -453,7 +476,7 @@ class _SessionExpiredBanner extends StatelessWidget {
             ),
           ),
           ElevatedButton(
-            onPressed: () => context.go(WelcomeScreen.loginOptionsPath),
+            onPressed: _isRefreshing ? null : _onSignIn,
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.whiteText,
               foregroundColor: VineTheme.accentOrange,
@@ -462,10 +485,18 @@ class _SessionExpiredBanner extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: Text(
-              'Sign in',
-              style: VineTheme.labelMediumFont(color: VineTheme.accentOrange),
-            ),
+            child: _isRefreshing
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Text(
+                    'Sign in',
+                    style: VineTheme.labelMediumFont(
+                      color: VineTheme.accentOrange,
+                    ),
+                  ),
           ),
         ],
       ),

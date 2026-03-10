@@ -5,7 +5,19 @@
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-HOOKS_DIR="$REPO_ROOT/.git/hooks"
+GIT_COMMON_DIR="$(git rev-parse --git-common-dir)"
+if [[ "$GIT_COMMON_DIR" != /* ]]; then
+  GIT_COMMON_DIR="$REPO_ROOT/$GIT_COMMON_DIR"
+fi
+HOOKS_DIR="$GIT_COMMON_DIR/hooks"
+DART_BIN="$(command -v dart)"
+FLUTTER_BIN="$(command -v flutter)"
+
+if [ -z "$DART_BIN" ] || [ -z "$FLUTTER_BIN" ]; then
+  echo "❌ Could not find both 'dart' and 'flutter' on PATH."
+  echo "Open a shell with the project toolchain loaded, then rerun scripts/install-hooks.sh."
+  exit 1
+fi
 
 echo "Installing git hooks..."
 
@@ -13,16 +25,47 @@ echo "Installing git hooks..."
 cat > "$HOOKS_DIR/pre-commit" << 'EOF'
 #!/bin/bash
 # Pre-commit hook for divine-mobile
-# Runs format check and analyze to catch CI failures early
+# Runs format check, analyze, and codegen verification to catch CI failures early
 
 set -e
 
-cd "$(git rev-parse --show-toplevel)/mobile"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+DART_BIN="__DART_BIN__"
+FLUTTER_BIN="__FLUTTER_BIN__"
+cd "$REPO_ROOT/mobile"
+
+list_codegen_inputs() {
+    while IFS= read -r file; do
+        [ -z "$file" ] && continue
+
+        local abs_path="$REPO_ROOT/$file"
+        [ -f "$abs_path" ] || continue
+
+        local base_path="${abs_path%.dart}"
+        if grep -Eq '@Riverpod|@riverpod|@freezed|@Freezed|@JsonSerializable|@GenerateMocks|@DriftDatabase|@UseRowClass|@DataClassName|@UseMoor|@HiveType' "$abs_path" \
+            || grep -Eq "part '.*\\.(g|freezed)\\.dart';" "$abs_path" \
+            || [ -f "${base_path}.g.dart" ] \
+            || [ -f "${base_path}.freezed.dart" ] \
+            || [ -f "${base_path}.mocks.dart" ]; then
+            echo "$file"
+        fi
+    done
+}
+
+capture_generated_status() {
+    git status --porcelain -- mobile \
+        | awk '{print $2}' \
+        | grep -E '^mobile/.*(\.g\.dart|\.freezed\.dart|\.mocks\.dart|\.types\.temp\.dart)$' \
+        | sort -u || true
+}
 
 echo "🔍 Running pre-commit checks..."
 
 # Check if any Dart files are staged
-STAGED_DART_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.dart$' || true)
+STAGED_DART_FILES=$(git diff --cached --name-only --diff-filter=ACM \
+    | grep '^mobile/.*\.dart$' \
+    | grep -v '\.g\.dart$' \
+    | grep -v '\.freezed\.dart$' || true)
 
 if [ -z "$STAGED_DART_FILES" ]; then
     echo "✅ No Dart files staged, skipping checks"
@@ -31,7 +74,7 @@ fi
 
 # Run dart format check (fast)
 echo "📝 Checking format..."
-if ! dart format --output=none --set-exit-if-changed lib test 2>/dev/null; then
+if ! "$DART_BIN" format --output=none --set-exit-if-changed lib test 2>/dev/null; then
     echo ""
     echo "❌ Format check failed!"
     echo "Run: cd mobile && dart format lib test"
@@ -41,7 +84,7 @@ echo "✅ Format OK"
 
 # Run flutter analyze (medium speed)
 echo "🔬 Running analyzer..."
-if ! flutter analyze --no-fatal-infos 2>/dev/null; then
+if ! "$FLUTTER_BIN" analyze --no-fatal-infos 2>/dev/null; then
     echo ""
     echo "❌ Analysis failed!"
     echo "Fix the issues above before committing"
@@ -49,29 +92,79 @@ if ! flutter analyze --no-fatal-infos 2>/dev/null; then
 fi
 echo "✅ Analysis OK"
 
-# Check if generated files need updating
-NEEDS_CODEGEN=$(echo "$STAGED_DART_FILES" | xargs grep -l '@riverpod\|@freezed\|@JsonSerializable\|@GenerateMocks' 2>/dev/null || true)
-if [ -n "$NEEDS_CODEGEN" ]; then
+# Verify generated files when codegen inputs changed
+CODEGEN_INPUTS=$(printf '%s\n' "$STAGED_DART_FILES" | list_codegen_inputs)
+if [ -n "$CODEGEN_INPUTS" ]; then
+    BEFORE_STATUS_FILE=$(mktemp)
+    AFTER_STATUS_FILE=$(mktemp)
+    trap 'rm -f "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE"' EXIT
+
+    capture_generated_status > "$BEFORE_STATUS_FILE"
+
+    echo "🧬 Verifying generated files..."
+    "$DART_BIN" run build_runner build --delete-conflicting-outputs >/dev/null
+
+    capture_generated_status > "$AFTER_STATUS_FILE"
+    NEW_GENERATED_CHANGES=$(comm -13 "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE" || true)
+
+    rm -f "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE"
+    trap - EXIT
+
+    if [ -n "$NEW_GENERATED_CHANGES" ]; then
+        echo ""
+        echo "❌ Generated files changed during verification:"
+        echo "$NEW_GENERATED_CHANGES"
+        echo ""
+        echo "Run: cd mobile && dart run build_runner build --delete-conflicting-outputs"
+        echo "Then stage the generated files and commit again."
+        exit 1
+    fi
+
     echo ""
-    echo "⚠️  Warning: Files with code generation annotations were modified."
-    echo "Consider running: dart run build_runner build --delete-conflicting-outputs"
+    echo "✅ Generated files OK"
 fi
 
 echo ""
 echo "✅ All pre-commit checks passed!"
 EOF
 
+sed -i.bak \
+  -e "s|__DART_BIN__|$DART_BIN|g" \
+  -e "s|__FLUTTER_BIN__|$FLUTTER_BIN|g" \
+  "$HOOKS_DIR/pre-commit"
+rm -f "$HOOKS_DIR/pre-commit.bak"
 chmod +x "$HOOKS_DIR/pre-commit"
 
 # Create pre-push hook
 cat > "$HOOKS_DIR/pre-push" << 'EOF'
 #!/bin/bash
 # Pre-push hook for divine-mobile
-# Runs tests related to changed files before pushing
+# Verifies generated files and runs tests related to changed files before pushing
 
 set -e
 
-cd "$(git rev-parse --show-toplevel)/mobile"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+DART_BIN="__DART_BIN__"
+FLUTTER_BIN="__FLUTTER_BIN__"
+cd "$REPO_ROOT/mobile"
+
+list_codegen_inputs() {
+    while IFS= read -r file; do
+        [ -z "$file" ] && continue
+
+        local abs_path="$REPO_ROOT/$file"
+        [ -f "$abs_path" ] || continue
+
+        local base_path="${abs_path%.dart}"
+        if grep -Eq '@Riverpod|@riverpod|@freezed|@Freezed|@JsonSerializable|@GenerateMocks|@DriftDatabase|@UseRowClass|@DataClassName|@UseMoor|@HiveType' "$abs_path" \
+            || grep -Eq "part '.*\\.(g|freezed)\\.dart';" "$abs_path" \
+            || [ -f "${base_path}.g.dart" ] \
+            || [ -f "${base_path}.freezed.dart" ] \
+            || [ -f "${base_path}.mocks.dart" ]; then
+            echo "$file"
+        fi
+    done
+}
 
 echo "🚀 Running pre-push checks..."
 
@@ -87,7 +180,10 @@ BASE_BRANCH="origin/main"
 git fetch origin main --quiet 2>/dev/null || true
 
 # Get list of changed Dart files (excluding generated files)
-CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null | grep '\.dart$' | grep -v '\.g\.dart$' | grep -v '\.freezed\.dart$' || true)
+CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
+    | grep '^mobile/.*\.dart$' \
+    | grep -v '\.g\.dart$' \
+    | grep -v '\.freezed\.dart$' || true)
 
 if [ -z "$CHANGED_FILES" ]; then
     echo "✅ No Dart files changed, skipping tests"
@@ -102,9 +198,28 @@ if [ "$TOTAL_CHANGED" -gt 10 ]; then
 fi
 echo ""
 
+# Mirror CI's generated-file check for codegen inputs
+CODEGEN_INPUTS=$(printf '%s\n' "$CHANGED_FILES" | list_codegen_inputs)
+if [ -n "$CODEGEN_INPUTS" ]; then
+    echo "🧬 Verifying generated files..."
+    "$DART_BIN" run build_runner build --delete-conflicting-outputs >/dev/null
+
+    if [ -n "$(git status --porcelain)" ]; then
+        echo ""
+        echo "❌ Generated files are out of date."
+        echo "Run: cd mobile && dart run build_runner build --delete-conflicting-outputs"
+        echo "Then commit the generated files before pushing."
+        echo ""
+        git diff --name-only
+        exit 1
+    fi
+
+    echo "✅ Generated files OK"
+    echo ""
+fi
+
 # Find corresponding test files
 TEST_FILES=""
-REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 for file in $CHANGED_FILES; do
     # If it's already a test file, add it directly
@@ -162,7 +277,7 @@ echo ""
 
 # Run the specific tests
 echo "🏃 Executing tests..."
-if flutter test $TEST_FILES 2>&1; then
+if "$FLUTTER_BIN" test $TEST_FILES 2>&1; then
     echo ""
     echo "✅ All tests passed!"
 else
@@ -175,11 +290,16 @@ else
 fi
 EOF
 
+sed -i.bak \
+  -e "s|__DART_BIN__|$DART_BIN|g" \
+  -e "s|__FLUTTER_BIN__|$FLUTTER_BIN|g" \
+  "$HOOKS_DIR/pre-push"
+rm -f "$HOOKS_DIR/pre-push.bak"
 chmod +x "$HOOKS_DIR/pre-push"
 
 echo "✅ Git hooks installed!"
 echo ""
-echo "Pre-commit: Runs 'dart format' and 'flutter analyze'"
-echo "Pre-push:   Runs tests for changed files"
+echo "Pre-commit: Runs 'dart format', 'flutter analyze', and codegen verification"
+echo "Pre-push:   Verifies generated files and runs tests for changed files"
 echo ""
 echo "To bypass hooks (not recommended): --no-verify"

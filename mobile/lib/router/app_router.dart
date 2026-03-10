@@ -89,7 +89,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     refreshListenable: authListenable,
     redirect: (context, state) {
       final location = state.matchedLocation;
-      final authState = ref.read(authServiceProvider).authState;
+      final authService = ref.read(authServiceProvider);
+      final authState = authService.authState;
 
       Log.debug(
         'Router redirect: location=$location, '
@@ -107,6 +108,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               location == NostrConnectScreen.path ||
               location == WelcomeScreen.createAccountPath ||
               location == WelcomeScreen.loginOptionsPath)) {
+        // Allow expired-session users through to login options
+        // so they can re-authenticate instead of being bounced home
+        if (authService.hasExpiredOAuthSession &&
+            location == WelcomeScreen.loginOptionsPath) {
+          return null;
+        }
         // On first navigation, redirect to explore if user has no following
         if (!_hasNavigated) {
           _hasNavigated = true;

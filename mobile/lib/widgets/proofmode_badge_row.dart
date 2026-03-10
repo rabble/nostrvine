@@ -47,23 +47,35 @@ class ProofModeBadgeRow extends ConsumerWidget {
     );
 
     // For Divine-hosted videos without Kind 1985 AI labels,
-    // fall back to the moderation status service (auto-scans all uploads)
+    // fall back to the moderation status service (auto-scans all uploads).
+    // Use select() to only rebuild when the AI score actually changes,
+    // avoiding excessive rebuilds during scroll.
     if (aiResult == null && video.isFromDivineServer) {
-      final statusAsync = ref.watch(
-        videoModerationStatusProvider(resolvedSha256),
+      final selectedData = ref.watch(
+        videoModerationStatusProvider(resolvedSha256).select(
+          (asyncValue) => (
+            aiScore: asyncValue.whenOrNull(
+              data: (status) => status?.aiScore,
+            ),
+            isLoading: asyncValue.isLoading,
+            hasError: asyncValue.hasError,
+          ),
+        ),
       );
-      moderationStatusAsync = statusAsync;
-      aiResult = statusAsync.whenOrNull(
-        data: (status) {
-          if (status?.aiScore != null) {
-            return AIDetectionResult(
-              score: status!.aiScore!,
-              source: 'moderation-service',
-            );
-          }
-          return null;
-        },
-      );
+      moderationStatusAsync = selectedData.isLoading
+          ? const AsyncValue<VideoModerationStatus?>.loading()
+          : selectedData.hasError
+          ? const AsyncValue<VideoModerationStatus?>.error(
+              'error',
+              StackTrace.empty,
+            )
+          : null;
+      if (selectedData.aiScore != null) {
+        aiResult = AIDetectionResult(
+          score: selectedData.aiScore!,
+          source: 'moderation-service',
+        );
+      }
     }
 
     // Determine effective verification level (with platinum upgrade)
@@ -130,7 +142,8 @@ class ProofModeBadgeRow extends ConsumerWidget {
       badgeLabels.add('original_vine');
     }
 
-    Log.debug(
+    // Only log badge decisions at verbose level to avoid flooding during scroll
+    Log.verbose(
       'Badge decision: eventId=${video.id}, resolvedSha256=$resolvedSha256, '
       'isFromDivine=${video.isFromDivineServer}, hasProofMode=${video.hasProofMode}, '
       'proofBadge=${video.shouldShowProofModeBadge}, vineBadge=${video.shouldShowVineBadge}, '

@@ -39,6 +39,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     required CuratedListRepository curatedListRepository,
     String? userPubkey,
     SharedPreferences? sharedPreferences,
+    bool serveCachedHomeFeed = true,
     Duration autoRefreshMinInterval = _defaultAutoRefreshMinInterval,
     FeedPerformanceTracker? feedTracker,
     HomeFeedCache? homeFeedCache,
@@ -47,6 +48,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
        _curatedListRepository = curatedListRepository,
        _userPubkey = userPubkey,
        _sharedPreferences = sharedPreferences,
+       _serveCachedHomeFeed = serveCachedHomeFeed,
        _autoRefreshMinInterval = autoRefreshMinInterval,
        _feedTracker = feedTracker,
        _homeFeedCache = homeFeedCache ?? const HomeFeedCache(),
@@ -68,6 +70,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   final CuratedListRepository _curatedListRepository;
   final String? _userPubkey;
   final SharedPreferences? _sharedPreferences;
+  final bool _serveCachedHomeFeed;
   final Duration _autoRefreshMinInterval;
   final FeedPerformanceTracker? _feedTracker;
   final HomeFeedCache _homeFeedCache;
@@ -382,7 +385,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// the `noFollowedUsers` CTA or refresh the feed.
   Future<void> _loadVideos(FeedMode mode, Emitter<VideoFeedState> emit) async {
     // Serve cached home feed on first load for instant startup.
-    if (!_cacheServed &&
+    if (_serveCachedHomeFeed &&
+        !_cacheServed &&
         (mode == FeedMode.home || mode == FeedMode.forYou) &&
         _sharedPreferences != null) {
       _cacheServed = true;
@@ -392,10 +396,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
             .where((v) => v.videoUrl != null)
             .toList();
         if (cachedValid.isNotEmpty) {
-          _feedTracker?.markFirstVideosReceived(
-            mode.name,
-            cachedValid.length,
-          );
+          _feedTracker?.markFirstVideosReceived(mode.name, cachedValid.length);
           emit(
             state.copyWith(
               status: VideoFeedStatus.success,
@@ -476,23 +477,21 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// Returns [HomeFeedResult] for all modes. For home/forYou, includes
   /// curated list attribution metadata. For other modes, returns a
   /// result with empty attribution.
-  Future<HomeFeedResult> _fetchVideosForMode(
-    FeedMode mode, {
-    int? until,
-  }) => switch (mode) {
-    FeedMode.forYou || FeedMode.home => _videosRepository.getHomeFeedVideos(
-      authors: _followRepository.followingPubkeys,
-      videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),
-      userPubkey: _userPubkey,
-      until: until,
-    ),
-    FeedMode.latest =>
-      _videosRepository
-          .getNewVideos(until: until)
-          .then((videos) => HomeFeedResult(videos: videos)),
-    FeedMode.popular =>
-      _videosRepository
-          .getPopularVideos(until: until)
-          .then((videos) => HomeFeedResult(videos: videos)),
-  };
+  Future<HomeFeedResult> _fetchVideosForMode(FeedMode mode, {int? until}) =>
+      switch (mode) {
+        FeedMode.forYou || FeedMode.home => _videosRepository.getHomeFeedVideos(
+          authors: _followRepository.followingPubkeys,
+          videoRefs: _curatedListRepository.getSubscribedListVideoRefs(),
+          userPubkey: _userPubkey,
+          until: until,
+        ),
+        FeedMode.latest =>
+          _videosRepository
+              .getNewVideos(until: until)
+              .then((videos) => HomeFeedResult(videos: videos)),
+        FeedMode.popular =>
+          _videosRepository
+              .getPopularVideos(until: until)
+              .then((videos) => HomeFeedResult(videos: videos)),
+      };
 }

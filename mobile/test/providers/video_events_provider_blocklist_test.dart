@@ -11,11 +11,13 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
@@ -27,6 +29,7 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 void main() {
   setUpAll(() {
     registerFallbackValue(SubscriptionType.discovery);
+    registerFallbackValue(<VideoEvent>[]);
     registerFallbackValue(NIP50SortMode.hot);
   });
 
@@ -34,6 +37,7 @@ void main() {
     late _MockNostrClient mockNostrClient;
     late _MockContentBlocklistService mockBlocklistService;
     late _MockVideoEventService mockVideoEventService;
+    late SharedPreferences sharedPreferences;
     late ProviderContainer container;
 
     final blockedPubkey = '1' * 64;
@@ -53,7 +57,9 @@ void main() {
       );
     }
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockNostrClient = _MockNostrClient();
       mockBlocklistService = _MockContentBlocklistService();
       mockVideoEventService = _MockVideoEventService();
@@ -75,6 +81,12 @@ void main() {
       when(
         () => mockVideoEventService.addVideoUpdateListener(any()),
       ).thenReturn(() {});
+      when(
+        () => mockVideoEventService.filterVideoList(any()),
+      ).thenAnswer(
+        (invocation) =>
+            invocation.positionalArguments.first as List<VideoEvent>,
+      );
       when(() => mockVideoEventService.removeListener(any())).thenReturn(null);
       when(() => mockVideoEventService.addListener(any())).thenReturn(null);
       when(
@@ -100,6 +112,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
@@ -142,6 +155,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
@@ -220,6 +234,7 @@ void main() {
 
       container = ProviderContainer(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,

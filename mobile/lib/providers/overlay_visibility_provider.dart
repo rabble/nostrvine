@@ -11,25 +11,45 @@ part 'overlay_visibility_provider.g.dart';
 class OverlayVisibilityState {
   const OverlayVisibilityState({
     this.isDrawerOpen = false,
-    this.isModalOpen = false,
+    this.isPageOpen = false,
+    this.isBottomSheetOpen = false,
   });
 
   final bool isDrawerOpen;
-  final bool isModalOpen;
+
+  /// Full-screen page overlay (e.g., settings, profile).
+  /// When open, all video players are released.
+  final bool isPageOpen;
+
+  /// Bottom sheet overlay (e.g., comments, share).
+  /// When open, only the current player is paused but retained.
+  final bool isBottomSheetOpen;
 
   /// Returns true if any overlay that should pause videos is visible
-  bool get hasVisibleOverlay => isDrawerOpen || isModalOpen;
+  bool get hasVisibleOverlay => isDrawerOpen || isPageOpen || isBottomSheetOpen;
 
-  OverlayVisibilityState copyWith({bool? isDrawerOpen, bool? isModalOpen}) {
+  /// Returns true if only lightweight overlays are open (drawer or bottom sheet).
+  /// These overlays retain the current player for instant resume.
+  /// Returns false if a full-screen page is open (requires full player release).
+  bool get shouldRetainPlayer =>
+      (isDrawerOpen || isBottomSheetOpen) && !isPageOpen;
+
+  OverlayVisibilityState copyWith({
+    bool? isDrawerOpen,
+    bool? isPageOpen,
+    bool? isBottomSheetOpen,
+  }) {
     return OverlayVisibilityState(
       isDrawerOpen: isDrawerOpen ?? this.isDrawerOpen,
-      isModalOpen: isModalOpen ?? this.isModalOpen,
+      isPageOpen: isPageOpen ?? this.isPageOpen,
+      isBottomSheetOpen: isBottomSheetOpen ?? this.isBottomSheetOpen,
     );
   }
 
   @override
   String toString() =>
-      'OverlayVisibilityState(drawer=$isDrawerOpen, modal=$isModalOpen)';
+      'OverlayVisibilityState(drawer=$isDrawerOpen, page=$isPageOpen, '
+      'bottomSheet=$isBottomSheetOpen)';
 }
 
 /// Notifier for managing overlay visibility state
@@ -49,14 +69,29 @@ class OverlayVisibility extends _$OverlayVisibility {
     }
   }
 
-  void setModalOpen(bool isOpen) {
-    if (state.isModalOpen != isOpen) {
+  /// Set page overlay state (full-screen overlays like settings).
+  /// When a page is open, all video players will be released.
+  void setPageOpen(bool isOpen) {
+    if (state.isPageOpen != isOpen) {
       Log.info(
-        '📱 Modal ${isOpen ? 'opened' : 'closed'}',
+        '📱 Page ${isOpen ? 'opened' : 'closed'}',
         name: 'OverlayVisibility',
         category: LogCategory.ui,
       );
-      state = state.copyWith(isModalOpen: isOpen);
+      state = state.copyWith(isPageOpen: isOpen);
+    }
+  }
+
+  /// Set bottom sheet overlay state.
+  /// When a bottom sheet is open, only the current player is paused.
+  void setBottomSheetOpen(bool isOpen) {
+    if (state.isBottomSheetOpen != isOpen) {
+      Log.info(
+        '📱 BottomSheet ${isOpen ? 'opened' : 'closed'}',
+        name: 'OverlayVisibility',
+        category: LogCategory.ui,
+      );
+      state = state.copyWith(isBottomSheetOpen: isOpen);
     }
   }
 }
