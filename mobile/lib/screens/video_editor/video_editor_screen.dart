@@ -22,6 +22,7 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
@@ -357,11 +358,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
             },
             child: ValueListenableBuilder<bool>(
               valueListenable: _isLoadingDraft,
-              builder: (_, isLoading, _) => isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator.adaptive(),
-                    )
-                  : const VideoEditorScaffold(),
+              builder: (_, isLoading, _) =>
+                  VideoEditorScaffold(isLoading: isLoading),
             ),
           );
         },
