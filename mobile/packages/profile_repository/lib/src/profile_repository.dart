@@ -413,6 +413,7 @@ class ProfileRepository {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final available = data['available'] as bool? ?? false;
         final reason = data['reason'] as String?;
+        final code = data['code'] as String?;
 
         if (available) {
           // Also check keycast (login.divine.video) — username must be
@@ -449,9 +450,24 @@ class ProfileRepository {
           }
         }
 
-        // Server told us it's not available — return appropriate type
+        // Use machine-readable code when available, fall back to
+        // reason string-matching for older server versions.
+        if (code != null) {
+          return switch (code) {
+            'reserved' || 'burned' => const UsernameReserved(),
+            'invalid_format' => UsernameInvalidFormat(
+              reason ?? 'Invalid username format',
+            ),
+            // taken, pending_confirmation, or any unknown code
+            _ => const UsernameTaken(),
+          };
+        }
+
+        // Fallback: string-match on reason for servers without code
         if (reason != null) {
-          // Validation failures come back with reason but available=false
+          if (reason.contains('reserved')) {
+            return const UsernameReserved();
+          }
           if (reason.contains('character') ||
               reason.contains('hyphen') ||
               reason.contains('invalid') ||

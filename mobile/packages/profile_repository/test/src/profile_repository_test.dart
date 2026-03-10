@@ -1894,6 +1894,7 @@ void main() {
         String username, {
         bool available = true,
         String? reason,
+        String? code,
         int statusCode = 200,
       }) {
         when(
@@ -1904,7 +1905,11 @@ void main() {
           ),
         ).thenAnswer(
           (_) async => Response(
-            jsonEncode({'available': available, 'reason': ?reason}),
+            jsonEncode({
+              'available': available,
+              'reason': ?reason,
+              'code': ?code,
+            }),
             statusCode,
           ),
         );
@@ -2148,6 +2153,120 @@ void main() {
           username: 'ok',
         );
         expect(result, isA<UsernameInvalidFormat>());
+      });
+
+
+      // --- code field tests (new name-server API) ---
+
+      test('returns $UsernameReserved when code is reserved', () async {
+        stubNameServerCheck(
+          'admin',
+          available: false,
+          code: 'reserved',
+          reason: 'Username is reserved',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'admin',
+        );
+        expect(result, isA<UsernameReserved>());
+      });
+
+      test('returns $UsernameReserved when code is burned', () async {
+        stubNameServerCheck(
+          'badname',
+          available: false,
+          code: 'burned',
+          reason: 'Username has been burned',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'badname',
+        );
+        expect(result, isA<UsernameReserved>());
+      });
+
+      test('returns $UsernameTaken when code is taken', () async {
+        stubNameServerCheck(
+          'alice',
+          available: false,
+          code: 'taken',
+          reason: 'Username is already taken',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'alice',
+        );
+        expect(result, isA<UsernameTaken>());
+      });
+
+      test(
+        'returns $UsernameTaken when code is pending_confirmation',
+        () async {
+          stubNameServerCheck(
+            'pending',
+            available: false,
+            code: 'pending_confirmation',
+            reason: 'Username is pending confirmation',
+          );
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'pending',
+          );
+          expect(result, isA<UsernameTaken>());
+        },
+      );
+
+      test(
+        'returns $UsernameInvalidFormat when code is invalid_format',
+        () async {
+          stubNameServerCheck(
+            'bad..name',
+            available: false,
+            code: 'invalid_format',
+            reason: 'Contains consecutive dots',
+          );
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'bad..name',
+          );
+          expect(result, isA<UsernameInvalidFormat>());
+        },
+      );
+
+      test('returns $UsernameInvalidFormat with fallback message '
+          'when code is invalid_format but no reason', () async {
+        stubNameServerCheck('bad', available: false, code: 'invalid_format');
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'bad',
+        );
+        expect(result, isA<UsernameInvalidFormat>());
+        expect(
+          (result as UsernameInvalidFormat).reason,
+          equals('Invalid username format'),
+        );
+      });
+
+      test('returns $UsernameReserved via reason fallback '
+          'when no code field present', () async {
+        stubNameServerCheck(
+          'admin',
+          available: false,
+          reason: 'Username is reserved',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'admin',
+        );
+        expect(result, isA<UsernameReserved>());
+      });
+
+      test('code field takes precedence over reason string-matching', () async {
+        stubNameServerCheck(
+          'reserved-word',
+          available: false,
+          code: 'taken',
+          reason: 'Username is reserved',
+        );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'reserved-word',
+        );
+        // code says taken, even though reason says reserved
+        expect(result, isA<UsernameTaken>());
       });
 
       test('returns UsernameAvailable when name is taken but pubkey matches '
