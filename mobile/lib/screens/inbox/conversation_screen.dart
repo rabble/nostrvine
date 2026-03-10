@@ -1670,19 +1670,17 @@ class _ReportUserDialogState extends ConsumerState<_ReportUserDialog> {
 
         // Send moderation DM
         final dmRepo = ref.read(dmRepositoryProvider);
-        if (dmRepo != null) {
-          try {
-            await dmRepo.sendMessage(
-              recipientPubkey: ModerationLabelService.divineModerationPubkeyHex,
-              content: _formatReportDm(),
-            );
-          } catch (e) {
-            Log.warning(
-              'Failed to send moderation DM: $e',
-              name: 'ReportUserDialog',
-              category: LogCategory.system,
-            );
-          }
+        try {
+          await dmRepo.sendMessage(
+            recipientPubkey: ModerationLabelService.divineModerationPubkeyHex,
+            content: _formatReportDm(),
+          );
+        } catch (e) {
+          Log.warning(
+            'Failed to send moderation DM: $e',
+            name: 'ReportUserDialog',
+            category: LogCategory.system,
+          );
         }
 
         if (mounted) {

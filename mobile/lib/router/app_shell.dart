@@ -3,10 +3,12 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
@@ -562,7 +564,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               NotificationBadge(
                 count:
                     ref.watch(relayNotificationUnreadCountProvider) +
-                    (ref.watch(dmUnreadCountProvider).asData?.value ?? 0),
+                    context.watch<DmUnreadCountCubit>().state,
                 child: _buildTabButton(
                   context,
                   ref,

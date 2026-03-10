@@ -38,10 +38,6 @@ class MessagesTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
 
-    if (dmRepository == null) {
-      return const _MessagesTabShell(child: _EmptyMessagesState());
-    }
-
     return BlocProvider(
       create: (_) =>
           ConversationListBloc(dmRepository: dmRepository)
@@ -61,22 +57,6 @@ class MessagesTab extends ConsumerWidget {
     );
 
     final dmRepository = ref.read(dmRepositoryProvider);
-    if (dmRepository == null) {
-      // Diagnostic: identify which guard in dmRepositoryProvider fails
-      final isReady = ref.read(isNostrReadyProvider);
-      final keyManager = ref.read(nostrKeyManagerProvider);
-      final authService = ref.read(authServiceProvider);
-      Log.warning(
-        'Cannot open new message: dmRepository is null — '
-        'isNostrReady=$isReady, '
-        'hasPublicKey=${keyManager.publicKey != null}, '
-        'hasRpcSigner=${authService.rpcSigner != null}, '
-        'isAuthenticated=${authService.isAuthenticated}',
-        name: 'MessagesTab',
-        category: LogCategory.ui,
-      );
-      return;
-    }
 
     final profileRepo = ref.read(profileRepositoryProvider);
     if (profileRepo == null) {
@@ -100,28 +80,6 @@ class MessagesTab extends ConsumerWidget {
         recipientProfile: selectedUser,
       );
     }
-  }
-}
-
-class _MessagesTabShell extends ConsumerWidget {
-  const _MessagesTabShell({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Stack(
-      children: [
-        child,
-        Positioned(
-          right: 16,
-          bottom: 20,
-          child: _NewMessageFab(
-            onTap: () => MessagesTab._openNewMessage(context, ref),
-          ),
-        ),
-      ],
-    );
   }
 }
 
@@ -179,7 +137,7 @@ class _ReactivePeopleBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userPubkey = ref.read(dmRepositoryProvider)!.userPubkey;
+    final userPubkey = ref.read(dmRepositoryProvider).userPubkey;
     final partnerPubkeys = _extractRecentPartners(userPubkey);
 
     final users = partnerPubkeys.map((pubkey) {
@@ -223,7 +181,6 @@ class _ReactivePeopleBar extends ConsumerWidget {
   void _onUserTap(BuildContext context, WidgetRef ref, PeopleBarUser user) {
     if (user.pubkey == null) return;
     final dmRepo = ref.read(dmRepositoryProvider);
-    if (dmRepo == null) return;
     final profileAsync = ref.read(
       userProfileReactiveProvider(user.pubkey!),
     );
@@ -255,7 +212,7 @@ class _ConversationsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userPubkey = ref.read(dmRepositoryProvider)!.userPubkey;
+    final userPubkey = ref.read(dmRepositoryProvider).userPubkey;
 
     return ListView.builder(
       itemCount: conversations.length,
@@ -311,7 +268,7 @@ class _ConversationItemWidget extends ConsumerWidget {
       isUnread: !conversation.isRead,
       isGroupChat: conversation.isGroup,
       participantCount: conversation.participantPubkeys.length,
-      onTap: dmRepo != null ? () => _onTap(context, profile, dmRepo) : null,
+      onTap: () => _onTap(context, profile, dmRepo),
     );
   }
 

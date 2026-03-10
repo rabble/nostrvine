@@ -3,8 +3,9 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/inbox/messages_tab.dart';
 import 'package:openvine/screens/inbox/notifications_tab.dart';
@@ -57,7 +58,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   @override
   Widget build(BuildContext context) {
     final notificationUnread = ref.watch(relayNotificationUnreadCountProvider);
-    final dmUnread = ref.watch(dmUnreadCountProvider).asData?.value ?? 0;
+    final dmUnread = context.watch<DmUnreadCountCubit>().state;
 
     return ColoredBox(
       color: VineTheme.surfaceBackground,
