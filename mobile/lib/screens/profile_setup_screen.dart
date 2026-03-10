@@ -1618,23 +1618,49 @@ class _SaveButton extends StatelessWidget {
 }
 
 @visibleForTesting
-class UsernameReservedDialog extends StatelessWidget {
+class UsernameReservedDialog extends StatefulWidget {
   const UsernameReservedDialog(this.username, {super.key});
 
   final String username;
 
-  Future<void> _contactSupport(BuildContext context) async {
+  @override
+  State<UsernameReservedDialog> createState() => _UsernameReservedDialogState();
+}
+
+class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
+  final _reasonController = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _contactSupport() async {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) return;
+
+    setState(() => _submitting = true);
+
+    final npub = ZendeskSupportService.userNpub;
     final created = await ZendeskSupportService.createTicketViaApi(
-      subject: 'Reserved username request: $username',
+      subject: 'Reserved username request: ${widget.username}',
       description:
-          'I would like to claim the reserved username "$username". '
-          'Please verify my identity and release this name to my account.',
+          'Username requested: ${widget.username}\n'
+          '${npub != null ? 'Nostr npub: $npub\n' : ''}\n'
+          'Why this name should be mine:\n$reason',
+      requesterName: ZendeskSupportService.userName,
+      requesterEmail: ZendeskSupportService.userEmail,
       tags: ['reserved_username', 'name_request'],
     );
 
-    if (!context.mounted) return;
+    if (!mounted) return;
+
+    setState(() => _submitting = false);
 
     if (created) {
+      Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Support request sent! We'll get back to you soon."),
@@ -1643,12 +1669,16 @@ class UsernameReservedDialog extends StatelessWidget {
       );
     } else {
       // Fallback to email if Zendesk is unavailable
+      final encodedReason = Uri.encodeComponent(reason);
       final launched = await launchUrl(
         Uri.parse(
-          'mailto:names@divine.video?subject=Reserved username request: $username',
+          'mailto:names@divine.video'
+          '?subject=Reserved username request: ${widget.username}'
+          '&body=Username requested: ${widget.username}%0A%0A'
+          'Why this name should be mine:%0A$encodedReason',
         ),
       );
-      if (!launched && context.mounted) {
+      if (!launched && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -1673,10 +1703,29 @@ class UsernameReservedDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'The name $username is reserved. Contact support to request it.',
+            'The name ${widget.username} is reserved. Tell us why it should '
+            'be yours.',
             style: const TextStyle(color: VineTheme.secondaryText),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _reasonController,
+            maxLines: 3,
+            style: const TextStyle(color: VineTheme.whiteText, fontSize: 14),
+            decoration: const InputDecoration(
+              hintText: "e.g. It's my brand name, stage name, etc.",
+              hintStyle: TextStyle(color: VineTheme.onSurfaceMuted),
+              border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: VineTheme.surfaceContainer),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: VineTheme.vineGreen),
+              ),
+              contentPadding: EdgeInsets.all(12),
+            ),
+          ),
+          const SizedBox(height: 12),
           const Text(
             'Already contacted support? Tap "Check again" to see if '
             "it's been released to you.",
@@ -1703,11 +1752,20 @@ class UsernameReservedDialog extends StatelessWidget {
           ),
         ),
         FilledButton(
-          onPressed: () => _contactSupport(context),
+          onPressed: _submitting ? null : _contactSupport,
           style: FilledButton.styleFrom(
             backgroundColor: VineTheme.vineGreen,
           ),
-          child: const Text('Contact support'),
+          child: _submitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: VineTheme.whiteText,
+                  ),
+                )
+              : const Text('Send request'),
         ),
       ],
     );

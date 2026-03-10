@@ -211,8 +211,18 @@ void main() {
 
       expect(
         find.text(
-          'The name $username is reserved. Contact support to request it.',
+          'The name $username is reserved. Tell us why it should be yours.',
         ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('has reason text field', (tester) async {
+      await tester.pumpWidget(buildDialog('reservedname'));
+
+      expect(find.byType(TextField), findsOneWidget);
+      expect(
+        find.text("e.g. It's my brand name, stage name, etc."),
         findsOneWidget,
       );
     });
@@ -224,11 +234,11 @@ void main() {
       expect(closeButton, findsOneWidget);
     });
 
-    testWidgets('has Contact support button', (tester) async {
+    testWidgets('has Send request button', (tester) async {
       await tester.pumpWidget(buildDialog('reservedname'));
 
       expect(
-        find.widgetWithText(FilledButton, 'Contact support'),
+        find.widgetWithText(FilledButton, 'Send request'),
         findsOneWidget,
       );
     });
