@@ -6,12 +6,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/controllers/clip_reorder_controller.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_calculations.dart';
@@ -258,7 +259,16 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
         );
 
         if (ref.read(clipManagerProvider.notifier).clips.isEmpty) {
-          if (mounted) context.pop();
+          if (mounted) {
+            Navigator.of(
+              context,
+            ).popUntil(
+              (route) =>
+                  route.settings.name == VideoRecorderScreen.routeName ||
+                  route.settings.name == LibraryScreen.draftsRouteName ||
+                  route.settings.name == LibraryScreen.clipsRouteName,
+            );
+          }
           return;
         }
 

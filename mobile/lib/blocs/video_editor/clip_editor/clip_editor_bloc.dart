@@ -85,12 +85,14 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
       category: LogCategory.video,
     );
 
+    // During reorder we only update the visual index — the video player
+    // stays on the same clip, so don't reset player readiness.
     emit(
       state.copyWith(
         currentClipIndex: event.index,
         isPlaying: false,
-        isPlayerReady: false,
-        hasPlayedOnce: false,
+        isPlayerReady: state.isReordering ? null : false,
+        hasPlayedOnce: state.isReordering ? null : false,
         currentPosition: offset,
         splitPosition: Duration.zero,
       ),

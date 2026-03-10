@@ -169,10 +169,27 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
       _isInitialized = false;
     }
 
+    // Reinitialize when the underlying video file changed (e.g. after a
+    // split finishes rendering) while this is still the current clip.
+    if (widget.isCurrentClip && oldWidget.clip.video != widget.clip.video) {
+      unawaited(_reinitializePlayer());
+    }
+
     // Handle playback when isCurrentClip changes
     if (oldWidget.isCurrentClip != widget.isCurrentClip) {
       final isPlaying = context.read<ClipEditorBloc>().state.isPlaying;
       _handlePlaybackStateChange(isPlaying);
+    }
+  }
+
+  Future<void> _reinitializePlayer() async {
+    context.read<ClipEditorBloc>().add(
+      const ClipEditorPlayerReadyChanged(isReady: false),
+    );
+    await _disposeController();
+    _isInitialized = false;
+    if (mounted) {
+      await _initializeVideoPlayer();
     }
   }
 

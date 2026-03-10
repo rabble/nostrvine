@@ -2,7 +2,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -10,6 +9,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor_icon_button.dart';
 
@@ -144,8 +144,8 @@ class _VideoEditorMoreButtonState
     final remainingClips = ref.read(clipManagerProvider).clips;
 
     if (remainingClips.isEmpty) {
-      // No clips left, navigate back
-      context.pop();
+      // No clips left, navigate back to the video recorder.
+      _popToVideoRecorder();
     } else {
       // Update currentClipIndex if it's now out of bounds
       final currentIndex = context
@@ -185,7 +185,23 @@ class _VideoEditorMoreButtonState
     ref.read(clipManagerProvider.notifier).clearAll();
 
     /// Navigate back to the video-recorder page.
-    context.pop();
+    _popToVideoRecorder();
+  }
+
+  /// Pops the clip editor and the video editor to return to the video
+  /// recorder.
+  ///
+  /// The navigation stack is: video-recorder → video-editor → clip-editor.
+  /// Uses the route name set by GoRouter to stop at the recorder route.
+  void _popToVideoRecorder() {
+    Navigator.of(
+      context,
+    ).popUntil(
+      (route) =>
+          route.settings.name == VideoRecorderScreen.routeName ||
+          route.settings.name == LibraryScreen.draftsRouteName ||
+          route.settings.name == LibraryScreen.clipsRouteName,
+    );
   }
 
   /// Opens the clip library screen in selection mode.
