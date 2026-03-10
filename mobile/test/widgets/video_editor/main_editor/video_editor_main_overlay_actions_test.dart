@@ -52,6 +52,7 @@ void main() {
                 removeAreaKey: GlobalKey(),
                 originalClipAspectRatio: 9 / 16,
                 bodySizeNotifier: ValueNotifier(const Size(400, 600)),
+                onOpenClipsEditor: () {},
                 onAddStickers: () {},
                 onAddEditTextLayer: ([layer]) async => null,
                 child: BlocProvider<VideoEditorMainBloc>.value(

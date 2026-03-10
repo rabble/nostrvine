@@ -21,6 +21,7 @@ class VideoEditorScope extends InheritedWidget {
     required this.editorKey,
     required this.removeAreaKey,
     required this.onAddStickers,
+    required this.onOpenClipsEditor,
     required this.onAddEditTextLayer,
     required this.originalClipAspectRatio,
     required this.bodySizeNotifier,
@@ -36,6 +37,9 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Callback to open the sticker picker.
   final VoidCallback onAddStickers;
+
+  /// Callback to open the clips editor.
+  final VoidCallback onOpenClipsEditor;
 
   /// Original aspect ratio of the clip being edited.
   final double originalClipAspectRatio;

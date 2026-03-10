@@ -39,6 +39,12 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                   ),
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
+                    label: 'Clips',
+                    icon: .images,
+                    onTap: scope.onOpenClipsEditor,
+                  ),
+                  _ActionButton(
+                    // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Draw',
                     icon: .scribble,
                     onTap: () => scope.editor?.openPaintEditor(),

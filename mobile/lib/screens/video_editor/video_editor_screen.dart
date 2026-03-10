@@ -16,6 +16,7 @@ import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.da
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -29,19 +30,35 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 /// Manages the [VideoEditorMainBloc] and [VideoEditorStickerBloc] lifecycle,
 /// precaches sticker images, and coordinates the editor canvas with toolbars.
 class VideoEditorScreen extends ConsumerStatefulWidget {
-  const VideoEditorScreen({super.key});
+  const VideoEditorScreen({
+    super.key,
+    this.draftId,
+    this.fromLibrary = false,
+  });
+
+  /// Optional draft ID to load an existing draft.
+  final String? draftId;
+
+  /// Whether the editor was opened from the clip library.
+  final bool fromLibrary;
 
   /// Route name for this screen.
   static const routeName = 'video-editor';
 
+  static const draftRouteName = '$routeName-draft';
+
   /// Path for this route.
   static const path = '/video-editor';
+
+  static const draftPathWithId = '$path/:draftId';
 
   @override
   ConsumerState<VideoEditorScreen> createState() => _VideoEditorScreenState();
 }
 
 class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
+  late bool _isLoadingDraft = widget.draftId != null;
+
   final _editorKey = GlobalKey<ProImageEditorState>();
   final GlobalKey<State<StatefulWidget>> _removeAreaKey = GlobalKey();
 
@@ -68,7 +85,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   void initState() {
     super.initState();
     Log.info(
-      '🎨 Initialized',
+      '🎬 Initialized (draftId: ${widget.draftId}, fromLibrary: ${widget.fromLibrary})',
       name: 'VideoEditorScreen',
       category: LogCategory.video,
     );
@@ -79,6 +96,32 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       name: 'VideoEditorScreen',
       category: LogCategory.video,
     );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+
+      Log.debug(
+        '🎬 Initializing video editor provider',
+        name: 'VideoClipEditorScreen',
+        category: LogCategory.video,
+      );
+
+      await ref
+          .read(videoEditorProvider.notifier)
+          .initialize(draftId: widget.draftId);
+
+      Log.info(
+        '🎬 Video editor initialized successfully',
+        name: 'VideoClipEditorScreen',
+        category: LogCategory.video,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoadingDraft = false;
+        });
+      }
+    });
   }
 
   @override
@@ -116,6 +159,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
       unawaited(precacheImage(provider, context, size: estimatedSize));
     }
+  }
+
+  Future<void> _openClipsEditor() async {
+    // TODO;
   }
 
   /// Opens the sticker picker sheet and adds the selected sticker as a layer.
@@ -228,6 +275,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
             removeAreaKey: _removeAreaKey,
             originalClipAspectRatio: _clip.originalAspectRatio,
             bodySizeNotifier: _bodySizeNotifier,
+            onOpenClipsEditor: _openClipsEditor,
             onAddStickers: _addStickers,
             onAddEditTextLayer: ([layer]) {
               final mainBloc = context.read<VideoEditorMainBloc>();
@@ -239,7 +287,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                 layer: layer,
               );
             },
-            child: const VideoEditorScaffold(),
+            child:
+                _isLoadingDraft // FIXME:
+                ? const Center(child: CircularProgressIndicator.adaptive())
+                // FIXME: fromLibrary: widget.fromLibrary
+                : const VideoEditorScaffold(),
           );
         },
       ),
