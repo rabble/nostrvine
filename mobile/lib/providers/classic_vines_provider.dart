@@ -390,12 +390,13 @@ Future<List<ClassicViner>> topClassicViners(Ref ref) async {
       category: LogCategory.video,
     );
     // Fire-and-forget profile prefetch - don't await
-    unawaited(
-      ref
-              .read(profileRepositoryProvider)
-              ?.fetchBatchProfiles(pubkeys: vinersNeedingProfiles) ??
-          Future<void>.value(),
-    );
+    final profileRepository = ref.read(profileRepositoryProvider);
+    // TODO(any): Consider making profile repository not nullable
+    if (profileRepository != null) {
+      unawaited(
+        profileRepository.fetchBatchProfiles(pubkeys: vinersNeedingProfiles),
+      );
+    }
   }
 
   return topViners;
