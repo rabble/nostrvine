@@ -141,6 +141,61 @@ void main() {
 
         verify(() => mockUserProfilesDao.upsertProfile(profile)).called(1);
       });
+
+      test('adds pubkey to known cached set', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+
+        await profileRepository.cacheProfile(profile);
+
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+      });
+
+      test('clears pubkey from confirmed missing set', () async {
+        // First make the pubkey confirmed missing
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => null);
+        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+        expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+
+        // Now cache a profile for it
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        await profileRepository.cacheProfile(profile);
+
+        expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
+      });
+    });
+
+    group('hasProfile', () {
+      test('returns false for unknown pubkey', () {
+        expect(profileRepository.hasProfile(testPubkey), isFalse);
+      });
+
+      test('returns true after caching a profile', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        await profileRepository.cacheProfile(profile);
+
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+      });
+
+      test('returns true after fetching from relay', () async {
+        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+      });
+    });
+
+    group('loadKnownCachedPubkeys', () {
+      test('populates known cached set from Drift', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => [profile]);
+
+        await profileRepository.loadKnownCachedPubkeys();
+
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+      });
     });
 
     group('deleteCachedProfile', () {
@@ -372,6 +427,59 @@ void main() {
         verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
         verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
       });
+
+      test('marks pubkey as confirmed missing on relay miss', () async {
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => null);
+
+        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+
+        expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+      });
+
+      test(
+        'skips relay fetch for confirmed missing pubkeys',
+        () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+
+          // First call — hits relay, marks missing
+          await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          // Second call — should not hit relay
+          await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          verify(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).called(1);
+        },
+      );
+
+      test(
+        'deduplicates concurrent calls for the same pubkey',
+        () async {
+          final results = await Future.wait([
+            profileRepository.fetchFreshProfile(pubkey: testPubkey),
+            profileRepository.fetchFreshProfile(pubkey: testPubkey),
+            profileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ]);
+
+          // All return the same profile
+          for (final r in results) {
+            expect(r?.pubkey, equals(testPubkey));
+          }
+          // Only one relay call
+          verify(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).called(1);
+        },
+      );
     });
 
     group('saveProfileEvent', () {

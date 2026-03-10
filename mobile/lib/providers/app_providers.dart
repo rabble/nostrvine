@@ -1091,7 +1091,7 @@ ProfileRepository? profileRepository(Ref ref) {
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
-  return ProfileRepository(
+  final repo = ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
@@ -1099,6 +1099,18 @@ ProfileRepository? profileRepository(Ref ref) {
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
   );
+
+  // Pre-load known cached pubkeys and wire into SubscriptionManager
+  // so Kind 0 relay requests skip already-cached authors.
+  unawaited(
+    repo.loadKnownCachedPubkeys().then((_) {
+      ref
+          .read(subscriptionManagerProvider)
+          .setCacheLookup(hasProfileCached: repo.hasProfile);
+    }),
+  );
+
+  return repo;
 }
 
 /// Enhanced notification service with Nostr integration (lazy loaded)

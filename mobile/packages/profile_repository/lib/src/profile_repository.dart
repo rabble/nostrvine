@@ -37,7 +37,7 @@ const _profileIndexerRelays = ['wss://purplepag.es', 'wss://user.kindpag.es'];
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
   /// Creates a new profile repository.
-  const ProfileRepository({
+  ProfileRepository({
     required NostrClient nostrClient,
     required UserProfilesDao userProfilesDao,
     required Client httpClient,
@@ -57,6 +57,20 @@ class ProfileRepository {
   final ProfileStatsDao? _profileStatsDao;
   final FunnelcakeApiClient? _funnelcakeApiClient;
   final ProfileSearchFilter? _profileSearchFilter;
+
+  /// In-flight relay fetches keyed by pubkey. Concurrent callers for the
+  /// same pubkey share the same future instead of firing duplicate requests.
+  final _inFlightFetches = <String, Future<UserProfile?>>{};
+
+  /// Pubkeys confirmed to have no Kind 0 profile (FunnelCake returned
+  /// the `_noProfile` sentinel or relay + indexer returned nothing).
+  /// Session-scoped — cleared on app restart.
+  final _confirmedMissing = <String>{};
+
+  /// In-memory set of pubkeys known to have cached profiles.
+  /// Enables synchronous [hasProfile] checks for subscription
+  /// manager filtering.
+  final _knownCached = <String>{};
 
   /// Searches cached profiles from local storage only.
   ///
@@ -92,6 +106,28 @@ class ProfileRepository {
     return matches.length;
   }
 
+  /// Whether the given pubkey is known to have no Kind 0 profile.
+  ///
+  /// Returns `true` if FunnelCake or relay fetches previously confirmed
+  /// this pubkey has no profile. Session-scoped.
+  bool isConfirmedMissing(String pubkey) => _confirmedMissing.contains(pubkey);
+
+  /// Synchronous check for whether a profile is cached.
+  ///
+  /// Returns `true` if the pubkey was previously fetched and cached in
+  /// this session. Used by the subscription manager to skip redundant
+  /// Kind 0 relay requests.
+  ///
+  /// Call [loadKnownCachedPubkeys] once at startup to pre-populate.
+  bool hasProfile(String pubkey) => _knownCached.contains(pubkey);
+
+  /// Pre-loads the in-memory [_knownCached] set from all profiles
+  /// currently in the Drift cache. Call once after construction.
+  Future<void> loadKnownCachedPubkeys() async {
+    final all = await _userProfilesDao.getAllProfiles();
+    _knownCached.addAll(all.map((p) => p.pubkey));
+  }
+
   /// Returns the cached profile from local storage (SQLite) only.
   ///
   /// Does NOT fetch from Nostr relays. Use this for immediate UI display
@@ -106,7 +142,11 @@ class ProfileRepository {
   ///
   /// Use this to cache profiles obtained from relay events or REST APIs.
   /// If a profile with the same pubkey already exists, it is updated.
+  /// Also clears the pubkey from the confirmed-missing set and adds
+  /// it to the known-cached set.
   Future<void> cacheProfile(UserProfile profile) {
+    _confirmedMissing.remove(profile.pubkey);
+    _knownCached.add(profile.pubkey);
     return _userProfilesDao.upsertProfile(profile);
   }
 
@@ -162,17 +202,32 @@ class ProfileRepository {
 
   /// Fetches a fresh profile from Nostr relays and updates the local cache.
   ///
-  /// Always fetches from relay, ignoring any cached data. Use this to ensure
-  /// the user sees the latest profile data.
+  /// Skips the relay fetch if the pubkey is confirmed missing (no Kind 0).
+  /// Deduplicates concurrent calls for the same pubkey — only one relay
+  /// request is made, and all callers share the result.
   ///
   /// Returns `null` if no profile exists on relays for the given pubkey.
   /// On success, the profile is automatically cached locally.
-  Future<UserProfile?> fetchFreshProfile({required String pubkey}) async {
+  Future<UserProfile?> fetchFreshProfile({required String pubkey}) {
+    if (_confirmedMissing.contains(pubkey)) return Future.value();
+
+    // Deduplicate: return existing in-flight future if present.
+    final existing = _inFlightFetches[pubkey];
+    if (existing != null) return existing;
+
+    final future = _doFetchFreshProfile(pubkey);
+    _inFlightFetches[pubkey] = future;
+
+    return future.whenComplete(() => _inFlightFetches.remove(pubkey));
+  }
+
+  Future<UserProfile?> _doFetchFreshProfile(String pubkey) async {
     final profileEvent = await _nostrClient.fetchProfile(pubkey);
     if (profileEvent == null) {
+      _confirmedMissing.add(pubkey);
       developer.log(
-        'No profile found for $pubkey (cache miss + relay miss)',
-        name: 'ProfileRepository.getProfile',
+        'No profile found for $pubkey (relay miss, marked missing)',
+        name: 'ProfileRepository.fetchFreshProfile',
       );
       return null;
     }
@@ -181,8 +236,9 @@ class ProfileRepository {
     developer.log(
       'Fetched from relay and caching: ${profile.bestDisplayName}, '
       'picture=${profile.picture ?? "null"}',
-      name: 'ProfileRepository.getProfile',
+      name: 'ProfileRepository.fetchFreshProfile',
     );
+    _knownCached.add(pubkey);
     await _userProfilesDao.upsertProfile(profile);
     return profile;
   }
@@ -689,7 +745,14 @@ class ProfileRepository {
 
     // Step 5: Batch-write all freshly fetched to Drift
     if (toCache.isNotEmpty) {
+      _knownCached.addAll(toCache.map((p) => p.pubkey));
       await _userProfilesDao.upsertProfiles(toCache);
+    }
+
+    // Mark any still-remaining pubkeys as confirmed missing so future
+    // single-profile fetches skip the relay/indexer cascade.
+    if (remaining.isNotEmpty) {
+      _confirmedMissing.addAll(remaining);
     }
 
     developer.log(

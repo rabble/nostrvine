@@ -250,6 +250,13 @@ class NotificationServiceEnhanced {
     return null;
   }
 
+  /// Returns cached profile if available, otherwise fetches fresh from relay.
+  Future<UserProfile?> _getActorProfile(String pubkey) async {
+    final cached = await _profileRepository?.getCachedProfile(pubkey: pubkey);
+    if (cached != null) return cached;
+    return _profileRepository?.fetchFreshProfile(pubkey: pubkey);
+  }
+
   /// Handle reaction (like) events
   Future<void> _handleReactionEvent(Event event) async {
     // Check if this is a like (+ reaction)
@@ -268,9 +275,7 @@ class NotificationServiceEnhanced {
     }
 
     // Get actor info using helper function
-    final actorProfile = await _profileRepository?.fetchFreshProfile(
-      pubkey: event.pubkey,
-    );
+    final actorProfile = await _getActorProfile(event.pubkey);
     final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
@@ -304,9 +309,7 @@ class NotificationServiceEnhanced {
     }
 
     // Get actor info using helper function
-    final actorProfile = await _profileRepository?.fetchFreshProfile(
-      pubkey: event.pubkey,
-    );
+    final actorProfile = await _getActorProfile(event.pubkey);
     final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
@@ -347,9 +350,7 @@ class NotificationServiceEnhanced {
     if (!isFollowingCurrentUser) return;
 
     // Get actor info using helper function
-    final actorProfile = await _profileRepository?.fetchFreshProfile(
-      pubkey: event.pubkey,
-    );
+    final actorProfile = await _getActorProfile(event.pubkey);
     final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
@@ -386,9 +387,7 @@ class NotificationServiceEnhanced {
     if (!mentionsCurrentUser) return;
 
     // Get actor info using helper function
-    final actorProfile = await _profileRepository?.fetchFreshProfile(
-      pubkey: event.pubkey,
-    );
+    final actorProfile = await _getActorProfile(event.pubkey);
     final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
@@ -420,9 +419,7 @@ class NotificationServiceEnhanced {
     }
 
     // Get actor info using helper function
-    final actorProfile = await _profileRepository?.fetchFreshProfile(
-      pubkey: event.pubkey,
-    );
+    final actorProfile = await _getActorProfile(event.pubkey);
     final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
