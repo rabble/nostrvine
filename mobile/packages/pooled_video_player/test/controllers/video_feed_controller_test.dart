@@ -754,6 +754,166 @@ void main() {
 
           addTearDown(controller.dispose);
         });
+
+        test(
+          'retainCurrentPlayer: true releases non-current players '
+          'but keeps current',
+          () async {
+            final controller = VideoFeedController(
+              videos: createTestVideos(count: 5),
+              pool: pool,
+              preloadBehind: 0,
+            );
+
+            // Wait for videos to load (indices 0, 1, 2)
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+
+            // Verify players are loaded before deactivation
+            expect(controller.getPlayer(0), isNotNull);
+            expect(controller.getPlayer(1), isNotNull);
+            expect(controller.getPlayer(2), isNotNull);
+
+            controller.setActive(active: false, retainCurrentPlayer: true);
+
+            // Non-current players (1, 2) should be released
+            expect(controller.getPlayer(1), isNull);
+            expect(controller.getPlayer(2), isNull);
+
+            // Current player (index 0) should be retained
+            expect(controller.getPlayer(0), isNotNull);
+
+            addTearDown(controller.dispose);
+          },
+        );
+
+        test(
+          'retainCurrentPlayer: false releases all players',
+          () async {
+            final controller = VideoFeedController(
+              videos: createTestVideos(count: 5),
+              pool: pool,
+              preloadBehind: 0,
+            );
+
+            // Wait for videos to load (indices 0, 1, 2)
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+
+            // Verify players are loaded before deactivation
+            expect(controller.getPlayer(0), isNotNull);
+            expect(controller.getPlayer(1), isNotNull);
+            expect(controller.getPlayer(2), isNotNull);
+
+            controller.setActive(
+              active: false,
+              retainCurrentPlayer: false,
+            );
+
+            // ALL players should be released
+            expect(controller.getPlayer(0), isNull);
+            expect(controller.getPlayer(1), isNull);
+            expect(controller.getPlayer(2), isNull);
+
+            addTearDown(controller.dispose);
+          },
+        );
+
+        test(
+          'retainCurrentPlayer defaults to false (releases all)',
+          () async {
+            final controller = VideoFeedController(
+              videos: createTestVideos(count: 5),
+              pool: pool,
+              preloadBehind: 0,
+            );
+
+            // Wait for videos to load (indices 0, 1, 2)
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+
+            // Verify players are loaded before deactivation
+            expect(controller.getPlayer(0), isNotNull);
+            expect(controller.getPlayer(1), isNotNull);
+            expect(controller.getPlayer(2), isNotNull);
+
+            // Call without the parameter to test default behavior
+            controller.setActive(active: false);
+
+            // ALL players should be released (same as explicit false)
+            expect(controller.getPlayer(0), isNull);
+            expect(controller.getPlayer(1), isNull);
+            expect(controller.getPlayer(2), isNull);
+
+            addTearDown(controller.dispose);
+          },
+        );
+
+        test(
+          'reactivating with retained player plays immediately',
+          () async {
+            final videos = createTestVideos(count: 5);
+            final controller = VideoFeedController(
+              videos: videos,
+              pool: pool,
+            );
+
+            // Wait for initial load
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+
+            final url = videos[0].url;
+            final currentPlayerSetup = playerSetups[url]!;
+
+            // Deactivate with retainCurrentPlayer: true
+            controller.setActive(active: false, retainCurrentPlayer: true);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            // Clear interaction history so we can verify new calls
+            clearInteractions(currentPlayerSetup.player);
+
+            // Reactivate
+            controller.setActive(active: true);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            // The current player should have play() and setVolume(100) called
+            verify(currentPlayerSetup.player.play).called(1);
+            verify(
+              () => currentPlayerSetup.player.setVolume(100),
+            ).called(1);
+
+            addTearDown(controller.dispose);
+          },
+        );
+
+        test(
+          'reactivating after full release reloads preload window',
+          () async {
+            final videos = createTestVideos(count: 5);
+            final controller = VideoFeedController(
+              videos: videos,
+              pool: pool,
+            );
+
+            // Wait for initial load
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+
+            // Confirm video 0 is ready before deactivation
+            expect(controller.isVideoReady(0), isTrue);
+
+            // Deactivate with default (releases all)
+            controller.setActive(active: false);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+
+            // After full release, player was released
+            expect(controller.isVideoReady(0), isFalse);
+
+            // Reactivate
+            controller.setActive(active: true);
+
+            // Immediately after reactivation, the player needs to reload
+            // so it won't be ready yet
+            expect(controller.isVideoReady(0), isFalse);
+
+            addTearDown(controller.dispose);
+          },
+        );
       });
     });
 
