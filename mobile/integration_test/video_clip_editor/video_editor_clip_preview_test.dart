@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -12,12 +12,9 @@ import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_pre
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('VideoEditorClipPreview Integration Tests', () {
-    testWidgets('displays clip preview with correct aspect ratio', (
-      tester,
-    ) async {
+    patrolTest('displays clip preview with correct aspect ratio', ($) async {
+      final tester = $.tester;
       final clip = DivineVideoClip(
         id: 'clip1',
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
@@ -49,7 +46,8 @@ void main() {
       expect(find.byType(AspectRatio), findsOneWidget);
     });
 
-    testWidgets('can be tapped when onTap is provided', (tester) async {
+    patrolTest('can be tapped when onTap is provided', ($) async {
+      final tester = $.tester;
       final clip = DivineVideoClip(
         id: 'clip1',
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
@@ -89,7 +87,8 @@ void main() {
       expect(tapped, true);
     });
 
-    testWidgets('shows border when reordering', (tester) async {
+    patrolTest('shows border when reordering', ($) async {
+      final tester = $.tester;
       final clip = DivineVideoClip(
         id: 'clip1',
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
@@ -125,7 +124,8 @@ void main() {
       expect(find.byType(AnimatedContainer), findsWidgets);
     });
 
-    testWidgets('shows deletion zone border color', (tester) async {
+    patrolTest('shows deletion zone border color', ($) async {
+      final tester = $.tester;
       final clip = DivineVideoClip(
         id: 'clip1',
         video: EditorVideo.file('assets/videos/default_intro.mp4'),

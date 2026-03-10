@@ -202,6 +202,7 @@ dev_dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
+  patrol: ^4.2.0
   flutter_launcher_icons: ^0.14.4
 
   very_good_analysis: ^10.2.0
@@ -213,6 +214,9 @@ dev_dependencies:
   # Code generation
   build_runner: ^2.7.1
   hive_ce_generator: ^1.6.0
+
+  # Integration test utilities
+  postgres: ^3.5.0
 
   # CLI tools
   args: ^2.4.2
@@ -310,6 +314,14 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   adaptive_icon_background: "#00B488"
   adaptive_icon_foreground: "assets/icon/app_icon.png"
+
+patrol:
+  app_name: divine
+  test_directory: integration_test
+  android:
+    package_name: co.openvine.app
+  ios:
+    bundle_id: co.openvine.app
 
 melos:
   useRootAsPackage: true

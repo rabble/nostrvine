@@ -41,6 +41,10 @@ class EventKind {
 
   static const int giftWrap = 1059;
 
+  static const int report = 1984;
+
+  static const int label = 1985;
+
   static const int fileHeader = 1063;
 
   static const int storageSharedFile = 1064;

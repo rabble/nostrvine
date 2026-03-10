@@ -41,6 +41,12 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+        testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
+        testInstrumentationRunnerArguments["clearPackageData"] = "true"
+    }
+
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 
     signingConfigs {
@@ -140,6 +146,9 @@ dependencies {
     // ProofMode library for cryptographic proof generation
     // Upgraded to 1.0.25 to fix duplicate class issues with java-opentimestamps fat JAR
     implementation("org.witness:android-libproofmode:1.0.25")
+
+    // Test orchestrator for Patrol
+    androidTestUtil("androidx.test:orchestrator:1.5.1")
 
     // Zendesk Support SDK
     implementation("com.zendesk:support:5.1.2")

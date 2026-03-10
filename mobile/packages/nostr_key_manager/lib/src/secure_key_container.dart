@@ -167,6 +167,12 @@ class SecureKeyContainer {
     }
   }
 
+  /// Whether this container holds a private key.
+  ///
+  /// Returns `false` for public-key-only containers (e.g. OAuth flow where
+  /// keys are managed server-side).
+  bool get hasPrivateKey => _privateKeyBytes.isNotEmpty;
+
   /// Temporarily expose the nsec for backup operations
   ///
   /// CRITICAL: Use with extreme caution. Only for backup/export scenarios.

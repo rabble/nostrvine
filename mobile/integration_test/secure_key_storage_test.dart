@@ -4,13 +4,11 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('NostrKeyManager Integration Tests on Device', () {
     late NostrKeyManager keyManager;
 
@@ -26,9 +24,7 @@ void main() {
       await keyManager.clearKeys();
     });
 
-    testWidgets('should initialize and generate keys on device', (
-      tester,
-    ) async {
+    patrolTest('should initialize and generate keys on device', ($) async {
       // Initialize
       await keyManager.initialize();
       expect(keyManager.isInitialized, isTrue);
@@ -49,9 +45,7 @@ void main() {
       expect(newKeyManager.publicKey, equals(keyPair.public));
     });
 
-    testWidgets('should migrate legacy keys from SharedPreferences', (
-      tester,
-    ) async {
+    patrolTest('should migrate legacy keys from SharedPreferences', ($) async {
       // Set up legacy keys
       const privateKey =
           '5dab4a6cf3b8c9b8d3c5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7';
@@ -78,7 +72,7 @@ void main() {
       expect(prefs.getString('nostr_keypair'), isNull);
     });
 
-    testWidgets('should import and export keys', (tester) async {
+    patrolTest('should import and export keys', ($) async {
       await keyManager.initialize();
 
       // Import key
@@ -93,7 +87,7 @@ void main() {
       expect(exported, equals(testPrivateKey));
     });
 
-    testWidgets('should clear keys properly', (tester) async {
+    patrolTest('should clear keys properly', ($) async {
       await keyManager.initialize();
       await keyManager.generateKeys();
       expect(keyManager.hasKeys, isTrue);
@@ -116,8 +110,8 @@ void main() {
       storageService.dispose();
     });
 
-    testWidgets('should generate and store keys with platform security', (
-      tester,
+    patrolTest('should generate and store keys with platform security', (
+      $,
     ) async {
       // Generate keys
       final keyContainer = await storageService.generateAndStoreKeys();
@@ -136,7 +130,7 @@ void main() {
       retrieved.dispose();
     });
 
-    testWidgets('should delete keys securely', (tester) async {
+    patrolTest('should delete keys securely', ($) async {
       // Generate and store keys
       final keyContainer = await storageService.generateAndStoreKeys();
       keyContainer.dispose();

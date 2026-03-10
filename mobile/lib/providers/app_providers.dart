@@ -19,6 +19,7 @@ import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
+import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -522,9 +523,17 @@ SecureKeyStorage secureKeyStorage(Ref ref) {
 // OAUTH SERVICES
 // =============================================================================
 
-/// OAuth configuration for our login.divine.video server
+/// OAuth configuration — uses local keycast when running in local environment
 @Riverpod(keepAlive: true)
 OAuthConfig oauthConfig(Ref ref) {
+  final env = ref.watch(currentEnvironmentProvider);
+  if (env.environment == AppEnvironment.local) {
+    return const OAuthConfig(
+      serverUrl: 'http://$localHost:$localKeycastPort',
+      clientId: 'divine-mobile',
+      redirectUri: 'http://localhost:$localKeycastPort/app/callback',
+    );
+  }
   return const OAuthConfig(
     serverUrl: 'https://login.divine.video',
     clientId: 'divine-mobile',
@@ -691,6 +700,7 @@ AuthService authService(Ref ref) {
   // analyticsApiServiceProvider to avoid a circular dependency:
   //   authService → analyticsApiService → nostrService → authService
   // Using currentEnvironmentProvider is safe (no auth/nostr dependency).
+  final authEnv = ref.read(currentEnvironmentProvider);
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
@@ -698,6 +708,8 @@ AuthService authService(Ref ref) {
     flutterSecureStorage: flutterSecureStorage,
     oauthConfig: oauthConfig,
     pendingVerificationService: pendingVerificationService,
+    profileCheckIndexerUrl: authEnv.indexerRelays.first,
+    indexerRelays: authEnv.indexerRelays,
     preFetchFollowing: (pubkeyHex) async {
       // Pre-fetch following list from funnelcake REST API during login
       // setup. This populates SharedPreferences BEFORE auth state is
@@ -918,11 +930,14 @@ SocialService socialService(Ref ref) {
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
   final analyticsApiService = ref.watch(analyticsApiServiceProvider);
 
+  final env = ref.watch(currentEnvironmentProvider);
+
   return SocialService(
     nostrService,
     authService,
     personalEventCache: personalEventCache,
     analyticsApiService: analyticsApiService,
+    indexerRelayUrls: env.indexerRelays,
   );
 }
 
@@ -974,10 +989,13 @@ FollowRepository followRepository(Ref ref) {
   // Get FunnelcakeApiClient for direct API access
   final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
 
+  final env = ref.watch(currentEnvironmentProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
     funnelcakeApiClient: funnelcakeApiClient,
+    indexerRelayUrls: env.indexerRelays,
     isOnline: () => connectionStatus.isOnline,
     queueOfflineAction: pendingActionService != null
         ? ({required bool isFollow, required String pubkey}) async {

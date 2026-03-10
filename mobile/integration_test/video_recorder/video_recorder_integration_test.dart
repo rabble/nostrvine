@@ -1,19 +1,17 @@
 // ABOUTME: Integration tests for video recording functionality
 // ABOUTME: Tests start/stop recording, video file creation, and recording state
 
-// NOTE: On Android, camera/microphone permissions must be granted before running.
-// Either grant via ADB: adb shell pm grant co.openvine.app android.permission.CAMERA
-// Or the first test run will show permission dialogs that must be accepted.
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
+import 'package:patrol/patrol.dart';
 import 'package:permissions_service/permissions_service.dart';
 
 /// Helper widget that wraps VideoRecorderScreen with required providers
@@ -28,17 +26,26 @@ Widget _buildTestWidget() {
   );
 }
 
-void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+/// Grant camera and microphone permissions via Patrol native automation.
+Future<void> _grantPermissions(PatrolIntegrationTester $) async {
+  const service = PermissionHandlerPermissionsService();
+  unawaited(service.requestCameraPermission());
+  if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+    timeout: const Duration(seconds: 5),
+  )) {
+    await $.platformAutomator.mobile.grantPermissionWhenInUse();
+  }
+  unawaited(service.requestMicrophonePermission());
+  if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+    timeout: const Duration(seconds: 5),
+  )) {
+    await $.platformAutomator.mobile.grantPermissionWhenInUse();
+  }
+}
 
+void main() {
   group('Video Recorder Integration Tests', () {
     late CameraService cameraService;
-
-    setUpAll(() async {
-      const service = PermissionHandlerPermissionsService();
-      await service.requestCameraPermission();
-      await service.requestMicrophonePermission();
-    });
 
     setUp(() async {
       cameraService = CameraService.create(
@@ -61,7 +68,9 @@ void main() {
       }
     });
 
-    testWidgets('can start recording', (tester) async {
+    patrolTest('can start recording', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       expect(cameraService.canRecord, isTrue);
 
       await cameraService.startRecording();
@@ -70,7 +79,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('can stop recording after starting', (tester) async {
+    patrolTest('can stop recording after starting', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       await cameraService.startRecording();
 
       // Record for 2 seconds
@@ -82,7 +93,9 @@ void main() {
       expect(video, anyOf(isNull, isA<Object>()));
     });
 
-    testWidgets('can start and stop multiple recordings', (tester) async {
+    patrolTest('can start and stop multiple recordings', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       for (var i = 0; i < 3; i++) {
         await cameraService.startRecording();
         await tester.pump(const Duration(milliseconds: 500));
@@ -97,7 +110,8 @@ void main() {
       }
     });
 
-    testWidgets('stopping without starting does not crash', (tester) async {
+    patrolTest('stopping without starting does not crash', ($) async {
+      await _grantPermissions($);
       // Should handle gracefully
       final video = await cameraService.stopRecording();
 
@@ -107,13 +121,9 @@ void main() {
   });
 
   group('Video Recorder Widget Tests', () {
-    setUpAll(() async {
-      const service = PermissionHandlerPermissionsService();
-      await service.requestCameraPermission();
-      await service.requestMicrophonePermission();
-    });
-
-    testWidgets('pinch to zoom changes zoom level', (tester) async {
+    patrolTest('pinch to zoom changes zoom level', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       await tester.pumpWidget(_buildTestWidget());
 
       // Wait for camera to initialize
@@ -158,7 +168,9 @@ void main() {
       notifier.destroy();
     });
 
-    testWidgets('long press on record button starts recording', (tester) async {
+    patrolTest('long press on record button starts recording', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       await tester.pumpWidget(_buildTestWidget());
 
       // Wait for camera to initialize and zoom limits to load
@@ -215,7 +227,9 @@ void main() {
       notifier.destroy();
     });
 
-    testWidgets('long press move zooms during recording', (tester) async {
+    patrolTest('long press move zooms during recording', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       await tester.pumpWidget(_buildTestWidget());
 
       // Wait for camera to initialize

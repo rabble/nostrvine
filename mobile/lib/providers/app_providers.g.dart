@@ -1269,17 +1269,17 @@ final class SecureKeyStorageProvider
 
 String _$secureKeyStorageHash() => r'853547d439994307884d2f47f3d9769daa0a1e96';
 
-/// OAuth configuration for our login.divine.video server
+/// OAuth configuration — uses local keycast when running in local environment
 
 @ProviderFor(oauthConfig)
 const oauthConfigProvider = OauthConfigProvider._();
 
-/// OAuth configuration for our login.divine.video server
+/// OAuth configuration — uses local keycast when running in local environment
 
 final class OauthConfigProvider
     extends $FunctionalProvider<OAuthConfig, OAuthConfig, OAuthConfig>
     with $Provider<OAuthConfig> {
-  /// OAuth configuration for our login.divine.video server
+  /// OAuth configuration — uses local keycast when running in local environment
   const OauthConfigProvider._()
     : super(
         from: null,
@@ -1313,7 +1313,7 @@ final class OauthConfigProvider
   }
 }
 
-String _$oauthConfigHash() => r'2d26760b0a845d9e0c2dd0362a4c26363be1786f';
+String _$oauthConfigHash() => r'f32c18f5c887e53d5c11479fabe62a1046250dcc';
 
 @ProviderFor(flutterSecureStorage)
 const flutterSecureStorageProvider = FlutterSecureStorageProvider._();
@@ -2126,7 +2126,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'f02dd0b46777ee8df7d43b2adec9e16462611ac2';
+String _$authServiceHash() => r'3cd3cf995f094aed8b0b8c88a3219b482319c766';
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly
@@ -2556,7 +2556,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'f3e43d187c9560fd9db5fe9925238eeb18048fff';
+String _$socialServiceHash() => r'6bcd6a86c6f0d5b42f84dc8cac32c9de51a3b950';
 
 /// Cached following list loaded directly from SharedPreferences.
 ///
@@ -2690,7 +2690,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'9ed8a0dfeb3cb62d7b64036f60f246924946096b';
+String _$followRepositoryHash() => r'b26951609811714d4830b2c8388b1f168d66b516';
 
 /// Provider for [CuratedListRepository] instance.
 ///

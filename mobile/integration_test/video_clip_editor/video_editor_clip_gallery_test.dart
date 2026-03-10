@@ -4,7 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
+import 'package:patrol/patrol.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -14,10 +14,9 @@ import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_gal
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
-
   group('VideoEditorClipGallery Integration Tests', () {
-    testWidgets('displays multiple clips in gallery', (tester) async {
+    patrolTest('displays multiple clips in gallery', ($) async {
+      final tester = $.tester;
       final clips = List.generate(
         3,
         (i) => DivineVideoClip(
@@ -57,7 +56,8 @@ void main() {
       expect(find.byType(Scrollable), findsOneWidget);
     });
 
-    testWidgets('displays Scrollable for clips', (tester) async {
+    patrolTest('displays Scrollable for clips', ($) async {
+      final tester = $.tester;
       final clips = List.generate(
         2,
         (i) => DivineVideoClip(
@@ -93,7 +93,8 @@ void main() {
       expect(find.byType(Scrollable), findsOneWidget);
     });
 
-    testWidgets('displays instruction text when not editing', (tester) async {
+    patrolTest('displays instruction text when not editing', ($) async {
+      final tester = $.tester;
       final clips = [
         DivineVideoClip(
           id: 'clip1',
@@ -128,7 +129,8 @@ void main() {
       expect(find.text('Tap to edit. Drag to reorder.'), findsOneWidget);
     });
 
-    testWidgets('can scroll through clips', (tester) async {
+    patrolTest('can scroll through clips', ($) async {
+      final tester = $.tester;
       final clips = List.generate(
         3,
         (i) => DivineVideoClip(

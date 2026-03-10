@@ -150,12 +150,18 @@ class AuthService implements BackgroundAwareService {
     OAuthConfig? oauthConfig,
     PendingVerificationService? pendingVerificationService,
     PreFetchFollowingCallback? preFetchFollowing,
+    String? profileCheckIndexerUrl,
+    List<String>? indexerRelays,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
        _pendingVerificationService = pendingVerificationService,
        _preFetchFollowing = preFetchFollowing,
+       _profileCheckIndexerUrl = profileCheckIndexerUrl,
+       _relayDiscoveryService = RelayDiscoveryService(
+         indexerRelays: indexerRelays,
+       ),
        _oauthConfig =
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
@@ -165,6 +171,7 @@ class AuthService implements BackgroundAwareService {
   final FlutterSecureStorage? _flutterSecureStorage;
   final PendingVerificationService? _pendingVerificationService;
   final PreFetchFollowingCallback? _preFetchFollowing;
+  final String? _profileCheckIndexerUrl;
 
   AuthState _authState = AuthState.checking;
   SecureKeyContainer? _currentKeyContainer;
@@ -187,7 +194,7 @@ class AuthService implements BackgroundAwareService {
   // Relay discovery state (NIP-65)
   List<DiscoveredRelay> _userRelays = [];
   bool _hasExistingProfile = false;
-  final RelayDiscoveryService _relayDiscoveryService = RelayDiscoveryService();
+  final RelayDiscoveryService _relayDiscoveryService;
 
   /// Callback registered by NostrService to add discovered relays to the client
   /// when discovery completes (avoids race where client is built before discovery).
@@ -2541,6 +2548,16 @@ class AuthService implements BackgroundAwareService {
         name: 'AuthService',
         category: LogCategory.auth,
       );
+
+      // Use the in-memory key container when available to avoid re-reading
+      // from platform storage. iOS keychain can fail transiently, causing
+      // "Unable to access your keys" errors even though the key is in RAM.
+      // Falls back to storage read if the container isn't loaded yet.
+      final container = _currentKeyContainer;
+      if (container != null && container.hasPrivateKey) {
+        return container.withNsec((nsec) => nsec);
+      }
+
       return await _keyStorage.exportNsec(biometricPrompt: biometricPrompt);
     } catch (e) {
       Log.error(
@@ -3188,7 +3205,8 @@ class AuthService implements BackgroundAwareService {
 
     try {
       final pubkeyHex = _currentKeyContainer!.publicKeyHex;
-      final indexerUrl = IndexerRelayConfig.defaultIndexers.first;
+      final indexerUrl =
+          _profileCheckIndexerUrl ?? IndexerRelayConfig.defaultIndexers.first;
 
       final relayStatus = RelayStatus(indexerUrl);
       final relay = RelayBase(indexerUrl, relayStatus);

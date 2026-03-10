@@ -18,8 +18,6 @@ import 'package:profile_repository/profile_repository.dart';
 // so username check/claim flows can be tested against it in E2E tests.
 const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
-
-/// Keycast NIP-05 endpoint for checking username availability on login server.
 const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 
 // TODO(search): Move ProfileSearchFilter to a shared package

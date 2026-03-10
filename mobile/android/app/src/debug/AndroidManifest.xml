@@ -4,4 +4,13 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Disable Impeller in debug builds. Impeller's Vulkan backend crashes
+         the Android emulator when using SwiftShader software rendering
+         (headless CI / AMD iGPU without native Vulkan). Skia works fine. -->
+    <application>
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="false" />
+    </application>
 </manifest>
