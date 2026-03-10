@@ -169,10 +169,12 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
       return;
     }
 
-    // Guard: stop polling if user is already authenticated on this auth service.
-    if (_authService.isAuthenticated) {
+    // Guard: stop polling if user completed OAuth sign-in on this auth service.
+    // Use isRegistered (not isAuthenticated) because anonymous users are
+    // authenticated but still need polling to complete the secure-account flow.
+    if (_authService.isRegistered) {
       Log.info(
-        'Auth already authenticated, stopping orphaned poll '
+        'Auth already registered, stopping orphaned poll '
         '(cubit=$hashCode)',
         name: 'EmailVerificationCubit',
         category: LogCategory.auth,

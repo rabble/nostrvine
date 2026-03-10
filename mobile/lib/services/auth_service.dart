@@ -2618,6 +2618,16 @@ class AuthService implements BackgroundAwareService {
         name: 'AuthService',
         category: LogCategory.auth,
       );
+
+      // Use the in-memory key container when available to avoid re-reading
+      // from platform storage. iOS keychain can fail transiently, causing
+      // "Unable to access your keys" errors even though the key is in RAM.
+      // Falls back to storage read if the container isn't loaded yet.
+      final container = _currentKeyContainer;
+      if (container != null && container.hasPrivateKey) {
+        return container.withNsec((nsec) => nsec);
+      }
+
       return await _keyStorage.exportNsec(biometricPrompt: biometricPrompt);
     } catch (e) {
       Log.error(
