@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
@@ -1351,6 +1352,7 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
   late TextEditingController _descriptionController;
   late TextEditingController _hashtagsController;
   late List<String> _collaboratorPubkeys;
+  Set<ContentLabel> _contentWarningLabels = {};
   InspiredByInfo? _inspiredByVideo;
   String? _inspiredByNpub;
   bool _isUpdating = false;
@@ -1375,6 +1377,10 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
 
     // Initialize collaborators and inspired-by from existing video
     _collaboratorPubkeys = List<String>.from(widget.video.collaboratorPubkeys);
+    _contentWarningLabels = widget.video.contentWarningLabels
+        .map(ContentLabel.fromValue)
+        .whereType<ContentLabel>()
+        .toSet();
     _inspiredByVideo = widget.video.inspiredByVideo;
     _inspiredByNpub = widget.video.inspiredByNpub;
   }
@@ -1429,6 +1435,14 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
               hintStyle: TextStyle(color: VineTheme.secondaryText),
             ),
           ),
+          const SizedBox(height: 16),
+
+          _EditContentLabelsSection(
+            selectedLabels: _contentWarningLabels,
+            isDisabled: _isUpdating,
+            onTap: _isUpdating ? null : _showContentLabelPicker,
+          ),
+
           const SizedBox(height: 16),
 
           // Collaborators section
@@ -1505,6 +1519,19 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       ),
     ],
   );
+
+  Future<void> _showContentLabelPicker() async {
+    final result = await _EditContentLabelsPicker.show(
+      context: context,
+      selected: _contentWarningLabels,
+    );
+
+    if (!mounted || result == null) return;
+
+    setState(() {
+      _contentWarningLabels = result;
+    });
+  }
 
   Future<void> _updateVideo() async {
     setState(() => _isUpdating = true);
@@ -1617,6 +1644,11 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       // Add hashtags
       for (final hashtag in hashtags) {
         tags.add(['t', hashtag]);
+      }
+
+      // Add content warning labels (NIP-32)
+      for (final label in _contentWarningLabels) {
+        tags.add(['l', label.value, 'content-warning']);
       }
 
       // Preserve other original tags that shouldn't be changed
@@ -1819,6 +1851,171 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
     _hashtagsController.dispose();
     super.dispose();
   }
+}
+
+class _EditContentLabelsSection extends StatelessWidget {
+  const _EditContentLabelsSection({
+    required this.selectedLabels,
+    required this.isDisabled,
+    required this.onTap,
+  });
+
+  final Set<ContentLabel> selectedLabels;
+  final bool isDisabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayText = selectedLabels.isEmpty
+        ? 'Add content labels'
+        : selectedLabels.map((label) => label.displayName).join(', ');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Content labels',
+          style: VineTheme.bodyFont(
+            color: VineTheme.onSurfaceVariant,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            height: 1.45,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: isDisabled ? null : onTap,
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: VineTheme.onSurfaceMuted),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    displayText,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: VineTheme.bodyFont(fontSize: 14),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right,
+                  color: isDisabled
+                      ? VineTheme.secondaryText
+                      : VineTheme.onSurfaceMuted,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditContentLabelsPicker extends StatefulWidget {
+  const _EditContentLabelsPicker({required this.selected});
+
+  final Set<ContentLabel> selected;
+
+  static Future<Set<ContentLabel>?> show({
+    required BuildContext context,
+    required Set<ContentLabel> selected,
+  }) => showModalBottomSheet<Set<ContentLabel>>(
+    context: context,
+    backgroundColor: VineTheme.cardBackground,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    isScrollControlled: true,
+    builder: (_) => _EditContentLabelsPicker(selected: selected),
+  );
+
+  @override
+  State<_EditContentLabelsPicker> createState() =>
+      _EditContentLabelsPickerState();
+}
+
+class _EditContentLabelsPickerState extends State<_EditContentLabelsPicker> {
+  late Set<ContentLabel> _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = Set<ContentLabel>.of(widget.selected);
+  }
+
+  void _toggle(ContentLabel label) {
+    setState(() {
+      if (_selected.contains(label)) {
+        _selected.remove(label);
+      } else {
+        _selected.add(label);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => SafeArea(
+    top: false,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Content labels', style: VineTheme.titleFont(fontSize: 18)),
+              if (_selected.isNotEmpty)
+                TextButton(
+                  onPressed: () => setState(_selected.clear),
+                  child: const Text(
+                    'Clear all',
+                    style: TextStyle(color: VineTheme.vineGreen),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Flexible(
+            child: ListView(
+              shrinkWrap: true,
+              children: ContentLabel.values
+                  .map(
+                    (label) => CheckboxListTile(
+                      value: _selected.contains(label),
+                      onChanged: (_) => _toggle(label),
+                      title: Text(
+                        label.displayName,
+                        style: const TextStyle(color: VineTheme.whiteText),
+                      ),
+                      activeColor: VineTheme.vineGreen,
+                      checkColor: VineTheme.whiteText,
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(_selected),
+              child: const Text('Done'),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Collaborators editing section for the post-publish edit dialog.
