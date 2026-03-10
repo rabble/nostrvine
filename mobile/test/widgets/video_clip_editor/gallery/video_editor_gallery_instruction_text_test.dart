@@ -4,13 +4,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_instruction_text.dart';
 
 void main() {
   group('ClipGalleryInstructionText', () {
+    late ClipEditorBloc bloc;
+
+    tearDown(() async {
+      await bloc.close();
+    });
+
     testWidgets('should show instruction text in normal state', (tester) async {
-      final bloc = _TestClipEditorBloc();
+      bloc = _TestClipEditorBloc();
 
       await tester.pumpWidget(
         BlocProvider<ClipEditorBloc>.value(
@@ -25,12 +32,10 @@ void main() {
         find.text('Tap to edit. Hold and drag to reorder.'),
         findsOneWidget,
       );
-
-      await bloc.close();
     });
 
     testWidgets('should hide text when editing', (tester) async {
-      final bloc = _TestClipEditorBloc(
+      bloc = _TestClipEditorBloc(
         initialState: const ClipEditorState(isEditing: true),
       );
 
@@ -48,12 +53,10 @@ void main() {
         find.text('Tap to edit. Hold and drag to reorder.'),
         findsNothing,
       );
-
-      await bloc.close();
     });
 
     testWidgets('should have zero opacity when reordering', (tester) async {
-      final bloc = _TestClipEditorBloc(
+      bloc = _TestClipEditorBloc(
         initialState: const ClipEditorState(isReordering: true),
       );
 
@@ -73,12 +76,10 @@ void main() {
         find.byType(AnimatedOpacity),
       );
       expect(animatedOpacity.opacity, 0);
-
-      await bloc.close();
     });
 
     testWidgets('should have full opacity when not reordering', (tester) async {
-      final bloc = _TestClipEditorBloc();
+      bloc = _TestClipEditorBloc();
 
       await tester.pumpWidget(
         BlocProvider<ClipEditorBloc>.value(
@@ -94,8 +95,6 @@ void main() {
         find.byType(AnimatedOpacity),
       );
       expect(animatedOpacity.opacity, 1);
-
-      await bloc.close();
     });
   });
 }

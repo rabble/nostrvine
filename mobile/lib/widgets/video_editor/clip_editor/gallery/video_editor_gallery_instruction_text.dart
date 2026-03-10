@@ -35,17 +35,13 @@ class ClipGalleryInstructionText extends StatelessWidget {
           : AnimatedOpacity(
               duration: const Duration(milliseconds: 120),
               opacity: state.isReordering ? 0 : 1,
-              child: const Align(
+              child: Align(
                 child: Padding(
-                  padding: EdgeInsets.only(top: 25),
+                  padding: const .only(top: 25),
                   child: Text(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     'Tap to edit. Hold and drag to reorder.',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      height: 1.33,
-                      letterSpacing: 0.4,
-                      fontSize: 12,
+                    style: VineTheme.bodySmallFont(
                       color: VineTheme.onSurfaceMuted,
                     ),
                     textAlign: TextAlign.center,
