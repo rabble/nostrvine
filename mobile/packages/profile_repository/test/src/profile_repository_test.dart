@@ -2155,7 +2155,6 @@ void main() {
         expect(result, isA<UsernameInvalidFormat>());
       });
 
-
       // --- code field tests (new name-server API) ---
 
       test('returns $UsernameReserved when code is reserved', () async {
