@@ -1,6 +1,6 @@
 # Divine
 
-<img src="https://devine.video/og.png" alt="Divine logo and screenshot"/>
+<img src="mobile/assets/icon/divine-web-thumbnail.png" alt="Divine logo and screenshot"/>
 
 ### Divine is a decentralized, short-form video sharing mobile application built on the Nostr protocol, inspired by the simplicity and creativity of Vine.
 
