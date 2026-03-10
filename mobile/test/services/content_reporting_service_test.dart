@@ -6,6 +6,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/client_utils/keys.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
@@ -410,6 +411,211 @@ void main() {
         );
       },
     );
+  });
+
+  group('NIP-56 tag compliance', () {
+    late _MockNostrClient mockNostrService;
+    late _MockAuthService mockAuthService;
+    late ContentReportingService service;
+    late String testPublicKey;
+
+    setUp(() async {
+      final testPrivateKey = generatePrivateKey();
+      testPublicKey = getPublicKey(testPrivateKey);
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      mockNostrService = _MockNostrClient();
+      mockAuthService = _MockAuthService();
+
+      when(() => mockAuthService.isAuthenticated).thenReturn(true);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
+      when(() => mockNostrService.isInitialized).thenReturn(true);
+
+      service = ContentReportingService(
+        nostrService: mockNostrService,
+        authService: mockAuthService,
+        prefs: prefs,
+      );
+      await service.initialize();
+    });
+
+    test('uses EventKind.report (1984) as kind', () async {
+      final reportEvent = Event(
+        testPublicKey,
+        EventKind.report,
+        [],
+        'test',
+        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      );
+      reportEvent.id = 'test_id';
+      reportEvent.sig = 'test_sig';
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer((_) async => reportEvent);
+
+      await service.reportContent(
+        eventId: 'evt_1',
+        authorPubkey: 'author_1',
+        reason: ContentFilterReason.spam,
+        details: 'test',
+      );
+
+      verify(
+        () => mockAuthService.createAndSignEvent(
+          kind: EventKind.report,
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).called(1);
+    });
+
+    test('places NIP-56 report type as 3rd element of e and p tags', () async {
+      List<List<String>>? capturedTags;
+
+      when(
+        () => mockAuthService.createAndSignEvent(
+          kind: any(named: 'kind'),
+          content: any(named: 'content'),
+          tags: any(named: 'tags'),
+        ),
+      ).thenAnswer((invocation) async {
+        capturedTags = invocation.namedArguments[#tags] as List<List<String>>?;
+        final event = Event(
+          testPublicKey,
+          EventKind.report,
+          capturedTags ?? [],
+          'test',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        event.id = 'test_id';
+        event.sig = 'test_sig';
+        return event;
+      });
+
+      when(
+        () => mockNostrService.publishEvent(
+          any(),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => Event(
+          testPublicKey,
+          EventKind.report,
+          [],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        ),
+      );
+
+      await service.reportContent(
+        eventId: 'evt_spam',
+        authorPubkey: 'author_spam',
+        reason: ContentFilterReason.spam,
+        details: 'Spam content',
+      );
+
+      expect(capturedTags, isNotNull);
+
+      // Find e and p tags
+      final eTag = capturedTags!.firstWhere((t) => t[0] == 'e');
+      final pTag = capturedTags!.firstWhere((t) => t[0] == 'p');
+
+      // NIP-56: report type is the 3rd element
+      expect(eTag, hasLength(3));
+      expect(eTag[1], equals('evt_spam'));
+      expect(eTag[2], equals('spam'));
+
+      expect(pTag, hasLength(3));
+      expect(pTag[1], equals('author_spam'));
+      expect(pTag[2], equals('spam'));
+
+      // No separate ['report', ...] tag should exist
+      final reportTags = capturedTags!.where((t) => t[0] == 'report');
+      expect(reportTags, isEmpty);
+    });
+
+    test('maps ContentFilterReason to NIP-56 standard types', () async {
+      final expectedMappings = {
+        ContentFilterReason.spam: 'spam',
+        ContentFilterReason.harassment: 'profanity',
+        ContentFilterReason.violence: 'illegal',
+        ContentFilterReason.sexualContent: 'nudity',
+        ContentFilterReason.copyright: 'illegal',
+        ContentFilterReason.falseInformation: 'other',
+        ContentFilterReason.csam: 'illegal',
+        ContentFilterReason.aiGenerated: 'other',
+        ContentFilterReason.other: 'other',
+      };
+
+      for (final entry in expectedMappings.entries) {
+        List<List<String>>? capturedTags;
+
+        when(
+          () => mockAuthService.createAndSignEvent(
+            kind: any(named: 'kind'),
+            content: any(named: 'content'),
+            tags: any(named: 'tags'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedTags =
+              invocation.namedArguments[#tags] as List<List<String>>?;
+          final event = Event(
+            testPublicKey,
+            EventKind.report,
+            capturedTags ?? [],
+            'test',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          );
+          event.id = 'id_${entry.key.name}';
+          event.sig = 'sig';
+          return event;
+        });
+
+        when(
+          () => mockNostrService.publishEvent(
+            any(),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer(
+          (_) async => Event(
+            testPublicKey,
+            EventKind.report,
+            [],
+            '',
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        await service.reportContent(
+          eventId: 'evt_${entry.key.name}',
+          authorPubkey: 'author_${entry.key.name}',
+          reason: entry.key,
+          details: 'Test ${entry.key.name}',
+        );
+
+        final eTag = capturedTags!.firstWhere((t) => t[0] == 'e');
+        expect(
+          eTag[2],
+          equals(entry.value),
+          reason:
+              '${entry.key.name} should map to NIP-56 type "${entry.value}"',
+        );
+      }
+    });
   });
 
   group('ContentReportingService Provider Integration', () {
