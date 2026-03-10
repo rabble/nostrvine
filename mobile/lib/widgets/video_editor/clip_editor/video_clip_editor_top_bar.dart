@@ -1,8 +1,6 @@
 // ABOUTME: Top bar with close, clip counter, and done buttons
 // ABOUTME: Displays current clip position and total clip count
 
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,9 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
-import 'package:openvine/utils/unified_logger.dart';
 
 /// Top bar with close button, clip counter, and done button.
 class VideoClipEditorTopBar extends ConsumerWidget {
