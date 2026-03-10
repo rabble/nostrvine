@@ -18,7 +18,6 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
-import 'package:openvine/services/user_profile_service.dart' as ups;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/nostr_timestamp.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -151,12 +150,18 @@ class AuthService implements BackgroundAwareService {
     OAuthConfig? oauthConfig,
     PendingVerificationService? pendingVerificationService,
     PreFetchFollowingCallback? preFetchFollowing,
+    String? profileCheckIndexerUrl,
+    List<String>? indexerRelays,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
        _pendingVerificationService = pendingVerificationService,
        _preFetchFollowing = preFetchFollowing,
+       _profileCheckIndexerUrl = profileCheckIndexerUrl,
+       _relayDiscoveryService = RelayDiscoveryService(
+         indexerRelays: indexerRelays,
+       ),
        _oauthConfig =
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
@@ -166,6 +171,7 @@ class AuthService implements BackgroundAwareService {
   final FlutterSecureStorage? _flutterSecureStorage;
   final PendingVerificationService? _pendingVerificationService;
   final PreFetchFollowingCallback? _preFetchFollowing;
+  final String? _profileCheckIndexerUrl;
 
   AuthState _authState = AuthState.checking;
   SecureKeyContainer? _currentKeyContainer;
@@ -188,7 +194,7 @@ class AuthService implements BackgroundAwareService {
   // Relay discovery state (NIP-65)
   List<DiscoveredRelay> _userRelays = [];
   bool _hasExistingProfile = false;
-  final RelayDiscoveryService _relayDiscoveryService = RelayDiscoveryService();
+  final RelayDiscoveryService _relayDiscoveryService;
 
   /// Callback registered by NostrService to add discovered relays to the client
   /// when discovery completes (avoids race where client is built before discovery).
@@ -2186,75 +2192,6 @@ class AuthService implements BackgroundAwareService {
     }
   }
 
-  /// Refresh the current user's profile from UserProfileService
-  Future<void> refreshCurrentProfile(
-    ups.UserProfileService userProfileService,
-  ) async {
-    if (_currentKeyContainer == null) return;
-
-    Log.debug(
-      '🔄 Refreshing current user profile from UserProfileService',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
-
-    // Get the latest profile from UserProfileService
-    final cachedProfile = userProfileService.getCachedProfile(
-      _currentKeyContainer!.publicKeyHex,
-    );
-
-    if (cachedProfile != null) {
-      Log.info(
-        '📋 Found updated profile:',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      Log.info(
-        '  - name: ${cachedProfile.name}',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      Log.info(
-        '  - displayName: ${cachedProfile.displayName}',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      Log.info(
-        '  - about: ${cachedProfile.about}',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-
-      // Update the AuthService profile with data from UserProfileService
-      _currentProfile = UserProfile(
-        npub: _currentKeyContainer!.npub,
-        publicKeyHex: _currentKeyContainer!.publicKeyHex,
-        displayName:
-            cachedProfile.displayName ??
-            cachedProfile.name ??
-            NostrKeyUtils.maskKey(_currentKeyContainer!.npub),
-        about: cachedProfile.about,
-        picture: cachedProfile.picture,
-        nip05: cachedProfile.nip05,
-      );
-
-      // Notify listeners and stream
-      _profileController.add(_currentProfile);
-
-      Log.info(
-        '✅ AuthService profile updated',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    } else {
-      Log.warning(
-        '⚠️ No cached profile found in UserProfileService',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-    }
-  }
-
   /// Sign in using OAuth 2.0 flow
   Future<void> signInWithDivineOAuth(KeycastSession session) async {
     Log.debug(
@@ -2611,6 +2548,16 @@ class AuthService implements BackgroundAwareService {
         name: 'AuthService',
         category: LogCategory.auth,
       );
+
+      // Use the in-memory key container when available to avoid re-reading
+      // from platform storage. iOS keychain can fail transiently, causing
+      // "Unable to access your keys" errors even though the key is in RAM.
+      // Falls back to storage read if the container isn't loaded yet.
+      final container = _currentKeyContainer;
+      if (container != null && container.hasPrivateKey) {
+        return container.withNsec((nsec) => nsec);
+      }
+
       return await _keyStorage.exportNsec(biometricPrompt: biometricPrompt);
     } catch (e) {
       Log.error(
@@ -3258,7 +3205,8 @@ class AuthService implements BackgroundAwareService {
 
     try {
       final pubkeyHex = _currentKeyContainer!.publicKeyHex;
-      final indexerUrl = IndexerRelayConfig.defaultIndexers.first;
+      final indexerUrl =
+          _profileCheckIndexerUrl ?? IndexerRelayConfig.defaultIndexers.first;
 
       final relayStatus = RelayStatus(indexerUrl);
       final relay = RelayBase(indexerUrl, relayStatus);

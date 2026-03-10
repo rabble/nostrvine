@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -57,8 +56,8 @@ class MentionOverlay extends ConsumerWidget {
                 // Use displayName from BLoC search results, fall back to
                 // cached profile lookup, then npub as last resort
                 final cachedProfile = ref
-                    .read(userProfileServiceProvider)
-                    .getCachedProfile(suggestion.pubkey);
+                    .read(userProfileReactiveProvider(suggestion.pubkey))
+                    .value;
                 final displayName =
                     suggestion.displayName ??
                     cachedProfile?.displayName ??
@@ -82,16 +81,9 @@ class _MentionSuggestionItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Fetch profile for display
-    final userProfileService = ref.watch(userProfileServiceProvider);
-    final profile = userProfileService.getCachedProfile(suggestion.pubkey);
-
-    if (profile == null &&
-        !userProfileService.shouldSkipProfileFetch(suggestion.pubkey)) {
-      Future.microtask(() {
-        ref.read(userProfileProvider.notifier).fetchProfile(suggestion.pubkey);
-      });
-    }
+    final profile = ref
+        .watch(userProfileReactiveProvider(suggestion.pubkey))
+        .value;
 
     final displayName = profile?.displayName ?? profile?.name;
     final npub = NostrKeyUtils.encodePubKey(suggestion.pubkey);

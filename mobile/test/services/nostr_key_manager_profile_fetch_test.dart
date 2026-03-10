@@ -6,14 +6,14 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/user_profile_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../test_setup.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockUserProfileService extends Mock implements UserProfileService {}
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
   setupTestEnvironment();
@@ -21,12 +21,12 @@ void main() {
   group('NostrKeyManager Profile Fetching After Import', () {
     late NostrKeyManager keyManager;
     late _MockNostrClient mockNostrService;
-    late _MockUserProfileService mockProfileService;
+    late _MockProfileRepository mockProfileRepository;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       mockNostrService = _MockNostrClient();
-      mockProfileService = _MockUserProfileService();
+      mockProfileRepository = _MockProfileRepository();
 
       // Setup basic mocks
       when(() => mockNostrService.isInitialized).thenReturn(true);
@@ -54,12 +54,16 @@ void main() {
 
           // Manually fetch profile after import (app-specific behavior)
           if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-            await mockProfileService.fetchProfile(keyManager.publicKey!);
+            await mockProfileRepository.fetchFreshProfile(
+              pubkey: keyManager.publicKey!,
+            );
           }
 
           // Assert: Verify profile fetch was called with correct parameters
           final captured = verify(
-            () => mockProfileService.fetchProfile(captureAny()),
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: captureAny(named: 'pubkey'),
+            ),
           ).captured;
           expect(captured.length, equals(1));
           expect(captured[0], equals(keyManager.publicKey));
@@ -78,16 +82,15 @@ void main() {
           throwsA(isA<NostrKeyException>()),
         );
 
-        // Verify profile service was never called (since import failed)
+        // Verify profile repository was never called (since import failed)
         verifyNever(
-          () => mockProfileService.fetchProfile(
-            any(),
-            forceRefresh: any(named: 'forceRefresh'),
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: any(named: 'pubkey'),
           ),
         );
       });
 
-      test('should handle missing UserProfileService gracefully', () async {
+      test('should handle missing ProfileRepository gracefully', () async {
         // Arrange: Create a valid test nsec key
         const testPrivateKeyHex =
             'b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3';
@@ -108,9 +111,11 @@ void main() {
             'c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4';
         final testNsec = Nip19.encodePrivateKey(testPrivateKeyHex);
 
-        // Mock profile service to throw an error
+        // Mock profile repository to throw an error
         when(
-          () => mockProfileService.fetchProfile(any()),
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: any(named: 'pubkey'),
+          ),
         ).thenThrow(Exception('Profile fetch failed'));
 
         // Act: Import should still succeed
@@ -125,14 +130,20 @@ void main() {
         // This should fail but not affect the import
         try {
           if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-            await mockProfileService.fetchProfile(keyManager.publicKey!);
+            await mockProfileRepository.fetchFreshProfile(
+              pubkey: keyManager.publicKey!,
+            );
           }
         } catch (e) {
           // Profile fetch failure is expected in this test
         }
 
         // Verify profile fetch was attempted
-        verify(() => mockProfileService.fetchProfile(any())).called(1);
+        verify(
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: any(named: 'pubkey'),
+          ),
+        ).called(1);
       });
 
       test(
@@ -155,9 +166,8 @@ void main() {
 
           // Assert: Profile fetch should NOT be called when service not initialized
           verifyNever(
-            () => mockProfileService.fetchProfile(
-              any(),
-              forceRefresh: any(named: 'forceRefresh'),
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: any(named: 'pubkey'),
             ),
           );
         },
@@ -176,16 +186,17 @@ void main() {
 
           // Manually fetch profile after import (app-specific behavior)
           if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-            await mockProfileService.fetchProfile(keyManager.publicKey!);
+            await mockProfileRepository.fetchFreshProfile(
+              pubkey: keyManager.publicKey!,
+            );
           }
 
-          // Assert: Verify forceRefresh is false (use cached profile if available)
-          verify(() => mockProfileService.fetchProfile(any())).called(1);
-
-          // Ensure forceRefresh=true was NOT called
-          verifyNever(
-            () => mockProfileService.fetchProfile(any(), forceRefresh: true),
-          );
+          // Assert: Verify fetchFreshProfile was called
+          verify(
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).called(1);
         },
         // TODO(Any): Fix and re-enable these tests
         skip: true,
@@ -205,12 +216,16 @@ void main() {
 
           // Manually fetch profile after import (app-specific behavior)
           if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-            await mockProfileService.fetchProfile(keyManager.publicKey!);
+            await mockProfileRepository.fetchFreshProfile(
+              pubkey: keyManager.publicKey!,
+            );
           }
 
           // Assert: Verify profile fetch was called
           final captured = verify(
-            () => mockProfileService.fetchProfile(captureAny()),
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: captureAny(named: 'pubkey'),
+            ),
           ).captured;
           expect(captured.length, equals(1));
           expect(captured[0], equals(keyManager.publicKey));
@@ -224,9 +239,11 @@ void main() {
         const testPrivateKeyHex =
             'a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8';
 
-        // Mock profile service to return null (profile not found)
+        // Mock profile repository to return null (profile not found)
         when(
-          () => mockProfileService.fetchProfile(any()),
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: any(named: 'pubkey'),
+          ),
         ).thenAnswer((_) async => null);
 
         // Act: Import should still succeed
@@ -234,7 +251,9 @@ void main() {
 
         // Manually fetch profile after import (app-specific behavior)
         if (mockNostrService.isInitialized && keyManager.publicKey != null) {
-          await mockProfileService.fetchProfile(keyManager.publicKey!);
+          await mockProfileRepository.fetchFreshProfile(
+            pubkey: keyManager.publicKey!,
+          );
         }
 
         // Assert: Import succeeded even though profile wasn't found

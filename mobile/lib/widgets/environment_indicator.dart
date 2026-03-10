@@ -42,6 +42,8 @@ class EnvironmentBadge extends ConsumerWidget {
         return 'STG';
       case AppEnvironment.test:
         return 'TEST';
+      case AppEnvironment.local:
+        return 'LOCAL';
       case AppEnvironment.production:
         return '';
     }

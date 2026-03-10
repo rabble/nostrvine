@@ -6,10 +6,10 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 /// Handles deferred initialization of notification service
 class DeferredNotificationInitializer {
@@ -19,7 +19,7 @@ class DeferredNotificationInitializer {
   static Future<void> initialize({
     required NotificationServiceEnhanced service,
     required NostrClient nostrService,
-    required UserProfileService profileService,
+    required ProfileRepository profileRepository,
     required VideoEventService videoService,
     required bool isWeb,
   }) async {
@@ -28,7 +28,7 @@ class DeferredNotificationInitializer {
       await _initializeService(
         service: service,
         nostrService: nostrService,
-        profileService: profileService,
+        profileRepository: profileRepository,
         videoService: videoService,
       );
     } else {
@@ -36,7 +36,7 @@ class DeferredNotificationInitializer {
       _scheduleWebInitialization(
         service: service,
         nostrService: nostrService,
-        profileService: profileService,
+        profileRepository: profileRepository,
         videoService: videoService,
       );
     }
@@ -46,13 +46,13 @@ class DeferredNotificationInitializer {
   static Future<void> _initializeService({
     required NotificationServiceEnhanced service,
     required NostrClient nostrService,
-    required UserProfileService profileService,
+    required ProfileRepository profileRepository,
     required VideoEventService videoService,
   }) async {
     try {
       await service.initialize(
         nostrService: nostrService,
-        profileService: profileService,
+        profileRepository: profileRepository,
         videoService: videoService,
       );
     } catch (e) {
@@ -68,7 +68,7 @@ class DeferredNotificationInitializer {
   static void _scheduleWebInitialization({
     required NotificationServiceEnhanced service,
     required NostrClient nostrService,
-    required UserProfileService profileService,
+    required ProfileRepository profileRepository,
     required VideoEventService videoService,
   }) {
     // Use a completer to track when main UI is ready
@@ -78,8 +78,7 @@ class DeferredNotificationInitializer {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Check if critical services are ready
       AsyncUtils.waitForCondition(
-            condition: () =>
-                _areServicesReady(nostrService, profileService, videoService),
+            condition: () => _areServicesReady(nostrService),
             timeout: _webDeferralTime,
             debugName: 'notification-service-readiness',
           )
@@ -100,18 +99,14 @@ class DeferredNotificationInitializer {
       await _initializeService(
         service: service,
         nostrService: nostrService,
-        profileService: profileService,
+        profileRepository: profileRepository,
         videoService: videoService,
       );
     });
   }
 
   /// Check if required services are ready
-  static bool _areServicesReady(
-    NostrClient nostrService,
-    UserProfileService profileService,
-    VideoEventService videoService,
-  ) =>
+  static bool _areServicesReady(NostrClient nostrService) =>
       // Check if services have completed basic initialization
       nostrService.connectedRelayCount > 0;
 }

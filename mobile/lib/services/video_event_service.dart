@@ -42,10 +42,10 @@ import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/log_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -123,11 +123,11 @@ class VideoEventService extends ChangeNotifier {
   VideoEventService(
     this._nostrService, {
     required SubscriptionManager subscriptionManager,
-    UserProfileService? userProfileService,
+    ProfileRepository? profileRepository,
     EventRouter? eventRouter,
     VideoFilterBuilder? videoFilterBuilder,
   }) : _subscriptionManager = subscriptionManager,
-       _userProfileService = userProfileService,
+       _profileRepository = profileRepository,
        _eventRouter = eventRouter,
        _videoFilterBuilder = videoFilterBuilder {
     _initializePaginationStates();
@@ -135,7 +135,7 @@ class VideoEventService extends ChangeNotifier {
   }
   final NostrClient _nostrService;
   late final RepostResolver _repostResolver;
-  final UserProfileService? _userProfileService;
+  final ProfileRepository? _profileRepository;
   final EventRouter? _eventRouter;
   final VideoFilterBuilder? _videoFilterBuilder;
   final ConnectionStatusService _connectionService = ConnectionStatusService();
@@ -1570,22 +1570,21 @@ class VideoEventService extends ChangeNotifier {
 
         // 🎯 OPTIMIZATION: Batch fetch profiles BEFORE processing events
         // This prevents 100+ sequential profile fetches that cause database locks
-        if (cachedEvents.isNotEmpty && _userProfileService != null) {
+        if (cachedEvents.isNotEmpty && _profileRepository != null) {
           final uniquePubkeys = cachedEvents
               .map((e) => e.pubkey)
               .toSet()
-              .where((pubkey) => !_userProfileService.hasProfile(pubkey))
               .toList();
 
           if (uniquePubkeys.isNotEmpty) {
             Log.info(
-              '⚡ Batch fetching ${uniquePubkeys.length} profiles for ${cachedEvents.length} cached events',
+              '⚡ Batch fetching profiles for ${cachedEvents.length} cached events',
               name: 'VideoEventService',
               category: LogCategory.video,
             );
-            // Use immediate prefetch for fast cache loading
-            await _userProfileService.prefetchProfilesImmediately(
-              uniquePubkeys,
+            // fetchBatchProfiles checks cache internally (step 1)
+            await _profileRepository.fetchBatchProfiles(
+              pubkeys: uniquePubkeys,
             );
           }
         }
@@ -1979,13 +1978,13 @@ class VideoEventService extends ChangeNotifier {
 
       if (!NIP71VideoKinds.isVideoKind(event.kind) && event.kind != 16) {
         // Cache non-video events in appropriate services instead of discarding
-        if (event.kind == 0 && _userProfileService != null) {
+        if (event.kind == 0 && _profileRepository != null) {
           // Kind 0 = profile metadata - cache it for profile display
           try {
             final profile = UserProfile.fromNostrEvent(event);
             // Fire-and-forget: cache the profile asynchronously
-            _userProfileService
-                .updateCachedProfile(profile)
+            _profileRepository
+                .cacheProfile(profile)
                 .then((_) {
                   Log.verbose(
                     '✅ Cached profile event for ${event.pubkey} from video subscription',
@@ -4088,18 +4087,9 @@ class VideoEventService extends ChangeNotifier {
       return; // Don't add duplicate events
     }
 
-    // Fetch profile for video author if not already cached
-    // This uses existing WebSocket connection with REQ command
-    if (_userProfileService != null &&
-        !_userProfileService.hasProfile(videoEvent.pubkey)) {
-      _userProfileService.fetchProfile(videoEvent.pubkey).catchError((error) {
-        Log.warning(
-          'Failed to fetch profile for ${videoEvent.pubkey}: $error',
-          name: 'VideoEventService',
-          category: LogCategory.video,
-        );
-        return null;
-      });
+    // Fetch profile for video author if not already cached (fire-and-forget)
+    if (_profileRepository != null) {
+      unawaited(_fetchProfileIfMissing(videoEvent.pubkey));
     }
 
     // Fetch live Nostr like count for this video (fire-and-forget)
@@ -4267,6 +4257,21 @@ class VideoEventService extends ChangeNotifier {
 
     // Schedule frame-based UI update for progressive loading
     _scheduleFrameUpdate();
+  }
+
+  /// Fetches and caches a profile only if it isn't already in the local cache.
+  Future<void> _fetchProfileIfMissing(String pubkey) async {
+    try {
+      final cached = await _profileRepository!.getCachedProfile(pubkey: pubkey);
+      if (cached != null) return;
+      await _profileRepository.fetchFreshProfile(pubkey: pubkey);
+    } catch (e) {
+      Log.warning(
+        'Failed to fetch profile for $pubkey: $e',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Queue a video for batched like count fetching.

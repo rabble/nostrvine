@@ -13,15 +13,12 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 class MockRelayNotificationApiService extends Mock
     implements RelayNotificationApiService {}
 
 class MockAuthService extends Mock implements AuthService {}
-
-class MockUserProfileService extends Mock implements UserProfileService {}
 
 class MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -34,7 +31,6 @@ void main() {
   group('RelayNotifications Provider', () {
     late MockRelayNotificationApiService mockApiService;
     late MockAuthService mockAuthService;
-    late MockUserProfileService mockUserProfileService;
     late MockVideoEventService mockVideoEventService;
     late MockNip98AuthService mockNip98AuthService;
     late MockBackgroundActivityManager mockBackgroundManager;
@@ -45,7 +41,6 @@ void main() {
     setUp(() {
       mockApiService = MockRelayNotificationApiService();
       mockAuthService = MockAuthService();
-      mockUserProfileService = MockUserProfileService();
       mockVideoEventService = MockVideoEventService();
       mockNip98AuthService = MockNip98AuthService();
       mockBackgroundManager = MockBackgroundActivityManager();
@@ -56,14 +51,6 @@ void main() {
 
       // Default API service behavior - available
       when(() => mockApiService.isAvailable).thenReturn(true);
-
-      // Default profile service behavior
-      when(
-        () => mockUserProfileService.getCachedProfile(any()),
-      ).thenReturn(null);
-      when(
-        () => mockUserProfileService.fetchProfile(any()),
-      ).thenAnswer((_) async => null);
 
       // Default video service behavior
       when(
@@ -99,9 +86,9 @@ void main() {
         overrides: [
           relayNotificationApiServiceProvider.overrideWithValue(mockApiService),
           authServiceProvider.overrideWithValue(mockAuthService),
-          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           nip98AuthServiceProvider.overrideWithValue(mockNip98AuthService),
+          profileRepositoryProvider.overrideWithValue(null),
           backgroundActivityManagerProvider.overrideWithValue(
             mockBackgroundManager,
           ),
@@ -859,96 +846,80 @@ void main() {
     });
 
     group('Auto-refresh background guard', () {
-      test(
-        'auto-refresh skips API call when app is backgrounded',
-        () async {
-          // Set up initial load to succeed
-          var apiCallCount = 0;
-          when(
-            () => mockApiService.getNotifications(
-              pubkey: any(named: 'pubkey'),
-              types: any(named: 'types'),
-              unreadOnly: any(named: 'unreadOnly'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer((_) async {
-            apiCallCount++;
-            return NotificationsResponse(
-              notifications: [
-                createMockRelayNotification(id: 'notif_$apiCallCount'),
-              ],
-              unreadCount: 1,
-            );
-          });
-
-          // App starts in foreground
-          when(
-            () => mockBackgroundManager.isAppInForeground,
-          ).thenReturn(true);
-          when(
-            () => mockBackgroundManager.isAppInBackground,
-          ).thenReturn(false);
-
-          final container = createTestContainer();
-
-          // Initial load triggers one API call
-          await waitForLoadComplete(container);
-          expect(apiCallCount, 1);
-
-          // Simulate app going to background
-          when(
-            () => mockBackgroundManager.isAppInForeground,
-          ).thenReturn(false);
-          when(
-            () => mockBackgroundManager.isAppInBackground,
-          ).thenReturn(true);
-
-          // Manually call refresh (simulates what auto-refresh timer does)
-          // This should still work since refresh() itself doesn't check
-          // background state (it's used for pull-to-refresh too)
-          await container.read(relayNotificationsProvider.notifier).refresh();
-
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-
-          // refresh() should have made the API call (2 total)
-          // because it's the timer callback that guards, not refresh()
-          expect(apiCallCount, 2);
-
-          container.dispose();
-        },
-      );
-
-      test(
-        'background manager is checked by auto-refresh timer callback',
-        () {
-          // Verify the provider reads the backgroundActivityManagerProvider
-          // by ensuring the mock is properly wired
-          when(
-            () => mockApiService.getNotifications(
-              pubkey: any(named: 'pubkey'),
-              types: any(named: 'types'),
-              unreadOnly: any(named: 'unreadOnly'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => const NotificationsResponse(
-              notifications: [],
-              unreadCount: 0,
-            ),
+      test('auto-refresh skips API call when app is backgrounded', () async {
+        // Set up initial load to succeed
+        var apiCallCount = 0;
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async {
+          apiCallCount++;
+          return NotificationsResponse(
+            notifications: [
+              createMockRelayNotification(id: 'notif_$apiCallCount'),
+            ],
+            unreadCount: 1,
           );
+        });
 
-          final container = createTestContainer();
+        // App starts in foreground
+        when(() => mockBackgroundManager.isAppInForeground).thenReturn(true);
+        when(() => mockBackgroundManager.isAppInBackground).thenReturn(false);
 
-          // The provider should be able to read the background manager
-          final manager = container.read(backgroundActivityManagerProvider);
-          expect(manager, equals(mockBackgroundManager));
-          expect(manager.isAppInBackground, isFalse);
+        final container = createTestContainer();
 
-          container.dispose();
-        },
-      );
+        // Initial load triggers one API call
+        await waitForLoadComplete(container);
+        expect(apiCallCount, 1);
+
+        // Simulate app going to background
+        when(() => mockBackgroundManager.isAppInForeground).thenReturn(false);
+        when(() => mockBackgroundManager.isAppInBackground).thenReturn(true);
+
+        // Manually call refresh (simulates what auto-refresh timer does)
+        // This should still work since refresh() itself doesn't check
+        // background state (it's used for pull-to-refresh too)
+        await container.read(relayNotificationsProvider.notifier).refresh();
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // refresh() should have made the API call (2 total)
+        // because it's the timer callback that guards, not refresh()
+        expect(apiCallCount, 2);
+
+        container.dispose();
+      });
+
+      test('background manager is checked by auto-refresh timer callback', () {
+        // Verify the provider reads the backgroundActivityManagerProvider
+        // by ensuring the mock is properly wired
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const NotificationsResponse(notifications: [], unreadCount: 0),
+        );
+
+        final container = createTestContainer();
+
+        // The provider should be able to read the background manager
+        final manager = container.read(backgroundActivityManagerProvider);
+        expect(manager, equals(mockBackgroundManager));
+        expect(manager.isAppInBackground, isFalse);
+
+        container.dispose();
+      });
     });
 
     group('NotificationFeedState', () {

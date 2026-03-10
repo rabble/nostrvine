@@ -1,29 +1,33 @@
 // ABOUTME: Integration tests for camera initialization and setup
 // ABOUTME: Tests camera service creation, initialization, and basic properties
 
-// NOTE: On Android, camera/microphone permissions must be granted before running.
-// Either grant via ADB: adb shell pm grant co.openvine.app android.permission.CAMERA
-// Or the first test run will show permission dialogs that must be accepted.
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
+import 'package:patrol/patrol.dart';
 import 'package:permissions_service/permissions_service.dart';
 
-void main() {
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+/// Grant camera and microphone permissions via Patrol native automation.
+Future<void> _grantPermissions(PatrolIntegrationTester $) async {
+  const service = PermissionHandlerPermissionsService();
+  unawaited(service.requestCameraPermission());
+  if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+    timeout: const Duration(seconds: 5),
+  )) {
+    await $.platformAutomator.mobile.grantPermissionWhenInUse();
+  }
+  unawaited(service.requestMicrophonePermission());
+  if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+    timeout: const Duration(seconds: 5),
+  )) {
+    await $.platformAutomator.mobile.grantPermissionWhenInUse();
+  }
+}
 
+void main() {
   group('Camera Initialization Integration Tests', () {
     late CameraService cameraService;
-
-    setUpAll(() async {
-      // Request permissions once at the start of all tests
-      // On Android, this will show the permission dialog once
-      // After granting, all subsequent tests will run without dialogs
-      const service = PermissionHandlerPermissionsService();
-      await service.requestCameraPermission();
-      await service.requestMicrophonePermission();
-    });
 
     setUp(() {
       cameraService = CameraService.create(
@@ -36,18 +40,21 @@ void main() {
       await cameraService.dispose();
     });
 
-    testWidgets('camera service can be created', (tester) async {
+    patrolTest('camera service can be created', ($) async {
+      await _grantPermissions($);
       expect(cameraService, isNotNull);
       expect(cameraService, isA<CameraService>());
     });
 
-    testWidgets('camera service can be initialized', (tester) async {
+    patrolTest('camera service can be initialized', ($) async {
+      await _grantPermissions($);
       await cameraService.initialize();
 
       expect(cameraService.isInitialized, isTrue);
     });
 
-    testWidgets('camera provides valid aspect ratio', (tester) async {
+    patrolTest('camera provides valid aspect ratio', ($) async {
+      await _grantPermissions($);
       await cameraService.initialize();
 
       final aspectRatio = cameraService.cameraAspectRatio;
@@ -55,7 +62,8 @@ void main() {
       expect(aspectRatio.isFinite, isTrue);
     });
 
-    testWidgets('camera provides valid zoom limits', (tester) async {
+    patrolTest('camera provides valid zoom limits', ($) async {
+      await _grantPermissions($);
       await cameraService.initialize();
 
       expect(cameraService.minZoomLevel, greaterThan(0.0));
@@ -65,25 +73,30 @@ void main() {
       );
     });
 
-    testWidgets('camera reports focus support capability', (tester) async {
+    patrolTest('camera reports focus support capability', ($) async {
+      await _grantPermissions($);
       await cameraService.initialize();
 
       expect(cameraService.isFocusPointSupported, isA<bool>());
     });
 
-    testWidgets('camera reports recording capability', (tester) async {
+    patrolTest('camera reports recording capability', ($) async {
+      await _grantPermissions($);
       await cameraService.initialize();
 
       expect(cameraService.canRecord, isTrue);
     });
 
-    testWidgets('camera reports switch capability', (tester) async {
+    patrolTest('camera reports switch capability', ($) async {
+      await _grantPermissions($);
       await cameraService.initialize();
 
       expect(cameraService.canSwitchCamera, isA<bool>());
     });
 
-    testWidgets('camera can be disposed after initialization', (tester) async {
+    patrolTest('camera can be disposed after initialization', ($) async {
+      await _grantPermissions($);
+      final tester = $.tester;
       await cameraService.initialize();
       expect(cameraService.isInitialized, isTrue);
 
@@ -93,7 +106,8 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('camera can be initialized multiple times', (tester) async {
+    patrolTest('camera can be initialized multiple times', ($) async {
+      await _grantPermissions($);
       await cameraService.initialize();
       expect(cameraService.isInitialized, isTrue);
 

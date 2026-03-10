@@ -16,8 +16,8 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 part 'comments_event.dart';
 part 'comments_state.dart';
@@ -44,7 +44,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     required String rootAuthorPubkey,
     String? rootAddressableId,
     int? initialTotalCount,
-    UserProfileService? userProfileService,
+    ProfileRepository? profileRepository,
     FollowRepository? followRepository,
   }) : _commentsRepository = commentsRepository,
        _authService = authService,
@@ -52,7 +52,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
        _contentReportingServiceFuture = contentReportingServiceFuture,
        _contentBlocklistService = contentBlocklistService,
        _initialTotalCount = initialTotalCount,
-       _userProfileService = userProfileService,
+       _profileRepository = profileRepository,
        _followRepository = followRepository,
        super(
          CommentsState(
@@ -107,7 +107,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   final LikesRepository _likesRepository;
   final Future<ContentReportingService> _contentReportingServiceFuture;
   final ContentBlocklistService _contentBlocklistService;
-  final UserProfileService? _userProfileService;
+  final ProfileRepository? _profileRepository;
   final FollowRepository? _followRepository;
 
   Future<void> _onLoadRequested(
@@ -741,7 +741,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       if (seen.contains(pubkey)) continue;
       seen.add(pubkey);
 
-      final profile = _userProfileService?.getCachedProfile(pubkey);
+      final profile = await _profileRepository?.getCachedProfile(
+        pubkey: pubkey,
+      );
       final displayName = profile?.displayName ?? profile?.name;
 
       // Match query against display name (case-insensitive contains)
@@ -766,10 +768,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     );
 
     // Tier 2: Async remote search if <5 local results
-    if (suggestions.length < 5 && _userProfileService != null) {
+    if (suggestions.length < 5 && _profileRepository != null) {
       try {
-        final remoteResults = await _userProfileService.searchUsers(
-          query,
+        final remoteResults = await _profileRepository.searchUsers(
+          query: query,
           limit: 10,
         );
 

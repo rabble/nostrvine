@@ -85,6 +85,71 @@ class UserProfilesDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  /// Get multiple profiles by pubkeys with domain model conversion.
+  ///
+  /// Returns a list of UserProfile domain models for the given pubkeys.
+  /// Profiles not found in the database are omitted from the result.
+  Future<List<UserProfile>> getProfilesByPubkeys(
+    List<String> pubkeys,
+  ) async {
+    if (pubkeys.isEmpty) return [];
+    final query = select(userProfiles)..where((t) => t.pubkey.isIn(pubkeys));
+    final rows = await query.get();
+    return rows.map(_rowToUserProfile).toList();
+  }
+
+  /// Batch upsert profiles from domain models.
+  ///
+  /// Inserts or updates all given profiles in a single batch operation.
+  /// Uses a Drift batch for efficiency when writing many profiles at once.
+  Future<void> upsertProfiles(List<UserProfile> profiles) async {
+    if (profiles.isEmpty) return;
+    await batch((b) {
+      for (final profile in profiles) {
+        b.insert(
+          userProfiles,
+          UserProfilesCompanion.insert(
+            pubkey: profile.pubkey,
+            displayName: Value(profile.displayName),
+            name: Value(profile.name),
+            about: Value(profile.about),
+            picture: Value(profile.picture),
+            banner: Value(profile.banner),
+            website: Value(profile.website),
+            nip05: Value(profile.nip05),
+            lud16: Value(profile.lud16),
+            lud06: Value(profile.lud06),
+            rawData: Value(
+              profile.rawData.isNotEmpty ? jsonEncode(profile.rawData) : null,
+            ),
+            createdAt: profile.createdAt,
+            eventId: profile.eventId,
+            lastFetched: DateTime.now(),
+          ),
+          onConflict: DoUpdate(
+            (_) => UserProfilesCompanion(
+              displayName: Value(profile.displayName),
+              name: Value(profile.name),
+              about: Value(profile.about),
+              picture: Value(profile.picture),
+              banner: Value(profile.banner),
+              website: Value(profile.website),
+              nip05: Value(profile.nip05),
+              lud16: Value(profile.lud16),
+              lud06: Value(profile.lud06),
+              rawData: Value(
+                profile.rawData.isNotEmpty ? jsonEncode(profile.rawData) : null,
+              ),
+              createdAt: Value(profile.createdAt),
+              eventId: Value(profile.eventId),
+              lastFetched: Value(DateTime.now()),
+            ),
+          ),
+        );
+      }
+    });
+  }
+
   /// Watch all profiles with domain model conversion.
   ///
   /// Returns a stream that emits list of UserProfile domain models

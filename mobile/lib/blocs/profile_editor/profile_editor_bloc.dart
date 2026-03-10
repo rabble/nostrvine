@@ -5,7 +5,6 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
@@ -44,11 +43,9 @@ EventTransformer<E> _debounceRestartable<E>() {
 class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   ProfileEditorBloc({
     required ProfileRepository profileRepository,
-    required UserProfileService userProfileService,
     required bool hasExistingProfile,
     String? currentUserPubkey,
   }) : _profileRepository = profileRepository,
-       _userProfileService = userProfileService,
        _hasExistingProfile = hasExistingProfile,
        _currentUserPubkey = currentUserPubkey,
        super(const ProfileEditorState()) {
@@ -66,7 +63,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   }
 
   final ProfileRepository _profileRepository;
-  final UserProfileService _userProfileService;
   final bool _hasExistingProfile;
   final String? _currentUserPubkey;
 
@@ -392,9 +388,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         '📝 Profile published: nip05=${savedProfile.nip05}',
         name: 'ProfileEditorBloc',
       );
-      // TODO(Josh-Sanford): Move cache into ProfileRepository and remove
-      // UserProfileService dependency
-      await _userProfileService.updateCachedProfile(savedProfile);
+      await _profileRepository.cacheProfile(savedProfile);
     } catch (error) {
       Log.error('Failed to publish profile: $error', name: 'ProfileEditorBloc');
       emit(
@@ -453,7 +447,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         banner: banner,
         currentProfile: currentProfile,
       );
-      await _userProfileService.updateCachedProfile(rolledBack);
+      await _profileRepository.cacheProfile(rolledBack);
       Log.info('📝 Rollback complete', name: 'ProfileEditorBloc');
     } catch (e) {
       Log.error('Rollback failed: $e', name: 'ProfileEditorBloc');

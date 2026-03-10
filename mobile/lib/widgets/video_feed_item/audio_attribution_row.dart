@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
@@ -75,17 +74,10 @@ class _AudioAttributionContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the creator's profile
-    final userProfileService = ref.watch(userProfileServiceProvider);
-    final creatorProfile = userProfileService.getCachedProfile(audio.pubkey);
-
-    // Trigger profile fetch if not cached
-    if (creatorProfile == null &&
-        !userProfileService.shouldSkipProfileFetch(audio.pubkey)) {
-      Future.microtask(() {
-        ref.read(userProfileProvider.notifier).fetchProfile(audio.pubkey);
-      });
-    }
+    // Watch the creator's profile reactively via Drift stream
+    final creatorProfile = ref
+        .watch(userProfileReactiveProvider(audio.pubkey))
+        .value;
 
     final creatorName =
         creatorProfile?.bestDisplayName ??

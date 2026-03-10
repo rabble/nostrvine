@@ -15,7 +15,6 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/social_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
 
 import '../../builders/comment_builder.dart';
 import '../../helpers/test_helpers.dart';
@@ -38,8 +37,6 @@ class MockSocialService extends Mock implements SocialService {}
 
 class MockAuthService extends Mock implements AuthService {}
 
-class MockUserProfileService extends Mock implements UserProfileService {}
-
 class MockNostrClient extends Mock implements NostrClient {}
 
 class MockCommentsBloc extends MockBloc<CommentsEvent, CommentsState>
@@ -55,7 +52,6 @@ void main() {
   group('CommentsScreen', () {
     late MockSocialService mockSocialService;
     late MockAuthService mockAuthService;
-    late MockUserProfileService mockUserProfileService;
     late MockNostrClient mockNostrClient;
     late MockCommentsBloc mockCommentsBloc;
     late ScrollController scrollController;
@@ -68,7 +64,6 @@ void main() {
     setUp(() {
       mockSocialService = MockSocialService();
       mockAuthService = MockAuthService();
-      mockUserProfileService = MockUserProfileService();
       mockNostrClient = MockNostrClient();
       mockCommentsBloc = MockCommentsBloc();
       scrollController = ScrollController();
@@ -78,13 +73,6 @@ void main() {
         pubkey: testVideoAuthorPubkey,
       );
 
-      // Default mock behavior
-      when(
-        () => mockUserProfileService.getCachedProfile(any()),
-      ).thenReturn(null);
-      when(
-        () => mockUserProfileService.shouldSkipProfileFetch(any()),
-      ).thenReturn(true);
       // Return empty string to indicate user is not the comment author (no 3-dot menu)
       when(() => mockNostrClient.publicKey).thenReturn('');
 
@@ -115,7 +103,6 @@ void main() {
         overrides: [
           socialServiceProvider.overrideWithValue(mockSocialService),
           authServiceProvider.overrideWithValue(mockAuthService),
-          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
         ],
         child: MaterialApp(
@@ -221,19 +208,6 @@ void main() {
       });
 
       testWidgets('shows reply indicator when replying', (tester) async {
-        final testProfile = UserProfile(
-          pubkey: TestCommentIds.author1Pubkey,
-          displayName: 'TestUser',
-          rawData: const {},
-          createdAt: DateTime.now(),
-          eventId: 'test_event_id',
-        );
-        when(
-          () => mockUserProfileService.getCachedProfile(
-            TestCommentIds.author1Pubkey,
-          ),
-        ).thenReturn(testProfile);
-
         final comment = CommentBuilder()
             .withId(TestCommentIds.comment1Id)
             .withAuthorPubkey(TestCommentIds.author1Pubkey)

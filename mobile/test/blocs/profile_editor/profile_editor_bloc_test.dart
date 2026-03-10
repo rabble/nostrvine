@@ -6,17 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
-class _MockUserProfileService extends Mock implements UserProfileService {}
-
 void main() {
   group('ProfileEditorBloc', () {
     late _MockProfileRepository mockProfileRepository;
-    late _MockUserProfileService mockUserProfileService;
 
     // Test data constants - using full 64-character hex pubkey as required
     const testPubkey =
@@ -56,17 +52,14 @@ void main() {
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
-      mockUserProfileService = _MockUserProfileService();
-
       when(
-        () => mockUserProfileService.updateCachedProfile(any()),
+        () => mockProfileRepository.cacheProfile(any()),
       ).thenAnswer((_) async {});
     });
 
     ProfileEditorBloc createBloc({bool hasExistingProfile = true}) =>
         ProfileEditorBloc(
           profileRepository: mockProfileRepository,
-          userProfileService: mockUserProfileService,
           hasExistingProfile: hasExistingProfile,
         );
 
@@ -343,7 +336,6 @@ void main() {
           },
           build: () => ProfileEditorBloc(
             profileRepository: mockProfileRepository,
-            userProfileService: mockUserProfileService,
             hasExistingProfile: true,
             currentUserPubkey: testPubkey,
           ),
@@ -1064,7 +1056,6 @@ void main() {
         },
         build: () => ProfileEditorBloc(
           profileRepository: mockProfileRepository,
-          userProfileService: mockUserProfileService,
           hasExistingProfile: true,
           currentUserPubkey: testPubkey,
         ),

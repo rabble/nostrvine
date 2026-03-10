@@ -146,7 +146,7 @@ void main() {
     // NOTE: Timer leaks previously fixed:
     // - VideoPrewarmer: NoOp override prevents timer leaks
     // - VisibilityTracker: NoOp override prevents timer leaks
-    // - UserProfileService: dispose() wired into provider lifecycle
+    // - ProfileRepository: dispose() wired into provider lifecycle
     // - AnalyticsService: dispose() already wired into provider lifecycle
     // TODO(any): Fix and re-enable these tests
   }, skip: true);

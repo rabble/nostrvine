@@ -12,15 +12,12 @@ import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 class _MockRelayNotificationApiService extends Mock
     implements RelayNotificationApiService {}
 
 class _MockAuthService extends Mock implements AuthService {}
-
-class _MockUserProfileService extends Mock implements UserProfileService {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -30,7 +27,6 @@ void main() {
   group('RelayNotifications insertFromWebSocket', () {
     late _MockRelayNotificationApiService mockApiService;
     late _MockAuthService mockAuthService;
-    late _MockUserProfileService mockUserProfileService;
     late _MockVideoEventService mockVideoEventService;
     late _MockNip98AuthService mockNip98AuthService;
 
@@ -40,19 +36,12 @@ void main() {
     setUp(() {
       mockApiService = _MockRelayNotificationApiService();
       mockAuthService = _MockAuthService();
-      mockUserProfileService = _MockUserProfileService();
       mockVideoEventService = _MockVideoEventService();
       mockNip98AuthService = _MockNip98AuthService();
 
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
       when(() => mockAuthService.currentPublicKeyHex).thenReturn(testPubkey);
       when(() => mockApiService.isAvailable).thenReturn(true);
-      when(
-        () => mockUserProfileService.getCachedProfile(any()),
-      ).thenReturn(null);
-      when(
-        () => mockUserProfileService.fetchProfile(any()),
-      ).thenAnswer((_) async => null);
       when(
         () => mockVideoEventService.getVideoEventById(any()),
       ).thenReturn(null);
@@ -81,7 +70,6 @@ void main() {
         overrides: [
           relayNotificationApiServiceProvider.overrideWithValue(mockApiService),
           authServiceProvider.overrideWithValue(mockAuthService),
-          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           nip98AuthServiceProvider.overrideWithValue(mockNip98AuthService),
         ],

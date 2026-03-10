@@ -1,361 +1,46 @@
-// ABOUTME: Riverpod providers for user profile service with reactive state management
-// ABOUTME: Pure @riverpod functions for user profile management and caching
+// ABOUTME: Riverpod providers for user profile fetching via ProfileRepository.
+// ABOUTME: Reactive stream provider + simple cache-or-fetch provider.
 
 import 'dart:async';
 
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/tab_visibility_provider.dart';
-import 'package:openvine/state/user_profile_state.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'user_profile_providers.g.dart';
 
+/// Reactive profile provider backed by Drift's watchProfile stream.
+///
+/// On first access for a pubkey:
+/// 1. Checks Drift cache — if missing, fires a background fetchFreshProfile
+/// 2. Yields from the Drift watch stream, so any cache update (from fetch,
+///    profile edit, or batch prefetch) automatically flows to consumers.
+///
+/// Consumers get `AsyncValue<UserProfile?>` — same API as the old
+/// FutureProvider, so widget code changes are minimal.
 @riverpod
-Future<UserProfile?> userProfileReactive(Ref ref, String pubkey) async {
-  final userProfileService = ref.watch(userProfileServiceProvider);
+Stream<UserProfile?> userProfileReactive(Ref ref, String pubkey) async* {
+  final repo = ref.watch(profileRepositoryProvider);
+  if (repo == null) return;
 
-  // Is the profile already present in the service cache?
-  if (userProfileService.hasProfile(pubkey)) {
-    return userProfileService.getCachedProfile(pubkey);
+  // Kick off a background fetch if nothing is cached yet.
+  final cached = await repo.getCachedProfile(pubkey: pubkey);
+  if (cached == null) {
+    unawaited(repo.fetchFreshProfile(pubkey: pubkey));
   }
 
-  // Check if profile is known to be missing (should skip fetch)
-  if (userProfileService.shouldSkipProfileFetch(pubkey)) {
-    Log.debug(
-      '⏭️ Profile marked as missing: $pubkey',
-      name: 'UserProfileReactiveProvider',
-      category: LogCategory.ui,
-    );
-
-    return null;
-  }
-
-  final completer = Completer<UserProfile?>();
-
-  // If the profile is not cached, add a listener to invalidate this provider
-  // when the profile is added or marked as missing.
-  void listener() {
-    Log.debug(
-      'Listener fired! Checking for $pubkey',
-      name: 'UserProfileReactiveProvider',
-      category: LogCategory.ui,
-    );
-
-    final profileExists = userProfileService.hasProfile(pubkey);
-    final profileMissing = userProfileService.shouldSkipProfileFetch(pubkey);
-
-    if (profileExists) {
-      Log.debug(
-        '✅ Profile added to cache: $pubkey',
-        name: 'UserProfileReactiveProvider',
-        category: LogCategory.ui,
-      );
-
-      userProfileService.removeListener(listener);
-      completer.complete(userProfileService.getCachedProfile(pubkey));
-    } else if (profileMissing && !completer.isCompleted) {
-      Log.debug(
-        '❌ Profile marked as missing: $pubkey',
-        name: 'UserProfileReactiveProvider',
-        category: LogCategory.ui,
-      );
-
-      userProfileService.removeListener(listener);
-      completer.complete(null);
-    }
-  }
-
-  ref.onDispose(() {
-    Log.debug(
-      '🗑️ Removing listener for profile: $pubkey',
-      name: 'UserProfileReactiveProvider',
-      category: LogCategory.ui,
-    );
-
-    userProfileService.removeListener(listener);
-
-    if (!completer.isCompleted) {
-      Log.debug(
-        '🗑️ Completing completer for profile: $pubkey',
-        name: 'UserProfileReactiveProvider',
-        category: LogCategory.ui,
-      );
-
-      completer.complete(null);
-    }
-  });
-
-  Log.debug(
-    '🔍 Adding listener for profile: $pubkey',
-    name: 'UserProfileReactiveProvider',
-    category: LogCategory.ui,
-  );
-
-  // Add the listener and fire the fetch profile request
-  userProfileService.addListener(listener);
-  unawaited(userProfileService.fetchProfile(pubkey));
-
-  // Wait for the profile to be fetched in the listener or timeout
-  return completer.future.timeout(
-    const Duration(seconds: 15),
-    onTimeout: () {
-      Log.warning(
-        '⏰ Timeout waiting for profile: $pubkey',
-        name: 'UserProfileReactiveProvider',
-        category: LogCategory.ui,
-      );
-
-      userProfileService.removeListener(listener);
-
-      return null;
-    },
-  );
+  yield* repo.watchProfile(pubkey: pubkey);
 }
 
-/// Async provider for loading a single user profile.
-/// Delegates to ProfileRepository for caching and fetching,
-/// and UserProfileService for skip-tracking.
+/// One-shot provider: returns cached profile or fetches fresh.
+///
+/// Use this when you need a single read (e.g., building a share sheet)
+/// rather than a reactive stream.
 @riverpod
 Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
-  final userProfileService = ref.watch(userProfileServiceProvider);
-  final profileRepository = ref.watch(profileRepositoryProvider);
+  final repo = ref.watch(profileRepositoryProvider);
+  if (repo == null) return null;
 
-  // Return null if NostrClient doesn't have keys yet
-  if (profileRepository == null) {
-    Log.debug(
-      'ProfileRepository not ready yet, waiting for keys...',
-      name: 'UserProfileProvider',
-      category: LogCategory.ui,
-    );
-    return null;
-  }
-
-  if (userProfileService.shouldSkipProfileFetch(pubkey)) {
-    Log.debug(
-      'Skipping fetch for known missing profile: $pubkey...',
-      name: 'UserProfileProvider',
-      category: LogCategory.ui,
-    );
-    return null;
-  }
-
-  Log.debug(
-    'Loading profile for: $pubkey...',
-    name: 'UserProfileProvider',
-    category: LogCategory.ui,
-  );
-
-  final profile = await profileRepository.getCachedProfile(pubkey: pubkey);
-
-  if (profile == null) {
-    Log.debug(
-      'Profile not found, marking as missing: $pubkey...',
-      name: 'UserProfileProvider',
-      category: LogCategory.ui,
-    );
-    userProfileService.markProfileAsMissing(pubkey);
-    return null;
-  }
-
-  return UserProfile.fromJson(profile.toJson());
-}
-
-// User profile state notifier with reactive state management
-@riverpod
-class UserProfileNotifier extends _$UserProfileNotifier {
-  // UserProfileService handles all subscription management
-  Timer? _batchDebounceTimer;
-
-  @override
-  UserProfileState build() {
-    // Keep this provider alive to avoid repeated init/dispose thrash when accessed via ref.read
-    // (AutoDispose is default for @riverpod; keep it alive explicitly.)
-    // This prevents log spam like "User profile notifier initialized" on every rebuild.
-    // ignore: unused_local_variable
-    final keepAliveLink = ref.keepAlive();
-    ref.onDispose(() {
-      _batchDebounceTimer?.cancel();
-    });
-
-    return UserProfileState.initial;
-  }
-
-  /// Initialize the profile service
-  Future<void> initialize() async {
-    if (state.isInitialized) return;
-
-    Log.verbose(
-      'Initializing user profile notifier...',
-      name: 'UserProfileNotifier',
-      category: LogCategory.system,
-    );
-
-    final nostrService = ref.read(nostrServiceProvider);
-
-    if (!nostrService.isInitialized) {
-      Log.warning(
-        'Nostr service not initialized, profile notifier will wait',
-        name: 'UserProfileNotifier',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    state = state.copyWith(isInitialized: true);
-    Log.info(
-      'User profile notifier initialized',
-      name: 'UserProfileNotifier',
-      category: LogCategory.system,
-    );
-  }
-
-  /// Get cached profile for a user
-  /// Delegates to UserProfileService as single source of truth
-  UserProfile? getCachedProfile(String pubkey) {
-    final userProfileService = ref.read(userProfileServiceProvider);
-    return userProfileService.getCachedProfile(pubkey);
-  }
-
-  /// Update a cached profile
-  /// Delegates to UserProfileService which will notify listeners
-  Future<void> updateCachedProfile(UserProfile profile) async {
-    final userProfileService = ref.read(userProfileServiceProvider);
-    await userProfileService.updateCachedProfile(profile);
-
-    Log.debug(
-      'Updated cached profile for ${profile.pubkey}: ${profile.bestDisplayName}',
-      name: 'UserProfileNotifier',
-      category: LogCategory.system,
-    );
-  }
-
-  /// Fetch profile for a specific user
-  /// Delegates to UserProfileService as single source of truth
-  Future<UserProfile?> fetchProfile(
-    String pubkey, {
-    bool forceRefresh = false,
-  }) async {
-    if (!state.isInitialized) {
-      await initialize();
-    }
-
-    // Check if already requesting
-    if (state.isRequestPending(pubkey)) {
-      Log.warning(
-        '⏳ Profile request already pending for $pubkey...',
-        name: 'UserProfileNotifier',
-        category: LogCategory.system,
-      );
-      return null;
-    }
-
-    try {
-      // Mark as pending
-      state = state.copyWith(
-        pendingRequests: {...state.pendingRequests, pubkey},
-        isLoading: true,
-        totalProfilesRequested: state.totalProfilesRequested + 1,
-      );
-
-      // Delegate to UserProfileService
-      final userProfileService = ref.read(userProfileServiceProvider);
-      final profile = await userProfileService.fetchProfile(
-        pubkey,
-        forceRefresh: forceRefresh,
-      );
-
-      return profile;
-    } finally {
-      // Remove from pending
-      final newPending = {...state.pendingRequests}..remove(pubkey);
-      state = state.copyWith(
-        pendingRequests: newPending,
-        isLoading: newPending.isEmpty && state.pendingBatchPubkeys.isEmpty,
-      );
-    }
-  }
-
-  /// Aggressively pre-fetch profiles for immediate display (no debouncing)
-  /// Delegates to UserProfileService which handles all caching
-  Future<void> prefetchProfilesImmediately(List<String> pubkeys) async {
-    // Only prefetch when a relevant UI tab is active to avoid background churn
-    final isFeedActive = ref.read(isFeedTabActiveProvider);
-    final isExploreActive = ref.read(isExploreTabActiveProvider);
-    final isProfileActive = ref.read(isProfileTabActiveProvider);
-    if (!(isFeedActive || isExploreActive || isProfileActive)) {
-      Log.info(
-        '🚫 Prefetch suppressed: Feed=$isFeedActive, Explore=$isExploreActive, Profile=$isProfileActive',
-        name: 'UserProfileNotifier',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    Log.info(
-      '✅ Prefetch allowed: Feed=$isFeedActive, Explore=$isExploreActive, Profile=$isProfileActive',
-      name: 'UserProfileNotifier',
-      category: LogCategory.system,
-    );
-
-    if (!state.isInitialized) {
-      await initialize();
-    }
-
-    // Delegate to UserProfileService for prefetch
-    final userProfileService = ref.read(userProfileServiceProvider);
-    await userProfileService.prefetchProfilesImmediately(pubkeys);
-
-    Log.debug(
-      '⚡ Prefetch request sent to UserProfileService',
-      name: 'UserProfileNotifier',
-      category: LogCategory.system,
-    );
-  }
-
-  /// Fetch multiple profiles with batching
-  /// Delegates to UserProfileService which handles all caching and batching
-  Future<void> fetchMultipleProfiles(
-    List<String> pubkeys, {
-    bool forceRefresh = false,
-  }) async {
-    if (!state.isInitialized) {
-      await initialize();
-    }
-
-    Log.info(
-      '📋 Batch fetching ${pubkeys.length} profiles',
-      name: 'UserProfileNotifier',
-      category: LogCategory.system,
-    );
-
-    // Delegate to UserProfileService for batch fetch
-    final userProfileService = ref.read(userProfileServiceProvider);
-    await userProfileService.fetchMultipleProfiles(
-      pubkeys,
-      forceRefresh: forceRefresh,
-    );
-  }
-
-  /// Mark a profile as missing to avoid spam
-  /// Delegates to UserProfileService which tracks missing profiles
-  void markProfileAsMissing(String pubkey) {
-    final userProfileService = ref.read(userProfileServiceProvider);
-    userProfileService.markProfileAsMissing(pubkey);
-
-    Log.debug(
-      'Marked profile as missing: $pubkey... (retry after 10 minutes)',
-      name: 'UserProfileNotifier',
-      category: LogCategory.system,
-    );
-  }
-
-  /// Check if we have a cached profile
-  /// Delegates to UserProfileService as single source of truth
-  bool hasProfile(String pubkey) {
-    final userProfileService = ref.read(userProfileServiceProvider);
-    return userProfileService.hasProfile(pubkey);
-  }
+  return await repo.getCachedProfile(pubkey: pubkey) ??
+      await repo.fetchFreshProfile(pubkey: pubkey);
 }

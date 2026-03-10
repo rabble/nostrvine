@@ -20,11 +20,9 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 void main() {
   group(FindPeopleSheet, () {
     late _MockProfileRepository mockProfileRepo;
-    late MockUserProfileService mockUserProfileService;
 
     setUp(() {
       mockProfileRepo = _MockProfileRepository();
-      mockUserProfileService = createMockUserProfileService();
     });
 
     Widget createTestWidget({List<ShareableUser> contacts = const []}) {
@@ -47,7 +45,6 @@ void main() {
             );
           },
         ),
-        mockUserProfileService: mockUserProfileService,
         additionalOverrides: [
           profileRepositoryProvider.overrideWithValue(mockProfileRepo),
         ],
@@ -61,37 +58,33 @@ void main() {
     }
 
     group('rendering', () {
-      testWidgets(
-        'renders search field with "Find people" hint text',
-        (tester) async {
-          await openSheet(tester);
+      testWidgets('renders search field with "Find people" hint text', (
+        tester,
+      ) async {
+        await openSheet(tester);
 
-          expect(find.byType(TextField), findsOneWidget);
-          expect(find.text('Find people'), findsOneWidget);
-        },
-      );
+        expect(find.byType(TextField), findsOneWidget);
+        expect(find.text('Find people'), findsOneWidget);
+      });
 
-      testWidgets(
-        'renders "No contacts found" when follow list is empty',
-        (tester) async {
-          await openSheet(tester);
+      testWidgets('renders "No contacts found" when follow list is empty', (
+        tester,
+      ) async {
+        await openSheet(tester);
 
-          expect(
-            find.text(
-              'No contacts found.\nStart following people to see them here.',
-            ),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(
+          find.text(
+            'No contacts found.\nStart following people to see them here.',
+          ),
+          findsOneWidget,
+        );
+      });
 
       testWidgets('renders contact list when contacts are loaded', (
         tester,
       ) async {
         final pubkey = 'a' * 64;
-        final contacts = [
-          ShareableUser(pubkey: pubkey, displayName: 'Alice'),
-        ];
+        final contacts = [ShareableUser(pubkey: pubkey, displayName: 'Alice')];
 
         await tester.pumpWidget(createTestWidget(contacts: contacts));
         await tester.tap(find.text('Open Sheet'));
@@ -103,68 +96,66 @@ void main() {
     });
 
     group('search states', () {
-      testWidgets(
-        'shows loading indicator when search is in progress',
-        (tester) async {
-          // Use a completer to control when the search completes
-          final completer = Completer<List<UserProfile>>();
-          when(
-            () => mockProfileRepo.searchUsers(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
-              sortBy: any(named: 'sortBy'),
-              hasVideos: any(named: 'hasVideos'),
+      testWidgets('shows loading indicator when search is in progress', (
+        tester,
+      ) async {
+        // Use a completer to control when the search completes
+        final completer = Completer<List<UserProfile>>();
+        when(
+          () => mockProfileRepo.searchUsers(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        await openSheet(tester);
+
+        // Type a search query
+        await tester.enterText(find.byType(TextField), 'alice');
+        // Wait for debounce (300ms) + some processing
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Complete the future to avoid pending timer errors
+        completer.complete([]);
+        await tester.pumpAndSettle();
+      });
+
+      testWidgets('shows search results when search succeeds with results', (
+        tester,
+      ) async {
+        final pubkey = 'b' * 64;
+        when(
+          () => mockProfileRepo.searchUsers(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            UserProfile(
+              pubkey: pubkey,
+              displayName: 'Bob',
+              picture: 'https://example.com/bob.jpg',
+              createdAt: DateTime.now(),
+              eventId: 'event-$pubkey',
+              rawData: const {'display_name': 'Bob'},
             ),
-          ).thenAnswer((_) => completer.future);
+          ],
+        );
 
-          await openSheet(tester);
+        await openSheet(tester);
 
-          // Type a search query
-          await tester.enterText(find.byType(TextField), 'alice');
-          // Wait for debounce (300ms) + some processing
-          await tester.pump(const Duration(milliseconds: 400));
+        await tester.enterText(find.byType(TextField), 'bob');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
 
-          expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-          // Complete the future to avoid pending timer errors
-          completer.complete([]);
-          await tester.pumpAndSettle();
-        },
-      );
-
-      testWidgets(
-        'shows search results when search succeeds with results',
-        (tester) async {
-          final pubkey = 'b' * 64;
-          when(
-            () => mockProfileRepo.searchUsers(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
-              sortBy: any(named: 'sortBy'),
-              hasVideos: any(named: 'hasVideos'),
-            ),
-          ).thenAnswer(
-            (_) async => [
-              UserProfile(
-                pubkey: pubkey,
-                displayName: 'Bob',
-                picture: 'https://example.com/bob.jpg',
-                createdAt: DateTime.now(),
-                eventId: 'event-$pubkey',
-                rawData: const {'display_name': 'Bob'},
-              ),
-            ],
-          );
-
-          await openSheet(tester);
-
-          await tester.enterText(find.byType(TextField), 'bob');
-          await tester.pump(const Duration(milliseconds: 400));
-          await tester.pumpAndSettle();
-
-          expect(find.text('Bob'), findsOneWidget);
-        },
-      );
+        expect(find.text('Bob'), findsOneWidget);
+      });
 
       testWidgets(
         'shows "No users found" when search succeeds with empty results',
@@ -188,65 +179,58 @@ void main() {
         },
       );
 
-      testWidgets(
-        'shows "Search failed" when search fails',
-        (tester) async {
-          when(
-            () => mockProfileRepo.searchUsers(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
-              sortBy: any(named: 'sortBy'),
-              hasVideos: any(named: 'hasVideos'),
-            ),
-          ).thenThrow(Exception('Network error'));
+      testWidgets('shows "Search failed" when search fails', (tester) async {
+        when(
+          () => mockProfileRepo.searchUsers(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+          ),
+        ).thenThrow(Exception('Network error'));
 
-          await openSheet(tester);
+        await openSheet(tester);
 
-          await tester.enterText(find.byType(TextField), 'error');
-          await tester.pump(const Duration(milliseconds: 400));
-          await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField), 'error');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
 
-          expect(
-            find.text('Search failed. Please try again.'),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.text('Search failed. Please try again.'), findsOneWidget);
+      });
 
-      testWidgets(
-        'returns to contact list when search is cleared',
-        (tester) async {
-          when(
-            () => mockProfileRepo.searchUsers(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
-              sortBy: any(named: 'sortBy'),
-              hasVideos: any(named: 'hasVideos'),
-            ),
-          ).thenAnswer((_) async => []);
+      testWidgets('returns to contact list when search is cleared', (
+        tester,
+      ) async {
+        when(
+          () => mockProfileRepo.searchUsers(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
+          ),
+        ).thenAnswer((_) async => []);
 
-          await openSheet(tester);
+        await openSheet(tester);
 
-          // Type something
-          await tester.enterText(find.byType(TextField), 'test');
-          await tester.pump(const Duration(milliseconds: 400));
-          await tester.pumpAndSettle();
+        // Type something
+        await tester.enterText(find.byType(TextField), 'test');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
 
-          expect(find.text('No users found'), findsOneWidget);
+        expect(find.text('No users found'), findsOneWidget);
 
-          // Clear the search
-          await tester.enterText(find.byType(TextField), '');
-          await tester.pumpAndSettle();
+        // Clear the search
+        await tester.enterText(find.byType(TextField), '');
+        await tester.pumpAndSettle();
 
-          // Should return to contacts (empty state in this case)
-          expect(
-            find.text(
-              'No contacts found.\nStart following people to see them here.',
-            ),
-            findsOneWidget,
-          );
-        },
-      );
+        // Should return to contacts (empty state in this case)
+        expect(
+          find.text(
+            'No contacts found.\nStart following people to see them here.',
+          ),
+          findsOneWidget,
+        );
+      });
     });
 
     group('user selection', () {
@@ -278,7 +262,6 @@ void main() {
                   );
                 },
               ),
-              mockUserProfileService: mockUserProfileService,
               additionalOverrides: [
                 profileRepositoryProvider.overrideWithValue(mockProfileRepo),
               ],

@@ -1,0 +1,61 @@
+[tools]
+flutter = "3.41.2-stable"
+
+[tasks.local_up]
+description = "Start all local E2E services"
+run = """
+docker compose -f ../local_stack/docker-compose.yml up -d
+docker compose -f ../local_stack/docker-compose.yml up -d --wait \
+  keycast keycast-postgres keycast-redis \
+  funnelcake-relay funnelcake-api funnelcake-redis funnelcake-clickhouse \
+  blossom
+docker compose -f ../local_stack/docker-compose.yml wait e2e-seed
+"""
+
+[tasks.local_down]
+description = "Stop all local E2E services"
+run = "docker compose -f ../local_stack/docker-compose.yml down"
+
+[tasks.local_logs]
+description = "Tail all local service logs"
+run = "docker compose -f ../local_stack/docker-compose.yml logs -f"
+
+[tasks.local_build]
+description = "Build APK with LOCAL environment"
+run = "flutter build apk --debug --dart-define=DEFAULT_ENV=LOCAL"
+
+[tasks.local_install]
+description = "Install LOCAL APK on emulator"
+run = "adb install -r build/app/outputs/flutter-apk/app-debug.apk"
+
+[tasks.local_status]
+description = "Check status of local services"
+run = "docker compose -f ../local_stack/docker-compose.yml ps"
+
+[tasks.local_reset]
+description = "Wipe all local data (relay, DB, blossom) and restart fresh"
+run = """
+docker compose -f ../local_stack/docker-compose.yml down -v
+docker compose -f ../local_stack/docker-compose.yml up -d --wait
+"""
+
+[tasks.local_setup]
+description = "First-time setup for local E2E"
+run = "bash ../local_stack/setup.sh"
+
+[tasks.local_token]
+description = "Get verification token for an email from local DB"
+run = """
+docker compose -f ../local_stack/docker-compose.yml exec keycast-postgres \
+  psql -U postgres -d keycast -t -A -c \
+  "SELECT pending_email_verification_token FROM oauth_codes WHERE pending_email = '$1' AND pending_email_verification_token IS NOT NULL ORDER BY created_at DESC LIMIT 1;"
+"""
+
+[tasks.local_logs_keycast]
+description = "Show keycast container logs (useful after refresh token tests)"
+run = "docker compose -f ../e2e/docker-compose.yml logs keycast --tail=200"
+
+[tasks.e2e_test]
+description = "Run E2E tests with log profiling (starts Docker stack, captures merged timeline)"
+depends = ["local_up"]
+run = "bash ../local_stack/profile.sh {{ arg(i=0, name='test_path', default='integration_test/auth/') }}"

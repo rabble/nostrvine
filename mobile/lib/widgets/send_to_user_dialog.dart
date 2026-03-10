@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -199,24 +200,21 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
   Future<void> _loadUserContacts() async {
     try {
       final followRepository = ref.read(followRepositoryProvider);
-      final userProfileService = ref.read(userProfileServiceProvider);
+      final profileRepo = ref.read(profileRepositoryProvider);
 
       // Get the user's follow list
       final followList = followRepository.followingPubkeys;
       final contacts = <ShareableUser>[];
 
-      // Batch-fetch uncached profiles before building the list
-      final uncachedPubkeys = followList
-          .where((pk) => !userProfileService.hasProfile(pk))
-          .toList();
-      if (uncachedPubkeys.isNotEmpty) {
-        await Future.wait(uncachedPubkeys.map(userProfileService.fetchProfile));
+      // Batch-fetch profiles via ProfileRepository
+      if (profileRepo != null && followList.isNotEmpty) {
+        await profileRepo.fetchBatchProfiles(pubkeys: followList);
       }
 
       // Convert follows to ShareableUser objects with profile data
       for (final pubkey in followList) {
         try {
-          final profile = userProfileService.getCachedProfile(pubkey);
+          final profile = await profileRepo?.getCachedProfile(pubkey: pubkey);
           contacts.add(
             ShareableUser(
               pubkey: pubkey,
@@ -259,8 +257,7 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
   /// Build a user tile for contacts or search results
   Widget _buildUserTile(ShareableUser user) {
     // Get user profile to check for nip05
-    final userProfileService = ref.read(userProfileServiceProvider);
-    final profile = userProfileService.getCachedProfile(user.pubkey);
+    final profile = ref.read(userProfileReactiveProvider(user.pubkey)).value;
 
     // Display nip05 if available, otherwise npub (never show raw hex)
     // Use normalizeToNpub to convert hex to npub format

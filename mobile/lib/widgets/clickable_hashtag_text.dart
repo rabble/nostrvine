@@ -6,7 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/utils/hashtag_extractor.dart';
@@ -158,14 +158,8 @@ class ClickableHashtagText extends ConsumerWidget {
       return TextSpan(text: 'nostr:$nostrId', style: style);
     }
 
-    // Try to get cached profile
-    final userProfileService = ref.read(userProfileServiceProvider);
-    final profile = userProfileService.getCachedProfile(hexPubkey);
-
-    // Trigger background fetch if not cached
-    if (profile == null) {
-      userProfileService.fetchProfile(hexPubkey);
-    }
+    // Try to get cached profile (reactive provider handles background fetch)
+    final profile = ref.read(userProfileReactiveProvider(hexPubkey)).value;
 
     // Display name: @username if available, otherwise @truncated_npub
     final displayName = profile?.bestDisplayName;
@@ -191,38 +185,12 @@ class ClickableHashtagText extends ConsumerWidget {
     String username,
     TextStyle style,
   ) {
-    // Try to find a cached profile that matches this username
-    final userProfileService = ref.read(userProfileServiceProvider);
-    final allProfiles = userProfileService.allProfiles;
-
-    // Search for a profile with matching name or displayName (case-insensitive)
-    final usernameLower = username.toLowerCase();
-    String? matchedPubkey;
-
-    for (final entry in allProfiles.entries) {
-      final profile = entry.value;
-      final nameMatch = profile.name?.toLowerCase() == usernameLower;
-      final displayNameMatch =
-          profile.displayName?.toLowerCase() == usernameLower;
-      if (nameMatch || displayNameMatch) {
-        matchedPubkey = entry.key;
-        break;
-      }
-    }
-
+    // Plain @mentions (legacy Vine format) — navigate to search
     return TextSpan(
       text: '@$username',
       style: style,
       recognizer: TapGestureRecognizer()
-        ..onTap = () {
-          if (matchedPubkey != null) {
-            // Found matching profile - navigate directly to it
-            _navigateToProfile(context, matchedPubkey);
-          } else {
-            // No cached match - navigate to search with username
-            _navigateToSearch(context, username);
-          }
-        },
+        ..onTap = () => _navigateToSearch(context, username),
     );
   }
 

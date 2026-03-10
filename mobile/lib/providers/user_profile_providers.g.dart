@@ -8,18 +8,46 @@ part of 'user_profile_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
+/// Reactive profile provider backed by Drift's watchProfile stream.
+///
+/// On first access for a pubkey:
+/// 1. Checks Drift cache — if missing, fires a background fetchFreshProfile
+/// 2. Yields from the Drift watch stream, so any cache update (from fetch,
+///    profile edit, or batch prefetch) automatically flows to consumers.
+///
+/// Consumers get `AsyncValue<UserProfile?>` — same API as the old
+/// FutureProvider, so widget code changes are minimal.
 
 @ProviderFor(userProfileReactive)
 const userProfileReactiveProvider = UserProfileReactiveFamily._();
+
+/// Reactive profile provider backed by Drift's watchProfile stream.
+///
+/// On first access for a pubkey:
+/// 1. Checks Drift cache — if missing, fires a background fetchFreshProfile
+/// 2. Yields from the Drift watch stream, so any cache update (from fetch,
+///    profile edit, or batch prefetch) automatically flows to consumers.
+///
+/// Consumers get `AsyncValue<UserProfile?>` — same API as the old
+/// FutureProvider, so widget code changes are minimal.
 
 final class UserProfileReactiveProvider
     extends
         $FunctionalProvider<
           AsyncValue<UserProfile?>,
           UserProfile?,
-          FutureOr<UserProfile?>
+          Stream<UserProfile?>
         >
-    with $FutureModifier<UserProfile?>, $FutureProvider<UserProfile?> {
+    with $FutureModifier<UserProfile?>, $StreamProvider<UserProfile?> {
+  /// Reactive profile provider backed by Drift's watchProfile stream.
+  ///
+  /// On first access for a pubkey:
+  /// 1. Checks Drift cache — if missing, fires a background fetchFreshProfile
+  /// 2. Yields from the Drift watch stream, so any cache update (from fetch,
+  ///    profile edit, or batch prefetch) automatically flows to consumers.
+  ///
+  /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
+  /// FutureProvider, so widget code changes are minimal.
   const UserProfileReactiveProvider._({
     required UserProfileReactiveFamily super.from,
     required String super.argument,
@@ -43,12 +71,12 @@ final class UserProfileReactiveProvider
 
   @$internal
   @override
-  $FutureProviderElement<UserProfile?> $createElement(
+  $StreamProviderElement<UserProfile?> $createElement(
     $ProviderPointer pointer,
-  ) => $FutureProviderElement(pointer);
+  ) => $StreamProviderElement(pointer);
 
   @override
-  FutureOr<UserProfile?> create(Ref ref) {
+  Stream<UserProfile?> create(Ref ref) {
     final argument = this.argument as String;
     return userProfileReactive(ref, argument);
   }
@@ -65,10 +93,20 @@ final class UserProfileReactiveProvider
 }
 
 String _$userProfileReactiveHash() =>
-    r'a386655102ccb644658df4df490df424e66e8e03';
+    r'b0df16fa99256495c86d9dc1980ac7312d71a6bd';
+
+/// Reactive profile provider backed by Drift's watchProfile stream.
+///
+/// On first access for a pubkey:
+/// 1. Checks Drift cache — if missing, fires a background fetchFreshProfile
+/// 2. Yields from the Drift watch stream, so any cache update (from fetch,
+///    profile edit, or batch prefetch) automatically flows to consumers.
+///
+/// Consumers get `AsyncValue<UserProfile?>` — same API as the old
+/// FutureProvider, so widget code changes are minimal.
 
 final class UserProfileReactiveFamily extends $Family
-    with $FunctionalFamilyOverride<FutureOr<UserProfile?>, String> {
+    with $FunctionalFamilyOverride<Stream<UserProfile?>, String> {
   const UserProfileReactiveFamily._()
     : super(
         retry: null,
@@ -78,6 +116,16 @@ final class UserProfileReactiveFamily extends $Family
         isAutoDispose: true,
       );
 
+  /// Reactive profile provider backed by Drift's watchProfile stream.
+  ///
+  /// On first access for a pubkey:
+  /// 1. Checks Drift cache — if missing, fires a background fetchFreshProfile
+  /// 2. Yields from the Drift watch stream, so any cache update (from fetch,
+  ///    profile edit, or batch prefetch) automatically flows to consumers.
+  ///
+  /// Consumers get `AsyncValue<UserProfile?>` — same API as the old
+  /// FutureProvider, so widget code changes are minimal.
+
   UserProfileReactiveProvider call(String pubkey) =>
       UserProfileReactiveProvider._(argument: pubkey, from: this);
 
@@ -85,16 +133,18 @@ final class UserProfileReactiveFamily extends $Family
   String toString() => r'userProfileReactiveProvider';
 }
 
-/// Async provider for loading a single user profile.
-/// Delegates to ProfileRepository for caching and fetching,
-/// and UserProfileService for skip-tracking.
+/// One-shot provider: returns cached profile or fetches fresh.
+///
+/// Use this when you need a single read (e.g., building a share sheet)
+/// rather than a reactive stream.
 
 @ProviderFor(fetchUserProfile)
 const fetchUserProfileProvider = FetchUserProfileFamily._();
 
-/// Async provider for loading a single user profile.
-/// Delegates to ProfileRepository for caching and fetching,
-/// and UserProfileService for skip-tracking.
+/// One-shot provider: returns cached profile or fetches fresh.
+///
+/// Use this when you need a single read (e.g., building a share sheet)
+/// rather than a reactive stream.
 
 final class FetchUserProfileProvider
     extends
@@ -104,9 +154,10 @@ final class FetchUserProfileProvider
           FutureOr<UserProfile?>
         >
     with $FutureModifier<UserProfile?>, $FutureProvider<UserProfile?> {
-  /// Async provider for loading a single user profile.
-  /// Delegates to ProfileRepository for caching and fetching,
-  /// and UserProfileService for skip-tracking.
+  /// One-shot provider: returns cached profile or fetches fresh.
+  ///
+  /// Use this when you need a single read (e.g., building a share sheet)
+  /// rather than a reactive stream.
   const FetchUserProfileProvider._({
     required FetchUserProfileFamily super.from,
     required String super.argument,
@@ -151,11 +202,12 @@ final class FetchUserProfileProvider
   }
 }
 
-String _$fetchUserProfileHash() => r'1705f45d7b27605fbce2f5e7ba1a96d59872e613';
+String _$fetchUserProfileHash() => r'b5565d7d2d026d79ff21286d42511b8aee085d4d';
 
-/// Async provider for loading a single user profile.
-/// Delegates to ProfileRepository for caching and fetching,
-/// and UserProfileService for skip-tracking.
+/// One-shot provider: returns cached profile or fetches fresh.
+///
+/// Use this when you need a single read (e.g., building a share sheet)
+/// rather than a reactive stream.
 
 final class FetchUserProfileFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<UserProfile?>, String> {
@@ -168,67 +220,14 @@ final class FetchUserProfileFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Async provider for loading a single user profile.
-  /// Delegates to ProfileRepository for caching and fetching,
-  /// and UserProfileService for skip-tracking.
+  /// One-shot provider: returns cached profile or fetches fresh.
+  ///
+  /// Use this when you need a single read (e.g., building a share sheet)
+  /// rather than a reactive stream.
 
   FetchUserProfileProvider call(String pubkey) =>
       FetchUserProfileProvider._(argument: pubkey, from: this);
 
   @override
   String toString() => r'fetchUserProfileProvider';
-}
-
-@ProviderFor(UserProfileNotifier)
-const userProfileProvider = UserProfileNotifierProvider._();
-
-final class UserProfileNotifierProvider
-    extends $NotifierProvider<UserProfileNotifier, UserProfileState> {
-  const UserProfileNotifierProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'userProfileProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$userProfileNotifierHash();
-
-  @$internal
-  @override
-  UserProfileNotifier create() => UserProfileNotifier();
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UserProfileState value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<UserProfileState>(value),
-    );
-  }
-}
-
-String _$userProfileNotifierHash() =>
-    r'8336acfa4268b155ca8b53240f1e3ee6126f9201';
-
-abstract class _$UserProfileNotifier extends $Notifier<UserProfileState> {
-  UserProfileState build();
-  @$mustCallSuper
-  @override
-  void runBuild() {
-    final created = build();
-    final ref = this.ref as $Ref<UserProfileState, UserProfileState>;
-    final element =
-        ref.element
-            as $ClassProviderElement<
-              AnyNotifier<UserProfileState, UserProfileState>,
-              UserProfileState,
-              Object?,
-              Object?
-            >;
-    element.handleValue(ref, created);
-  }
 }

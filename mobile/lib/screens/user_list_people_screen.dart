@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/user_list_service.dart';
@@ -341,15 +341,13 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
 }
 
 /// Horizontal carousel of people avatars for a user list.
-class _PeopleCarousel extends ConsumerWidget {
+class _PeopleCarousel extends StatelessWidget {
   const _PeopleCarousel({required this.pubkeys, super.key});
 
   final List<String> pubkeys;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final userProfileService = ref.watch(userProfileServiceProvider);
-
+  Widget build(BuildContext context) {
     return ColoredBox(
       color: VineTheme.backgroundColor,
       child: SizedBox(
@@ -358,51 +356,52 @@ class _PeopleCarousel extends ConsumerWidget {
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
           itemCount: pubkeys.length,
-          itemBuilder: (context, index) {
-            final pubkey = pubkeys[index];
+          itemBuilder: (context, index) =>
+              _PeopleAvatarItem(pubkey: pubkeys[index]),
+        ),
+      ),
+    );
+  }
+}
 
-            return FutureBuilder(
-              future: userProfileService.fetchProfile(pubkey),
-              builder: (context, snapshot) {
-                final profile = userProfileService.getCachedProfile(pubkey);
+class _PeopleAvatarItem extends ConsumerWidget {
+  const _PeopleAvatarItem({required this.pubkey});
 
-                final displayName =
-                    profile?.bestDisplayName ??
-                    UserProfile.defaultDisplayNameFor(pubkey);
+  final String pubkey;
 
-                return Semantics(
-                  label: 'View profile for $displayName',
-                  button: true,
-                  child: GestureDetector(
-                    onTap: () {
-                      final npub = NostrKeyUtils.encodePubKey(pubkey);
-                      context.push(OtherProfileScreen.pathForNpub(npub));
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          UserAvatar(imageUrl: profile?.picture, size: 56),
-                          const SizedBox(height: 4),
-                          SizedBox(
-                            width: 70,
-                            child: Text(
-                              displayName,
-                              style: VineTheme.titleTinyFont(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
-          },
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
+    final displayName =
+        profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
+
+    return Semantics(
+      label: 'View profile for $displayName',
+      button: true,
+      child: GestureDetector(
+        onTap: () {
+          final npub = NostrKeyUtils.encodePubKey(pubkey);
+          context.push(OtherProfileScreen.pathForNpub(npub));
+        },
+        child: Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              UserAvatar(imageUrl: profile?.picture, size: 56),
+              const SizedBox(height: 4),
+              SizedBox(
+                width: 70,
+                child: Text(
+                  displayName,
+                  style: VineTheme.titleTinyFont(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

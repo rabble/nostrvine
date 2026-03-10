@@ -15,6 +15,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -826,8 +827,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final npub = NostrKeyUtils.encodePubKey(userPubkey);
 
         // Try to get user profile for display name and NIP-05
-        final userProfileService = ref.read(userProfileServiceProvider);
-        final profile = userProfileService.getCachedProfile(userPubkey);
+        final profile = ref.read(userProfileReactiveProvider(userPubkey)).value;
 
         await ZendeskSupportService.setUserIdentity(
           displayName: profile?.bestDisplayName,

@@ -275,8 +275,12 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         // to profile
         final pubkeyHex = authService.currentPublicKeyHex;
         if (pubkeyHex != null) {
-          final userProfileService = ref.read(userProfileServiceProvider);
-          unawaited(userProfileService.fetchProfile(pubkeyHex));
+          unawaited(
+            ref
+                    .read(profileRepositoryProvider)
+                    ?.fetchFreshProfile(pubkey: pubkeyHex) ??
+                Future<void>.value(),
+          );
           Log.info(
             'Started background fetch for imported user profile',
             name: 'KeyImportScreen',

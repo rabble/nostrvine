@@ -837,8 +837,9 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     _safePop(ctx);
 
     // Resolve the creator's displayed NIP-05 or fallback handle.
-    final profileService = ref.read(userProfileServiceProvider);
-    final profile = profileService.getCachedProfile(widget.video.pubkey);
+    final profile = ref
+        .read(userProfileReactiveProvider(widget.video.pubkey))
+        .value;
     final watermarkText = resolveWatermarkText(
       profile: profile,
       fallbackAuthorName: widget.video.authorName,

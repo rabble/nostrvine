@@ -572,25 +572,27 @@ class RelayNotifications extends _$RelayNotifications {
       relayNotifications,
     );
 
-    final userProfileService = ref.read(userProfileServiceProvider);
+    final profileRepo = ref.read(profileRepositoryProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
 
     // Batch fetch profiles for all unique pubkeys
     final pubkeys = consolidatedNotifications
         .map((n) => n.sourcePubkey)
-        .toSet();
+        .toSet()
+        .toList();
 
-    // Trigger profile fetches (don't wait - profiles may already be cached)
-    for (final pubkey in pubkeys) {
-      // fetchProfile returns cached if available, fetches if not
-      userProfileService.fetchProfile(pubkey);
-    }
+    // Fire-and-forget batch fetch
+    unawaited(
+      profileRepo?.fetchBatchProfiles(pubkeys: pubkeys) ?? Future<void>.value(),
+    );
 
     // Convert to NotificationModel with available profile data
     final enriched = <NotificationModel>[];
     for (final relay in consolidatedNotifications) {
       // Get cached profile (may be null if still loading)
-      final profile = userProfileService.getCachedProfile(relay.sourcePubkey);
+      final profile = await profileRepo?.getCachedProfile(
+        pubkey: relay.sourcePubkey,
+      );
 
       // Get video info if available
       String? videoUrl;

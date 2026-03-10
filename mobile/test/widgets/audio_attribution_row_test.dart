@@ -7,9 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 
 void main() {
@@ -73,10 +71,6 @@ void main() {
           soundByIdProvider(testAudioEventId).overrideWith((ref) async {
             return audioOverride ?? testAudio;
           }),
-          // Override user profile service with a mock
-          userProfileServiceProvider.overrideWith((ref) {
-            return _MockUserProfileService();
-          }),
         ],
         child: MaterialApp(
           theme: VineTheme.theme,
@@ -111,9 +105,6 @@ void main() {
             overrides: [
               soundByIdProvider(testAudioEventId).overrideWith((ref) async {
                 return null;
-              }),
-              userProfileServiceProvider.overrideWith((ref) {
-                return _MockUserProfileService();
               }),
             ],
             child: MaterialApp(
@@ -214,9 +205,6 @@ void main() {
               // we check the skeleton before pumpAndSettle
               soundByIdProvider(testAudioEventId).overrideWith((ref) async {
                 return testAudio;
-              }),
-              userProfileServiceProvider.overrideWith((ref) {
-                return _MockUserProfileService();
               }),
             ],
             child: MaterialApp(
@@ -324,38 +312,4 @@ void main() {
       });
     });
   });
-}
-
-/// Mock UserProfileService for testing.
-///
-/// Uses implements + noSuchMethod pattern to stub all required methods.
-class _MockUserProfileService implements UserProfileService {
-  final Map<String, UserProfile> _profiles = {};
-
-  void addProfile(UserProfile profile) {
-    _profiles[profile.pubkey] = profile;
-  }
-
-  @override
-  UserProfile? getCachedProfile(String pubkey) {
-    return _profiles[pubkey];
-  }
-
-  @override
-  bool shouldSkipProfileFetch(String? pubkey) {
-    // Always skip fetching in tests to avoid network calls
-    return true;
-  }
-
-  @override
-  Future<UserProfile?> fetchProfile(
-    String pubkey, {
-    bool forceRefresh = false,
-  }) async {
-    return _profiles[pubkey];
-  }
-
-  // Stub all other required methods
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
 }

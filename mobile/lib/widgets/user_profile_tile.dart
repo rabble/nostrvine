@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
@@ -52,98 +53,89 @@ class UserProfileTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userProfileService = ref.watch(userProfileServiceProvider);
+    final profile = ref.watch(userProfileReactiveProvider(pubkey)).value;
     final authService = ref.watch(authServiceProvider);
     final isCurrentUser = pubkey == authService.currentPublicKeyHex;
 
-    return FutureBuilder(
-      future: userProfileService.fetchProfile(pubkey),
-      builder: (context, snapshot) {
-        final profile = userProfileService.getCachedProfile(pubkey);
-        // wrapping with Semantics for testability and accessibility
-        // Get display name or truncated npub (fallback for users without Kind 0)
-        final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
-        final displayName =
-            profile?.bestDisplayName ??
-            UserProfile.defaultDisplayNameFor(pubkey);
+    // Get display name or truncated npub (fallback for users without Kind 0)
+    final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
+    final displayName =
+        profile?.bestDisplayName ?? UserProfile.defaultDisplayNameFor(pubkey);
 
-        final claimedNip05 = profile?.displayNip05;
-        final verificationStatus =
-            claimedNip05 != null && claimedNip05.isNotEmpty
-            ? ref
-                  .watch(nip05VerificationProvider(pubkey))
-                  .whenOrNull(data: (status) => status)
-            : null;
-        final hasVerifiedNip05 =
-            verificationStatus == Nip05VerificationStatus.verified;
+    final claimedNip05 = profile?.displayNip05;
+    final verificationStatus = claimedNip05 != null && claimedNip05.isNotEmpty
+        ? ref
+              .watch(nip05VerificationProvider(pubkey))
+              .whenOrNull(data: (status) => status)
+        : null;
+    final hasVerifiedNip05 =
+        verificationStatus == Nip05VerificationStatus.verified;
 
-        // Only show NIP-05 when verification succeeds; otherwise show npub.
-        final uniqueIdentifier = hasVerifiedNip05 && claimedNip05 != null
-            ? claimedNip05
-            : truncatedNpub;
+    // Only show NIP-05 when verification succeeds; otherwise show npub.
+    final uniqueIdentifier = hasVerifiedNip05 && claimedNip05 != null
+        ? claimedNip05
+        : truncatedNpub;
 
-        return Semantics(
-          identifier: 'user_profile_tile_$pubkey',
-          label: displayName,
-          container: true,
-          child: GestureDetector(
-            onTap: onTap,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  // Avatar with border (matching video player style)
-                  UserAvatar(
-                    imageUrl: profile?.picture,
-                    name: displayName,
-                    size: 48,
-                  ),
-                  const SizedBox(width: 12),
+    return Semantics(
+      identifier: 'user_profile_tile_$pubkey',
+      label: displayName,
+      container: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Avatar with border (matching video player style)
+              UserAvatar(
+                imageUrl: profile?.picture,
+                name: displayName,
+                size: 48,
+              ),
+              const SizedBox(width: 12),
 
-                  // Name and unique identifier
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          displayName,
-                          style: VineTheme.titleSmallFont(
-                            color: VineTheme.onSurface,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          uniqueIdentifier,
-                          style: VineTheme.bodySmallFont(
-                            color: VineTheme.onSurfaceVariant,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+              // Name and unique identifier
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: VineTheme.titleSmallFont(
+                        color: VineTheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-
-                  // Follow button
-                  if (showFollowButton &&
-                      !isCurrentUser &&
-                      isFollowing != null &&
-                      onToggleFollow != null) ...[
-                    const SizedBox(width: 12),
-                    _FollowButton(
-                      isFollowing: isFollowing!,
-                      onToggleFollow: onToggleFollow!,
-                      displayName: displayName,
-                      index: index,
+                    Text(
+                      uniqueIdentifier,
+                      style: VineTheme.bodySmallFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
-                ],
+                ),
               ),
-            ),
+
+              // Follow button
+              if (showFollowButton &&
+                  !isCurrentUser &&
+                  isFollowing != null &&
+                  onToggleFollow != null) ...[
+                const SizedBox(width: 12),
+                _FollowButton(
+                  isFollowing: isFollowing!,
+                  onToggleFollow: onToggleFollow!,
+                  displayName: displayName,
+                  index: index,
+                ),
+              ],
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

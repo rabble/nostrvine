@@ -8,10 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/bug_report_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -144,10 +145,14 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                             final bugReportService = ref.read(
                               bugReportServiceProvider,
                             );
-                            final userProfileService = ref.read(
-                              userProfileServiceProvider,
-                            );
                             final userPubkey = authService.currentPublicKeyHex;
+                            final userProfile = userPubkey != null
+                                ? ref
+                                      .read(
+                                        userProfileReactiveProvider(userPubkey),
+                                      )
+                                      .value
+                                : null;
 
                             final navigatorContext = Navigator.of(
                               context,
@@ -169,7 +174,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                             _showSupportOptionsDialog(
                               navigatorContext,
                               bugReportService,
-                              userProfileService,
+                              userProfile,
                               userPubkey,
                               isZendeskAvailable,
                             );
@@ -284,7 +289,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   void _showSupportOptionsDialog(
     BuildContext context,
     BugReportService bugReportService,
-    UserProfileService userProfileService,
+    UserProfile? userProfile,
     String? userPubkey,
     bool isZendeskAvailable,
   ) {
@@ -309,7 +314,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                 _handleBugReportWithServices(
                   context,
                   bugReportService,
-                  userProfileService,
+                  userProfile,
                   userPubkey,
                   isZendeskAvailable,
                 );
@@ -324,10 +329,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                 dialogContext.pop();
                 if (isZendeskAvailable) {
                   // Ensure identity is set before viewing tickets
-                  await _setZendeskIdentityWithService(
-                    userPubkey,
-                    userProfileService,
-                  );
+                  await _setZendeskIdentityWithService(userPubkey, userProfile);
                   Log.debug(
                     '💬 Opening Zendesk ticket list',
                     category: LogCategory.ui,
@@ -374,7 +376,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   /// This version doesn't use ref, so it works after drawer is closed
   Future<void> _setZendeskIdentityWithService(
     String? userPubkey,
-    UserProfileService userProfileService,
+    UserProfile? profile,
   ) async {
     if (userPubkey == null) {
       // Users always have pubkey in this app, but handle edge case gracefully
@@ -387,7 +389,6 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
 
     try {
       final npub = NostrKeyUtils.encodePubKey(userPubkey);
-      final profile = userProfileService.getCachedProfile(userPubkey);
 
       Log.debug(
         '🎫 Zendesk: Setting identity for ${profile?.bestDisplayName ?? npub}',
@@ -420,12 +421,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   Future<void> _handleBugReportWithServices(
     BuildContext context,
     BugReportService bugReportService,
-    UserProfileService userProfileService,
+    UserProfile? userProfile,
     String? userPubkey,
     bool isZendeskAvailable,
   ) async {
     // Set Zendesk identity for all paths (native SDK and REST API)
-    await _setZendeskIdentityWithService(userPubkey, userProfileService);
+    await _setZendeskIdentityWithService(userPubkey, userProfile);
     if (!context.mounted) return;
 
     if (isZendeskAvailable) {

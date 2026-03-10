@@ -21,7 +21,7 @@ void main() {
       expect(json['kinds'], equals([22]));
     });
 
-    test('UserProfileService filters should include vine tag', () {
+    test('Profile filters should include vine tag', () {
       // Create a filter for Kind 0 events (profiles)
       final filter = Filter(
         kinds: [0],

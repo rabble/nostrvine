@@ -1,0 +1,174 @@
+services:
+  # ---------------------------------------------------------------------------
+  # Keycast (OAuth + NIP-46 bunker signer)
+  # ---------------------------------------------------------------------------
+  keycast-postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: keycast
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "15432:5432"
+    volumes:
+      - keycast-pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  keycast-redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  keycast-migrate:
+    image: ghcr.io/divinevideo/keycast:latest
+    entrypoint: ["./keycast"]
+    command: ["--migrate"]
+    depends_on:
+      keycast-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:password@keycast-postgres:5432/keycast
+
+  keycast:
+    image: ghcr.io/divinevideo/keycast:latest
+    ports:
+      - "43000:3000"
+      - "45173:5173"
+    volumes:
+      - ./master.key:/app/master.key:ro
+    depends_on:
+      keycast-migrate:
+        condition: service_completed_successfully
+      keycast-redis:
+        condition: service_healthy
+      funnelcake-relay:
+        condition: service_started
+    environment:
+      DATABASE_URL: postgres://postgres:password@keycast-postgres:5432/keycast
+      REDIS_URL: redis://keycast-redis:6379
+      MASTER_KEY_PATH: /app/master.key
+      USE_GCP_KMS: "false"
+      ALLOWED_ORIGINS: http://localhost:45173,http://10.0.2.2:43000
+      ALLOWED_TENANT_DOMAINS: localhost,10.0.2.2
+      BUNKER_RELAYS: ws://funnelcake-relay:7777
+      SENDGRID_API_KEY: ""
+      SERVER_NSEC: ${SERVER_NSEC}
+      VITE_DOMAIN: http://localhost:43000
+      TOKEN_EXPIRY_SECONDS: ${TOKEN_EXPIRY_SECONDS:-15}
+
+  # ---------------------------------------------------------------------------
+  # FunnelCake (Nostr relay + analytics API)
+  # ---------------------------------------------------------------------------
+  funnelcake-clickhouse:
+    image: clickhouse/clickhouse-server:25.8
+    ports:
+      - "18123:8123"
+      - "19000:9000"
+    environment:
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    volumes:
+      - funnelcake-ch-data:/var/lib/clickhouse
+      - ./clickhouse-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "clickhouse-client --password clickhouse --query 'SELECT 1'"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  funnelcake-redis:
+    image: redis/redis-stack-server:7.4.0-v1
+    ports:
+      - "16380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  funnelcake-migrate:
+    image: ghcr.io/divinevideo/funnelcake-migrate:latest
+    restart: on-failure:3
+    depends_on:
+      funnelcake-clickhouse:
+        condition: service_healthy
+    environment:
+      CLICKHOUSE_HOST: funnelcake-clickhouse
+      CLICKHOUSE_PORT: "9000"
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse
+
+  funnelcake-relay:
+    image: ghcr.io/divinevideo/funnelcake-relay:latest
+    ports:
+      - "47777:7777"
+    depends_on:
+      funnelcake-migrate:
+        condition: service_completed_successfully
+      funnelcake-redis:
+        condition: service_healthy
+    environment:
+      CLICKHOUSE_URL: http://funnelcake-clickhouse:8123
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse
+
+  funnelcake-api:
+    image: ghcr.io/divinevideo/funnelcake-api:latest
+    ports:
+      - "43001:3001"
+    depends_on:
+      funnelcake-migrate:
+        condition: service_completed_successfully
+      funnelcake-redis:
+        condition: service_healthy
+    environment:
+      CLICKHOUSE_URL: http://funnelcake-clickhouse:8123
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: clickhouse
+      BIND_ADDR: 0.0.0.0:3001
+
+  # ---------------------------------------------------------------------------
+  # Blossom (media server)
+  # ---------------------------------------------------------------------------
+  blossom:
+    image: ghcr.io/hzrd149/blossom-server:master
+    ports:
+      - "43003:3000"
+    volumes:
+      - blossom-data:/app/data
+      - ./blossom-config.yml:/app/config.yml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/ || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # ---------------------------------------------------------------------------
+  # E2E seed data (runs once at startup)
+  # ---------------------------------------------------------------------------
+  e2e-seed:
+    build: ./seed
+    depends_on:
+      funnelcake-relay:
+        condition: service_started
+      blossom:
+        condition: service_healthy
+    environment:
+      RELAY_URL: ws://funnelcake-relay:7777
+      BLOSSOM_URL: http://blossom:3000
+      NUM_VIDEOS: "100"
+    restart: "no"
+
+volumes:
+  keycast-pg-data:
+  funnelcake-ch-data:
+  blossom-data:

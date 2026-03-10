@@ -15,6 +15,7 @@ import 'package:openvine/services/bookmark_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 import '../helpers/test_provider_overrides.dart';
 
@@ -23,6 +24,8 @@ class _MockBookmarkService extends Mock implements BookmarkService {}
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockVideoSharingService extends Mock implements VideoSharingService {}
+
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _FakeVideoEvent extends Fake implements VideoEvent {}
 
@@ -41,12 +44,25 @@ void main() {
   late VideoEvent testVideo;
   late _MockBookmarkService mockBookmarkService;
   late _MockVideoSharingService mockVideoSharingService;
+  late _MockProfileRepository mockProfileRepository;
 
   setUpAll(() {
     registerFallbackValue(_FakeVideoEvent());
   });
 
   setUp(() {
+    mockProfileRepository = _MockProfileRepository();
+    when(
+      () => mockProfileRepository.getCachedProfile(
+        pubkey: any(named: 'pubkey'),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockProfileRepository.fetchFreshProfile(
+        pubkey: any(named: 'pubkey'),
+      ),
+    ).thenAnswer((_) async => null);
+
     testVideo = VideoEvent(
       id: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
       pubkey:
@@ -79,8 +95,8 @@ void main() {
       bool curatedListsEnabled = true,
       bool debugToolsEnabled = true,
     }) => testProviderScope(
-      mockUserProfileService: createMockUserProfileService(),
       additionalOverrides: [
+        profileRepositoryProvider.overrideWithValue(mockProfileRepository),
         bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
         videoSharingServiceProvider.overrideWith(
           (ref) => mockVideoSharingService,
@@ -300,9 +316,7 @@ void main() {
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
-      when(
-        () => mockFollowRepository.followingPubkeys,
-      ).thenReturn([]);
+      when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
     });
 
     Widget buildSubjectWithContacts() {
@@ -311,8 +325,8 @@ void main() {
       ).thenReturn([testContact]);
 
       return testProviderScope(
-        mockUserProfileService: createMockUserProfileService(),
         additionalOverrides: [
+          profileRepositoryProvider.overrideWithValue(mockProfileRepository),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           bookmarkServiceProvider.overrideWith((ref) => mockBookmarkService),
           videoSharingServiceProvider.overrideWith(
