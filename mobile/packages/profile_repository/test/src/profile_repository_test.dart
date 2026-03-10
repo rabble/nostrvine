@@ -2629,6 +2629,87 @@ void main() {
         expect(result, isEmpty);
       });
 
+      test(
+        'skips relay fallback for _noProfile sentinel entries',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+            (_) async => const BulkProfilesResponse(
+              profiles: {
+                testPubkey: {'_noProfile': true},
+              },
+            ),
+          );
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repoWithFunnelcake.fetchBatchProfiles(
+            pubkeys: [testPubkey],
+          );
+
+          expect(result, isEmpty);
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+          verifyNever(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          );
+          verifyNever(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          );
+        },
+      );
+
+      test(
+        'processes real profiles alongside _noProfile sentinels',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+            (_) async => const BulkProfilesResponse(
+              profiles: {
+                testPubkey: {'display_name': 'Real User'},
+                testPubkey2: {'_noProfile': true},
+              },
+            ),
+          );
+          when(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          ).thenAnswer((_) async {});
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repoWithFunnelcake.fetchBatchProfiles(
+            pubkeys: [testPubkey, testPubkey2],
+          );
+
+          expect(result, hasLength(1));
+          expect(
+            result[testPubkey]?.displayName,
+            equals('Real User'),
+          );
+          expect(result.containsKey(testPubkey2), isFalse);
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+        },
+      );
+
       test('does not batch-write when nothing was fetched', () async {
         final cached = UserProfile(
           pubkey: testPubkey,

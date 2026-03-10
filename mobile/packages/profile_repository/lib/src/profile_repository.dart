@@ -596,6 +596,16 @@ class ProfileRepository {
         for (final entry in bulkResponse.profiles.entries) {
           final pubkey = entry.key;
           final data = entry.value;
+
+          // Sentinel: user exists in FunnelCake but has never
+          // published a Kind 0 profile. Remove from remaining so
+          // we skip the relay/indexer fallback — the profile truly
+          // doesn't exist.
+          if (data['_noProfile'] == true) {
+            remaining.remove(pubkey);
+            continue;
+          }
+
           final profile = UserProfile(
             pubkey: pubkey,
             name: data['name'] as String?,
