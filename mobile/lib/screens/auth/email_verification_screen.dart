@@ -3,13 +3,13 @@
 // ABOUTME: Supports auto-login on cold start via persisted verification data
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -456,13 +456,13 @@ class _PollingContent extends StatelessWidget {
 
   Future<void> _openEmailApp() async {
     Log.info(
-      'Opening email app (platform=${Platform.operatingSystem})',
+      'Opening email app (platform=${defaultTargetPlatform.name})',
       name: 'EmailVerification',
       category: LogCategory.auth,
     );
 
     try {
-      if (Platform.isAndroid) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         // Use AndroidIntent to fire ACTION_MAIN + APP_EMAIL which opens
         // the default email app's inbox (not compose).
         const intent = AndroidIntent(

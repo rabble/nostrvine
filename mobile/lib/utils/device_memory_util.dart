@@ -1,7 +1,6 @@
 // ABOUTME: Utility for detecting device memory and determining safe image resolutions
 // ABOUTME: Used to prevent OOM crashes when rendering large images on low-memory devices
 
-import 'dart:io';
 import 'dart:ui' show Size;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
@@ -37,9 +36,9 @@ class DeviceMemoryUtil {
     }
 
     try {
-      if (Platform.isIOS) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
         _cachedTier = await _getIOSMemoryTier();
-      } else if (Platform.isAndroid) {
+      } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
         _cachedTier = await _getAndroidMemoryTier();
       } else {
         // Default to medium for other platforms

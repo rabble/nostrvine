@@ -1,8 +1,6 @@
 // ABOUTME: Platform channel handler for Android back button interception
 // ABOUTME: Routes back button presses from native Android to GoRouter navigation
 
-import 'dart:io' show Platform;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +24,7 @@ class BackButtonHandler {
     _ref = ref;
 
     // Only set up platform channel on Android
-    if (!kIsWeb && Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       _channel.setMethodCallHandler((call) async {
         if (call.method == 'onBackPressed') {
           return _handleBackButton();

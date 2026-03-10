@@ -3,8 +3,8 @@
 // ABOUTME: or platform detection (dart:io) that don't belong in the pure data model.
 
 import 'dart:developer' as developer;
-import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
@@ -44,7 +44,9 @@ extension VideoEventAppExtensions on VideoEvent {
   bool get isSupportedOnCurrentPlatform {
     // WebM only works on Android and Web, not iOS/macOS
     if (isWebM) {
-      return !Platform.isIOS && !Platform.isMacOS;
+      if (kIsWeb) return true;
+      return defaultTargetPlatform != TargetPlatform.iOS &&
+          defaultTargetPlatform != TargetPlatform.macOS;
     }
     // All other formats work on all platforms
     return true;
@@ -296,7 +298,7 @@ extension VideoEventAppExtensions on VideoEvent {
     }
 
     // Desktop and Apple platforms are more stable using the original MP4.
-    if (!Platform.isAndroid) {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       return videoUrl;
     }
 
@@ -335,7 +337,7 @@ extension VideoEventAppExtensions on VideoEvent {
   /// - Not on Android
   /// - Video is not from Divine servers (no HLS available)
   String? getHlsFallbackUrl() {
-    if (!Platform.isAndroid) return null;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return null;
 
     final quality = _getBandwidthBasedQuality();
     // Map 3-tier quality to HLS stream quality

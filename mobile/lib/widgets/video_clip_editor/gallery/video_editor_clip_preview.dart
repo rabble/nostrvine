@@ -2,12 +2,12 @@
 // ABOUTME: Manages video player lifecycle for the currently selected clip
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_processing_overlay.dart';
 import 'package:video_player/video_player.dart';

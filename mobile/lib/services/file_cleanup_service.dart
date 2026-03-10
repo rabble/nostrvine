@@ -2,9 +2,10 @@
 // ABOUTME: Only deletes files when not referenced by drafts OR clip library
 // ABOUTME: Uses indexed file_path columns for efficient lookups
 
+import 'dart:io';
+
 import 'package:db_client/db_client.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
 

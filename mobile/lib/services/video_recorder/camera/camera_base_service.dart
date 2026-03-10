@@ -1,8 +1,6 @@
 // ABOUTME: Base service for camera operations across different platforms
 // ABOUTME: Provides unified API for camera control, recording, and preview
 
-import 'dart:io';
-
 import 'package:divine_camera/divine_camera.dart'
     show CameraLensMetadata, DivineCameraLens, DivineVideoQuality;
 import 'package:flutter/foundation.dart';
@@ -25,13 +23,13 @@ abstract class CameraService {
     required void Function({bool? forceCameraRebuild}) onUpdateState,
     required void Function(EditorVideo video) onAutoStopped,
   }) {
-    if (!kIsWeb && Platform.isMacOS) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS) {
       return CameraMacOSService(
         onUpdateState: onUpdateState,
         onAutoStopped: onAutoStopped,
       );
     }
-    if (!kIsWeb && Platform.isLinux) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
       return CameraLinuxService(
         onUpdateState: onUpdateState,
         onAutoStopped: onAutoStopped,

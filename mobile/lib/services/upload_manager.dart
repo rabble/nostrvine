@@ -7,7 +7,7 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart' show ValueChanged, kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -29,7 +29,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 String _getPlatformName() {
   if (kIsWeb) return 'web';
   try {
-    return Platform.operatingSystem;
+    return defaultTargetPlatform.name;
   } catch (_) {
     return 'unknown';
   }

@@ -9,6 +9,8 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:audio_session/audio_session.dart' as audio_session;
 import 'package:just_audio/just_audio.dart';
 import 'package:rxdart/rxdart.dart';
@@ -156,7 +158,8 @@ class AudioPlaybackService {
 
       // iOS-specific: Check for Bluetooth HFP
       // coverage:ignore-start
-      if (Platform.isIOS &&
+      if (!kIsWeb &&
+          Platform.isIOS &&
           device.type == audio_session.AudioDeviceType.bluetoothLe) {
         return true;
       }

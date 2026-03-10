@@ -2,6 +2,7 @@
 // ABOUTME: Handles layer manipulation callbacks and editor configuration.
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -16,7 +17,6 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/models/audio_event.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';

@@ -2,7 +2,6 @@
 // ABOUTME: Uses Firebase Crashlytics to capture and report crashes from TestFlight/production
 
 import 'dart:async';
-import 'dart:isolate';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -51,18 +50,6 @@ class CrashReportingService {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
         return true;
       };
-
-      // Catch errors in other isolates
-      Isolate.current.addErrorListener(
-        RawReceivePort((dynamic pair) async {
-          final List<dynamic> errorAndStacktrace = pair as List<dynamic>;
-          await FirebaseCrashlytics.instance.recordError(
-            errorAndStacktrace.first,
-            errorAndStacktrace.last as StackTrace?,
-            fatal: true,
-          );
-        }).sendPort,
-      );
 
       // Set custom keys for debugging
       await FirebaseCrashlytics.instance.setCustomKey(

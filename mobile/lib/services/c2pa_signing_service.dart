@@ -4,6 +4,7 @@
 import 'dart:io';
 
 import 'package:c2pa_flutter/c2pa.dart';
+import 'package:flutter/foundation.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -214,10 +215,10 @@ class C2paSigningService {
   /// - Support user-provided certificates via enrollment API
   Future<C2paSigner> _createSigner() async {
     var args = '?platform=';
-    if (Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       // Android-specific code
       args += 'android';
-    } else if (Platform.isIOS) {
+    } else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       // iOS-specific code
       args += 'ios';
     }
