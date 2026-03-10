@@ -172,6 +172,7 @@ void main() {
           // Simulate cubit #1 (the one that completed verification)
           when(() => mockAuthService.isAuthenticated).thenReturn(false);
           when(() => mockAuthService.isAnonymous).thenReturn(false);
+          when(() => mockAuthService.isRegistered).thenReturn(false);
           when(
             () => mockOAuth.pollForCode(testDeviceCode),
           ).thenAnswer((_) async => PollResult.complete(testCode));
@@ -203,6 +204,7 @@ void main() {
           final zombieOAuth = _MockKeycastOAuth();
           final zombieAuthService = _MockAuthService();
           when(() => zombieAuthService.isAuthenticated).thenReturn(false);
+          when(() => zombieAuthService.isRegistered).thenReturn(false);
           when(
             () => zombieOAuth.pollForCode(testDeviceCode),
           ).thenAnswer((_) async => PollResult.pending());
@@ -236,6 +238,7 @@ void main() {
         // Simulate cubit #1 completing with one device code
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
         when(() => mockAuthService.isAnonymous).thenReturn(false);
+        when(() => mockAuthService.isRegistered).thenReturn(false);
         when(
           () => mockOAuth.pollForCode(testDeviceCode),
         ).thenAnswer((_) async => PollResult.complete(testCode));
@@ -262,6 +265,7 @@ void main() {
         final newOAuth = _MockKeycastOAuth();
         final newAuthService = _MockAuthService();
         when(() => newAuthService.isAuthenticated).thenReturn(false);
+        when(() => newAuthService.isRegistered).thenReturn(false);
         when(
           () => newOAuth.pollForCode(newDeviceCode),
         ).thenAnswer((_) async => PollResult.pending());
