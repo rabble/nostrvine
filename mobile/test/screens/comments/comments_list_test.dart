@@ -9,14 +9,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/comments/comments.dart';
-import 'package:openvine/services/user_profile_service.dart';
 
 import '../../builders/comment_builder.dart';
-
-class MockUserProfileService extends Mock implements UserProfileService {}
 
 class MockNostrClient extends Mock implements NostrClient {}
 
@@ -31,7 +27,6 @@ const testVideoAuthorPubkey =
 
 void main() {
   group('CommentsList', () {
-    late MockUserProfileService mockUserProfileService;
     late MockNostrClient mockNostrClient;
     late MockCommentsBloc mockCommentsBloc;
 
@@ -40,16 +35,9 @@ void main() {
     });
 
     setUp(() {
-      mockUserProfileService = MockUserProfileService();
       mockNostrClient = MockNostrClient();
       mockCommentsBloc = MockCommentsBloc();
 
-      when(
-        () => mockUserProfileService.getCachedProfile(any()),
-      ).thenReturn(null);
-      when(
-        () => mockUserProfileService.shouldSkipProfileFetch(any()),
-      ).thenReturn(true);
       // Return empty string to indicate user is not the comment author (no 3-dot menu)
       when(() => mockNostrClient.publicKey).thenReturn('');
     });
@@ -65,7 +53,6 @@ void main() {
 
       return ProviderScope(
         overrides: [
-          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
         ],
         child: MaterialApp(

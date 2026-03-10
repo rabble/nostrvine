@@ -9,13 +9,11 @@ import 'package:chewie/chewie.dart';
 import 'package:nostrvine_app/models/video_event.dart';
 import 'package:nostrvine_app/widgets/video_feed_item.dart';
 import 'package:nostrvine_app/services/video_cache_service.dart';
-import 'package:nostrvine_app/services/user_profile_service.dart';
 import 'package:nostrvine_app/services/seen_videos_service.dart';
 import '../../helpers/test_helpers.dart';
 
 // Mock classes for testing current VideoFeedItem
 class MockVideoCacheService extends Mock implements VideoCacheService {}
-class MockUserProfileService extends Mock implements UserProfileService {}
 class MockSeenVideosService extends Mock implements SeenVideosService {}
 class MockVideoPlayerController extends Mock implements VideoPlayerController {}
 
@@ -24,7 +22,6 @@ void main() {
     
     late VideoEvent testVideoEvent;
     late MockVideoCacheService mockVideoCacheService;
-    late MockUserProfileService mockUserProfileService;
     late MockSeenVideosService mockSeenVideosService;
 
     setUp(() {
@@ -38,7 +35,6 @@ void main() {
       );
 
       mockVideoCacheService = MockVideoCacheService();
-      mockUserProfileService = MockUserProfileService();
       mockSeenVideosService = MockSeenVideosService();
       
       // Register fallback values for mocktail
@@ -65,7 +61,6 @@ void main() {
             onMoreOptions: onMoreOptions,
             onUserTap: onUserTap,
             videoCacheService: mockVideoCacheService,
-            userProfileService: mockUserProfileService,
             seenVideosService: mockSeenVideosService,
           ),
         ),
@@ -503,7 +498,6 @@ void main() {
                   videoEvent: testVideoEvent,
                   isActive: false,
                   videoCacheService: mockVideoCacheService,
-                  userProfileService: mockUserProfileService,
                   seenVideosService: mockSeenVideosService,
                 );
               },

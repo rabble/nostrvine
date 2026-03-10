@@ -7,7 +7,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -105,7 +104,6 @@ class _FindPeopleSheetState extends ConsumerState<FindPeopleSheet> {
                 searchQuery: _searchQuery,
                 searchBloc: _searchBloc,
                 contacts: widget.contacts,
-                userProfileService: ref.read(userProfileServiceProvider),
                 onSelectUser: _selectUser,
               ),
             ),
@@ -161,14 +159,12 @@ class _ResultsList extends StatelessWidget {
     required this.searchQuery,
     required this.searchBloc,
     required this.contacts,
-    required this.userProfileService,
     required this.onSelectUser,
   });
 
   final String searchQuery;
   final UserSearchBloc? searchBloc;
   final List<ShareableUser> contacts;
-  final UserProfileService userProfileService;
   final ValueChanged<ShareableUser> onSelectUser;
 
   @override
@@ -218,7 +214,6 @@ class _ResultsList extends StatelessWidget {
             ),
             UserSearchStatus.initial => _ContactsList(
               contacts: contacts,
-              userProfileService: userProfileService,
               onSelectUser: onSelectUser,
             ),
           };
@@ -226,23 +221,14 @@ class _ResultsList extends StatelessWidget {
       );
     }
 
-    return _ContactsList(
-      contacts: contacts,
-      userProfileService: userProfileService,
-      onSelectUser: onSelectUser,
-    );
+    return _ContactsList(contacts: contacts, onSelectUser: onSelectUser);
   }
 }
 
 class _ContactsList extends StatelessWidget {
-  const _ContactsList({
-    required this.contacts,
-    required this.userProfileService,
-    required this.onSelectUser,
-  });
+  const _ContactsList({required this.contacts, required this.onSelectUser});
 
   final List<ShareableUser> contacts;
-  final UserProfileService userProfileService;
   final ValueChanged<ShareableUser> onSelectUser;
 
   @override
@@ -264,11 +250,8 @@ class _ContactsList extends StatelessWidget {
       itemCount: contacts.length,
       itemBuilder: (context, index) {
         final contact = contacts[index];
-        final profile = userProfileService.getCachedProfile(contact.pubkey);
-
         return _UserResultTile(
           user: contact,
-          nip05: profile?.nip05,
           onTap: () => onSelectUser(contact),
         );
       },

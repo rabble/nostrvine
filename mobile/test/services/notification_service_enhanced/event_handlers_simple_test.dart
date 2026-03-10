@@ -10,8 +10,8 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 import '../../helpers/real_integration_test_helper.dart';
 
@@ -54,8 +54,8 @@ class FakeNostrService implements NostrClient {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-/// Fake UserProfileService
-class FakeUserProfileService implements UserProfileService {
+/// Fake ProfileRepository
+class FakeProfileRepository implements ProfileRepository {
   final Map<String, UserProfile> _profiles = {};
 
   void addProfile(String pubkey, UserProfile profile) {
@@ -63,10 +63,8 @@ class FakeUserProfileService implements UserProfileService {
   }
 
   @override
-  Future<UserProfile?> fetchProfile(
-    String pubkey, {
-    bool forceRefresh = false,
-  }) async => _profiles[pubkey];
+  Future<UserProfile?> fetchFreshProfile({required String pubkey}) async =>
+      _profiles[pubkey];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -93,7 +91,7 @@ void main() {
   group('NotificationServiceEnhanced - Basic Behavior', () {
     late NotificationServiceEnhanced service;
     late FakeNostrService fakeNostrService;
-    late FakeUserProfileService fakeProfileService;
+    late FakeProfileRepository fakeProfileRepository;
     late FakeVideoEventService fakeVideoService;
 
     setUpAll(() async {
@@ -106,14 +104,14 @@ void main() {
     setUp(() async {
       service = NotificationServiceEnhanced.instance;
       fakeNostrService = FakeNostrService();
-      fakeProfileService = FakeUserProfileService();
+      fakeProfileRepository = FakeProfileRepository();
       fakeVideoService = FakeVideoEventService();
 
       fakeNostrService.setPublicKey('user123');
 
       await service.initialize(
         nostrService: fakeNostrService,
-        profileService: fakeProfileService,
+        profileRepository: fakeProfileRepository,
         videoService: fakeVideoService,
       );
     });
@@ -148,7 +146,7 @@ void main() {
         '{"name":"TestUser"}',
         createdAt: 1700000000,
       );
-      fakeProfileService.addProfile(
+      fakeProfileRepository.addProfile(
         actorPubkey,
         UserProfile.fromNostrEvent(profileEvent),
       );
@@ -246,7 +244,7 @@ void main() {
         '{"name":"Commenter"}',
         createdAt: 1700000000,
       );
-      fakeProfileService.addProfile(
+      fakeProfileRepository.addProfile(
         actorPubkey,
         UserProfile.fromNostrEvent(profileEvent),
       );
@@ -303,7 +301,7 @@ void main() {
         '{"name":"Follower"}',
         createdAt: 1700000000,
       );
-      fakeProfileService.addProfile(
+      fakeProfileRepository.addProfile(
         actorPubkey,
         UserProfile.fromNostrEvent(profileEvent),
       );
@@ -335,7 +333,7 @@ void main() {
         '{"name":"TestUser"}',
         createdAt: 1700000000,
       );
-      fakeProfileService.addProfile(
+      fakeProfileRepository.addProfile(
         actorPubkey,
         UserProfile.fromNostrEvent(profileEvent),
       );
@@ -366,7 +364,7 @@ void main() {
         '{"name":"TestUser"}',
         createdAt: 1700000000,
       );
-      fakeProfileService.addProfile(
+      fakeProfileRepository.addProfile(
         actorPubkey,
         UserProfile.fromNostrEvent(profileEvent),
       );
@@ -408,7 +406,7 @@ void main() {
         '{"name":"TestUser"}',
         createdAt: 1700000000,
       );
-      fakeProfileService.addProfile(
+      fakeProfileRepository.addProfile(
         actorPubkey,
         UserProfile.fromNostrEvent(profileEvent),
       );
@@ -453,7 +451,7 @@ void main() {
         '{"name":"TestUser"}',
         createdAt: 1700000000,
       );
-      fakeProfileService.addProfile(
+      fakeProfileRepository.addProfile(
         actorPubkey,
         UserProfile.fromNostrEvent(profileEvent),
       );
@@ -486,7 +484,7 @@ void main() {
           '{"name":"NameValue","display_name":"DisplayValue","nip05":"nip@example.com"}',
           createdAt: 1700000000,
         );
-        fakeProfileService.addProfile(
+        fakeProfileRepository.addProfile(
           pubkey1,
           UserProfile.fromNostrEvent(profileEvent1),
         );
@@ -512,7 +510,7 @@ void main() {
           '{"display_name":"DisplayValue","nip05":"nip@example.com"}',
           createdAt: 1700000000,
         );
-        fakeProfileService.addProfile(
+        fakeProfileRepository.addProfile(
           pubkey2,
           UserProfile.fromNostrEvent(profileEvent2),
         );
@@ -533,7 +531,7 @@ void main() {
           '{"nip05":"username@example.com"}',
           createdAt: 1700000000,
         );
-        fakeProfileService.addProfile(
+        fakeProfileRepository.addProfile(
           pubkey3,
           UserProfile.fromNostrEvent(profileEvent3),
         );

@@ -6,8 +6,8 @@ import 'dart:async';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 /// Represents a user that can receive shared videos
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -47,13 +47,13 @@ class VideoSharingService {
   VideoSharingService({
     required NostrClient nostrService,
     required AuthService authService,
-    required UserProfileService userProfileService,
+    required ProfileRepository profileRepository,
   }) : _nostrService = nostrService,
        _authService = authService,
-       _userProfileService = userProfileService;
+       _profileRepository = profileRepository;
   final NostrClient _nostrService;
   final AuthService _authService;
-  final UserProfileService _userProfileService;
+  final ProfileRepository _profileRepository;
 
   final List<ShareableUser> _recentlySharedWith = [];
   final Map<String, DateTime> _shareHistory = {};
@@ -184,7 +184,9 @@ class VideoSharingService {
 
       if (query.length == 64 && RegExp(r'^[0-9a-fA-F]+$').hasMatch(query)) {
         // Looks like a hex pubkey
-        final profile = await _userProfileService.fetchProfile(query);
+        final profile = await _profileRepository.fetchFreshProfile(
+          pubkey: query,
+        );
         return [
           ShareableUser(
             pubkey: query,
@@ -290,7 +292,9 @@ class VideoSharingService {
       _recentlySharedWith.removeWhere((user) => user.pubkey == pubkey);
 
       // Fetch user profile for display
-      final profile = await _userProfileService.fetchProfile(pubkey);
+      final profile = await _profileRepository.fetchFreshProfile(
+        pubkey: pubkey,
+      );
 
       // Add to front of list
       _recentlySharedWith.insert(

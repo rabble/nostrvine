@@ -8,14 +8,14 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
-class _MockUserProfileService extends Mock implements UserProfileService {}
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 const _testPubkey =
     'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2';
@@ -27,7 +27,7 @@ void main() {
   late VideoSharingService service;
   late _MockNostrClient mockNostrService;
   late _MockAuthService mockAuthService;
-  late _MockUserProfileService mockUserProfileService;
+  late _MockProfileRepository mockProfileRepository;
 
   setUpAll(() {
     registerFallbackValue(Event(_testPubkey, 4, <List<String>>[], ''));
@@ -36,12 +36,12 @@ void main() {
   setUp(() {
     mockNostrService = _MockNostrClient();
     mockAuthService = _MockAuthService();
-    mockUserProfileService = _MockUserProfileService();
+    mockProfileRepository = _MockProfileRepository();
 
     service = VideoSharingService(
       nostrService: mockNostrService,
       authService: mockAuthService,
-      userProfileService: mockUserProfileService,
+      profileRepository: mockProfileRepository,
     );
   });
 
@@ -68,7 +68,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(
-        () => mockUserProfileService.fetchProfile(_recipientPubkey),
+        () => mockProfileRepository.fetchFreshProfile(
+          pubkey: _recipientPubkey,
+        ),
       ).thenAnswer(
         (_) async => UserProfile(
           pubkey: _recipientPubkey,
@@ -120,7 +122,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(
-        () => mockUserProfileService.fetchProfile(any()),
+        () => mockProfileRepository.fetchFreshProfile(
+          pubkey: any(named: 'pubkey'),
+        ),
       ).thenAnswer((_) async => null);
 
       final now = DateTime.now();
@@ -168,7 +172,7 @@ void main() {
       );
 
       when(
-        () => mockUserProfileService.fetchProfile(hexPubkey),
+        () => mockProfileRepository.fetchFreshProfile(pubkey: hexPubkey),
       ).thenAnswer((_) async => profile);
 
       final result = await service.searchUsersToShareWith(hexPubkey);
@@ -177,7 +181,9 @@ void main() {
       expect(result[0].pubkey, hexPubkey);
       expect(result[0].displayName, 'Charlie');
       expect(result[0].picture, 'https://example.com/charlie.jpg');
-      verify(() => mockUserProfileService.fetchProfile(hexPubkey)).called(1);
+      verify(
+        () => mockProfileRepository.fetchFreshProfile(pubkey: hexPubkey),
+      ).called(1);
     });
 
     test(
@@ -186,7 +192,7 @@ void main() {
         final hexPubkey = 'b' * 64;
 
         when(
-          () => mockUserProfileService.fetchProfile(hexPubkey),
+          () => mockProfileRepository.fetchFreshProfile(pubkey: hexPubkey),
         ).thenAnswer((_) async => null);
 
         final result = await service.searchUsersToShareWith(hexPubkey);
@@ -276,7 +282,9 @@ void main() {
         () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => signedEvent);
       when(
-        () => mockUserProfileService.fetchProfile(any()),
+        () => mockProfileRepository.fetchFreshProfile(
+          pubkey: any(named: 'pubkey'),
+        ),
       ).thenAnswer((_) async => null);
 
       final now = DateTime.now();
@@ -365,7 +373,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(
-        () => mockUserProfileService.fetchProfile(any()),
+        () => mockProfileRepository.fetchFreshProfile(
+          pubkey: any(named: 'pubkey'),
+        ),
       ).thenAnswer((_) async => null);
 
       final now = DateTime.now();
@@ -399,7 +409,9 @@ void main() {
         (_) async => Event(_testPubkey, 4, <List<String>>[], 'test'),
       );
       when(
-        () => mockUserProfileService.fetchProfile(any()),
+        () => mockProfileRepository.fetchFreshProfile(
+          pubkey: any(named: 'pubkey'),
+        ),
       ).thenAnswer((_) async => null);
 
       final now = DateTime.now();

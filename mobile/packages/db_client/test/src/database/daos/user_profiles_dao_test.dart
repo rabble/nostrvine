@@ -212,5 +212,115 @@ void main() {
         expect(result.lastFetched.isBefore(after), isTrue);
       });
     });
+
+    group('getProfilesByPubkeys', () {
+      test('returns empty list for empty input', () async {
+        final results = await dao.getProfilesByPubkeys([]);
+        expect(results, isEmpty);
+      });
+
+      test('returns matching profiles', () async {
+        await dao.upsertProfile(createProfile(name: 'Alice'));
+        await dao.upsertProfile(
+          createProfile(pubkey: testPubkey2, name: 'Bob'),
+        );
+
+        final results = await dao.getProfilesByPubkeys(
+          [testPubkey, testPubkey2],
+        );
+        expect(results, hasLength(2));
+
+        final names = results.map((p) => p.name).toSet();
+        expect(names, containsAll(['Alice', 'Bob']));
+      });
+
+      test('omits pubkeys not in database', () async {
+        await dao.upsertProfile(createProfile(name: 'Alice'));
+
+        final results = await dao.getProfilesByPubkeys(
+          [testPubkey, testPubkey2],
+        );
+        expect(results, hasLength(1));
+        expect(results.first.name, equals('Alice'));
+      });
+
+      test('returns domain models with all fields', () async {
+        await dao.upsertProfile(
+          createProfile(
+            name: 'test_name',
+            displayName: 'Test Display Name',
+            about: 'Test about',
+            picture: 'https://example.com/pic.jpg',
+            nip05: 'test@example.com',
+          ),
+        );
+
+        final results = await dao.getProfilesByPubkeys([testPubkey]);
+        expect(results, hasLength(1));
+
+        final profile = results.first;
+        expect(profile.pubkey, equals(testPubkey));
+        expect(profile.name, equals('test_name'));
+        expect(profile.displayName, equals('Test Display Name'));
+        expect(profile.about, equals('Test about'));
+        expect(profile.picture, equals('https://example.com/pic.jpg'));
+        expect(profile.nip05, equals('test@example.com'));
+      });
+    });
+
+    group('upsertProfiles', () {
+      test('does nothing for empty list', () async {
+        await dao.upsertProfiles([]);
+
+        final allProfiles = await dao.getAllProfiles();
+        expect(allProfiles, isEmpty);
+      });
+
+      test('inserts multiple profiles in batch', () async {
+        final profiles = [
+          createProfile(name: 'Alice'),
+          createProfile(pubkey: testPubkey2, name: 'Bob'),
+        ];
+
+        await dao.upsertProfiles(profiles);
+
+        final allProfiles = await dao.getAllProfiles();
+        expect(allProfiles, hasLength(2));
+
+        final names = allProfiles.map((p) => p.name).toSet();
+        expect(names, containsAll(['Alice', 'Bob']));
+      });
+
+      test('updates existing profiles on conflict', () async {
+        await dao.upsertProfile(
+          createProfile(name: 'Alice', displayName: 'Old'),
+        );
+
+        await dao.upsertProfiles([
+          createProfile(name: 'Alice', displayName: 'New', eventId: 'event2'),
+        ]);
+
+        final allProfiles = await dao.getAllProfiles();
+        expect(allProfiles, hasLength(1));
+        expect(allProfiles.first.displayName, equals('New'));
+        expect(allProfiles.first.eventId, equals('event2'));
+      });
+
+      test('handles mix of inserts and updates', () async {
+        await dao.upsertProfile(createProfile(name: 'Original'));
+
+        await dao.upsertProfiles([
+          createProfile(name: 'Updated', eventId: 'event2'),
+          createProfile(pubkey: testPubkey2, name: 'New'),
+        ]);
+
+        final allProfiles = await dao.getAllProfiles();
+        expect(allProfiles, hasLength(2));
+
+        final byPubkey = {for (final p in allProfiles) p.pubkey: p};
+        expect(byPubkey[testPubkey]!.name, equals('Updated'));
+        expect(byPubkey[testPubkey2]!.name, equals('New'));
+      });
+    });
   });
 }

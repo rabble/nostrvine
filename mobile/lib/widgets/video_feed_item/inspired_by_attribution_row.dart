@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -88,16 +87,9 @@ class _InspiredByContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userProfileService = ref.watch(userProfileServiceProvider);
-    final creatorProfile = userProfileService.getCachedProfile(creatorPubkey);
-
-    // Trigger profile fetch if not cached
-    if (creatorProfile == null &&
-        !userProfileService.shouldSkipProfileFetch(creatorPubkey)) {
-      Future.microtask(() {
-        ref.read(userProfileProvider.notifier).fetchProfile(creatorPubkey);
-      });
-    }
+    final creatorProfile = ref
+        .watch(userProfileReactiveProvider(creatorPubkey))
+        .value;
 
     final creatorName =
         creatorProfile?.bestDisplayName ??

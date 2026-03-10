@@ -130,7 +130,7 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
       video: widget.video,
       relayUrl: ref.read(currentEnvironmentProvider).relayUrl,
       videoSharingService: ref.read(videoSharingServiceProvider),
-      userProfileService: ref.read(userProfileServiceProvider),
+      profileRepository: ref.read(profileRepositoryProvider)!,
       followRepository: ref.read(followRepositoryProvider),
       bookmarkServiceFuture: ref.read(bookmarkServiceProvider.future),
     )..add(const ShareSheetContactsLoadRequested());
@@ -276,8 +276,10 @@ class _UnifiedShareSheetState extends ConsumerState<_UnifiedShareSheet> {
   }
 
   Future<void> _handleSaveWithWatermark() async {
-    final profileService = ref.read(userProfileServiceProvider);
-    final profile = profileService.getCachedProfile(widget.video.pubkey);
+    final profileRepo = ref.read(profileRepositoryProvider);
+    final profile = await profileRepo?.getCachedProfile(
+      pubkey: widget.video.pubkey,
+    );
     final watermarkText = resolveWatermarkText(
       profile: profile,
       fallbackAuthorName: widget.video.authorName,

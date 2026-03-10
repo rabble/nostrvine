@@ -37,14 +37,12 @@ void main() {
     late _MockContentBlocklistService mockBlocklistService;
     late _MockNostrClient mockNostrClient;
     late _MockFollowRepository mockFollowRepository;
-    late MockUserProfileService mockUserProfileService;
 
     setUp(() {
       mockVideoEventService = _MockVideoEventService();
       mockNostrClient = _MockNostrClient();
       mockBlocklistService = _MockContentBlocklistService();
       mockFollowRepository = _MockFollowRepository();
-      mockUserProfileService = createMockUserProfileService();
 
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
@@ -54,9 +52,9 @@ void main() {
       when(() => mockNostrClient.isInitialized).thenReturn(true);
       when(() => mockNostrClient.hasKeys).thenReturn(false);
       when(() => mockNostrClient.connectedRelayCount).thenReturn(1);
-      when(() => mockNostrClient.subscribe(any())).thenAnswer(
-        (_) => const Stream<Event>.empty(),
-      );
+      when(
+        () => mockNostrClient.subscribe(any()),
+      ).thenAnswer((_) => const Stream<Event>.empty());
       when(
         () => mockNostrClient.queryEvents(any()),
       ).thenAnswer((_) async => <Event>[]);
@@ -80,7 +78,6 @@ void main() {
           ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
         ],
-        mockUserProfileService: mockUserProfileService,
         home: VideoDetailScreen(
           videoId: videoId,
           videoFeedBuilder: (_) =>
@@ -107,28 +104,22 @@ void main() {
     });
 
     group('video found in cache', () {
-      testWidgets(
-        'renders placeholder feed with cached video',
-        (tester) async {
-          final video = createTestVideoEvent(
-            id: 'test_video_id',
-            pubkey: 'test_pubkey',
-            title: 'Deep Link Video',
-          );
+      testWidgets('renders placeholder feed with cached video', (tester) async {
+        final video = createTestVideoEvent(
+          id: 'test_video_id',
+          pubkey: 'test_pubkey',
+          title: 'Deep Link Video',
+        );
 
-          when(
-            () => mockVideoEventService.getVideoById('test_video_id'),
-          ).thenReturn(video);
+        when(
+          () => mockVideoEventService.getVideoById('test_video_id'),
+        ).thenReturn(video);
 
-          await tester.pumpWidget(buildSubject());
-          await tester.pump();
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
 
-          expect(
-            find.byKey(const Key('video-feed-placeholder')),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(find.byKey(const Key('video-feed-placeholder')), findsOneWidget);
+      });
     });
 
     group('video not found', () {

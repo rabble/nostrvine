@@ -31,7 +31,6 @@ void main() {
           child: const Scaffold(body: HashtagSearchView()),
         ),
         mockAuthService: createMockAuthService(),
-        mockUserProfileService: createMockUserProfileService(),
       );
     }
 

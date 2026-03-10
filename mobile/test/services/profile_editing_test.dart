@@ -7,13 +7,13 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/user_profile_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
-class _MockUserProfileService extends Mock implements UserProfileService {}
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
   setUpAll(() {
@@ -39,12 +39,12 @@ void main() {
   group('Profile Editing Tests', () {
     late _MockNostrClient mockNostrService;
     late _MockAuthService mockAuthService;
-    late _MockUserProfileService mockUserProfileService;
+    late _MockProfileRepository mockProfileRepository;
 
     setUp(() {
       mockNostrService = _MockNostrClient();
       mockAuthService = _MockAuthService();
-      mockUserProfileService = _MockUserProfileService();
+      mockProfileRepository = _MockProfileRepository();
 
       // Default mock setup
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -214,9 +214,9 @@ void main() {
         (invocation) async => invocation.positionalArguments[0] as Event,
       );
 
-      // Mock profile service to update cache
+      // Mock profile repository to cache profile
       when(
-        () => mockUserProfileService.updateCachedProfile(any()),
+        () => mockProfileRepository.cacheProfile(any()),
       ).thenAnswer((_) async {});
 
       // Act
@@ -243,10 +243,10 @@ void main() {
         rawData: profileData,
       );
 
-      mockUserProfileService.updateCachedProfile(updatedProfile);
+      mockProfileRepository.cacheProfile(updatedProfile);
 
       // Assert
-      verify(() => mockUserProfileService.updateCachedProfile(any())).called(1);
+      verify(() => mockProfileRepository.cacheProfile(any())).called(1);
     });
 
     test('should validate profile data before publishing', () async {

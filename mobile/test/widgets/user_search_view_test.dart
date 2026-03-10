@@ -40,7 +40,6 @@ void main() {
           child: const Scaffold(body: UserSearchView()),
         ),
         mockAuthService: createMockAuthService(),
-        mockUserProfileService: createMockUserProfileService(),
       );
     }
 

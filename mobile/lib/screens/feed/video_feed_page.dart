@@ -10,8 +10,7 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/router/providers/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
@@ -308,8 +307,8 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         ref
-            .read(userProfileProvider.notifier)
-            .prefetchProfilesImmediately(pubkeys);
+            .read(profileRepositoryProvider)
+            ?.fetchBatchProfiles(pubkeys: pubkeys);
       });
     }
   }

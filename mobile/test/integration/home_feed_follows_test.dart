@@ -10,7 +10,6 @@ void main() {}
 //import 'package:openvine/services/content_blocklist_service.dart';
 //import 'package:openvine/services/nostr_service_factory.dart';
 //import 'package:openvine/services/subscription_manager.dart';
-//import 'package:openvine/services/user_profile_service.dart';
 //import 'package:openvine/services/video_event_service.dart';
 //import 'package:openvine/utils/unified_logger.dart';
 //
@@ -23,7 +22,7 @@ void main() {}
 //    late SubscriptionManager subscriptionManager;
 //    late VideoEventService videoEventService;
 //    late ContentBlocklistService blocklistService;
-//    late UserProfileService userProfileService;
+//    // UserProfileService removed - now uses ProfileRepository
 //
 //    setUp(() async {
 //      // Enable logging for debugging
@@ -43,14 +42,9 @@ void main() {}
 //      await nostrService.initialize();
 //
 //      subscriptionManager = SubscriptionManager(nostrService);
-//      userProfileService = UserProfileService(
-//        nostrService,
-//        subscriptionManager: subscriptionManager,
-//      );
 //      videoEventService = VideoEventService(
 //        nostrService,
 //        subscriptionManager: subscriptionManager,
-//        userProfileService: userProfileService,
 //      );
 //      videoEventService.setBlocklistService(blocklistService);
 //    });

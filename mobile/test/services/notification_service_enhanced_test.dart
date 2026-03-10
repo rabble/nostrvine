@@ -7,12 +7,12 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
-class _MockUserProfileService extends Mock implements UserProfileService {}
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockVideoEventService extends Mock implements VideoEventService {}
 
@@ -24,13 +24,13 @@ void main() {
   group('NotificationServiceEnhanced Race Condition Tests', () {
     late NotificationServiceEnhanced service;
     late _MockNostrClient mockNostrService;
-    late _MockUserProfileService mockProfileService;
+    late _MockProfileRepository mockProfileRepository;
     late _MockVideoEventService mockVideoService;
 
     setUp(() {
       service = NotificationServiceEnhanced();
       mockNostrService = _MockNostrClient();
-      mockProfileService = _MockUserProfileService();
+      mockProfileRepository = _MockProfileRepository();
       mockVideoService = _MockVideoEventService();
 
       // Setup mock responses
@@ -51,7 +51,7 @@ void main() {
         // Initialize the service
         await service.initialize(
           nostrService: mockNostrService,
-          profileService: mockProfileService,
+          profileRepository: mockProfileRepository,
           videoService: mockVideoService,
         );
 
@@ -96,7 +96,7 @@ void main() {
       () async {
         await service.initialize(
           nostrService: mockNostrService,
-          profileService: mockProfileService,
+          profileRepository: mockProfileRepository,
           videoService: mockVideoService,
         );
 
@@ -136,7 +136,7 @@ void main() {
     test('rapid sequential adds with same ID should only add once', () async {
       await service.initialize(
         nostrService: mockNostrService,
-        profileService: mockProfileService,
+        profileRepository: mockProfileRepository,
         videoService: mockVideoService,
       );
 
@@ -164,7 +164,7 @@ void main() {
     test('stress test: 100 concurrent adds with mixed IDs', () async {
       await service.initialize(
         nostrService: mockNostrService,
-        profileService: mockProfileService,
+        profileRepository: mockProfileRepository,
         videoService: mockVideoService,
       );
 
@@ -205,13 +205,13 @@ void main() {
   group('NotificationServiceEnhanced Chronological Order Tests', () {
     late NotificationServiceEnhanced service;
     late _MockNostrClient mockNostrService;
-    late _MockUserProfileService mockProfileService;
+    late _MockProfileRepository mockProfileRepository;
     late _MockVideoEventService mockVideoService;
 
     setUp(() {
       service = NotificationServiceEnhanced();
       mockNostrService = _MockNostrClient();
-      mockProfileService = _MockUserProfileService();
+      mockProfileRepository = _MockProfileRepository();
       mockVideoService = _MockVideoEventService();
 
       when(() => mockNostrService.hasKeys).thenReturn(true);
@@ -230,7 +230,7 @@ void main() {
       () async {
         await service.initialize(
           nostrService: mockNostrService,
-          profileService: mockProfileService,
+          profileRepository: mockProfileRepository,
           videoService: mockVideoService,
         );
 
@@ -277,7 +277,7 @@ void main() {
       () async {
         await service.initialize(
           nostrService: mockNostrService,
-          profileService: mockProfileService,
+          profileRepository: mockProfileRepository,
           videoService: mockVideoService,
         );
 
@@ -330,7 +330,7 @@ void main() {
     test('notifications with same timestamp are stable-sorted by ID', () async {
       await service.initialize(
         nostrService: mockNostrService,
-        profileService: mockProfileService,
+        profileRepository: mockProfileRepository,
         videoService: mockVideoService,
       );
 

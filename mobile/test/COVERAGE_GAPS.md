@@ -52,7 +52,7 @@ The codebase has **253 files in lib/** with an overall test coverage of **45.0%*
 ### 3. Profile Viewing
 - **E2E test exists**: Yes (`test/integration/profile_route_loads_test.dart`, `profile_cache_sync_test.dart`)
 - **Service unit tests**:
-  - ⚠️ `user_profile_service.dart` - Has tests but coverage needs verification
+  - ⚠️ `profile_repository` package - Has tests but coverage needs verification
   - ❌ `mute_service.dart` - **0% coverage**
 - **Screen coverage**: `profile_screen_router.dart` - **9.5% coverage**
 - **Missing Scenarios**:

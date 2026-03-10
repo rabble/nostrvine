@@ -79,25 +79,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   void _fetchProfileIfNeeded(String userIdHex, bool isOwnProfile) {
     if (isOwnProfile) return; // Own profile loads automatically
 
-    final userProfileService = ref.read(userProfileServiceProvider);
-
-    // Fetch profile (shows cached immediately, refreshes in background)
-    if (!userProfileService.hasProfile(userIdHex)) {
-      Log.debug(
-        '📥 Fetching uncached profile: $userIdHex',
-        name: 'ProfileScreenRouter',
-        category: LogCategory.ui,
-      );
-      userProfileService.fetchProfile(userIdHex);
-    } else {
-      Log.debug(
-        '📋 Using cached profile: $userIdHex',
-        name: 'ProfileScreenRouter',
-        category: LogCategory.ui,
-      );
-      // Still call fetchProfile to trigger background refresh if needed
-      userProfileService.fetchProfile(userIdHex);
-    }
+    // Trigger a background fetch via ProfileRepository
+    ref.read(profileRepositoryProvider)?.fetchFreshProfile(pubkey: userIdHex);
   }
 
   @override
@@ -137,7 +120,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     await ref.read(profileFeedProvider(userIdHex).notifier).refresh();
 
     // Refresh user profile info
-    ref.read(userProfileServiceProvider).fetchProfile(userIdHex);
+    ref.read(profileRepositoryProvider)?.fetchFreshProfile(pubkey: userIdHex);
 
     // Trigger BLoC refresh for likes/reposts via notifier
     _refreshNotifier.value++;
@@ -282,8 +265,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     try {
       // Get profile info for better share text
       final profile = await ref
-          .read(userProfileServiceProvider)
-          .fetchProfile(userIdHex);
+          .read(profileRepositoryProvider)
+          ?.getCachedProfile(pubkey: userIdHex);
       final displayName = profile?.bestDisplayName ?? 'User';
 
       // Convert hex pubkey to npub format for sharing

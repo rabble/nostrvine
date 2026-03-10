@@ -7,13 +7,13 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
-import 'package:openvine/services/user_profile_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockAuthService extends Mock implements AuthService {}
 
-class _MockUserProfileService extends Mock implements UserProfileService {}
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
   setUpAll(() {
@@ -40,7 +40,7 @@ void main() {
   group('Profile Setup Relay Confirmation', () {
     late _MockNostrClient mockNostrService;
     late _MockAuthService mockAuthService;
-    late _MockUserProfileService mockUserProfileService;
+    late _MockProfileRepository mockProfileRepository;
     late String testPubkey;
     late String testEventId;
     late int testTimestamp;
@@ -48,7 +48,7 @@ void main() {
     setUp(() {
       mockNostrService = _MockNostrClient();
       mockAuthService = _MockAuthService();
-      mockUserProfileService = _MockUserProfileService();
+      mockProfileRepository = _MockProfileRepository();
 
       testPubkey =
           '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738';
@@ -114,9 +114,8 @@ void main() {
 
         var fetchCallCount = 0;
         when(
-          () => mockUserProfileService.fetchProfile(
-            testPubkey,
-            forceRefresh: true,
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
           ),
         ).thenAnswer((_) async {
           fetchCallCount++;
@@ -128,10 +127,12 @@ void main() {
         });
 
         when(
-          () => mockUserProfileService.removeProfile(testPubkey),
-        ).thenReturn(null);
+          () => mockProfileRepository.deleteCachedProfile(
+            pubkey: testPubkey,
+          ),
+        ).thenAnswer((_) async => 1);
         when(
-          () => mockUserProfileService.updateCachedProfile(any()),
+          () => mockProfileRepository.cacheProfile(any()),
         ).thenAnswer((_) async {});
 
         // Act - simulate the publish flow with retry logic
@@ -153,10 +154,11 @@ void main() {
 
         while (attempts < maxAttempts) {
           attempts++;
-          mockUserProfileService.removeProfile(testPubkey);
-          final fetchedProfile = await mockUserProfileService.fetchProfile(
-            testPubkey,
-            forceRefresh: true,
+          await mockProfileRepository.deleteCachedProfile(
+            pubkey: testPubkey,
+          );
+          final fetchedProfile = await mockProfileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
           );
 
           // Check if we got the updated profile
@@ -203,12 +205,13 @@ void main() {
           reason: 'Should retry until getting updated profile',
         );
         verify(
-          () => mockUserProfileService.removeProfile(testPubkey),
+          () => mockProfileRepository.deleteCachedProfile(
+            pubkey: testPubkey,
+          ),
         ).called(3);
         verify(
-          () => mockUserProfileService.fetchProfile(
-            testPubkey,
-            forceRefresh: true,
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
           ),
         ).called(3);
       },
@@ -242,7 +245,7 @@ void main() {
         () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => publishedEvent);
 
-      // Mock profile service to ALWAYS return stale profile
+      // Mock profile repository to ALWAYS return stale profile
       final staleProfile = UserProfile(
         pubkey: testPubkey,
         name: 'Old Name',
@@ -254,12 +257,11 @@ void main() {
       );
 
       when(
-        () =>
-            mockUserProfileService.fetchProfile(testPubkey, forceRefresh: true),
+        () => mockProfileRepository.fetchFreshProfile(pubkey: testPubkey),
       ).thenAnswer((_) async => staleProfile);
       when(
-        () => mockUserProfileService.removeProfile(testPubkey),
-      ).thenReturn(null);
+        () => mockProfileRepository.deleteCachedProfile(pubkey: testPubkey),
+      ).thenAnswer((_) async => 1);
 
       // Act
       final event = await mockAuthService.createAndSignEvent(
@@ -277,10 +279,9 @@ void main() {
 
       while (attempts < maxAttempts) {
         attempts++;
-        mockUserProfileService.removeProfile(testPubkey);
-        final fetchedProfile = await mockUserProfileService.fetchProfile(
-          testPubkey,
-          forceRefresh: true,
+        await mockProfileRepository.deleteCachedProfile(pubkey: testPubkey);
+        final fetchedProfile = await mockProfileRepository.fetchFreshProfile(
+          pubkey: testPubkey,
         );
 
         final eventIdMatches = fetchedProfile?.eventId == testEventId;
@@ -341,7 +342,7 @@ void main() {
           () => mockNostrService.publishEvent(any()),
         ).thenAnswer((_) async => publishedEvent);
 
-        // Mock profile service to return updated profile immediately
+        // Mock profile repository to return updated profile immediately
         final updatedProfile = UserProfile(
           pubkey: testPubkey,
           name: 'Fast Update',
@@ -351,14 +352,15 @@ void main() {
         );
 
         when(
-          () => mockUserProfileService.fetchProfile(
-            testPubkey,
-            forceRefresh: true,
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
           ),
         ).thenAnswer((_) async => updatedProfile);
         when(
-          () => mockUserProfileService.removeProfile(testPubkey),
-        ).thenReturn(null);
+          () => mockProfileRepository.deleteCachedProfile(
+            pubkey: testPubkey,
+          ),
+        ).thenAnswer((_) async => 1);
 
         // Act
         final event = await mockAuthService.createAndSignEvent(
@@ -373,10 +375,9 @@ void main() {
         UserProfile? confirmedProfile;
         var attempts = 0;
 
-        mockUserProfileService.removeProfile(testPubkey);
-        final fetchedProfile = await mockUserProfileService.fetchProfile(
-          testPubkey,
-          forceRefresh: true,
+        await mockProfileRepository.deleteCachedProfile(pubkey: testPubkey);
+        final fetchedProfile = await mockProfileRepository.fetchFreshProfile(
+          pubkey: testPubkey,
         );
 
         attempts++;
@@ -397,9 +398,8 @@ void main() {
           reason: 'Should succeed on first attempt without retries',
         );
         verify(
-          () => mockUserProfileService.fetchProfile(
-            testPubkey,
-            forceRefresh: true,
+          () => mockProfileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
           ),
         ).called(1);
       },

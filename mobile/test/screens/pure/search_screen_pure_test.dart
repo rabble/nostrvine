@@ -72,9 +72,8 @@ void main() {
       ).thenReturn(0);
 
       when(
-        () => mockProfileRepository.countUsersLocally(
-          query: any(named: 'query'),
-        ),
+        () =>
+            mockProfileRepository.countUsersLocally(query: any(named: 'query')),
       ).thenAnswer((_) async => 0);
 
       // Single stream stub for searchVideos
@@ -87,9 +86,6 @@ void main() {
     });
 
     Widget createTestWidget({List<VideoEvent>? searchResults}) {
-      final mockUserProfileService = createMockUserProfileService();
-      when(() => mockUserProfileService.getDisplayName(any())).thenReturn('');
-
       if (searchResults != null) {
         when(
           () => mockVideosRepository.searchVideos(
@@ -101,10 +97,7 @@ void main() {
 
       return ProviderScope(
         overrides: [
-          ...getStandardTestOverrides(
-            mockAuthService: createMockAuthService(),
-            mockUserProfileService: mockUserProfileService,
-          ),
+          ...getStandardTestOverrides(mockAuthService: createMockAuthService()),
           profileRepositoryProvider.overrideWithValue(mockProfileRepository),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
           videoEventServiceProvider.overrideWithValue(fakeVideoEventService),
@@ -125,14 +118,10 @@ void main() {
         required int videoIndex,
         List<VideoEvent>? searchVideos,
       }) {
-        final mockUserProfileService = createMockUserProfileService();
-        when(() => mockUserProfileService.getDisplayName(any())).thenReturn('');
-
         return ProviderScope(
           overrides: [
             ...getStandardTestOverrides(
               mockAuthService: createMockAuthService(),
-              mockUserProfileService: mockUserProfileService,
             ),
             profileRepositoryProvider.overrideWithValue(mockProfileRepository),
             videosRepositoryProvider.overrideWithValue(mockVideosRepository),

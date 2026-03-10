@@ -12,15 +12,15 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
-class _MockUserProfileService extends Mock implements UserProfileService {}
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockEventRouter extends Mock implements EventRouter {}
 
@@ -32,7 +32,7 @@ void main() {
     late VideoEventService service;
     late _MockNostrClient mockNostrService;
     late _MockSubscriptionManager mockSubscriptionManager;
-    late _MockUserProfileService mockUserProfileService;
+    late _MockProfileRepository mockProfileRepository;
     late _MockEventRouter mockEventRouter;
     late _MockRelayCapabilityService mockRelayCapabilityService;
     late VideoFilterBuilder filterBuilder;
@@ -46,7 +46,7 @@ void main() {
     setUp(() {
       mockNostrService = _MockNostrClient();
       mockSubscriptionManager = _MockSubscriptionManager();
-      mockUserProfileService = _MockUserProfileService();
+      mockProfileRepository = _MockProfileRepository();
       mockEventRouter = _MockEventRouter();
       mockRelayCapabilityService = _MockRelayCapabilityService();
       eventStreamController = StreamController<Event>.broadcast();
@@ -74,7 +74,7 @@ void main() {
       service = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
-        userProfileService: mockUserProfileService,
+        profileRepository: mockProfileRepository,
         eventRouter: mockEventRouter,
         videoFilterBuilder: filterBuilder,
       );
@@ -334,7 +334,7 @@ void main() {
           final serviceWithoutBuilder = VideoEventService(
             mockNostrService,
             subscriptionManager: mockSubscriptionManager,
-            userProfileService: mockUserProfileService,
+            profileRepository: mockProfileRepository,
             eventRouter: mockEventRouter,
             // No videoFilterBuilder parameter
           );

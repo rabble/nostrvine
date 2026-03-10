@@ -1041,7 +1041,10 @@ class FunnelcakeApiClient {
   ///
   /// [pubkey] is the user's public key (hex format).
   ///
-  /// Returns the profile metadata map, or `null` if not found.
+  /// Returns the profile metadata map if the user has profile data,
+  /// a sentinel map `{'_noProfile': true, 'pubkey': pubkey}` if the
+  /// user exists but has never published a Kind 0 profile, or `null`
+  /// if the user is not found at all (404).
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not
@@ -1081,7 +1084,11 @@ class FunnelcakeApiClient {
             'lud16': profile['lud16'],
           };
         }
-        return null;
+
+        // User exists in FunnelCake but has never published a
+        // Kind 0 profile event — return sentinel so callers can
+        // skip expensive relay/indexer fallback.
+        return {'_noProfile': true, 'pubkey': pubkey};
       } else if (response.statusCode == 404) {
         return null;
       } else {
@@ -1364,7 +1371,8 @@ class FunnelcakeApiClient {
   /// [pubkeys] is the list of public keys to fetch.
   ///
   /// Returns a [BulkProfilesResponse] with a map of pubkey to
-  /// profile metadata.
+  /// profile metadata. Users that exist but have no profile data
+  /// are included as `{'_noProfile': true}` sentinel entries.
   ///
   /// Throws:
   /// - [FunnelcakeNotConfiguredException] if the API is not
@@ -1395,9 +1403,15 @@ class FunnelcakeApiClient {
         for (final user in usersData) {
           if (user is Map<String, dynamic>) {
             final pubkey = user['pubkey']?.toString();
+            if (pubkey == null || pubkey.isEmpty) continue;
+
             final profile = user['profile'] as Map<String, dynamic>?;
-            if (pubkey != null && pubkey.isNotEmpty && profile != null) {
+            if (profile != null &&
+                (profile['name'] != null || profile['display_name'] != null)) {
               result[pubkey] = profile;
+            } else {
+              // User exists but has no profile data — sentinel.
+              result[pubkey] = {'_noProfile': true};
             }
           }
         }

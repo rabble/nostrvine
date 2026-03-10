@@ -36,7 +36,6 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
   @override
   Widget build(BuildContext context) {
     final nostrService = ref.watch(nostrServiceProvider);
-    final profileService = ref.watch(userProfileServiceProvider);
 
     return Scaffold(
       appBar: DiVineAppBar(
@@ -62,7 +61,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               const SizedBox(height: 24),
 
               // Import existing key section
-              _buildImportSection(context, nostrService, profileService),
+              _buildImportSection(context, nostrService),
               const SizedBox(height: 24),
 
               // Export/Backup section
@@ -119,7 +118,6 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
   Widget _buildImportSection(
     BuildContext context,
     nostrService,
-    profileService,
   ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +199,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                 child: ElevatedButton(
                   onPressed: _isProcessing
                       ? null
-                      : () => _importKey(context, nostrService, profileService),
+                      : () => _importKey(context, nostrService),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.vineGreen,
                     foregroundColor: VineTheme.whiteText,
@@ -352,7 +350,6 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
   Future<void> _importKey(
     BuildContext context,
     nostrService,
-    profileService,
   ) async {
     final nsec = _importController.text.trim();
 
@@ -425,10 +422,11 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
       // Fetch profile after successful import (authService is source of truth)
       if (context.mounted && authService.currentPublicKeyHex != null) {
         try {
-          await profileService.fetchProfile(
-            authService.currentPublicKeyHex!,
-            forceRefresh: false,
-          );
+          await ref
+              .read(profileRepositoryProvider)
+              ?.fetchFreshProfile(
+                pubkey: authService.currentPublicKeyHex!,
+              );
         } catch (e) {
           // Non-fatal - profile fetch failure shouldn't block import
         }

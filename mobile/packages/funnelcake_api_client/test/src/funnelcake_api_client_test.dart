@@ -2962,20 +2962,49 @@ void main() {
         );
       });
 
-      test('returns null when profile has no name fields', () async {
-        const noNameResponse = '''
+      test(
+        'returns _noProfile sentinel when profile has no name fields',
+        () async {
+          const noNameResponse = '''
 {"profile": {"about": "just about"}}
 ''';
-        when(
-          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(noNameResponse, 200),
-        );
+          when(
+            () => mockHttpClient.get(
+              any(),
+              headers: any(named: 'headers'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(noNameResponse, 200),
+          );
 
-        final profile = await client.getUserProfile(testPubkey);
+          final profile = await client.getUserProfile(testPubkey);
 
-        expect(profile, isNull);
-      });
+          expect(profile, isNotNull);
+          expect(profile!['_noProfile'], isTrue);
+          expect(profile['pubkey'], equals(testPubkey));
+        },
+      );
+
+      test(
+        'returns _noProfile sentinel when profile is null',
+        () async {
+          const nullProfileResponse = '{"profile": null}';
+          when(
+            () => mockHttpClient.get(
+              any(),
+              headers: any(named: 'headers'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(nullProfileResponse, 200),
+          );
+
+          final profile = await client.getUserProfile(testPubkey);
+
+          expect(profile, isNotNull);
+          expect(profile!['_noProfile'], isTrue);
+          expect(profile['pubkey'], equals(testPubkey));
+        },
+      );
 
       test('returns null on 404', () async {
         when(
@@ -3727,14 +3756,13 @@ void main() {
       });
 
       test(
-        'filters out entries without pubkey or profile',
+        'filters out entries without pubkey',
         () async {
           const responseWithInvalid = '''
 {
   "users": [
     {"pubkey": "", "profile": {"name": "No Key"}},
-    {"pubkey": "pub1", "profile": null},
-    {"pubkey": "pub2", "profile": {"name": "Valid"}}
+    {"pubkey": "pub1", "profile": {"name": "Valid"}}
   ]
 }
 ''';
@@ -3749,13 +3777,84 @@ void main() {
           );
 
           final result = await client.getBulkProfiles(
-            ['pub1', 'pub2'],
+            ['pub1'],
           );
 
           expect(result.profiles, hasLength(1));
           expect(
+            result.profiles['pub1']?['name'],
+            equals('Valid'),
+          );
+        },
+      );
+
+      test(
+        'returns _noProfile sentinel for users with null profile',
+        () async {
+          const response = '''
+{
+  "users": [
+    {"pubkey": "pub1", "profile": null},
+    {"pubkey": "pub2", "profile": {"name": "Valid"}}
+  ]
+}
+''';
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(response, 200),
+          );
+
+          final result = await client.getBulkProfiles(
+            ['pub1', 'pub2'],
+          );
+
+          expect(result.profiles, hasLength(2));
+          expect(
+            result.profiles['pub1']?['_noProfile'],
+            isTrue,
+          );
+          expect(
             result.profiles['pub2']?['name'],
             equals('Valid'),
+          );
+        },
+      );
+
+      test(
+        'returns _noProfile sentinel for users with all-null '
+        'profile fields',
+        () async {
+          const response = '''
+{
+  "users": [
+    {
+      "pubkey": "pub1",
+      "profile": {"name": null, "display_name": null, "about": null}
+    }
+  ]
+}
+''';
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(response, 200),
+          );
+
+          final result = await client.getBulkProfiles(['pub1']);
+
+          expect(result.profiles, hasLength(1));
+          expect(
+            result.profiles['pub1']?['_noProfile'],
+            isTrue,
           );
         },
       );

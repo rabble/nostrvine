@@ -11,9 +11,9 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/nip19/nip19_tlv.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/bookmark_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 part 'share_sheet_event.dart';
 part 'share_sheet_state.dart';
@@ -33,13 +33,13 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     required VideoEvent video,
     required String relayUrl,
     required VideoSharingService videoSharingService,
-    required UserProfileService userProfileService,
+    required ProfileRepository profileRepository,
     required FollowRepository followRepository,
     Future<BookmarkService?>? bookmarkServiceFuture,
   }) : _video = video,
        _relayUrl = relayUrl,
        _videoSharingService = videoSharingService,
-       _userProfileService = userProfileService,
+       _profileRepository = profileRepository,
        _followRepository = followRepository,
        _bookmarkServiceFuture = bookmarkServiceFuture,
        super(const ShareSheetState()) {
@@ -61,7 +61,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   final VideoEvent _video;
   final String _relayUrl;
   final VideoSharingService _videoSharingService;
-  final UserProfileService _userProfileService;
+  final ProfileRepository _profileRepository;
   final FollowRepository _followRepository;
   final Future<BookmarkService?>? _bookmarkServiceFuture;
 
@@ -88,17 +88,27 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
 
       // Batch-fetch uncached profiles
       final allPubkeys = [...recentPubkeys, ...remainingFollows];
-      final uncached = allPubkeys
-          .where((pk) => !_userProfileService.hasProfile(pk))
-          .toList();
+      final cachedChecks = await Future.wait(
+        allPubkeys.map((pk) => _profileRepository.getCachedProfile(pubkey: pk)),
+      );
+      final uncached = <String>[];
+      for (var i = 0; i < allPubkeys.length; i++) {
+        if (cachedChecks[i] == null) uncached.add(allPubkeys[i]);
+      }
       if (uncached.isNotEmpty) {
-        await Future.wait(uncached.map(_userProfileService.fetchProfile));
+        await Future.wait(
+          uncached.map(
+            (pk) => _profileRepository.fetchFreshProfile(pubkey: pk),
+          ),
+        );
       }
 
       final contacts = <ShareableUser>[...recentUsers];
 
       for (final pubkey in remainingFollows) {
-        final profile = _userProfileService.getCachedProfile(pubkey);
+        final profile = await _profileRepository.getCachedProfile(
+          pubkey: pubkey,
+        );
         contacts.add(
           ShareableUser(
             pubkey: pubkey,
@@ -343,11 +353,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
-      emit(
-        state.copyWith(
-          actionResult: const ShareSheetActionFailure(),
-        ),
-      );
+      emit(state.copyWith(actionResult: const ShareSheetActionFailure()));
     }
   }
 
@@ -358,9 +364,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
     try {
       final shareText = _videoSharingService.generateShareText(_video);
       emit(
-        state.copyWith(
-          actionResult: ShareSheetShareViaTriggered(shareText),
-        ),
+        state.copyWith(actionResult: ShareSheetShareViaTriggered(shareText)),
       );
     } catch (e) {
       Log.error(
@@ -368,11 +372,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
-      emit(
-        state.copyWith(
-          actionResult: const ShareSheetActionFailure(),
-        ),
-      );
+      emit(state.copyWith(actionResult: const ShareSheetActionFailure()));
     }
   }
 
@@ -396,11 +396,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
-      emit(
-        state.copyWith(
-          actionResult: const ShareSheetActionFailure(),
-        ),
-      );
+      emit(state.copyWith(actionResult: const ShareSheetActionFailure()));
     }
   }
 
@@ -410,11 +406,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
   ) {
     try {
       final nevent = NIP19Tlv.encodeNevent(
-        Nevent(
-          id: _video.id,
-          author: _video.pubkey,
-          relays: [_relayUrl],
-        ),
+        Nevent(id: _video.id, author: _video.pubkey, relays: [_relayUrl]),
       );
       emit(
         state.copyWith(
@@ -430,11 +422,7 @@ class ShareSheetBloc extends Bloc<ShareSheetEvent, ShareSheetState> {
         name: 'ShareSheetBloc',
         category: LogCategory.ui,
       );
-      emit(
-        state.copyWith(
-          actionResult: const ShareSheetActionFailure(),
-        ),
-      );
+      emit(state.copyWith(actionResult: const ShareSheetActionFailure()));
     }
   }
 }

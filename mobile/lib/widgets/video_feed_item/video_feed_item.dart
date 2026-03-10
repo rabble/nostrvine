@@ -1549,12 +1549,9 @@ class VideoOverlayActions extends ConsumerWidget {
                     // Author avatar and info row
                     Consumer(
                       builder: (context, ref, _) {
-                        final userProfileService = ref.watch(
-                          userProfileServiceProvider,
-                        );
-                        final profile = userProfileService.getCachedProfile(
-                          video.pubkey,
-                        );
+                        final profile = ref
+                            .watch(userProfileReactiveProvider(video.pubkey))
+                            .value;
                         // Use embedded author data from REST API as fallback
                         // This avoids WebSocket profile fetches for videos
                         // that already have author_name/author_avatar embedded
@@ -1567,7 +1564,7 @@ class VideoOverlayActions extends ConsumerWidget {
                         final archivedLoops = video.originalLoops ?? 0;
                         final liveViews =
                             int.tryParse(video.rawTags['views'] ?? '') ?? 0;
-                        // Always sum archived (original Vine) and live (new Divine)
+                        // Always sum archived (original Vine) and live (new diVine)
                         // loops so migrated videos show their full combined count.
                         final loopCount = archivedLoops + liveViews;
                         final hasLoopMetadata =
@@ -2035,18 +2032,9 @@ class VideoAuthorRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch UserProfileService directly (now a ChangeNotifier)
-    // This will rebuild when profiles are added/updated
-    final userProfileService = ref.watch(userProfileServiceProvider);
-    final profile = userProfileService.getCachedProfile(video.pubkey);
-
-    // If profile not cached and not known missing, fetch it
-    if (profile == null &&
-        !userProfileService.shouldSkipProfileFetch(video.pubkey)) {
-      Future.microtask(() {
-        ref.read(userProfileProvider.notifier).fetchProfile(video.pubkey);
-      });
-    }
+    // Profile is unused here (UserName.fromPubKey handles display),
+    // but watching ensures the widget rebuilds when profile data arrives.
+    ref.watch(userProfileReactiveProvider(video.pubkey));
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -2108,17 +2096,9 @@ class VideoRepostHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Fetch reposter's profile
-    final userProfileService = ref.watch(userProfileServiceProvider);
-    final reposterProfile = userProfileService.getCachedProfile(reposterPubkey);
-
-    // If profile not cached, fetch it
-    if (reposterProfile == null &&
-        !userProfileService.shouldSkipProfileFetch(reposterPubkey)) {
-      Future.microtask(() {
-        userProfileService.fetchProfile(reposterPubkey);
-      });
-    }
+    final reposterProfile = ref
+        .watch(userProfileReactiveProvider(reposterPubkey))
+        .value;
 
     final displayName =
         reposterProfile?.bestDisplayName ??

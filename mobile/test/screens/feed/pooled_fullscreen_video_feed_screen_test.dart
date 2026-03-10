@@ -76,7 +76,6 @@ void main() {
   group('PooledFullscreenVideoFeedScreen', () {
     late MockFullscreenFeedBloc mockBloc;
     late MockVideoFeedController defaultController;
-    late MockUserProfileService mockUserProfileService;
     late Map<int, ValueNotifier<VideoIndexState>> defaultIndexNotifiers;
     late StreamController<FullscreenFeedState> stateController;
 
@@ -97,7 +96,6 @@ void main() {
       await PlayerPool.init();
       mockBloc = MockFullscreenFeedBloc();
       defaultController = MockVideoFeedController();
-      mockUserProfileService = createMockUserProfileService();
       defaultIndexNotifiers = <int, ValueNotifier<VideoIndexState>>{};
       stateController = StreamController<FullscreenFeedState>.broadcast();
       stubVideoFeedController(defaultController, defaultIndexNotifiers);
@@ -152,7 +150,6 @@ void main() {
 
       return testMaterialApp(
         additionalOverrides: additionalOverrides,
-        mockUserProfileService: mockUserProfileService,
         home: BlocProvider<FullscreenFeedBloc>.value(
           value: mockBloc,
           child: FullscreenFeedContent(
@@ -421,7 +418,6 @@ void main() {
 
         await tester.pumpWidget(
           testMaterialApp(
-            mockUserProfileService: mockUserProfileService,
             home: BlocProvider<FullscreenFeedBloc>.value(
               value: mockBloc,
               child: FullscreenFeedContent(
@@ -461,7 +457,6 @@ void main() {
 
           await tester.pumpWidget(
             testMaterialApp(
-              mockUserProfileService: mockUserProfileService,
               home: BlocProvider<FullscreenFeedBloc>.value(
                 value: mockBloc,
                 child: FullscreenFeedContent(
@@ -494,7 +489,6 @@ void main() {
 
           await tester.pumpWidget(
             testMaterialApp(
-              mockUserProfileService: mockUserProfileService,
               home: BlocProvider<FullscreenFeedBloc>.value(
                 value: mockBloc,
                 child: FullscreenFeedContent(

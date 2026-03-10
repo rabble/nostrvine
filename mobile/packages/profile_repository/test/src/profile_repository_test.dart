@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 // Hide Drift table class to avoid collision with ProfileStats domain model.
-import 'package:db_client/db_client.dart' hide ProfileStats;
+import 'package:db_client/db_client.dart' hide Filter, ProfileStats;
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
 import 'package:mocktail/mocktail.dart';
@@ -49,6 +49,7 @@ void main() {
         ),
       );
       registerFallbackValue(Uri.parse('https://example.com'));
+      registerFallbackValue(<Filter>[]);
     });
 
     setUp(() {
@@ -140,6 +141,61 @@ void main() {
 
         verify(() => mockUserProfilesDao.upsertProfile(profile)).called(1);
       });
+
+      test('adds pubkey to known cached set', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+
+        await profileRepository.cacheProfile(profile);
+
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+      });
+
+      test('clears pubkey from confirmed missing set', () async {
+        // First make the pubkey confirmed missing
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => null);
+        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+        expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+
+        // Now cache a profile for it
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        await profileRepository.cacheProfile(profile);
+
+        expect(profileRepository.isConfirmedMissing(testPubkey), isFalse);
+      });
+    });
+
+    group('hasProfile', () {
+      test('returns false for unknown pubkey', () {
+        expect(profileRepository.hasProfile(testPubkey), isFalse);
+      });
+
+      test('returns true after caching a profile', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        await profileRepository.cacheProfile(profile);
+
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+      });
+
+      test('returns true after fetching from relay', () async {
+        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+      });
+    });
+
+    group('loadKnownCachedPubkeys', () {
+      test('populates known cached set from Drift', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
+        when(
+          () => mockUserProfilesDao.getAllProfiles(),
+        ).thenAnswer((_) async => [profile]);
+
+        await profileRepository.loadKnownCachedPubkeys();
+
+        expect(profileRepository.hasProfile(testPubkey), isTrue);
+      });
     });
 
     group('deleteCachedProfile', () {
@@ -153,9 +209,7 @@ void main() {
         );
 
         expect(result, equals(1));
-        verify(
-          () => mockUserProfilesDao.deleteProfile(testPubkey),
-        ).called(1);
+        verify(() => mockUserProfilesDao.deleteProfile(testPubkey)).called(1);
       });
 
       test('returns 0 when profile does not exist', () async {
@@ -173,9 +227,7 @@ void main() {
 
     group('getAllCachedProfiles', () {
       test('returns all profiles from dao', () async {
-        final profiles = [
-          UserProfile.fromNostrEvent(mockProfileEvent),
-        ];
+        final profiles = [UserProfile.fromNostrEvent(mockProfileEvent)];
         when(
           () => mockUserProfilesDao.getAllProfiles(),
         ).thenAnswer((_) async => profiles);
@@ -223,10 +275,7 @@ void main() {
       test('emits updates when profile changes', () async {
         final profile1 = UserProfile.fromNostrEvent(mockProfileEvent);
         when(() => mockProfileEvent.content).thenReturn(
-          jsonEncode({
-            'display_name': 'Updated User',
-            'about': 'Updated bio',
-          }),
+          jsonEncode({'display_name': 'Updated User', 'about': 'Updated bio'}),
         );
         final profile2 = UserProfile.fromNostrEvent(mockProfileEvent);
 
@@ -282,9 +331,7 @@ void main() {
           () => mockProfileStatsDao.watchStats(any()),
         ).thenAnswer((_) => Stream.value(row));
 
-        final stream = profileRepository.watchProfileStats(
-          pubkey: testPubkey,
-        );
+        final stream = profileRepository.watchProfileStats(pubkey: testPubkey);
 
         await expectLater(
           stream,
@@ -309,9 +356,7 @@ void main() {
           () => mockProfileStatsDao.watchStats(any()),
         ).thenAnswer((_) => Stream.value(null));
 
-        final stream = profileRepository.watchProfileStats(
-          pubkey: testPubkey,
-        );
+        final stream = profileRepository.watchProfileStats(pubkey: testPubkey);
 
         await expectLater(stream, emits(isNull));
       });
@@ -325,9 +370,7 @@ void main() {
           () => mockProfileStatsDao.watchStats(any()),
         ).thenAnswer((_) => Stream.value(row));
 
-        final stream = profileRepository.watchProfileStats(
-          pubkey: testPubkey,
-        );
+        final stream = profileRepository.watchProfileStats(pubkey: testPubkey);
 
         await expectLater(
           stream,
@@ -342,22 +385,17 @@ void main() {
         );
       });
 
-      test(
-        'returns empty stream when ProfileStatsDao not injected',
-        () async {
-          final repoWithoutStats = ProfileRepository(
-            nostrClient: mockNostrClient,
-            userProfilesDao: mockUserProfilesDao,
-            httpClient: mockHttpClient,
-          );
+      test('returns empty stream when ProfileStatsDao not injected', () async {
+        final repoWithoutStats = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+        );
 
-          final stream = repoWithoutStats.watchProfileStats(
-            pubkey: testPubkey,
-          );
+        final stream = repoWithoutStats.watchProfileStats(pubkey: testPubkey);
 
-          await expectLater(stream, emitsDone);
-        },
-      );
+        await expectLater(stream, emitsDone);
+      });
     });
 
     group('fetchFreshProfile', () {
@@ -389,6 +427,59 @@ void main() {
         verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
         verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
       });
+
+      test('marks pubkey as confirmed missing on relay miss', () async {
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => null);
+
+        await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+
+        expect(profileRepository.isConfirmedMissing(testPubkey), isTrue);
+      });
+
+      test(
+        'skips relay fetch for confirmed missing pubkeys',
+        () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+
+          // First call — hits relay, marks missing
+          await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          // Second call — should not hit relay
+          await profileRepository.fetchFreshProfile(
+            pubkey: testPubkey,
+          );
+
+          verify(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).called(1);
+        },
+      );
+
+      test(
+        'deduplicates concurrent calls for the same pubkey',
+        () async {
+          final results = await Future.wait([
+            profileRepository.fetchFreshProfile(pubkey: testPubkey),
+            profileRepository.fetchFreshProfile(pubkey: testPubkey),
+            profileRepository.fetchFreshProfile(pubkey: testPubkey),
+          ]);
+
+          // All return the same profile
+          for (final r in results) {
+            expect(r?.pubkey, equals(testPubkey));
+          }
+          // Only one relay call
+          verify(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).called(1);
+        },
+      );
     });
 
     group('saveProfileEvent', () {
@@ -644,31 +735,25 @@ void main() {
           },
         );
 
-        test(
-          'removes nip05 from rawData when clearNip05 is true',
-          () async {
-            final currentProfile = await createCurrentProfile({
-              'display_name': 'Old Name',
-              'nip05': 'alice@example.com',
-              'about': 'Bio',
-            });
+        test('removes nip05 from rawData when clearNip05 is true', () async {
+          final currentProfile = await createCurrentProfile({
+            'display_name': 'Old Name',
+            'nip05': 'alice@example.com',
+            'about': 'Bio',
+          });
 
-            await profileRepository.saveProfileEvent(
-              displayName: 'New Name',
-              clearNip05: true,
-              currentProfile: currentProfile,
-            );
+          await profileRepository.saveProfileEvent(
+            displayName: 'New Name',
+            clearNip05: true,
+            currentProfile: currentProfile,
+          );
 
-            verify(
-              () => mockNostrClient.sendProfile(
-                profileContent: {
-                  'display_name': 'New Name',
-                  'about': 'Bio',
-                },
-              ),
-            ).called(1);
-          },
-        );
+          verify(
+            () => mockNostrClient.sendProfile(
+              profileContent: {'display_name': 'New Name', 'about': 'Bio'},
+            ),
+          ).called(1);
+        });
 
         test(
           'clearNip05 is a no-op when a new nip05 is also provided',
@@ -1035,9 +1120,7 @@ void main() {
 
     group('searchUsersLocally', () {
       test('returns empty list when query is blank', () async {
-        final result = await profileRepository.searchUsersLocally(
-          query: '   ',
-        );
+        final result = await profileRepository.searchUsersLocally(query: '   ');
 
         expect(result, isEmpty);
         verifyNever(() => mockUserProfilesDao.getAllProfiles());
@@ -1144,9 +1227,7 @@ void main() {
           () => mockUserProfilesDao.getAllProfiles(),
         ).thenAnswer((_) async => cachedProfiles);
 
-        final count = await profileRepository.countUsersLocally(
-          query: 'alice',
-        );
+        final count = await profileRepository.countUsersLocally(query: 'alice');
 
         expect(count, equals(2));
       });
@@ -2069,101 +2150,86 @@ void main() {
         expect(result, isA<UsernameInvalidFormat>());
       });
 
-      test(
-        'returns UsernameAvailable when name is taken but pubkey matches '
-        'current user (admin-assigned)',
-        () async {
-          // Simulate the name-server returning pubkey for an active name
-          when(
-            () => mockHttpClient.get(
-              Uri.parse(
-                'https://names.divine.video/api/username/check/vipuser',
-              ),
-            ),
-          ).thenAnswer(
-            (_) async => Response(
-              jsonEncode({
-                'ok': true,
-                'available': false,
-                'status': 'active',
-                'pubkey': testPubkey,
-                'reason': 'Username is already taken',
-              }),
-              200,
-            ),
-          );
+      test('returns UsernameAvailable when name is taken but pubkey matches '
+          'current user (admin-assigned)', () async {
+        // Simulate the name-server returning pubkey for an active name
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://names.divine.video/api/username/check/vipuser'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({
+              'ok': true,
+              'available': false,
+              'status': 'active',
+              'pubkey': testPubkey,
+              'reason': 'Username is already taken',
+            }),
+            200,
+          ),
+        );
 
-          final result = await profileRepository.checkUsernameAvailability(
-            username: 'vipuser',
-            currentUserPubkey: testPubkey,
-          );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'vipuser',
+          currentUserPubkey: testPubkey,
+        );
 
-          expect(result, equals(const UsernameAvailable()));
-        },
-      );
+        expect(result, equals(const UsernameAvailable()));
+      });
 
-      test(
-        'returns UsernameTaken when name is taken and pubkey does not match '
-        'current user',
-        () async {
-          when(
-            () => mockHttpClient.get(
-              Uri.parse(
-                'https://names.divine.video/api/username/check/vipuser',
-              ),
-            ),
-          ).thenAnswer(
-            (_) async => Response(
-              jsonEncode({
-                'ok': true,
-                'available': false,
-                'status': 'active',
-                'pubkey': otherPubkey,
-                'reason': 'Username is already taken',
-              }),
-              200,
-            ),
-          );
+      test('returns UsernameTaken when name is taken and pubkey does not match '
+          'current user', () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://names.divine.video/api/username/check/vipuser'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({
+              'ok': true,
+              'available': false,
+              'status': 'active',
+              'pubkey': otherPubkey,
+              'reason': 'Username is already taken',
+            }),
+            200,
+          ),
+        );
 
-          final result = await profileRepository.checkUsernameAvailability(
-            username: 'vipuser',
-            currentUserPubkey: testPubkey,
-          );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'vipuser',
+          currentUserPubkey: testPubkey,
+        );
 
-          expect(result, equals(const UsernameTaken()));
-        },
-      );
+        expect(result, equals(const UsernameTaken()));
+      });
 
-      test(
-        'returns UsernameTaken when name is taken and no currentUserPubkey '
-        'provided (backwards compatible)',
-        () async {
-          when(
-            () => mockHttpClient.get(
-              Uri.parse(
-                'https://names.divine.video/api/username/check/vipuser',
-              ),
-            ),
-          ).thenAnswer(
-            (_) async => Response(
-              jsonEncode({
-                'ok': true,
-                'available': false,
-                'status': 'active',
-                'pubkey': testPubkey,
-                'reason': 'Username is already taken',
-              }),
-              200,
-            ),
-          );
+      test('returns UsernameTaken when name is taken and no currentUserPubkey '
+          'provided (backwards compatible)', () async {
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://names.divine.video/api/username/check/vipuser'),
+          ),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({
+              'ok': true,
+              'available': false,
+              'status': 'active',
+              'pubkey': testPubkey,
+              'reason': 'Username is already taken',
+            }),
+            200,
+          ),
+        );
 
-          final result = await profileRepository.checkUsernameAvailability(
-            username: 'vipuser',
-          );
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'vipuser',
+        );
 
-          expect(result, equals(const UsernameTaken()));
-        },
-      );
+        expect(result, equals(const UsernameTaken()));
+      });
     });
 
     group('UsernameAvailabilityResult', () {
@@ -2382,6 +2448,391 @@ void main() {
           () => repoWithFunnelcake.getBulkProfilesFromApi([testPubkey]),
           throwsA(isA<FunnelcakeTimeoutException>()),
         );
+      });
+    });
+
+    group('fetchBatchProfiles', () {
+      const testPubkey2 =
+          'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3';
+      const testPubkey3 =
+          'c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4';
+
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+
+        registerFallbackValue(<UserProfile>[]);
+      });
+
+      test('returns empty map for empty pubkeys', () async {
+        final result = await profileRepository.fetchBatchProfiles(pubkeys: []);
+        expect(result, isEmpty);
+      });
+
+      test('returns all from cache when all are cached', () async {
+        final cached = UserProfile(
+          pubkey: testPubkey,
+          displayName: 'Cached',
+          rawData: const {},
+          createdAt: DateTime(2026),
+          eventId: 'cached-event',
+        );
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys([testPubkey]),
+        ).thenAnswer((_) async => [cached]);
+
+        final result = await profileRepository.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
+
+        expect(result, hasLength(1));
+        expect(result[testPubkey]?.displayName, equals('Cached'));
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+      });
+
+      test('fetches uncached from Funnelcake API', () async {
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+          (_) async => const BulkProfilesResponse(
+            profiles: {
+              testPubkey: {
+                'display_name': 'API User',
+                'picture': 'https://example.com/pic.jpg',
+              },
+            },
+          ),
+        );
+        when(
+          () => mockUserProfilesDao.upsertProfiles(any()),
+        ).thenAnswer((_) async {});
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
+
+        expect(result, hasLength(1));
+        expect(result[testPubkey]?.displayName, equals('API User'));
+        verify(() => mockUserProfilesDao.upsertProfiles(any())).called(1);
+      });
+
+      test('falls back to relay for pubkeys not in cache or API', () async {
+        final relayEvent = MockEvent();
+        when(() => relayEvent.kind).thenReturn(0);
+        when(() => relayEvent.pubkey).thenReturn(testPubkey);
+        when(() => relayEvent.createdAt).thenReturn(1704067200);
+        when(() => relayEvent.id).thenReturn(testEventId);
+        when(
+          () => relayEvent.content,
+        ).thenReturn(jsonEncode({'display_name': 'Relay User'}));
+
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => relayEvent);
+        when(
+          () => mockUserProfilesDao.upsertProfiles(any()),
+        ).thenAnswer((_) async {});
+
+        final result = await profileRepository.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
+
+        expect(result, hasLength(1));
+        expect(result[testPubkey]?.displayName, equals('Relay User'));
+      });
+
+      test('combines cache, API, and relay results', () async {
+        final cachedProfile = UserProfile(
+          pubkey: testPubkey,
+          displayName: 'Cached',
+          rawData: const {},
+          createdAt: DateTime(2026),
+          eventId: 'cached-event',
+        );
+
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => [cachedProfile]);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+          (_) async => const BulkProfilesResponse(
+            profiles: {
+              testPubkey2: {'display_name': 'API User'},
+            },
+          ),
+        );
+
+        final relayEvent = MockEvent();
+        when(() => relayEvent.kind).thenReturn(0);
+        when(() => relayEvent.pubkey).thenReturn(testPubkey3);
+        when(() => relayEvent.createdAt).thenReturn(1704067200);
+        when(() => relayEvent.id).thenReturn(
+          'd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5',
+        );
+        when(
+          () => relayEvent.content,
+        ).thenReturn(jsonEncode({'display_name': 'Relay User'}));
+
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey3),
+        ).thenAnswer((_) async => relayEvent);
+        when(
+          () => mockUserProfilesDao.upsertProfiles(any()),
+        ).thenAnswer((_) async {});
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.fetchBatchProfiles(
+          pubkeys: [testPubkey, testPubkey2, testPubkey3],
+        );
+
+        expect(result, hasLength(3));
+        expect(result[testPubkey]?.displayName, equals('Cached'));
+        expect(result[testPubkey2]?.displayName, equals('API User'));
+        expect(result[testPubkey3]?.displayName, equals('Relay User'));
+      });
+
+      test('handles API failure gracefully and falls back to relay', () async {
+        final relayEvent = MockEvent();
+        when(() => relayEvent.kind).thenReturn(0);
+        when(() => relayEvent.pubkey).thenReturn(testPubkey);
+        when(() => relayEvent.createdAt).thenReturn(1704067200);
+        when(() => relayEvent.id).thenReturn(testEventId);
+        when(
+          () => relayEvent.content,
+        ).thenReturn(jsonEncode({'display_name': 'Relay Fallback'}));
+
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenThrow(
+          const FunnelcakeApiException(
+            message: 'Server error',
+            statusCode: 500,
+            url: 'https://example.com',
+          ),
+        );
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => relayEvent);
+        when(
+          () => mockUserProfilesDao.upsertProfiles(any()),
+        ).thenAnswer((_) async {});
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
+
+        expect(result, hasLength(1));
+        expect(result[testPubkey]?.displayName, equals('Relay Fallback'));
+      });
+
+      test('handles relay failure gracefully with partial results', () async {
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenThrow(Exception('Relay error'));
+        // Step 4 indexer fallback also calls queryEvents
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+
+        final result = await profileRepository.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test('falls back to indexer relay when step 3 returns nothing', () async {
+        final indexerEvent = MockEvent();
+        when(() => indexerEvent.kind).thenReturn(0);
+        when(() => indexerEvent.pubkey).thenReturn(testPubkey);
+        when(() => indexerEvent.createdAt).thenReturn(1704067200);
+        when(() => indexerEvent.id).thenReturn(testEventId);
+        when(
+          () => indexerEvent.content,
+        ).thenReturn(jsonEncode({'display_name': 'Indexer User'}));
+
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        // Step 3 returns null (no result)
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => null);
+        // Step 4 indexer fallback returns the profile
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => [indexerEvent]);
+        when(
+          () => mockUserProfilesDao.upsertProfiles(any()),
+        ).thenAnswer((_) async {});
+
+        final result = await profileRepository.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
+
+        expect(result, hasLength(1));
+        expect(result[testPubkey]?.displayName, equals('Indexer User'));
+      });
+
+      test('handles indexer relay failure gracefully', () async {
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+        ).thenAnswer((_) async => []);
+        // Step 3 returns null
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => null);
+        // Step 4 indexer fallback throws
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenThrow(Exception('Indexer error'));
+
+        final result = await profileRepository.fetchBatchProfiles(
+          pubkeys: [testPubkey],
+        );
+
+        expect(result, isEmpty);
+      });
+
+      test(
+        'skips relay fallback for _noProfile sentinel entries',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+            (_) async => const BulkProfilesResponse(
+              profiles: {
+                testPubkey: {'_noProfile': true},
+              },
+            ),
+          );
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repoWithFunnelcake.fetchBatchProfiles(
+            pubkeys: [testPubkey],
+          );
+
+          expect(result, isEmpty);
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+          verifyNever(
+            () => mockNostrClient.queryEvents(
+              any(),
+              tempRelays: any(named: 'tempRelays'),
+              useCache: any(named: 'useCache'),
+            ),
+          );
+          verifyNever(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          );
+        },
+      );
+
+      test(
+        'processes real profiles alongside _noProfile sentinels',
+        () async {
+          when(
+            () => mockUserProfilesDao.getProfilesByPubkeys(any()),
+          ).thenAnswer((_) async => []);
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(() => mockFunnelcakeClient.getBulkProfiles(any())).thenAnswer(
+            (_) async => const BulkProfilesResponse(
+              profiles: {
+                testPubkey: {'display_name': 'Real User'},
+                testPubkey2: {'_noProfile': true},
+              },
+            ),
+          );
+          when(
+            () => mockUserProfilesDao.upsertProfiles(any()),
+          ).thenAnswer((_) async {});
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repoWithFunnelcake.fetchBatchProfiles(
+            pubkeys: [testPubkey, testPubkey2],
+          );
+
+          expect(result, hasLength(1));
+          expect(
+            result[testPubkey]?.displayName,
+            equals('Real User'),
+          );
+          expect(result.containsKey(testPubkey2), isFalse);
+          verifyNever(() => mockNostrClient.fetchProfile(any()));
+        },
+      );
+
+      test('does not batch-write when nothing was fetched', () async {
+        final cached = UserProfile(
+          pubkey: testPubkey,
+          displayName: 'Cached',
+          rawData: const {},
+          createdAt: DateTime(2026),
+          eventId: 'cached-event',
+        );
+        when(
+          () => mockUserProfilesDao.getProfilesByPubkeys([testPubkey]),
+        ).thenAnswer((_) async => [cached]);
+
+        await profileRepository.fetchBatchProfiles(pubkeys: [testPubkey]);
+
+        verifyNever(() => mockUserProfilesDao.upsertProfiles(any()));
       });
     });
   });

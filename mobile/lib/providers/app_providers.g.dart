@@ -2303,7 +2303,7 @@ final class ZendeskIdentitySyncProvider
 }
 
 String _$zendeskIdentitySyncHash() =>
-    r'53afea2107170640c9fd5d666ce700fd5d64daa6';
+    r'ce4114939fc8a9124bc1b657defc0a6eea432d70';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
@@ -2464,7 +2464,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'23adce286ca63de1fe659a33ae9d12b15df09fcc';
+String _$videoEventServiceHash() => r'b3455a59a241ce1158a1bea7e55cbf29ab907155';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -2511,59 +2511,6 @@ final class HashtagServiceProvider
 }
 
 String _$hashtagServiceHash() => r'5cd38d3c2e8d78a6f7b74a72b650d79e28938fe4';
-
-/// User profile service depends on Nostr service, SubscriptionManager, and ProfileRepository
-
-@ProviderFor(userProfileService)
-const userProfileServiceProvider = UserProfileServiceProvider._();
-
-/// User profile service depends on Nostr service, SubscriptionManager, and ProfileRepository
-
-final class UserProfileServiceProvider
-    extends
-        $FunctionalProvider<
-          UserProfileService,
-          UserProfileService,
-          UserProfileService
-        >
-    with $Provider<UserProfileService> {
-  /// User profile service depends on Nostr service, SubscriptionManager, and ProfileRepository
-  const UserProfileServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'userProfileServiceProvider',
-        isAutoDispose: false,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$userProfileServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<UserProfileService> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  UserProfileService create(Ref ref) {
-    return userProfileService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UserProfileService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<UserProfileService>(value),
-    );
-  }
-}
-
-String _$userProfileServiceHash() =>
-    r'897be9977ae70ea8d8340ef20b1f0e1f3873dad8';
 
 /// Social service depends on Nostr service, Auth service, and Analytics API
 
@@ -2942,7 +2889,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'9d24b8b90fed2a2d47dc16a0f90472cd541b6eac';
+String _$profileRepositoryHash() => r'56f617c3f3ebd1840886ab2ed6566a3899e54cd5';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -2996,7 +2943,7 @@ final class NotificationServiceEnhancedProvider
 }
 
 String _$notificationServiceEnhancedHash() =>
-    r'70a0b1344beaf6934f1fd0007620aa0dccb5336e';
+    r'5a9dc0a52085f0b2dc35786f947dde4ec414d299';
 
 /// NIP-98 authentication service
 
@@ -3351,7 +3298,7 @@ final class VideoEventPublisherProvider
 }
 
 String _$videoEventPublisherHash() =>
-    r'31a9147e1c9779180518fe8f4d8ee5527f5861d2';
+    r'6ca22df6c1be81090de341ba5ff02dc3e2a2707a';
 
 /// View event publisher for kind 22236 ephemeral analytics events
 ///
@@ -3800,7 +3747,7 @@ final class VideoSharingServiceProvider
 }
 
 String _$videoSharingServiceHash() =>
-    r'143e8562ab0f2c7df911141f5fcc53ec13a5b82a';
+    r'b001f6ce04c25673327f72bcfbbcd27db6e49e7e';
 
 /// Content deletion service for NIP-09 delete events
 

@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
@@ -134,8 +135,7 @@ class _VinerAvatar extends ConsumerWidget {
     final displayName = _cleanDisplayName(rawName);
 
     // Get avatar URL: try REST API first, then fallback to Nostr profile
-    final userProfileService = ref.watch(userProfileServiceProvider);
-    final profile = userProfileService.getCachedProfile(viner.pubkey);
+    final profile = ref.watch(userProfileReactiveProvider(viner.pubkey)).value;
     final avatarUrl = viner.authorAvatar ?? profile?.picture;
 
     return Semantics(

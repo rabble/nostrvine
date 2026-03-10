@@ -9,12 +9,12 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/share_sheet/share_sheet_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/bookmark_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 class _MockVideoSharingService extends Mock implements VideoSharingService {}
 
-class _MockUserProfileService extends Mock implements UserProfileService {}
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
 
@@ -53,7 +53,7 @@ void main() {
 
   group(ShareSheetBloc, () {
     late _MockVideoSharingService mockSharingService;
-    late _MockUserProfileService mockProfileService;
+    late _MockProfileRepository mockProfileRepository;
     late _MockFollowRepository mockFollowRepository;
     late _MockBookmarkService mockBookmarkService;
     late VideoEvent testVideo;
@@ -67,7 +67,7 @@ void main() {
 
     setUp(() {
       mockSharingService = _MockVideoSharingService();
-      mockProfileService = _MockUserProfileService();
+      mockProfileRepository = _MockProfileRepository();
       mockFollowRepository = _MockFollowRepository();
       mockBookmarkService = _MockBookmarkService();
 
@@ -95,7 +95,7 @@ void main() {
       video: testVideo,
       relayUrl: relayUrl,
       videoSharingService: mockSharingService,
-      userProfileService: mockProfileService,
+      profileRepository: mockProfileRepository,
       followRepository: followRepository ?? mockFollowRepository,
       bookmarkServiceFuture:
           bookmarkServiceFuture ?? Future.value(mockBookmarkService),
@@ -136,10 +136,16 @@ void main() {
           when(() => mockFollowRepository.followingPubkeys).thenReturn([
             'bbbb456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
           ]);
-          when(() => mockProfileService.hasProfile(any())).thenReturn(true);
           when(
-            () => mockProfileService.getCachedProfile(any()),
-          ).thenReturn(null);
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
@@ -177,7 +183,16 @@ void main() {
           when(
             () => mockSharingService.recentlySharedWith,
           ).thenReturn([testRecipient]);
-          when(() => mockProfileService.hasProfile(any())).thenReturn(true);
+          when(
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
@@ -190,32 +205,35 @@ void main() {
       );
 
       blocTest<ShareSheetBloc, ShareSheetState>(
-        'fetches uncached profiles when hasProfile returns false',
+        'fetches uncached profiles when getCachedProfile returns null',
         setUp: () {
           const cachedPubkey =
               'cccc456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
           const uncachedPubkey =
               'dddd456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
+          when(() => mockSharingService.recentlySharedWith).thenReturn([]);
           when(
-            () => mockSharingService.recentlySharedWith,
-          ).thenReturn([]);
-          when(() => mockFollowRepository.followingPubkeys).thenReturn([
-            cachedPubkey,
-            uncachedPubkey,
-          ]);
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn([cachedPubkey, uncachedPubkey]);
           when(
-            () => mockProfileService.hasProfile(cachedPubkey),
-          ).thenReturn(true);
+            () => mockProfileRepository.getCachedProfile(pubkey: cachedPubkey),
+          ).thenAnswer(
+            (_) async => UserProfile(
+              pubkey: cachedPubkey,
+              createdAt: DateTime.now(),
+              eventId: 'event-$cachedPubkey',
+              rawData: const {},
+            ),
+          );
           when(
-            () => mockProfileService.hasProfile(uncachedPubkey),
-          ).thenReturn(false);
-          when(
-            () => mockProfileService.fetchProfile(uncachedPubkey),
+            () =>
+                mockProfileRepository.getCachedProfile(pubkey: uncachedPubkey),
           ).thenAnswer((_) async => null);
           when(
-            () => mockProfileService.getCachedProfile(any()),
-          ).thenReturn(null);
+            () =>
+                mockProfileRepository.fetchFreshProfile(pubkey: uncachedPubkey),
+          ).thenAnswer((_) async => null);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
@@ -227,13 +245,15 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockProfileService.fetchProfile(
-              'dddd456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey:
+                  'dddd456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
             ),
           ).called(1);
           verifyNever(
-            () => mockProfileService.fetchProfile(
-              'cccc456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey:
+                  'cccc456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
             ),
           );
         },
@@ -247,9 +267,7 @@ void main() {
       blocTest<ShareSheetBloc, ShareSheetState>(
         'deduplicates contacts when pubkey appears in both recents and follows',
         setUp: () {
-          when(
-            () => mockSharingService.recentlySharedWith,
-          ).thenReturn([
+          when(() => mockSharingService.recentlySharedWith).thenReturn([
             const ShareableUser(
               pubkey: duplicatePubkey,
               displayName: 'Alice (recent)',
@@ -259,10 +277,16 @@ void main() {
             duplicatePubkey,
             'bbbb456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
           ]);
-          when(() => mockProfileService.hasProfile(any())).thenReturn(true);
           when(
-            () => mockProfileService.getCachedProfile(any()),
-          ).thenReturn(null);
+            () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
@@ -803,7 +827,7 @@ void main() {
           video: _ThrowingJsonVideoEvent(),
           relayUrl: 'wss://relay.test.example',
           videoSharingService: mockSharingService,
-          userProfileService: mockProfileService,
+          profileRepository: mockProfileRepository,
           followRepository: mockFollowRepository,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventJsonRequested()),
@@ -851,7 +875,7 @@ void main() {
           video: _InvalidIdVideoEvent(),
           relayUrl: 'wss://relay.test.example',
           videoSharingService: mockSharingService,
-          userProfileService: mockProfileService,
+          profileRepository: mockProfileRepository,
           followRepository: mockFollowRepository,
         ),
         act: (bloc) => bloc.add(const ShareSheetCopyEventIdRequested()),

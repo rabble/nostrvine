@@ -10,8 +10,6 @@ resolution: workspace
 
 dev_dependencies:
   mocktail: ^1.0.4
-  nostr_sdk:
-    path: '../nostr_sdk'
   test: ^1.26.3
   very_good_analysis: ^10.0.0
 
@@ -22,3 +20,4 @@ dependencies:
   http: ^1.2.2
   models:
   nostr_client:
+  nostr_sdk:

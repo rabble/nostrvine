@@ -146,7 +146,6 @@ void main() {
       String? avatarUrlHint,
     }) {
       final authService = MockAuthService(isAnonymousValue: isAnonymous);
-      final mockUserProfileService = createMockUserProfileService();
 
       Widget header = ProfileHeaderWidget(
         userIdHex: userIdHex,
@@ -160,13 +159,13 @@ void main() {
       if (isOwnProfile) {
         final mockMyProfileBloc = _MockMyProfileBloc();
         if (profile != null) {
-          when(() => mockMyProfileBloc.state).thenReturn(
-            MyProfileUpdated(profile: profile),
-          );
+          when(
+            () => mockMyProfileBloc.state,
+          ).thenReturn(MyProfileUpdated(profile: profile));
         } else {
-          when(() => mockMyProfileBloc.state).thenReturn(
-            const MyProfileInitial(),
-          );
+          when(
+            () => mockMyProfileBloc.state,
+          ).thenReturn(const MyProfileInitial());
         }
         header = BlocProvider<MyProfileBloc>.value(
           value: mockMyProfileBloc,
@@ -176,10 +175,7 @@ void main() {
 
       return ProviderScope(
         overrides: [
-          ...getStandardTestOverrides(
-            mockNostrService: mockNostrClient,
-            mockUserProfileService: mockUserProfileService,
-          ),
+          ...getStandardTestOverrides(mockNostrService: mockNostrClient),
           fetchUserProfileProvider(userIdHex).overrideWith(
             profileIsLoading
                 ? (ref) => Completer<UserProfile?>().future
@@ -197,9 +193,7 @@ void main() {
             authService: authService,
           ),
           child: MaterialApp(
-            home: Scaffold(
-              body: SingleChildScrollView(child: header),
-            ),
+            home: Scaffold(body: SingleChildScrollView(child: header)),
           ),
         ),
       );
@@ -309,23 +303,22 @@ void main() {
       expect(setupCalled, isTrue);
     });
 
-    testWidgets(
-      'hides setup banner while profile is still loading',
-      (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            userIdHex: testUserHex,
-            isOwnProfile: true,
-            profileIsLoading: true,
-            onSetupProfile: () {},
-          ),
-        );
-        // Do not pumpAndSettle — provider never resolves
-        await tester.pump();
+    testWidgets('hides setup banner while profile is still loading', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          userIdHex: testUserHex,
+          isOwnProfile: true,
+          profileIsLoading: true,
+          onSetupProfile: () {},
+        ),
+      );
+      // Do not pumpAndSettle — provider never resolves
+      await tester.pump();
 
-        expect(find.text('Complete Your Profile'), findsNothing);
-      },
-    );
+      expect(find.text('Complete Your Profile'), findsNothing);
+    });
 
     testWidgets('hides setup banner when profile has custom name', (
       tester,
