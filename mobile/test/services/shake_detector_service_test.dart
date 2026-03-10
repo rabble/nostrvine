@@ -1,26 +1,18 @@
 // ABOUTME: Tests for shake detector service
 // ABOUTME: Verifies shake detection logic without actual accelerometer
 
-import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/shake_detector_service.dart';
 
 void main() {
   group('ShakeDetectorService', () {
     setUp(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('dev.fluttercommunity.plus/sensors/method'),
-            (call) async => null,
-          );
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
     });
 
     tearDown(() {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('dev.fluttercommunity.plus/sensors/method'),
-            null,
-          );
+      debugDefaultTargetPlatformOverride = null;
     });
     test('can be instantiated with default values', () {
       final service = ShakeDetectorService();
