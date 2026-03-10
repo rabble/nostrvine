@@ -2600,5 +2600,185 @@ void main() {
         },
       );
     });
+
+    group('fast-path reuse of pooled player', () {
+      test('reuses existing pool player without re-opening media', () async {
+        final videos = createTestVideos();
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+          preloadAhead: 1,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final setup0 = playerSetups[videos[0].url]!;
+
+        // Buffer ready for video 0.
+        setup0.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+
+        // Simulate the player having a valid duration (media loaded).
+        when(
+          () => setup0.state.duration,
+        ).thenReturn(const Duration(seconds: 10));
+
+        clearInteractions(setup0.player);
+
+        // Swipe to index 2 — preload window becomes [1, 2, 3].
+        // Index 0 falls outside and is released from the controller
+        // but stays in the pool.
+        controller.onPageChanged(2);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(controller.getLoadState(0), equals(LoadState.none));
+        expect(pool.hasPlayer(videos[0].url), isTrue);
+
+        clearInteractions(setup0.player);
+
+        // Swipe back to index 0 — the fast-path should skip open()
+        // and immediately mark ready.
+        controller.onPageChanged(0);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+        verifyNever(
+          () => setup0.player.open(any(), play: any(named: 'play')),
+        );
+      });
+
+      test('plays reused player immediately when it is current', () async {
+        final videos = createTestVideos();
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+          preloadAhead: 1,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final setup0 = playerSetups[videos[0].url]!;
+
+        setup0.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        when(
+          () => setup0.state.duration,
+        ).thenReturn(const Duration(seconds: 10));
+        when(
+          () => setup0.state.position,
+        ).thenReturn(const Duration(seconds: 3));
+
+        // Move away so index 0 is released.
+        controller.onPageChanged(2);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        clearInteractions(setup0.player);
+
+        // Swipe back to 0 — it should play via the fast-path.
+        controller.onPageChanged(0);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(controller.getLoadState(0), equals(LoadState.ready));
+        // setVolume(100) is called during _playVideo -> _resume
+        verify(
+          () => setup0.player.setVolume(100),
+        ).called(greaterThanOrEqualTo(1));
+      });
+
+      test('pauses and rewinds reused player when it is a preload', () async {
+        final videos = createTestVideos();
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: pool,
+          preloadAhead: 1,
+        );
+        addTearDown(controller.dispose);
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final setup1 = playerSetups[videos[1].url]!;
+        final setup0 = playerSetups[videos[0].url]!;
+
+        setup0.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        setup1.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        when(
+          () => setup1.state.duration,
+        ).thenReturn(const Duration(seconds: 8));
+        when(
+          () => setup1.state.position,
+        ).thenReturn(const Duration(seconds: 2));
+
+        // Move to index 3 — both 0 and 1 are released.
+        controller.onPageChanged(3);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(pool.hasPlayer(videos[1].url), isTrue);
+        clearInteractions(setup1.player);
+
+        // Move to index 2 — preload window is [1, 2, 3].
+        // Video 1 is reloaded as a preload (not current).
+        controller.onPageChanged(2);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(controller.getLoadState(1), equals(LoadState.ready));
+        // Should pause and seek to zero for preloads.
+        verify(setup1.player.pause).called(greaterThanOrEqualTo(1));
+        verify(
+          () => setup1.player.seek(Duration.zero),
+        ).called(greaterThanOrEqualTo(1));
+        // open() should NOT be called.
+        verifyNever(
+          () => setup1.player.open(any(), play: any(named: 'play')),
+        );
+      });
+
+      test(
+        'falls through to full load when reused player has no duration',
+        () async {
+          final videos = createTestVideos();
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+            preloadAhead: 1,
+          );
+          addTearDown(controller.dispose);
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final setup0 = playerSetups[videos[0].url]!;
+
+          setup0.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Duration stays at zero — simulating a player whose media
+          // wasn't fully loaded.
+          when(() => setup0.state.duration).thenReturn(Duration.zero);
+
+          controller.onPageChanged(2);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          clearInteractions(setup0.player);
+
+          // Swipe back — duration is 0, so the fast-path should NOT
+          // apply. The full open() path should be used instead.
+          controller.onPageChanged(0);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // open() SHOULD be called since fast-path was skipped.
+          verify(
+            () => setup0.player.open(any(), play: any(named: 'play')),
+          ).called(1);
+        },
+      );
+    });
   });
 }
