@@ -37,24 +37,30 @@ class VideoClipEditorTopBar extends ConsumerWidget {
     );
 
     return Padding(
-      padding: const .all(16),
+      padding: const .fromLTRB(10, 16, 16, 16),
       child: SizedBox(
         height: 48,
         child: Row(
           children: [
             Expanded(
-              child: isReordering
-                  ? const SizedBox.shrink()
-                  : isEditing
-                  ? Align(
-                      alignment: .centerLeft,
-                      child: _CloseButton(
-                        onTap: () => context.read<ClipEditorBloc>().add(
+              child: Align(
+                alignment: .centerLeft,
+                child: isReordering
+                    ? const SizedBox.shrink()
+                    : isEditing
+                    ? DivineIconButton(
+                        onPressed: () => context.read<ClipEditorBloc>().add(
                           const ClipEditorEditingStopped(),
                         ),
+                        icon: .x,
+                        type: .ghostSecondary,
+                      )
+                    : DivineIconButton(
+                        onPressed: context.pop,
+                        icon: .caretLeft,
+                        type: .ghostSecondary,
                       ),
-                    )
-                  : _BackToCameraButton(onTap: context.pop),
+              ),
             ),
 
             // Clip counter
@@ -99,55 +105,6 @@ class VideoClipEditorTopBar extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _BackToCameraButton extends StatelessWidget {
-  const _BackToCameraButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Go back to camera',
-      child: GestureDetector(
-        behavior: .opaque,
-        onTap: onTap,
-        child: const Row(
-          spacing: 6,
-          children: [
-            DivineIcon(icon: .caretLeft, size: 32, color: VineTheme.whiteText),
-            DivineIcon(
-              icon: .videoCamera,
-              size: 22,
-              color: VineTheme.whiteText,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Close video editor',
-      child: GestureDetector(
-        onTap: onTap,
-        child: const DivineIcon(icon: .x, size: 32, color: VineTheme.whiteText),
       ),
     );
   }

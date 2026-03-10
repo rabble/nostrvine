@@ -58,10 +58,10 @@ class VideoEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
-  late bool _isLoadingDraft = widget.draftId != null;
-
   final _editorKey = GlobalKey<ProImageEditorState>();
   final GlobalKey<State<StatefulWidget>> _removeAreaKey = GlobalKey();
+
+  late final _isLoadingDraft = ValueNotifier<bool>(widget.draftId != null);
 
   /// Manually managed instead of using [BlocProvider.create] so we can reuse
   /// it in contexts outside the widget tree (e.g., bottom sheets opened via
@@ -118,9 +118,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       );
 
       if (mounted) {
-        setState(() {
-          _isLoadingDraft = false;
-        });
+        _isLoadingDraft.value = false;
       }
     });
   }
@@ -133,6 +131,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       category: LogCategory.video,
     );
     _stickerBloc.close();
+    _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
     super.dispose();
   }
@@ -294,11 +293,14 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
                 layer: layer,
               );
             },
-            child:
-                _isLoadingDraft // FIXME(hm21):
-                ? const Center(child: CircularProgressIndicator.adaptive())
-                // FIXME(hm21): fromLibrary: widget.fromLibrary
-                : const VideoEditorScaffold(),
+            child: ValueListenableBuilder<bool>(
+              valueListenable: _isLoadingDraft,
+              builder: (_, isLoading, _) => isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator.adaptive(),
+                    )
+                  : const VideoEditorScaffold(),
+            ),
           );
         },
       ),

@@ -168,8 +168,9 @@ class ClipReorderController extends ChangeNotifier {
     final compensatedClampUp =
         VideoEditorGalleryConstants.dragYClampUp / contentScale;
     final newValue = dragYOffsetNotifier.value + deltaY / contentScale;
-    dragYOffsetNotifier.value =
-        newValue < -compensatedClampUp ? -compensatedClampUp : newValue;
+    dragYOffsetNotifier.value = newValue < -compensatedClampUp
+        ? -compensatedClampUp
+        : newValue;
   }
 
   /// Calculates the reorder threshold based on viewport and clip count.
