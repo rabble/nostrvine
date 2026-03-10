@@ -94,9 +94,15 @@ class VideoEditorPlaybackChanged extends VideoEditorMainEvent {
   List<Object?> get props => [isPlaying];
 }
 
-/// Triggered when the video player is ready for playback.
+/// Triggered when the video player readiness state changes.
 class VideoEditorPlayerReady extends VideoEditorMainEvent {
-  const VideoEditorPlayerReady();
+  const VideoEditorPlayerReady({this.isReady = true});
+
+  /// Whether the player is ready for playback.
+  final bool isReady;
+
+  @override
+  List<Object?> get props => [isReady];
 }
 
 /// Triggered when an external component requests playback pause/resume.

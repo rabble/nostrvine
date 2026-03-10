@@ -45,19 +45,13 @@ class VideoClipEditorTopBar extends ConsumerWidget {
             Expanded(
               child: Align(
                 alignment: .centerLeft,
-                child: isReordering
+                child: isReordering || !isEditing
                     ? const SizedBox.shrink()
-                    : isEditing
-                    ? DivineIconButton(
+                    : DivineIconButton(
                         onPressed: () => context.read<ClipEditorBloc>().add(
                           const ClipEditorEditingStopped(),
                         ),
                         icon: .x,
-                        type: .ghostSecondary,
-                      )
-                    : DivineIconButton(
-                        onPressed: context.pop,
-                        icon: .caretLeft,
                         type: .ghostSecondary,
                       ),
               ),
@@ -81,77 +75,21 @@ class VideoClipEditorTopBar extends ConsumerWidget {
                   ? const SizedBox.shrink()
                   : Align(
                       alignment: .centerRight,
-                      child: _NextButton(
-                        onTap: () {
+                      child: DivineButton(
+                        label: 'Done',
+                        size: .small,
+                        type: .tertiary,
+                        onPressed: () {
                           context.read<ClipEditorBloc>().add(
                             const ClipEditorPlaybackPaused(),
                           );
-                          final notifier = ref.read(
-                            videoEditorProvider.notifier,
-                          );
 
-                          unawaited(notifier.startRenderVideo());
-                          // TODO(@hm21): Replace with VideoEditorScreen.path
-                          Log.info(
-                            '📤 Navigating to metadata screen',
-                            name: 'VideoClipEditorTopBar',
-                            category: .video,
-                          );
-
-                          context.push(VideoMetadataScreen.path);
+                          context.pop();
                         },
                       ),
                     ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NextButton extends StatelessWidget {
-  const _NextButton({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Continue to metadata',
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const .symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: VineTheme.whiteText,
-            borderRadius: .circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: VineTheme.innerShadow,
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-              BoxShadow(
-                color: VineTheme.innerShadow,
-                offset: Offset(0.4, 0.4),
-                blurRadius: 0.6,
-              ),
-            ],
-          ),
-          child: Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Next',
-            style: GoogleFonts.bricolageGrotesque(
-              fontSize: 18,
-              fontWeight: .w800,
-              height: 1.33,
-              letterSpacing: 0.15,
-              color: VineTheme.inverseOnSurface,
-            ),
-          ),
         ),
       ),
     );

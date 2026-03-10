@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
@@ -58,6 +60,8 @@ class VideoEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
+  static const _renderTaskId = 'Divine_Editor_Merger';
+
   final _editorKey = GlobalKey<ProImageEditorState>();
   final GlobalKey<State<StatefulWidget>> _removeAreaKey = GlobalKey();
 
@@ -70,6 +74,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   /// Body size notifier, updated by [_CanvasFitter].
   final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
+
+  /// Notifier for the rendered video output path.
+  ///
+  /// `null` while rendering is in progress.
+  final _videoOutputPathNotifier = ValueNotifier<String?>(null);
 
   ProImageEditorState? get _editor => _editorKey.currentState;
 
@@ -92,11 +101,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     );
     _stickerBloc = VideoEditorStickerBloc(onPrecacheStickers: _precacheStickers)
       ..add(const VideoEditorStickerLoad());
-    Log.debug(
-      '🎨 Sticker bloc created and loading stickers',
-      name: 'VideoEditorScreen',
-      category: LogCategory.video,
-    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
@@ -120,6 +124,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       if (mounted) {
         _isLoadingDraft.value = false;
       }
+
+      // Initial video render
+      await _renderVideo();
     });
   }
 
@@ -133,6 +140,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     _stickerBloc.close();
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
+    _videoOutputPathNotifier.dispose();
     super.dispose();
   }
 
@@ -161,13 +169,66 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     }
   }
 
+  /// Renders the video from current clips and updates the output path notifier.
+  Future<void> _renderVideo() async {
+    final clips = ref.read(clipManagerProvider).clips;
+    if (clips.isEmpty) return;
+
+    Log.debug(
+      '🎬 Rendering video from ${clips.length} clip(s)',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
+
+    _videoOutputPathNotifier.value = null;
+
+    final outputPath = await VideoEditorRenderService.renderVideo(
+      taskId: _renderTaskId,
+      clips: clips,
+    );
+
+    if (mounted && outputPath != null) {
+      _videoOutputPathNotifier.value = outputPath;
+    }
+  }
+
   Future<void> _openClipsEditor() async {
+    // Snapshot clip IDs before opening the editor.
+    final clipsBefore = ref
+        .read(clipManagerProvider)
+        .clips
+        .map((c) => c.id)
+        .toList();
+
+    // Pause playback while the clip editor is open.
+    final currentPath = _videoOutputPathNotifier.value;
+    _videoOutputPathNotifier.value = null;
+
     await Navigator.push<TextLayer>(
       context,
       MaterialPageRoute(
         builder: (context) => const VideoClipEditorScreen(),
       ),
     );
+
+    // Check if clips changed (added, removed, or reordered).
+    final clipsAfter = ref
+        .read(clipManagerProvider)
+        .clips
+        .map((c) => c.id)
+        .toList();
+
+    if (!listEquals(clipsBefore, clipsAfter)) {
+      Log.info(
+        '🎬 Clips changed after clip editor – re-rendering video',
+        name: 'VideoEditorScreen',
+        category: LogCategory.video,
+      );
+      await _renderVideo();
+    } else {
+      // Clips unchanged – restore the previous output path to resume playback.
+      _videoOutputPathNotifier.value = currentPath;
+    }
   }
 
   /// Opens the sticker picker sheet and adds the selected sticker as a layer.
@@ -280,6 +341,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
             removeAreaKey: _removeAreaKey,
             originalClipAspectRatio: _clip.originalAspectRatio,
             bodySizeNotifier: _bodySizeNotifier,
+            videoOutputPathNotifier: _videoOutputPathNotifier,
             fromLibrary: widget.fromLibrary,
             onOpenClipsEditor: _openClipsEditor,
             onAddStickers: _addStickers,
