@@ -25,6 +25,7 @@ class VideoEditorScope extends InheritedWidget {
     required this.onAddEditTextLayer,
     required this.originalClipAspectRatio,
     required this.bodySizeNotifier,
+    required this.fromLibrary,
     super.child = const SizedBox.shrink(),
     super.key,
   });
@@ -43,6 +44,9 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Original aspect ratio of the clip being edited.
   final double originalClipAspectRatio;
+
+  /// Whether the clip was selected from the device library.
+  final bool fromLibrary;
 
   /// Notifier for the body size, updated by [_CanvasFitter].
   final ValueNotifier<Size> bodySizeNotifier;
