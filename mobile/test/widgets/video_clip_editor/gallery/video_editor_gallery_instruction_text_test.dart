@@ -3,7 +3,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_instruction_text.dart';
@@ -14,12 +13,10 @@ void main() {
       final bloc = _TestClipEditorBloc();
 
       await tester.pumpWidget(
-        ProviderScope(
-          child: BlocProvider<ClipEditorBloc>.value(
-            value: bloc,
-            child: const MaterialApp(
-              home: Scaffold(body: ClipGalleryInstructionText()),
-            ),
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: const MaterialApp(
+            home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
       );
@@ -38,12 +35,10 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          child: BlocProvider<ClipEditorBloc>.value(
-            value: bloc,
-            child: const MaterialApp(
-              home: Scaffold(body: ClipGalleryInstructionText()),
-            ),
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: const MaterialApp(
+            home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
       );
@@ -63,12 +58,10 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          child: BlocProvider<ClipEditorBloc>.value(
-            value: bloc,
-            child: const MaterialApp(
-              home: Scaffold(body: ClipGalleryInstructionText()),
-            ),
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: const MaterialApp(
+            home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
       );
@@ -88,12 +81,10 @@ void main() {
       final bloc = _TestClipEditorBloc();
 
       await tester.pumpWidget(
-        ProviderScope(
-          child: BlocProvider<ClipEditorBloc>.value(
-            value: bloc,
-            child: const MaterialApp(
-              home: Scaffold(body: ClipGalleryInstructionText()),
-            ),
+        BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: const MaterialApp(
+            home: Scaffold(body: ClipGalleryInstructionText()),
           ),
         ),
       );

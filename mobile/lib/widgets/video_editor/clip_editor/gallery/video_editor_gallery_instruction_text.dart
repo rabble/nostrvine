@@ -4,19 +4,18 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 
 /// Instruction text that appears below the clip gallery.
 ///
 /// Displays "Tap to edit. Hold and drag to reorder." with animated transitions
 /// based on editing and reordering states.
-class ClipGalleryInstructionText extends ConsumerWidget {
+class ClipGalleryInstructionText extends StatelessWidget {
   /// Creates clip gallery instruction text.
   const ClipGalleryInstructionText({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = context.select(
       (ClipEditorBloc bloc) => (
         isEditing: bloc.state.isEditing,
