@@ -359,6 +359,9 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
         try {
           // Use permissive mode to accept all NIP-71 video kinds from curated lists
           final video = VideoEvent.fromNostrEvent(event, permissive: true);
+          if (videoEventService.shouldHideVideo(video)) {
+            continue;
+          }
           foundVideos.add(video);
           seenIds.add(event.id.toLowerCase());
 
@@ -558,6 +561,9 @@ Stream<List<VideoEvent>> videoEventsByIds(
         try {
           // Use permissive mode to accept all NIP-71 video kinds from external sources
           final video = VideoEvent.fromNostrEvent(event, permissive: true);
+          if (videoEventService.shouldHideVideo(video)) {
+            continue;
+          }
           foundVideos.add(video);
           seenIds.add(event.id.toLowerCase());
 

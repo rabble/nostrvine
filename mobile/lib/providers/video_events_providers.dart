@@ -111,6 +111,7 @@ class VideoEvents extends _$VideoEvents {
     // Get services and gate states
     final videoEventService = ref.watch(videoEventServiceProvider);
     ref.watch(blocklistVersionProvider);
+    ref.watch(divineHostFilterVersionProvider);
     final isAppReady = ref.watch(appReadyProvider);
     final isTabActive = ref.watch(isDiscoveryTabActiveProvider);
     final seenVideosState = ref.watch(seenVideosProvider);
@@ -306,9 +307,11 @@ class VideoEvents extends _$VideoEvents {
     // Always emit current events if available (no reordering - preserve insertion order)
     // Create defensive copy, filtering blocked users and unsupported platforms
     final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final currentEvents = service.discoveryVideos
-        .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
-        .toList();
+    final currentEvents = service.filterVideoList(
+      service.discoveryVideos
+          .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
+          .toList(),
+    );
 
     Log.error(
       '  🔍 About to emit ${currentEvents.length} current events (canEmit: $_canEmit)',
@@ -401,10 +404,12 @@ class VideoEvents extends _$VideoEvents {
     // Filter for platform support and blocked users
     // Create defensive copy ONLY when contents changed
     final blocklistService = ref.read(contentBlocklistServiceProvider);
-    _pendingEvents = newEvents
-        .where((v) => v.isSupportedOnCurrentPlatform)
-        .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
-        .toList();
+    _pendingEvents = service.filterVideoList(
+      newEvents
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
+          .toList(),
+    );
 
     // Cancel any existing timer
     _debounceTimer?.cancel();

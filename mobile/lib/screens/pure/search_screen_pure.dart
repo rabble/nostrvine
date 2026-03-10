@@ -249,11 +249,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
     final tabContent = TabBarView(
       controller: _tabController,
-      children: const [
-        _VideosTab(),
-        UserSearchView(),
-        HashtagSearchView(),
-      ],
+      children: const [_VideosTab(), UserSearchView(), HashtagSearchView()],
     );
 
     return MultiBlocProvider(
@@ -522,8 +518,11 @@ class _SearchFeedModeContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final videos =
-        ref.watch(searchScreenVideosProvider) ?? const <VideoEvent>[];
+    ref.watch(divineHostFilterVersionProvider);
+    final videoEventService = ref.read(videoEventServiceProvider);
+    final videos = videoEventService.filterVideoList(
+      ref.watch(searchScreenVideosProvider) ?? const <VideoEvent>[],
+    );
     final pageContext = ref.watch(pageContextProvider);
     final startIndex =
         pageContext.whenOrNull(data: (ctx) => ctx.videoIndex ?? 0) ?? 0;

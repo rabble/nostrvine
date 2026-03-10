@@ -483,6 +483,16 @@ class _NotificationTabContentState
       return;
     }
 
+    if (videoEventService.shouldHideVideo(video)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Video unavailable'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     final shouldAutoOpenComments = notificationType == NotificationType.comment;
     final videoForNav = video;
 

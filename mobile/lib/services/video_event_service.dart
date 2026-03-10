@@ -30,12 +30,14 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
+import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/repost_resolver.dart';
@@ -205,6 +207,7 @@ class VideoEventService extends ChangeNotifier {
   AgeVerificationService? _ageVerificationService;
   LikesRepository? _likesRepository;
   ContentFilterService? _contentFilterService;
+  DivineHostFilterService? _divineHostFilterService;
   final SubscriptionManager _subscriptionManager;
 
   // Like count batching - accumulates video IDs and fetches counts in batches
@@ -323,6 +326,25 @@ class VideoEventService extends ChangeNotifier {
       name: 'VideoEventService',
       category: LogCategory.video,
     );
+  }
+
+  /// Set the Divine-hosted-only filter service.
+  void setDivineHostFilterService(DivineHostFilterService service) {
+    _divineHostFilterService = service;
+    Log.debug(
+      'Divine host filter service attached to VideoEventService',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+  }
+
+  bool get shouldFilterNonDivineVideos =>
+      _divineHostFilterService?.showDivineHostedOnly ?? false;
+
+  /// Returns true when this video should be hidden by the Divine-hosted-only
+  /// preference.
+  bool shouldHideVideo(VideoEvent video) {
+    return shouldFilterNonDivineVideos && !video.isFromDivineServer;
   }
 
   /// Returns true if adult content should be filtered from feeds
@@ -446,9 +468,12 @@ class VideoEventService extends ChangeNotifier {
   /// Videos matching "warn" labels are kept (the UI shows an overlay).
   List<VideoEvent> filterVideoList(List<VideoEvent> videos) {
     final service = _contentFilterService;
-    if (service == null) return videos;
+    final baseVideos = videos
+        .where((video) => !shouldHideVideo(video))
+        .toList();
+    if (service == null) return baseVideos;
 
-    return videos
+    return baseVideos
         .map((video) {
           final labels = video.contentWarningLabels;
           if (labels.isEmpty) {
@@ -707,6 +732,9 @@ class VideoEventService extends ChangeNotifier {
     for (final eventList in _eventLists.values) {
       try {
         final video = eventList.firstWhere((v) => v.id == eventId);
+        if (shouldHideVideo(video)) {
+          return null;
+        }
         return video;
       } catch (_) {
         // Not found in this list, continue searching
@@ -2065,6 +2093,10 @@ class VideoEventService extends ChangeNotifier {
             videoEvent = videoEvent.copyWith(warnLabels: matchedLabels);
           }
 
+          if (shouldHideVideo(videoEvent)) {
+            return;
+          }
+
           Log.verbose(
             'Parsed direct video: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}',
             name: 'VideoEventService',
@@ -2331,6 +2363,10 @@ class VideoEventService extends ChangeNotifier {
           if (histFilterAction == ContentFilterPreference.warn &&
               histMatchedLabels.isNotEmpty) {
             videoEvent = videoEvent.copyWith(warnLabels: histMatchedLabels);
+          }
+
+          if (shouldHideVideo(videoEvent)) {
+            return;
           }
 
           // Handle replaceable events (NIP-33)
@@ -3509,6 +3545,9 @@ class VideoEventService extends ChangeNotifier {
       (event) {
         try {
           final videoEvent = VideoEvent.fromNostrEvent(event);
+          if (shouldHideVideo(videoEvent)) {
+            return;
+          }
           // Since we're filtering by d tag at the relay level, this should be our video
           Log.info(
             'Found video event for vine ID $vineId: ${event.id}...',
@@ -3944,6 +3983,15 @@ class VideoEventService extends ChangeNotifier {
         category: LogCategory.video,
       );
       return; // Don't show content from blocked users
+    }
+
+    if (shouldHideVideo(videoEvent)) {
+      Log.verbose(
+        'Filtering non-Divine-hosted video ${videoEvent.id} from $subscriptionType',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      return;
     }
 
     // CRITICAL: Validate that video has an accessible URL before adding to feed
@@ -5148,7 +5196,7 @@ class VideoEventService extends ChangeNotifier {
 
     for (final event in events) {
       final videoEvent = VideoEvent.fromNostrEvent(event);
-      if (_hasValidVideoUrl(videoEvent)) {
+      if (_hasValidVideoUrl(videoEvent) && !shouldHideVideo(videoEvent)) {
         results.add(videoEvent);
       }
     }

@@ -24,10 +24,7 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Compares two [VideoItem] lists for equality by id and url.
 @visibleForTesting
-bool samePooledVideoItems(
-  List<VideoItem>? previous,
-  List<VideoItem> current,
-) {
+bool samePooledVideoItems(List<VideoItem>? previous, List<VideoItem> current) {
   if (previous == null || previous.length != current.length) return false;
 
   for (var i = 0; i < current.length; i++) {
@@ -58,10 +55,7 @@ bool isAppendOnlyPooledVideoUpdate(
 
 /// Compares two [VideoEvent] lists by id only.
 @visibleForTesting
-bool sameVideoEventIds(
-  List<VideoEvent> previous,
-  List<VideoEvent> current,
-) {
+bool sameVideoEventIds(List<VideoEvent> previous, List<VideoEvent> current) {
   if (previous.length != current.length) return false;
 
   for (var i = 0; i < previous.length; i++) {
@@ -91,19 +85,25 @@ class VideoFeedPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(divineHostFilterVersionProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final curatedListRepository = ref.watch(curatedListRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
     final sharedPreferences = ref.watch(sharedPreferencesProvider);
+    final showDivineHostedOnly = ref
+        .read(divineHostFilterServiceProvider)
+        .showDivineHostedOnly;
 
     return BlocProvider(
+      key: ValueKey('video-feed-$showDivineHostedOnly'),
       create: (_) => VideoFeedBloc(
         videosRepository: videosRepository,
         followRepository: followRepository,
         curatedListRepository: curatedListRepository,
         userPubkey: authService.currentPublicKeyHex,
         sharedPreferences: sharedPreferences,
+        serveCachedHomeFeed: !showDivineHostedOnly,
         feedTracker: FeedPerformanceTracker(),
       )..add(VideoFeedStarted(mode: initialMode)),
       child: const VideoFeedView(),
@@ -420,9 +420,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                         name: 'VideoFeedPage',
                         category: LogCategory.video,
                       );
-                      return const ColoredBox(
-                        color: VineTheme.backgroundColor,
-                      );
+                      return const ColoredBox(color: VineTheme.backgroundColor);
                     }
                     Log.debug(
                       'Feed item build: mode=${state.mode.name}, index=$index, '
@@ -818,10 +816,7 @@ class _VideoLoadingPlaceholderState extends State<_VideoLoadingPlaceholder> {
 
             return Stack(
               fit: StackFit.expand,
-              children: [
-                child,
-                const _LoadingIndicator(),
-              ],
+              children: [child, const _LoadingIndicator()],
             );
           },
           errorBuilder: (context, error, stackTrace) {

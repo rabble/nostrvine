@@ -93,6 +93,15 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
 
       if (event != null) {
         final fetchedVideo = VideoEvent.fromNostrEvent(event);
+        if (videoEventService.shouldHideVideo(fetchedVideo)) {
+          if (mounted) {
+            setState(() {
+              _error = 'Video not found';
+              _isLoading = false;
+            });
+          }
+          return;
+        }
 
         Log.info(
           '✅ Fetched video from Nostr: ${fetchedVideo.title}',
@@ -137,6 +146,8 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
   @override
   Widget build(BuildContext context) {
     ref.watch(blocklistVersionProvider);
+    ref.watch(divineHostFilterVersionProvider);
+    final videoEventService = ref.read(videoEventServiceProvider);
 
     if (_isLoading) {
       return const Scaffold(
@@ -174,7 +185,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       );
     }
 
-    if (_video == null) {
+    if (_video == null || videoEventService.shouldHideVideo(_video!)) {
       return const Scaffold(
         backgroundColor: VineTheme.backgroundColor,
         body: Center(
@@ -201,10 +212,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
         body: const Center(
           child: Text(
             'This account is not available',
-            style: TextStyle(
-              color: VineTheme.lightText,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: VineTheme.lightText, fontSize: 16),
           ),
         ),
       );

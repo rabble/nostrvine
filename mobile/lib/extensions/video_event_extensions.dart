@@ -62,8 +62,15 @@ extension VideoEventAppExtensions on VideoEvent {
   /// - media.divine.video (default Blossom server)
   /// - blossom.divine.video (Blossom protocol server)
   bool get isFromDivineServer {
-    final url = videoUrl?.toLowerCase() ?? '';
-    return url.contains('divine.video');
+    final url = videoUrl;
+    if (url == null || url.isEmpty) return false;
+
+    try {
+      final host = Uri.parse(url).host.toLowerCase();
+      return host == 'divine.video' || host.endsWith('.divine.video');
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Check for `media.divine.video` URLs that are just a bare sha256 hash path.

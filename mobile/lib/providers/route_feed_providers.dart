@@ -76,14 +76,18 @@ final videosForExploreRouteProvider = Provider<AsyncValue<VideoFeedState>>((
       // Check if we have a tab-specific list (set when user enters feed mode)
       final tabVideos = ref.watch(exploreTabVideosProvider);
       if (tabVideos != null && tabVideos.isNotEmpty) {
+        ref.watch(divineHostFilterVersionProvider);
+        final videoEventService = ref.read(videoEventServiceProvider);
+        final visibleTabVideos = videoEventService.filterVideoList(tabVideos);
+
         // Filter broken videos to match ExploreVideoScreenPure's PageView.
         // Both must use the same filtered list so URL indices align with
         // the videos actually shown on screen.
         final filteredTabVideos = brokenTrackerAsync.maybeWhen(
-          data: (tracker) => tabVideos
+          data: (tracker) => visibleTabVideos
               .where((video) => !tracker.isVideoBroken(video.id))
               .toList(),
-          orElse: () => tabVideos,
+          orElse: () => visibleTabVideos,
         );
         return AsyncValue.data(
           VideoFeedState(
@@ -148,11 +152,16 @@ final videosForSearchRouteProvider = Provider<AsyncValue<VideoFeedState>>((
 
       // Get search results from SearchScreenPure's state provider
       final searchVideos = ref.watch(searchScreenVideosProvider);
+      ref.watch(divineHostFilterVersionProvider);
+      final videoEventService = ref.read(videoEventServiceProvider);
+      final visibleSearchVideos = searchVideos == null
+          ? const <VideoEvent>[]
+          : videoEventService.filterVideoList(searchVideos);
 
       // Return search results wrapped in VideoFeedState
       return AsyncValue.data(
         VideoFeedState(
-          videos: searchVideos ?? const [],
+          videos: visibleSearchVideos,
           hasMoreContent: false, // Search results are finite
           lastUpdated: DateTime.now(),
         ),

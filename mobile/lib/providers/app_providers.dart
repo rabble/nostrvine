@@ -8,6 +8,7 @@ import 'dart:core';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:curated_list_repository/curated_list_repository.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:http/http.dart';
@@ -17,6 +18,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -47,6 +49,7 @@ import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
+import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/event_router.dart';
@@ -369,6 +372,32 @@ AnalyticsService analyticsService(Ref ref) {
 
   return service;
 }
+
+/// Divine-hosted-only filter preference service.
+final divineHostFilterServiceProvider = Provider<DivineHostFilterService>((
+  ref,
+) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final service = DivineHostFilterService(prefs);
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// Rebuild trigger for consumers that need to react to Divine-host filter
+/// preference changes.
+final divineHostFilterVersionProvider = Provider<int>((ref) {
+  final service = ref.watch(divineHostFilterServiceProvider);
+  var version = 0;
+
+  void listener() {
+    version++;
+    ref.invalidateSelf();
+  }
+
+  service.addListener(listener);
+  ref.onDispose(() => service.removeListener(listener));
+  return version;
+});
 
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state
@@ -855,6 +884,7 @@ VideoEventService videoEventService(Ref ref) {
   final eventRouter = EventRouter(db);
 
   final likesRepository = ref.watch(likesRepositoryProvider);
+  final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
 
   final service = VideoEventService(
     nostrService,
@@ -867,6 +897,7 @@ VideoEventService videoEventService(Ref ref) {
   service.setAgeVerificationService(ageVerificationService);
   service.setLikesRepository(likesRepository);
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
+  service.setDivineHostFilterService(divineHostFilterService);
   return service;
 }
 
@@ -1608,12 +1639,18 @@ VideosRepository videosRepository(Ref ref) {
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final contentFilterService = ref.watch(contentFilterServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
+
+  final nsfwFilter = createNsfwFilter(contentFilterService);
 
   return VideosRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
-    contentFilter: createNsfwFilter(contentFilterService),
+    contentFilter: (video) =>
+        nsfwFilter(video) ||
+        (divineHostFilterService.showDivineHostedOnly &&
+            !video.isFromDivineServer),
     warningLabelsResolver: createNsfwWarnLabels(contentFilterService),
     funnelcakeApiClient: funnelcakeClient,
   );

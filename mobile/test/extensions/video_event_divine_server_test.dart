@@ -70,6 +70,16 @@ void main() {
       final video = _createVideoWithUrl('https://nostr.build/video/abc123.mp4');
       expect(video.isFromDivineServer, isFalse);
     });
+
+    test(
+      'returns false for hosts that only contain divine.video in the URL',
+      () {
+        final video = _createVideoWithUrl(
+          'https://notdivine.video.evil.com/video.mp4',
+        );
+        expect(video.isFromDivineServer, isFalse);
+      },
+    );
   });
 
   group('shouldShowNotDivineBadge', () {
