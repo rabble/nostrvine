@@ -2464,7 +2464,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'13109cf800294e7c0d3cab6b60bdfb80a529c4cb';
+String _$videoEventServiceHash() => r'b3455a59a241ce1158a1bea7e55cbf29ab907155';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -2889,7 +2889,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'9d24b8b90fed2a2d47dc16a0f90472cd541b6eac';
+String _$profileRepositoryHash() => r'56f617c3f3ebd1840886ab2ed6566a3899e54cd5';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
