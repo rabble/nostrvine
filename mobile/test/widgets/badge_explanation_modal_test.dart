@@ -99,6 +99,7 @@ void main() {
           createdAt: DateTime.now().millisecondsSinceEpoch,
           content: 'vine no loops',
           timestamp: DateTime.now(),
+          rawTags: const {'platform': 'vine'},
           originalLoops: 0,
         );
 
@@ -106,8 +107,8 @@ void main() {
         await tester.tap(find.text('Show'));
         await tester.pumpAndSettle();
 
-        // Not original vine, so it shows ProofMode explanation
-        expect(find.text('Video Verification'), findsOneWidget);
+        expect(find.text('Original Vine Archive'), findsOneWidget);
+        expect(find.text('Original stats: 0 loops'), findsNothing);
       });
     });
 
@@ -131,8 +132,13 @@ void main() {
         await tester.tap(find.text('Show'));
         await tester.pumpAndSettle();
 
-        expect(find.text('Video Verification'), findsOneWidget);
-        expect(find.text('ProofMode Verification'), findsOneWidget);
+        expect(find.text('Camera Proof'), findsNWidgets(2));
+        expect(
+          find.textContaining(
+            "This video's authenticity is verified using Proofmode technology.",
+          ),
+          findsOneWidget,
+        );
         expect(find.text('AI Detection'), findsOneWidget);
         expect(find.text('Device attestation'), findsOneWidget);
         expect(find.text('PGP signature'), findsOneWidget);
