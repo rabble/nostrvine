@@ -300,12 +300,9 @@ class VideoEditorGalleryConstants {
   static double dragClampFactor = 0.3;
 
   /// Maximum upward Y clamp (pixels) during drag — prevents clip from
-  /// leaving the gallery area upward.
+  /// leaving the gallery area upward. Downward movement is unclamped so
+  /// the clip can always reach the delete zone.
   static double dragYClampUp = 40;
-
-  /// Maximum downward Y clamp (pixels) during drag — prevents clip from
-  /// going too far below the gallery area.
-  static double dragYClampDown = 200;
 
   /// Scale factor when in reorder mode.
   static double reorderScale = 0.5;
