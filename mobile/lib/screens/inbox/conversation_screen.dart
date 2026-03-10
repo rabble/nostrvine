@@ -1095,11 +1095,39 @@ class _MessageBubble extends StatelessWidget {
 bool _isEmojiOnly(String text) {
   final trimmed = text.trim();
   if (trimmed.isEmpty || trimmed.length > 20) return false;
-  final emojiRegex = RegExp(
-    r'^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+$',
-    unicode: true,
-  );
-  return emojiRegex.hasMatch(trimmed);
+
+  var hasEmoji = false;
+  for (final rune in trimmed.runes) {
+    // Skip whitespace, variation selectors (FE0F), and ZWJ (200D).
+    if (rune == 0x20 || rune == 0xFE0F || rune == 0x200D) continue;
+    // Common emoji ranges.
+    if (_isEmojiRune(rune)) {
+      hasEmoji = true;
+      continue;
+    }
+    // Non-emoji character found.
+    return false;
+  }
+  return hasEmoji;
+}
+
+bool _isEmojiRune(int rune) {
+  return (rune >= 0x1F600 && rune <= 0x1F64F) || // Emoticons
+      (rune >= 0x1F300 && rune <= 0x1F5FF) || // Misc Symbols & Pictographs
+      (rune >= 0x1F680 && rune <= 0x1F6FF) || // Transport & Map
+      (rune >= 0x1F1E0 && rune <= 0x1F1FF) || // Regional indicators (flags)
+      (rune >= 0x2600 && rune <= 0x27BF) || // Misc Symbols & Dingbats
+      (rune >= 0x1F900 && rune <= 0x1F9FF) || // Supplemental Symbols
+      (rune >= 0x1FA00 && rune <= 0x1FA6F) || // Chess, extended-A
+      (rune >= 0x1FA70 && rune <= 0x1FAFF) || // Symbols extended-A
+      (rune >= 0x2702 && rune <= 0x27B0) || // Dingbats
+      (rune >= 0x231A && rune <= 0x23F3) || // Misc technical
+      (rune == 0x2764) || // Heart
+      (rune == 0x2B50) || // Star
+      (rune == 0x2B55) || // Circle
+      (rune == 0x2934) || // Arrow
+      (rune == 0x2935) || // Arrow
+      (rune >= 0x25AA && rune <= 0x25FE); // Geometric shapes
 }
 
 // ---------------------------------------------------------------------------
