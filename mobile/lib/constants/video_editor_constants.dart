@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -106,7 +107,7 @@ class VideoEditorConstants {
     statusBarIconBrightness: Brightness.light,
     systemNavigationBarIconBrightness: Brightness.light,
     statusBarBrightness: Brightness.dark,
-    systemNavigationBarColor: Color(0xFF000000),
+    systemNavigationBarColor: VineTheme.surfaceContainerHigh,
   );
 
   /// Height of the bottom action bar in the video editor.

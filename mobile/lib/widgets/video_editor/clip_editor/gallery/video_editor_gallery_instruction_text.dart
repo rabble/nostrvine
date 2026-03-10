@@ -3,8 +3,9 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 
 /// Instruction text that appears below the clip gallery.
 ///
@@ -16,9 +17,10 @@ class ClipGalleryInstructionText extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(
-      videoEditorProvider.select(
-        (s) => (isEditing: s.isEditing, isReordering: s.isReordering),
+    final state = context.select(
+      (ClipEditorBloc bloc) => (
+        isEditing: bloc.state.isEditing,
+        isReordering: bloc.state.isReordering,
       ),
     );
     return AnimatedSwitcher(

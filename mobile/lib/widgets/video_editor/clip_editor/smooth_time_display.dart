@@ -1,19 +1,21 @@
 // ABOUTME: Widget for smooth interpolated time display during video playback
 // ABOUTME: Uses Ticker for 60 FPS updates between position updates from video player
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 /// A reusable smooth time display widget that interpolates video position
 /// updates.
 ///
 /// Uses a Ticker to provide smooth ~60 FPS updates between video player
 /// position updates.
-class SmoothTimeDisplay extends ConsumerStatefulWidget {
+class SmoothTimeDisplay extends StatefulWidget {
   /// Creates a smooth time display.
   const SmoothTimeDisplay({
     required this.isPlayingSelector,
@@ -23,11 +25,11 @@ class SmoothTimeDisplay extends ConsumerStatefulWidget {
     super.key,
   });
 
-  /// Provider selector that returns whether video is currently playing
-  final ProviderListenable<bool> isPlayingSelector;
+  /// Selector that extracts playing state from [ClipEditorState].
+  final bool Function(ClipEditorState state) isPlayingSelector;
 
-  /// Provider selector that returns current video position
-  final ProviderListenable<Duration> currentPositionSelector;
+  /// Selector that extracts current position from [ClipEditorState].
+  final Duration Function(ClipEditorState state) currentPositionSelector;
 
   /// Text style for the time display
   final TextStyle? style;
@@ -36,77 +38,82 @@ class SmoothTimeDisplay extends ConsumerStatefulWidget {
   final String Function(Duration)? formatter;
 
   @override
-  ConsumerState<SmoothTimeDisplay> createState() => _SmoothTimeDisplayState();
+  State<SmoothTimeDisplay> createState() => _SmoothTimeDisplayState();
 }
 
-class _SmoothTimeDisplayState extends ConsumerState<SmoothTimeDisplay>
+class _SmoothTimeDisplayState extends State<SmoothTimeDisplay>
     with SingleTickerProviderStateMixin {
   late Ticker _ticker;
   Duration _lastKnownPosition = Duration.zero;
   DateTime? _lastUpdateTime;
+  StreamSubscription<ClipEditorState>? _subscription;
+
+  bool _previousIsPlaying = false;
+  Duration _previousPosition = Duration.zero;
 
   @override
   void initState() {
     super.initState();
     _ticker = createTicker(_onTick);
-
-    // Listen to playing state changes
-    ref
-      ..listenManual(widget.isPlayingSelector, (previous, next) async {
-        if (next) {
-          // Start ticker when playing
-          _lastUpdateTime = DateTime.now();
-          if (!_ticker.isActive) {
-            await _ticker.start();
-          }
-        } else {
-          // Stop ticker when paused
-          _ticker.stop();
-          if (mounted) {
-            setState(() {});
-          }
-        }
-      })
-      // Listen to position changes
-      ..listenManual(widget.currentPositionSelector, (previous, next) {
-        if ((next - _lastKnownPosition).abs() >
-            const Duration(milliseconds: 10)) {
-          _lastKnownPosition = next;
-          _lastUpdateTime = DateTime.now();
-          if (mounted) {
-            setState(() {});
-          }
-        }
-      });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Initialize position on first build (called before build)
-    if (_lastUpdateTime == null) {
-      _lastKnownPosition = ref.read(widget.currentPositionSelector);
+
+    // Set up BLoC subscription on first build
+    if (_subscription == null) {
+      final bloc = context.read<ClipEditorBloc>();
+      final state = bloc.state;
+
+      _lastKnownPosition = widget.currentPositionSelector(state);
       _lastUpdateTime = DateTime.now();
+      _previousIsPlaying = widget.isPlayingSelector(state);
+      _previousPosition = _lastKnownPosition;
 
       // Start ticker if already playing
-      final isPlaying = ref.read(widget.isPlayingSelector);
-      if (isPlaying && !_ticker.isActive) {
+      if (_previousIsPlaying && !_ticker.isActive) {
         _ticker.start();
       }
+
+      _subscription = bloc.stream.listen(_onBlocStateChanged);
+    }
+  }
+
+  void _onBlocStateChanged(ClipEditorState state) {
+    final isPlaying = widget.isPlayingSelector(state);
+    final position = widget.currentPositionSelector(state);
+
+    // Handle play/pause changes
+    if (isPlaying != _previousIsPlaying) {
+      _previousIsPlaying = isPlaying;
+      if (isPlaying) {
+        _lastUpdateTime = DateTime.now();
+        if (!_ticker.isActive) {
+          _ticker.start();
+        }
+      } else {
+        _ticker.stop();
+        if (mounted) setState(() {});
+      }
+    }
+
+    // Handle position changes
+    if ((position - _previousPosition).abs() >
+        const Duration(milliseconds: 10)) {
+      _previousPosition = position;
+      _lastKnownPosition = position;
+      _lastUpdateTime = DateTime.now();
+      if (mounted) setState(() {});
     }
   }
 
   void _onTick(Duration elapsed) {
-    // Only called when ticker is active (i.e., when playing)
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 
   Duration get _displayPosition {
-    final isPlaying = ref.read(widget.isPlayingSelector);
-
-    if (!isPlaying || _lastUpdateTime == null) {
+    if (!_previousIsPlaying || _lastUpdateTime == null) {
       return _lastKnownPosition;
     }
 
@@ -117,6 +124,7 @@ class _SmoothTimeDisplayState extends ConsumerState<SmoothTimeDisplay>
 
   @override
   void dispose() {
+    _subscription?.cancel();
     _ticker.dispose();
     super.dispose();
   }

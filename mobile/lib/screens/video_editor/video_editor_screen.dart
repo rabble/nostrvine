@@ -163,7 +163,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   Future<void> _openClipsEditor() async {
-    final result = await Navigator.push<TextLayer>(
+    await Navigator.push<TextLayer>(
       context,
       MaterialPageRoute(
         builder: (context) => const VideoClipEditorScreen(),
@@ -295,9 +295,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
               );
             },
             child:
-                _isLoadingDraft // FIXME:
+                _isLoadingDraft // FIXME(hm21):
                 ? const Center(child: CircularProgressIndicator.adaptive())
-                // FIXME: fromLibrary: widget.fromLibrary
+                // FIXME(hm21): fromLibrary: widget.fromLibrary
                 : const VideoEditorScaffold(),
           );
         },

@@ -5,9 +5,11 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -26,13 +28,11 @@ class VideoClipEditorTopBar extends ConsumerWidget {
     final totalClips = ref.watch(
       clipManagerProvider.select((state) => state.clips.length),
     );
-    final state = ref.watch(
-      videoEditorProvider.select(
-        (s) => (
-          currentClipIndex: s.currentClipIndex,
-          isEditing: s.isEditing,
-          isReordering: s.isReordering,
-        ),
+    final (currentClipIndex, isEditing, isReordering) = context.select(
+      (ClipEditorBloc bloc) => (
+        bloc.state.currentClipIndex,
+        bloc.state.isEditing,
+        bloc.state.isReordering,
       ),
     );
 
@@ -43,15 +43,15 @@ class VideoClipEditorTopBar extends ConsumerWidget {
         child: Row(
           children: [
             Expanded(
-              child: state.isReordering
+              child: isReordering
                   ? const SizedBox.shrink()
-                  : state.isEditing
+                  : isEditing
                   ? Align(
                       alignment: .centerLeft,
                       child: _CloseButton(
-                        onTap: ref
-                            .read(videoEditorProvider.notifier)
-                            .stopClipEditing,
+                        onTap: () => context.read<ClipEditorBloc>().add(
+                          const ClipEditorEditingStopped(),
+                        ),
                       ),
                     )
                   : _BackToCameraButton(onTap: context.pop),
@@ -59,7 +59,7 @@ class VideoClipEditorTopBar extends ConsumerWidget {
 
             // Clip counter
             Text(
-              '${state.currentClipIndex + 1}/$totalClips',
+              '${currentClipIndex + 1}/$totalClips',
               style: GoogleFonts.bricolageGrotesque(
                 color: VineTheme.whiteText,
                 fontSize: 18,
@@ -71,17 +71,19 @@ class VideoClipEditorTopBar extends ConsumerWidget {
             ),
 
             Expanded(
-              child: state.isEditing || state.isReordering
+              child: isEditing || isReordering
                   ? const SizedBox.shrink()
                   : Align(
                       alignment: .centerRight,
                       child: _NextButton(
                         onTap: () {
+                          context.read<ClipEditorBloc>().add(
+                            const ClipEditorPlaybackPaused(),
+                          );
                           final notifier = ref.read(
                             videoEditorProvider.notifier,
                           );
 
-                          notifier.pauseVideo();
                           unawaited(notifier.startRenderVideo());
                           // TODO(@hm21): Replace with VideoEditorScreen.path
                           Log.info(

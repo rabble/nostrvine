@@ -2,9 +2,11 @@
 // ABOUTME: Validates close button, clip counter, and done button
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -23,43 +25,44 @@ void main() {
       int totalClips = 3,
       bool isEditing = false,
     }) {
+      final clips = List.generate(
+        totalClips,
+        (i) => DivineVideoClip(
+          id: 'clip$i',
+          video: EditorVideo.file('/test/clip$i.mp4'),
+          duration: const Duration(seconds: 2),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        ),
+      );
+      final bloc = _TestClipEditorBloc(
+        initialState: ClipEditorState(
+          currentClipIndex: currentClipIndex,
+          isEditing: isEditing,
+        ),
+        clipsGetter: () => clips,
+      );
+
       return ProviderScope(
         overrides: [
-          videoEditorProvider.overrideWith(
-            () => TestVideoEditorNotifier(
-              VideoEditorProviderState(
-                currentClipIndex: currentClipIndex,
-                isEditing: isEditing,
-              ),
-            ),
-          ),
+          videoEditorProvider.overrideWith(_TestVideoEditorNotifier.new),
           clipManagerProvider.overrideWith(
-            () => TestClipManagerNotifier(
-              ClipManagerState(
-                clips: List.generate(
-                  totalClips,
-                  (i) => DivineVideoClip(
-                    id: 'clip$i',
-                    video: EditorVideo.file('/test/clip$i.mp4'),
-                    duration: const Duration(seconds: 2),
-                    recordedAt: DateTime.now(),
-                    targetAspectRatio: .vertical,
-                    originalAspectRatio: 9 / 16,
-                  ),
-                ),
-              ),
-            ),
+            () => _TestClipManagerNotifier(ClipManagerState(clips: clips)),
           ),
         ],
-        child: MaterialApp.router(
-          routerConfig: GoRouter(
-            routes: [
-              GoRoute(
-                path: '/',
-                builder: (context, state) =>
-                    const Scaffold(body: VideoClipEditorTopBar()),
-              ),
-            ],
+        child: BlocProvider<ClipEditorBloc>.value(
+          value: bloc,
+          child: MaterialApp.router(
+            routerConfig: GoRouter(
+              routes: [
+                GoRoute(
+                  path: '/',
+                  builder: (context, state) =>
+                      const Scaffold(body: VideoClipEditorTopBar()),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -118,23 +121,24 @@ void main() {
   });
 }
 
-class TestVideoEditorNotifier extends VideoEditorNotifier {
-  TestVideoEditorNotifier(this._state);
-  final VideoEditorProviderState _state;
-
+class _TestVideoEditorNotifier extends VideoEditorNotifier {
   @override
-  VideoEditorProviderState build() => _state;
-
-  @override
-  void stopClipEditing() {}
-
-  Future<void> done() async {}
+  VideoEditorProviderState build() => VideoEditorProviderState();
 }
 
-class TestClipManagerNotifier extends ClipManagerNotifier {
-  TestClipManagerNotifier(this._state);
+class _TestClipManagerNotifier extends ClipManagerNotifier {
+  _TestClipManagerNotifier(this._state);
   final ClipManagerState _state;
 
   @override
   ClipManagerState build() => _state;
+}
+
+class _TestClipEditorBloc extends ClipEditorBloc {
+  _TestClipEditorBloc({
+    ClipEditorState initialState = const ClipEditorState(),
+    ClipsGetter? clipsGetter,
+  }) : super(clipsGetter: clipsGetter ?? () => []) {
+    emit(initialState);
+  }
 }

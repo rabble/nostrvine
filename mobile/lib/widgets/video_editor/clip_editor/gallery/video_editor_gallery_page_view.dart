@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/controllers/clip_reorder_controller.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/extended_sliver_fill_viewport.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_calculations.dart';
@@ -10,7 +10,7 @@ import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_item.dart';
 
 /// Horizontally scrollable page view for video clip gallery items.
-class VideoEditorGalleryPageView extends ConsumerStatefulWidget {
+class VideoEditorGalleryPageView extends StatefulWidget {
   const VideoEditorGalleryPageView({
     required this.isEditing,
     required this.isReordering,
@@ -48,10 +48,10 @@ class VideoEditorGalleryPageView extends ConsumerStatefulWidget {
   final ClipReorderController reorderController;
 
   @override
-  ConsumerState<VideoEditorGalleryPageView> createState() => _PageViewState();
+  State<VideoEditorGalleryPageView> createState() => _PageViewState();
 }
 
-class _PageViewState extends ConsumerState<VideoEditorGalleryPageView> {
+class _PageViewState extends State<VideoEditorGalleryPageView> {
   int _lastReportedPage = 0;
 
   /// Returns axis direction based on text directionality.
@@ -88,12 +88,10 @@ class _PageViewState extends ConsumerState<VideoEditorGalleryPageView> {
 
   /// Toggles editing or selects clip on tap.
   void _handleItemTap(int index) {
-    final notifier = ref.read(videoEditorProvider.notifier);
-
     if (index == widget.selectedClipIndex) {
-      notifier.toggleClipEditing();
+      context.read<ClipEditorBloc>().add(const ClipEditorEditingToggled());
     } else if (!widget.isEditing) {
-      notifier.selectClipByIndex(index);
+      context.read<ClipEditorBloc>().add(ClipEditorClipSelected(index));
     }
   }
 

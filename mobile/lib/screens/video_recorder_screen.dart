@@ -279,11 +279,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         return bloc;
       },
       child: const AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle(
-          statusBarColor: backgroundColor,
-          statusBarIconBrightness: .light,
-          statusBarBrightness: .dark,
-        ),
+        value: VideoEditorConstants.uiOverlayStyle,
         child: Scaffold(
           backgroundColor: backgroundColor,
           resizeToAvoidBottomInset: false,

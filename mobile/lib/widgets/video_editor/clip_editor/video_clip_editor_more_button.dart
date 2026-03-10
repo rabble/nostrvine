@@ -1,7 +1,9 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -21,8 +23,9 @@ class VideoClipEditorMoreButton extends ConsumerStatefulWidget {
 
 class _VideoEditorMoreButtonState
     extends ConsumerState<VideoClipEditorMoreButton> {
-  /// Gets the current clip index from the video editor.
-  int get _currentClipIndex => ref.read(videoEditorProvider).currentClipIndex;
+  /// Gets the current clip index from the clip editor bloc.
+  int get _currentClipIndex =>
+      context.read<ClipEditorBloc>().state.currentClipIndex;
 
   /// Gets the current clip from the clip manager.
   DivineVideoClip get _currentClip {
@@ -39,7 +42,7 @@ class _VideoEditorMoreButtonState
       name: 'VideoEditorNotifier',
       category: .video,
     );
-    final isEditing = ref.read(videoEditorProvider).isEditing;
+    final isEditing = context.read<ClipEditorBloc>().state.isEditing;
 
     if (isEditing) {
       await _openClipEditOptions();
@@ -85,8 +88,9 @@ class _VideoEditorMoreButtonState
           iconPath: 'assets/icon/trim.svg',
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Split clip',
-          onTap: () =>
-              ref.read(videoEditorProvider.notifier).splitSelectedClip(),
+          onTap: () => context.read<ClipEditorBloc>().add(
+            const ClipEditorSplitRequested(),
+          ),
         ),
         VineBottomSheetActionData(
           iconPath: 'assets/icon/save.svg',
@@ -125,6 +129,7 @@ class _VideoEditorMoreButtonState
   Future<void> _removeClip() async {
     final clipManager = ref.read(clipManagerProvider.notifier);
     final success = await clipManager.removeClipById(_currentClip.id);
+    if (!mounted) return;
 
     if (!success) {
       // TODO(l10n): Replace with context.l10n when localization is added.
@@ -140,15 +145,19 @@ class _VideoEditorMoreButtonState
 
     if (remainingClips.isEmpty) {
       // No clips left, navigate back
-      if (mounted) context.pop();
+      context.pop();
     } else {
       // Update currentClipIndex if it's now out of bounds
-      final videoEditor = ref.read(videoEditorProvider.notifier);
-      final currentIndex = ref.read(videoEditorProvider).currentClipIndex;
+      final currentIndex = context
+          .read<ClipEditorBloc>()
+          .state
+          .currentClipIndex;
       if (currentIndex >= remainingClips.length) {
-        videoEditor.selectClipByIndex(remainingClips.length - 1);
+        context.read<ClipEditorBloc>().add(
+          ClipEditorClipSelected(remainingClips.length - 1),
+        );
       }
-      videoEditor.stopClipEditing();
+      context.read<ClipEditorBloc>().add(const ClipEditorEditingStopped());
       // TODO(l10n): Replace with context.l10n when localization is added.
       _showSnackBar(message: 'Clip deleted');
     }

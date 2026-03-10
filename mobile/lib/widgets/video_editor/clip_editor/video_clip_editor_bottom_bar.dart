@@ -3,7 +3,9 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -30,9 +32,10 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleSplitClip(BuildContext context, WidgetRef ref) async {
-    final splitPosition = ref.read(videoEditorProvider).splitPosition;
-    final currentClipIndex = ref.read(videoEditorProvider).currentClipIndex;
+  void _handleSplitClip(BuildContext context, WidgetRef ref) {
+    final clipEditorState = context.read<ClipEditorBloc>().state;
+    final splitPosition = clipEditorState.splitPosition;
+    final currentClipIndex = clipEditorState.currentClipIndex;
 
     final clips = ref.read(clipManagerProvider).clips;
     if (currentClipIndex >= clips.length) {
@@ -69,31 +72,40 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
     }
 
     // Proceed with split
-    await ref.read(videoEditorProvider.notifier).splitSelectedClip();
+    context.read<ClipEditorBloc>().add(const ClipEditorSplitRequested());
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(
-      videoEditorProvider.select(
-        (state) => (
-          isPlaying: state.isPlaying,
-          isEditing: state.isEditing,
-          isReordering: state.isReordering,
-          isMuted: state.isMuted,
-          currentClipIndex: state.currentClipIndex,
-          splitPosition: state.splitPosition,
-        ),
-      ),
-    );
-    final notifier = ref.read(videoEditorProvider.notifier);
+    final (
+      :isReordering,
+      :isPlaying,
+      :isEditing,
+      :currentClipIndex,
+    ) = context
+        .select<
+          ClipEditorBloc,
+          ({
+            bool isReordering,
+            bool isPlaying,
+            bool isEditing,
+            int currentClipIndex,
+          })
+        >(
+          (bloc) => (
+            isReordering: bloc.state.isReordering,
+            isPlaying: bloc.state.isPlaying,
+            isEditing: bloc.state.isEditing,
+            currentClipIndex: bloc.state.currentClipIndex,
+          ),
+        );
 
     return Container(
       height: 80,
       padding: const .symmetric(horizontal: 16, vertical: 16),
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 200),
-        child: state.isReordering
+        child: isReordering
             ? const _ClipRemoveArea()
             : Row(
                 mainAxisAlignment: .spaceBetween,
@@ -104,12 +116,14 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                     children: [
                       VideoEditorIconButton(
                         backgroundColor: Colors.transparent,
-                        icon: state.isPlaying ? .pause : .play,
-                        onTap: notifier.togglePlayPause,
+                        icon: isPlaying ? .pause : .play,
+                        onTap: () => context.read<ClipEditorBloc>().add(
+                          const ClipEditorPlayPauseToggled(),
+                        ),
                         // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticLabel: 'Play or pause video',
                       ),
-                      if (state.isEditing)
+                      if (isEditing)
                         VideoEditorIconButton(
                           backgroundColor: Colors.transparent,
                           icon: .scissors,
@@ -122,14 +136,15 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                   ),
 
                   // Time display
+                  // TODO(migration): clipManagerProvider still uses Riverpod.
                   Consumer(
                     builder: (_, ref, _) {
                       Duration totalDuration = .zero;
 
-                      if (state.isEditing) {
+                      if (isEditing) {
                         totalDuration = ref.watch(
                           clipManagerProvider.select((p) {
-                            final clipIndex = state.currentClipIndex;
+                            final clipIndex = currentClipIndex;
 
                             if (clipIndex >= p.clips.length) {
                               assert(
@@ -153,16 +168,12 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
 
                       return VideoTimeDisplay(
                         key: ValueKey(
-                          'Video-Editor-Time-Display-${state.isEditing}',
+                          'Video-Editor-Time-Display-$isEditing',
                         ),
-                        isPlayingSelector: videoEditorProvider.select(
-                          (s) => s.isPlaying && !s.isEditing,
-                        ),
-                        currentPositionSelector: state.isEditing
-                            ? videoEditorProvider.select((s) => s.splitPosition)
-                            : videoEditorProvider.select(
-                                (s) => s.currentPosition,
-                              ),
+                        isPlayingSelector: (s) => s.isPlaying && !s.isEditing,
+                        currentPositionSelector: isEditing
+                            ? (s) => s.splitPosition
+                            : (s) => s.currentPosition,
                         totalDuration: Duration(
                           milliseconds: totalDuration.inMilliseconds.clamp(
                             0,
@@ -185,8 +196,8 @@ class _ClipRemoveArea extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deleteButtonKey = ref.read(videoEditorProvider).deleteButtonKey;
-    final isOverDeleteZone = ref.watch(
-      videoEditorProvider.select((s) => s.isOverDeleteZone),
+    final isOverDeleteZone = context.select<ClipEditorBloc, bool>(
+      (bloc) => bloc.state.isOverDeleteZone,
     );
     return Align(
       child: AnimatedScale(

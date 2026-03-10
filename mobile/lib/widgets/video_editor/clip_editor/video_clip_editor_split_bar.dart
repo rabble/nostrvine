@@ -5,9 +5,10 @@ import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
 
 /// A video editor split bar using Material Slider with custom styling.
 /// The left section is highlighted in primary color, the right section is
@@ -17,17 +18,15 @@ class VideoClipEditorSplitBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final videoEditorState = ref.watch(
-      videoEditorProvider.select(
-        (s) => (
-          trimPosition: s.splitPosition,
-          currentClipIndex: s.currentClipIndex,
-        ),
+    final (currentClipIndex, splitPosition) = context.select(
+      (ClipEditorBloc bloc) => (
+        bloc.state.currentClipIndex,
+        bloc.state.splitPosition,
       ),
     );
     final clipDuration = ref.watch(
       clipManagerProvider.select((p) {
-        final clipIndex = videoEditorState.currentClipIndex;
+        final clipIndex = currentClipIndex;
 
         if (clipIndex >= p.clips.length) {
           assert(
@@ -44,12 +43,11 @@ class VideoClipEditorSplitBar extends ConsumerWidget {
     const handleColor = VineTheme.whiteText;
     final disabledColor = VineTheme.whiteText.withAlpha(65);
 
-    final videoPosition = videoEditorState.trimPosition;
+    final videoPosition = splitPosition;
 
     return RepaintBoundary(
       child: SliderTheme(
         data: SliderThemeData(
-          padding: .zero,
           activeTrackColor: VineTheme.tabIndicatorGreen,
           inactiveTrackColor: disabledColor,
           trackHeight: 8,
@@ -63,7 +61,9 @@ class VideoClipEditorSplitBar extends ConsumerWidget {
           value: videoPosition.inMilliseconds.toDouble(),
           onChanged: (value) {
             final position = Duration(milliseconds: value.toInt());
-            ref.read(videoEditorProvider.notifier).seekToTrimPosition(position);
+            context.read<ClipEditorBloc>().add(
+              ClipEditorSplitPositionChanged(position),
+            );
           },
           max: max(
             videoPosition.inMilliseconds,
