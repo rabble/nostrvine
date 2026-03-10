@@ -10,10 +10,13 @@ import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
 
 class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 void main() {
   group(ShareActionButton, () {
@@ -22,10 +25,23 @@ void main() {
 
     late VideoEvent testVideo;
     late _MockFollowRepository mockFollowRepository;
+    late _MockProfileRepository mockProfileRepository;
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
+
+      mockProfileRepository = _MockProfileRepository();
+      when(
+        () => mockProfileRepository.getCachedProfile(
+          pubkey: any(named: 'pubkey'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockProfileRepository.fetchFreshProfile(
+          pubkey: any(named: 'pubkey'),
+        ),
+      ).thenAnswer((_) async => null);
 
       testVideo = VideoEvent(
         id: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
@@ -87,6 +103,7 @@ void main() {
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
             mockAuthService: mockAuth,
+            mockProfileRepository: mockProfileRepository,
           ),
         );
 
@@ -103,6 +120,7 @@ void main() {
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
             mockAuthService: mockAuth,
+            mockProfileRepository: mockProfileRepository,
           ),
         );
 
@@ -119,6 +137,7 @@ void main() {
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
             mockAuthService: mockAuth,
+            mockProfileRepository: mockProfileRepository,
           ),
         );
 
@@ -135,6 +154,7 @@ void main() {
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
             mockAuthService: mockAuth,
+            mockProfileRepository: mockProfileRepository,
           ),
         );
 
@@ -163,6 +183,7 @@ void main() {
               followRepositoryProvider.overrideWithValue(mockFollowRepository),
             ],
             mockAuthService: mockAuth,
+            mockProfileRepository: mockProfileRepository,
           ),
         );
 

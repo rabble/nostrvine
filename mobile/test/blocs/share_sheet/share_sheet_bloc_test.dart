@@ -141,6 +141,11 @@ void main() {
               pubkey: any(named: 'pubkey'),
             ),
           ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.fetchFreshProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ShareSheetContactsLoadRequested()),
@@ -180,6 +185,11 @@ void main() {
           ).thenReturn([testRecipient]);
           when(
             () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.fetchFreshProfile(
               pubkey: any(named: 'pubkey'),
             ),
           ).thenAnswer((_) async => null);
@@ -269,6 +279,11 @@ void main() {
           ]);
           when(
             () => mockProfileRepository.getCachedProfile(
+              pubkey: any(named: 'pubkey'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockProfileRepository.fetchFreshProfile(
               pubkey: any(named: 'pubkey'),
             ),
           ).thenAnswer((_) async => null);
