@@ -1672,10 +1672,9 @@ class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
       final encodedReason = Uri.encodeComponent(reason);
       final launched = await launchUrl(
         Uri.parse(
-          'mailto:names@divine.video'
-          '?subject=Reserved username request: ${widget.username}'
-          '&body=Username requested: ${widget.username}%0A%0A'
-          'Why this name should be mine:%0A$encodedReason',
+          'mailto:names@divine.video?subject=Reserved username request: '
+          '${widget.username}&body=Username requested: ${widget.username}'
+          '%0A%0AWhy this name should be mine:%0A$encodedReason',
         ),
       );
       if (!launched && mounted) {

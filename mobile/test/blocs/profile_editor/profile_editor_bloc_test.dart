@@ -1387,7 +1387,6 @@ void main() {
         'does nothing when username is empty',
         build: createBloc,
         seed: () => const ProfileEditorState(
-          username: '',
           usernameStatus: UsernameStatus.reserved,
         ),
         act: (bloc) => bloc.add(const UsernameRechecked()),
