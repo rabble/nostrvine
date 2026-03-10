@@ -19,6 +19,7 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -1477,15 +1478,64 @@ class _UsernameReservedIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 8),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lock, color: VineTheme.warning, size: 16),
-          SizedBox(width: 8),
-          Text(
-            'Username is reserved',
-            style: TextStyle(color: VineTheme.warning, fontSize: 12),
+          const Row(
+            children: [
+              Icon(Icons.lock, color: VineTheme.warning, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'Username is reserved',
+                style: TextStyle(color: VineTheme.warning, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  final username = context
+                      .read<ProfileEditorBloc>()
+                      .state
+                      .username;
+                  showDialog<void>(
+                    context: context,
+                    builder: (dialogContext) => BlocProvider.value(
+                      value: context.read<ProfileEditorBloc>(),
+                      child: UsernameReservedDialog(username),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Contact support',
+                  style: TextStyle(
+                    color: VineTheme.vineGreen,
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                    decorationColor: VineTheme.vineGreen,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => context.read<ProfileEditorBloc>().add(
+                  const UsernameRechecked(),
+                ),
+                child: const Text(
+                  'Check again',
+                  style: TextStyle(
+                    color: VineTheme.vineGreen,
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                    decorationColor: VineTheme.vineGreen,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1573,6 +1623,43 @@ class UsernameReservedDialog extends StatelessWidget {
 
   final String username;
 
+  Future<void> _contactSupport(BuildContext context) async {
+    final created = await ZendeskSupportService.createTicketViaApi(
+      subject: 'Reserved username request: $username',
+      description:
+          'I would like to claim the reserved username "$username". '
+          'Please verify my identity and release this name to my account.',
+      tags: ['reserved_username', 'name_request'],
+    );
+
+    if (!context.mounted) return;
+
+    if (created) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Support request sent! We'll get back to you soon."),
+          backgroundColor: VineTheme.vineGreen,
+        ),
+      );
+    } else {
+      // Fallback to email if Zendesk is unavailable
+      final launched = await launchUrl(
+        Uri.parse(
+          'mailto:names@divine.video?subject=Reserved username request: $username',
+        ),
+      );
+      if (!launched && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Couldn't open email. Send to: names@divine.video",
+            ),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -1581,44 +1668,21 @@ class UsernameReservedDialog extends StatelessWidget {
         'Username reserved',
         style: TextStyle(color: VineTheme.whiteText),
       ),
-      content: RichText(
-        text: TextSpan(
-          style: const TextStyle(color: VineTheme.secondaryText),
-          children: [
-            TextSpan(text: 'The name $username is reserved. Please email '),
-            WidgetSpan(
-              child: GestureDetector(
-                onTap: () async {
-                  final launched = await launchUrl(
-                    Uri.parse(
-                      'mailto:names@divine.video?subject=Reserved username request: $username',
-                    ),
-                  );
-                  if (!launched && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Couldn't open email. Send to: names@divine.video",
-                        ),
-                      ),
-                    );
-                  }
-                },
-                child: const Text(
-                  'names@divine.video',
-                  style: TextStyle(
-                    color: VineTheme.vineGreen,
-                    decoration: TextDecoration.underline,
-                    decorationColor: VineTheme.vineGreen,
-                  ),
-                ),
-              ),
-            ),
-            const TextSpan(
-              text: ' explaining and proving why you should own it.',
-            ),
-          ],
-        ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'The name $username is reserved. Contact support to request it.',
+            style: const TextStyle(color: VineTheme.secondaryText),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Already contacted support? Tap "Check again" to see if '
+            "it's been released to you.",
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+          ),
+        ],
       ),
       actions: [
         TextButton(
@@ -1627,6 +1691,23 @@ class UsernameReservedDialog extends StatelessWidget {
             'Close',
             style: TextStyle(color: VineTheme.lightText),
           ),
+        ),
+        TextButton(
+          onPressed: () {
+            context.read<ProfileEditorBloc>().add(const UsernameRechecked());
+            Navigator.of(context).pop();
+          },
+          child: const Text(
+            'Check again',
+            style: TextStyle(color: VineTheme.vineGreen),
+          ),
+        ),
+        FilledButton(
+          onPressed: () => _contactSupport(context),
+          style: FilledButton.styleFrom(
+            backgroundColor: VineTheme.vineGreen,
+          ),
+          child: const Text('Contact support'),
         ),
       ],
     );

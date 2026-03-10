@@ -89,3 +89,8 @@ final class InitialExternalNip05Set extends ProfileEditorEvent {
   /// The user's current external NIP-05 identifier.
   final String nip05;
 }
+
+/// Re-check a previously reserved username to see if support has released it.
+final class UsernameRechecked extends ProfileEditorEvent {
+  const UsernameRechecked();
+}
