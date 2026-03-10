@@ -18,6 +18,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -786,22 +787,32 @@ bool isNostrReady(Ref ref) {
     // NostrClient.initialize() runs asynchronously in a Future.microtask
     // after NostrService.build() returns. Riverpod can't detect when
     // hasKeys transitions because it's the same object reference.
-    // Schedule retries at increasing intervals to catch the transition.
+    // Poll periodically until hasKeys becomes true. Android emulators
+    // can take significantly longer than 2 seconds to initialize.
     var disposed = false;
     ref.onDispose(() => disposed = true);
 
-    for (final delayMs in [100, 500, 2000]) {
-      Future.delayed(Duration(milliseconds: delayMs), () {
-        if (!disposed && nostrClient.hasKeys) {
-          Log.info(
-            'isNostrReady: NostrClient.hasKeys became true after ${delayMs}ms, invalidating',
-            name: 'isNostrReadyProvider',
-            category: LogCategory.system,
-          );
-          ref.invalidateSelf();
-        }
-      });
-    }
+    const pollInterval = Duration(milliseconds: 250);
+    const maxWait = Duration(seconds: 30);
+    var elapsed = Duration.zero;
+
+    Timer.periodic(pollInterval, (timer) {
+      elapsed += pollInterval;
+      if (disposed || elapsed > maxWait) {
+        timer.cancel();
+        return;
+      }
+      if (nostrClient.hasKeys) {
+        timer.cancel();
+        Log.info(
+          'isNostrReady: NostrClient.hasKeys became true '
+          'after ${elapsed.inMilliseconds}ms, invalidating',
+          name: 'isNostrReadyProvider',
+          category: LogCategory.system,
+        );
+        ref.invalidateSelf();
+      }
+    });
   }
 
   return ready;

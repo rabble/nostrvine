@@ -15,12 +15,12 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/inbox/inbox_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
-import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -147,7 +147,8 @@ RouteContext parseRoute(String path) {
       // Grid mode - no videoIndex
       return RouteContext(type: RouteType.profile, npub: npub);
 
-    case 'notifications':
+    case 'inbox':
+    case 'notifications': // Backward compat
       final rawIndex = segments.length > 1 ? int.tryParse(segments[1]) ?? 0 : 0;
       final index = rawIndex < 0 ? 0 : rawIndex;
       return RouteContext(type: RouteType.notifications, videoIndex: index);
@@ -346,9 +347,9 @@ String buildRoute(RouteContext context) {
       if (context.videoIndex != null) {
         final rawIndex = context.videoIndex!;
         final index = rawIndex < 0 ? 0 : rawIndex;
-        return NotificationsScreen.pathForIndex(index);
+        return InboxScreen.pathForIndex(index);
       }
-      return NotificationsScreen.path;
+      return InboxScreen.path;
 
     case RouteType.profile:
       final npub = Uri.encodeComponent(context.npub ?? '');

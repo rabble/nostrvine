@@ -11,7 +11,7 @@ import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/inbox/inbox_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -72,7 +72,7 @@ class VineBottomNav extends ConsumerWidget {
 
     return switch (tabIndex) {
       1 => context.go(ExploreScreen.path),
-      2 => context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0)),
+      2 => context.go(InboxScreen.pathForIndex(lastIndex ?? 0)),
       _ => context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0)),
     };
   }
@@ -81,7 +81,7 @@ class VineBottomNav extends ConsumerWidget {
     return switch (index) {
       0 => 'Home',
       1 => 'Explore',
-      2 => 'Notifications',
+      2 => 'Inbox',
       3 => 'Profile',
       _ => 'Unknown',
     };
@@ -154,13 +154,15 @@ class VineBottomNav extends ConsumerWidget {
               },
             ),
             NotificationBadge(
-              count: ref.watch(relayNotificationUnreadCountProvider),
+              count:
+                  ref.watch(relayNotificationUnreadCountProvider) +
+                  (ref.watch(dmUnreadCountProvider).asData?.value ?? 0),
               child: _buildTabButton(
                 context,
                 ref,
-                'assets/icon/bell.svg',
+                'assets/icon/chat.svg',
                 2,
-                'notifications_tab',
+                'inbox_tab',
               ),
             ),
             _buildTabButton(

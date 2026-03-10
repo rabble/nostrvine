@@ -19,7 +19,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/inbox/inbox_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -73,7 +73,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         }
         return 'Explore';
       case RouteType.notifications:
-        return 'Notifications';
+        return 'Inbox';
       case RouteType.hashtag:
         final raw = ctx?.hashtag ?? '';
         return raw.isEmpty ? '#—' : '#$raw';
@@ -158,7 +158,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         // This prevents the "No videos available" bug when returning from another tab
         return context.go(ExploreScreen.path);
       case 2:
-        return context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
+        return context.go(InboxScreen.pathForIndex(lastIndex ?? 0));
       case 3:
         // Always navigate to current user's profile when tapping Profile tab
         final authService = ref.read(authServiceProvider);
@@ -174,7 +174,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     return switch (index) {
       0 => 'Home',
       1 => 'Explore',
-      2 => 'Notifications',
+      2 => 'Inbox',
       3 => 'Profile',
       _ => 'Unknown',
     };
@@ -333,7 +333,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       },
       // Home tab uses FeedModeSwitch overlay (menu + mode dropdown + search)
       // instead of the standard AppBar, for full-screen video UX.
-      appBar: currentIndex == 0
+      appBar: currentIndex == 0 || (currentIndex == 2 && !showBackButton)
           ? null
           : DiVineAppBar(
               titleWidget: _buildTappableTitle(context, ref, title),
@@ -395,7 +395,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                           // For Notifications, index 0 is the base state
                           case RouteType.notifications when ctx.videoIndex != 0:
                             return context.go(
-                              NotificationsScreen.pathForIndex(0),
+                              InboxScreen.pathForIndex(0),
                             );
                           default:
                             break;
@@ -437,7 +437,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                             }
                           case 2:
                             return context.go(
-                              NotificationsScreen.pathForIndex(
+                              InboxScreen.pathForIndex(
                                 lastIndex ?? 0,
                               ),
                             );
@@ -560,14 +560,16 @@ class _AppShellState extends ConsumerState<AppShell> {
                 ),
               ),
               NotificationBadge(
-                count: ref.watch(relayNotificationUnreadCountProvider),
+                count:
+                    ref.watch(relayNotificationUnreadCountProvider) +
+                    (ref.watch(dmUnreadCountProvider).asData?.value ?? 0),
                 child: _buildTabButton(
                   context,
                   ref,
-                  'assets/icon/bell.svg',
+                  'assets/icon/chat.svg',
                   2,
                   currentIndex,
-                  'notifications_tab',
+                  'inbox_tab',
                 ),
               ),
               _buildTabButton(

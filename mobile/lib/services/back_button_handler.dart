@@ -11,7 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/inbox/inbox_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 
 class BackButtonHandler {
@@ -75,7 +75,7 @@ class BackButtonHandler {
     if (ctx.videoIndex != null && ctx.videoIndex != 0) {
       // For explore, profile, and other routes, go to grid mode (null index)
       final newRoute = switch (ctx.type) {
-        RouteType.notifications => NotificationsScreen.pathForIndex(0),
+        RouteType.notifications => InboxScreen.pathForIndex(0),
         RouteType.explore => ExploreScreen.path,
         RouteType.profile => ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
         RouteType.home => VideoFeedPage.pathForIndex(0),
@@ -112,7 +112,7 @@ class BackButtonHandler {
             _router!.go(ExploreScreen.path);
           }
         case 2:
-          _router!.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
+          _router!.go(InboxScreen.pathForIndex(lastIndex ?? 0));
         case 3:
           // Get current user's npub for profile
           final authService = _ref!.read(authServiceProvider);
