@@ -15,6 +15,7 @@ import 'package:openvine/services/user_profile_service.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -115,7 +116,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                             // The drawer closes after the push,
                             // and onDrawerChanged(false) fires only once the
                             // settings screen is already on top.
-                            context.push(SettingsScreen.path);
+                            context.pushWithVideoPause(SettingsScreen.path);
                             Navigator.of(context).pop();
                           },
                         ),

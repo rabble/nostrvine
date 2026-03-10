@@ -617,6 +617,10 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
         }
       }
 
+      if (video != null && videoEventService.shouldHideVideo(video)) {
+        video = null;
+      }
+
       events[videoId] = video;
     }
 
@@ -634,13 +638,16 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(divineHostFilterVersionProvider);
+    final videoEventService = ref.read(videoEventServiceProvider);
     if (_isLoading) {
       return const Center(child: BrandedLoadingIndicator(size: 60));
     }
 
-    final validVideos = widget.videoIds
-        .where((id) => _videoEvents[id] != null)
-        .toList();
+    final validVideos = widget.videoIds.where((id) {
+      final video = _videoEvents[id];
+      return video != null && !videoEventService.shouldHideVideo(video);
+    }).toList();
 
     if (validVideos.isEmpty) {
       return const Center(
@@ -664,10 +671,7 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
             SizedBox(height: 8),
             Text(
               'Could not load video details',
-              style: TextStyle(
-                color: VineTheme.onSurfaceMuted,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: VineTheme.onSurfaceMuted, fontSize: 14),
             ),
           ],
         ),

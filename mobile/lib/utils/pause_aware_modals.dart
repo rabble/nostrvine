@@ -1,5 +1,6 @@
 // ABOUTME: BuildContext extensions for showing modals/navigating that pause
-// ABOUTME: video playback. Calls setModalOpen(true/false) to pause/resume.
+// ABOUTME: video playback. Uses setPageOpen for full-screen pages/dialogs
+// ABOUTME: and setBottomSheetOpen for bottom sheets (retains current player).
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -28,8 +29,9 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 extension PauseAwareModals on BuildContext {
   /// Pushes a route that automatically pauses video playback.
   ///
-  /// Calls [OverlayVisibility.setModalOpen(true)] before pushing and
-  /// [setModalOpen(false)] when the pushed route is popped.
+  /// Calls [OverlayVisibility.setPageOpen(true)] before pushing and
+  /// [setPageOpen(false)] when the pushed route is popped.
+  /// This releases all video players to free memory.
   Future<T?> pushWithVideoPause<T extends Object?>(
     String location, {
     Object? extra,
@@ -37,17 +39,18 @@ extension PauseAwareModals on BuildContext {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
 
-    overlayNotifier.setModalOpen(true);
+    overlayNotifier.setPageOpen(true);
 
     return push<T>(location, extra: extra).whenComplete(() {
-      overlayNotifier.setModalOpen(false);
+      overlayNotifier.setPageOpen(false);
     });
   }
 
   /// Shows a dialog that automatically pauses video playback.
   ///
-  /// Calls [OverlayVisibility.setModalOpen(true)] before showing and
-  /// [setModalOpen(false)] after the dialog is dismissed.
+  /// Calls [OverlayVisibility.setPageOpen(true)] before showing and
+  /// [setPageOpen(false)] after the dialog is dismissed.
+  /// This releases all video players (dialogs block full UI).
   Future<T?> showVideoPausingDialog<T>({
     required WidgetBuilder builder,
     bool barrierDismissible = true,
@@ -62,7 +65,7 @@ extension PauseAwareModals on BuildContext {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
 
-    overlayNotifier.setModalOpen(true);
+    overlayNotifier.setPageOpen(true);
 
     return showDialog<T>(
       context: this,
@@ -76,7 +79,7 @@ extension PauseAwareModals on BuildContext {
       anchorPoint: anchorPoint,
       traversalEdgeBehavior: traversalEdgeBehavior,
     ).whenComplete(() {
-      overlayNotifier.setModalOpen(false);
+      overlayNotifier.setPageOpen(false);
     });
   }
 
@@ -115,8 +118,9 @@ extension PauseAwareModals on BuildContext {
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
 
     // Custom builder path: raw modal bottom sheet with video pause integration
+    // Uses setBottomSheetOpen to retain current player for instant resume.
     if (builder != null) {
-      overlayNotifier.setModalOpen(true);
+      overlayNotifier.setBottomSheetOpen(true);
       return showModalBottomSheet<T>(
         context: this,
         builder: builder,
@@ -124,11 +128,12 @@ extension PauseAwareModals on BuildContext {
         useSafeArea: true,
         backgroundColor: Colors.transparent,
       ).whenComplete(() {
-        overlayNotifier.setModalOpen(false);
+        overlayNotifier.setBottomSheetOpen(false);
       });
     }
 
     // Standard VineBottomSheet path
+    // Uses setBottomSheetOpen to retain current player for instant resume.
     return VineBottomSheet.show<T>(
       context: this,
       children: children,
@@ -145,8 +150,8 @@ extension PauseAwareModals on BuildContext {
       initialChildSize: initialChildSize,
       minChildSize: minChildSize,
       maxChildSize: maxChildSize,
-      onShow: () => overlayNotifier.setModalOpen(true),
-      onDismiss: () => overlayNotifier.setModalOpen(false),
+      onShow: () => overlayNotifier.setBottomSheetOpen(true),
+      onDismiss: () => overlayNotifier.setBottomSheetOpen(false),
     );
   }
 }

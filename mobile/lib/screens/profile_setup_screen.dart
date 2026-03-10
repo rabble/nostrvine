@@ -19,6 +19,7 @@ import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -903,13 +904,16 @@ class _ProfileSetupScreenViewState
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              _ProfileColorPicker(
-                                selectedColor: _selectedProfileColor,
-                                onColorChanged: (color) {
-                                  setState(() {
-                                    _selectedProfileColor = color;
-                                  });
-                                },
+                              Padding(
+                                padding: const .symmetric(horizontal: 16),
+                                child: _ProfileColorPicker(
+                                  selectedColor: _selectedProfileColor,
+                                  onColorChanged: (color) {
+                                    setState(() {
+                                      _selectedProfileColor = color;
+                                    });
+                                  },
+                                ),
                               ),
                             ],
                           ),
@@ -1477,15 +1481,64 @@ class _UsernameReservedIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.only(top: 8),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.lock, color: VineTheme.warning, size: 16),
-          SizedBox(width: 8),
-          Text(
-            'Username is reserved',
-            style: TextStyle(color: VineTheme.warning, fontSize: 12),
+          const Row(
+            children: [
+              Icon(Icons.lock, color: VineTheme.warning, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'Username is reserved',
+                style: TextStyle(color: VineTheme.warning, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  final username = context
+                      .read<ProfileEditorBloc>()
+                      .state
+                      .username;
+                  showDialog<void>(
+                    context: context,
+                    builder: (dialogContext) => BlocProvider.value(
+                      value: context.read<ProfileEditorBloc>(),
+                      child: UsernameReservedDialog(username),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'Contact support',
+                  style: TextStyle(
+                    color: VineTheme.vineGreen,
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                    decorationColor: VineTheme.vineGreen,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              GestureDetector(
+                onTap: () => context.read<ProfileEditorBloc>().add(
+                  const UsernameRechecked(),
+                ),
+                child: const Text(
+                  'Check again',
+                  style: TextStyle(
+                    color: VineTheme.vineGreen,
+                    fontSize: 12,
+                    decoration: TextDecoration.underline,
+                    decorationColor: VineTheme.vineGreen,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1568,10 +1621,76 @@ class _SaveButton extends StatelessWidget {
 }
 
 @visibleForTesting
-class UsernameReservedDialog extends StatelessWidget {
+class UsernameReservedDialog extends StatefulWidget {
   const UsernameReservedDialog(this.username, {super.key});
 
   final String username;
+
+  @override
+  State<UsernameReservedDialog> createState() => _UsernameReservedDialogState();
+}
+
+class _UsernameReservedDialogState extends State<UsernameReservedDialog> {
+  final _reasonController = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _contactSupport() async {
+    final reason = _reasonController.text.trim();
+    if (reason.isEmpty) return;
+
+    setState(() => _submitting = true);
+
+    final npub = ZendeskSupportService.userNpub;
+    final created = await ZendeskSupportService.createTicketViaApi(
+      subject: 'Reserved username request: ${widget.username}',
+      description:
+          'Username requested: ${widget.username}\n'
+          '${npub != null ? 'Nostr npub: $npub\n' : ''}\n'
+          'Why this name should be mine:\n$reason',
+      requesterName: ZendeskSupportService.userName,
+      requesterEmail: ZendeskSupportService.userEmail,
+      tags: ['reserved_username', 'name_request'],
+    );
+
+    if (!mounted) return;
+
+    setState(() => _submitting = false);
+
+    if (created) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Support request sent! We'll get back to you soon."),
+          backgroundColor: VineTheme.vineGreen,
+        ),
+      );
+    } else {
+      // Fallback to email if Zendesk is unavailable
+      final encodedReason = Uri.encodeComponent(reason);
+      final launched = await launchUrl(
+        Uri.parse(
+          'mailto:names@divine.video?subject=Reserved username request: '
+          '${widget.username}&body=Username requested: ${widget.username}'
+          '%0A%0AWhy this name should be mine:%0A$encodedReason',
+        ),
+      );
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Couldn't open email. Send to: names@divine.video",
+            ),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1581,44 +1700,40 @@ class UsernameReservedDialog extends StatelessWidget {
         'Username reserved',
         style: TextStyle(color: VineTheme.whiteText),
       ),
-      content: RichText(
-        text: TextSpan(
-          style: const TextStyle(color: VineTheme.secondaryText),
-          children: [
-            TextSpan(text: 'The name $username is reserved. Please email '),
-            WidgetSpan(
-              child: GestureDetector(
-                onTap: () async {
-                  final launched = await launchUrl(
-                    Uri.parse(
-                      'mailto:names@divine.video?subject=Reserved username request: $username',
-                    ),
-                  );
-                  if (!launched && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          "Couldn't open email. Send to: names@divine.video",
-                        ),
-                      ),
-                    );
-                  }
-                },
-                child: const Text(
-                  'names@divine.video',
-                  style: TextStyle(
-                    color: VineTheme.vineGreen,
-                    decoration: TextDecoration.underline,
-                    decorationColor: VineTheme.vineGreen,
-                  ),
-                ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'The name ${widget.username} is reserved. Tell us why it should '
+            'be yours.',
+            style: const TextStyle(color: VineTheme.secondaryText),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _reasonController,
+            maxLines: 3,
+            style: const TextStyle(color: VineTheme.whiteText, fontSize: 14),
+            decoration: const InputDecoration(
+              hintText: "e.g. It's my brand name, stage name, etc.",
+              hintStyle: TextStyle(color: VineTheme.onSurfaceMuted),
+              border: OutlineInputBorder(),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: VineTheme.surfaceContainer),
               ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: VineTheme.vineGreen),
+              ),
+              contentPadding: EdgeInsets.all(12),
             ),
-            const TextSpan(
-              text: ' explaining and proving why you should own it.',
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Already contacted support? Tap "Check again" to see if '
+            "it's been released to you.",
+            style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+          ),
+        ],
       ),
       actions: [
         TextButton(
@@ -1627,6 +1742,32 @@ class UsernameReservedDialog extends StatelessWidget {
             'Close',
             style: TextStyle(color: VineTheme.lightText),
           ),
+        ),
+        TextButton(
+          onPressed: () {
+            context.read<ProfileEditorBloc>().add(const UsernameRechecked());
+            Navigator.of(context).pop();
+          },
+          child: const Text(
+            'Check again',
+            style: TextStyle(color: VineTheme.vineGreen),
+          ),
+        ),
+        FilledButton(
+          onPressed: _submitting ? null : _contactSupport,
+          style: FilledButton.styleFrom(
+            backgroundColor: VineTheme.vineGreen,
+          ),
+          child: _submitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: VineTheme.whiteText,
+                  ),
+                )
+              : const Text('Send request'),
         ),
       ],
     );

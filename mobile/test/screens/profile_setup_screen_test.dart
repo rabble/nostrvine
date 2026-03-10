@@ -1,27 +1,33 @@
 // ABOUTME: Widget tests for username field in ProfileSetupScreen
 // ABOUTME: Tests status indicators, pre-population, and validation behavior
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
-import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
-class MockUrlLauncher extends Mock
-    with MockPlatformInterfaceMixin
-    implements UrlLauncherPlatform {}
-
-class FakeLaunchOptions extends Fake implements LaunchOptions {}
+class _MockProfileEditorBloc
+    extends MockBloc<ProfileEditorEvent, ProfileEditorState>
+    implements ProfileEditorBloc {}
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(FakeLaunchOptions());
-  });
-
   group('UsernameStatusIndicator', () {
+    late _MockProfileEditorBloc mockBloc;
+
+    setUp(() {
+      mockBloc = _MockProfileEditorBloc();
+      when(() => mockBloc.state).thenReturn(
+        const ProfileEditorState(
+          username: 'testuser',
+          usernameStatus: UsernameStatus.reserved,
+        ),
+      );
+    });
+
     Widget buildIndicator(
       UsernameStatus status, {
       UsernameValidationError? error,
@@ -30,6 +36,21 @@ void main() {
         theme: VineTheme.theme,
         home: Scaffold(
           body: UsernameStatusIndicator(status: status, error: error),
+        ),
+      );
+    }
+
+    Widget buildIndicatorWithBloc(
+      UsernameStatus status, {
+      UsernameValidationError? error,
+    }) {
+      return MaterialApp(
+        theme: VineTheme.theme,
+        home: BlocProvider<ProfileEditorBloc>.value(
+          value: mockBloc,
+          child: Scaffold(
+            body: UsernameStatusIndicator(status: status, error: error),
+          ),
         ),
       );
     }
@@ -67,11 +88,43 @@ void main() {
     testWidgets('shows reserved indicator when status is reserved', (
       tester,
     ) async {
-      await tester.pumpWidget(buildIndicator(UsernameStatus.reserved));
+      await tester.pumpWidget(
+        buildIndicatorWithBloc(UsernameStatus.reserved),
+      );
 
       expect(find.text('Username is reserved'), findsOneWidget);
       expect(find.byIcon(Icons.lock), findsOneWidget);
     });
+
+    testWidgets('shows Contact support link when reserved', (tester) async {
+      await tester.pumpWidget(
+        buildIndicatorWithBloc(UsernameStatus.reserved),
+      );
+
+      expect(find.text('Contact support'), findsOneWidget);
+    });
+
+    testWidgets('shows Check again link when reserved', (tester) async {
+      await tester.pumpWidget(
+        buildIndicatorWithBloc(UsernameStatus.reserved),
+      );
+
+      expect(find.text('Check again'), findsOneWidget);
+    });
+
+    testWidgets(
+      'Check again link adds $UsernameRechecked event',
+      (tester) async {
+        await tester.pumpWidget(
+          buildIndicatorWithBloc(UsernameStatus.reserved),
+        );
+
+        await tester.tap(find.text('Check again'));
+        await tester.pumpAndSettle();
+
+        verify(() => mockBloc.add(const UsernameRechecked())).called(1);
+      },
+    );
 
     testWidgets('shows error message when network error', (tester) async {
       await tester.pumpWidget(
@@ -124,10 +177,25 @@ void main() {
   });
 
   group('UsernameReservedDialog', () {
+    late _MockProfileEditorBloc mockBloc;
+
+    setUp(() {
+      mockBloc = _MockProfileEditorBloc();
+      when(() => mockBloc.state).thenReturn(
+        const ProfileEditorState(
+          username: 'reservedname',
+          usernameStatus: UsernameStatus.reserved,
+        ),
+      );
+    });
+
     Widget buildDialog(String username) {
       return MaterialApp(
         theme: VineTheme.theme,
-        home: Scaffold(body: UsernameReservedDialog(username)),
+        home: BlocProvider<ProfileEditorBloc>.value(
+          value: mockBloc,
+          child: Scaffold(body: UsernameReservedDialog(username)),
+        ),
       );
     }
 
@@ -142,40 +210,63 @@ void main() {
       await tester.pumpWidget(buildDialog(username));
 
       expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is RichText &&
-              widget.text.toPlainText().contains(username),
+        find.text(
+          'The name $username is reserved. Tell us why it should be yours.',
         ),
         findsOneWidget,
       );
     });
 
-    testWidgets('shows email address in message content', (tester) async {
+    testWidgets('has reason text field', (tester) async {
       await tester.pumpWidget(buildDialog('reservedname'));
 
-      expect(find.text('names@divine.video'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+      expect(
+        find.text("e.g. It's my brand name, stage name, etc."),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('has Close button as TextButton', (tester) async {
+    testWidgets('has Close button', (tester) async {
       await tester.pumpWidget(buildDialog('reservedname'));
 
       final closeButton = find.widgetWithText(TextButton, 'Close');
       expect(closeButton, findsOneWidget);
     });
 
+    testWidgets('has Send request button', (tester) async {
+      await tester.pumpWidget(buildDialog('reservedname'));
+
+      expect(
+        find.widgetWithText(FilledButton, 'Send request'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('has Check again button', (tester) async {
+      await tester.pumpWidget(buildDialog('reservedname'));
+
+      expect(find.widgetWithText(TextButton, 'Check again'), findsOneWidget);
+    });
+
     testWidgets('Close button dismisses dialog', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: VineTheme.theme,
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (_) => const UsernameReservedDialog('testuser'),
+          home: BlocProvider<ProfileEditorBloc>.value(
+            value: mockBloc,
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => BlocProvider<ProfileEditorBloc>.value(
+                      value: mockBloc,
+                      child: const UsernameReservedDialog('testuser'),
+                    ),
+                  ),
+                  child: const Text('Show Dialog'),
                 ),
-                child: const Text('Show Dialog'),
               ),
             ),
           ),
@@ -192,45 +283,51 @@ void main() {
       expect(find.text('Username reserved'), findsNothing);
     });
 
-    testWidgets('tapping email link calls launchUrl with mailto URI', (
+    testWidgets('Check again button adds $UsernameRechecked event', (
       tester,
     ) async {
-      final mockUrlLauncher = MockUrlLauncher();
-      UrlLauncherPlatform.instance = mockUrlLauncher;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: VineTheme.theme,
+          home: BlocProvider<ProfileEditorBloc>.value(
+            value: mockBloc,
+            child: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => BlocProvider<ProfileEditorBloc>.value(
+                      value: mockBloc,
+                      child: const UsernameReservedDialog('testuser'),
+                    ),
+                  ),
+                  child: const Text('Show Dialog'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
 
-      when(
-        () => mockUrlLauncher.launchUrl(any(), any()),
-      ).thenAnswer((_) async => true);
-
-      const username = 'reservedname';
-      await tester.pumpWidget(buildDialog(username));
-
-      await tester.tap(find.text('names@divine.video'));
+      await tester.tap(find.text('Show Dialog'));
       await tester.pumpAndSettle();
 
-      final expectedUri = Uri.parse(
-        'mailto:names@divine.video?subject=Reserved username request: $username',
-      );
-      verify(
-        () => mockUrlLauncher.launchUrl(expectedUri.toString(), any()),
-      ).called(1);
+      await tester.tap(find.widgetWithText(TextButton, 'Check again'));
+      await tester.pumpAndSettle();
+
+      verify(() => mockBloc.add(const UsernameRechecked())).called(1);
     });
 
-    testWidgets('shows snackbar when email launch fails', (tester) async {
-      final mockUrlLauncher = MockUrlLauncher();
-      UrlLauncherPlatform.instance = mockUrlLauncher;
-
-      when(
-        () => mockUrlLauncher.launchUrl(any(), any()),
-      ).thenAnswer((_) async => false);
-
+    testWidgets('shows hint about checking again after contacting support', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildDialog('reservedname'));
 
-      await tester.tap(find.text('names@divine.video'));
-      await tester.pumpAndSettle();
-
       expect(
-        find.text("Couldn't open email. Send to: names@divine.video"),
+        find.text(
+          'Already contacted support? Tap "Check again" to see if '
+          "it's been released to you.",
+        ),
         findsOneWidget,
       );
     });

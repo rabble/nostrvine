@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -395,7 +396,7 @@ class _NotificationTabContentState
       ];
       return weekdays[date.weekday - 1];
     } else {
-      return '${date.day}/${date.month}/${date.year}';
+      return DateFormat.yMd().format(date);
     }
   }
 
@@ -477,6 +478,16 @@ class _NotificationTabContentState
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Video not found'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (videoEventService.shouldHideVideo(video)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Video unavailable'),
           duration: Duration(seconds: 2),
         ),
       );

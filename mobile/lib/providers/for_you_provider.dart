@@ -24,6 +24,7 @@ class ForYouFeed extends _$ForYouFeed {
   Future<VideoFeedState> build() async {
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
+    ref.watch(divineHostFilterVersionProvider);
 
     // Watch blocklist version — rebuilds when block/unblock actions occur.
     ref.watch(blocklistVersionProvider);
@@ -109,9 +110,7 @@ class ForYouFeed extends _$ForYouFeed {
       final filteredVideos = videoEventService.filterVideoList(
         result.videos
             .where((v) => v.isSupportedOnCurrentPlatform)
-            .where(
-              (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-            )
+            .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       );
 
@@ -173,9 +172,7 @@ class ForYouFeed extends _$ForYouFeed {
       final filteredVideos = videoEventService.filterVideoList(
         result.videos
             .where((v) => v.isSupportedOnCurrentPlatform)
-            .where(
-              (v) => !blocklistService.shouldFilterFromFeeds(v.pubkey),
-            )
+            .where((v) => !blocklistService.shouldFilterFromFeeds(v.pubkey))
             .toList(),
       );
       final newEventsLoaded =

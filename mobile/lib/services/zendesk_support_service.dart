@@ -23,6 +23,15 @@ class ZendeskSupportService {
   static String? _userEmail;
   static String? _userNpub;
 
+  /// The current user's display name (set via [setUserIdentity]).
+  static String? get userName => _userName;
+
+  /// The current user's email/NIP-05 (set via [setUserIdentity]).
+  static String? get userEmail => _userEmail;
+
+  /// The current user's npub (set via [setUserIdentity]).
+  static String? get userNpub => _userNpub;
+
   /// Initialize Zendesk SDK
   ///
   /// Call once at app startup. Returns true if initialization successful.

@@ -35,6 +35,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
 
     // Watch content filter version — rebuilds when preferences change.
     ref.watch(contentFilterVersionProvider);
+    ref.watch(divineHostFilterVersionProvider);
 
     // Watch blocklist version — rebuilds when block/unblock actions occur.
     ref.watch(blocklistVersionProvider);

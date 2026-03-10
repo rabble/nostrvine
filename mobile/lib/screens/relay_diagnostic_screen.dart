@@ -571,7 +571,12 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: .fromLTRB(
+              16,
+              16,
+              16,
+              16 + MediaQuery.viewPaddingOf(context).bottom,
+            ),
             children: [
               // Last refresh time
               if (_lastRefresh != null)

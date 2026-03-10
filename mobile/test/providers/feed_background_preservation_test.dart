@@ -9,10 +9,12 @@ import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:riverpod/riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
 
@@ -38,6 +40,7 @@ void main() {
     late _MockAnalyticsApiService mockAnalyticsService;
     late _MockVideoEventService mockVideoEventService;
     late _MockContentBlocklistService mockBlocklistService;
+    late SharedPreferences sharedPreferences;
 
     // Test videos with originalLoops for ClassicVines Nostr fallback
     final testVideos = List.generate(
@@ -59,7 +62,9 @@ void main() {
       ),
     );
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      sharedPreferences = await SharedPreferences.getInstance();
       mockAnalyticsService = _MockAnalyticsApiService();
       mockVideoEventService = _MockVideoEventService();
       mockBlocklistService = _MockContentBlocklistService();
@@ -94,6 +99,7 @@ void main() {
       return ProviderContainer(
         overrides: [
           appReadyProvider.overrideWithValue(appReady),
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
@@ -139,6 +145,7 @@ void main() {
         // Simulate going to background — appReady becomes false
         container.updateOverrides([
           appReadyProvider.overrideWithValue(false),
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
@@ -179,6 +186,7 @@ void main() {
         // Go to background
         container.updateOverrides([
           appReadyProvider.overrideWithValue(false),
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
@@ -205,6 +213,7 @@ void main() {
         // Return to foreground
         container.updateOverrides([
           appReadyProvider.overrideWithValue(true),
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(
@@ -262,6 +271,7 @@ void main() {
         // Simulate going to background
         container.updateOverrides([
           appReadyProvider.overrideWithValue(false),
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           analyticsApiServiceProvider.overrideWithValue(mockAnalyticsService),
           videoEventServiceProvider.overrideWithValue(mockVideoEventService),
           contentBlocklistServiceProvider.overrideWithValue(

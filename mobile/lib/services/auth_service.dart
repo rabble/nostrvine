@@ -281,12 +281,17 @@ class AuthService implements BackgroundAwareService {
       name: 'AuthService',
       category: LogCategory.auth,
     );
+    return _tryRefreshOAuthSession(caller: 'tryRefreshExpiredSession');
+  }
 
+  /// Shared OAuth session refresh logic used by both [initialize] and
+  /// [tryRefreshExpiredSession]. Returns true if refresh succeeded.
+  Future<bool> _tryRefreshOAuthSession({required String caller}) async {
     try {
       final refreshed = await _oauthClient!.refreshSession();
       if (refreshed != null && refreshed.hasRpcAccess) {
         Log.info(
-          'tryRefreshExpiredSession: refresh succeeded',
+          '$caller: refresh succeeded',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -296,7 +301,7 @@ class AuthService implements BackgroundAwareService {
       }
     } catch (e) {
       Log.error(
-        'tryRefreshExpiredSession: refresh failed: $e',
+        '$caller: refresh failed: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
@@ -442,17 +447,10 @@ class AuthService implements BackgroundAwareService {
             category: LogCategory.auth,
           );
           if (_oauthClient != null) {
-            final refreshed = await _oauthClient.refreshSession();
-            if (refreshed != null && refreshed.hasRpcAccess) {
-              Log.info(
-                'initialize: refresh succeeded, restoring session',
-                name: 'AuthService',
-                category: LogCategory.auth,
-              );
-              await refreshed.save(_flutterSecureStorage);
-              await signInWithDivineOAuth(refreshed);
-              return;
-            }
+            final refreshed = await _tryRefreshOAuthSession(
+              caller: 'initialize',
+            );
+            if (refreshed) return;
           }
           // Refresh failed — mark expired session so UI shows
           // "Session Expired" instead of "Secure Your Account"

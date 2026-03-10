@@ -14,7 +14,9 @@ import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/divine_host_filter_service.dart';
 import 'package:openvine/services/moderation_label_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockContentBlocklistService extends Mock
     implements ContentBlocklistService {
@@ -90,14 +92,18 @@ void main() {
     late MockModerationLabelService mockModerationLabelService;
     late MockAgeVerificationService mockAgeVerificationService;
     late MockContentFilterService mockContentFilterService;
+    late DivineHostFilterService divineHostFilterService;
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
       mockBlocklistService = MockContentBlocklistService();
       mockReportingService = MockContentReportingService();
       mockAccountLabelService = MockAccountLabelService();
       mockModerationLabelService = MockModerationLabelService();
       mockAgeVerificationService = MockAgeVerificationService();
       mockContentFilterService = MockContentFilterService();
+      divineHostFilterService = DivineHostFilterService(prefs);
     });
 
     Widget createTestWidget() {
@@ -121,6 +127,9 @@ void main() {
           ),
           contentFilterServiceProvider.overrideWithValue(
             mockContentFilterService,
+          ),
+          divineHostFilterServiceProvider.overrideWithValue(
+            divineHostFilterService,
           ),
         ],
       );
@@ -208,6 +217,23 @@ void main() {
 
       final appBar = tester.widget<AppBar>(find.byType(AppBar));
       expect(appBar.backgroundColor, isNotNull);
+    });
+
+    testWidgets('shows Divine-hosted-only toggle and persists changes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Only show Divine-hosted videos'), findsOneWidget);
+      expect(divineHostFilterService.showDivineHostedOnly, isFalse);
+
+      await tester.tap(
+        find.widgetWithText(SwitchListTile, 'Only show Divine-hosted videos'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(divineHostFilterService.showDivineHostedOnly, isTrue);
     });
   });
 

@@ -245,7 +245,10 @@ VideoFeedController createMockVideoFeedController({
   when(() => mockController.setVolume(any())).thenReturn(null);
   when(() => mockController.setPlaybackSpeed(any())).thenReturn(null);
   when(
-    () => mockController.setActive(active: any(named: 'active')),
+    () => mockController.setActive(
+      active: any(named: 'active'),
+      retainCurrentPlayer: any(named: 'retainCurrentPlayer'),
+    ),
   ).thenReturn(null);
   when(() => mockController.addVideos(any())).thenReturn(null);
   when(() => mockController.addListener(any())).thenReturn(null);

@@ -50,7 +50,12 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: .fromLTRB(
+              16,
+              16,
+              16,
+              16 + MediaQuery.viewPaddingOf(context).bottom,
+            ),
             children: [
               // What are Nostr keys explanation
               _buildExplanationCard(),

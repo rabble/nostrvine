@@ -62,6 +62,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     on<Nip05ModeChanged>(_onNip05ModeChanged);
     on<ExternalNip05Changed>(_onExternalNip05Changed);
     on<InitialExternalNip05Set>(_onInitialExternalNip05Set);
+    on<UsernameRechecked>(_onUsernameRechecked);
   }
 
   final ProfileRepository _profileRepository;
@@ -278,6 +279,60 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     Emitter<ProfileEditorState> emit,
   ) {
     emit(state.copyWith(initialExternalNip05: event.nip05));
+  }
+
+  /// Re-checks a previously reserved username against the nameserver.
+  ///
+  /// Removes the username from the local reserved cache and performs a fresh
+  /// availability check. If support has released the name to this user, the
+  /// nameserver will return it as available (owner matches current pubkey).
+  Future<void> _onUsernameRechecked(
+    UsernameRechecked event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    final username = state.username;
+    if (username.isEmpty) return;
+
+    // Remove from local reserved cache so the check runs against the server
+    final updatedReserved = {...state.reservedUsernames}..remove(username);
+
+    emit(
+      state.copyWith(
+        usernameStatus: UsernameStatus.checking,
+        reservedUsernames: updatedReserved,
+      ),
+    );
+
+    final result = await _profileRepository.checkUsernameAvailability(
+      username: username,
+      currentUserPubkey: _currentUserPubkey,
+    );
+
+    switch (result) {
+      case UsernameAvailable():
+        emit(state.copyWith(usernameStatus: UsernameStatus.available));
+      case UsernameTaken():
+        emit(state.copyWith(usernameStatus: UsernameStatus.taken));
+      case UsernameInvalidFormat(:final reason):
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.invalidFormat,
+            usernameError: UsernameValidationError.invalidFormat,
+            usernameFormatMessage: reason,
+          ),
+        );
+      case UsernameCheckError(:final message):
+        Log.error(
+          'Username re-check failed: $message',
+          name: 'ProfileEditorBloc',
+        );
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.reserved,
+            reservedUsernames: {...state.reservedUsernames, username},
+          ),
+        );
+    }
   }
 
   /// Core profile save logic (extracted for reuse)

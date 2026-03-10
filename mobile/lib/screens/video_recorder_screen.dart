@@ -148,7 +148,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   /// Force all background video playback to pause while camera is open.
   void _pauseBackgroundPlayback() {
     try {
-      ref.read(overlayVisibilityProvider.notifier).setModalOpen(true);
+      ref.read(overlayVisibilityProvider.notifier).setPageOpen(true);
       ref.read(videoVisibilityManagerProvider).pauseAllVideos();
       _disposeVideoControllers();
       Log.info(
@@ -249,7 +249,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   @override
   Future<void> dispose() async {
     try {
-      ref.read(overlayVisibilityProvider.notifier).setModalOpen(false);
+      ref.read(overlayVisibilityProvider.notifier).setPageOpen(false);
     } catch (e) {
       Log.warning(
         '📹 Failed to clear overlay visibility on dispose: $e',

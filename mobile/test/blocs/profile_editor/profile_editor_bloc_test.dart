@@ -1269,6 +1269,138 @@ void main() {
       );
     });
 
+    group('UsernameRechecked', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits available when nameserver releases reserved username',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          username: testUsername,
+          usernameStatus: UsernameStatus.reserved,
+          reservedUsernames: {testUsername},
+        ),
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenAnswer((_) async => const UsernameAvailable());
+        },
+        act: (bloc) => bloc.add(const UsernameRechecked()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.checking,
+              )
+              .having(
+                (s) => s.reservedUsernames,
+                'reservedUsernames',
+                isEmpty,
+              ),
+          isA<ProfileEditorState>().having(
+            (s) => s.usernameStatus,
+            'usernameStatus',
+            UsernameStatus.available,
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits taken when username is now taken by someone else',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          username: testUsername,
+          usernameStatus: UsernameStatus.reserved,
+          reservedUsernames: {testUsername},
+        ),
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenAnswer((_) async => const UsernameTaken());
+        },
+        act: (bloc) => bloc.add(const UsernameRechecked()),
+        expect: () => [
+          isA<ProfileEditorState>().having(
+            (s) => s.usernameStatus,
+            'usernameStatus',
+            UsernameStatus.checking,
+          ),
+          isA<ProfileEditorState>().having(
+            (s) => s.usernameStatus,
+            'usernameStatus',
+            UsernameStatus.taken,
+          ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'restores reserved status on network error',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          username: testUsername,
+          usernameStatus: UsernameStatus.reserved,
+          reservedUsernames: {testUsername},
+        ),
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+              currentUserPubkey: any(named: 'currentUserPubkey'),
+            ),
+          ).thenAnswer(
+            (_) async => const UsernameCheckError('Network error'),
+          );
+        },
+        act: (bloc) => bloc.add(const UsernameRechecked()),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.checking,
+              )
+              .having(
+                (s) => s.reservedUsernames,
+                'reservedUsernames',
+                isEmpty,
+              ),
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.reserved,
+              )
+              .having(
+                (s) => s.reservedUsernames,
+                'reservedUsernames',
+                contains(testUsername),
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'does nothing when username is empty',
+        build: createBloc,
+        seed: () => const ProfileEditorState(
+          usernameStatus: UsernameStatus.reserved,
+        ),
+        act: (bloc) => bloc.add(const UsernameRechecked()),
+        expect: () => <ProfileEditorState>[],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: any(named: 'username'),
+            ),
+          );
+        },
+      );
+    });
+
     group('Nip05ModeChanged', () {
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'switches to external mode and resets username status',

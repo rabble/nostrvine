@@ -70,6 +70,16 @@ void main() {
       final video = _createVideoWithUrl('https://nostr.build/video/abc123.mp4');
       expect(video.isFromDivineServer, isFalse);
     });
+
+    test(
+      'returns false for hosts that only contain divine.video in the URL',
+      () {
+        final video = _createVideoWithUrl(
+          'https://notdivine.video.evil.com/video.mp4',
+        );
+        expect(video.isFromDivineServer, isFalse);
+      },
+    );
   });
 
   group('shouldShowNotDivineBadge', () {
@@ -127,16 +137,16 @@ void main() {
       expect(video.getOptimalVideoUrlForPlatform(), url);
     });
 
-    test('prefers HLS for bare media.divine.video blob URLs', () {
+    test('prefers direct MP4 for bare media.divine.video blob URLs', () {
       const hash =
           '191679cbbeea3e4e3539d46b558e66fbadb673733af1ada0161a6e8b1cf61bea';
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
       expect(video.hasBareDivineHashPath, isTrue);
-      expect(video.shouldPreferHlsPlayback, isTrue);
+      expect(video.shouldPreferHlsPlayback, isFalse);
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash/hls/master.m3u8'),
+        equals('https://media.divine.video/$hash'),
       );
     });
 
@@ -156,11 +166,14 @@ void main() {
     const hash =
         'cfb5cf3415ec4ad3f45eff478570d898ff9a660ecea63d0c058892b22468a90d';
 
-    test('skip direct-file caching for bare hash paths', () {
+    test('allow direct-file caching for bare hash paths', () {
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
-      expect(video.shouldSkipFileCaching, isTrue);
-      expect(video.getCacheableVideoUrlForPlatform(), isNull);
+      expect(video.shouldSkipFileCaching, isFalse);
+      expect(
+        video.getCacheableVideoUrlForPlatform(),
+        equals('https://media.divine.video/$hash'),
+      );
     });
 
     test('do not treat quality variants as bare hash paths', () {

@@ -3,6 +3,7 @@
 // ABOUTME: notifications.
 
 import 'package:equatable/equatable.dart';
+import 'package:intl/intl.dart';
 
 enum NotificationType { like, comment, follow, mention, repost, system }
 
@@ -125,7 +126,7 @@ class NotificationModel extends Equatable {
     } else if (difference.inDays < 7) {
       return '${difference.inDays}d ago';
     } else {
-      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+      return DateFormat.yMd().format(timestamp);
     }
   }
 
