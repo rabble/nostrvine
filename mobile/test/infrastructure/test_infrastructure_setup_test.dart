@@ -114,6 +114,39 @@ void main() {
       // TODO(any): Fix and re-enable tests
     }, skip: true);
 
+    test('hook installer enforces generated files are up to date', () {
+      final hookInstallerFile = File('../scripts/install-hooks.sh');
+      expect(
+        hookInstallerFile.existsSync(),
+        isTrue,
+        reason: 'scripts/install-hooks.sh should exist',
+      );
+
+      final content = hookInstallerFile.readAsStringSync();
+      expect(
+        content,
+        contains('dart run build_runner build --delete-conflicting-outputs'),
+        reason:
+            'Hook installer should verify generated files with build_runner',
+      );
+      expect(
+        content,
+        contains('Generated files changed during verification'),
+        reason: 'Pre-commit hook should fail when generated files drift',
+      );
+      expect(
+        content,
+        contains('Generated files are out of date.'),
+        reason: 'Pre-push hook should mirror the CI generated-files failure',
+      );
+      expect(
+        content,
+        contains('git rev-parse --git-common-dir'),
+        reason:
+            'Hook installer should work from worktrees as well as the main checkout',
+      );
+    });
+
     test('test data builders exist', () {
       final testBuildersDir = Directory('test/builders');
       expect(
