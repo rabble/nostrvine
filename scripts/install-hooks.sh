@@ -10,6 +10,14 @@ if [[ "$GIT_COMMON_DIR" != /* ]]; then
   GIT_COMMON_DIR="$REPO_ROOT/$GIT_COMMON_DIR"
 fi
 HOOKS_DIR="$GIT_COMMON_DIR/hooks"
+DART_BIN="$(command -v dart)"
+FLUTTER_BIN="$(command -v flutter)"
+
+if [ -z "$DART_BIN" ] || [ -z "$FLUTTER_BIN" ]; then
+  echo "❌ Could not find both 'dart' and 'flutter' on PATH."
+  echo "Open a shell with the project toolchain loaded, then rerun scripts/install-hooks.sh."
+  exit 1
+fi
 
 echo "Installing git hooks..."
 
@@ -22,6 +30,8 @@ cat > "$HOOKS_DIR/pre-commit" << 'EOF'
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+DART_BIN="__DART_BIN__"
+FLUTTER_BIN="__FLUTTER_BIN__"
 cd "$REPO_ROOT/mobile"
 
 list_codegen_inputs() {
@@ -64,7 +74,7 @@ fi
 
 # Run dart format check (fast)
 echo "📝 Checking format..."
-if ! dart format --output=none --set-exit-if-changed lib test 2>/dev/null; then
+if ! "$DART_BIN" format --output=none --set-exit-if-changed lib test 2>/dev/null; then
     echo ""
     echo "❌ Format check failed!"
     echo "Run: cd mobile && dart format lib test"
@@ -74,7 +84,7 @@ echo "✅ Format OK"
 
 # Run flutter analyze (medium speed)
 echo "🔬 Running analyzer..."
-if ! flutter analyze --no-fatal-infos 2>/dev/null; then
+if ! "$FLUTTER_BIN" analyze --no-fatal-infos 2>/dev/null; then
     echo ""
     echo "❌ Analysis failed!"
     echo "Fix the issues above before committing"
@@ -92,7 +102,7 @@ if [ -n "$CODEGEN_INPUTS" ]; then
     capture_generated_status > "$BEFORE_STATUS_FILE"
 
     echo "🧬 Verifying generated files..."
-    dart run build_runner build --delete-conflicting-outputs >/dev/null
+    "$DART_BIN" run build_runner build --delete-conflicting-outputs >/dev/null
 
     capture_generated_status > "$AFTER_STATUS_FILE"
     NEW_GENERATED_CHANGES=$(comm -13 "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE" || true)
@@ -118,6 +128,11 @@ echo ""
 echo "✅ All pre-commit checks passed!"
 EOF
 
+sed -i.bak \
+  -e "s|__DART_BIN__|$DART_BIN|g" \
+  -e "s|__FLUTTER_BIN__|$FLUTTER_BIN|g" \
+  "$HOOKS_DIR/pre-commit"
+rm -f "$HOOKS_DIR/pre-commit.bak"
 chmod +x "$HOOKS_DIR/pre-commit"
 
 # Create pre-push hook
@@ -129,6 +144,8 @@ cat > "$HOOKS_DIR/pre-push" << 'EOF'
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
+DART_BIN="__DART_BIN__"
+FLUTTER_BIN="__FLUTTER_BIN__"
 cd "$REPO_ROOT/mobile"
 
 list_codegen_inputs() {
@@ -185,7 +202,7 @@ echo ""
 CODEGEN_INPUTS=$(printf '%s\n' "$CHANGED_FILES" | list_codegen_inputs)
 if [ -n "$CODEGEN_INPUTS" ]; then
     echo "🧬 Verifying generated files..."
-    dart run build_runner build --delete-conflicting-outputs >/dev/null
+    "$DART_BIN" run build_runner build --delete-conflicting-outputs >/dev/null
 
     if [ -n "$(git status --porcelain)" ]; then
         echo ""
@@ -260,7 +277,7 @@ echo ""
 
 # Run the specific tests
 echo "🏃 Executing tests..."
-if flutter test $TEST_FILES 2>&1; then
+if "$FLUTTER_BIN" test $TEST_FILES 2>&1; then
     echo ""
     echo "✅ All tests passed!"
 else
@@ -273,6 +290,11 @@ else
 fi
 EOF
 
+sed -i.bak \
+  -e "s|__DART_BIN__|$DART_BIN|g" \
+  -e "s|__FLUTTER_BIN__|$FLUTTER_BIN|g" \
+  "$HOOKS_DIR/pre-push"
+rm -f "$HOOKS_DIR/pre-push.bak"
 chmod +x "$HOOKS_DIR/pre-push"
 
 echo "✅ Git hooks installed!"

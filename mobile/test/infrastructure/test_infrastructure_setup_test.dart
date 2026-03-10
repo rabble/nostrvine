@@ -145,6 +145,16 @@ void main() {
         reason:
             'Hook installer should work from worktrees as well as the main checkout',
       );
+      expect(
+        content,
+        contains('command -v flutter'),
+        reason: 'Hook installer should pin the active Flutter binary path',
+      );
+      expect(
+        content,
+        contains('command -v dart'),
+        reason: 'Hook installer should pin the active Dart binary path',
+      );
     });
 
     test('test data builders exist', () {
