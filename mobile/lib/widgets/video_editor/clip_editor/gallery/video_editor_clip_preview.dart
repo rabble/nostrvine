@@ -9,7 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_processing_overlay.dart';
 import 'package:video_player/video_player.dart';
 
 /// Displays a video clip preview with thumbnail and video playback.

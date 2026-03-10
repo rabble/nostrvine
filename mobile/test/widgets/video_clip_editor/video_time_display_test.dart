@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/video_time_display.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_time_display.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

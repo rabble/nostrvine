@@ -8,7 +8,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show StickerData;
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
@@ -167,7 +166,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     final result = await Navigator.push<TextLayer>(
       context,
       MaterialPageRoute(
-        builder: (context) => VideoClipEditorScreen(),
+        builder: (context) => const VideoClipEditorScreen(),
       ),
     );
   }

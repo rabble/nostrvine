@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/controllers/clip_reorder_controller.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/controllers/clip_reorder_controller.dart';
 
 void main() {
   group('ClipReorderController', () {

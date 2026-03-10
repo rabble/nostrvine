@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_gallery.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_bottom_bar.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_progress_bar.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_split_bar.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_top_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_clip_gallery.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_bottom_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_progress_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_split_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_top_bar.dart';
 
 /// Video editor screen for editing recorded video clips.
 class VideoClipEditorScreen extends ConsumerWidget {

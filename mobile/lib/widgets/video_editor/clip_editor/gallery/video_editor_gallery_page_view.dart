@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/controllers/clip_reorder_controller.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/extended_sliver_fill_viewport.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/scopes/gallery_calculations.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/scopes/gallery_callbacks.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_item.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/controllers/clip_reorder_controller.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/extended_sliver_fill_viewport.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_calculations.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_callbacks.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_item.dart';
 
 /// Horizontally scrollable page view for video clip gallery items.
 class VideoEditorGalleryPageView extends ConsumerStatefulWidget {

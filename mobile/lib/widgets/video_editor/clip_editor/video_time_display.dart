@@ -5,7 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
-import 'package:openvine/widgets/video_clip_editor/smooth_time_display.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/smooth_time_display.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 /// Displays current video time and total duration with a separator.

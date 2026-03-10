@@ -11,14 +11,14 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/haptic_service.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/controllers/clip_reorder_controller.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/scopes/gallery_calculations.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/scopes/gallery_callbacks.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/utils/gallery_transform_calculator.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_center_clip_overlay.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_edge_gradients.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_instruction_text.dart';
-import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_gallery_page_view.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/controllers/clip_reorder_controller.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_calculations.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_callbacks.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/utils/gallery_transform_calculator.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_center_clip_overlay.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_edge_gradients.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_instruction_text.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/gallery/video_editor_gallery_page_view.dart';
 
 /// Horizontal scrolling clip selector with animated transitions.
 class VideoEditorClipGallery extends ConsumerStatefulWidget {

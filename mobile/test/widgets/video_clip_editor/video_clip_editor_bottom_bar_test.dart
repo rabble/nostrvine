@@ -11,8 +11,8 @@ import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
-import 'package:openvine/widgets/video_clip_editor/video_clip_editor_bottom_bar.dart';
-import 'package:openvine/widgets/video_clip_editor/video_time_display.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_bottom_bar.dart';
+import 'package:openvine/widgets/video_editor/clip_editor/video_time_display.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
