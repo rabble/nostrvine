@@ -179,7 +179,7 @@ class CrashReportingService {
   /// Call periodically (e.g., on app background) to keep crash reports
   /// annotated with recent cache performance data.
   Future<void> updateCacheMetricsKeys() async {
-    if (!_initialized) return;
+    if (!_initialized || kIsWeb) return;
 
     try {
       final metrics = openVineMediaCache.metrics;

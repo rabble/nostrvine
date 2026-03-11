@@ -20,6 +20,11 @@ class HttpOverrides {
   static dynamic global;
 }
 
+// Platform stub for web platform
+class Platform {
+  static String get version => 'web';
+}
+
 // VineCdnHttpOverrides stub for web platform
 class VineCdnHttpOverrides {
   // ignore: avoid_unused_constructor_parameters
