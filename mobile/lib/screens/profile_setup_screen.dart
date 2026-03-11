@@ -1397,6 +1397,7 @@ class UsernameStatusIndicator extends StatelessWidget {
       UsernameStatus.available => const _UsernameAvailableIndicator(),
       UsernameStatus.taken => const _UsernameTakenIndicator(),
       UsernameStatus.reserved => const _UsernameReservedIndicator(),
+      UsernameStatus.burned => const _UsernameBurnedIndicator(),
       UsernameStatus.invalidFormat => _UsernameErrorIndicator(
         message: errorText ?? 'Invalid username format',
       ),
@@ -1537,6 +1538,27 @@ class _UsernameReservedIndicator extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UsernameBurnedIndicator extends StatelessWidget {
+  const _UsernameBurnedIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          Icon(Icons.block, color: VineTheme.warning, size: 16),
+          SizedBox(width: 8),
+          Text(
+            'This username is no longer available',
+            style: TextStyle(color: VineTheme.warning, fontSize: 12),
           ),
         ],
       ),

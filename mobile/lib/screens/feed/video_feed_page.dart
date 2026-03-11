@@ -325,6 +325,17 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
       final isHome = routeType == RouteType.home;
       if (isHome == _isOnHomeTab) return;
       _isOnHomeTab = isHome;
+
+      // Don't resume when GoRouter falsely reports "home" while a pushed
+      // overlay (e.g. video recorder) is still open. This happens because
+      // GoRouter's routeInformationProvider can emit the shell-route
+      // location when popping between pushed routes (recorder → editor →
+      // pop back to recorder). The overlay listener handles resume when
+      // the overlay actually closes.
+      if (isHome && ref.read(overlayVisibilityProvider).hasVisibleOverlay) {
+        return;
+      }
+
       controller?.setActive(active: isHome);
     });
 

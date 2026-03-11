@@ -341,8 +341,8 @@ class PlayerPool {
     // bypass MPV's API log callback and go directly to stderr.
     try {
       final nativePlayer = player.platform;
-      if (nativePlayer is NativePlayer) {
-        await nativePlayer.setProperty('msg-level', 'all=error');
+      if (!kIsWeb && nativePlayer is NativePlayer) {
+        await (nativePlayer as dynamic).setProperty('msg-level', 'all=error');
       }
     } on Exception {
       // Ignore — non-native platforms don't support setProperty.

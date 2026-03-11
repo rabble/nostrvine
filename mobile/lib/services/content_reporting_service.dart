@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
@@ -243,7 +244,9 @@ class ContentReportingService {
     List<String>? relatedEventIds,
   }) async {
     // Use first related event or create a user-focused report
-    final eventId = relatedEventIds?.first ?? 'user_$userPubkey';
+    final eventId = (relatedEventIds != null && relatedEventIds.isNotEmpty)
+        ? relatedEventIds.first
+        : 'user_$userPubkey';
 
     return reportContent(
       eventId: eventId,
@@ -352,12 +355,12 @@ class ContentReportingService {
         return null;
       }
 
-      // Build NIP-56 compliant tags (kind 1984)
+      // NIP-56 requires the report type as the 3rd element of the e/p tags.
+      final nip56Type = _toNip56ReportType(reason);
       final tags = <List<String>>[
-        ['e', eventId], // Event being reported
-        ['p', authorPubkey], // Author of reported content
-        ['report', reason.name], // Report reason as per NIP-56
-        ['client', 'diVine'], // Reporting client
+        ['e', eventId, nip56Type],
+        ['p', authorPubkey, nip56Type],
+        ['client', 'diVine'],
       ];
 
       // Add hashtags as 't' tags
@@ -379,7 +382,7 @@ class ContentReportingService {
 
       // Create and sign event via AuthService
       final signedEvent = await _authService.createAndSignEvent(
-        kind: 1984, // NIP-56 reporting event kind
+        kind: EventKind.report,
         content: reportContent,
         tags: tags,
       );
@@ -418,6 +421,23 @@ class ContentReportingService {
       );
       return null;
     }
+  }
+
+  /// Maps app-level [ContentFilterReason] to one of the NIP-56 standard
+  /// report type strings: nudity, malware, profanity, illegal, spam,
+  /// impersonation, other.
+  String _toNip56ReportType(ContentFilterReason reason) {
+    return switch (reason) {
+      ContentFilterReason.spam => 'spam',
+      ContentFilterReason.harassment => 'profanity',
+      ContentFilterReason.violence => 'illegal',
+      ContentFilterReason.sexualContent => 'nudity',
+      ContentFilterReason.copyright => 'illegal',
+      ContentFilterReason.falseInformation => 'other',
+      ContentFilterReason.csam => 'illegal',
+      ContentFilterReason.aiGenerated => 'other',
+      ContentFilterReason.other => 'other',
+    };
   }
 
   /// Format report content for NIP-56 compliance (kind 1984)

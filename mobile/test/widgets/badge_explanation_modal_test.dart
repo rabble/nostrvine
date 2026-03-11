@@ -148,6 +148,34 @@ void main() {
         expect(find.text('Check if AI-generated'), findsOneWidget);
       });
 
+      testWidgets('uses authenticity wording when no proof data exists', (
+        tester,
+      ) async {
+        final video = VideoEvent(
+          id: 'no_proof_id',
+          pubkey: 'pubkey_no_proof',
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          content: 'unverified video',
+          timestamp: DateTime.now(),
+          videoUrl: 'https://example-cdn.com/video.mp4',
+        );
+
+        await tester.pumpWidget(buildSubject(video));
+        await tester.tap(find.text('Show'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Authenticity Signals'), findsNWidgets(2));
+        expect(find.text('Camera Proof'), findsNothing);
+        expect(
+          find.textContaining('cryptographic camera-verification data'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('ProofMode verification data'),
+          findsNothing,
+        );
+      });
+
       testWidgets('shows AI detection results when available', (
         tester,
       ) async {

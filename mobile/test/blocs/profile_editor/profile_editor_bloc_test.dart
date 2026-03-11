@@ -1044,6 +1044,71 @@ void main() {
       );
 
       blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits [checking, reserved] when username is reserved',
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+            ),
+          ).thenAnswer((_) async => const UsernameReserved());
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
+        wait: debounceDuration,
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.checking,
+              ),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.reserved,
+              )
+              .having(
+                (s) => s.reservedUsernames,
+                'reservedUsernames',
+                contains(testUsername),
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits [checking, burned] when username is burned',
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+            ),
+          ).thenAnswer((_) async => const UsernameBurned());
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
+        wait: debounceDuration,
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.checking,
+              ),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.burned,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
         'emits [checking, available] when username is admin-assigned to '
         'current user',
         setUp: () {

@@ -21,10 +21,14 @@ class BadgeExplanationModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isVineArchive = video.isOriginalVine;
+    final hasProofModeVerification = video.hasProofMode;
 
     return AlertDialog(
       backgroundColor: VineTheme.cardBackground,
-      title: _BadgeModalTitle(isVineArchive: isVineArchive),
+      title: _BadgeModalTitle(
+        isVineArchive: isVineArchive,
+        hasProofModeVerification: hasProofModeVerification,
+      ),
       content: SingleChildScrollView(
         child: isVineArchive
             ? _VineArchiveExplanation(video: video)
@@ -42,9 +46,13 @@ class BadgeExplanationModal extends StatelessWidget {
 
 /// Title row for the badge explanation modal
 class _BadgeModalTitle extends StatelessWidget {
-  const _BadgeModalTitle({required this.isVineArchive});
+  const _BadgeModalTitle({
+    required this.isVineArchive,
+    required this.hasProofModeVerification,
+  });
 
   final bool isVineArchive;
+  final bool hasProofModeVerification;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +65,11 @@ class _BadgeModalTitle extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            isVineArchive ? 'Original Vine Archive' : 'Camera Proof',
+            isVineArchive
+                ? 'Original Vine Archive'
+                : hasProofModeVerification
+                ? 'Camera Proof'
+                : 'Authenticity Signals',
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -182,14 +194,18 @@ class _ProofModeExplanationState extends ConsumerState<_ProofModeExplanation> {
           onResult: (result) => setState(() => _manualAiResult = result),
         ),
         const SizedBox(height: 12),
-        const _ExternalLink(
+        _ExternalLink(
           url: 'https://divine.video/proofmode',
-          label: 'Learn more about Proofmode verification',
+          label: video.hasProofMode
+              ? 'Learn more about Proofmode verification'
+              : 'Learn more about Divine authenticity signals',
         ),
         if (video.videoUrl != null && video.videoUrl!.isNotEmpty)
           _ExternalLink(
             url: 'https://check.proofmode.org/#${video.videoUrl}',
-            label: 'Inspect with ProofCheck Tool',
+            label: video.hasProofMode
+                ? 'Inspect with ProofCheck Tool'
+                : 'Inspect media details',
           ),
       ],
     );
@@ -223,18 +239,18 @@ class _ProofModeExplanationState extends ConsumerState<_ProofModeExplanation> {
     if (aiResult != null && aiResult.score < 0.5) {
       if (video.isFromDivineServer) {
         return 'This video is hosted on Divine and AI detection indicates it '
-            'is likely human-made, even though no ProofMode verification data '
-            'is attached.';
+            'is likely human-made, but it does not include cryptographic '
+            'camera-verification data.';
       }
       return 'AI detection indicates this video is likely human-made, though '
-          'no ProofMode verification data is attached.';
+          'it does not include cryptographic camera-verification data.';
     }
     if (video.isFromDivineServer) {
-      return 'This video is hosted on Divine, but no ProofMode verification '
-          'data is attached yet.';
+      return 'This video is hosted on Divine, but it does not include '
+          'cryptographic camera-verification data yet.';
     }
     return 'This video is hosted outside Divine and does not include '
-        'ProofMode verification data.';
+        'cryptographic camera-verification data.';
   }
 }
 
@@ -253,9 +269,9 @@ class _ProofModeDetailsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionHeader(
+        _SectionHeader(
           icon: Icons.verified_user,
-          title: 'Camera Proof',
+          title: video.hasProofMode ? 'Camera Proof' : 'Authenticity Signals',
         ),
         const SizedBox(height: 8),
         _VerificationLevelCard(video: video, aiResult: aiResult),

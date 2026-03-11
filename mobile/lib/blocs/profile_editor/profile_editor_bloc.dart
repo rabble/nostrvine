@@ -189,6 +189,15 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         emit(state.copyWith(usernameStatus: UsernameStatus.available));
       case UsernameTaken():
         emit(state.copyWith(usernameStatus: UsernameStatus.taken));
+      case UsernameReserved():
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.reserved,
+            reservedUsernames: {...state.reservedUsernames, username},
+          ),
+        );
+      case UsernameBurned():
+        emit(state.copyWith(usernameStatus: UsernameStatus.burned));
       case UsernameInvalidFormat(:final reason):
         emit(
           state.copyWith(
@@ -309,6 +318,15 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         emit(state.copyWith(usernameStatus: UsernameStatus.available));
       case UsernameTaken():
         emit(state.copyWith(usernameStatus: UsernameStatus.taken));
+      case UsernameReserved():
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.reserved,
+            reservedUsernames: {...state.reservedUsernames, username},
+          ),
+        );
+      case UsernameBurned():
+        emit(state.copyWith(usernameStatus: UsernameStatus.burned));
       case UsernameInvalidFormat(:final reason):
         emit(
           state.copyWith(

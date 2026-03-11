@@ -361,5 +361,74 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'does not resume when router reports home while page overlay is open',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final element = tester.element(find.byType(VideoFeedView));
+        final container = ProviderScope.containerOf(element);
+
+        // Start on home
+        locationController.add('/home/0');
+        await tester.pump();
+
+        // Simulate pushing to video recorder (overlay opens, location
+        // changes to /video-recorder)
+        container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+        locationController.add('/video-recorder');
+        await tester.pump();
+
+        clearInteractions(videoFeedController);
+
+        // GoRouter falsely reports home while recorder is still open
+        // (happens when popping from editor back to recorder)
+        locationController.add('/home/0');
+        await tester.pump();
+
+        // setActive(active: true) must NOT be called — the overlay is
+        // still open, so the overlay listener handles resume later.
+        verifyNever(
+          () => videoFeedController.setActive(active: true),
+        );
+      },
+    );
+
+    testWidgets(
+      'resumes playback when overlay closes after false home report',
+      (tester) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pump();
+
+        final element = tester.element(find.byType(VideoFeedView));
+        final container = ProviderScope.containerOf(element);
+
+        // Start on home
+        locationController.add('/home/0');
+        await tester.pump();
+
+        // Open page overlay (e.g. video recorder)
+        container.read(overlayVisibilityProvider.notifier).setPageOpen(true);
+        locationController.add('/video-recorder');
+        await tester.pump();
+
+        // GoRouter falsely reports home
+        locationController.add('/home/0');
+        await tester.pump();
+
+        clearInteractions(videoFeedController);
+
+        // Recorder actually closes — overlay cleared
+        container.read(overlayVisibilityProvider.notifier).setPageOpen(false);
+        await tester.pump();
+
+        // Now the overlay listener should resume playback
+        verify(
+          () => videoFeedController.setActive(active: true),
+        ).called(1);
+      },
+    );
   });
 }

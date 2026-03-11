@@ -14,9 +14,8 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Event, Filter;
 import 'package:profile_repository/profile_repository.dart';
 
-// TODO(e2e): These URLs are hardcoded to production. Make them
-// constructor-injectable so E2E tests against the local Docker stack
-// don't hit external servers during username claim/check flows.
+// TODO(e2e): Add divine-name-server to local_stack Docker dependencies
+// so username check/claim flows can be tested against it in E2E tests.
 const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
 const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
@@ -413,6 +412,7 @@ class ProfileRepository {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final available = data['available'] as bool? ?? false;
         final reason = data['reason'] as String?;
+        final code = data['code'] as String?;
 
         if (available) {
           // Also check keycast (login.divine.video) — username must be
@@ -449,18 +449,24 @@ class ProfileRepository {
           }
         }
 
-        // Server told us it's not available — return appropriate type
-        if (reason != null) {
-          // Validation failures come back with reason but available=false
-          if (reason.contains('character') ||
-              reason.contains('hyphen') ||
-              reason.contains('invalid') ||
-              reason.contains('emoji') ||
-              reason.contains('DNS')) {
-            return UsernameInvalidFormat(reason);
-          }
+        if (code == null) {
+          developer.log(
+            'Name server response missing required code field '
+            '(username: $normalizedUsername, reason: $reason)',
+            name: 'ProfileRepository.checkUsernameAvailability',
+            level: 1000,
+          );
+          return const UsernameTaken();
         }
-        return const UsernameTaken();
+        return switch (code) {
+          'reserved' => const UsernameReserved(),
+          'burned' => const UsernameBurned(),
+          'invalid_format' => UsernameInvalidFormat(
+            reason ?? 'Invalid username format',
+          ),
+          // taken, pending_confirmation, or any unknown code
+          _ => const UsernameTaken(),
+        };
       } else {
         return UsernameCheckError(
           'Server returned status ${response.statusCode}',

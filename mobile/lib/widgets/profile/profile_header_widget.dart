@@ -627,7 +627,12 @@ class _UniqueIdentifier extends ConsumerWidget {
               padding: const EdgeInsets.only(left: 8),
               child: GestureDetector(
                 onTap: () {
-                  final profileUrl = buildProfileUrl(nip05, npub);
+                  // Only use NIP-05 subdomain when verification passed
+                  // to avoid linking to wrong profile (see divine-web#195)
+                  final verifiedNip05 = hasNip05 && !verificationFailed
+                      ? nip05
+                      : null;
+                  final profileUrl = buildProfileUrl(verifiedNip05, npub);
                   ClipboardUtils.copy(
                     context,
                     profileUrl,

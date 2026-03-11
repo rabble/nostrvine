@@ -743,7 +743,7 @@ void main() {
       });
 
       test(
-        'promotes only recognized moderation labels from REST responses',
+        'promotes only recognized moderation_labels from REST responses',
         () {
           final json = {
             'id': 'test-id',
@@ -758,19 +758,25 @@ void main() {
             'comments': 0,
             'reposts': 0,
             'engagement_score': 0,
-            'content_labels': [
+            'moderation_labels': [
               'nudity',
               'violence',
-              'topic:music',
-              'archive.divine.video:vine-archive',
+              'topic:music', // ignored - discovery metadata belongs elsewhere
+              'spam',
             ],
           };
 
           final stats = VideoStats.fromJson(json);
           final event = stats.toVideoEvent();
 
-          expect(stats.contentLabels, equals(['nudity', 'violence']));
-          expect(event.contentWarningLabels, equals(['nudity', 'violence']));
+          expect(
+            stats.moderationLabels,
+            equals(['nudity', 'violence', 'spam']),
+          );
+          expect(
+            event.contentWarningLabels,
+            equals(['nudity', 'violence', 'spam']),
+          );
         },
       );
 

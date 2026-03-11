@@ -152,9 +152,7 @@ class VideosRepository {
         );
 
         final videos = _transformVideoStats(response.videos);
-        if (videos.isNotEmpty) {
-          return (videos: videos, rawBody: response.rawBody);
-        }
+        return (videos: videos, rawBody: response.rawBody);
       } on FunnelcakeException {
         // Fall through to Nostr
       }
@@ -407,7 +405,7 @@ class VideosRepository {
         );
 
         final videos = _transformVideoStats(videoStats);
-        if (videos.isNotEmpty) return videos;
+        return videos;
       } on FunnelcakeException {
         // Fall through to Nostr
       }
@@ -458,7 +456,7 @@ class VideosRepository {
 
         // Preserve API order (sorted by trending score)
         final videos = _transformVideoStats(videoStats, sortByCreatedAt: false);
-        if (videos.isNotEmpty) return videos;
+        return videos;
       } on FunnelcakeException {
         // Fall through to NIP-50
       }
@@ -1080,15 +1078,7 @@ class VideosRepository {
           limit: limit,
           before: until,
         );
-        if (stats.isNotEmpty) {
-          return stats
-              .map((s) => s.toVideoEvent())
-              .where((v) => v.hasVideo)
-              .where((v) => !v.isExpired)
-              .where((v) => !(_blockFilter?.call(v.pubkey) ?? false))
-              .where((v) => !(_contentFilter?.call(v) ?? false))
-              .toList();
-        }
+        return _transformVideoStats(stats);
       } on FunnelcakeException {
         // Fall through to relay query
       }

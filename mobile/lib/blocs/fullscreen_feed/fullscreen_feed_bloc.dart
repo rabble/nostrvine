@@ -20,9 +20,8 @@ part 'fullscreen_feed_state.dart';
 
 /// Maximum playback duration before looping back to start.
 ///
-/// TODO(product): Confirm with product - original Vine was 6.0s exactly.
-/// Current app uses 6.3s without clear documentation.
-const maxPlaybackDuration = Duration(seconds: 6);
+/// Keep aligned with provider-based playback loop enforcement (6.3s).
+const maxPlaybackDuration = Duration(milliseconds: 6300);
 
 /// Maximum number of concurrent background cache downloads.
 ///

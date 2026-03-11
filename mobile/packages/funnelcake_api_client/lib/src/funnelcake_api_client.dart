@@ -36,17 +36,23 @@ class FunnelcakeApiClient {
     required String baseUrl,
     http.Client? httpClient,
     Duration timeout = const Duration(seconds: 15),
+    String moderationProfile = defaultModerationProfile,
   }) : _baseUrl = baseUrl.endsWith('/')
            ? baseUrl.substring(0, baseUrl.length - 1)
            : baseUrl,
        _httpClient = httpClient ?? http.Client(),
        _ownsHttpClient = httpClient == null,
-       _timeout = timeout;
+       _timeout = timeout,
+       _moderationProfile = moderationProfile;
+
+  /// Default moderation profile sent with video-bearing Funnelcake requests.
+  static const String defaultModerationProfile = 'default';
 
   final String _baseUrl;
   final http.Client _httpClient;
   final bool _ownsHttpClient;
   final Duration _timeout;
+  final String _moderationProfile;
 
   /// Whether the API is available (has a non-empty base URL).
   bool get isAvailable => _baseUrl.isNotEmpty;
@@ -81,6 +87,14 @@ class FunnelcakeApiClient {
         .timeout(_timeout);
   }
 
+  Map<String, String> _videoQueryParameters(Map<String, String> params) {
+    return <String, String>{
+      ...params,
+      'nsfw': 'show',
+      'moderation_profile': _moderationProfile,
+    };
+  }
+
   /// Fetches videos by a specific author.
   ///
   /// [pubkey] is the author's public key (hex format).
@@ -108,7 +122,7 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Pubkey cannot be empty');
     }
 
-    final queryParams = <String, String>{'limit': limit.toString()};
+    final queryParams = _videoQueryParameters({'limit': limit.toString()});
     if (before != null) {
       queryParams['before'] = before.toString();
     }
@@ -168,10 +182,10 @@ class FunnelcakeApiClient {
       throw const FunnelcakeNotConfiguredException();
     }
 
-    final queryParams = <String, String>{
+    final queryParams = _videoQueryParameters({
       'sort': 'trending',
       'limit': limit.toString(),
-    };
+    });
     if (before != null) {
       queryParams['before'] = before.toString();
     }
@@ -226,10 +240,10 @@ class FunnelcakeApiClient {
       throw const FunnelcakeNotConfiguredException();
     }
 
-    final queryParams = <String, String>{
+    final queryParams = _videoQueryParameters({
       'sort': 'recent',
       'limit': limit.toString(),
-    };
+    });
     if (before != null) {
       queryParams['before'] = before.toString();
     }
@@ -296,10 +310,10 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Pubkey cannot be empty');
     }
 
-    final queryParams = <String, String>{
+    final queryParams = _videoQueryParameters({
       'limit': limit.toString(),
       'sort': sort,
-    };
+    });
     if (before != null) {
       queryParams['before'] = before.toString();
     }
@@ -463,7 +477,7 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Pubkey cannot be empty');
     }
 
-    final queryParams = <String, String>{'limit': limit.toString()};
+    final queryParams = _videoQueryParameters({'limit': limit.toString()});
     if (before != null) {
       queryParams['before'] = before.toString();
     }
@@ -581,10 +595,10 @@ class FunnelcakeApiClient {
       throw const FunnelcakeNotConfiguredException();
     }
 
-    final queryParams = <String, String>{
+    final queryParams = _videoQueryParameters({
       'sort': 'loops',
       'limit': limit.toString(),
-    };
+    });
     if (before != null) {
       queryParams['before'] = before.toString();
     }
@@ -647,11 +661,11 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Hashtag cannot be empty');
     }
 
-    final queryParams = <String, String>{
+    final queryParams = _videoQueryParameters({
       'tag': normalizedTag,
       'sort': 'trending',
       'limit': limit.toString(),
-    };
+    });
     if (before != null) {
       queryParams['before'] = before.toString();
     }
@@ -716,11 +730,11 @@ class FunnelcakeApiClient {
     }
 
     final uri = Uri.parse('$_baseUrl/api/videos').replace(
-      queryParameters: {
+      queryParameters: _videoQueryParameters({
         'tag': normalizedTag,
         'sort': 'loops',
         'limit': limit.toString(),
-      },
+      }),
     );
 
     try {
@@ -832,12 +846,12 @@ class FunnelcakeApiClient {
       throw const FunnelcakeNotConfiguredException();
     }
 
-    final queryParams = <String, String>{
+    final queryParams = _videoQueryParameters({
       'classic': 'true',
       'platform': 'vine',
       'sort': sort,
       'limit': limit.toString(),
-    };
+    });
     if (sort == 'recent' && before != null) {
       queryParams['before'] = before.toString();
     } else if (offset > 0) {
@@ -1598,11 +1612,11 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Category cannot be empty');
     }
 
-    final queryParams = <String, String>{
+    final queryParams = _videoQueryParameters({
       'category': category.toLowerCase(),
       'sort': sort,
       'limit': limit.toString(),
-    };
+    });
     if (before != null) {
       queryParams['before'] = before.toString();
     }

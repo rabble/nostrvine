@@ -10,8 +10,11 @@ import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/services/gallery_save_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks/mock_camera_service.dart';
@@ -40,6 +43,46 @@ class HapticFeedbackTracker {
   }
 
   void clear() => hapticCalls.clear();
+}
+
+/// Mock [ProVideoEditor] that returns canned metadata.
+class _MockProVideoEditor extends ProVideoEditor {
+  @override
+  void initializeStream() {
+    // Intentional no-op: testing stub.
+  }
+
+  @override
+  Future<VideoMetadata> getMetadata(
+    EditorVideo value, {
+    bool checkStreamingOptimization = false,
+  }) async {
+    return VideoMetadata(
+      duration: const Duration(seconds: 3),
+      extension: 'mp4',
+      fileSize: 1024000,
+      resolution: const Size(1920, 1080),
+      rotation: 0,
+      bitrate: 3000000,
+    );
+  }
+}
+
+/// Spy [GallerySaveService] that records whether [saveVideoToGallery] was
+/// called.
+class _SpyGallerySaveService implements GallerySaveService {
+  bool saveVideoToGalleryCalled = false;
+
+  @override
+  Future<GallerySaveResult> saveVideoToGallery(
+    EditorVideo video, {
+    AspectRatio? aspectRatio,
+    String albumName = 'Divine',
+    VideoMetadata? metadata,
+  }) async {
+    saveVideoToGalleryCalled = true;
+    return const GallerySaveSuccess();
+  }
 }
 
 /// Shared test setup for VideoRecorderNotifier tests.
@@ -658,5 +701,57 @@ void main() {
       // Verify mock camera was initialized with default front lens
       expect(mockCamera.currentLens, equals(DivineCameraLens.front));
     });
+  });
+
+  group('VideoRecorderNotifier - No Gallery Save on Recording', () {
+    test(
+      'stopRecording does not call saveVideoToGallery',
+      () async {
+        // Regression test: saving to gallery during clip recording was
+        // removed because it is not the responsibility of the recorder.
+        // This test ensures it is never reintroduced.
+        final mockEditor = _MockProVideoEditor();
+        ProVideoEditor.instance = mockEditor;
+
+        final spyGallerySave = _SpyGallerySaveService();
+
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockCamera = MockCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+        await mockCamera.initialize();
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(mockCamera),
+            ),
+            gallerySaveServiceProvider.overrideWith(
+              (ref) => spyGallerySave,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(videoRecorderProvider.notifier).initialize();
+        final notifier = container.read(videoRecorderProvider.notifier);
+
+        // Start recording first
+        await notifier.startRecording();
+
+        // Stop recording with a video result to exercise the full
+        // post-recording code path (metadata extraction, clip creation,
+        // thumbnail generation).
+        await notifier.stopRecording(
+          EditorVideo.file('/fake/test_video.mp4'),
+        );
+
+        expect(spyGallerySave.saveVideoToGalleryCalled, isFalse);
+      },
+    );
   });
 }

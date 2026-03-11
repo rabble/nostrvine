@@ -771,6 +771,10 @@ void main() {
     });
 
     group('FullscreenFeedPositionUpdated', () {
+      test('uses a 6.3s loop limit', () {
+        expect(maxPlaybackDuration, const Duration(milliseconds: 6300));
+      });
+
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'emits SeekCommand when position exceeds max duration',
         build: createBloc,
