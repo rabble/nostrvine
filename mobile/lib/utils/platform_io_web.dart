@@ -25,3 +25,13 @@ class VineCdnHttpOverrides {
   // ignore: avoid_unused_constructor_parameters
   VineCdnHttpOverrides({required dynamic overrideAddress});
 }
+
+// Platform stub for conditional dart:io imports on web.
+class Platform {
+  static String get operatingSystem => 'web';
+  static bool get isAndroid => false;
+  static bool get isIOS => false;
+  static bool get isMacOS => false;
+  static bool get isWindows => false;
+  static bool get isLinux => false;
+}
