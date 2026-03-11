@@ -26,7 +26,7 @@ void main() {
   group('PooledFullscreenVideoFeedScreen web', () {
     late MockFullscreenFeedBloc mockBloc;
     late MockAuthService mockAuthService;
-    late MockUserProfileService mockUserProfileService;
+    late MockProfileRepository mockProfileRepository;
     late StreamController<FullscreenFeedState> stateController;
 
     setUpAll(() {
@@ -36,7 +36,7 @@ void main() {
     setUp(() {
       mockBloc = MockFullscreenFeedBloc();
       mockAuthService = createMockAuthService();
-      mockUserProfileService = createMockUserProfileService();
+      mockProfileRepository = createMockProfileRepository();
       stateController = StreamController<FullscreenFeedState>.broadcast();
 
       when(() => mockBloc.stream).thenAnswer((_) => stateController.stream);
@@ -63,7 +63,7 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             mockAuthService: mockAuthService,
-            mockUserProfileService: mockUserProfileService,
+            mockProfileRepository: mockProfileRepository,
             home: BlocProvider<FullscreenFeedBloc>.value(
               value: mockBloc,
               child: const FullscreenFeedContent(),

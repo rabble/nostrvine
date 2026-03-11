@@ -466,7 +466,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                           name: 'VideoFeedPage',
                           category: LogCategory.video,
                         );
-                        return const ColoredBox(color: VineTheme.backgroundColor);
+                        return const ColoredBox(
+                          color: VineTheme.backgroundColor,
+                        );
                       }
                       Log.debug(
                         'Feed item build: mode=${state.mode.name}, index=$index, '
@@ -490,7 +492,9 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
                       );
                     },
                     onActiveVideoChanged: (video, index) {
-                      FeedPerformanceTracker().startVideoSwipeTracking(video.id);
+                      FeedPerformanceTracker().startVideoSwipeTracking(
+                        video.id,
+                      );
                       final sourceIndex = state.videos.indexWhere(
                         (event) => event.id == video.id,
                       );
