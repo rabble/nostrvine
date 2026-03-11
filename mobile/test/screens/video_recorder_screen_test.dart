@@ -42,7 +42,9 @@ class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
 /// Helper to build VideoRecorderScreen with required providers
 Widget buildTestWidget({List<Override> overrides = const []}) {
   final mockDraftStorage = _MockDraftStorageService();
-  when(() => mockDraftStorage.getDraftById(any())).thenAnswer((_) async => null);
+  when(
+    () => mockDraftStorage.getDraftById(any()),
+  ).thenAnswer((_) async => null);
   return ProviderScope(
     overrides: [
       draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
@@ -58,7 +60,9 @@ Widget buildTestWidget({List<Override> overrides = const []}) {
 /// Helper to build VideoRecorderScreen with provider overrides
 Widget buildTestWidgetWithOverrides(List<Override> overrides) {
   final mockDraftStorage = _MockDraftStorageService();
-  when(() => mockDraftStorage.getDraftById(any())).thenAnswer((_) async => null);
+  when(
+    () => mockDraftStorage.getDraftById(any()),
+  ).thenAnswer((_) async => null);
   return ProviderScope(
     overrides: [
       draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
@@ -334,8 +338,9 @@ void main() {
     group('Screen Integration', () {
       testWidgets('can be pushed onto navigation stack', (tester) async {
         final mockDraftStorage = _MockDraftStorageService();
-        when(() => mockDraftStorage.getDraftById(any()))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDraftStorage.getDraftById(any()),
+        ).thenAnswer((_) async => null);
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
