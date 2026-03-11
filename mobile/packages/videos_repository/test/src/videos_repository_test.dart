@@ -3482,6 +3482,30 @@ void main() {
         expect(filter.calls.first.id, equals('video-1'));
         expect(filter.calls.first.pubkey, equals('user-1'));
       });
+
+      test('applies warn labels from relay content-warning tags', () async {
+        final event = _createVideoEvent(
+          id: 'cw-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+          hasContentWarning: true,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repositoryWithResolver = VideosRepository(
+          nostrClient: mockNostrClient,
+          warningLabelsResolver: (video) => video.contentWarningLabels,
+        );
+
+        final result = await repositoryWithResolver.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.warnLabels, equals(['adult content']));
+      });
     });
 
     group('local storage caching', () {
