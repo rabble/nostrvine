@@ -270,6 +270,9 @@ class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel>
   /// Tracks if we already triggered the pop callback.
   bool _hasPopped = false;
 
+  /// Whether the keyboard has reached full height at least once.
+  bool _hasReachedFullHeight = false;
+
   @override
   void initState() {
     super.initState();
@@ -316,6 +319,7 @@ class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel>
   @override
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    final previousMax = _lastKeyboardHeight;
 
     // Update last known keyboard height when keyboard is visible
     if (keyboardHeight > _lastKeyboardHeight) {
@@ -327,8 +331,17 @@ class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel>
       _lastKeyboardHeight = _minPanelHeight;
     }
 
+    // Skip animation while the keyboard is still growing for the first time.
+    if (!_hasReachedFullHeight &&
+        previousMax > _keyboardThreshold &&
+        keyboardHeight <= previousMax) {
+      _hasReachedFullHeight = true;
+    }
+
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 100),
+      duration: _hasReachedFullHeight
+          ? const Duration(milliseconds: 100)
+          : Duration.zero,
       height: _lastKeyboardHeight,
       color: widget.backgroundColor,
       child: AnimatedSwitcher(
