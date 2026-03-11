@@ -607,6 +607,46 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
+        test('applies non-empty warn labels from resolver', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                ),
+              ],
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            warningLabelsResolver: (_) => const ['nudity'],
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: ['followed-user'],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(
+            result.videos.first.warnLabels,
+            equals(['nudity']),
+          );
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
         test('filters hidden labels from REST moderation labels', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
