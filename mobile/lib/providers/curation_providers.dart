@@ -444,19 +444,15 @@ class AnalyticsPopular extends _$AnalyticsPopular {
 @riverpod
 class TrendingHashtags extends _$TrendingHashtags {
   @override
-  List<TrendingHashtag> build() {
-    // Get initial trending hashtags (synchronous, uses defaults when API unavailable)
-    final service = ref.watch(analyticsApiServiceProvider);
-    return service.getTrendingHashtags();
+  Future<List<TrendingHashtag>> build() async {
+    final repo = ref.watch(hashtagRepositoryProvider);
+    return repo.getTrendingHashtags();
   }
 
-  /// Refresh trending hashtags from REST API
-  ///
-  /// This fetches fresh data from the API with forceRefresh to bypass cache.
+  /// Refresh trending hashtags from REST API, bypassing the repository cache.
   Future<void> refresh() async {
-    final service = ref.read(analyticsApiServiceProvider);
-    // Fetch from API with force refresh to bypass 5-minute cache
-    final hashtags = await service.fetchTrendingHashtags(forceRefresh: true);
-    state = hashtags;
+    final repo = ref.read(hashtagRepositoryProvider);
+    final hashtags = await repo.getTrendingHashtags(forceRefresh: true);
+    state = AsyncData(hashtags);
   }
 }

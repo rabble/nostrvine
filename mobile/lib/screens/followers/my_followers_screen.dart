@@ -58,9 +58,7 @@ class _MyFollowersView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(blocklistVersionProvider, (_, _) {
-      context.read<MyFollowersBloc>().add(
-        const MyFollowersBlocklistChanged(),
-      );
+      context.read<MyFollowersBloc>().add(const MyFollowersBlocklistChanged());
     });
 
     final appBarTitle = displayName?.isNotEmpty == true
@@ -73,7 +71,7 @@ class _MyFollowersView extends ConsumerWidget {
         titleWidget: FollowerCountTitle<MyFollowersBloc, MyFollowersState>(
           title: appBarTitle,
           selector: (state) => state.status == MyFollowersStatus.success
-              ? state.followersPubkeys.length
+              ? state.followerCount
               : 0,
         ),
         showBackButton: true,

@@ -4,7 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/services/draft_storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
   group('Profile Clips Button', () {
@@ -98,8 +105,18 @@ void main() {
     testWidgets(
       'should navigate to ClipLibraryScreen when Clips button tapped',
       (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final sharedPreferences = await SharedPreferences.getInstance();
+        final mockDraftStorageService = _MockDraftStorageService();
+
         await tester.pumpWidget(
           ProviderScope(
+            overrides: [
+              sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+              draftStorageServiceProvider.overrideWithValue(
+                mockDraftStorageService,
+              ),
+            ],
             child: MaterialApp(
               home: Scaffold(
                 body: Builder(

@@ -518,10 +518,19 @@ class Drafts extends Table {
   TextColumn get renderedThumbnailPath =>
       text().nullable().named('rendered_thumbnail_path')();
 
+  /// Hex public key of the account that owns this draft.
+  /// NULL for legacy drafts created before multi-account support.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
   List<Index> get indexes => [
+    Index(
+      'idx_draft_owner_pubkey',
+      'CREATE INDEX IF NOT EXISTS idx_draft_owner_pubkey '
+          'ON drafts (owner_pubkey)',
+    ),
     Index(
       'idx_draft_publish_status',
       'CREATE INDEX IF NOT EXISTS idx_draft_publish_status '
@@ -587,6 +596,10 @@ class Clips extends Table {
   /// Basename of the thumbnail file (for indexed lookups)
   TextColumn get thumbnailPath => text().nullable().named('thumbnail_path')();
 
+  /// Hex public key of the account that owns this clip.
+  /// NULL for legacy clips created before multi-account support.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -596,6 +609,11 @@ class Clips extends Table {
   ];
 
   List<Index> get indexes => [
+    Index(
+      'idx_clip_owner_pubkey',
+      'CREATE INDEX IF NOT EXISTS idx_clip_owner_pubkey '
+          'ON clips (owner_pubkey)',
+    ),
     // Partial index for library clips (clips without a draft)
     Index(
       'idx_clip_library',
@@ -626,6 +644,167 @@ class Clips extends Table {
       'idx_clip_thumbnail_path',
       'CREATE INDEX IF NOT EXISTS idx_clip_thumbnail_path '
           'ON clips (thumbnail_path)',
+    ),
+  ];
+}
+
+/// Stores decrypted NIP-17 direct messages (kind 14 rumor content).
+///
+/// After a gift-wrapped event (kind 1059) is received and decrypted through
+/// the seal (kind 13) to the rumor (kind 14), the plaintext message is
+/// persisted here for offline access and reactive UI queries.
+@DataClassName('DirectMessageRow')
+class DirectMessages extends Table {
+  @override
+  String get tableName => 'direct_messages';
+
+  /// The rumor event ID (kind 14/15 id field).
+  TextColumn get id => text()();
+
+  /// Deterministic conversation identifier (SHA-256 of sorted participant
+  /// pubkeys). Shared by all messages in the same chat room.
+  TextColumn get conversationId => text().named('conversation_id')();
+
+  /// Public key of the message sender.
+  TextColumn get senderPubkey => text().named('sender_pubkey')();
+
+  /// For kind 14: decrypted plaintext content.
+  /// For kind 15: the encrypted file URL.
+  TextColumn get content => text()();
+
+  /// Unix timestamp from the rumor event's created_at.
+  IntColumn get createdAt => integer().named('created_at')();
+
+  /// Optional parent message ID (from `e` tag) for threaded replies.
+  TextColumn get replyToId => text().nullable().named('reply_to_id')();
+
+  /// The gift-wrap event ID (kind 1059) used for deduplication.
+  TextColumn get giftWrapId => text().named('gift_wrap_id')();
+
+  /// Optional conversation subject/title (from `subject` tag).
+  TextColumn get subject => text().nullable()();
+
+  /// The inner event kind: 14 (text) or 15 (file). Defaults to 14.
+  IntColumn get messageKind =>
+      integer().withDefault(const Constant(14)).named('message_kind')();
+
+  // ---- Kind 15 file metadata (null for kind 14) ----
+
+  /// MIME type of the file before encryption (e.g. `image/jpeg`).
+  TextColumn get fileType => text().nullable().named('file_type')();
+
+  /// Encryption algorithm (e.g. `aes-gcm`).
+  TextColumn get encryptionAlgorithm =>
+      text().nullable().named('encryption_algorithm')();
+
+  /// Hex-encoded AES key for file decryption.
+  TextColumn get decryptionKey => text().nullable().named('decryption_key')();
+
+  /// Hex-encoded nonce/IV for file decryption.
+  TextColumn get decryptionNonce =>
+      text().nullable().named('decryption_nonce')();
+
+  /// SHA-256 hex hash of the encrypted file.
+  TextColumn get fileHash => text().nullable().named('file_hash')();
+
+  /// SHA-256 hex hash of the original file before encryption.
+  TextColumn get originalFileHash =>
+      text().nullable().named('original_file_hash')();
+
+  /// Size of the encrypted file in bytes.
+  IntColumn get fileSize => integer().nullable().named('file_size')();
+
+  /// Dimensions in `<width>x<height>` format.
+  TextColumn get dimensions => text().nullable()();
+
+  /// BlurHash string for image preview.
+  TextColumn get blurhash => text().nullable()();
+
+  /// URL of an encrypted thumbnail (same key/nonce).
+  TextColumn get thumbnailUrl => text().nullable().named('thumbnail_url')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_dm_conversation_id',
+      'CREATE INDEX IF NOT EXISTS idx_dm_conversation_id '
+          'ON direct_messages (conversation_id)',
+    ),
+    Index(
+      'idx_dm_conversation_created',
+      'CREATE INDEX IF NOT EXISTS idx_dm_conversation_created '
+          'ON direct_messages (conversation_id, created_at DESC)',
+    ),
+    Index(
+      'idx_dm_gift_wrap_id',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_gift_wrap_id '
+          'ON direct_messages (gift_wrap_id)',
+    ),
+    Index(
+      'idx_dm_sender',
+      'CREATE INDEX IF NOT EXISTS idx_dm_sender '
+          'ON direct_messages (sender_pubkey)',
+    ),
+  ];
+}
+
+/// Denormalized conversation metadata for fast list queries.
+///
+/// Each row represents a unique chat room defined by the set of participant
+/// pubkeys. Updated whenever a new message arrives in the conversation.
+@DataClassName('ConversationRow')
+class Conversations extends Table {
+  @override
+  String get tableName => 'conversations';
+
+  /// Deterministic conversation identifier (SHA-256 of sorted participant
+  /// pubkeys).
+  TextColumn get id => text()();
+
+  /// JSON-encoded list of participant pubkeys (sorted).
+  TextColumn get participantPubkeys => text().named('participant_pubkeys')();
+
+  /// Whether this is a group conversation (more than 2 participants).
+  BoolColumn get isGroup =>
+      boolean().withDefault(const Constant(false)).named('is_group')();
+
+  /// Preview text of the last message.
+  TextColumn get lastMessageContent =>
+      text().nullable().named('last_message_content')();
+
+  /// Unix timestamp of the last message.
+  IntColumn get lastMessageTimestamp =>
+      integer().nullable().named('last_message_timestamp')();
+
+  /// Pubkey of the last message sender.
+  TextColumn get lastMessageSenderPubkey =>
+      text().nullable().named('last_message_sender_pubkey')();
+
+  /// Optional conversation title (from `subject` tag).
+  TextColumn get subject => text().nullable()();
+
+  /// Whether the conversation has unread messages.
+  BoolColumn get isRead =>
+      boolean().withDefault(const Constant(true)).named('is_read')();
+
+  /// Unix timestamp when the conversation was first created.
+  IntColumn get createdAt => integer().named('created_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<Index> get indexes => [
+    Index(
+      'idx_conversation_last_message',
+      'CREATE INDEX IF NOT EXISTS idx_conversation_last_message '
+          'ON conversations (last_message_timestamp DESC)',
+    ),
+    Index(
+      'idx_conversation_is_read',
+      'CREATE INDEX IF NOT EXISTS idx_conversation_is_read '
+          'ON conversations (is_read)',
     ),
   ];
 }

@@ -3,16 +3,32 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
   group('ClipManagerProvider', () {
     late ProviderContainer container;
+    late _MockDraftStorageService mockDraftStorageService;
 
     setUp(() {
-      container = ProviderContainer();
+      mockDraftStorageService = _MockDraftStorageService();
+      when(
+        () => mockDraftStorageService.deleteDraft(any()),
+      ).thenAnswer((_) async {});
+      container = ProviderContainer(
+        overrides: [
+          draftStorageServiceProvider.overrideWithValue(
+            mockDraftStorageService,
+          ),
+        ],
+      );
     });
 
     tearDown(() {
@@ -121,7 +137,7 @@ void main() {
       expect(state.totalDuration, equals(const Duration(seconds: 3)));
     });
 
-    test('removeLastClip removes last clip', () {
+    test('removeLastClip removes last clip', () async {
       final notifier = container.read(clipManagerProvider.notifier);
 
       notifier.addClip(
@@ -139,7 +155,7 @@ void main() {
 
       expect(container.read(clipManagerProvider).clips.length, equals(2));
 
-      notifier.removeLastClip();
+      await notifier.removeLastClip();
 
       final state = container.read(clipManagerProvider);
       expect(state.clips.length, equals(1));

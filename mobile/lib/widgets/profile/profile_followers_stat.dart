@@ -16,6 +16,7 @@ class ProfileFollowersStat extends ConsumerWidget {
   const ProfileFollowersStat({
     required this.pubkey,
     required this.displayName,
+    required this.isOwnProfile,
     super.key,
   });
 
@@ -25,14 +26,15 @@ class ProfileFollowersStat extends ConsumerWidget {
   /// The display name of the user for the followers screen title.
   final String? displayName;
 
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
-    final authService = ref.watch(authServiceProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    final isCurrentUser = pubkey == authService.currentPublicKeyHex;
 
-    if (isCurrentUser) {
+    if (isOwnProfile) {
       return BlocProvider(
         create: (_) => MyFollowersBloc(
           followRepository: followRepository,
@@ -58,9 +60,7 @@ class _MyFollowersStatView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.listen(blocklistVersionProvider, (_, _) {
-      context.read<MyFollowersBloc>().add(
-        const MyFollowersBlocklistChanged(),
-      );
+      context.read<MyFollowersBloc>().add(const MyFollowersBlocklistChanged());
     });
 
     return BlocBuilder<MyFollowersBloc, MyFollowersState>(
@@ -70,7 +70,7 @@ class _MyFollowersStatView extends ConsumerWidget {
             state.status == MyFollowersStatus.loading;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followersPubkeys.length,
+          count: isLoading ? null : state.followerCount,
           label: 'Followers',
           isLoading: isLoading,
           onTap: () => context.push(
@@ -101,29 +101,14 @@ class _OthersFollowersStatView extends ConsumerWidget {
       );
     });
 
-    final currentUserPubkey = ref
-        .watch(authServiceProvider)
-        .currentPublicKeyHex;
-    final followRepository = ref.watch(followRepositoryProvider);
-    // Hide ourselves from the target's followers if we're not actually
-    // following them (e.g. follow severed by block→unblock flow).
-    final isFollowingTarget = followRepository.isFollowing(pubkey);
-
     return BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
       builder: (context, state) {
         final isLoading =
             state.status == OthersFollowersStatus.initial ||
             state.status == OthersFollowersStatus.loading;
-        final filteredCount = isLoading
-            ? null
-            : state.followersPubkeys
-                  .where(
-                    (pk) => !(pk == currentUserPubkey && !isFollowingTarget),
-                  )
-                  .length;
 
         return ProfileStatColumn(
-          count: filteredCount,
+          count: isLoading ? null : state.followerCount,
           label: 'Followers',
           isLoading: isLoading,
           onTap: () => context.push(

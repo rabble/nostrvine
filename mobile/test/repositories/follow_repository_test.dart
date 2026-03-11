@@ -862,6 +862,87 @@ void main() {
       });
     });
 
+    group('watchMyFollowers', () {
+      const follower1 =
+          'e5f6789012345678901234567890abcdef1234567890123456789012abcd1234';
+      const follower2 =
+          'f6789012345678901234567890abcdef1234567890123456789012abcde12345';
+
+      test('yields only fresh data on first call (no cache)', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              follower1,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+
+        final emissions = await repository.watchMyFollowers().toList();
+
+        expect(emissions, hasLength(1));
+        expect(emissions.first.pubkeys, contains(follower1));
+      });
+
+      test('yields cached data then fresh data on second call', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              follower1,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+
+        // First call — populates cache
+        await repository.watchMyFollowers().toList();
+
+        // Second call — should now yield cache first, then fresh
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              follower1,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+            Event(
+              follower2,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+
+        final emissions = await repository.watchMyFollowers().toList();
+
+        expect(emissions, hasLength(2));
+        // First emission: cached data from first call
+        expect(emissions[0].pubkeys, contains(follower1));
+        expect(emissions[0].pubkeys, isNot(contains(follower2)));
+        // Second emission: fresh data
+        expect(emissions[1].pubkeys, contains(follower1));
+        expect(emissions[1].pubkeys, contains(follower2));
+      });
+    });
+
     group('real-time sync', () {
       late StreamController<Event> realTimeStreamController;
 
@@ -1189,73 +1270,61 @@ void main() {
     });
 
     group('followingStream force-emit on initialize', () {
-      test(
-        'emits on followingStream after initialize '
-        'when user has no follows',
-        () async {
-          // No cached follows, no PersonalEventCache, no relay data
-          SharedPreferences.setMockInitialValues({});
+      test('emits on followingStream after initialize '
+          'when user has no follows', () async {
+        // No cached follows, no PersonalEventCache, no relay data
+        SharedPreferences.setMockInitialValues({});
 
-          repository = FollowRepository(
-            nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
-            indexerRelayUrls: const [],
-          );
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
+        );
 
-          final emissions = <List<String>>[];
-          final subscription = repository.followingStream.listen(
-            emissions.add,
-          );
+        final emissions = <List<String>>[];
+        final subscription = repository.followingStream.listen(emissions.add);
 
-          // Seed value is [] — capture it
-          await Future<void>.delayed(Duration.zero);
-          final preInitCount = emissions.length;
+        // Seed value is [] — capture it
+        await Future<void>.delayed(Duration.zero);
+        final preInitCount = emissions.length;
 
-          await repository.initialize();
-          await Future<void>.delayed(Duration.zero);
+        await repository.initialize();
+        await Future<void>.delayed(Duration.zero);
 
-          // Force-emit should add one more [] emission
-          expect(emissions.length, greaterThan(preInitCount));
-          expect(emissions.last, isEmpty);
+        // Force-emit should add one more [] emission
+        expect(emissions.length, greaterThan(preInitCount));
+        expect(emissions.last, isEmpty);
 
-          await subscription.cancel();
-        },
-      );
+        await subscription.cancel();
+      });
 
-      test(
-        'does not double-emit after initialize '
-        'when user has follows',
-        () async {
-          SharedPreferences.setMockInitialValues({
-            'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
-          });
+      test('does not double-emit after initialize '
+          'when user has follows', () async {
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
 
-          repository = FollowRepository(
-            nostrClient: mockNostrClient,
-            personalEventCache: mockPersonalEventCache,
-            indexerRelayUrls: const [],
-          );
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          indexerRelayUrls: const [],
+        );
 
-          final emissions = <List<String>>[];
-          final subscription = repository.followingStream.listen(
-            emissions.add,
-          );
+        final emissions = <List<String>>[];
+        final subscription = repository.followingStream.listen(emissions.add);
 
-          await repository.initialize();
-          await Future<void>.delayed(Duration.zero);
+        await repository.initialize();
+        await Future<void>.delayed(Duration.zero);
 
-          // Should emit exactly once with the follow list (from
-          // _emitFollowingList during _loadFromLocalStorage), no
-          // extra force-emit because _followingPubkeys is non-empty.
-          final nonSeedEmissions = emissions
-              .where((e) => e.isNotEmpty)
-              .toList();
-          expect(nonSeedEmissions, hasLength(1));
-          expect(nonSeedEmissions.first, contains(testTargetPubkey));
+        // Should emit exactly once with the follow list (from
+        // _emitFollowingList during _loadFromLocalStorage), no
+        // extra force-emit because _followingPubkeys is non-empty.
+        final nonSeedEmissions = emissions.where((e) => e.isNotEmpty).toList();
+        expect(nonSeedEmissions, hasLength(1));
+        expect(nonSeedEmissions.first, contains(testTargetPubkey));
 
-          await subscription.cancel();
-        },
-      );
+        await subscription.cancel();
+      });
     });
 
     group('getSocialCounts', () {

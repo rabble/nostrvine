@@ -475,7 +475,7 @@ const trendingHashtagsProvider = TrendingHashtagsProvider._();
 
 /// Provider for trending hashtags
 final class TrendingHashtagsProvider
-    extends $NotifierProvider<TrendingHashtags, List<TrendingHashtag>> {
+    extends $AsyncNotifierProvider<TrendingHashtags, List<TrendingHashtag>> {
   /// Provider for trending hashtags
   const TrendingHashtagsProvider._()
     : super(
@@ -494,32 +494,30 @@ final class TrendingHashtagsProvider
   @$internal
   @override
   TrendingHashtags create() => TrendingHashtags();
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(List<TrendingHashtag> value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<List<TrendingHashtag>>(value),
-    );
-  }
 }
 
-String _$trendingHashtagsHash() => r'3946913e36f7c8e8e59be05f1db16665bd2f3367';
+String _$trendingHashtagsHash() => r'dea971920d5b8852fc6679f9f386c3a3c63c4d35';
 
 /// Provider for trending hashtags
 
-abstract class _$TrendingHashtags extends $Notifier<List<TrendingHashtag>> {
-  List<TrendingHashtag> build();
+abstract class _$TrendingHashtags
+    extends $AsyncNotifier<List<TrendingHashtag>> {
+  FutureOr<List<TrendingHashtag>> build();
   @$mustCallSuper
   @override
   void runBuild() {
     final created = build();
-    final ref = this.ref as $Ref<List<TrendingHashtag>, List<TrendingHashtag>>;
+    final ref =
+        this.ref
+            as $Ref<AsyncValue<List<TrendingHashtag>>, List<TrendingHashtag>>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<List<TrendingHashtag>, List<TrendingHashtag>>,
-              List<TrendingHashtag>,
+              AnyNotifier<
+                AsyncValue<List<TrendingHashtag>>,
+                List<TrendingHashtag>
+              >,
+              AsyncValue<List<TrendingHashtag>>,
               Object?,
               Object?
             >;

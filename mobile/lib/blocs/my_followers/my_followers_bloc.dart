@@ -1,8 +1,6 @@
 // ABOUTME: BLoC for displaying current user's followers list
 // ABOUTME: Fetches Kind 3 events that mention current user in 'p' tags
 
-import 'dart:math';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -44,36 +42,34 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
       )
       .toList();
 
-  /// Handle request to load current user's followers list
+  /// Handle request to load current user's followers list.
+  ///
+  /// Listens to [FollowRepository.watchMyFollowers] which progressively
+  /// yields cached data (instant) then fresh data from relays.
   Future<void> _onLoadRequested(
     MyFollowersListLoadRequested event,
     Emitter<MyFollowersState> emit,
   ) async {
-    emit(
-      state.copyWith(status: MyFollowersStatus.loading, followersPubkeys: []),
-    );
-
-    try {
-      // Fetch the follower list and accurate count in parallel.
-      // The list is limited by relay result caps, so the count
-      // (from COUNT queries) is more accurate for display.
-      final results = await Future.wait([
-        _followRepository.getMyFollowers(),
-        _followRepository.getMyFollowerCount(),
-      ]);
-      final followers = results[0] as List<String>;
-      final countFromService = results[1] as int;
-      final followerCount = max(followers.length, countFromService);
-
-      _rawFollowersPubkeys = followers;
-      final filtered = _filterPubkeys(followers);
-
+    if (state.status != MyFollowersStatus.success) {
       emit(
         state.copyWith(
-          status: MyFollowersStatus.success,
-          followersPubkeys: filtered,
-          followerCount: followerCount,
+          status: MyFollowersStatus.loading,
+          followersPubkeys: [],
         ),
+      );
+    }
+
+    try {
+      await emit.forEach<({List<String> pubkeys, int count})>(
+        _followRepository.watchMyFollowers(),
+        onData: (result) {
+          _rawFollowersPubkeys = result.pubkeys;
+          return state.copyWith(
+            status: MyFollowersStatus.success,
+            followersPubkeys: _filterPubkeys(result.pubkeys),
+            followerCount: result.count,
+          );
+        },
       );
     } catch (e) {
       Log.error(
@@ -81,7 +77,9 @@ class MyFollowersBloc extends Bloc<MyFollowersEvent, MyFollowersState> {
         name: 'MyFollowersBloc',
         category: LogCategory.system,
       );
-      emit(state.copyWith(status: MyFollowersStatus.failure));
+      if (state.status != MyFollowersStatus.success) {
+        emit(state.copyWith(status: MyFollowersStatus.failure));
+      }
     }
   }
 

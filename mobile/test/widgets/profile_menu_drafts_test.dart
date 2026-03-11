@@ -5,7 +5,15 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
+
+class _MockClipLibraryService extends Mock implements ClipLibraryService {}
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
   group('Profile menu drafts widget', () {
@@ -131,8 +139,21 @@ void main() {
     }, skip: true);
 
     testWidgets('should close menu after navigating to drafts', (tester) async {
+      final mockClipLibraryService = _MockClipLibraryService();
+      final mockDraftStorageService = _MockDraftStorageService();
+      when(mockClipLibraryService.getAllClips).thenAnswer((_) async => []);
+      when(mockDraftStorageService.getAllDrafts).thenAnswer((_) async => []);
+
       await tester.pumpWidget(
         ProviderScope(
+          overrides: [
+            clipLibraryServiceProvider.overrideWithValue(
+              mockClipLibraryService,
+            ),
+            draftStorageServiceProvider.overrideWithValue(
+              mockDraftStorageService,
+            ),
+          ],
           child: MaterialApp(
             home: Scaffold(
               body: Builder(

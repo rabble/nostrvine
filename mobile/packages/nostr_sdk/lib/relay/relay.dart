@@ -136,6 +136,10 @@ abstract class Relay {
     return _subscriptions.isNotEmpty;
   }
 
+  bool hasSubscriptionById(String id) {
+    return _subscriptions.containsKey(id);
+  }
+
   void saveQuery(Subscription subscription) {
     _queries[subscription.id] = subscription;
   }

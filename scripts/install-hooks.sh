@@ -166,6 +166,27 @@ list_codegen_inputs() {
     done
 }
 
+run_without_git_env() {
+    (
+        while IFS= read -r git_var; do
+            unset "$git_var"
+        done < <(git rev-parse --local-env-vars)
+
+        "$@"
+    )
+}
+
+git_repo() {
+    run_without_git_env git -C "$REPO_ROOT" "$@"
+}
+
+capture_generated_status() {
+    git_repo status --porcelain -- mobile \
+        | awk '{print $2}' \
+        | grep -E '^mobile/.*(\.g\.dart|\.freezed\.dart|\.mocks\.dart|\.types\.temp\.dart)$' \
+        | sort -u || true
+}
+
 echo "🚀 Running pre-push checks..."
 
 # Get the remote and branch being pushed to
@@ -177,10 +198,34 @@ url="$2"
 BASE_BRANCH="origin/main"
 
 # Fetch latest main to ensure accurate comparison
-git fetch origin main --quiet 2>/dev/null || true
+git_repo fetch origin main --quiet 2>/dev/null || true
+
+# ── Merge-conflict check ──────────────────────────────────────────
+# Trial-merge the branch into origin/main. If there are conflicts the
+# PR cannot be merged cleanly, so fail early instead of wasting CI time.
+CURRENT_BRANCH=$(git_repo rev-parse --abbrev-ref HEAD)
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo "🔀 Checking for merge conflicts with main..."
+    # Create a temporary merge in-memory (no worktree changes)
+    if ! git_repo merge-tree --write-tree "$BASE_BRANCH" HEAD >/dev/null 2>&1; then
+        echo ""
+        echo "❌ Branch has merge conflicts with main!"
+        echo ""
+        echo "Resolve conflicts before pushing:"
+        echo "  git fetch origin main"
+        echo "  git merge origin/main   # or: git rebase origin/main"
+        echo "  # resolve conflicts, then commit and push"
+        echo ""
+        # Show which files conflict
+        git_repo merge-tree --write-tree --name-only "$BASE_BRANCH" HEAD 2>&1 | grep -E '^\S' | head -20 || true
+        exit 1
+    fi
+    echo "✅ No merge conflicts with main"
+    echo ""
+fi
 
 # Get list of changed Dart files (excluding generated files)
-CHANGED_FILES=$(git diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
+CHANGED_FILES=$(git_repo diff --name-only "$BASE_BRANCH"...HEAD 2>/dev/null \
     | grep '^mobile/.*\.dart$' \
     | grep -v '\.g\.dart$' \
     | grep -v '\.freezed\.dart$' || true)
@@ -201,16 +246,28 @@ echo ""
 # Mirror CI's generated-file check for codegen inputs
 CODEGEN_INPUTS=$(printf '%s\n' "$CHANGED_FILES" | list_codegen_inputs)
 if [ -n "$CODEGEN_INPUTS" ]; then
-    echo "🧬 Verifying generated files..."
-    "$DART_BIN" run build_runner build --delete-conflicting-outputs >/dev/null
+    BEFORE_STATUS_FILE=$(mktemp)
+    AFTER_STATUS_FILE=$(mktemp)
+    trap 'rm -f "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE"' EXIT
 
-    if [ -n "$(git status --porcelain)" ]; then
+    capture_generated_status > "$BEFORE_STATUS_FILE"
+
+    echo "🧬 Verifying generated files..."
+    run_without_git_env "$DART_BIN" run build_runner build --delete-conflicting-outputs >/dev/null
+
+    capture_generated_status > "$AFTER_STATUS_FILE"
+    NEW_GENERATED_CHANGES=$(comm -13 "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE" || true)
+
+    rm -f "$BEFORE_STATUS_FILE" "$AFTER_STATUS_FILE"
+    trap - EXIT
+
+    if [ -n "$NEW_GENERATED_CHANGES" ]; then
         echo ""
         echo "❌ Generated files are out of date."
         echo "Run: cd mobile && dart run build_runner build --delete-conflicting-outputs"
         echo "Then commit the generated files before pushing."
         echo ""
-        git diff --name-only
+        echo "$NEW_GENERATED_CHANGES"
         exit 1
     fi
 
@@ -277,7 +334,7 @@ echo ""
 
 # Run the specific tests
 echo "🏃 Executing tests..."
-if "$FLUTTER_BIN" test $TEST_FILES 2>&1; then
+if run_without_git_env "$FLUTTER_BIN" test $TEST_FILES 2>&1; then
     echo ""
     echo "✅ All tests passed!"
 else

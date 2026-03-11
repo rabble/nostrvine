@@ -4,8 +4,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/utils/hashtag_extractor.dart';
 import 'package:openvine/widgets/clickable_hashtag_text.dart';
 
 class _MockNavigatorObserver extends Mock implements NavigatorObserver {}

@@ -14,6 +14,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
+import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -26,6 +27,10 @@ import '../../helpers/test_provider_overrides.dart';
 
 class _MockMyProfileBloc extends MockBloc<MyProfileEvent, MyProfileState>
     implements MyProfileBloc {}
+
+class _MockOthersFollowersBloc
+    extends MockBloc<OthersFollowersEvent, OthersFollowersState>
+    implements OthersFollowersBloc {}
 
 // Mock for KeycastOAuth used by EmailVerificationCubit
 class MockKeycastOAuth extends Mock implements KeycastOAuth {}
@@ -49,6 +54,9 @@ class MockFollowRepository extends Mock implements FollowRepository {
 
   @override
   Future<List<String>> getFollowers(String pubkey) async => [];
+
+  @override
+  bool isFollowing(String pubkey) => false;
 }
 
 class MockNostrClient extends Mock implements NostrClient {
@@ -169,6 +177,15 @@ void main() {
         }
         header = BlocProvider<MyProfileBloc>.value(
           value: mockMyProfileBloc,
+          child: header,
+        );
+      } else {
+        final mockOthersFollowersBloc = _MockOthersFollowersBloc();
+        when(
+          () => mockOthersFollowersBloc.state,
+        ).thenReturn(const OthersFollowersState());
+        header = BlocProvider<OthersFollowersBloc>.value(
+          value: mockOthersFollowersBloc,
           child: header,
         );
       }

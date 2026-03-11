@@ -260,6 +260,9 @@ class VineTheme {
   /// Primary color.
   static const Color primary = Color(0xFF27C58B);
 
+  /// Primary accessible color for high-contrast use on dark backgrounds.
+  static const Color primaryAccessible = Color(0xFF00A572);
+
   /// Navigation bar green background.
   static const Color navGreen = Color(0xFF00150D);
 
@@ -409,6 +412,9 @@ class VineTheme {
   /// Accent yellow color.
   static const Color accentYellow = Color(0xFFFFF140);
 
+  /// Accent yellow background color.
+  static const Color accentYellowBackground = Color(0xFF363313);
+
   // --------------------------------------------------------------------------
   // Semantic status colors
   // --------------------------------------------------------------------------
@@ -448,14 +454,26 @@ class VineTheme {
   /// Accent blue color.
   static const Color accentBlue = Color(0xFF34BBF1);
 
+  /// Accent blue background color.
+  static const Color accentBlueBackground = Color(0xFF1A3A5C);
+
   /// Accent lime color.
   static const Color accentLime = Color(0xFFD2FF40);
+
+  /// Accent lime background color.
+  static const Color accentLimeBackground = Color(0xFF272F0E);
 
   /// Accent pink color.
   static const Color accentPink = Color(0xFFFF7FAF);
 
+  /// Accent pink background color.
+  static const Color accentPinkBackground = Color(0xFF3E0C1F);
+
   /// Accent violet color.
   static const Color accentViolet = Color(0xFFA3A9FF);
+
+  /// Accent violet background color.
+  static const Color accentVioletBackground = Color(0xFF2D214D);
 
   /// Accent purple color.
   static const Color accentPurple = Color(0xFF8568FF);

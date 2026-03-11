@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/utils/hashtag_extractor.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 
 void main() {
   group('HashtagExtractor', () {

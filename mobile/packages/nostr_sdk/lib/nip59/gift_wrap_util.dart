@@ -34,7 +34,26 @@ class GiftWrapUtil {
     }
 
     var jsonObj = jsonDecode(sourceText);
-    return Event.fromJson(jsonObj);
+    var innerEvent = Event.fromJson(jsonObj);
+
+    // NIP-17 sender verification: the seal's pubkey should match the rumor's
+    // pubkey. When they differ, the rumor's claimed author is unverified while
+    // the seal's pubkey IS cryptographically authenticated (it's signed).
+    // Some Nostr clients in the wild produce mismatched pubkeys. Rather than
+    // rejecting the message entirely, we accept it but override the rumor's
+    // pubkey with the seal's authenticated pubkey to prevent impersonation.
+    if (rumorEvent.pubkey != innerEvent.pubkey) {
+      log(
+        'GiftWrap sender pubkey mismatch: seal=${rumorEvent.pubkey} '
+        'rumor=${innerEvent.pubkey}. Using seal pubkey as authoritative sender.',
+      );
+      // Reconstruct the inner event with the seal's authenticated pubkey.
+      final corrected = innerEvent.toJson();
+      corrected['pubkey'] = rumorEvent.pubkey;
+      return Event.fromJson(corrected);
+    }
+
+    return innerEvent;
   }
 
   static Future<Event?> getGiftWrapEvent(

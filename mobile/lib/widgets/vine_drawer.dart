@@ -10,15 +10,17 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/services/bug_report_service.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
+import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
+import 'package:openvine/widgets/feature_request_dialog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -135,24 +137,48 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                               category: LogCategory.ui,
                             );
 
+                            final userPubkey = authService.currentPublicKeyHex;
+                            if (userPubkey == null) {
+                              Navigator.of(context).pop();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Log in to contact support',
+                                    ),
+                                    backgroundColor: VineTheme.error,
+                                  ),
+                                );
+                              }
+                              return;
+                            }
+
                             final isZendeskAvailable =
                                 ZendeskSupportService.isAvailable;
                             Log.debug(
-                              '🔍 Zendesk available: $isZendeskAvailable',
+                              'Zendesk available: $isZendeskAvailable',
                               category: LogCategory.ui,
                             );
 
                             final bugReportService = ref.read(
                               bugReportServiceProvider,
                             );
-                            final userPubkey = authService.currentPublicKeyHex;
-                            final userProfile = userPubkey != null
-                                ? ref
-                                      .read(
-                                        userProfileReactiveProvider(userPubkey),
-                                      )
-                                      .value
-                                : null;
+                            final userProfile = ref
+                                .read(
+                                  userProfileReactiveProvider(userPubkey),
+                                )
+                                .value;
+
+                            // Capture services before drawer closes — ref
+                            // becomes invalid after widget unmounts.
+                            final nip98Service = ref.read(
+                              nip98AuthServiceProvider,
+                            );
+                            final relayManagerUrl = ref
+                                .read(
+                                  currentEnvironmentProvider,
+                                )
+                                .relayManagerApiUrl;
 
                             final navigatorContext = Navigator.of(
                               context,
@@ -177,6 +203,8 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                               userProfile,
                               userPubkey,
                               isZendeskAvailable,
+                              nip98Service: nip98Service,
+                              relayManagerUrl: relayManagerUrl,
                             );
                           },
                         ),
@@ -291,8 +319,10 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
     BugReportService bugReportService,
     UserProfile? userProfile,
     String? userPubkey,
-    bool isZendeskAvailable,
-  ) {
+    bool isZendeskAvailable, {
+    required Nip98AuthService nip98Service,
+    required String relayManagerUrl,
+  }) {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -317,6 +347,24 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                   userProfile,
                   userPubkey,
                   isZendeskAvailable,
+                  nip98Service: nip98Service,
+                  relayManagerUrl: relayManagerUrl,
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            _SupportOption(
+              icon: Icons.lightbulb_outline,
+              title: 'Request a Feature',
+              subtitle: 'Suggest improvements or new features',
+              onTap: () {
+                dialogContext.pop();
+                _handleFeatureRequest(
+                  context,
+                  userPubkey,
+                  isZendeskAvailable,
+                  nip98Service: nip98Service,
+                  relayManagerUrl: relayManagerUrl,
                 );
               },
             ),
@@ -328,13 +376,31 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               onTap: () async {
                 dialogContext.pop();
                 if (isZendeskAvailable) {
-                  // Ensure identity is set before viewing tickets
-                  await _setZendeskIdentityWithService(userPubkey, userProfile);
+                  // Set JWT identity for ticket list (Zendesk configured for JWT auth)
+                  // Don't set anonymous identity first - causes auth type mismatch
+                  if (userPubkey != null) {
+                    final jwtSet = await ZendeskSupportService.setJwtIdentity(
+                      nip98Service: nip98Service,
+                      relayManagerUrl: relayManagerUrl,
+                    );
+                    if (!jwtSet && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Could not authenticate with support',
+                          ),
+                          backgroundColor: VineTheme.error,
+                        ),
+                      );
+                      return;
+                    }
+                  }
+
                   Log.debug(
                     '💬 Opening Zendesk ticket list',
                     category: LogCategory.ui,
                   );
-                  await ZendeskSupportService.showTicketList();
+                  await ZendeskSupportService.showTicketListScreen();
                 } else {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -372,91 +438,40 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
     );
   }
 
-  /// Set Zendesk user identity from user pubkey using pre-captured service
-  /// This version doesn't use ref, so it works after drawer is closed
-  Future<void> _setZendeskIdentityWithService(
-    String? userPubkey,
-    UserProfile? profile,
-  ) async {
-    if (userPubkey == null) {
-      // Users always have pubkey in this app, but handle edge case gracefully
-      Log.warning(
-        '⚠️ Zendesk: No userPubkey, using baseline anonymous identity',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    try {
-      final npub = NostrKeyUtils.encodePubKey(userPubkey);
-
-      Log.debug(
-        '🎫 Zendesk: Setting identity for ${profile?.bestDisplayName ?? npub}',
-        category: LogCategory.system,
-      );
-      Log.debug(
-        '🎫 Zendesk: NIP-05: ${profile?.nip05 ?? "none"}',
-        category: LogCategory.system,
-      );
-
-      await ZendeskSupportService.setUserIdentity(
-        displayName: profile?.bestDisplayName,
-        nip05: profile?.nip05,
-        npub: npub,
-      );
-
-      Log.debug(
-        '✅ Zendesk: Identity set successfully',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        '❌ Zendesk: Failed to set identity: $e',
-        category: LogCategory.system,
-      );
-    }
-  }
-
   /// Handle bug report submission
+  /// Sets JWT identity via pre-auth token before creating the ticket so it's
+  /// linked to the authenticated user and visible in "View Past Messages".
   Future<void> _handleBugReportWithServices(
     BuildContext context,
     BugReportService bugReportService,
     UserProfile? userProfile,
     String? userPubkey,
-    bool isZendeskAvailable,
-  ) async {
-    // Set Zendesk identity for all paths (native SDK and REST API)
-    await _setZendeskIdentityWithService(userPubkey, userProfile);
+    bool isZendeskAvailable, {
+    required Nip98AuthService nip98Service,
+    required String relayManagerUrl,
+  }) async {
+    if (userPubkey != null) {
+      final jwtSet = await ZendeskSupportService.setJwtIdentity(
+        nip98Service: nip98Service,
+        relayManagerUrl: relayManagerUrl,
+      );
+      if (!jwtSet) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not authenticate with support'),
+              backgroundColor: VineTheme.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     if (!context.mounted) return;
 
-    if (isZendeskAvailable) {
-      // Get device and app info
-      final packageInfo = await PackageInfo.fromPlatform();
-      if (!context.mounted) return;
-      final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
-
-      final description =
-          '''
-Please describe the bug you encountered:
-
----
-App Version: $appVersion
-Platform: ${Theme.of(context).platform.name}
-''';
-
-      Log.debug('🐛 Opening Zendesk for bug report', category: LogCategory.ui);
-      final success = await ZendeskSupportService.showNewTicketScreen(
-        subject: 'Bug Report',
-        description: description,
-        tags: ['mobile', 'bug', 'ios'],
-      );
-
-      if (!success && context.mounted) {
-        _showSupportFallbackWithServices(context, bugReportService, userPubkey);
-      }
-    } else {
-      _showSupportFallbackWithServices(context, bugReportService, userPubkey);
-    }
+    Log.debug('🐛 Opening bug report dialog', category: LogCategory.ui);
+    _showSupportFallbackWithServices(context, bugReportService, userPubkey);
   }
 
   /// Show fallback support options when Zendesk is not available
@@ -473,6 +488,42 @@ Platform: ${Theme.of(context).platform.name}
         currentScreen: 'VineDrawer',
         userPubkey: userPubkey,
       ),
+    );
+  }
+
+  /// Handle feature request submission
+  /// Sets JWT identity via pre-auth token before creating the ticket so it's
+  /// linked to the authenticated user and visible in "View Past Messages".
+  Future<void> _handleFeatureRequest(
+    BuildContext context,
+    String? userPubkey,
+    bool isZendeskAvailable, {
+    required Nip98AuthService nip98Service,
+    required String relayManagerUrl,
+  }) async {
+    if (userPubkey != null) {
+      final jwtSet = await ZendeskSupportService.setJwtIdentity(
+        nip98Service: nip98Service,
+        relayManagerUrl: relayManagerUrl,
+      );
+      if (!jwtSet) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not authenticate with support'),
+              backgroundColor: VineTheme.error,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
+    Log.debug('💡 Opening feature request dialog', category: LogCategory.ui);
+    if (!context.mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => FeatureRequestDialog(userPubkey: userPubkey),
     );
   }
 }

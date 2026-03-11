@@ -90,8 +90,18 @@ class RelayPool {
 
     if (await relay.connect()) {
       if (autoSubscribe) {
+        final msg =
+            '🔄 autoSubscribe: re-sending ${_subscriptions.length} '
+            'subscriptions to ${relay.url}';
+        log(msg);
         for (Subscription subscription in _subscriptions.values) {
-          relay.send(subscription.toJson());
+          // Save the subscription to the relay so that after AUTH completes
+          // the relay can re-send it. Without this, autoSubscribe sends the
+          // subscription once but it dies if the relay requires AUTH —
+          // relay.getSubscriptions() would return empty after AUTH success.
+          relay.saveSubscription(subscription);
+          log('🔄 autoSubscribe: sending ${subscription.id} to ${relay.url}');
+          await relay.send(subscription.toJson());
         }
       }
       if (init) {
@@ -193,7 +203,23 @@ class RelayPool {
 
   Future<void> _onEvent(Relay relay, List<dynamic> json) async {
     final messageType = json[0];
-    log('📡 Raw message from ${relay.url}: $json');
+    // Log message type + sub ID (full json is too verbose for non-DM events)
+    if (json.length >= 2) {
+      final msgSubId = json.length >= 2 ? json[1] : '';
+      if (msgSubId == 'dm_inbox' ||
+          messageType == 'AUTH' ||
+          messageType == 'CLOSED' ||
+          messageType == 'NOTICE') {
+        log('📡 Raw message from ${relay.url}: $json');
+      } else {
+        log(
+          '📡 ${relay.url}: $messageType '
+          '${json.length >= 2 ? json[1] : ""}',
+        );
+      }
+    } else {
+      log('📡 Raw message from ${relay.url}: $json');
+    }
 
     if (messageType == 'EVENT') {
       try {
@@ -208,12 +234,26 @@ class RelayPool {
 
         final event = Event.fromJson(json[2]);
 
+        if (event.kind == EventKind.giftWrap) {
+          final subId = json[1] as String;
+          log(
+            '🎁 Kind 1059 gift wrap received! subId=$subId '
+            'from ${relay.url}, eventId=${event.id}',
+          );
+        }
+
         // add some statistics
         relay.relayStatus.noteReceive();
 
         // check block pubkey
         for (var eventFilter in eventFilters) {
           if (eventFilter.check(event)) {
+            if (event.kind == EventKind.giftWrap) {
+              log(
+                '🎁 Kind 1059 BLOCKED by eventFilter! '
+                'eventId=${event.id}',
+              );
+            }
             return;
           }
         }
@@ -250,7 +290,9 @@ class RelayPool {
       }
 
       final subId = json[1] as String;
-      // EOSE received for subscription (debug logging removed)
+      if (subId == 'dm_inbox') {
+        log('📬 EOSE received for dm_inbox from ${relay.url}');
+      }
       var isQuery = await relay.checkAndCompleteQuery(subId);
       if (isQuery) {
         // is Query find if need to callback
@@ -314,9 +356,22 @@ class RelayPool {
             // Send subscriptions
             if (relay.hasSubscription()) {
               var subs = relay.getSubscriptions();
+              log(
+                '🔐 AUTH post-auth: re-sending ${subs.length} '
+                'subscriptions to ${relay.url}',
+              );
               for (var subscription in subs) {
+                log(
+                  '🔐 AUTH post-auth: sending ${subscription.id} '
+                  'to ${relay.url}',
+                );
                 relay.send(subscription.toJson());
               }
+            } else {
+              log(
+                '🔐 AUTH post-auth: NO subscriptions saved for '
+                '${relay.url}',
+              );
             }
           } else {
             relay.relayStatus.authed = false;
@@ -401,7 +456,6 @@ class RelayPool {
       final reason = json.length > 2 ? json[2] as String : 'Unknown reason';
 
       log('📡 CLOSED from ${relay.url}: $subscriptionId - $reason');
-
       // Check if this is a COUNT query being refused
       if (relay.hasCountQuery(subscriptionId)) {
         relay.failCountQuery(subscriptionId, reason);
@@ -455,8 +509,10 @@ class RelayPool {
       onEose: onEose,
     );
     _subscriptions[subscription.id] = subscription;
-    // send(subscription.toJson());
-
+    log(
+      '📋 subscribe: id=${subscription.id}, '
+      'relays=${_relays.length}, filters=$filters',
+    );
     // tempRelay, only query those relay which has bean provide
     if (tempRelays != null &&
         tempRelays.isNotEmpty &&
@@ -517,6 +573,12 @@ class RelayPool {
       relay.saveSubscription(subscription);
 
       var message = subscription.toJson();
+      final subscribeMsg =
+          '📤 relayDoSubscribe: ${subscription.id} → ${relay.url} '
+          '(authed=${relay.relayStatus.authed}, '
+          'readAccess=${relay.relayStatus.readAccess}, '
+          'connected=${relay.relayStatus.connected})';
+      log(subscribeMsg);
       if ((sendAfterAuth || relay.relayStatus.alwaysAuth) &&
           !relay.relayStatus.authed) {
         // For vine.hol.is, send the subscription to trigger AUTH challenge
@@ -533,7 +595,9 @@ class RelayPool {
           return true;
         }
       } else {
-        return relay.send(message);
+        var result = await relay.send(message);
+        log('📤 relayDoSubscribe: ${subscription.id} send result=$result');
+        return result;
       }
     } catch (err) {
       log(err.toString());
@@ -1038,29 +1102,31 @@ class RelayPool {
     throw CountNotSupportedException('No relay responded to COUNT');
   }
 
-  /// Returns the set of relay URLs that have an active subscription with the given ID.
+  /// Returns the set of relay URLs that have the given subscription active.
   ///
   /// This is used to determine when all relays have sent EOSE for a subscription.
+  /// Only counts relays that actually received the subscription, not relays with
+  /// unrelated subscriptions.
   Set<String> _getRelaysWithSubscription(String subscriptionId) {
     final relays = <String>{};
 
     // Check normal relays
     for (final entry in _relays.entries) {
-      if (entry.value.hasSubscription()) {
+      if (entry.value.hasSubscriptionById(subscriptionId)) {
         relays.add(entry.key);
       }
     }
 
     // Check temp relays
     for (final entry in _tempRelays.entries) {
-      if (entry.value.hasSubscription()) {
+      if (entry.value.hasSubscriptionById(subscriptionId)) {
         relays.add(entry.key);
       }
     }
 
     // Check cache relays
     for (final entry in _cacheRelays.entries) {
-      if (entry.value.hasSubscription()) {
+      if (entry.value.hasSubscriptionById(subscriptionId)) {
         relays.add(entry.key);
       }
     }

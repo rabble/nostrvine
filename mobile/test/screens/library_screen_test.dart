@@ -9,6 +9,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
+import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/widgets/library/clips_tab.dart';
 import 'package:openvine/widgets/library/drafts_tab.dart';
@@ -17,13 +19,28 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockGallerySaveService extends Mock implements GallerySaveService {}
 
+class _MockClipLibraryService extends Mock implements ClipLibraryService {}
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
+
 void main() {
   group(LibraryScreen, () {
     late _MockGallerySaveService mockGallerySaveService;
+    late _MockClipLibraryService mockClipLibraryService;
+    late _MockDraftStorageService mockDraftStorageService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       mockGallerySaveService = _MockGallerySaveService();
+      mockClipLibraryService = _MockClipLibraryService();
+      mockDraftStorageService = _MockDraftStorageService();
+
+      when(
+        () => mockClipLibraryService.getAllClips(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockDraftStorageService.getAllDrafts(),
+      ).thenAnswer((_) async => []);
     });
 
     Widget buildWidget({
@@ -32,8 +49,10 @@ void main() {
     }) {
       return ProviderScope(
         overrides: [
-          gallerySaveServiceProvider.overrideWith(
-            (ref) => mockGallerySaveService,
+          gallerySaveServiceProvider.overrideWithValue(mockGallerySaveService),
+          clipLibraryServiceProvider.overrideWithValue(mockClipLibraryService),
+          draftStorageServiceProvider.overrideWithValue(
+            mockDraftStorageService,
           ),
           clipManagerProvider.overrideWith(ClipManagerNotifier.new),
         ],

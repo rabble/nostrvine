@@ -16,6 +16,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
@@ -584,6 +585,21 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     category: LogCategory.system,
   );
 
+  // Re-initialize NostrKeyManager after AuthService, because AuthService may
+  // have imported/restored keys into PlatformSecureStorage during its own
+  // initialization (e.g. nsec import, key generation, session restore).
+  // NostrKeyManager ran first and found no keys; re-running picks them up.
+  final keyManager = container.read(nostrKeyManagerProvider);
+  if (!keyManager.hasKeys) {
+    await keyManager.initialize();
+    Log.info(
+      '[INIT] NostrKeyManager re-initialized after auth — '
+      'hasKeys=${keyManager.hasKeys}',
+      name: 'Main',
+      category: LogCategory.system,
+    );
+  }
+
   // Initialize independent services in parallel
   await Future.wait([
     container.read(seenVideosServiceProvider).initialize(),
@@ -1114,6 +1130,11 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           create: (_) => EmailVerificationCubit(
             oauthClient: ref.read(oauthClientProvider),
             authService: ref.read(authServiceProvider),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => DmUnreadCountCubit(
+            dmRepository: ref.read(dmRepositoryProvider),
           ),
         ),
       ],
