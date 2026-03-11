@@ -6,12 +6,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:patrol/patrol.dart';
 import 'package:openvine/main.dart' as app;
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:patrol/patrol.dart';
 
 void main() {
   group('Thumbnail Integration Tests', () {
