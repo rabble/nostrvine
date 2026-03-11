@@ -1,0 +1,24 @@
+name: Mergeability Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  mergeability:
+    name: mergeability
+    uses: divinevideo/.github/.github/workflows/mergeability_check.yml@964204e26bc675ffe822c444342ff3ac61f4d8ae
+    with:
+      base-ref: ${{ github.event.pull_request.base.ref }}
+      base-repository: ${{ github.repository }}
+      head-repository: ${{ github.event.pull_request.head.repo.full_name }}
+      head-sha: ${{ github.event.pull_request.head.sha }}
