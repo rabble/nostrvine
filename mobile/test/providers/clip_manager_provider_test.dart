@@ -3,16 +3,32 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 void main() {
   group('ClipManagerProvider', () {
     late ProviderContainer container;
+    late _MockDraftStorageService mockDraftStorageService;
 
     setUp(() {
-      container = ProviderContainer();
+      mockDraftStorageService = _MockDraftStorageService();
+      when(
+        () => mockDraftStorageService.deleteDraft(any()),
+      ).thenAnswer((_) async {});
+      container = ProviderContainer(
+        overrides: [
+          draftStorageServiceProvider.overrideWithValue(
+            mockDraftStorageService,
+          ),
+        ],
+      );
     });
 
     tearDown(() {
