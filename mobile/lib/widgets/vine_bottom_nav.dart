@@ -3,17 +3,15 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/inbox/inbox_screen.dart';
+import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -74,7 +72,7 @@ class VineBottomNav extends ConsumerWidget {
 
     return switch (tabIndex) {
       1 => context.go(ExploreScreen.path),
-      2 => context.go(InboxScreen.pathForIndex(lastIndex ?? 0)),
+      2 => context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0)),
       _ => context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0)),
     };
   }
@@ -83,7 +81,7 @@ class VineBottomNav extends ConsumerWidget {
     return switch (index) {
       0 => 'Home',
       1 => 'Explore',
-      2 => 'Inbox',
+      2 => 'Notifications',
       3 => 'Profile',
       _ => 'Unknown',
     };
@@ -156,15 +154,13 @@ class VineBottomNav extends ConsumerWidget {
               },
             ),
             NotificationBadge(
-              count:
-                  ref.watch(relayNotificationUnreadCountProvider) +
-                  context.watch<DmUnreadCountCubit>().state,
+              count: ref.watch(relayNotificationUnreadCountProvider),
               child: _buildTabButton(
                 context,
                 ref,
-                'assets/icon/chat.svg',
+                'assets/icon/bell.svg',
                 2,
-                'inbox_tab',
+                'notifications_tab',
               ),
             ),
             _buildTabButton(

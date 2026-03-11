@@ -30,7 +30,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/inbox/inbox_screen.dart';
+import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
@@ -1002,7 +1002,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
         final newRoute = switch (ctx.type) {
           // Notifications always has an index, go to index 0
-          RouteType.notifications => InboxScreen.pathForIndex(0),
+          RouteType.notifications => NotificationsScreen.pathForIndex(0),
           RouteType.explore => ExploreScreen.path,
           RouteType.profile => ProfileScreenRouter.pathForNpub(
             ctx.npub ?? 'me',
@@ -1047,7 +1047,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
               router.go(ExploreScreen.path);
             }
           case 2:
-            router.go(InboxScreen.pathForIndex(lastIndex ?? 0));
+            router.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
           case 3:
             // Get current user's npub for profile
             final authService = ref.read(authServiceProvider);

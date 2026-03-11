@@ -29,12 +29,12 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/inbox/inbox_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
@@ -216,17 +216,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
-          // INBOX tab subtree (Messages + Notifications)
+          // NOTIFICATIONS tab subtree
           GoRoute(
-            path: InboxScreen.pathWithIndex,
-            name: InboxScreen.routeName,
+            path: NotificationsScreen.pathWithIndex,
+            name: NotificationsScreen.routeName,
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
                 key: NavigatorKeys.notifications,
                 onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const InboxScreen(),
-                  settings: const RouteSettings(name: InboxScreen.routeName),
+                  builder: (_) => const NotificationsScreen(),
+                  settings: const RouteSettings(
+                    name: NotificationsScreen.routeName,
+                  ),
                 ),
               ),
             ),
@@ -810,7 +812,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 /// Returns the tab index for tab routes:
 /// - 0: Home
 /// - 1: Explore (also for hashtag routes)
-/// - 2: Inbox (Messages + Notifications)
+/// - 2: Notifications
 /// - 3: Profile (also for liked-videos)
 ///
 /// Returns -1 for non-tab routes (like search, settings, edit-profile)
@@ -825,8 +827,7 @@ int tabIndexFromLocation(String loc) {
       return 1;
     case 'hashtag':
       return 1; // Hashtag keeps explore tab active
-    case 'inbox':
-    case 'notifications': // Backward compat
+    case 'notifications':
       return 2;
     case 'profile':
     case 'liked-videos':

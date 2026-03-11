@@ -4058,8 +4058,7 @@ final class DmRepositoryProvider
   ///
   /// Creates a [DmRepository] that handles receiving, decrypting, persisting,
   /// and sending encrypted direct messages. Works with any [NostrSigner]
-  /// (local keys, Keycast RPC, Amber, etc.). Returns null when
-  /// unauthenticated.
+  /// (local keys, Keycast RPC, Amber, etc.).
   ///
   /// Automatically starts listening for incoming gift-wrapped messages and
   /// stops when disposed.
