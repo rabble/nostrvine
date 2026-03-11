@@ -10,6 +10,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
@@ -103,10 +104,15 @@ class FollowRepository {
   final _followingSubject = BehaviorSubject<List<String>>.seeded(const []);
   Stream<List<String>> get followingStream => _followingSubject.stream;
 
-  // In-memory cache
+  // In-memory cache — following
   List<String> _followingPubkeys = [];
   Event? _currentUserContactListEvent;
   bool _isInitialized = false;
+
+  // In-memory cache — my followers (populated after first fetch)
+  List<String> _cachedMyFollowersPubkeys = [];
+  int _cachedMyFollowerCount = 0;
+  bool _hasMyFollowersCache = false;
 
   // Real-time sync subscription for cross-device synchronization
   StreamSubscription<Event>? _contactListSubscription;
@@ -161,7 +167,10 @@ class FollowRepository {
   ///
   /// Returns a list of unique pubkeys of users who follow the current user.
   Future<List<String>> getMyFollowers() async {
-    return _fetchFollowers(_nostrClient.publicKey);
+    final result = await _fetchFollowers(_nostrClient.publicKey);
+    _cachedMyFollowersPubkeys = result;
+    _hasMyFollowersCache = true;
+    return result;
   }
 
   /// Get the list of followers for another user.
@@ -180,7 +189,42 @@ class FollowRepository {
   /// which uses COUNT queries to indexer relays for accurate results.
   /// Returns 0 if no callback is configured.
   Future<int> getMyFollowerCount() async {
-    return getFollowerCount(_nostrClient.publicKey);
+    final count = await getFollowerCount(_nostrClient.publicKey);
+    _cachedMyFollowerCount = count;
+    return count;
+  }
+
+  /// Progressively streams the current user's followers.
+  ///
+  /// Yields cached data immediately when available (from a previous fetch),
+  /// then fetches fresh data from all sources and yields the updated result.
+  /// Each emission contains the full follower list and an accurate count.
+  ///
+  /// Follows the same progressive-yield pattern as
+  /// `VideosRepository.searchVideos`.
+  Stream<({List<String> pubkeys, int count})> watchMyFollowers() async* {
+    // Phase 1: Yield cached data immediately (if available)
+    if (_hasMyFollowersCache) {
+      yield (
+        pubkeys: List<String>.unmodifiable(_cachedMyFollowersPubkeys),
+        count: _cachedMyFollowerCount,
+      );
+    }
+
+    // Phase 2: Fetch fresh data from all sources in parallel
+    final results = await Future.wait([
+      getMyFollowers(),
+      getMyFollowerCount(),
+    ]);
+    final pubkeys = results[0] as List<String>;
+    final countFromService = results[1] as int;
+    final count = max(pubkeys.length, countFromService);
+
+    // Cache is updated by getMyFollowers/getMyFollowerCount; store the
+    // merged count so the next watchMyFollowers call yields it.
+    _cachedMyFollowerCount = count;
+
+    yield (pubkeys: pubkeys, count: count);
   }
 
   /// Get an accurate follower count for any user.
