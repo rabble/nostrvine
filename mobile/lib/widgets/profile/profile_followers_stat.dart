@@ -8,8 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart'
-    show nostrServiceProvider;
 import 'package:openvine/router/router.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 
@@ -30,9 +28,9 @@ class ProfileFollowersStat extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final followRepository = ref.watch(followRepositoryProvider);
-    final nostrClient = ref.watch(nostrServiceProvider);
+    final authService = ref.watch(authServiceProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    final isCurrentUser = pubkey == nostrClient.publicKey;
+    final isCurrentUser = pubkey == authService.currentPublicKeyHex;
 
     if (isCurrentUser) {
       return BlocProvider(
@@ -103,7 +101,9 @@ class _OthersFollowersStatView extends ConsumerWidget {
       );
     });
 
-    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
+    final currentUserPubkey = ref
+        .watch(authServiceProvider)
+        .currentPublicKeyHex;
     final followRepository = ref.watch(followRepositoryProvider);
     // Hide ourselves from the target's followers if we're not actually
     // following them (e.g. follow severed by block→unblock flow).
