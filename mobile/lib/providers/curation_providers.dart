@@ -11,6 +11,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/curation_state.dart';
+import 'package:openvine/utils/hashtag_extractor.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -444,19 +445,34 @@ class AnalyticsPopular extends _$AnalyticsPopular {
 @riverpod
 class TrendingHashtags extends _$TrendingHashtags {
   @override
-  List<TrendingHashtag> build() {
-    // Get initial trending hashtags (synchronous, uses defaults when API unavailable)
-    final service = ref.watch(analyticsApiServiceProvider);
-    return service.getTrendingHashtags();
+  Future<List<TrendingHashtag>> build() async {
+    final repo = ref.watch(hashtagRepositoryProvider);
+    try {
+      return await repo.getTrendingHashtags();
+    } on FunnelcakeNotConfiguredException {
+      return _defaultHashtags();
+    }
   }
 
-  /// Refresh trending hashtags from REST API
-  ///
-  /// This fetches fresh data from the API with forceRefresh to bypass cache.
+  /// Refresh trending hashtags from REST API, bypassing the repository cache.
   Future<void> refresh() async {
-    final service = ref.read(analyticsApiServiceProvider);
-    // Fetch from API with force refresh to bypass 5-minute cache
-    final hashtags = await service.fetchTrendingHashtags(forceRefresh: true);
-    state = hashtags;
+    final repo = ref.read(hashtagRepositoryProvider);
+    try {
+      final hashtags = await repo.getTrendingHashtags(forceRefresh: true);
+      state = AsyncData(hashtags);
+    } on FunnelcakeNotConfiguredException {
+      state = AsyncData(_defaultHashtags());
+    }
+  }
+
+  List<TrendingHashtag> _defaultHashtags({int limit = 20}) {
+    final defaultTags =
+        HashtagExtractor.suggestedHashtags.take(limit).toList();
+    return defaultTags.asMap().entries.map((entry) {
+      return TrendingHashtag(
+        tag: entry.value,
+        videoCount: 50 - (entry.key * 2),
+      );
+    }).toList();
   }
 }

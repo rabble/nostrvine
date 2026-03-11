@@ -10,17 +10,23 @@ typedef LocalHashtagSearch = List<String> Function(String query, int limit);
 /// Repository for searching hashtags.
 ///
 /// Provides a clean abstraction over the Funnelcake API for hashtag search.
-/// This layer can be extended with caching or additional data sources.
+/// This layer owns caching for trending hashtags.
 class HashtagRepository {
   /// Creates a new [HashtagRepository] instance.
-  const HashtagRepository({
+  HashtagRepository({
     required FunnelcakeApiClient funnelcakeApiClient,
     LocalHashtagSearch? localSearch,
+    Duration cacheDuration = const Duration(minutes: 5),
   }) : _funnelcakeApiClient = funnelcakeApiClient,
-       _localSearch = localSearch;
+       _localSearch = localSearch,
+       _cacheDuration = cacheDuration;
 
   final FunnelcakeApiClient _funnelcakeApiClient;
   final LocalHashtagSearch? _localSearch;
+  final Duration _cacheDuration;
+
+  List<TrendingHashtag> _trendingHashtagsCache = [];
+  DateTime? _lastTrendingHashtagsFetch;
 
   /// Searches for hashtags matching [query].
   ///
@@ -69,4 +75,38 @@ class HashtagRepository {
   Future<List<TrendingHashtag>> fetchTrendingHashtags({
     int limit = 20,
   }) => _funnelcakeApiClient.fetchTrendingHashtags(limit: limit);
+
+  /// Returns trending hashtags, using an in-memory cache to avoid redundant
+  /// network calls.
+  ///
+  /// When [forceRefresh] is `false` (default) and a non-expired cache exists,
+  /// the cached result is returned immediately without a network call. Cache
+  /// expires after the duration provided at construction time (default 5 min).
+  ///
+  /// When [forceRefresh] is `true` the cache is bypassed and a fresh request
+  /// is made. On success the cache is updated.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] on server error.
+  /// - [FunnelcakeTimeoutException] on timeout.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<TrendingHashtag>> getTrendingHashtags({
+    bool forceRefresh = false,
+    int limit = 20,
+  }) async {
+    if (!forceRefresh &&
+        _lastTrendingHashtagsFetch != null &&
+        DateTime.now().difference(_lastTrendingHashtagsFetch!) <
+            _cacheDuration &&
+        _trendingHashtagsCache.isNotEmpty) {
+      return _trendingHashtagsCache.take(limit).toList();
+    }
+
+    final results =
+        await _funnelcakeApiClient.fetchTrendingHashtags(limit: limit);
+    _trendingHashtagsCache = results;
+    _lastTrendingHashtagsFetch = DateTime.now();
+    return results;
+  }
 }
