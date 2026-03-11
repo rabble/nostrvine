@@ -35,10 +35,12 @@ void main() {
       mockClipLibraryService = _MockClipLibraryService();
       mockDraftStorageService = _MockDraftStorageService();
 
-      when(() => mockClipLibraryService.getAllClips())
-          .thenAnswer((_) async => []);
-      when(() => mockDraftStorageService.getAllDrafts())
-          .thenAnswer((_) async => []);
+      when(
+        () => mockClipLibraryService.getAllClips(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockDraftStorageService.getAllDrafts(),
+      ).thenAnswer((_) async => []);
     });
 
     Widget buildWidget({
@@ -47,12 +49,11 @@ void main() {
     }) {
       return ProviderScope(
         overrides: [
-          gallerySaveServiceProvider
-              .overrideWithValue(mockGallerySaveService),
-          clipLibraryServiceProvider
-              .overrideWithValue(mockClipLibraryService),
-          draftStorageServiceProvider
-              .overrideWithValue(mockDraftStorageService),
+          gallerySaveServiceProvider.overrideWithValue(mockGallerySaveService),
+          clipLibraryServiceProvider.overrideWithValue(mockClipLibraryService),
+          draftStorageServiceProvider.overrideWithValue(
+            mockDraftStorageService,
+          ),
           clipManagerProvider.overrideWith(ClipManagerNotifier.new),
         ],
         child: MaterialApp(
