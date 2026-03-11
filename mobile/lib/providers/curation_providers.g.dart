@@ -496,7 +496,7 @@ final class TrendingHashtagsProvider
   TrendingHashtags create() => TrendingHashtags();
 }
 
-String _$trendingHashtagsHash() => r'7642fc4c2ecf318cfd42bace30d8a05d0b8cb720';
+String _$trendingHashtagsHash() => r'dea971920d5b8852fc6679f9f386c3a3c63c4d35';
 
 /// Provider for trending hashtags
 
