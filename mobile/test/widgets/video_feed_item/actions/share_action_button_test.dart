@@ -9,6 +9,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/widgets/video_feed_item/actions/share_action_button.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -18,6 +19,8 @@ class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
+class _MockVideoSharingService extends Mock implements VideoSharingService {}
+
 void main() {
   group(ShareActionButton, () {
     const ownPubkey =
@@ -26,9 +29,11 @@ void main() {
     late VideoEvent testVideo;
     late _MockFollowRepository mockFollowRepository;
     late _MockProfileRepository mockProfileRepository;
+    late _MockVideoSharingService mockVideoSharingService;
 
     setUp(() {
       mockFollowRepository = _MockFollowRepository();
+      mockVideoSharingService = _MockVideoSharingService();
       when(() => mockFollowRepository.followingPubkeys).thenReturn([]);
 
       mockProfileRepository = _MockProfileRepository();
@@ -102,6 +107,11 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
+            additionalOverrides: [
+              videoSharingServiceProvider.overrideWith(
+                (ref) => mockVideoSharingService,
+              ),
+            ],
             mockAuthService: mockAuth,
             mockProfileRepository: mockProfileRepository,
           ),
@@ -119,6 +129,11 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
+            additionalOverrides: [
+              videoSharingServiceProvider.overrideWith(
+                (ref) => mockVideoSharingService,
+              ),
+            ],
             mockAuthService: mockAuth,
             mockProfileRepository: mockProfileRepository,
           ),
@@ -136,6 +151,11 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
+            additionalOverrides: [
+              videoSharingServiceProvider.overrideWith(
+                (ref) => mockVideoSharingService,
+              ),
+            ],
             mockAuthService: mockAuth,
             mockProfileRepository: mockProfileRepository,
           ),
@@ -153,6 +173,11 @@ void main() {
         await tester.pumpWidget(
           testMaterialApp(
             home: Scaffold(body: ShareActionButton(video: testVideo)),
+            additionalOverrides: [
+              videoSharingServiceProvider.overrideWith(
+                (ref) => mockVideoSharingService,
+              ),
+            ],
             mockAuthService: mockAuth,
             mockProfileRepository: mockProfileRepository,
           ),
@@ -181,6 +206,9 @@ void main() {
             home: Scaffold(body: ShareActionButton(video: testVideo)),
             additionalOverrides: [
               followRepositoryProvider.overrideWithValue(mockFollowRepository),
+              videoSharingServiceProvider.overrideWith(
+                (ref) => mockVideoSharingService,
+              ),
             ],
             mockAuthService: mockAuth,
             mockProfileRepository: mockProfileRepository,
