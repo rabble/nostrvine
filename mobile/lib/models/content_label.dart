@@ -53,6 +53,15 @@ enum ContentLabel {
   /// Content is AI-generated or AI-assisted.
   aiGenerated('ai-generated', 'AI-Generated'),
 
+  /// Content contains a deceptive AI face/voice/video synthesis.
+  deepfake('deepfake', 'Deepfake'),
+
+  /// Contains spammy or low-value abusive distribution.
+  spam('spam', 'Spam'),
+
+  /// Contains scam or fraud content.
+  scam('scam', 'Scam/Fraud'),
+
   /// Contains spoilers for other media.
   spoiler('spoiler', 'Spoiler'),
 

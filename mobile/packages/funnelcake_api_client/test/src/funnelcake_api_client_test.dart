@@ -99,9 +99,7 @@ void main() {
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
         final videos = await client.getTrendingVideos();
 
@@ -114,9 +112,7 @@ void main() {
       test('constructs correct URL with sort=trending', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getTrendingVideos();
 
@@ -129,14 +125,17 @@ void main() {
         expect(uri.path, equals('/api/videos'));
         expect(uri.queryParameters['sort'], equals('trending'));
         expect(uri.queryParameters['limit'], equals('50'));
+        expect(uri.queryParameters['nsfw'], equals('show'));
+        expect(
+          uri.queryParameters['moderation_profile'],
+          equals(FunnelcakeApiClient.defaultModerationProfile),
+        );
       });
 
       test('includes before parameter when provided', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getTrendingVideos(before: 1700000000);
 
@@ -152,9 +151,7 @@ void main() {
       test('constructs correct URL with custom limit', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getTrendingVideos(limit: 25);
 
@@ -189,9 +186,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmptyId, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmptyId, 200));
 
         final videos = await client.getTrendingVideos();
 
@@ -212,34 +207,27 @@ void main() {
         emptyClient.dispose();
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getTrendingVideos(),
-            throwsA(
-              isA<FunnelcakeApiException>().having(
-                (e) => e.statusCode,
-                'statusCode',
-                equals(500),
-              ),
+        expect(
+          () => client.getTrendingVideos(),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(500),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getTrendingVideos(),
@@ -290,9 +278,7 @@ void main() {
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
         final videos = await client.getRecentVideos();
 
@@ -304,9 +290,7 @@ void main() {
       test('constructs correct URL with sort=recent', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getRecentVideos();
 
@@ -319,14 +303,17 @@ void main() {
         expect(uri.path, equals('/api/videos'));
         expect(uri.queryParameters['sort'], equals('recent'));
         expect(uri.queryParameters['limit'], equals('50'));
+        expect(uri.queryParameters['nsfw'], equals('show'));
+        expect(
+          uri.queryParameters['moderation_profile'],
+          equals(FunnelcakeApiClient.defaultModerationProfile),
+        );
       });
 
       test('includes before parameter when provided', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getRecentVideos(before: 1700000000);
 
@@ -342,9 +329,7 @@ void main() {
       test('constructs correct URL with custom limit', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getRecentVideos(limit: 10);
 
@@ -379,9 +364,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmptyUrl, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmptyUrl, 200));
 
         final videos = await client.getRecentVideos();
 
@@ -402,34 +385,27 @@ void main() {
         emptyClient.dispose();
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getRecentVideos(),
-            throwsA(
-              isA<FunnelcakeApiException>().having(
-                (e) => e.statusCode,
-                'statusCode',
-                equals(500),
-              ),
+        expect(
+          () => client.getRecentVideos(),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(500),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getRecentVideos(),
@@ -484,9 +460,7 @@ void main() {
       test('returns feed response on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validFeedResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validFeedResponse, 200));
 
         final result = await client.getHomeFeed(pubkey: testPubkey);
 
@@ -500,10 +474,7 @@ void main() {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer(
-          (_) async => http.Response(
-            '{"videos": [], "has_more": false}',
-            200,
-          ),
+          (_) async => http.Response('{"videos": [], "has_more": false}', 200),
         );
 
         await client.getHomeFeed(pubkey: testPubkey);
@@ -517,6 +488,11 @@ void main() {
         expect(uri.path, equals('/api/users/$testPubkey/feed'));
         expect(uri.queryParameters['limit'], equals('50'));
         expect(uri.queryParameters['sort'], equals('recent'));
+        expect(uri.queryParameters['nsfw'], equals('show'));
+        expect(
+          uri.queryParameters['moderation_profile'],
+          equals(FunnelcakeApiClient.defaultModerationProfile),
+        );
         expect(uri.queryParameters.containsKey('before'), isFalse);
       });
 
@@ -524,10 +500,7 @@ void main() {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer(
-          (_) async => http.Response(
-            '{"videos": [], "has_more": false}',
-            200,
-          ),
+          (_) async => http.Response('{"videos": [], "has_more": false}', 200),
         );
 
         await client.getHomeFeed(
@@ -581,10 +554,7 @@ void main() {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer(
-          (_) async => http.Response(
-            '{"videos": [], "has_more": false}',
-            200,
-          ),
+          (_) async => http.Response('{"videos": [], "has_more": false}', 200),
         );
 
         final result = await client.getHomeFeed(pubkey: testPubkey);
@@ -618,9 +588,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithInvalid, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithInvalid, 200));
 
         final result = await client.getHomeFeed(pubkey: testPubkey);
 
@@ -657,9 +625,7 @@ void main() {
       test('throws FunnelcakeNotFoundException on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         expect(
           () => client.getHomeFeed(pubkey: testPubkey),
@@ -692,9 +658,7 @@ void main() {
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getHomeFeed(pubkey: testPubkey),
@@ -745,9 +709,7 @@ void main() {
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
         final videos = await client.getVideosByAuthor(pubkey: testPubkey);
 
@@ -761,9 +723,7 @@ void main() {
       test('constructs correct URL with default limit', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getVideosByAuthor(pubkey: testPubkey);
 
@@ -775,14 +735,17 @@ void main() {
         final uri = captured.first as Uri;
         expect(uri.path, equals('/api/users/$testPubkey/videos'));
         expect(uri.queryParameters['limit'], equals('50'));
+        expect(uri.queryParameters['nsfw'], equals('show'));
+        expect(
+          uri.queryParameters['moderation_profile'],
+          equals(FunnelcakeApiClient.defaultModerationProfile),
+        );
       });
 
       test('constructs correct URL with custom limit', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getVideosByAuthor(pubkey: testPubkey, limit: 100);
 
@@ -798,14 +761,9 @@ void main() {
       test('includes before parameter when provided', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
-        await client.getVideosByAuthor(
-          pubkey: testPubkey,
-          before: 1700000000,
-        );
+        await client.getVideosByAuthor(pubkey: testPubkey, before: 1700000000);
 
         final captured = verify(
           () =>
@@ -819,9 +777,7 @@ void main() {
       test('sends correct headers', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getVideosByAuthor(pubkey: testPubkey);
 
@@ -858,9 +814,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmptyId, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmptyId, 200));
 
         final videos = await client.getVideosByAuthor(pubkey: testPubkey);
 
@@ -889,9 +843,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmptyUrl, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmptyUrl, 200));
 
         final videos = await client.getVideosByAuthor(pubkey: testPubkey);
 
@@ -928,9 +880,7 @@ void main() {
       test('throws FunnelcakeNotFoundException on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         expect(
           () => client.getVideosByAuthor(pubkey: testPubkey),
@@ -963,9 +913,7 @@ void main() {
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getVideosByAuthor(pubkey: testPubkey),
@@ -1011,9 +959,7 @@ void main() {
       test('returns profiles on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validProfileResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validProfileResponse, 200));
 
         final profiles = await client.searchProfiles(query: 'test');
 
@@ -1027,9 +973,7 @@ void main() {
       test('constructs correct URL with default limit', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchProfiles(query: 'test');
 
@@ -1048,9 +992,7 @@ void main() {
       test('constructs correct URL with custom limit and offset', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchProfiles(query: 'test', limit: 25, offset: 10);
 
@@ -1067,9 +1009,7 @@ void main() {
       test('trims whitespace from query', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchProfiles(query: '  test  ');
 
@@ -1094,9 +1034,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmptyPubkey, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmptyPubkey, 200));
 
         final profiles = await client.searchProfiles(query: 'test');
 
@@ -1143,34 +1081,27 @@ void main() {
         );
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.searchProfiles(query: 'test'),
-            throwsA(
-              isA<FunnelcakeApiException>().having(
-                (e) => e.statusCode,
-                'statusCode',
-                equals(500),
-              ),
+        expect(
+          () => client.searchProfiles(query: 'test'),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(500),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.searchProfiles(query: 'test'),
@@ -1198,9 +1129,7 @@ void main() {
       test('includes sort_by query param when provided', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchProfiles(query: 'test', sortBy: 'followers');
 
@@ -1216,9 +1145,7 @@ void main() {
       test('includes has_videos query param when true', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchProfiles(query: 'test', hasVideos: true);
 
@@ -1234,9 +1161,7 @@ void main() {
       test('omits has_videos when false (default)', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchProfiles(query: 'test');
 
@@ -1252,9 +1177,7 @@ void main() {
       test('omits sort_by when not provided', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchProfiles(query: 'test');
 
@@ -1267,38 +1190,31 @@ void main() {
         expect(uri.queryParameters.containsKey('sort_by'), isFalse);
       });
 
-      test(
-        'constructs URL with all params',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[]', 200),
-          );
+      test('constructs URL with all params', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
-          await client.searchProfiles(
-            query: 'test',
-            limit: 25,
-            offset: 50,
-            sortBy: 'followers',
-            hasVideos: true,
-          );
+        await client.searchProfiles(
+          query: 'test',
+          limit: 25,
+          offset: 50,
+          sortBy: 'followers',
+          hasVideos: true,
+        );
 
-          final captured = verify(
-            () => mockHttpClient.get(
-              captureAny(),
-              headers: any(named: 'headers'),
-            ),
-          ).captured;
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
 
-          final uri = captured.first as Uri;
-          expect(uri.queryParameters['q'], equals('test'));
-          expect(uri.queryParameters['limit'], equals('25'));
-          expect(uri.queryParameters['offset'], equals('50'));
-          expect(uri.queryParameters['sort_by'], equals('followers'));
-          expect(uri.queryParameters['has_videos'], equals('true'));
-        },
-      );
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['q'], equals('test'));
+        expect(uri.queryParameters['limit'], equals('25'));
+        expect(uri.queryParameters['offset'], equals('50'));
+        expect(uri.queryParameters['sort_by'], equals('followers'));
+        expect(uri.queryParameters['has_videos'], equals('true'));
+      });
 
       test('handles pubkey as byte array', () async {
         // Funnelcake sometimes returns IDs as ASCII byte arrays
@@ -1312,9 +1228,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(byteArrayResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(byteArrayResponse, 200));
 
         final profiles = await client.searchProfiles(query: 'test');
 
@@ -1348,9 +1262,7 @@ void main() {
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validCollabResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validCollabResponse, 200));
 
         final videos = await client.getCollabVideos(pubkey: testPubkey);
 
@@ -1362,17 +1274,13 @@ void main() {
       test('constructs correct URL with default limit', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getCollabVideos(pubkey: testPubkey);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
@@ -1383,20 +1291,13 @@ void main() {
       test('includes before parameter when provided', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
-        await client.getCollabVideos(
-          pubkey: testPubkey,
-          before: 1700000000,
-        );
+        await client.getCollabVideos(pubkey: testPubkey, before: 1700000000);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
@@ -1433,9 +1334,7 @@ void main() {
       test('throws FunnelcakeNotFoundException on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         expect(
           () => client.getCollabVideos(pubkey: testPubkey),
@@ -1468,9 +1367,7 @@ void main() {
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getCollabVideos(pubkey: testPubkey),
@@ -1500,9 +1397,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmptyId, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmptyId, 200));
 
         final videos = await client.getCollabVideos(pubkey: testPubkey);
 
@@ -1521,9 +1416,7 @@ void main() {
       test('returns hashtags on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validHashtagResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validHashtagResponse, 200));
 
         final hashtags = await client.searchHashtags(query: 'bit');
 
@@ -1540,9 +1433,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(tagFieldResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(tagFieldResponse, 200));
 
         final hashtags = await client.searchHashtags(query: 'bit');
 
@@ -1553,9 +1444,7 @@ void main() {
         const stringResponse = '["bitcoin", "nostr"]';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(stringResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(stringResponse, 200));
 
         final hashtags = await client.searchHashtags(query: 'bit');
 
@@ -1565,9 +1454,7 @@ void main() {
       test('constructs correct URL with query parameter', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchHashtags(query: 'bitcoin');
 
@@ -1582,38 +1469,29 @@ void main() {
         expect(uri.queryParameters['limit'], equals('20'));
       });
 
-      test(
-        'constructs correct URL without query when query is null',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[]', 200),
-          );
+      test('constructs correct URL without query when query is null', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
-          await client.searchHashtags();
+        await client.searchHashtags();
 
-          final captured = verify(
-            () => mockHttpClient.get(
-              captureAny(),
-              headers: any(named: 'headers'),
-            ),
-          ).captured;
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
 
-          final uri = captured.first as Uri;
-          expect(uri.queryParameters.containsKey('q'), isFalse);
-          expect(uri.queryParameters['limit'], equals('20'));
-        },
-      );
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters.containsKey('q'), isFalse);
+        expect(uri.queryParameters['limit'], equals('20'));
+      });
 
       test(
         'constructs correct URL without query when query is empty',
         () async {
           when(
             () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[]', 200),
-          );
+          ).thenAnswer((_) async => http.Response('[]', 200));
 
           await client.searchHashtags(query: '');
 
@@ -1632,9 +1510,7 @@ void main() {
       test('passes query through without normalization', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchHashtags(query: 'Bitcoin');
 
@@ -1650,9 +1526,7 @@ void main() {
       test('constructs correct URL with custom limit', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchHashtags(query: 'test', limit: 50);
 
@@ -1675,9 +1549,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmpty, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmpty, 200));
 
         final hashtags = await client.searchHashtags(query: 'test');
 
@@ -1698,34 +1570,27 @@ void main() {
         emptyClient.dispose();
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.searchHashtags(query: 'test'),
-            throwsA(
-              isA<FunnelcakeApiException>().having(
-                (e) => e.statusCode,
-                'statusCode',
-                equals(500),
-              ),
+        expect(
+          () => client.searchHashtags(query: 'test'),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(500),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.searchHashtags(query: 'test'),
@@ -1776,9 +1641,7 @@ void main() {
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
         final videos = await client.getVideosByLoops();
 
@@ -1789,17 +1652,13 @@ void main() {
       test('constructs correct URL with sort=loops', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getVideosByLoops();
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
@@ -1811,24 +1670,17 @@ void main() {
       test('includes before parameter when provided', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getVideosByLoops(before: 1700000000);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(
-          uri.queryParameters['before'],
-          equals('1700000000'),
-        );
+        expect(uri.queryParameters['before'], equals('1700000000'));
       });
 
       test('filters out videos with empty id', () async {
@@ -1841,60 +1693,48 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmptyId, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmptyId, 200));
 
         final videos = await client.getVideosByLoops();
 
         expect(videos, isEmpty);
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            emptyClient.getVideosByLoops,
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          emptyClient.getVideosByLoops,
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getVideosByLoops(),
-            throwsA(
-              isA<FunnelcakeApiException>().having(
-                (e) => e.statusCode,
-                'statusCode',
-                equals(500),
-              ),
+        expect(
+          () => client.getVideosByLoops(),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(500),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getVideosByLoops(),
@@ -1945,79 +1785,61 @@ void main() {
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
-        final videos = await client.getVideosByHashtag(
-          hashtag: 'flutter',
-        );
+        final videos = await client.getVideosByHashtag(hashtag: 'flutter');
 
         expect(videos, hasLength(1));
         expect(videos.first.id, equals('hash123'));
       });
 
-      test(
-        'constructs correct URL with tag and sort=trending',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[]', 200),
-          );
+      test('constructs correct URL with tag and sort=trending', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
-          await client.getVideosByHashtag(hashtag: 'Flutter');
+        await client.getVideosByHashtag(hashtag: 'Flutter');
 
-          final captured = verify(
-            () => mockHttpClient.get(
-              captureAny(),
-              headers: any(named: 'headers'),
-            ),
-          ).captured;
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
 
-          final uri = captured.first as Uri;
-          expect(uri.path, equals('/api/videos'));
-          expect(uri.queryParameters['tag'], equals('flutter'));
-          expect(uri.queryParameters['sort'], equals('trending'));
-        },
-      );
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/videos'));
+        expect(uri.queryParameters['tag'], equals('flutter'));
+        expect(uri.queryParameters['sort'], equals('trending'));
+      });
 
       test('strips # prefix from hashtag', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getVideosByHashtag(hashtag: '#bitcoin');
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
         expect(uri.queryParameters['tag'], equals('bitcoin'));
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getVideosByHashtag(hashtag: 'test'),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getVideosByHashtag(hashtag: 'test'),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
       test('throws FunnelcakeException when hashtag is empty', () {
         expect(
@@ -2045,34 +1867,27 @@ void main() {
         );
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getVideosByHashtag(hashtag: 'test'),
-            throwsA(
-              isA<FunnelcakeApiException>().having(
-                (e) => e.statusCode,
-                'statusCode',
-                equals(500),
-              ),
+        expect(
+          () => client.getVideosByHashtag(hashtag: 'test'),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(500),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getVideosByHashtag(hashtag: 'test'),
@@ -2102,17 +1917,13 @@ void main() {
       test('constructs URL with sort=loops', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getClassicVideosByHashtag(hashtag: 'comedy');
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
@@ -2120,24 +1931,19 @@ void main() {
         expect(uri.queryParameters['sort'], equals('loops'));
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getClassicVideosByHashtag(
-              hashtag: 'test',
-            ),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getClassicVideosByHashtag(hashtag: 'test'),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
       test('throws FunnelcakeException when hashtag is empty', () {
         expect(
@@ -2152,28 +1958,21 @@ void main() {
         );
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getClassicVideosByHashtag(hashtag: 'test'),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getClassicVideosByHashtag(hashtag: 'test'),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getClassicVideosByHashtag(hashtag: 'test'),
@@ -2207,9 +2006,7 @@ void main() {
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
         final videos = await client.searchVideos(query: 'flutter');
 
@@ -2220,17 +2017,13 @@ void main() {
       test('constructs correct URL', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchVideos(query: 'dart');
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
@@ -2242,39 +2035,32 @@ void main() {
       test('trims whitespace from query', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.searchVideos(query: '  flutter  ');
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
         expect(uri.queryParameters['q'], equals('flutter'));
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.searchVideos(query: 'test'),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.searchVideos(query: 'test'),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
       test('throws FunnelcakeException when query is empty', () {
         expect(
@@ -2289,44 +2075,34 @@ void main() {
         );
       });
 
-      test(
-        'throws FunnelcakeException when query is only whitespace',
-        () {
-          expect(
-            () => client.searchVideos(query: '   '),
-            throwsA(
-              isA<FunnelcakeException>().having(
-                (e) => e.message,
-                'message',
-                contains('Search query cannot be empty'),
-              ),
+      test('throws FunnelcakeException when query is only whitespace', () {
+        expect(
+          () => client.searchVideos(query: '   '),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Search query cannot be empty'),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.searchVideos(query: 'test'),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.searchVideos(query: 'test'),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.searchVideos(query: 'test'),
@@ -2377,9 +2153,7 @@ void main() {
       test('returns videos on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
         final videos = await client.getClassicVines();
 
@@ -2390,17 +2164,13 @@ void main() {
       test('constructs correct URL with defaults', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.getClassicVines();
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
@@ -2410,42 +2180,30 @@ void main() {
         expect(uri.queryParameters['sort'], equals('loops'));
       });
 
-      test(
-        'includes offset when sort is not recent and offset > 0',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[]', 200),
-          );
+      test('includes offset when sort is not recent and offset > 0', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
-          await client.getClassicVines(offset: 50);
+        await client.getClassicVines(offset: 50);
 
-          final captured = verify(
-            () => mockHttpClient.get(
-              captureAny(),
-              headers: any(named: 'headers'),
-            ),
-          ).captured;
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
 
-          final uri = captured.first as Uri;
-          expect(uri.queryParameters['offset'], equals('50'));
-        },
-      );
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['offset'], equals('50'));
+      });
 
       test(
         'includes before when sort is recent and before is provided',
         () async {
           when(
             () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('[]', 200),
-          );
+          ).thenAnswer((_) async => http.Response('[]', 200));
 
-          await client.getClassicVines(
-            sort: 'recent',
-            before: 1700000000,
-          );
+          await client.getClassicVines(sort: 'recent', before: 1700000000);
 
           final captured = verify(
             () => mockHttpClient.get(
@@ -2455,14 +2213,8 @@ void main() {
           ).captured;
 
           final uri = captured.first as Uri;
-          expect(
-            uri.queryParameters['before'],
-            equals('1700000000'),
-          );
-          expect(
-            uri.queryParameters.containsKey('offset'),
-            isFalse,
-          );
+          expect(uri.queryParameters['before'], equals('1700000000'));
+          expect(uri.queryParameters.containsKey('offset'), isFalse);
         },
       );
 
@@ -2489,9 +2241,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(wrappedResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(wrappedResponse, 200));
 
         final videos = await client.getClassicVines();
 
@@ -2499,45 +2249,35 @@ void main() {
         expect(videos.first.id, equals('vine456'));
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            emptyClient.getClassicVines,
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          emptyClient.getClassicVines,
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getClassicVines(),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getClassicVines(),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getClassicVines(),
@@ -2557,9 +2297,7 @@ void main() {
       test('returns hashtags on successful response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
         final hashtags = await client.fetchTrendingHashtags();
 
@@ -2572,17 +2310,13 @@ void main() {
       test('constructs correct URL', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
         await client.fetchTrendingHashtags(limit: 10);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
@@ -2596,9 +2330,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmpty, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmpty, 200));
 
         final hashtags = await client.fetchTrendingHashtags();
 
@@ -2606,45 +2338,35 @@ void main() {
         expect(hashtags.first.tag, equals('bitcoin'));
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            emptyClient.fetchTrendingHashtags,
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          emptyClient.fetchTrendingHashtags,
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.fetchTrendingHashtags(),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.fetchTrendingHashtags(),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.fetchTrendingHashtags(),
@@ -2696,9 +2418,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
 
         final stats = await client.getVideoStats(testEventId);
 
@@ -2710,93 +2430,71 @@ void main() {
       test('constructs correct URL', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         await client.getVideoStats(testEventId);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(
-          uri.path,
-          equals('/api/videos/$testEventId/stats'),
-        );
+        expect(uri.path, equals('/api/videos/$testEventId/stats'));
       });
 
       test('returns null on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         final stats = await client.getVideoStats(testEventId);
 
         expect(stats, isNull);
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getVideoStats(testEventId),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getVideoStats(testEventId),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
-      test(
-        'throws FunnelcakeException when event ID is empty',
-        () {
-          expect(
-            () => client.getVideoStats(''),
-            throwsA(
-              isA<FunnelcakeException>().having(
-                (e) => e.message,
-                'message',
-                contains('Event ID cannot be empty'),
-              ),
+      test('throws FunnelcakeException when event ID is empty', () {
+        expect(
+          () => client.getVideoStats(''),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Event ID cannot be empty'),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getVideoStats(testEventId),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getVideoStats(testEventId),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getVideoStats(testEventId),
@@ -2813,9 +2511,7 @@ void main() {
       test('returns view count from views key', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('{"views": 1500}', 200),
-        );
+        ).thenAnswer((_) async => http.Response('{"views": 1500}', 200));
 
         final views = await client.getVideoViews(testEventId);
 
@@ -2825,9 +2521,7 @@ void main() {
       test('returns view count from view_count key', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('{"view_count": 2000}', 200),
-        );
+        ).thenAnswer((_) async => http.Response('{"view_count": 2000}', 200));
 
         final views = await client.getVideoViews(testEventId);
 
@@ -2837,9 +2531,7 @@ void main() {
       test('returns 0 on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         final views = await client.getVideoViews(testEventId);
 
@@ -2849,81 +2541,61 @@ void main() {
       test('constructs correct URL', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         await client.getVideoViews(testEventId);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/videos/$testEventId/views'));
+      });
+
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
         expect(
-          uri.path,
-          equals('/api/videos/$testEventId/views'),
+          () => emptyClient.getVideoViews(testEventId),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test('throws FunnelcakeException when event ID is empty', () {
+        expect(
+          () => client.getVideoViews(''),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Event ID cannot be empty'),
+            ),
+          ),
         );
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => emptyClient.getVideoViews(testEventId),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
-
-          emptyClient.dispose();
-        },
-      );
-
-      test(
-        'throws FunnelcakeException when event ID is empty',
-        () {
-          expect(
-            () => client.getVideoViews(''),
-            throwsA(
-              isA<FunnelcakeException>().having(
-                (e) => e.message,
-                'message',
-                contains('Event ID cannot be empty'),
-              ),
-            ),
-          );
-        },
-      );
-
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
-
-          expect(
-            () => client.getVideoViews(testEventId),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getVideoViews(testEventId),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getVideoViews(testEventId),
@@ -2947,19 +2619,14 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
 
         final profile = await client.getUserProfile(testPubkey);
 
         expect(profile, isNotNull);
         expect(profile!['pubkey'], equals(testPubkey));
         expect(profile['name'], equals('testuser'));
-        expect(
-          profile['display_name'],
-          equals('Test User'),
-        );
+        expect(profile['display_name'], equals('Test User'));
       });
 
       test(
@@ -2969,13 +2636,8 @@ void main() {
 {"profile": {"about": "just about"}}
 ''';
           when(
-            () => mockHttpClient.get(
-              any(),
-              headers: any(named: 'headers'),
-            ),
-          ).thenAnswer(
-            (_) async => http.Response(noNameResponse, 200),
-          );
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer((_) async => http.Response(noNameResponse, 200));
 
           final profile = await client.getUserProfile(testPubkey);
 
@@ -2985,33 +2647,23 @@ void main() {
         },
       );
 
-      test(
-        'returns _noProfile sentinel when profile is null',
-        () async {
-          const nullProfileResponse = '{"profile": null}';
-          when(
-            () => mockHttpClient.get(
-              any(),
-              headers: any(named: 'headers'),
-            ),
-          ).thenAnswer(
-            (_) async => http.Response(nullProfileResponse, 200),
-          );
+      test('returns _noProfile sentinel when profile is null', () async {
+        const nullProfileResponse = '{"profile": null}';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(nullProfileResponse, 200));
 
-          final profile = await client.getUserProfile(testPubkey);
+        final profile = await client.getUserProfile(testPubkey);
 
-          expect(profile, isNotNull);
-          expect(profile!['_noProfile'], isTrue);
-          expect(profile['pubkey'], equals(testPubkey));
-        },
-      );
+        expect(profile, isNotNull);
+        expect(profile!['_noProfile'], isTrue);
+        expect(profile['pubkey'], equals(testPubkey));
+      });
 
       test('returns null on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         final profile = await client.getUserProfile(testPubkey);
 
@@ -3021,42 +2673,32 @@ void main() {
       test('constructs correct URL', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         await client.getUserProfile(testPubkey);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(
-          uri.path,
-          equals('/api/users/$testPubkey'),
-        );
+        expect(uri.path, equals('/api/users/$testPubkey'));
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getUserProfile(testPubkey),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getUserProfile(testPubkey),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
       test('throws FunnelcakeException when pubkey is empty', () {
         expect(
@@ -3071,28 +2713,21 @@ void main() {
         );
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getUserProfile(testPubkey),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getUserProfile(testPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getUserProfile(testPubkey),
@@ -3109,9 +2744,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
 
         final counts = await client.getSocialCounts(testPubkey);
 
@@ -3123,9 +2756,7 @@ void main() {
       test('returns null on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         final counts = await client.getSocialCounts(testPubkey);
 
@@ -3135,42 +2766,32 @@ void main() {
       test('constructs correct URL', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         await client.getSocialCounts(testPubkey);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(
-          uri.path,
-          equals('/api/users/$testPubkey/social'),
-        );
+        expect(uri.path, equals('/api/users/$testPubkey/social'));
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getSocialCounts(testPubkey),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getSocialCounts(testPubkey),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
       test('throws FunnelcakeException when pubkey is empty', () {
         expect(
@@ -3185,28 +2806,21 @@ void main() {
         );
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getSocialCounts(testPubkey),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getSocialCounts(testPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getSocialCounts(testPubkey),
@@ -3222,9 +2836,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
 
         final result = await client.getFollowers(pubkey: testPubkey);
 
@@ -3237,26 +2849,18 @@ void main() {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer(
-          (_) async => http.Response(
-            '{"followers": [], "total": 0}',
-            200,
-          ),
+          (_) async => http.Response('{"followers": [], "total": 0}', 200),
         );
 
         await client.getFollowers(pubkey: testPubkey);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(
-          uri.path,
-          equals('/api/users/$testPubkey/followers'),
-        );
+        expect(uri.path, equals('/api/users/$testPubkey/followers'));
         expect(uri.queryParameters['limit'], equals('100'));
       });
 
@@ -3264,44 +2868,33 @@ void main() {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer(
-          (_) async => http.Response(
-            '{"followers": [], "total": 0}',
-            200,
-          ),
+          (_) async => http.Response('{"followers": [], "total": 0}', 200),
         );
 
-        await client.getFollowers(
-          pubkey: testPubkey,
-          offset: 50,
-        );
+        await client.getFollowers(pubkey: testPubkey, offset: 50);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
         expect(uri.queryParameters['offset'], equals('50'));
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getFollowers(pubkey: testPubkey),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getFollowers(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
       test('throws FunnelcakeException when pubkey is empty', () {
         expect(
@@ -3319,9 +2912,7 @@ void main() {
       test('throws FunnelcakeNotFoundException on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         expect(
           () => client.getFollowers(pubkey: testPubkey),
@@ -3329,28 +2920,21 @@ void main() {
         );
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getFollowers(pubkey: testPubkey),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getFollowers(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getFollowers(pubkey: testPubkey),
@@ -3366,9 +2950,7 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
 
         final result = await client.getFollowing(pubkey: testPubkey);
 
@@ -3381,44 +2963,33 @@ void main() {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer(
-          (_) async => http.Response(
-            '{"following": [], "total": 0}',
-            200,
-          ),
+          (_) async => http.Response('{"following": [], "total": 0}', 200),
         );
 
         await client.getFollowing(pubkey: testPubkey);
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(
-          uri.path,
-          equals('/api/users/$testPubkey/following'),
-        );
+        expect(uri.path, equals('/api/users/$testPubkey/following'));
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getFollowing(pubkey: testPubkey),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getFollowing(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
       test('throws FunnelcakeException when pubkey is empty', () {
         expect(
@@ -3436,9 +3007,7 @@ void main() {
       test('throws FunnelcakeNotFoundException on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         expect(
           () => client.getFollowing(pubkey: testPubkey),
@@ -3446,28 +3015,21 @@ void main() {
         );
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getFollowing(pubkey: testPubkey),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getFollowing(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getFollowing(pubkey: testPubkey),
@@ -3504,13 +3066,9 @@ void main() {
       test('returns recommendations on success', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
 
-        final result = await client.getRecommendations(
-          pubkey: testPubkey,
-        );
+        final result = await client.getRecommendations(pubkey: testPubkey);
 
         expect(result.videos, hasLength(1));
         expect(result.videos.first.id, equals('rec123'));
@@ -3522,10 +3080,8 @@ void main() {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
         ).thenAnswer(
-          (_) async => http.Response(
-            '{"videos": [], "source": "popular"}',
-            200,
-          ),
+          (_) async =>
+              http.Response('{"videos": [], "source": "popular"}', 200),
         );
 
         await client.getRecommendations(
@@ -3536,40 +3092,23 @@ void main() {
         );
 
         final captured = verify(
-          () => mockHttpClient.get(
-            captureAny(),
-            headers: any(named: 'headers'),
-          ),
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
         ).captured;
 
         final uri = captured.first as Uri;
-        expect(
-          uri.path,
-          equals(
-            '/api/users/$testPubkey/recommendations',
-          ),
-        );
+        expect(uri.path, equals('/api/users/$testPubkey/recommendations'));
         expect(uri.queryParameters['limit'], equals('10'));
-        expect(
-          uri.queryParameters['fallback'],
-          equals('recent'),
-        );
-        expect(
-          uri.queryParameters['category'],
-          equals('comedy'),
-        );
+        expect(uri.queryParameters['fallback'], equals('recent'));
+        expect(uri.queryParameters['category'], equals('comedy'));
       });
 
       test('defaults source to unknown when missing', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('{"videos": []}', 200),
-        );
+        ).thenAnswer((_) async => http.Response('{"videos": []}', 200));
 
-        final result = await client.getRecommendations(
-          pubkey: testPubkey,
-        );
+        final result = await client.getRecommendations(pubkey: testPubkey);
 
         expect(result.source, equals('unknown'));
       });
@@ -3590,35 +3129,26 @@ void main() {
 ''';
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithInvalid, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithInvalid, 200));
 
-        final result = await client.getRecommendations(
-          pubkey: testPubkey,
-        );
+        final result = await client.getRecommendations(pubkey: testPubkey);
 
         expect(result.videos, isEmpty);
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getRecommendations(
-              pubkey: testPubkey,
-            ),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getRecommendations(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
       test('throws FunnelcakeException when pubkey is empty', () {
         expect(
@@ -3636,9 +3166,7 @@ void main() {
       test('throws FunnelcakeNotFoundException on 404', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Not found', 404),
-        );
+        ).thenAnswer((_) async => http.Response('Not found', 404));
 
         expect(
           () => client.getRecommendations(pubkey: testPubkey),
@@ -3646,28 +3174,21 @@ void main() {
         );
       });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getRecommendations(pubkey: testPubkey),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getRecommendations(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getRecommendations(pubkey: testPubkey),
@@ -3715,9 +3236,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => http.Response(validResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
 
         final result = await client.getBulkProfiles(['pub1', 'pub2']);
 
@@ -3733,9 +3252,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => http.Response('{"users": []}', 200),
-        );
+        ).thenAnswer((_) async => http.Response('{"users": []}', 200));
 
         await client.getBulkProfiles(['pub1', 'pub2']);
 
@@ -3755,10 +3272,8 @@ void main() {
         expect(body, contains('pub1'));
       });
 
-      test(
-        'filters out entries without pubkey',
-        () async {
-          const responseWithInvalid = '''
+      test('filters out entries without pubkey', () async {
+        const responseWithInvalid = '''
 {
   "users": [
     {"pubkey": "", "profile": {"name": "No Key"}},
@@ -3766,32 +3281,22 @@ void main() {
   ]
 }
 ''';
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer(
-            (_) async => http.Response(responseWithInvalid, 200),
-          );
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response(responseWithInvalid, 200));
 
-          final result = await client.getBulkProfiles(
-            ['pub1'],
-          );
+        final result = await client.getBulkProfiles(['pub1']);
 
-          expect(result.profiles, hasLength(1));
-          expect(
-            result.profiles['pub1']?['name'],
-            equals('Valid'),
-          );
-        },
-      );
+        expect(result.profiles, hasLength(1));
+        expect(result.profiles['pub1']?['name'], equals('Valid'));
+      });
 
-      test(
-        'returns _noProfile sentinel for users with null profile',
-        () async {
-          const response = '''
+      test('returns _noProfile sentinel for users with null profile', () async {
+        const response = '''
 {
   "users": [
     {"pubkey": "pub1", "profile": null},
@@ -3799,37 +3304,24 @@ void main() {
   ]
 }
 ''';
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer(
-            (_) async => http.Response(response, 200),
-          );
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response(response, 200));
 
-          final result = await client.getBulkProfiles(
-            ['pub1', 'pub2'],
-          );
+        final result = await client.getBulkProfiles(['pub1', 'pub2']);
 
-          expect(result.profiles, hasLength(2));
-          expect(
-            result.profiles['pub1']?['_noProfile'],
-            isTrue,
-          );
-          expect(
-            result.profiles['pub2']?['name'],
-            equals('Valid'),
-          );
-        },
-      );
+        expect(result.profiles, hasLength(2));
+        expect(result.profiles['pub1']?['_noProfile'], isTrue);
+        expect(result.profiles['pub2']?['name'], equals('Valid'));
+      });
 
-      test(
-        'returns _noProfile sentinel for users with all-null '
-        'profile fields',
-        () async {
-          const response = '''
+      test('returns _noProfile sentinel for users with all-null '
+          'profile fields', () async {
+        const response = '''
 {
   "users": [
     {
@@ -3839,25 +3331,19 @@ void main() {
   ]
 }
 ''';
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer(
-            (_) async => http.Response(response, 200),
-          );
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response(response, 200));
 
-          final result = await client.getBulkProfiles(['pub1']);
+        final result = await client.getBulkProfiles(['pub1']);
 
-          expect(result.profiles, hasLength(1));
-          expect(
-            result.profiles['pub1']?['_noProfile'],
-            isTrue,
-          );
-        },
-      );
+        expect(result.profiles, hasLength(1));
+        expect(result.profiles['pub1']?['_noProfile'], isTrue);
+      });
 
       test('sends correct headers for POST', () async {
         when(
@@ -3866,9 +3352,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => http.Response('{"users": []}', 200),
-        );
+        ).thenAnswer((_) async => http.Response('{"users": []}', 200));
 
         await client.getBulkProfiles(['pub1']);
 
@@ -3885,58 +3369,47 @@ void main() {
         ).called(1);
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getBulkProfiles(['pub1']),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getBulkProfiles(['pub1']),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
-      test(
-        'throws FunnelcakeException when pubkeys list is empty',
-        () {
-          expect(
-            () => client.getBulkProfiles([]),
-            throwsA(
-              isA<FunnelcakeException>().having(
-                (e) => e.message,
-                'message',
-                contains('Pubkeys list cannot be empty'),
-              ),
+      test('throws FunnelcakeException when pubkeys list is empty', () {
+        expect(
+          () => client.getBulkProfiles([]),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Pubkeys list cannot be empty'),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getBulkProfiles(['pub1']),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getBulkProfiles(['pub1']),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
@@ -3945,9 +3418,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getBulkProfiles(['pub1']),
@@ -3993,13 +3464,9 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => http.Response(validResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
 
-        final result = await client.getBulkVideoStats(
-          ['ev1', 'ev2'],
-        );
+        final result = await client.getBulkVideoStats(['ev1', 'ev2']);
 
         expect(result.stats, hasLength(2));
         expect(result.stats['ev1']?.reactions, equals(10));
@@ -4021,13 +3488,9 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => http.Response(mapResponse, 200),
-        );
+        ).thenAnswer((_) async => http.Response(mapResponse, 200));
 
-        final result = await client.getBulkVideoStats(
-          ['ev1', 'ev2'],
-        );
+        final result = await client.getBulkVideoStats(['ev1', 'ev2']);
 
         expect(result.stats, hasLength(2));
         expect(result.stats['ev1']?.reactions, equals(10));
@@ -4040,9 +3503,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => http.Response('{"stats": []}', 200),
-        );
+        ).thenAnswer((_) async => http.Response('{"stats": []}', 200));
 
         await client.getBulkVideoStats(['ev1', 'ev2']);
 
@@ -4077,9 +3538,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => http.Response(responseWithEmpty, 200),
-        );
+        ).thenAnswer((_) async => http.Response(responseWithEmpty, 200));
 
         final result = await client.getBulkVideoStats(['ev1']);
 
@@ -4087,58 +3546,47 @@ void main() {
         expect(result.stats.containsKey('ev1'), isTrue);
       });
 
-      test(
-        'throws FunnelcakeNotConfiguredException when not available',
-        () {
-          final emptyClient = FunnelcakeApiClient(
-            baseUrl: '',
-            httpClient: mockHttpClient,
-          );
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
 
-          expect(
-            () => emptyClient.getBulkVideoStats(['ev1']),
-            throwsA(isA<FunnelcakeNotConfiguredException>()),
-          );
+        expect(
+          () => emptyClient.getBulkVideoStats(['ev1']),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
 
-          emptyClient.dispose();
-        },
-      );
+        emptyClient.dispose();
+      });
 
-      test(
-        'throws FunnelcakeException when eventIds list is empty',
-        () {
-          expect(
-            () => client.getBulkVideoStats([]),
-            throwsA(
-              isA<FunnelcakeException>().having(
-                (e) => e.message,
-                'message',
-                contains('Event IDs list cannot be empty'),
-              ),
+      test('throws FunnelcakeException when eventIds list is empty', () {
+        expect(
+          () => client.getBulkVideoStats([]),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Event IDs list cannot be empty'),
             ),
-          );
-        },
-      );
+          ),
+        );
+      });
 
-      test(
-        'throws FunnelcakeApiException on error status codes',
-        () async {
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer(
-            (_) async => http.Response('Internal Server Error', 500),
-          );
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
 
-          expect(
-            () => client.getBulkVideoStats(['ev1']),
-            throwsA(isA<FunnelcakeApiException>()),
-          );
-        },
-      );
+        expect(
+          () => client.getBulkVideoStats(['ev1']),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
 
       test('throws FunnelcakeTimeoutException on timeout', () async {
         when(
@@ -4147,9 +3595,7 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           ),
-        ).thenAnswer(
-          (_) async => throw TimeoutException('Request timed out'),
-        );
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
 
         expect(
           () => client.getBulkVideoStats(['ev1']),
@@ -4206,9 +3652,7 @@ void main() {
       test('returns categories on success', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
         final categories = await client.getCategories();
 
@@ -4221,9 +3665,7 @@ void main() {
       test('includes query parameter when provided', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
         await client.getCategories(query: 'mus');
 
@@ -4259,9 +3701,7 @@ void main() {
       test('throws FunnelcakeApiException on non-200 response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Server error', 500),
-        );
+        ).thenAnswer((_) async => http.Response('Server error', 500));
 
         expect(
           () => client.getCategories(),
@@ -4310,13 +3750,9 @@ void main() {
       test('returns videos on success', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response(validResponseBody, 200),
-        );
+        ).thenAnswer((_) async => http.Response(validResponseBody, 200));
 
-        final videos = await client.getVideosByCategory(
-          category: 'music',
-        );
+        final videos = await client.getVideosByCategory(category: 'music');
 
         expect(videos, hasLength(1));
         expect(videos.first.title, equals('Music Video'));
@@ -4325,14 +3761,9 @@ void main() {
       test('includes category and sort in query params', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('[]', 200),
-        );
+        ).thenAnswer((_) async => http.Response('[]', 200));
 
-        await client.getVideosByCategory(
-          category: 'Music',
-          sort: 'loops',
-        );
+        await client.getVideosByCategory(category: 'Music', sort: 'loops');
 
         final captured =
             verify(
@@ -4374,9 +3805,7 @@ void main() {
       test('throws FunnelcakeApiException on non-200 response', () async {
         when(
           () => mockHttpClient.get(any(), headers: any(named: 'headers')),
-        ).thenAnswer(
-          (_) async => http.Response('Error', 500),
-        );
+        ).thenAnswer((_) async => http.Response('Error', 500));
 
         expect(
           () => client.getVideosByCategory(category: 'music'),

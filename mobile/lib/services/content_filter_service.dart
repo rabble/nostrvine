@@ -67,6 +67,9 @@ class ContentFilterService extends ChangeNotifier {
     ContentLabel.harassment: ContentFilterPreference.warn,
     ContentLabel.flashingLights: ContentFilterPreference.warn,
     ContentLabel.aiGenerated: ContentFilterPreference.show,
+    ContentLabel.deepfake: ContentFilterPreference.warn,
+    ContentLabel.spam: ContentFilterPreference.hide,
+    ContentLabel.scam: ContentFilterPreference.hide,
     ContentLabel.spoiler: ContentFilterPreference.show,
     ContentLabel.misleading: ContentFilterPreference.warn,
   };

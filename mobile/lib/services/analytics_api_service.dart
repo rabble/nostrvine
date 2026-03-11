@@ -73,9 +73,11 @@ class _CachedViewCount {
 class AnalyticsApiService {
   static const Duration cacheTimeout = Duration(minutes: 5);
   static const Duration _viewCountCacheTimeout = Duration(seconds: 30);
+  static const String _defaultModerationProfile = 'default';
 
   final String? _baseUrl;
   final http.Client _httpClient;
+  final String _moderationProfile;
 
   // Cache for API responses
   List<VideoStats> _trendingVideosCache = [];
@@ -91,12 +93,26 @@ class AnalyticsApiService {
   final Map<String, DateTime> _hashtagSearchCacheTime = {};
   final Map<String, _CachedViewCount> _videoViewsCache = {};
 
-  AnalyticsApiService({required String? baseUrl, http.Client? httpClient})
-    : _baseUrl = baseUrl,
-      _httpClient = httpClient ?? http.Client();
+  AnalyticsApiService({
+    required String? baseUrl,
+    http.Client? httpClient,
+    String moderationProfile = _defaultModerationProfile,
+  }) : _baseUrl = baseUrl,
+       _httpClient = httpClient ?? http.Client(),
+       _moderationProfile = moderationProfile;
 
   /// Whether the API is available (has a configured base URL)
   bool get isAvailable => _baseUrl != null && _baseUrl.isNotEmpty;
+
+  Uri _buildVideoUri(String path, Map<String, String> params) {
+    return Uri.parse('$_baseUrl$path').replace(
+      queryParameters: {
+        ...params,
+        'nsfw': 'show',
+        'moderation_profile': _moderationProfile,
+      },
+    );
+  }
 
   /// Fetch trending videos sorted by engagement score
   ///
@@ -133,10 +149,12 @@ class AnalyticsApiService {
     }
 
     try {
-      var url = '$_baseUrl/api/videos?sort=trending&limit=$limit';
-      if (before != null) {
-        url += '&before=$before';
-      }
+      final uri = _buildVideoUri('/api/videos', {
+        'sort': 'trending',
+        'limit': limit.toString(),
+        if (before != null) 'before': before.toString(),
+      });
+      final url = uri.toString();
       Log.info(
         'Fetching trending videos from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -145,7 +163,7 @@ class AnalyticsApiService {
 
       final response = await _httpClient
           .get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'OpenVine-Mobile/1.0',
@@ -224,10 +242,12 @@ class AnalyticsApiService {
     }
 
     try {
-      var url = '$_baseUrl/api/videos?sort=loops&limit=$limit';
-      if (before != null) {
-        url += '&before=$before';
-      }
+      final uri = _buildVideoUri('/api/videos', {
+        'sort': 'loops',
+        'limit': limit.toString(),
+        if (before != null) 'before': before.toString(),
+      });
+      final url = uri.toString();
       Log.info(
         'Fetching videos by loops from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -236,7 +256,7 @@ class AnalyticsApiService {
 
       final response = await _httpClient
           .get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'OpenVine-Mobile/1.0',
@@ -319,10 +339,12 @@ class AnalyticsApiService {
     }
 
     try {
-      var url = '$_baseUrl/api/videos?sort=recent&limit=$limit';
-      if (before != null) {
-        url += '&before=$before';
-      }
+      final uri = _buildVideoUri('/api/videos', {
+        'sort': 'recent',
+        'limit': limit.toString(),
+        if (before != null) 'before': before.toString(),
+      });
+      final url = uri.toString();
       Log.info(
         'Fetching recent videos from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -331,7 +353,7 @@ class AnalyticsApiService {
 
       final response = await _httpClient
           .get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'OpenVine-Mobile/1.0',
@@ -414,11 +436,13 @@ class AnalyticsApiService {
     }
 
     try {
-      var url =
-          '$_baseUrl/api/videos?tag=$normalizedTag&sort=trending&limit=$limit';
-      if (before != null) {
-        url += '&before=$before';
-      }
+      final uri = _buildVideoUri('/api/videos', {
+        'tag': normalizedTag,
+        'sort': 'trending',
+        'limit': limit.toString(),
+        if (before != null) 'before': before.toString(),
+      });
+      final url = uri.toString();
       Log.info(
         'Searching videos by hashtag from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -427,7 +451,7 @@ class AnalyticsApiService {
 
       final response = await _httpClient
           .get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'OpenVine-Mobile/1.0',
@@ -508,8 +532,12 @@ class AnalyticsApiService {
     }
 
     try {
-      final url =
-          '$_baseUrl/api/videos?tag=$normalizedTag&sort=loops&limit=$limit';
+      final uri = _buildVideoUri('/api/videos', {
+        'tag': normalizedTag,
+        'sort': 'loops',
+        'limit': limit.toString(),
+      });
+      final url = uri.toString();
       Log.info(
         'Fetching classic videos by hashtag from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -518,7 +546,7 @@ class AnalyticsApiService {
 
       final response = await _httpClient
           .get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'OpenVine-Mobile/1.0',
@@ -928,10 +956,11 @@ class AnalyticsApiService {
     if (!isAvailable || pubkey.isEmpty) return [];
 
     try {
-      var url = '$_baseUrl/api/users/$pubkey/videos?limit=$limit';
-      if (before != null) {
-        url += '&before=$before';
-      }
+      final uri = _buildVideoUri('/api/users/$pubkey/videos', {
+        'limit': limit.toString(),
+        if (before != null) 'before': before.toString(),
+      });
+      final url = uri.toString();
       Log.info(
         'Fetching author videos from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -940,7 +969,7 @@ class AnalyticsApiService {
 
       final response = await _httpClient
           .get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'OpenVine-Mobile/1.0',
@@ -1144,12 +1173,13 @@ class AnalyticsApiService {
     }
 
     try {
-      var url =
-          '$_baseUrl/api/users/$pubkey/feed'
-          '?limit=$limit&sort=$sort&include_collabs=true';
-      if (before != null) {
-        url += '&before=$before';
-      }
+      final uri = _buildVideoUri('/api/users/$pubkey/feed', {
+        'limit': limit.toString(),
+        'sort': sort,
+        'include_collabs': 'true',
+        if (before != null) 'before': before.toString(),
+      });
+      final url = uri.toString();
       Log.info(
         'Fetching home feed from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -1158,7 +1188,7 @@ class AnalyticsApiService {
 
       final response = await _httpClient
           .get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'OpenVine-Mobile/1.0',
@@ -1235,15 +1265,21 @@ class AnalyticsApiService {
     if (!isAvailable) return [];
 
     try {
-      var url =
-          '$_baseUrl/api/videos?classic=true&platform=vine&sort=$sort&limit=$limit';
+      final queryParams = <String, String>{
+        'classic': 'true',
+        'platform': 'vine',
+        'sort': sort,
+        'limit': limit.toString(),
+      };
       // Use offset for rank-based sorting (loops, trending)
       // Use before for time-based sorting (recent)
       if (sort == 'recent' && before != null) {
-        url += '&before=$before';
+        queryParams['before'] = before.toString();
       } else if (offset > 0) {
-        url += '&offset=$offset';
+        queryParams['offset'] = offset.toString();
       }
+      final uri = _buildVideoUri('/api/videos', queryParams);
+      final url = uri.toString();
       Log.info(
         'Fetching classic vines from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -1252,7 +1288,7 @@ class AnalyticsApiService {
 
       final response = await _httpClient
           .get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'OpenVine-Mobile/1.0',
@@ -1541,11 +1577,12 @@ class AnalyticsApiService {
     }
 
     try {
-      var url =
-          '$_baseUrl/api/users/$pubkey/recommendations?limit=$limit&fallback=$fallback';
-      if (category != null && category.isNotEmpty) {
-        url += '&category=${Uri.encodeQueryComponent(category)}';
-      }
+      final uri = _buildVideoUri('/api/users/$pubkey/recommendations', {
+        'limit': limit.toString(),
+        'fallback': fallback,
+        if (category != null && category.isNotEmpty) 'category': category,
+      });
+      final url = uri.toString();
 
       Log.info(
         'Fetching recommendations from Funnelcake: $url',
@@ -1555,7 +1592,7 @@ class AnalyticsApiService {
 
       final response = await _httpClient
           .get(
-            Uri.parse(url),
+            uri,
             headers: {
               'Accept': 'application/json',
               'User-Agent': 'OpenVine-Mobile/1.0',

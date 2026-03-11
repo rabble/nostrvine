@@ -178,9 +178,9 @@ void main() {
             videoUrl: 'https://example.com/nostr.mp4',
             createdAt: 1704067200,
           );
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [nostrEvent],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [nostrEvent]);
 
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
@@ -194,38 +194,41 @@ void main() {
           verify(() => mockNostrClient.queryEvents(any())).called(1);
         });
 
-        test('falls back to Nostr when Funnelcake returns empty', () async {
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getRecentVideos(
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer((_) async => <VideoStats>[]);
+        test(
+          'trusts empty Funnelcake response without Nostr fallback',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getRecentVideos(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer((_) async => <VideoStats>[]);
 
-          final nostrEvent = _createVideoEvent(
-            id: 'nostr-video',
-            pubkey: 'test-pubkey',
-            videoUrl: 'https://example.com/nostr.mp4',
-            createdAt: 1704067200,
-          );
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [nostrEvent],
-          );
+            final nostrEvent = _createVideoEvent(
+              id: 'nostr-video',
+              pubkey: 'test-pubkey',
+              videoUrl: 'https://example.com/nostr.mp4',
+              createdAt: 1704067200,
+            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [nostrEvent]);
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
 
-          final result = await repositoryWithApi.getNewVideos();
+            final result = await repositoryWithApi.getNewVideos();
 
-          expect(result, hasLength(1));
-          expect(result.first.id, equals('nostr-video'));
-        });
+            expect(result, isEmpty);
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+          },
+        );
 
         test(
-          'falls back to Nostr when all API results filtered out',
+          'does not fall back when Funnelcake results are filtered locally',
           () async {
             when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
             when(
@@ -250,9 +253,9 @@ void main() {
               videoUrl: 'https://example.com/nostr.mp4',
               createdAt: 1704067200,
             );
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => [nostrEvent],
-            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [nostrEvent]);
 
             final blockFilter = TestContentFilter(
               blockedPubkeys: {'blocked-pubkey'},
@@ -265,15 +268,15 @@ void main() {
 
             final result = await repositoryWithApi.getNewVideos();
 
-            expect(result, hasLength(1));
-            expect(result.first.id, equals('nostr-video'));
+            expect(result, isEmpty);
+            verifyNever(() => mockNostrClient.queryEvents(any()));
           },
         );
 
         test('skips API when Funnelcake client is null', () async {
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           // Default repository has no Funnelcake client
           await repository.getNewVideos();
@@ -283,9 +286,9 @@ void main() {
 
         test('skips API when Funnelcake is not available', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
@@ -347,9 +350,9 @@ void main() {
       });
 
       test('returns empty list when no events found', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         final result = await repository.getNewVideos();
 
@@ -358,9 +361,9 @@ void main() {
       });
 
       test('queries with correct filter for video kind', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         await repository.getNewVideos(limit: 10);
 
@@ -375,9 +378,9 @@ void main() {
       });
 
       test('passes until parameter for pagination', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         const until = 1704067200; // 2024-01-01 00:00:00 UTC
         await repository.getNewVideos(until: until);
@@ -398,9 +401,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getNewVideos();
 
@@ -423,9 +426,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [validEvent, invalidEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [validEvent, invalidEvent]);
 
         final result = await repository.getNewVideos();
 
@@ -447,9 +450,9 @@ void main() {
           createdAt: 1704153600,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [olderEvent, newerEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [olderEvent, newerEvent]);
 
         final result = await repository.getNewVideos();
 
@@ -508,7 +511,7 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
-        test('applies warning labels from REST content labels', () async {
+        test('applies warning labels from REST moderation labels', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
             () => mockFunnelcakeClient.getHomeFeed(
@@ -524,7 +527,7 @@ void main() {
                   pubkey: 'followed-user',
                   dTag: 'dtag-1',
                   videoUrl: 'https://example.com/video.mp4',
-                  contentLabels: ['violence'],
+                  moderationLabels: ['violence'],
                 ),
               ],
             ),
@@ -569,7 +572,7 @@ void main() {
                     pubkey: 'followed-user',
                     dTag: 'dtag-1',
                     videoUrl: 'https://example.com/video.mp4',
-                    contentLabels: ['violence'],
+                    moderationLabels: ['violence'],
                   ),
                   warnLabels: const ['violence'],
                 ),
@@ -597,7 +600,7 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
-        test('filters hidden labels from REST content labels', () async {
+        test('filters hidden labels from REST moderation labels', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
             () => mockFunnelcakeClient.getHomeFeed(
@@ -613,7 +616,7 @@ void main() {
                   pubkey: 'followed-user',
                   dTag: 'dtag-1',
                   videoUrl: 'https://example.com/video.mp4',
-                  contentLabels: ['nudity'],
+                  moderationLabels: ['nudity'],
                 ),
               ],
             ),
@@ -625,17 +628,13 @@ void main() {
             contentFilter: (video) =>
                 video.contentWarningLabels.contains('nudity'),
           );
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
-
           final result = await repositoryWithApi.getHomeFeedVideos(
             authors: ['followed-user'],
             userPubkey: 'my-pubkey',
           );
 
           expect(result.videos, isEmpty);
-          verify(() => mockNostrClient.queryEvents(any())).called(1);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
         test('passes params to Funnelcake API', () async {
@@ -646,12 +645,10 @@ void main() {
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
-          ).thenAnswer(
-            (_) async => const HomeFeedResponse(videos: []),
-          );
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          ).thenAnswer((_) async => const HomeFeedResponse(videos: []));
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
@@ -690,9 +687,9 @@ void main() {
             videoUrl: 'https://example.com/nostr.mp4',
             createdAt: 1704067200,
           );
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [nostrEvent],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [nostrEvent]);
 
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
@@ -709,47 +706,38 @@ void main() {
           verify(() => mockNostrClient.queryEvents(any())).called(1);
         });
 
-        test('falls back to Nostr when Funnelcake returns empty', () async {
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getHomeFeed(
-              pubkey: any(named: 'pubkey'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => const HomeFeedResponse(videos: []),
-          );
+        test(
+          'trusts empty Funnelcake home feed without Nostr fallback',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getHomeFeed(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer((_) async => const HomeFeedResponse(videos: []));
 
-          final nostrEvent = _createVideoEvent(
-            id: 'nostr-video',
-            pubkey: 'followed-user',
-            videoUrl: 'https://example.com/nostr.mp4',
-            createdAt: 1704067200,
-          );
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [nostrEvent],
-          );
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+            final result = await repositoryWithApi.getHomeFeedVideos(
+              authors: ['followed-user'],
+              userPubkey: 'my-pubkey',
+            );
 
-          final result = await repositoryWithApi.getHomeFeedVideos(
-            authors: ['followed-user'],
-            userPubkey: 'my-pubkey',
-          );
-
-          expect(result.videos, hasLength(1));
-          expect(result.videos.first.id, equals('nostr-video'));
-        });
+            expect(result.videos, isEmpty);
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+          },
+        );
 
         test('skips API when userPubkey is null', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
@@ -804,19 +792,17 @@ void main() {
 
           expect(result.videos, hasLength(1));
           verify(
-            () => mockFunnelcakeClient.getHomeFeed(
-              pubkey: 'my-pubkey',
-              limit: 5,
-            ),
+            () =>
+                mockFunnelcakeClient.getHomeFeed(pubkey: 'my-pubkey', limit: 5),
           ).called(1);
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
         test('skips API when Funnelcake is not available', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
@@ -887,101 +873,90 @@ void main() {
         });
       });
 
-      test(
-        'returns empty list when authors is empty '
-        'and userPubkey is null',
-        () async {
-          final result = await repository.getHomeFeedVideos(authors: []);
+      test('returns empty list when authors is empty '
+          'and userPubkey is null', () async {
+        final result = await repository.getHomeFeedVideos(authors: []);
 
-          expect(result.videos, isEmpty);
-          verifyNever(() => mockNostrClient.queryEvents(any()));
-        },
-      );
+        expect(result.videos, isEmpty);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
 
-      test(
-        'hits Funnelcake API when authors is empty '
-        'but userPubkey is provided',
-        () async {
-          final mockFunnelcakeClient = MockFunnelcakeApiClient();
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getHomeFeed(
-              pubkey: any(named: 'pubkey'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => HomeFeedResponse(
-              videos: [
-                _createVideoStats(
-                  id: 'event-1',
-                  pubkey: 'followed-user',
-                  dTag: 'dtag-1',
-                  videoUrl: 'https://example.com/video.mp4',
-                ),
-              ],
-              hasMore: true,
-              nextCursor: 1704067100,
-            ),
-          );
+      test('hits Funnelcake API when authors is empty '
+          'but userPubkey is provided', () async {
+        final mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => HomeFeedResponse(
+            videos: [
+              _createVideoStats(
+                id: 'event-1',
+                pubkey: 'followed-user',
+                dTag: 'dtag-1',
+                videoUrl: 'https://example.com/video.mp4',
+              ),
+            ],
+            hasMore: true,
+            nextCursor: 1704067100,
+          ),
+        );
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final repositoryWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
 
-          final result = await repositoryWithApi.getHomeFeedVideos(
-            authors: [],
-            userPubkey: 'my-pubkey',
-          );
+        final result = await repositoryWithApi.getHomeFeedVideos(
+          authors: [],
+          userPubkey: 'my-pubkey',
+        );
 
-          expect(result.videos, hasLength(1));
-          verify(
-            () => mockFunnelcakeClient.getHomeFeed(
-              pubkey: 'my-pubkey',
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).called(1);
-          verifyNever(() => mockNostrClient.queryEvents(any()));
-        },
-      );
+        expect(result.videos, hasLength(1));
+        verify(
+          () => mockFunnelcakeClient.getHomeFeed(
+            pubkey: 'my-pubkey',
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).called(1);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
 
-      test(
-        'skips Nostr fallback when authors is empty '
-        'and Funnelcake returns empty',
-        () async {
-          final mockFunnelcakeClient = MockFunnelcakeApiClient();
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getHomeFeed(
-              pubkey: any(named: 'pubkey'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer(
-            (_) async => const HomeFeedResponse(videos: []),
-          );
+      test('skips Nostr fallback when authors is empty '
+          'and Funnelcake returns empty', () async {
+        final mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getHomeFeed(
+            pubkey: any(named: 'pubkey'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async => const HomeFeedResponse(videos: []));
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+        final repositoryWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
 
-          final result = await repositoryWithApi.getHomeFeedVideos(
-            authors: [],
-            userPubkey: 'my-pubkey',
-          );
+        final result = await repositoryWithApi.getHomeFeedVideos(
+          authors: [],
+          userPubkey: 'my-pubkey',
+        );
 
-          expect(result.videos, isEmpty);
-          verifyNever(() => mockNostrClient.queryEvents(any()));
-        },
-      );
+        expect(result.videos, isEmpty);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
 
       test('returns empty list when no events found', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         final result = await repository.getHomeFeedVideos(
           authors: ['pubkey1', 'pubkey2'],
@@ -992,9 +967,9 @@ void main() {
       });
 
       test('queries with correct filter including authors', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         final authors = ['pubkey1', 'pubkey2'];
         await repository.getHomeFeedVideos(authors: authors, limit: 10);
@@ -1011,15 +986,12 @@ void main() {
       });
 
       test('passes until parameter for pagination', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         const until = 1704067200;
-        await repository.getHomeFeedVideos(
-          authors: ['pubkey1'],
-          until: until,
-        );
+        await repository.getHomeFeedVideos(authors: ['pubkey1'], until: until);
 
         final captured = verify(
           () => mockNostrClient.queryEvents(captureAny()),
@@ -1037,9 +1009,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getHomeFeedVideos(
           authors: ['followed-user'],
@@ -1064,9 +1036,9 @@ void main() {
           createdAt: 1704153600,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [olderEvent, newerEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [olderEvent, newerEvent]);
 
         final result = await repository.getHomeFeedVideos(
           authors: ['user1', 'user2'],
@@ -1087,9 +1059,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getHomeFeedVideos(
           authors: ['followed-user'],
@@ -1117,16 +1089,16 @@ void main() {
         );
 
         // Following fetch
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (invocation) async {
-            final filters = invocation.positionalArguments[0] as List<Filter>;
-            if (filters.first.authors != null) {
-              return [followingEvent];
-            }
-            // Event ID fetch for list videos
-            return [listEvent];
-          },
-        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          if (filters.first.authors != null) {
+            return [followingEvent];
+          }
+          // Event ID fetch for list videos
+          return [listEvent];
+        });
 
         final result = await repository.getHomeFeedVideos(
           authors: ['followed-user'],
@@ -1152,9 +1124,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [sharedEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [sharedEvent]);
 
         final result = await repository.getHomeFeedVideos(
           authors: ['followed-user'],
@@ -1180,13 +1152,13 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (invocation) async {
-            final filters = invocation.positionalArguments[0] as List<Filter>;
-            if (filters.first.authors != null) return <Event>[];
-            return [event];
-          },
-        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          if (filters.first.authors != null) return <Event>[];
+          return [event];
+        });
 
         final result = await repository.getHomeFeedVideos(
           authors: ['followed-user'],
@@ -1221,13 +1193,11 @@ void main() {
         );
 
         var callCount = 0;
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async {
-            callCount++;
-            if (callCount == 1) return [followingEvent]; // Following fetch
-            return [addressableEvent]; // Addressable fetch
-          },
-        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return [followingEvent]; // Following fetch
+          return [addressableEvent]; // Addressable fetch
+        });
 
         final result = await repository.getHomeFeedVideos(
           authors: ['followed-user'],
@@ -1264,14 +1234,12 @@ void main() {
         );
 
         var callCount = 0;
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async {
-            callCount++;
-            if (callCount == 1) return [followingEvent]; // Following
-            if (callCount == 2) return [eventIdVideo]; // Event IDs
-            return [addressableVideo]; // Addressable
-          },
-        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return [followingEvent]; // Following
+          if (callCount == 2) return [eventIdVideo]; // Event IDs
+          return [addressableVideo]; // Addressable
+        });
 
         final result = await repository.getHomeFeedVideos(
           authors: ['followed-user'],
@@ -1297,13 +1265,11 @@ void main() {
         );
 
         var callCount = 0;
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async {
-            callCount++;
-            if (callCount == 1) return <Event>[]; // Following (empty)
-            return [listEvent]; // List video fetch
-          },
-        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return <Event>[]; // Following (empty)
+          return [listEvent]; // List video fetch
+        });
 
         final result = await repository.getHomeFeedVideos(
           authors: ['followed-user'],
@@ -1340,13 +1306,11 @@ void main() {
         );
 
         var callCount = 0;
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async {
-            callCount++;
-            if (callCount == 1) return [old, newest]; // Following
-            return [mid]; // List videos
-          },
-        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return [old, newest]; // Following
+          return [mid]; // List videos
+        });
 
         final result = await repository.getHomeFeedVideos(
           authors: ['followed-user'],
@@ -1361,36 +1325,33 @@ void main() {
         expect(result.videos[2].id, equals('old-following'));
       });
 
-      test(
-        'case-insensitive dedup between following and list',
-        () async {
-          final followingEvent = _createVideoEvent(
-            id: 'AbCdEf',
-            pubkey: 'followed-user',
-            videoUrl: 'https://example.com/video.mp4',
-            createdAt: 1704067200,
-          );
+      test('case-insensitive dedup between following and list', () async {
+        final followingEvent = _createVideoEvent(
+          id: 'AbCdEf',
+          pubkey: 'followed-user',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
 
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (invocation) async {
-              final filters = invocation.positionalArguments[0] as List<Filter>;
-              if (filters.first.authors != null) return [followingEvent];
-              return [followingEvent]; // Same video from list fetch
-            },
-          );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((
+          invocation,
+        ) async {
+          final filters = invocation.positionalArguments[0] as List<Filter>;
+          if (filters.first.authors != null) return [followingEvent];
+          return [followingEvent]; // Same video from list fetch
+        });
 
-          final result = await repository.getHomeFeedVideos(
-            authors: ['followed-user'],
-            videoRefs: {
-              'list-a': ['AbCdEf'],
-            },
-          );
+        final result = await repository.getHomeFeedVideos(
+          authors: ['followed-user'],
+          videoRefs: {
+            'list-a': ['AbCdEf'],
+          },
+        );
 
-          // Video appears only once despite being in both
-          expect(result.videos, hasLength(1));
-          expect(result.listOnlyVideoIds, isEmpty);
-        },
-      );
+        // Video appears only once despite being in both
+        expect(result.videos, hasLength(1));
+        expect(result.listOnlyVideoIds, isEmpty);
+      });
     });
 
     group('getVideosForList', () {
@@ -1409,9 +1370,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getVideosForList(['event-1']);
 
@@ -1428,13 +1389,13 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
-        final result = await repository.getVideosForList(
-          ['34236:author-1:my-vine'],
-        );
+        final result = await repository.getVideosForList([
+          '34236:author-1:my-vine',
+        ]);
 
         expect(result, hasLength(1));
         expect(result.first.vineId, equals('my-vine'));
@@ -1457,13 +1418,11 @@ void main() {
         );
 
         var callCount = 0;
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async {
-            callCount++;
-            if (callCount == 1) return [eventIdVideo];
-            return [addressableVideo];
-          },
-        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) return [eventIdVideo];
+          return [addressableVideo];
+        });
 
         final result = await repository.getVideosForList([
           'event-video',
@@ -1497,9 +1456,9 @@ void main() {
           createdAt: 2000,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [video1, video2, video3],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [video1, video2, video3]);
 
         // Request in specific order regardless of createdAt
         final result = await repository.getVideosForList([
@@ -1522,9 +1481,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [video],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [video]);
 
         final result = await repository.getVideosForList([
           'found-video',
@@ -1537,9 +1496,9 @@ void main() {
     });
     group('getProfileVideos', () {
       test('returns empty list when no events found', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         final result = await repository.getProfileVideos(
           authorPubkey: 'test-pubkey',
@@ -1550,9 +1509,9 @@ void main() {
       });
 
       test('queries with correct filter for single author', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         const authorPubkey = 'user-pubkey-123';
         await repository.getProfileVideos(
@@ -1572,9 +1531,9 @@ void main() {
       });
 
       test('passes until parameter for pagination', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         const until = 1704067200;
         await repository.getProfileVideos(
@@ -1598,9 +1557,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getProfileVideos(
           authorPubkey: 'user-pubkey',
@@ -1625,9 +1584,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [validEvent, invalidEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [validEvent, invalidEvent]);
 
         final result = await repository.getProfileVideos(
           authorPubkey: 'user-pubkey',
@@ -1651,9 +1610,9 @@ void main() {
           createdAt: 1704153600,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [olderEvent, newerEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [olderEvent, newerEvent]);
 
         final result = await repository.getProfileVideos(
           authorPubkey: 'user-pubkey',
@@ -1665,9 +1624,9 @@ void main() {
       });
 
       test('uses default limit of 5 when not specified', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         await repository.getProfileVideos(authorPubkey: 'test-pubkey');
 
@@ -1839,38 +1798,33 @@ void main() {
           ).called(1);
         });
 
-        test('falls back to NIP-50 when Funnelcake returns empty', () async {
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getTrendingVideos(
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer((_) async => <VideoStats>[]);
+        test(
+          'trusts empty Funnelcake popular feed without NIP-50 fallback',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getTrendingVideos(
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer((_) async => <VideoStats>[]);
 
-          final nip50Event = _createVideoEvent(
-            id: 'nip50-video',
-            pubkey: 'test-pubkey',
-            videoUrl: 'https://example.com/nip50.mp4',
-            createdAt: 1704067200,
-          );
-          when(
-            () => mockNostrClient.queryEvents(
-              any(),
-              useCache: any(named: 'useCache'),
-            ),
-          ).thenAnswer((_) async => [nip50Event]);
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+            final result = await repositoryWithApi.getPopularVideos();
 
-          final result = await repositoryWithApi.getPopularVideos();
-
-          expect(result, hasLength(1));
-          expect(result.first.id, equals('nip50-video'));
-        });
+            expect(result, isEmpty);
+            verifyNever(
+              () => mockNostrClient.queryEvents(
+                any(),
+                useCache: any(named: 'useCache'),
+              ),
+            );
+          },
+        );
 
         test('skips API when Funnelcake client is null', () async {
           // getPopularVideos without Funnelcake goes straight to NIP-50
@@ -2270,9 +2224,7 @@ void main() {
         const blockedPubkey = 'blocked-user-pubkey';
         const allowedPubkey = 'allowed-user-pubkey';
 
-        final filter = TestContentFilter(
-          blockedPubkeys: {blockedPubkey},
-        );
+        final filter = TestContentFilter(blockedPubkeys: {blockedPubkey});
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
           blockFilter: filter.call,
@@ -2291,9 +2243,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [blockedEvent, allowedEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [blockedEvent, allowedEvent]);
 
         final result = await repositoryWithFilter.getNewVideos();
 
@@ -2310,9 +2262,7 @@ void main() {
         const blockedPubkey = 'blocked-followed-user';
         const allowedPubkey = 'allowed-followed-user';
 
-        final filter = TestContentFilter(
-          blockedPubkeys: {blockedPubkey},
-        );
+        final filter = TestContentFilter(blockedPubkeys: {blockedPubkey});
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
           blockFilter: filter.call,
@@ -2331,9 +2281,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [blockedEvent, allowedEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [blockedEvent, allowedEvent]);
 
         final result = await repositoryWithFilter.getHomeFeedVideos(
           authors: [blockedPubkey, allowedPubkey],
@@ -2347,9 +2297,7 @@ void main() {
         const blockedPubkey = 'blocked-popular-user';
         const allowedPubkey = 'allowed-popular-user';
 
-        final filter = TestContentFilter(
-          blockedPubkeys: {blockedPubkey},
-        );
+        final filter = TestContentFilter(blockedPubkeys: {blockedPubkey});
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
           blockFilter: filter.call,
@@ -2392,9 +2340,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getNewVideos();
 
@@ -2403,9 +2351,7 @@ void main() {
       });
 
       test('filters all videos if all pubkeys are blocked', () async {
-        final filter = TestContentFilter(
-          blockedPubkeys: {'user-1', 'user-2'},
-        );
+        final filter = TestContentFilter(blockedPubkeys: {'user-1', 'user-2'});
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
           blockFilter: filter.call,
@@ -2426,9 +2372,9 @@ void main() {
           ),
         ];
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => events,
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => events);
 
         final result = await repositoryWithFilter.getNewVideos();
 
@@ -2440,9 +2386,7 @@ void main() {
         // expensive VideoEvent.fromNostrEvent() call
         const blockedPubkey = 'blocked-user';
 
-        final filter = TestContentFilter(
-          blockedPubkeys: {blockedPubkey},
-        );
+        final filter = TestContentFilter(blockedPubkeys: {blockedPubkey});
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
           blockFilter: filter.call,
@@ -2455,9 +2399,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [blockedEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [blockedEvent]);
 
         final result = await repositoryWithFilter.getNewVideos();
 
@@ -2476,9 +2420,9 @@ void main() {
       });
 
       test('queries with correct filter for event IDs', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         final eventIds = ['id-1', 'id-2', 'id-3'];
         await repository.getVideosByIds(eventIds);
@@ -2490,10 +2434,7 @@ void main() {
 
         expect(filters, hasLength(1));
         expect(filters.first.ids, equals(eventIds));
-        expect(
-          filters.first.kinds,
-          equals(NIP71VideoKinds.getAllVideoKinds()),
-        );
+        expect(filters.first.kinds, equals(NIP71VideoKinds.getAllVideoKinds()));
       });
 
       test('transforms valid events to VideoEvents', () async {
@@ -2504,9 +2445,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getVideosByIds(['test-id-123']);
 
@@ -2536,9 +2477,9 @@ void main() {
         );
 
         // Return events in different order than requested
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event3, event1, event2],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event3, event1, event2]);
 
         final result = await repository.getVideosByIds([
           'id-1',
@@ -2566,9 +2507,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [validEvent, invalidEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [validEvent, invalidEvent]);
 
         final result = await repository.getVideosByIds([
           'valid-id',
@@ -2587,9 +2528,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getVideosByIds([
           'found-id',
@@ -2605,9 +2546,7 @@ void main() {
         const blockedPubkey = 'blocked-user-pubkey';
         const allowedPubkey = 'allowed-user-pubkey';
 
-        final filter = TestContentFilter(
-          blockedPubkeys: {blockedPubkey},
-        );
+        final filter = TestContentFilter(blockedPubkeys: {blockedPubkey});
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
           blockFilter: filter.call,
@@ -2626,9 +2565,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [blockedEvent, allowedEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [blockedEvent, allowedEvent]);
 
         final result = await repositoryWithFilter.getVideosByIds([
           'blocked-video',
@@ -2660,9 +2599,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [nsfwEvent, safeEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [nsfwEvent, safeEvent]);
 
         final result = await repositoryWithFilter.getVideosByIds([
           'nsfw-video',
@@ -2693,9 +2632,9 @@ void main() {
       });
 
       test('queries with correct filters for addressable IDs', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         final addressableIds = [
           '${EventKind.videoVertical}:pubkey1:dtag1',
@@ -2726,9 +2665,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getVideosByAddressableIds([
           '${EventKind.videoVertical}:test-pubkey:test-id-123',
@@ -2760,9 +2699,9 @@ void main() {
         );
 
         // Return events in different order than requested
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event3, event1, event2],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event3, event1, event2]);
 
         final result = await repository.getVideosByAddressableIds([
           '${EventKind.videoVertical}:pubkey-1:dtag-1',
@@ -2785,9 +2724,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getVideosByAddressableIds([
           '${EventKind.videoVertical}:test-pubkey:dtag:with:colons',
@@ -2811,9 +2750,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [validEvent, invalidEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [validEvent, invalidEvent]);
 
         final result = await repository.getVideosByAddressableIds([
           '${EventKind.videoVertical}:test-pubkey:valid-dtag',
@@ -2832,9 +2771,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getVideosByAddressableIds([
           '${EventKind.videoVertical}:test-pubkey:found-dtag',
@@ -2848,9 +2787,9 @@ void main() {
 
       test('filters out non-video kinds', () async {
         // Should skip filters for non-video kinds
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         final result = await repository.getVideosByAddressableIds([
           '1:pubkey:dtag', // kind 1 is not a video kind
@@ -2865,9 +2804,7 @@ void main() {
         const blockedPubkey = 'blocked-user-pubkey';
         const allowedPubkey = 'allowed-user-pubkey';
 
-        final filter = TestContentFilter(
-          blockedPubkeys: {blockedPubkey},
-        );
+        final filter = TestContentFilter(blockedPubkeys: {blockedPubkey});
         final repositoryWithFilter = VideosRepository(
           nostrClient: mockNostrClient,
           blockFilter: filter.call,
@@ -2886,9 +2823,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [blockedEvent, allowedEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [blockedEvent, allowedEvent]);
 
         final result = await repositoryWithFilter.getVideosByAddressableIds([
           '${EventKind.videoVertical}:$blockedPubkey:blocked-dtag',
@@ -2920,9 +2857,9 @@ void main() {
           createdAt: 1704067201,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [nsfwEvent, safeEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [nsfwEvent, safeEvent]);
 
         final result = await repositoryWithFilter.getVideosByAddressableIds([
           '${EventKind.videoVertical}:user-1:nsfw-dtag',
@@ -2942,9 +2879,9 @@ void main() {
 
         test('does not call Funnelcake API when client is null', () async {
           // Repository without Funnelcake client
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           final result = await repository.getVideosByAddressableIds([
             '${EventKind.videoVertical}:pubkey1:dtag1',
@@ -2964,14 +2901,14 @@ void main() {
               funnelcakeApiClient: mockFunnelcakeClient,
             );
 
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => <Event>[],
-            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => <Event>[]);
 
             final result = await repositoryWithFunnelcake
-                .getVideosByAddressableIds(
-                  ['${EventKind.videoVertical}:pubkey1:dtag1'],
-                );
+                .getVideosByAddressableIds([
+                  '${EventKind.videoVertical}:pubkey1:dtag1',
+                ]);
 
             expect(result, isEmpty);
             verifyNever(
@@ -3000,14 +2937,14 @@ void main() {
               createdAt: 1704067200,
             );
 
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => [event],
-            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [event]);
 
             final result = await repositoryWithFunnelcake
-                .getVideosByAddressableIds(
-                  ['${EventKind.videoVertical}:pubkey1:dtag1'],
-                );
+                .getVideosByAddressableIds([
+                  '${EventKind.videoVertical}:pubkey1:dtag1',
+                ]);
 
             expect(result, hasLength(1));
             verifyNever(
@@ -3030,9 +2967,9 @@ void main() {
             );
 
             // Nostr returns nothing
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => <Event>[],
-            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => <Event>[]);
 
             // Funnelcake returns the video
             final videoStats = _createVideoStats(
@@ -3050,9 +2987,9 @@ void main() {
             ).thenAnswer((_) async => [videoStats]);
 
             final result = await repositoryWithFunnelcake
-                .getVideosByAddressableIds(
-                  ['${EventKind.videoVertical}:pubkey1:dtag1'],
-                );
+                .getVideosByAddressableIds([
+                  '${EventKind.videoVertical}:pubkey1:dtag1',
+                ]);
 
             expect(result, hasLength(1));
             expect(result.first.vineId, equals('dtag1'));
@@ -3083,9 +3020,9 @@ void main() {
               createdAt: 1704067200,
             );
 
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => [nostrEvent],
-            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [nostrEvent]);
 
             // Funnelcake returns the second video
             final videoStats = _createVideoStats(
@@ -3103,12 +3040,10 @@ void main() {
             ).thenAnswer((_) async => [videoStats]);
 
             final result = await repositoryWithFunnelcake
-                .getVideosByAddressableIds(
-                  [
-                    '${EventKind.videoVertical}:pubkey1:dtag1',
-                    '${EventKind.videoVertical}:pubkey2:dtag2',
-                  ],
-                );
+                .getVideosByAddressableIds([
+                  '${EventKind.videoVertical}:pubkey1:dtag1',
+                  '${EventKind.videoVertical}:pubkey2:dtag2',
+                ]);
 
             expect(result, hasLength(2));
             expect(result[0].vineId, equals('dtag1'));
@@ -3132,9 +3067,9 @@ void main() {
             createdAt: 1704067200,
           );
 
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [nostrEvent],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [nostrEvent]);
 
           // Funnelcake returns videos 1 and 3
           final videoStats1 = _createVideoStats(
@@ -3165,13 +3100,11 @@ void main() {
           ).thenAnswer((_) async => [videoStats3]);
 
           final result = await repositoryWithFunnelcake
-              .getVideosByAddressableIds(
-                [
-                  '${EventKind.videoVertical}:pubkey1:dtag1',
-                  '${EventKind.videoVertical}:pubkey2:dtag2',
-                  '${EventKind.videoVertical}:pubkey3:dtag3',
-                ],
-              );
+              .getVideosByAddressableIds([
+                '${EventKind.videoVertical}:pubkey1:dtag1',
+                '${EventKind.videoVertical}:pubkey2:dtag2',
+                '${EventKind.videoVertical}:pubkey3:dtag3',
+              ]);
 
           expect(result, hasLength(3));
           // Order should match input addressable IDs
@@ -3196,9 +3129,9 @@ void main() {
             createdAt: 1704067200,
           );
 
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [nostrEvent],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [nostrEvent]);
 
           // Funnelcake throws an exception
           when(
@@ -3210,12 +3143,10 @@ void main() {
 
           // Should not throw, just return what Nostr found
           final result = await repositoryWithFunnelcake
-              .getVideosByAddressableIds(
-                [
-                  '${EventKind.videoVertical}:pubkey1:dtag1',
-                  '${EventKind.videoVertical}:pubkey2:dtag2',
-                ],
-              );
+              .getVideosByAddressableIds([
+                '${EventKind.videoVertical}:pubkey1:dtag1',
+                '${EventKind.videoVertical}:pubkey2:dtag2',
+              ]);
 
           expect(result, hasLength(1));
           expect(result.first.vineId, equals('dtag1'));
@@ -3234,9 +3165,9 @@ void main() {
           );
 
           // Nostr returns nothing
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           // Funnelcake returns a video from blocked pubkey
           final videoStats = _createVideoStats(
@@ -3270,9 +3201,9 @@ void main() {
           );
 
           // Nostr returns nothing
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           // Funnelcake returns a video without URL
           final videoStats = _createVideoStats(
@@ -3290,9 +3221,9 @@ void main() {
           ).thenAnswer((_) async => [videoStats]);
 
           final result = await repositoryWithFunnelcake
-              .getVideosByAddressableIds(
-                ['${EventKind.videoVertical}:pubkey1:dtag1'],
-              );
+              .getVideosByAddressableIds([
+                '${EventKind.videoVertical}:pubkey1:dtag1',
+              ]);
 
           expect(result, isEmpty);
         });
@@ -3306,9 +3237,9 @@ void main() {
           );
 
           // Nostr returns nothing
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           // Funnelcake returns both videos from the same author
           final videoStats1 = _createVideoStats(
@@ -3332,12 +3263,10 @@ void main() {
           ).thenAnswer((_) async => [videoStats1, videoStats2]);
 
           final result = await repositoryWithFunnelcake
-              .getVideosByAddressableIds(
-                [
-                  '${EventKind.videoVertical}:same-pubkey:dtag1',
-                  '${EventKind.videoVertical}:same-pubkey:dtag2',
-                ],
-              );
+              .getVideosByAddressableIds([
+                '${EventKind.videoVertical}:same-pubkey:dtag1',
+                '${EventKind.videoVertical}:same-pubkey:dtag2',
+              ]);
 
           expect(result, hasLength(2));
           // Should only make one API call for the same pubkey
@@ -3374,9 +3303,9 @@ void main() {
           hashtags: ['funny', 'cat'],
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [nsfwEvent, safeEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [nsfwEvent, safeEvent]);
 
         final result = await repositoryWithFilter.getNewVideos();
 
@@ -3400,9 +3329,9 @@ void main() {
           hashtags: ['adult'],
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [adultEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [adultEvent]);
 
         final result = await repositoryWithFilter.getNewVideos();
 
@@ -3424,9 +3353,9 @@ void main() {
           hasContentWarning: true,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [cwEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [cwEvent]);
 
         final result = await repositoryWithFilter.getNewVideos();
 
@@ -3443,9 +3372,9 @@ void main() {
           hashtags: ['nsfw'],
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [nsfwEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [nsfwEvent]);
 
         final result = await repository.getNewVideos();
 
@@ -3468,9 +3397,9 @@ void main() {
           hashtags: ['nsfw'],
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [nsfwEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [nsfwEvent]);
 
         final result = await repositoryWithFilter.getNewVideos();
 
@@ -3511,9 +3440,9 @@ void main() {
           createdAt: 1704067202,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [blockedEvent, nsfwEvent, safeEvent],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [blockedEvent, nsfwEvent, safeEvent]);
 
         final result = await repositoryWithBothFilters.getNewVideos();
 
@@ -3542,9 +3471,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         await repositoryWithFilter.getNewVideos();
 
@@ -3575,9 +3504,9 @@ void main() {
             createdAt: 1704067200,
           );
 
-          when(() => mockLocalStorage.getEventsByIds(any())).thenAnswer(
-            (_) async => [cachedEvent],
-          );
+          when(
+            () => mockLocalStorage.getEventsByIds(any()),
+          ).thenAnswer((_) async => [cachedEvent]);
 
           final repositoryWithCache = VideosRepository(
             nostrClient: mockNostrClient,
@@ -3610,25 +3539,25 @@ void main() {
               createdAt: 1704067201,
             );
 
-            when(() => mockLocalStorage.getEventsByIds(any())).thenAnswer(
-              (_) async => [cachedEvent],
-            );
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => [relayEvent],
-            );
-            when(() => mockLocalStorage.saveEventsBatch(any())).thenAnswer(
-              (_) async {},
-            );
+            when(
+              () => mockLocalStorage.getEventsByIds(any()),
+            ).thenAnswer((_) async => [cachedEvent]);
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [relayEvent]);
+            when(
+              () => mockLocalStorage.saveEventsBatch(any()),
+            ).thenAnswer((_) async {});
 
             final repositoryWithCache = VideosRepository(
               nostrClient: mockNostrClient,
               localStorage: mockLocalStorage,
             );
 
-            final result = await repositoryWithCache.getVideosByIds(
-              ['cached-id', 'relay-id'],
-              cacheResults: true,
-            );
+            final result = await repositoryWithCache.getVideosByIds([
+              'cached-id',
+              'relay-id',
+            ], cacheResults: true);
 
             expect(result, hasLength(2));
             // Preserves input order
@@ -3649,25 +3578,24 @@ void main() {
               createdAt: 1704067200,
             );
 
-            when(() => mockLocalStorage.getEventsByIds(any())).thenAnswer(
-              (_) async => <Event>[],
-            );
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => [relayEvent],
-            );
-            when(() => mockLocalStorage.saveEventsBatch(any())).thenAnswer(
-              (_) async {},
-            );
+            when(
+              () => mockLocalStorage.getEventsByIds(any()),
+            ).thenAnswer((_) async => <Event>[]);
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [relayEvent]);
+            when(
+              () => mockLocalStorage.saveEventsBatch(any()),
+            ).thenAnswer((_) async {});
 
             final repositoryWithCache = VideosRepository(
               nostrClient: mockNostrClient,
               localStorage: mockLocalStorage,
             );
 
-            await repositoryWithCache.getVideosByIds(
-              ['relay-id'],
-              cacheResults: true,
-            );
+            await repositoryWithCache.getVideosByIds([
+              'relay-id',
+            ], cacheResults: true);
 
             verify(
               () => mockLocalStorage.saveEventsBatch([relayEvent]),
@@ -3675,33 +3603,30 @@ void main() {
           },
         );
 
-        test(
-          'does not save to cache when cacheResults is false',
-          () async {
-            final relayEvent = _createVideoEvent(
-              id: 'relay-id',
-              pubkey: 'test-pubkey',
-              videoUrl: 'https://example.com/relay.mp4',
-              createdAt: 1704067200,
-            );
+        test('does not save to cache when cacheResults is false', () async {
+          final relayEvent = _createVideoEvent(
+            id: 'relay-id',
+            pubkey: 'test-pubkey',
+            videoUrl: 'https://example.com/relay.mp4',
+            createdAt: 1704067200,
+          );
 
-            when(() => mockLocalStorage.getEventsByIds(any())).thenAnswer(
-              (_) async => <Event>[],
-            );
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => [relayEvent],
-            );
+          when(
+            () => mockLocalStorage.getEventsByIds(any()),
+          ).thenAnswer((_) async => <Event>[]);
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [relayEvent]);
 
-            final repositoryWithCache = VideosRepository(
-              nostrClient: mockNostrClient,
-              localStorage: mockLocalStorage,
-            );
+          final repositoryWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
 
-            await repositoryWithCache.getVideosByIds(['relay-id']);
+          await repositoryWithCache.getVideosByIds(['relay-id']);
 
-            verifyNever(() => mockLocalStorage.saveEventsBatch(any()));
-          },
-        );
+          verifyNever(() => mockLocalStorage.saveEventsBatch(any()));
+        });
       });
 
       group('getVideosByAddressableIds with localStorage', () {
@@ -3715,22 +3640,21 @@ void main() {
               createdAt: 1704067200,
             );
 
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => [relayEvent],
-            );
-            when(() => mockLocalStorage.saveEventsBatch(any())).thenAnswer(
-              (_) async {},
-            );
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [relayEvent]);
+            when(
+              () => mockLocalStorage.saveEventsBatch(any()),
+            ).thenAnswer((_) async {});
 
             final repositoryWithCache = VideosRepository(
               nostrClient: mockNostrClient,
               localStorage: mockLocalStorage,
             );
 
-            await repositoryWithCache.getVideosByAddressableIds(
-              ['${EventKind.videoVertical}:pubkey1:dtag1'],
-              cacheResults: true,
-            );
+            await repositoryWithCache.getVideosByAddressableIds([
+              '${EventKind.videoVertical}:pubkey1:dtag1',
+            ], cacheResults: true);
 
             verify(
               () => mockLocalStorage.saveEventsBatch([relayEvent]),
@@ -3738,53 +3662,46 @@ void main() {
           },
         );
 
-        test(
-          'does not save to cache when cacheResults is false',
-          () async {
-            final relayEvent = _createVideoEvent(
-              id: 'dtag1',
-              pubkey: 'pubkey1',
-              videoUrl: 'https://example.com/video.mp4',
-              createdAt: 1704067200,
-            );
+        test('does not save to cache when cacheResults is false', () async {
+          final relayEvent = _createVideoEvent(
+            id: 'dtag1',
+            pubkey: 'pubkey1',
+            videoUrl: 'https://example.com/video.mp4',
+            createdAt: 1704067200,
+          );
 
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => [relayEvent],
-            );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [relayEvent]);
 
-            final repositoryWithCache = VideosRepository(
-              nostrClient: mockNostrClient,
-              localStorage: mockLocalStorage,
-            );
+          final repositoryWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
 
-            await repositoryWithCache.getVideosByAddressableIds(
-              ['${EventKind.videoVertical}:pubkey1:dtag1'],
-            );
+          await repositoryWithCache.getVideosByAddressableIds([
+            '${EventKind.videoVertical}:pubkey1:dtag1',
+          ]);
 
-            verifyNever(() => mockLocalStorage.saveEventsBatch(any()));
-          },
-        );
+          verifyNever(() => mockLocalStorage.saveEventsBatch(any()));
+        });
 
-        test(
-          'does not save to cache when no events are fetched',
-          () async {
-            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-              (_) async => <Event>[],
-            );
+        test('does not save to cache when no events are fetched', () async {
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
-            final repositoryWithCache = VideosRepository(
-              nostrClient: mockNostrClient,
-              localStorage: mockLocalStorage,
-            );
+          final repositoryWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
 
-            await repositoryWithCache.getVideosByAddressableIds(
-              ['${EventKind.videoVertical}:pubkey1:dtag1'],
-              cacheResults: true,
-            );
+          await repositoryWithCache.getVideosByAddressableIds([
+            '${EventKind.videoVertical}:pubkey1:dtag1',
+          ], cacheResults: true);
 
-            verifyNever(() => mockLocalStorage.saveEventsBatch(any()));
-          },
-        );
+          verifyNever(() => mockLocalStorage.saveEventsBatch(any()));
+        });
       });
     });
 
@@ -3797,9 +3714,9 @@ void main() {
           createdAt: 1704067200,
         );
 
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => [event],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
 
         final result = await repository.getCollabVideos(
           taggedPubkey: 'collab-pubkey',
@@ -3817,9 +3734,9 @@ void main() {
       });
 
       test('passes limit and until to relay query', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         await repository.getCollabVideos(
           taggedPubkey: 'collab-pubkey',
@@ -3836,9 +3753,9 @@ void main() {
       });
 
       test('uses default limit of 5', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         await repository.getCollabVideos(taggedPubkey: 'collab-pubkey');
 
@@ -3850,9 +3767,9 @@ void main() {
       });
 
       test('returns empty list when no events found', () async {
-        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-          (_) async => <Event>[],
-        );
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => <Event>[]);
 
         final result = await repository.getCollabVideos(
           taggedPubkey: 'collab-pubkey',
@@ -3951,9 +3868,7 @@ void main() {
               limit: any(named: 'limit'),
               before: any(named: 'before'),
             ),
-          ).thenThrow(
-            const FunnelcakeException('Server error'),
-          );
+          ).thenThrow(const FunnelcakeException('Server error'));
 
           final event = _createVideoEvent(
             id: 'relay-collab-1',
@@ -3962,9 +3877,9 @@ void main() {
             createdAt: 1704067200,
           );
 
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => [event],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [event]);
 
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
@@ -3980,38 +3895,38 @@ void main() {
           verify(() => mockNostrClient.queryEvents(any())).called(1);
         });
 
-        test('falls back to relay when Funnelcake returns empty', () async {
-          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcakeClient.getCollabVideos(
-              pubkey: any(named: 'pubkey'),
-              limit: any(named: 'limit'),
-              before: any(named: 'before'),
-            ),
-          ).thenAnswer((_) async => <VideoStats>[]);
+        test(
+          'trusts empty Funnelcake collab results without relay fallback',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+            when(
+              () => mockFunnelcakeClient.getCollabVideos(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+                before: any(named: 'before'),
+              ),
+            ).thenAnswer((_) async => <VideoStats>[]);
 
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+            final repositoryWithApi = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
 
-          final repositoryWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            funnelcakeApiClient: mockFunnelcakeClient,
-          );
+            final result = await repositoryWithApi.getCollabVideos(
+              taggedPubkey: 'collab-pubkey',
+            );
 
-          await repositoryWithApi.getCollabVideos(
-            taggedPubkey: 'collab-pubkey',
-          );
-
-          verify(() => mockNostrClient.queryEvents(any())).called(1);
-        });
+            expect(result, isEmpty);
+            verifyNever(() => mockNostrClient.queryEvents(any()));
+          },
+        );
 
         test('falls back to relay when Funnelcake not available', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
 
-          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
-            (_) async => <Event>[],
-          );
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => <Event>[]);
 
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
@@ -4084,16 +3999,12 @@ void main() {
       });
 
       test('returns empty list when query is whitespace only', () async {
-        final result = await repository.searchVideosLocally(
-          query: '   ',
-        );
+        final result = await repository.searchVideosLocally(query: '   ');
         expect(result, isEmpty);
       });
 
       test('returns empty list when no local storage', () async {
-        final result = await repository.searchVideosLocally(
-          query: 'flutter',
-        );
+        final result = await repository.searchVideosLocally(query: 'flutter');
         expect(result, isEmpty);
       });
 
@@ -4175,77 +4086,68 @@ void main() {
           blockFilter: blockFilter.call,
         );
 
-        final result = await repoWithFilter.searchVideosLocally(
-          query: 'video',
-        );
+        final result = await repoWithFilter.searchVideosLocally(query: 'video');
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('ok-video'));
       });
 
-      test(
-        'combines content and hashtag matches without duplicates',
-        () async {
-          final mockLocalStorage = MockVideoLocalStorage();
+      test('combines content and hashtag matches without duplicates', () async {
+        final mockLocalStorage = MockVideoLocalStorage();
 
-          final contentMatch = _createVideoEvent(
-            id: 'content-match',
-            pubkey: 'pubkey-1',
-            videoUrl: 'https://example.com/content.mp4',
-            createdAt: 1704067200,
-            content: 'flutter tutorial',
-          );
-          final hashtagMatch = _createVideoEvent(
-            id: 'hashtag-match',
-            pubkey: 'pubkey-2',
-            videoUrl: 'https://example.com/hashtag.mp4',
-            createdAt: 1704067100,
-            hashtags: ['flutter'],
-          );
-          final sharedMatch = _createVideoEvent(
-            id: 'shared-match',
-            pubkey: 'pubkey-3',
-            videoUrl: 'https://example.com/shared.mp4',
-            createdAt: 1704067000,
-            content: 'flutter tips',
-            hashtags: ['flutter'],
-          );
+        final contentMatch = _createVideoEvent(
+          id: 'content-match',
+          pubkey: 'pubkey-1',
+          videoUrl: 'https://example.com/content.mp4',
+          createdAt: 1704067200,
+          content: 'flutter tutorial',
+        );
+        final hashtagMatch = _createVideoEvent(
+          id: 'hashtag-match',
+          pubkey: 'pubkey-2',
+          videoUrl: 'https://example.com/hashtag.mp4',
+          createdAt: 1704067100,
+          hashtags: ['flutter'],
+        );
+        final sharedMatch = _createVideoEvent(
+          id: 'shared-match',
+          pubkey: 'pubkey-3',
+          videoUrl: 'https://example.com/shared.mp4',
+          createdAt: 1704067000,
+          content: 'flutter tips',
+          hashtags: ['flutter'],
+        );
 
-          when(
-            () => mockLocalStorage.searchEvents(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer(
-            (_) async => [contentMatch, sharedMatch],
-          );
+        when(
+          () => mockLocalStorage.searchEvents(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [contentMatch, sharedMatch]);
 
-          when(
-            () => mockLocalStorage.getEventsByHashtags(
-              hashtags: any(named: 'hashtags'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer(
-            (_) async => [hashtagMatch, sharedMatch],
-          );
+        when(
+          () => mockLocalStorage.getEventsByHashtags(
+            hashtags: any(named: 'hashtags'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [hashtagMatch, sharedMatch]);
 
-          final repoWithStorage = VideosRepository(
-            nostrClient: mockNostrClient,
-            localStorage: mockLocalStorage,
-          );
+        final repoWithStorage = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
 
-          final result = await repoWithStorage.searchVideosLocally(
-            query: 'flutter',
-          );
+        final result = await repoWithStorage.searchVideosLocally(
+          query: 'flutter',
+        );
 
-          // Should have 3 unique videos, not 4 (sharedMatch deduplicated)
-          expect(result, hasLength(3));
-          final ids = result.map((v) => v.id).toSet();
-          expect(ids, contains('content-match'));
-          expect(ids, contains('hashtag-match'));
-          expect(ids, contains('shared-match'));
-        },
-      );
+        // Should have 3 unique videos, not 4 (sharedMatch deduplicated)
+        expect(result, hasLength(3));
+        final ids = result.map((v) => v.id).toSet();
+        expect(ids, contains('content-match'));
+        expect(ids, contains('hashtag-match'));
+        expect(ids, contains('shared-match'));
+      });
 
       test(
         'countVideosLocally returns deduplicated local match count',
@@ -4290,16 +4192,12 @@ void main() {
 
     group('searchVideosOnRelays', () {
       test('returns empty list when query is empty', () async {
-        final result = await repository.searchVideosOnRelays(
-          query: '',
-        );
+        final result = await repository.searchVideosOnRelays(query: '');
         expect(result, isEmpty);
       });
 
       test('returns empty list when query is whitespace only', () async {
-        final result = await repository.searchVideosOnRelays(
-          query: '   ',
-        );
+        final result = await repository.searchVideosOnRelays(query: '   ');
         expect(result, isEmpty);
       });
 
@@ -4312,15 +4210,10 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer((_) => Stream.value(event));
 
-        final result = await repository.searchVideosOnRelays(
-          query: 'flutter',
-        );
+        final result = await repository.searchVideosOnRelays(query: 'flutter');
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('nip50-1'));
@@ -4331,16 +4224,10 @@ void main() {
 
       test('passes custom limit to NIP-50 search', () async {
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer((_) => const Stream.empty());
 
-        await repository.searchVideosOnRelays(
-          query: 'flutter',
-          limit: 50,
-        );
+        await repository.searchVideosOnRelays(query: 'flutter', limit: 50);
 
         verify(
           () => mockNostrClient.searchVideos('flutter', limit: 50),
@@ -4349,15 +4236,10 @@ void main() {
 
       test('handles NIP-50 failure gracefully', () async {
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer((_) => Stream.error(Exception('relay error')));
 
-        final result = await repository.searchVideosOnRelays(
-          query: 'flutter',
-        );
+        final result = await repository.searchVideosOnRelays(query: 'flutter');
 
         expect(result, isEmpty);
       });
@@ -4368,10 +4250,7 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer(
           (_) => Stream.fromIterable([
             _createVideoEvent(
@@ -4407,15 +4286,11 @@ void main() {
           final controller = StreamController<Event>();
 
           when(
-            () => mockNostrClient.searchVideos(
-              any(),
-              limit: any(named: 'limit'),
-            ),
+            () =>
+                mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
           ).thenAnswer((_) => controller.stream);
 
-          final future = repository.searchVideosOnRelays(
-            query: 'flutter',
-          );
+          final future = repository.searchVideosOnRelays(query: 'flutter');
 
           // Advance past the 15-second timeout
           async.elapse(const Duration(seconds: 16));
@@ -4429,10 +4304,7 @@ void main() {
 
       test('collects stream events within timeout', () async {
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer(
           (_) => Stream.value(
             _createVideoEvent(
@@ -4444,9 +4316,7 @@ void main() {
           ),
         );
 
-        final result = await repository.searchVideosOnRelays(
-          query: 'flutter',
-        );
+        final result = await repository.searchVideosOnRelays(query: 'flutter');
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('slow-result'));
@@ -4460,17 +4330,13 @@ void main() {
       });
 
       test('returns empty list when query is whitespace only', () async {
-        final result = await repository.searchVideosViaApi(
-          query: '   ',
-        );
+        final result = await repository.searchVideosViaApi(query: '   ');
         expect(result, isEmpty);
       });
 
       test('returns empty list when funnelcakeApiClient is null', () async {
         // Default repository has no funnelcake client
-        final result = await repository.searchVideosViaApi(
-          query: 'flutter',
-        );
+        final result = await repository.searchVideosViaApi(query: 'flutter');
         expect(result, isEmpty);
       });
 
@@ -4485,9 +4351,7 @@ void main() {
             funnelcakeApiClient: mockFunnelcake,
           );
 
-          final result = await repoWithApi.searchVideosViaApi(
-            query: 'flutter',
-          );
+          final result = await repoWithApi.searchVideosViaApi(query: 'flutter');
           expect(result, isEmpty);
         },
       );
@@ -4516,14 +4380,10 @@ void main() {
           funnelcakeApiClient: mockFunnelcake,
         );
 
-        final result = await repoWithApi.searchVideosViaApi(
-          query: 'flutter',
-        );
+        final result = await repoWithApi.searchVideosViaApi(query: 'flutter');
 
         expect(result, hasLength(1));
-        verify(
-          () => mockFunnelcake.searchVideos(query: 'flutter'),
-        ).called(1);
+        verify(() => mockFunnelcake.searchVideos(query: 'flutter')).called(1);
       });
 
       test('returns empty list on FunnelcakeException', () async {
@@ -4541,9 +4401,7 @@ void main() {
           funnelcakeApiClient: mockFunnelcake,
         );
 
-        final result = await repoWithApi.searchVideosViaApi(
-          query: 'flutter',
-        );
+        final result = await repoWithApi.searchVideosViaApi(query: 'flutter');
         expect(result, isEmpty);
       });
 
@@ -4581,9 +4439,7 @@ void main() {
           blockFilter: blockFilter.call,
         );
 
-        final result = await repoWithFilter.searchVideosViaApi(
-          query: 'video',
-        );
+        final result = await repoWithFilter.searchVideosViaApi(query: 'video');
 
         expect(result, hasLength(1));
       });
@@ -4603,10 +4459,7 @@ void main() {
           funnelcakeApiClient: mockFunnelcake,
         );
 
-        await repoWithApi.searchVideosViaApi(
-          query: 'flutter',
-          limit: 25,
-        );
+        await repoWithApi.searchVideosViaApi(query: 'flutter', limit: 25);
 
         verify(
           () => mockFunnelcake.searchVideos(query: 'flutter', limit: 25),
@@ -4633,9 +4486,7 @@ void main() {
           ),
         );
 
-        final result = repository.deduplicateAndSortVideos(
-          [video1, video2],
-        );
+        final result = repository.deduplicateAndSortVideos([video1, video2]);
 
         expect(result, hasLength(1));
         expect(result.first.id, equals('shared-id'));
@@ -4661,9 +4512,10 @@ void main() {
           ),
         );
 
-        final result = repository.deduplicateAndSortVideos(
-          [videoLowLoops, videoHighLoops],
-        );
+        final result = repository.deduplicateAndSortVideos([
+          videoLowLoops,
+          videoHighLoops,
+        ]);
 
         expect(result.first.id, equals('high-loops'));
       });
@@ -4710,10 +4562,7 @@ void main() {
         ).thenAnswer((_) async => [localEvent]);
 
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer((_) => const Stream.empty());
 
         final repoWithStorage = VideosRepository(
@@ -4773,10 +4622,7 @@ void main() {
         );
 
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer(
           (_) => Stream.value(
             _createVideoEvent(
@@ -4830,10 +4676,7 @@ void main() {
 
         // Both remote sources return empty
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer((_) => const Stream.empty());
 
         final repoWithStorage = VideosRepository(
@@ -4877,10 +4720,7 @@ void main() {
 
         // Relay returns the same video
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer((_) => Stream.value(sharedEvent));
 
         final repoWithStorage = VideosRepository(
@@ -4922,10 +4762,7 @@ void main() {
 
         // Relay throws — caught by searchVideosOnRelays internally
         when(
-          () => mockNostrClient.searchVideos(
-            any(),
-            limit: any(named: 'limit'),
-          ),
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
         ).thenAnswer((_) => Stream.error(Exception('relay error')));
 
         final repoWithStorage = VideosRepository(
@@ -4937,9 +4774,7 @@ void main() {
         // internally by searchVideosOnRelays
         final results = <List<VideoEvent>>[];
         await repoWithStorage
-            .searchVideos(
-              query: 'flutter',
-            )
+            .searchVideos(query: 'flutter')
             .forEach(results.add);
 
         // searchVideosOnRelays catches exceptions internally and
@@ -4947,58 +4782,52 @@ void main() {
         expect(results.first, hasLength(1));
       });
 
-      test(
-        'catches API phase exception when searchVideosViaApi throws '
-        'non-FunnelcakeException',
-        () async {
-          final mockLocalStorage = MockVideoLocalStorage();
-          final mockFunnelcake = MockFunnelcakeApiClient();
+      test('catches API phase exception when searchVideosViaApi throws '
+          'non-FunnelcakeException', () async {
+        final mockLocalStorage = MockVideoLocalStorage();
+        final mockFunnelcake = MockFunnelcakeApiClient();
 
-          when(
-            () => mockLocalStorage.searchEvents(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) async => []);
+        when(
+          () => mockLocalStorage.searchEvents(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
 
-          when(
-            () => mockLocalStorage.getEventsByHashtags(
-              hashtags: any(named: 'hashtags'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) async => []);
+        when(
+          () => mockLocalStorage.getEventsByHashtags(
+            hashtags: any(named: 'hashtags'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => []);
 
-          // Funnelcake throws a non-FunnelcakeException which escapes
-          // searchVideosViaApi's internal catch
-          when(() => mockFunnelcake.isAvailable).thenReturn(true);
-          when(
-            () => mockFunnelcake.searchVideos(
-              query: any(named: 'query'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenThrow(Exception('unexpected API error'));
+        // Funnelcake throws a non-FunnelcakeException which escapes
+        // searchVideosViaApi's internal catch
+        when(() => mockFunnelcake.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcake.searchVideos(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(Exception('unexpected API error'));
 
-          when(
-            () => mockNostrClient.searchVideos(
-              any(),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockNostrClient.searchVideos(any(), limit: any(named: 'limit')),
+        ).thenAnswer((_) => const Stream.empty());
 
-          final repoWithApi = VideosRepository(
-            nostrClient: mockNostrClient,
-            localStorage: mockLocalStorage,
-            funnelcakeApiClient: mockFunnelcake,
-          );
+        final repoWithApi = VideosRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          funnelcakeApiClient: mockFunnelcake,
+        );
 
-          final results = await repoWithApi
-              .searchVideos(query: 'flutter')
-              .toList();
+        final results = await repoWithApi
+            .searchVideos(query: 'flutter')
+            .toList();
 
-          // Should still complete with local results (empty in this case)
-          expect(results, isNotEmpty);
-        },
-      );
+        // Should still complete with local results (empty in this case)
+        expect(results, isNotEmpty);
+      });
     });
     group('getVideosByLoops', () {
       late MockFunnelcakeApiClient mockFunnelcakeClient;
@@ -5035,9 +4864,7 @@ void main() {
 
         expect(result, hasLength(1));
         verify(
-          () => mockFunnelcakeClient.getVideosByLoops(
-            limit: 20,
-          ),
+          () => mockFunnelcakeClient.getVideosByLoops(limit: 20),
         ).called(1);
       });
 
@@ -5074,10 +4901,7 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenThrow(
-          const FunnelcakeApiException(
-            message: 'error',
-            statusCode: 500,
-          ),
+          const FunnelcakeApiException(message: 'error', statusCode: 500),
         );
 
         final repo = VideosRepository(
@@ -5085,10 +4909,7 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        expect(
-          repo.getVideosByLoops,
-          throwsA(isA<FunnelcakeApiException>()),
-        );
+        expect(repo.getVideosByLoops, throwsA(isA<FunnelcakeApiException>()));
       });
 
       test('applies block filter to results', () async {
@@ -5216,10 +5037,7 @@ void main() {
             before: any(named: 'before'),
           ),
         ).thenThrow(
-          const FunnelcakeApiException(
-            message: 'error',
-            statusCode: 500,
-          ),
+          const FunnelcakeApiException(message: 'error', statusCode: 500),
         );
 
         final repo = VideosRepository(
@@ -5294,9 +5112,7 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repo.getClassicVideosByHashtag(
-          hashtag: 'bitcoin',
-        );
+        final result = await repo.getClassicVideosByHashtag(hashtag: 'bitcoin');
 
         expect(result, hasLength(1));
       });
@@ -5309,9 +5125,7 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        final result = await repo.getClassicVideosByHashtag(
-          hashtag: 'bitcoin',
-        );
+        final result = await repo.getClassicVideosByHashtag(hashtag: 'bitcoin');
 
         expect(result, isEmpty);
       });
@@ -5332,10 +5146,7 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenThrow(
-          const FunnelcakeApiException(
-            message: 'error',
-            statusCode: 500,
-          ),
+          const FunnelcakeApiException(message: 'error', statusCode: 500),
         );
 
         final repo = VideosRepository(
@@ -5422,10 +5233,7 @@ void main() {
           funnelcakeApiClient: mockFunnelcakeClient,
         );
 
-        expect(
-          repo.getClassicVines,
-          throwsA(isA<FunnelcakeException>()),
-        );
+        expect(repo.getClassicVines, throwsA(isA<FunnelcakeException>()));
       });
 
       test('passes parameters correctly', () async {
@@ -5866,10 +5674,8 @@ void main() {
             category: any(named: 'category'),
           ),
         ).thenAnswer(
-          (_) async => const RecommendationsResponse(
-            videos: [],
-            source: 'category',
-          ),
+          (_) async =>
+              const RecommendationsResponse(videos: [], source: 'category'),
         );
 
         final repo = VideosRepository(
@@ -5968,7 +5774,7 @@ VideoStats _createVideoStats({
   String title = 'Test Video',
   String thumbnail = 'https://example.com/thumb.jpg',
   int? loops,
-  List<String> contentLabels = const [],
+  List<String> moderationLabels = const [],
 }) {
   return VideoStats(
     id: id,
@@ -5984,7 +5790,7 @@ VideoStats _createVideoStats({
     reposts: 0,
     engagementScore: 0,
     loops: loops,
-    contentLabels: contentLabels,
+    moderationLabels: moderationLabels,
   );
 }
 
@@ -6016,7 +5822,7 @@ class _VideoStatsWithWarnLabels extends VideoStats {
         rawTags: base.rawTags,
         textTrackRef: base.textTrackRef,
         textTrackContent: base.textTrackContent,
-        contentLabels: base.contentLabels,
+        moderationLabels: base.moderationLabels,
       );
 
   final VideoStats base;

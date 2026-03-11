@@ -522,6 +522,8 @@ void main() {
       final mockClient = MockClient((request) async {
         expect(request.url.path, '/api/videos');
         expect(request.url.queryParameters['sort'], 'trending');
+        expect(request.url.queryParameters['nsfw'], 'show');
+        expect(request.url.queryParameters['moderation_profile'], 'default');
         return http.Response(mockResponse, 200);
       });
 
@@ -560,6 +562,8 @@ void main() {
       final mockClient = MockClient((request) async {
         expect(request.url.path, '/api/videos');
         expect(request.url.queryParameters['tag'], 'nostr');
+        expect(request.url.queryParameters['nsfw'], 'show');
+        expect(request.url.queryParameters['moderation_profile'], 'default');
         return http.Response(mockResponse, 200);
       });
 
@@ -694,6 +698,8 @@ void main() {
         expect(request.url.path, '/api/videos');
         expect(request.url.queryParameters['sort'], 'recent');
         expect(request.url.queryParameters['limit'], '10');
+        expect(request.url.queryParameters['nsfw'], 'show');
+        expect(request.url.queryParameters['moderation_profile'], 'default');
         return http.Response(mockResponse, 200);
       });
 
@@ -857,10 +863,7 @@ void main() {
       () async {
         final mockClient = MockClient((request) async {
           return http.Response(
-            jsonEncode({
-              'pubkey': 'abc123',
-              'profile': <String, dynamic>{},
-            }),
+            jsonEncode({'pubkey': 'abc123', 'profile': <String, dynamic>{}}),
             200,
           );
         });

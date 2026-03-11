@@ -39,8 +39,9 @@ class VideoStats {
     this.rawTags = const {},
     this.textTrackRef,
     this.textTrackContent,
-    this.contentLabels = const [],
-  });
+    List<String> moderationLabels = const [],
+    @Deprecated('Use moderationLabels') List<String>? contentLabels,
+  }) : moderationLabels = contentLabels ?? moderationLabels;
 
   /// Creates a [VideoStats] from JSON response.
   ///
@@ -160,10 +161,10 @@ class VideoStats {
         statsData['dim']?.toString();
     if (dimensions != null && dimensions.isEmpty) dimensions = null;
 
-    final contentLabels = _parseContentLabels(
-      json['content_labels'] ??
-          eventData['content_labels'] ??
-          statsData['content_labels'],
+    final moderationLabels = _parseModerationLabels(
+      json['moderation_labels'] ??
+          eventData['moderation_labels'] ??
+          statsData['moderation_labels'],
     );
     // Also check for blurhash and summary in tags (NIP-71 standard)
     // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
@@ -305,7 +306,7 @@ class VideoStats {
       rawTags: rawTags,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
-      contentLabels: contentLabels,
+      moderationLabels: moderationLabels,
     );
   }
 
@@ -389,12 +390,16 @@ class VideoStats {
   /// Embedded VTT content from API (saves client a relay round-trip).
   final String? textTrackContent;
 
-  /// Recognized moderation labels extracted from REST `content_labels`.
+  /// Resolved moderation labels extracted from REST `moderation_labels`.
   ///
-  /// The relay currently mixes moderation and generic classifier labels inside
-  /// `content_labels`. Only the moderation subset is promoted into
-  /// [VideoEvent.contentWarningLabels].
-  final List<String> contentLabels;
+  /// This is the server-resolved trust-and-safety field returned by Funnelcake.
+  /// Discovery/classifier metadata remains in REST `content_labels` and is not
+  /// promoted into [VideoEvent.contentWarningLabels].
+  final List<String> moderationLabels;
+
+  /// Deprecated alias for [moderationLabels].
+  @Deprecated('Use moderationLabels')
+  List<String> get contentLabels => moderationLabels;
 
   /// Converts this [VideoStats] to a [VideoEvent] for use in the app.
   ///
@@ -432,7 +437,7 @@ class VideoStats {
       originalLoops: loops,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
-      contentWarningLabels: contentLabels,
+      contentWarningLabels: moderationLabels,
       rawTags: {
         ...rawTags,
         // Note: Do NOT inject engagement `loops` here — rawTags['loops']
@@ -457,12 +462,12 @@ class VideoStats {
   String toString() => 'VideoStats(id: $id, title: $title)';
 }
 
-List<String> _parseContentLabels(dynamic value) {
+List<String> _parseModerationLabels(dynamic value) {
   if (value is! List) return const [];
 
   final labels = <String>[];
   for (final item in value) {
-    final normalized = _normalizeContentLabel(item.toString().trim());
+    final normalized = _normalizeModerationLabel(item.toString().trim());
     if (normalized != null && !labels.contains(normalized)) {
       labels.add(normalized);
     }
@@ -470,17 +475,30 @@ List<String> _parseContentLabels(dynamic value) {
   return labels;
 }
 
-String? _normalizeContentLabel(String value) {
+String? _normalizeModerationLabel(String value) {
   if (value.isEmpty) return null;
 
-  switch (value) {
+  final normalized = value.toLowerCase().replaceAll('_', '-');
+
+  switch (normalized) {
     case 'pornography':
+    case 'explicit':
       return 'porn';
     case 'graphic-violence':
+    case 'gore':
       return 'graphic-media';
+    case 'nsfw':
+      return 'nudity';
+    case 'offensive':
+    case 'hate-speech':
+      return 'hate';
+    case 'recreational-drug':
+      return 'drugs';
+    case 'weapon':
+      return 'violence';
   }
 
-  return _recognizedModerationLabels.contains(value) ? value : null;
+  return _recognizedModerationLabels.contains(normalized) ? normalized : null;
 }
 
 const Set<String> _recognizedModerationLabels = {
@@ -499,9 +517,10 @@ const Set<String> _recognizedModerationLabels = {
   'harassment',
   'flashing-lights',
   'ai-generated',
-  'spoiler',
+  'deepfake',
   'misleading',
-  'content-warning',
+  'spam',
+  'scam',
 };
 
 /// Safely parses a dynamic value to double.
