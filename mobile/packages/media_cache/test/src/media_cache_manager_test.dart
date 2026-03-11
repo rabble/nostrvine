@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'helpers/mocks.dart';
 import 'helpers/test_helpers.dart';
@@ -254,6 +256,31 @@ void main() {
 
         // Clean up
         dbCache.resetForTesting();
+        if (dbFile.existsSync()) dbFile.deleteSync();
+      });
+
+      test('uses default database opener when cache database exists', () async {
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cacheKey = 'default_opener_test_$timestamp';
+        final dbFile = File('$testTempPath/$cacheKey.db')..createSync();
+
+        sqfliteFfiInit();
+        sqflite.databaseFactory = databaseFactoryFfi;
+
+        final defaultOpenerCache = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+          ),
+          databasePathProvider: () async => testTempPath,
+          tempDirectoryProvider: () async => Directory(testTempPath),
+        );
+
+        await defaultOpenerCache.initialize();
+
+        expect(defaultOpenerCache.isInitialized, true);
+
+        defaultOpenerCache.resetForTesting();
         if (dbFile.existsSync()) dbFile.deleteSync();
       });
     });

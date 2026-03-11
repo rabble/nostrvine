@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
@@ -332,6 +334,44 @@ void main() {
 
         expect(capturedHeaders['v1'], {'X-Key': 'v1'});
         expect(capturedHeaders['v2'], {'X-Key': 'v2'});
+      });
+
+      test('tracks prefetched files when later used synchronously', () async {
+        final mockFile = MockFile();
+        final mockFileInfo = MockFileInfo();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final cacheKey = 'precache_metrics_$timestamp';
+        final cacheDir = Directory('$testTempPath/$cacheKey')
+          ..createSync(recursive: true);
+        final prefetchedFile = await createTestFile(cacheDir, 'prefetched.mp4');
+
+        when(mockFile.existsSync).thenReturn(true);
+        when(() => mockFile.path).thenReturn(prefetchedFile.path);
+        when(() => mockFileInfo.file).thenReturn(mockFile);
+
+        cacheManager = TestableMediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: cacheKey,
+            enableSyncManifest: true,
+          ),
+          mockGetFileFromCache: (key) async => mockFileInfo,
+        );
+
+        await cacheManager.preCacheFiles([
+          (url: 'https://example.com/prefetched.mp4', key: 'prefetched_key'),
+        ]);
+
+        final cachedFile = cacheManager.getCachedFileSync('prefetched_key');
+        final stats = cacheManager.getCacheStats();
+
+        expect(cachedFile, isNotNull);
+        expect(cachedFile!.path, prefetchedFile.path);
+        expect(stats['prefetched_total'], 1);
+        expect(stats['prefetched_used'], 1);
+
+        if (cacheDir.existsSync()) {
+          cacheDir.deleteSync(recursive: true);
+        }
       });
     });
   });

@@ -192,11 +192,13 @@ class MediaCacheManager extends CacheManager {
        _databaseOpener = databaseOpener ?? _defaultDatabaseOpener,
        super(
          kIsWeb
+             // coverage:ignore-start
              ? Config(
                  config.cacheKey,
                  stalePeriod: config.stalePeriod,
                  maxNrOfCacheObjects: config.maxNrOfCacheObjects,
                )
+             // coverage:ignore-end
              : Config(
                  config.cacheKey,
                  stalePeriod: config.stalePeriod,
@@ -262,10 +264,12 @@ class MediaCacheManager extends CacheManager {
   ///
   /// Safe to call multiple times - subsequent calls are no-ops.
   Future<void> initialize() async {
+    // coverage:ignore-start
     if (kIsWeb) {
       _manifestInitialized = true;
       return;
     }
+    // coverage:ignore-end
 
     if (!_config.enableSyncManifest || _manifestInitialized) {
       _manifestInitialized = true;
