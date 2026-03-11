@@ -1,5 +1,5 @@
-// ABOUTME: Widget test for unified settings screen
-// ABOUTME: Verifies settings navigation and UI structure
+// ABOUTME: Widget tests for the Figma-reskinned settings screen layout
+// ABOUTME: Verifies section grouping and preservation of key settings actions
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,7 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockAuthService extends Mock implements AuthService {}
 
 void main() {
-  group('SettingsScreen Tests', () {
+  group('SettingsScreen', () {
     late _MockAuthService mockAuthService;
     late SharedPreferences sharedPreferences;
 
@@ -23,8 +23,10 @@ void main() {
       sharedPreferences = await SharedPreferences.getInstance();
       mockAuthService = _MockAuthService();
       when(() => mockAuthService.isAuthenticated).thenReturn(true);
-      when(() => mockAuthService.isAnonymous).thenReturn(true);
-      when(() => mockAuthService.currentPublicKeyHex).thenReturn('test_pubkey');
+      when(() => mockAuthService.isAnonymous).thenReturn(false);
+      when(() => mockAuthService.currentPublicKeyHex).thenReturn(
+        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+      );
       when(() => mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(
         () => mockAuthService.authStateStream,
@@ -34,170 +36,127 @@ void main() {
       ).thenReturn(false);
     });
 
-    testWidgets('Settings screen displays all sections', (tester) async {
+    Future<void> pumpSettingsScreen(
+      WidgetTester tester, {
+      AuthState authState = AuthState.authenticated,
+      bool isAnonymous = false,
+      bool hasExpiredOAuthSession = false,
+    }) async {
+      when(() => mockAuthService.authState).thenReturn(authState);
+      when(
+        () => mockAuthService.authStateStream,
+      ).thenAnswer((_) => Stream.value(authState));
+      when(() => mockAuthService.isAuthenticated).thenReturn(
+        authState == AuthState.authenticated,
+      );
+      when(() => mockAuthService.isAnonymous).thenReturn(isAnonymous);
+      when(
+        () => mockAuthService.hasExpiredOAuthSession,
+      ).thenReturn(hasExpiredOAuthSession);
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWith(
-              (ref) => AuthState.authenticated,
-            ),
-          ],
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
-      );
-
-      // Verify section headers (displayed as uppercase)
-      expect(find.text('PROFILE'), findsOneWidget);
-      expect(find.text('NETWORK'), findsOneWidget);
-      expect(find.text('PREFERENCES'), findsOneWidget);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
-
-    testWidgets('Settings tiles display correctly', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWith(
-              (ref) => AuthState.authenticated,
-            ),
-          ],
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
-      );
-
-      // Verify profile settings
-      expect(find.text('Edit Profile'), findsOneWidget);
-      expect(find.text('Key Management'), findsOneWidget);
-
-      // Verify network settings
-      expect(find.text('Relays'), findsOneWidget);
-      expect(find.text('Relay Diagnostics'), findsOneWidget);
-      expect(find.text('Media Servers'), findsOneWidget);
-
-      // CRITICAL: P2P Sync should be hidden for release
-      expect(find.text('P2P Sync'), findsNothing);
-      expect(find.text('Peer-to-peer synchronization settings'), findsNothing);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
-
-    testWidgets('Settings tiles have proper icons', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          ],
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
-      );
-
-      // Verify icons exist
-      expect(find.byIcon(Icons.person), findsWidgets); // Edit Profile
-      expect(find.byIcon(Icons.key), findsWidgets); // Key Management
-      expect(find.byIcon(Icons.hub), findsWidgets); // Relays
-      expect(
-        find.byIcon(Icons.troubleshoot),
-        findsWidgets,
-      ); // Relay Diagnostics
-      expect(find.byIcon(Icons.cloud_upload), findsWidgets); // Media Servers
-
-      // CRITICAL: P2P Sync icon (Icons.sync) should be hidden for release
-      expect(find.byIcon(Icons.sync), findsNothing);
-      // TODO(any): Fix and re-enable these tests
-    }, skip: true);
-
-    testWidgets('App bar displays correctly', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+            currentAuthStateProvider.overrideWithValue(authState),
           ],
           child: const MaterialApp(home: SettingsScreen()),
         ),
       );
       await tester.pumpAndSettle();
+    }
 
-      expect(find.text('Settings'), findsOneWidget);
-      final appBar = tester.widget<AppBar>(find.byType(AppBar));
-      expect(appBar.backgroundColor, isNotNull);
-
-      // Dispose and pump to clear any pending timers from overlay visibility
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
-    });
-
-    testWidgets('Settings screen reorganizes dev and danger items', (
+    testWidgets('groups rows using the new Figma-style sections', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
-            authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
-          ],
-          child: const MaterialApp(home: SettingsScreen()),
-        ),
+      await pumpSettingsScreen(tester);
+
+      expect(find.text('Preferences'), findsOneWidget);
+      expect(find.text('Notifications'), findsOneWidget);
+      expect(find.text('Safety & Privacy'), findsOneWidget);
+      expect(find.text('PROFILE'), findsNothing);
+      expect(find.text('NETWORK'), findsNothing);
+
+      await tester.scrollUntilVisible(
+        find.text('Nostr Settings'),
+        300,
+        scrollable: find.byType(Scrollable),
       );
       await tester.pumpAndSettle();
 
-      // Preferences should be near the top (after Profile)
-      expect(find.text('PREFERENCES'), findsOneWidget);
+      expect(find.text('Nostr Settings'), findsOneWidget);
+      expect(find.text('Relays'), findsOneWidget);
+      expect(find.text('Media Servers'), findsOneWidget);
 
-      // Scroll to find Developer Options under Network section
+      await tester.scrollUntilVisible(
+        find.text('Support'),
+        300,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Support'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Account Tools'),
+        300,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Account Tools'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Danger Zone'),
+        300,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Danger Zone'), findsOneWidget);
+      expect(find.textContaining('Version '), findsOneWidget);
+    });
+
+    testWidgets('keeps advanced and destructive actions reachable', (
+      tester,
+    ) async {
+      await pumpSettingsScreen(tester);
+
       await tester.scrollUntilVisible(
         find.text('Developer Options'),
-        100,
+        300,
         scrollable: find.byType(Scrollable),
       );
       await tester.pumpAndSettle();
 
-      // Developer Options should always be visible (not hidden behind 7-tap)
       expect(find.text('Developer Options'), findsOneWidget);
 
-      // Switch Account should be in the Profile section at the top
-      // Scroll back to top to find it
-      await tester.scrollUntilVisible(
-        find.text('PROFILE'),
-        -100,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Switch Account'), findsOneWidget);
-
-      // Scroll to find Advanced Account Options section at the bottom
       await tester.scrollUntilVisible(
         find.text('Key Management'),
-        100,
+        300,
         scrollable: find.byType(Scrollable),
       );
       await tester.pumpAndSettle();
 
-      // Advanced Account Options section should have key/account related items
-      expect(find.text('ADVANCED ACCOUNT OPTIONS'), findsOneWidget);
       expect(find.text('Key Management'), findsOneWidget);
       expect(find.text('Remove Keys from Device'), findsOneWidget);
 
-      // Danger Zone section should have delete option
       await tester.scrollUntilVisible(
-        find.text('DANGER ZONE'),
-        100,
+        find.text('Delete Account and Data'),
+        300,
         scrollable: find.byType(Scrollable),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('DANGER ZONE'), findsOneWidget);
       expect(find.text('Delete Account and Data'), findsOneWidget);
+    });
 
-      // Dispose and pump to clear any pending timers from overlay visibility
-      await tester.pumpWidget(const SizedBox());
-      await tester.pump();
+    testWidgets('shows the settings app bar title', (tester) async {
+      await pumpSettingsScreen(tester);
+
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.byType(AppBar), findsOneWidget);
     });
   });
 }

@@ -51,7 +51,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('SettingsScreen has black background', (tester) async {
+    testWidgets('SettingsScreen uses the Figma surface background', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -67,9 +69,9 @@ void main() {
       final scaffoldFinder = find.byType(Scaffold);
       expect(scaffoldFinder, findsOneWidget);
 
-      // Verify Scaffold background is black
+      // Verify Scaffold background matches the Figma dark surface token
       final Scaffold scaffold = tester.widget(scaffoldFinder);
-      expect(scaffold.backgroundColor, equals(Colors.black));
+      expect(scaffold.backgroundColor, equals(VineTheme.surfaceBackground));
 
       // Dispose and pump to clear any pending timers from overlay visibility
       await tester.pumpWidget(const SizedBox());

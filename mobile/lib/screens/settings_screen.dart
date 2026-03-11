@@ -32,6 +32,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
+import 'package:openvine/widgets/settings/settings_screen_components.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -82,110 +83,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: 'Settings',
         showBackButton: true,
         onBackPressed: context.pop,
+        backgroundColor: VineTheme.surfaceBackground,
       ),
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: VineTheme.surfaceBackground,
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600),
           child: ListView(
+            padding: const EdgeInsets.only(bottom: 32),
             children: [
-              // Profile Section
               if (isAuthenticated) ...[
-                const _SectionHeader(title: 'Profile'),
-                // Show session expired tile for divineOAuth users
-                // whose refresh token also expired
-                if (authService.hasExpiredOAuthSession)
-                  _SettingsTile(
-                    icon: Icons.refresh,
-                    title: 'Session Expired',
-                    subtitle: 'Sign in again to restore full access',
-                    onTap: () async {
-                      final router = GoRouter.of(context);
-                      final refreshed = await authService
-                          .tryRefreshExpiredSession();
-                      if (!mounted) return;
-                      if (!refreshed) {
-                        router.go(WelcomeScreen.loginOptionsPath);
-                      }
-                    },
-                    iconColor: VineTheme.accentOrange,
-                  )
-                // Show register tile for anonymous users
-                else if (authService.isAnonymous)
-                  _SettingsTile(
-                    icon: Icons.security,
-                    title: 'Secure Your Account',
-                    subtitle:
-                        'Add email & password to recover your account on any device',
-                    onTap: () => context.push(SecureAccountScreen.path),
-                    iconColor: VineTheme.vineGreen,
-                  ),
-                _SettingsTile(
-                  icon: Icons.switch_account,
-                  title: 'Switch Account',
-                  subtitle:
-                      'Go to sign in screen to use a different account. '
-                      'Your current keys stay saved on this device.',
-                  onTap: _handleSwitchAccount,
-                ),
+                _buildAccountSummarySection(authService),
               ],
 
-              // About
-              const _SectionHeader(title: 'About'),
-              _VersionTile(appVersion: _appVersion),
-
-              // Preferences - most used settings near the top
-              const _SectionHeader(title: 'Preferences'),
-              _SettingsTile(
-                icon: Icons.notifications,
+              const SettingsSectionHeading(
+                title: 'Preferences',
+                showTopDivider: false,
+              ),
+              SettingsNavigationRow(
                 title: 'Notifications',
                 subtitle: 'Manage notification preferences',
                 onTap: () => context.push(NotificationSettingsScreen.path),
               ),
-              _SettingsTile(
-                icon: Icons.shield,
+              SettingsNavigationRow(
                 title: 'Safety & Privacy',
                 subtitle: 'Blocked users, muted content, and report history',
                 onTap: () => context.push(SafetySettingsScreen.path),
               ),
               _buildAudioSharingToggle(),
               _buildLanguageSetting(),
-              // Audio device selector (macOS only - shows when multiple mics)
               if (!kIsWeb && Platform.isMacOS) _buildAudioDeviceSelector(),
 
-              // Network Configuration
-              const _SectionHeader(title: 'Network'),
-              _SettingsTile(
-                icon: Icons.hub,
+              const SettingsSectionHeading(title: 'Nostr Settings'),
+              SettingsNavigationRow(
                 title: 'Relays',
                 subtitle: 'Manage Nostr relay connections',
                 onTap: () => context.push(RelaySettingsScreen.path),
               ),
-              _SettingsTile(
-                icon: Icons.troubleshoot,
+              SettingsNavigationRow(
                 title: 'Relay Diagnostics',
                 subtitle: 'Debug relay connectivity and network issues',
                 onTap: () => context.push(RelayDiagnosticScreen.path),
               ),
-              _SettingsTile(
-                icon: Icons.cloud_upload,
+              SettingsNavigationRow(
                 title: 'Media Servers',
                 subtitle: 'Configure Blossom upload servers',
                 onTap: () => context.push(BlossomSettingsScreen.path),
               ),
-              _SettingsTile(
-                icon: Icons.developer_mode,
+              SettingsNavigationRow(
                 title: 'Developer Options',
                 subtitle: 'Environment switcher and debug settings',
                 onTap: () => context.push(DeveloperOptionsScreen.path),
-                iconColor: VineTheme.warning,
               ),
 
-              // Support
-              const _SectionHeader(title: 'Support'),
-              _SettingsTile(
-                icon: Icons.support_agent,
+              const SettingsSectionHeading(title: 'Support'),
+              SettingsNavigationRow(
                 title: 'Contact Support',
                 subtitle: 'Get help or report an issue',
                 onTap: () async {
@@ -209,14 +162,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   }
                 },
               ),
-              _SettingsTile(
-                icon: Icons.verified_user,
+              SettingsNavigationRow(
                 title: 'ProofMode Info',
                 subtitle: 'Learn about ProofMode verification and authenticity',
                 onTap: _openProofModeInfo,
               ),
-              _SettingsTile(
-                icon: Icons.save,
+              SettingsNavigationRow(
                 title: 'Save Logs',
                 subtitle: 'Export logs to file for manual sending',
                 onTap: () async {
@@ -248,39 +199,114 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
 
               if (isAuthenticated) ...[
-                const _SectionHeader(title: 'Advanced Account Options'),
-                _SettingsTile(
-                  icon: Icons.key,
+                const SettingsSectionHeading(title: 'Account Tools'),
+                SettingsNavigationRow(
                   title: 'Key Management',
                   subtitle: 'Export, backup, and restore your Nostr keys',
                   onTap: () => context.push(KeyManagementScreen.path),
                 ),
-                _SettingsTile(
-                  icon: Icons.key_off,
+                SettingsNavigationRow(
                   title: 'Remove Keys from Device',
                   subtitle:
                       'Delete your private key from this device only. '
                       "Your content stays on relays, but you'll need your "
                       'nsec backup to access your account again.',
                   onTap: () => _handleRemoveKeys(context, ref),
-                  iconColor: VineTheme.warning,
                   titleColor: VineTheme.warning,
                 ),
-                const _SectionHeader(title: 'Danger Zone'),
-                _SettingsTile(
-                  icon: Icons.delete_forever,
+                const SettingsSectionHeading(title: 'Danger Zone'),
+                SettingsNavigationRow(
                   title: 'Delete Account and Data',
                   subtitle:
                       'PERMANENTLY delete your account and ALL content from Nostr relays. This cannot be undone.',
                   onTap: () => _handleDeleteAllContent(context, ref),
-                  iconColor: VineTheme.error,
                   titleColor: VineTheme.error,
                 ),
               ],
+
+              _VersionTile(appVersion: _appVersion),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAccountSummarySection(AuthService authService) {
+    final userPubkey = authService.currentPublicKeyHex;
+    final profile = userPubkey == null
+        ? null
+        : ref.watch(userProfileReactiveProvider(userPubkey)).value;
+    final npub = userPubkey == null
+        ? null
+        : NostrKeyUtils.encodePubKey(userPubkey);
+    final profileSubtitleParts = <String>[
+      ...switch (profile?.nip05) {
+        final nip05? when nip05.isNotEmpty => [nip05],
+        _ => const <String>[],
+      },
+      ?npub,
+    ];
+
+    final title = switch ((
+      authService.hasExpiredOAuthSession,
+      authService.isAnonymous,
+    )) {
+      (true, _) => 'Session expired',
+      (false, true) => 'Local account',
+      _ => profile?.bestDisplayName ?? 'Currently logged in',
+    };
+
+    final subtitle = switch ((
+      authService.hasExpiredOAuthSession,
+      authService.isAnonymous,
+    )) {
+      (true, _) => 'Sign in again to restore full access.',
+      (false, true) => [
+        'Add email and password to recover this account on any device.',
+        ?npub,
+      ].join('\n'),
+      _ => [
+        ...profileSubtitleParts,
+        if (profileSubtitleParts.isEmpty)
+          'Your current account is ready on this device.',
+      ].join('\n'),
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SettingsAccountSummaryBlock(
+          title: title,
+          subtitle: subtitle,
+          bottomMargin: EdgeInsets.zero,
+        ),
+        if (authService.hasExpiredOAuthSession)
+          SettingsNavigationRow(
+            title: 'Session Expired',
+            subtitle: 'Sign in again to restore full access.',
+            onTap: () async {
+              final router = GoRouter.of(context);
+              final refreshed = await authService.tryRefreshExpiredSession();
+              if (!mounted) return;
+              if (!refreshed) {
+                router.go(WelcomeScreen.loginOptionsPath);
+              }
+            },
+          ),
+        if (authService.isAnonymous)
+          SettingsNavigationRow(
+            title: 'Secure Your Account',
+            subtitle: 'Add email and password to recover your account.',
+            onTap: () => context.push(SecureAccountScreen.path),
+          ),
+        SettingsNavigationRow(
+          title: 'Switch Account',
+          subtitle:
+              'Use a different account without removing saved keys from this device.',
+          onTap: _handleSwitchAccount,
+        ),
+      ],
     );
   }
 
@@ -290,27 +316,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
     final isEnabled = audioSharingService.isAudioSharingEnabled;
 
-    return SwitchListTile(
+    return SettingsToggleRow(
       value: isEnabled,
       onChanged: (value) async {
         await audioSharingService.setAudioSharingEnabled(value);
-        // Force rebuild to reflect the new state
         setState(() {});
       },
-      title: const Text(
-        'Make my audio available for reuse',
-        style: TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: const Text(
-        'When enabled, others can use audio from your videos',
-        style: TextStyle(color: VineTheme.lightText, fontSize: 14),
-      ),
-      activeThumbColor: VineTheme.vineGreen,
-      secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
+      title: 'Make my audio available for reuse',
+      subtitle: 'When enabled, others can use audio from your videos',
     );
   }
 
@@ -321,22 +334,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final displayName = LanguagePreferenceService.displayNameFor(currentCode);
     final subtitle = isCustom ? displayName : '$displayName (device default)';
 
-    return ListTile(
-      leading: const Icon(Icons.language, color: VineTheme.vineGreen),
-      title: const Text(
-        'Content Language',
-        style: TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+    return SettingsNavigationRow(
+      title: 'Content Language',
+      subtitle: subtitle,
       onTap: _showLanguagePicker,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 120),
+            child: Text(
+              displayName,
+              overflow: TextOverflow.ellipsis,
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Icon(
+            Icons.chevron_right_rounded,
+            color: VineTheme.onSurfaceVariant,
+            size: 24,
+          ),
+        ],
+      ),
     );
   }
 
@@ -382,7 +404,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               const SizedBox(height: 8),
               const Divider(color: VineTheme.lightText, height: 1),
-              // Device default option
               ListTile(
                 leading: Icon(
                   !isCustom
@@ -412,7 +433,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
               const Divider(color: VineTheme.lightText, height: 1),
-              // Language list
               Expanded(
                 child: ListView.builder(
                   controller: scrollController,
@@ -473,7 +493,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         deviceType: CameraMacOSDeviceType.audio,
       ),
       builder: (context, snapshot) {
-        // Don't show if we can't get devices or only one device
         if (!snapshot.hasData || snapshot.data!.length <= 1) {
           return const SizedBox.shrink();
         }
@@ -481,7 +500,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         final devices = snapshot.data!;
         final currentDevice = audioDevicePref.preferredDeviceId;
 
-        // Get display name for current selection
         String currentDisplayName;
         if (currentDevice == null) {
           currentDisplayName = 'Auto (recommended)';
@@ -492,22 +510,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               : 'Auto (recommended)';
         }
 
-        return ListTile(
-          leading: const Icon(Icons.mic, color: VineTheme.vineGreen),
-          title: const Text(
-            'Audio Input Device',
-            style: TextStyle(
-              color: VineTheme.whiteText,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          subtitle: Text(
-            currentDisplayName,
-            style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
-          ),
-          trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
+        return SettingsNavigationRow(
+          title: 'Audio Input Device',
+          subtitle: currentDisplayName,
           onTap: () => _showAudioDevicePicker(devices, currentDevice),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 120),
+                child: Text(
+                  currentDisplayName,
+                  overflow: TextOverflow.ellipsis,
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: VineTheme.onSurfaceVariant,
+                size: 24,
+              ),
+            ],
+          ),
         );
       },
     );
@@ -870,20 +897,10 @@ class _VersionTile extends ConsumerWidget {
     // Read the new count after tapping
     final newCount = ref.watch(developerModeTapCounterProvider);
 
-    return ListTile(
-      leading: const Icon(Icons.info, color: VineTheme.vineGreen),
-      title: const Text(
-        'Version',
-        style: TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        _appVersion.isEmpty ? 'Loading...' : _appVersion,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
-      ),
+    return SettingsFooterRow(
+      label: _appVersion.isEmpty
+          ? 'Version loading...'
+          : 'Version $_appVersion',
       onTap: () async {
         if (isDeveloperMode) {
           // Already unlocked - show message
@@ -936,67 +953,6 @@ class _VersionTile extends ConsumerWidget {
           return;
         }
       },
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.iconColor,
-    this.titleColor,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final Color? iconColor;
-  final Color? titleColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: iconColor ?? VineTheme.vineGreen),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: titleColor ?? VineTheme.whiteText,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: VineTheme.lightText, fontSize: 14),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: VineTheme.lightText),
-      onTap: onTap,
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
-        ),
-      ),
     );
   }
 }
