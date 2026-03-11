@@ -7,6 +7,8 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "mobile/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
