@@ -1,8 +1,6 @@
 // ABOUTME: Unit tests for VideoRecorderProviderState and VideoRecorderNotifier
 // ABOUTME: Tests state getters, properties, and recording lifecycle
 
-import 'dart:ui';
-
 import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
