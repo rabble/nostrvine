@@ -1,5 +1,3 @@
-export 'package:time_formatter/time_formatter.dart';
-
 export 'src/app_bar/app_bar.dart';
 export 'src/bottom_sheet/bottom_sheet.dart';
 export 'src/button/button.dart';
