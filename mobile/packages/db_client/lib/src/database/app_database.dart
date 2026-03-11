@@ -260,6 +260,18 @@ class AppDatabase extends _$AppDatabase {
       ON drafts (rendered_thumbnail_path)
     ''');
 
+    // Add owner_pubkey columns for multi-account isolation
+    await _addColumnIfMissing('drafts', 'owner_pubkey', 'TEXT');
+    await _addColumnIfMissing('clips', 'owner_pubkey', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_draft_owner_pubkey
+      ON drafts (owner_pubkey)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_owner_pubkey
+      ON clips (owner_pubkey)
+    ''');
+
     // Check if direct_messages table exists, create if missing
     final dmResult = await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' "

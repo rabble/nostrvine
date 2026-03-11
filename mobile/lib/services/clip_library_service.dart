@@ -15,11 +15,16 @@ class ClipLibraryService {
   ClipLibraryService({
     required ClipsDao clipsDao,
     required DraftsDao draftsDao,
+    this.ownerPubkey,
   }) : _clipsDao = clipsDao,
        _draftsDao = draftsDao;
 
   final ClipsDao _clipsDao;
   final DraftsDao _draftsDao;
+
+  /// Hex pubkey of the current account. When set, new clips are tagged
+  /// with this owner and queries filter by it (plus legacy NULL rows).
+  final String? ownerPubkey;
 
   static const String _storageKey = 'clip_library';
 
@@ -106,13 +111,16 @@ class ClipLibraryService {
       thumbnailPath: clip.thumbnailPath != null
           ? p.basename(clip.thumbnailPath!)
           : null,
+      ownerPubkey: ownerPubkey,
     );
   }
 
   /// Get all clips from the library, sorted by creation date (newest first)
   Future<List<DivineVideoClip>> getAllClips() async {
     try {
-      final rows = await _clipsDao.getLibraryClips();
+      final rows = await _clipsDao.getLibraryClips(
+        ownerPubkey: ownerPubkey,
+      );
       final documentsPath = await getDocumentsPath();
 
       return rows.map((row) {

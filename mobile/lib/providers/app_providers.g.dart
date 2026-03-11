@@ -2027,7 +2027,7 @@ final class DraftStorageServiceProvider
 }
 
 String _$draftStorageServiceHash() =>
-    r'27a52029060a87f60092ca7b856ca61f8d6646e2';
+    r'1ef3ccee1fdbb86f842c2bdf448b7f72d4e8f629';
 
 /// Clip library service for persisting individual video clips
 
@@ -2080,7 +2080,7 @@ final class ClipLibraryServiceProvider
 }
 
 String _$clipLibraryServiceHash() =>
-    r'657ca5751fb520c4671997e6fbb8e87a760aecef';
+    r'f36b3e22012c58da8f70d620378448bbe500f0cc';
 
 /// Authentication service
 

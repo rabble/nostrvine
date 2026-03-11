@@ -6847,6 +6847,17 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6860,6 +6871,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     data,
     renderedFilePath,
     renderedThumbnailPath,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6965,6 +6977,15 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         ),
       );
     }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7018,6 +7039,10 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         DriftSqlType.string,
         data['${effectivePrefix}rendered_thumbnail_path'],
       ),
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
     );
   }
 
@@ -7060,6 +7085,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
 
   /// Basename of the final rendered thumbnail (for indexed lookups)
   final String? renderedThumbnailPath;
+
+  /// Hex public key of the account that owns this draft.
+  /// NULL for legacy drafts created before multi-account support.
+  final String? ownerPubkey;
   const DraftRow({
     required this.id,
     required this.title,
@@ -7072,6 +7101,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     required this.data,
     this.renderedFilePath,
     this.renderedThumbnailPath,
+    this.ownerPubkey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7092,6 +7122,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     }
     if (!nullToAbsent || renderedThumbnailPath != null) {
       map['rendered_thumbnail_path'] = Variable<String>(renderedThumbnailPath);
+    }
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
     }
     return map;
   }
@@ -7115,6 +7148,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       renderedThumbnailPath: renderedThumbnailPath == null && nullToAbsent
           ? const Value.absent()
           : Value(renderedThumbnailPath),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
     );
   }
 
@@ -7137,6 +7173,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       renderedThumbnailPath: serializer.fromJson<String?>(
         json['renderedThumbnailPath'],
       ),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
   @override
@@ -7156,6 +7193,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       'renderedThumbnailPath': serializer.toJson<String?>(
         renderedThumbnailPath,
       ),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
 
@@ -7171,6 +7209,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     String? data,
     Value<String?> renderedFilePath = const Value.absent(),
     Value<String?> renderedThumbnailPath = const Value.absent(),
+    Value<String?> ownerPubkey = const Value.absent(),
   }) => DraftRow(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -7187,6 +7226,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     renderedThumbnailPath: renderedThumbnailPath.present
         ? renderedThumbnailPath.value
         : this.renderedThumbnailPath,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   DraftRow copyWithCompanion(DraftsCompanion data) {
     return DraftRow(
@@ -7215,6 +7255,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       renderedThumbnailPath: data.renderedThumbnailPath.present
           ? data.renderedThumbnailPath.value
           : this.renderedThumbnailPath,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
     );
   }
 
@@ -7231,7 +7274,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           ..write('lastModified: $lastModified, ')
           ..write('data: $data, ')
           ..write('renderedFilePath: $renderedFilePath, ')
-          ..write('renderedThumbnailPath: $renderedThumbnailPath')
+          ..write('renderedThumbnailPath: $renderedThumbnailPath, ')
+          ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
   }
@@ -7249,6 +7293,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     data,
     renderedFilePath,
     renderedThumbnailPath,
+    ownerPubkey,
   );
   @override
   bool operator ==(Object other) =>
@@ -7264,7 +7309,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           other.lastModified == this.lastModified &&
           other.data == this.data &&
           other.renderedFilePath == this.renderedFilePath &&
-          other.renderedThumbnailPath == this.renderedThumbnailPath);
+          other.renderedThumbnailPath == this.renderedThumbnailPath &&
+          other.ownerPubkey == this.ownerPubkey);
 }
 
 class DraftsCompanion extends UpdateCompanion<DraftRow> {
@@ -7279,6 +7325,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   final Value<String> data;
   final Value<String?> renderedFilePath;
   final Value<String?> renderedThumbnailPath;
+  final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const DraftsCompanion({
     this.id = const Value.absent(),
@@ -7292,6 +7339,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     this.data = const Value.absent(),
     this.renderedFilePath = const Value.absent(),
     this.renderedThumbnailPath = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DraftsCompanion.insert({
@@ -7306,6 +7354,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     required String data,
     this.renderedFilePath = const Value.absent(),
     this.renderedThumbnailPath = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -7323,6 +7372,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Expression<String>? data,
     Expression<String>? renderedFilePath,
     Expression<String>? renderedThumbnailPath,
+    Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7338,6 +7388,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       if (renderedFilePath != null) 'rendered_file_path': renderedFilePath,
       if (renderedThumbnailPath != null)
         'rendered_thumbnail_path': renderedThumbnailPath,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7354,6 +7405,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Value<String>? data,
     Value<String?>? renderedFilePath,
     Value<String?>? renderedThumbnailPath,
+    Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
     return DraftsCompanion(
@@ -7369,6 +7421,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       renderedFilePath: renderedFilePath ?? this.renderedFilePath,
       renderedThumbnailPath:
           renderedThumbnailPath ?? this.renderedThumbnailPath,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7411,6 +7464,9 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
         renderedThumbnailPath.value,
       );
     }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7431,6 +7487,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
           ..write('data: $data, ')
           ..write('renderedFilePath: $renderedFilePath, ')
           ..write('renderedThumbnailPath: $renderedThumbnailPath, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7527,6 +7584,17 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7537,6 +7605,7 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     data,
     filePath,
     thumbnailPath,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7606,6 +7675,15 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         ),
       );
     }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7647,6 +7725,10 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         DriftSqlType.string,
         data['${effectivePrefix}thumbnail_path'],
       ),
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
     );
   }
 
@@ -7681,6 +7763,10 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
 
   /// Basename of the thumbnail file (for indexed lookups)
   final String? thumbnailPath;
+
+  /// Hex public key of the account that owns this clip.
+  /// NULL for legacy clips created before multi-account support.
+  final String? ownerPubkey;
   const ClipRow({
     required this.id,
     this.draftId,
@@ -7690,6 +7776,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     required this.data,
     this.filePath,
     this.thumbnailPath,
+    this.ownerPubkey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7707,6 +7794,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     }
     if (!nullToAbsent || thumbnailPath != null) {
       map['thumbnail_path'] = Variable<String>(thumbnailPath);
+    }
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
     }
     return map;
   }
@@ -7727,6 +7817,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       thumbnailPath: thumbnailPath == null && nullToAbsent
           ? const Value.absent()
           : Value(thumbnailPath),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
     );
   }
 
@@ -7744,6 +7837,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       data: serializer.fromJson<String>(json['data']),
       filePath: serializer.fromJson<String?>(json['filePath']),
       thumbnailPath: serializer.fromJson<String?>(json['thumbnailPath']),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
   @override
@@ -7758,6 +7852,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       'data': serializer.toJson<String>(data),
       'filePath': serializer.toJson<String?>(filePath),
       'thumbnailPath': serializer.toJson<String?>(thumbnailPath),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
 
@@ -7770,6 +7865,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     String? data,
     Value<String?> filePath = const Value.absent(),
     Value<String?> thumbnailPath = const Value.absent(),
+    Value<String?> ownerPubkey = const Value.absent(),
   }) => ClipRow(
     id: id ?? this.id,
     draftId: draftId.present ? draftId.value : this.draftId,
@@ -7781,6 +7877,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     thumbnailPath: thumbnailPath.present
         ? thumbnailPath.value
         : this.thumbnailPath,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   ClipRow copyWithCompanion(ClipsCompanion data) {
     return ClipRow(
@@ -7800,6 +7897,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       thumbnailPath: data.thumbnailPath.present
           ? data.thumbnailPath.value
           : this.thumbnailPath,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
     );
   }
 
@@ -7813,7 +7913,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           ..write('recordedAt: $recordedAt, ')
           ..write('data: $data, ')
           ..write('filePath: $filePath, ')
-          ..write('thumbnailPath: $thumbnailPath')
+          ..write('thumbnailPath: $thumbnailPath, ')
+          ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
   }
@@ -7828,6 +7929,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     data,
     filePath,
     thumbnailPath,
+    ownerPubkey,
   );
   @override
   bool operator ==(Object other) =>
@@ -7840,7 +7942,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           other.recordedAt == this.recordedAt &&
           other.data == this.data &&
           other.filePath == this.filePath &&
-          other.thumbnailPath == this.thumbnailPath);
+          other.thumbnailPath == this.thumbnailPath &&
+          other.ownerPubkey == this.ownerPubkey);
 }
 
 class ClipsCompanion extends UpdateCompanion<ClipRow> {
@@ -7852,6 +7955,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
   final Value<String> data;
   final Value<String?> filePath;
   final Value<String?> thumbnailPath;
+  final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const ClipsCompanion({
     this.id = const Value.absent(),
@@ -7862,6 +7966,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     this.data = const Value.absent(),
     this.filePath = const Value.absent(),
     this.thumbnailPath = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ClipsCompanion.insert({
@@ -7873,6 +7978,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     required String data,
     this.filePath = const Value.absent(),
     this.thumbnailPath = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        durationMs = Value(durationMs),
@@ -7887,6 +7993,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Expression<String>? data,
     Expression<String>? filePath,
     Expression<String>? thumbnailPath,
+    Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7898,6 +8005,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       if (data != null) 'data': data,
       if (filePath != null) 'file_path': filePath,
       if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7911,6 +8019,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Value<String>? data,
     Value<String?>? filePath,
     Value<String?>? thumbnailPath,
+    Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
     return ClipsCompanion(
@@ -7922,6 +8031,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       data: data ?? this.data,
       filePath: filePath ?? this.filePath,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7953,6 +8063,9 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     if (thumbnailPath.present) {
       map['thumbnail_path'] = Variable<String>(thumbnailPath.value);
     }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7970,6 +8083,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
           ..write('data: $data, ')
           ..write('filePath: $filePath, ')
           ..write('thumbnailPath: $thumbnailPath, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -13118,6 +13232,7 @@ typedef $$DraftsTableCreateCompanionBuilder =
       required String data,
       Value<String?> renderedFilePath,
       Value<String?> renderedThumbnailPath,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 typedef $$DraftsTableUpdateCompanionBuilder =
@@ -13133,6 +13248,7 @@ typedef $$DraftsTableUpdateCompanionBuilder =
       Value<String> data,
       Value<String?> renderedFilePath,
       Value<String?> renderedThumbnailPath,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 
@@ -13197,6 +13313,11 @@ class $$DraftsTableFilterComposer
 
   ColumnFilters<String> get renderedThumbnailPath => $composableBuilder(
     column: $table.renderedThumbnailPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -13264,6 +13385,11 @@ class $$DraftsTableOrderingComposer
     column: $table.renderedThumbnailPath,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DraftsTableAnnotationComposer
@@ -13321,6 +13447,11 @@ class $$DraftsTableAnnotationComposer
     column: $table.renderedThumbnailPath,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
 }
 
 class $$DraftsTableTableManager
@@ -13362,6 +13493,7 @@ class $$DraftsTableTableManager
                 Value<String> data = const Value.absent(),
                 Value<String?> renderedFilePath = const Value.absent(),
                 Value<String?> renderedThumbnailPath = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion(
                 id: id,
@@ -13375,6 +13507,7 @@ class $$DraftsTableTableManager
                 data: data,
                 renderedFilePath: renderedFilePath,
                 renderedThumbnailPath: renderedThumbnailPath,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -13390,6 +13523,7 @@ class $$DraftsTableTableManager
                 required String data,
                 Value<String?> renderedFilePath = const Value.absent(),
                 Value<String?> renderedThumbnailPath = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion.insert(
                 id: id,
@@ -13403,6 +13537,7 @@ class $$DraftsTableTableManager
                 data: data,
                 renderedFilePath: renderedFilePath,
                 renderedThumbnailPath: renderedThumbnailPath,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -13437,6 +13572,7 @@ typedef $$ClipsTableCreateCompanionBuilder =
       required String data,
       Value<String?> filePath,
       Value<String?> thumbnailPath,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 typedef $$ClipsTableUpdateCompanionBuilder =
@@ -13449,6 +13585,7 @@ typedef $$ClipsTableUpdateCompanionBuilder =
       Value<String> data,
       Value<String?> filePath,
       Value<String?> thumbnailPath,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 
@@ -13497,6 +13634,11 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
 
   ColumnFilters<String> get thumbnailPath => $composableBuilder(
     column: $table.thumbnailPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -13549,6 +13691,11 @@ class $$ClipsTableOrderingComposer
     column: $table.thumbnailPath,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ClipsTableAnnotationComposer
@@ -13591,6 +13738,11 @@ class $$ClipsTableAnnotationComposer
     column: $table.thumbnailPath,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
 }
 
 class $$ClipsTableTableManager
@@ -13629,6 +13781,7 @@ class $$ClipsTableTableManager
                 Value<String> data = const Value.absent(),
                 Value<String?> filePath = const Value.absent(),
                 Value<String?> thumbnailPath = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion(
                 id: id,
@@ -13639,6 +13792,7 @@ class $$ClipsTableTableManager
                 data: data,
                 filePath: filePath,
                 thumbnailPath: thumbnailPath,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -13651,6 +13805,7 @@ class $$ClipsTableTableManager
                 required String data,
                 Value<String?> filePath = const Value.absent(),
                 Value<String?> thumbnailPath = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion.insert(
                 id: id,
@@ -13661,6 +13816,7 @@ class $$ClipsTableTableManager
                 data: data,
                 filePath: filePath,
                 thumbnailPath: thumbnailPath,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

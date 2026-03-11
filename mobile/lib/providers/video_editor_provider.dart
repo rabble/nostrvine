@@ -60,7 +60,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Get clips from clip manager.
   List<DivineVideoClip> get _clips => ref.read(clipManagerProvider).clips;
 
-  late final DraftStorageService _draftService = ref.read(
+  DraftStorageService get _draftService => ref.read(
     draftStorageServiceProvider,
   );
 

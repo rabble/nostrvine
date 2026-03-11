@@ -670,14 +670,28 @@ class BlocklistVersion extends _$BlocklistVersion {
 @riverpod
 DraftStorageService draftStorageService(Ref ref) {
   final db = ref.watch(databaseProvider);
-  return DraftStorageService(draftsDao: db.draftsDao, clipsDao: db.clipsDao);
+  // Rebuild when account changes so ownerPubkey stays current
+  ref.watch(currentAuthStateProvider);
+  final authService = ref.watch(authServiceProvider);
+  return DraftStorageService(
+    draftsDao: db.draftsDao,
+    clipsDao: db.clipsDao,
+    ownerPubkey: authService.currentPublicKeyHex,
+  );
 }
 
 /// Clip library service for persisting individual video clips
 @riverpod
 ClipLibraryService clipLibraryService(Ref ref) {
   final db = ref.watch(databaseProvider);
-  return ClipLibraryService(clipsDao: db.clipsDao, draftsDao: db.draftsDao);
+  // Rebuild when account changes so ownerPubkey stays current
+  ref.watch(currentAuthStateProvider);
+  final authService = ref.watch(authServiceProvider);
+  return ClipLibraryService(
+    clipsDao: db.clipsDao,
+    draftsDao: db.draftsDao,
+    ownerPubkey: authService.currentPublicKeyHex,
+  );
 }
 
 // (Removed duplicate legacy provider for StreamUploadService)

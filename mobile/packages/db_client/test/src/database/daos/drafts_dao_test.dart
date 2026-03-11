@@ -158,5 +158,205 @@ void main() {
         );
       });
     });
+
+    group('ownerPubkey isolation', () {
+      const pubkeyA =
+          'aaaa1111aaaa1111aaaa1111aaaa1111'
+          'aaaa1111aaaa1111aaaa1111aaaa1111';
+      const pubkeyB =
+          'bbbb2222bbbb2222bbbb2222bbbb2222'
+          'bbbb2222bbbb2222bbbb2222bbbb2222';
+
+      Future<void> insertDraft({
+        required String id,
+        String? ownerPubkey,
+        String publishStatus = 'draft',
+        DateTime? lastModified,
+      }) async {
+        await dao.upsertDraft(
+          id: id,
+          title: 'Draft $id',
+          description: '',
+          publishStatus: publishStatus,
+          createdAt: DateTime(2023, 11, 14),
+          lastModified: lastModified ?? DateTime(2023, 11, 14),
+          renderedFilePath: 'rendered.mp4',
+          renderedThumbnailPath: 'thumb.jpeg',
+          data: '{}',
+          ownerPubkey: ownerPubkey,
+        );
+      }
+
+      test('upsertDraft stores ownerPubkey', () async {
+        await insertDraft(id: 'draft_owned', ownerPubkey: pubkeyA);
+
+        final draft = await dao.getDraftById('draft_owned');
+        expect(draft, isNotNull);
+        expect(draft!.ownerPubkey, equals(pubkeyA));
+      });
+
+      test('upsertDraft without ownerPubkey stores null', () async {
+        await insertDraft(id: 'draft_legacy');
+
+        final draft = await dao.getDraftById('draft_legacy');
+        expect(draft, isNotNull);
+        expect(draft!.ownerPubkey, isNull);
+      });
+
+      test('getAllDrafts returns only owned + legacy drafts', () async {
+        await insertDraft(id: 'draft_a', ownerPubkey: pubkeyA);
+        await insertDraft(id: 'draft_b', ownerPubkey: pubkeyB);
+        await insertDraft(id: 'draft_legacy');
+
+        final draftsA = await dao.getAllDrafts(ownerPubkey: pubkeyA);
+        expect(draftsA, hasLength(2));
+        final idsA = draftsA.map((d) => d.id).toSet();
+        expect(idsA, containsAll(['draft_a', 'draft_legacy']));
+        expect(idsA, isNot(contains('draft_b')));
+
+        final draftsB = await dao.getAllDrafts(ownerPubkey: pubkeyB);
+        expect(draftsB, hasLength(2));
+        final idsB = draftsB.map((d) => d.id).toSet();
+        expect(idsB, containsAll(['draft_b', 'draft_legacy']));
+        expect(idsB, isNot(contains('draft_a')));
+      });
+
+      test(
+        'getAllDrafts without ownerPubkey returns all drafts',
+        () async {
+          await insertDraft(id: 'draft_a', ownerPubkey: pubkeyA);
+          await insertDraft(id: 'draft_b', ownerPubkey: pubkeyB);
+          await insertDraft(id: 'draft_legacy');
+
+          final all = await dao.getAllDrafts();
+          expect(all, hasLength(3));
+        },
+      );
+
+      test('getDraftsByStatus filters by owner', () async {
+        await insertDraft(
+          id: 'draft_a',
+          ownerPubkey: pubkeyA,
+          publishStatus: 'published',
+        );
+        await insertDraft(
+          id: 'draft_b',
+          ownerPubkey: pubkeyB,
+          publishStatus: 'published',
+        );
+        await insertDraft(id: 'draft_legacy', publishStatus: 'published');
+
+        final published = await dao.getDraftsByStatus(
+          'published',
+          ownerPubkey: pubkeyA,
+        );
+        expect(published, hasLength(2));
+        final ids = published.map((d) => d.id).toSet();
+        expect(ids, containsAll(['draft_a', 'draft_legacy']));
+        expect(ids, isNot(contains('draft_b')));
+      });
+
+      test('watchAllDrafts filters by ownerPubkey', () async {
+        await insertDraft(id: 'draft_a', ownerPubkey: pubkeyA);
+        await insertDraft(id: 'draft_b', ownerPubkey: pubkeyB);
+        await insertDraft(id: 'draft_legacy');
+
+        final stream = dao.watchAllDrafts(ownerPubkey: pubkeyA);
+        final results = await stream.first;
+
+        expect(results, hasLength(2));
+        final ids = results.map((d) => d.id).toSet();
+        expect(ids, containsAll(['draft_a', 'draft_legacy']));
+        expect(ids, isNot(contains('draft_b')));
+      });
+
+      test('watchDraftsByStatus filters by ownerPubkey', () async {
+        await insertDraft(
+          id: 'draft_a',
+          ownerPubkey: pubkeyA,
+        );
+        await insertDraft(
+          id: 'draft_b',
+          ownerPubkey: pubkeyB,
+        );
+        await insertDraft(id: 'draft_legacy');
+
+        final stream = dao.watchDraftsByStatus(
+          'draft',
+          ownerPubkey: pubkeyA,
+        );
+        final results = await stream.first;
+
+        expect(results, hasLength(2));
+        final ids = results.map((d) => d.id).toSet();
+        expect(ids, containsAll(['draft_a', 'draft_legacy']));
+      });
+
+      test('getCountByStatus filters by owner', () async {
+        await insertDraft(
+          id: 'draft_a',
+          ownerPubkey: pubkeyA,
+        );
+        await insertDraft(
+          id: 'draft_b',
+          ownerPubkey: pubkeyB,
+        );
+        await insertDraft(id: 'draft_legacy');
+
+        final countA = await dao.getCountByStatus(
+          'draft',
+          ownerPubkey: pubkeyA,
+        );
+        expect(countA, equals(2));
+
+        final countB = await dao.getCountByStatus(
+          'draft',
+          ownerPubkey: pubkeyB,
+        );
+        expect(countB, equals(2));
+      });
+
+      test('getCount filters by owner', () async {
+        await insertDraft(id: 'draft_a', ownerPubkey: pubkeyA);
+        await insertDraft(id: 'draft_b', ownerPubkey: pubkeyB);
+        await insertDraft(id: 'draft_legacy');
+
+        final countA = await dao.getCount(ownerPubkey: pubkeyA);
+        expect(countA, equals(2));
+
+        final countB = await dao.getCount(ownerPubkey: pubkeyB);
+        expect(countB, equals(2));
+
+        final countAll = await dao.getCount();
+        expect(countAll, equals(3));
+      });
+
+      test('drafts of user A are invisible to user B', () async {
+        await insertDraft(id: 'draft_a_only', ownerPubkey: pubkeyA);
+
+        final draftsB = await dao.getAllDrafts(ownerPubkey: pubkeyB);
+        expect(draftsB, isEmpty);
+      });
+
+      test('saveDraftWithClips stores ownerPubkey', () async {
+        await dao.saveDraftWithClips(
+          id: 'draft_txn',
+          title: 'Transactional',
+          description: '',
+          publishStatus: 'draft',
+          createdAt: DateTime(2023, 11, 14),
+          lastModified: DateTime(2023, 11, 14),
+          renderedFilePath: null,
+          renderedThumbnailPath: null,
+          data: '{}',
+          clipDataList: const [],
+          ownerPubkey: pubkeyA,
+        );
+
+        final draft = await dao.getDraftById('draft_txn');
+        expect(draft, isNotNull);
+        expect(draft!.ownerPubkey, equals(pubkeyA));
+      });
+    });
   });
 }

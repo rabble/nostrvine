@@ -518,10 +518,19 @@ class Drafts extends Table {
   TextColumn get renderedThumbnailPath =>
       text().nullable().named('rendered_thumbnail_path')();
 
+  /// Hex public key of the account that owns this draft.
+  /// NULL for legacy drafts created before multi-account support.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
   List<Index> get indexes => [
+    Index(
+      'idx_draft_owner_pubkey',
+      'CREATE INDEX IF NOT EXISTS idx_draft_owner_pubkey '
+          'ON drafts (owner_pubkey)',
+    ),
     Index(
       'idx_draft_publish_status',
       'CREATE INDEX IF NOT EXISTS idx_draft_publish_status '
@@ -587,6 +596,10 @@ class Clips extends Table {
   /// Basename of the thumbnail file (for indexed lookups)
   TextColumn get thumbnailPath => text().nullable().named('thumbnail_path')();
 
+  /// Hex public key of the account that owns this clip.
+  /// NULL for legacy clips created before multi-account support.
+  TextColumn get ownerPubkey => text().nullable().named('owner_pubkey')();
+
   @override
   Set<Column> get primaryKey => {id};
 
@@ -596,6 +609,11 @@ class Clips extends Table {
   ];
 
   List<Index> get indexes => [
+    Index(
+      'idx_clip_owner_pubkey',
+      'CREATE INDEX IF NOT EXISTS idx_clip_owner_pubkey '
+          'ON clips (owner_pubkey)',
+    ),
     // Partial index for library clips (clips without a draft)
     Index(
       'idx_clip_library',
