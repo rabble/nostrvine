@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:media_kit/media_kit.dart';
 
 /// Large centered play affordance shown when a pooled video is paused.
@@ -130,35 +131,25 @@ class _PausedPlayAffordance extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 112,
-        height: 112,
+        width: 64,
+        height: 64,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: VineTheme.surfaceContainer55,
-          border: Border.all(
-            color: VineTheme.borderWhite25,
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: VineTheme.backgroundColor.withValues(alpha: 0.24),
-              blurRadius: 24,
-              spreadRadius: 2,
-            ),
-          ],
+          color: VineTheme.scrim65,
+          borderRadius: BorderRadius.circular(24),
         ),
         child: Semantics(
           identifier: 'play_button',
           container: true,
           explicitChildNodes: true,
           label: 'Play video',
-          child: const Center(
-            child: Padding(
-              padding: EdgeInsets.only(left: 8),
-              child: Icon(
-                Icons.play_arrow_rounded,
-                size: 72,
-                color: VineTheme.onSurface,
+          child: Center(
+            child: SvgPicture.asset(
+              'assets/icon/content-controls/play.svg',
+              width: 32,
+              height: 32,
+              colorFilter: const ColorFilter.mode(
+                VineTheme.whiteText,
+                BlendMode.srcIn,
               ),
             ),
           ),

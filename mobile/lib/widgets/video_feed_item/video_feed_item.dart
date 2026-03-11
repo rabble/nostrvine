@@ -1206,8 +1206,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                     width: 64,
                                     height: 64,
                                     decoration: BoxDecoration(
-                                      color: VineTheme.backgroundColor
-                                          .withValues(alpha: 0.65),
+                                      color: VineTheme.scrim65,
                                       borderRadius: BorderRadius.circular(24),
                                     ),
                                     child: Center(

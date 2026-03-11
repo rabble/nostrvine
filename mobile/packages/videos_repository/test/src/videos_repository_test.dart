@@ -511,7 +511,8 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
-        test('applies warning labels from REST moderation labels', () async {
+        test('maps REST moderation labels to moderationLabels '
+            '(not contentWarningLabels) and does not apply warn', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
             () => mockFunnelcakeClient.getHomeFeed(
@@ -536,6 +537,7 @@ void main() {
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
             funnelcakeApiClient: mockFunnelcakeClient,
+            // ML moderation labels should NOT trigger warn
             warningLabelsResolver: (video) => video.contentWarningLabels
                 .where((label) => label == 'violence')
                 .toList(),
@@ -547,11 +549,14 @@ void main() {
           );
 
           expect(result.videos, hasLength(1));
+          // Moderation labels go to moderationLabels, not contentWarningLabels
+          expect(result.videos.first.contentWarningLabels, isEmpty);
           expect(
-            result.videos.first.contentWarningLabels,
+            result.videos.first.moderationLabels,
             equals(['violence']),
           );
-          expect(result.videos.first.warnLabels, equals(['violence']));
+          // ML labels should not trigger warn behaviour
+          expect(result.videos.first.warnLabels, isEmpty);
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
@@ -592,8 +597,10 @@ void main() {
           );
 
           expect(result.videos, hasLength(1));
+          // Moderation labels go to moderationLabels, not contentWarningLabels
+          expect(result.videos.first.contentWarningLabels, isEmpty);
           expect(
-            result.videos.first.contentWarningLabels,
+            result.videos.first.moderationLabels,
             equals(['violence']),
           );
           expect(result.videos.first.warnLabels, isEmpty);
@@ -625,8 +632,8 @@ void main() {
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
             funnelcakeApiClient: mockFunnelcakeClient,
-            contentFilter: (video) =>
-                video.contentWarningLabels.contains('nudity'),
+            // Moderation labels now go to video.moderationLabels
+            contentFilter: (video) => video.moderationLabels.contains('nudity'),
           );
           final result = await repositoryWithApi.getHomeFeedVideos(
             authors: ['followed-user'],
