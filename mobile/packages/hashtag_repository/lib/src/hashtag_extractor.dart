@@ -3,10 +3,14 @@
 
 /// Utility class for hashtag extraction and validation
 class HashtagExtractor {
+  /// Maximum allowed length for a single hashtag.
   static const int maxHashtagLength = 50;
+
+  /// Maximum number of hashtags extracted from a single piece of text.
   static const int maxHashtagCount = 20;
 
-  // Common hashtags for Divine content
+  /// Common hashtags for Divine content, used as a fallback when the
+  /// Funnelcake API is unavailable.
   static const List<String> suggestedHashtags = [
     'openvine',
     'nostr',
@@ -217,6 +221,7 @@ class HashtagExtractor {
 
 /// Statistics about hashtag usage
 class HashtagStats {
+  /// Creates a [HashtagStats] instance.
   const HashtagStats({
     required this.totalCount,
     required this.validCount,
@@ -224,13 +229,26 @@ class HashtagStats {
     required this.averageLength,
     this.mostCommon,
   });
+
+  /// Total number of hashtags.
   final int totalCount;
+
+  /// Number of valid hashtags.
   final int validCount;
+
+  /// Number of invalid hashtags.
   final int invalidCount;
+
+  /// Average length of all hashtags.
   final double averageLength;
+
+  /// The most frequently occurring hashtag, or `null` if the list is empty.
   final String? mostCommon;
 
+  /// Whether any hashtags failed validation.
   bool get hasInvalidHashtags => invalidCount > 0;
+
+  /// Fraction of hashtags that are valid, in the range `[0.0, 1.0]`.
   double get validPercentage => totalCount > 0 ? validCount / totalCount : 0.0;
 
   @override

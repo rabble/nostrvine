@@ -11,7 +11,6 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/curation_state.dart';
-import 'package:openvine/utils/hashtag_extractor.dart';
 import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -447,31 +446,13 @@ class TrendingHashtags extends _$TrendingHashtags {
   @override
   Future<List<TrendingHashtag>> build() async {
     final repo = ref.watch(hashtagRepositoryProvider);
-    try {
-      return await repo.getTrendingHashtags();
-    } on FunnelcakeNotConfiguredException {
-      return _defaultHashtags();
-    }
+    return repo.getTrendingHashtags();
   }
 
   /// Refresh trending hashtags from REST API, bypassing the repository cache.
   Future<void> refresh() async {
     final repo = ref.read(hashtagRepositoryProvider);
-    try {
-      final hashtags = await repo.getTrendingHashtags(forceRefresh: true);
-      state = AsyncData(hashtags);
-    } on FunnelcakeNotConfiguredException {
-      state = AsyncData(_defaultHashtags());
-    }
-  }
-
-  List<TrendingHashtag> _defaultHashtags({int limit = 20}) {
-    final defaultTags = HashtagExtractor.suggestedHashtags.take(limit).toList();
-    return defaultTags.asMap().entries.map((entry) {
-      return TrendingHashtag(
-        tag: entry.value,
-        videoCount: 50 - (entry.key * 2),
-      );
-    }).toList();
+    final hashtags = await repo.getTrendingHashtags(forceRefresh: true);
+    state = AsyncData(hashtags);
   }
 }
