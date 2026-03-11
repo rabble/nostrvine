@@ -466,8 +466,7 @@ class TrendingHashtags extends _$TrendingHashtags {
   }
 
   List<TrendingHashtag> _defaultHashtags({int limit = 20}) {
-    final defaultTags =
-        HashtagExtractor.suggestedHashtags.take(limit).toList();
+    final defaultTags = HashtagExtractor.suggestedHashtags.take(limit).toList();
     return defaultTags.asMap().entries.map((entry) {
       return TrendingHashtag(
         tag: entry.value,

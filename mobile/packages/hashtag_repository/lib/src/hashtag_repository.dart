@@ -103,8 +103,9 @@ class HashtagRepository {
       return _trendingHashtagsCache.take(limit).toList();
     }
 
-    final results =
-        await _funnelcakeApiClient.fetchTrendingHashtags(limit: limit);
+    final results = await _funnelcakeApiClient.fetchTrendingHashtags(
+      limit: limit,
+    );
     _trendingHashtagsCache = results;
     _lastTrendingHashtagsFetch = DateTime.now();
     return results;
