@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+import 'package:pooled_video_player/src/controllers/native_player_logging_stub.dart'
+    if (dart.library.io) 'package:pooled_video_player/src/controllers/native_player_logging_native.dart';
 import 'package:pooled_video_player/src/models/video_pool_config.dart';
 
 /// A pooled player instance containing both Player and VideoController.
@@ -339,14 +341,7 @@ class PlayerPool {
 
     // Suppress FFmpeg codec warnings (e.g. smpte170m color transfer) that
     // bypass MPV's API log callback and go directly to stderr.
-    try {
-      final nativePlayer = player.platform;
-      if (nativePlayer is NativePlayer) {
-        await nativePlayer.setProperty('msg-level', 'all=error');
-      }
-    } on Exception {
-      // Ignore — non-native platforms don't support setProperty.
-    }
+    await suppressNativePlayerWarnings(player);
 
     final videoController = VideoController(player);
     return PooledPlayer(player: player, videoController: videoController);
