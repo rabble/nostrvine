@@ -65,9 +65,12 @@ class ClipsDao extends DatabaseAccessor<AppDatabase> with _$ClipsDaoMixin {
     return (select(clips)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
-  /// Get all clips sorted by recorded date (newest first)
-  Future<List<ClipRow>> getAllClips({int? limit}) {
+  /// Get all clips sorted by recorded date (newest first).
+  /// When [ownerPubkey] is provided, returns only clips owned by that
+  /// account **plus** legacy clips with no owner.
+  Future<List<ClipRow>> getAllClips({int? limit, String? ownerPubkey}) {
     final query = select(clips)
+      ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.recordedAt,
