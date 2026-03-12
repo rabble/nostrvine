@@ -49,6 +49,9 @@ class NavigatorKeys {
     debugLabel: 'hashtag-grid',
   );
 
+  /// Inbox tab navigator key (Messages + Notifications).
+  static final inbox = GlobalKey<NavigatorState>(debugLabel: 'inbox');
+
   /// Profile tab navigator key for grid mode (no video index).
   static final profileGrid = GlobalKey<NavigatorState>(
     debugLabel: 'profile-grid',

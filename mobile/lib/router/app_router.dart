@@ -31,6 +31,7 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -232,6 +233,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   builder: (_) => const NotificationsScreen(),
                   settings: const RouteSettings(
                     name: NotificationsScreen.routeName,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // INBOX tab (Messages + Notifications combined)
+          GoRoute(
+            path: InboxPage.path,
+            name: InboxPage.routeName,
+            pageBuilder: (ctx, st) => NoTransitionPage(
+              key: st.pageKey,
+              child: Navigator(
+                key: NavigatorKeys.inbox,
+                onGenerateRoute: (r) => MaterialPageRoute(
+                  builder: (_) => const InboxPage(),
+                  settings: const RouteSettings(
+                    name: InboxPage.routeName,
                   ),
                 ),
               ),
@@ -841,6 +860,8 @@ int tabIndexFromLocation(String loc) {
       return 1; // Hashtag keeps explore tab active
     case 'notifications':
       return 2;
+    case 'inbox':
+      return 2; // Inbox replaces notifications in the same tab position
     case 'profile':
     case 'liked-videos':
       return 3; // Liked videos keeps profile tab active

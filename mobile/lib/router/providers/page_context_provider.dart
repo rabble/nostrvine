@@ -15,6 +15,7 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -43,6 +44,7 @@ enum RouteType {
   home,
   explore,
   notifications,
+  inbox, // Inbox screen (Messages + Notifications combined)
   profile,
   likedVideos, // Current user's liked videos feed
   hashtag, // Still supported as push route within explore
@@ -151,6 +153,9 @@ RouteContext parseRoute(String path) {
       final rawIndex = segments.length > 1 ? int.tryParse(segments[1]) ?? 0 : 0;
       final index = rawIndex < 0 ? 0 : rawIndex;
       return RouteContext(type: RouteType.notifications, videoIndex: index);
+
+    case 'inbox':
+      return const RouteContext(type: RouteType.inbox);
 
     case 'liked-videos':
       // /liked-videos - grid mode
@@ -349,6 +354,9 @@ String buildRoute(RouteContext context) {
         return NotificationsScreen.pathForIndex(index);
       }
       return NotificationsScreen.path;
+
+    case RouteType.inbox:
+      return InboxPage.path;
 
     case RouteType.profile:
       final npub = Uri.encodeComponent(context.npub ?? '');

@@ -44,7 +44,10 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
   }
 
   /// Get all conversations sorted by last message (newest first).
-  Future<List<ConversationRow>> getAllConversations({int? limit}) {
+  Future<List<ConversationRow>> getAllConversations({
+    int? limit,
+    int? offset,
+  }) {
     final query = select(conversations)
       ..orderBy([
         (t) => OrderingTerm(
@@ -52,12 +55,15 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
           mode: OrderingMode.desc,
         ),
       ]);
-    if (limit != null) query.limit(limit);
+    if (limit != null) query.limit(limit, offset: offset);
     return query.get();
   }
 
   /// Watch all conversations (reactive stream), newest first.
-  Stream<List<ConversationRow>> watchAllConversations({int? limit}) {
+  Stream<List<ConversationRow>> watchAllConversations({
+    int? limit,
+    int? offset,
+  }) {
     final query = select(conversations)
       ..orderBy([
         (t) => OrderingTerm(
@@ -65,7 +71,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
           mode: OrderingMode.desc,
         ),
       ]);
-    if (limit != null) query.limit(limit);
+    if (limit != null) query.limit(limit, offset: offset);
     return query.watch();
   }
 

@@ -14,6 +14,11 @@ class ConversationListStarted extends ConversationListEvent {
   const ConversationListStarted();
 }
 
+/// Load the next page of conversations.
+class ConversationListLoadMore extends ConversationListEvent {
+  const ConversationListLoadMore();
+}
+
 /// Mark a conversation as read.
 class ConversationListMarkRead extends ConversationListEvent {
   const ConversationListMarkRead(this.conversationId);
