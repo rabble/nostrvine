@@ -172,7 +172,12 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.all(4),
+          padding: .fromLTRB(
+            4,
+            4,
+            4,
+            4 + MediaQuery.viewPaddingOf(context).bottom,
+          ),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
