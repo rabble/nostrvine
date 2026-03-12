@@ -23,12 +23,18 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final collaborators = ref.watch(
-      videoEditorProvider.select((s) => s.collaboratorPubkeys),
+    final (:collaborators, :pendingCollaborators) = ref.watch(
+      videoEditorProvider.select(
+        (s) => (
+          collaborators: s.collaboratorPubkeys,
+          pendingCollaborators: s.pendingCollaboratorPubkeys,
+        ),
+      ),
     );
 
+    final totalCount = collaborators.length + pendingCollaborators.length;
     final canAddCollaborators =
-        collaborators.length < VideoEditorNotifier.maxCollaborators;
+        totalCount < VideoEditorNotifier.maxCollaborators;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +76,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          '${collaborators.length}/'
+                          '$totalCount/'
                           '${VideoEditorNotifier.maxCollaborators} Collaborators',
                           style: VineTheme.titleFont(
                             fontSize: 16,
@@ -104,25 +110,30 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
           ),
         ),
 
-        if (collaborators.isNotEmpty)
+        if (collaborators.isNotEmpty || pendingCollaborators.isNotEmpty)
           Padding(
             padding: const .fromLTRB(16, 0, 16, 16),
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: collaborators
-                  .map(
-                    (pubkey) => VideoMetadataUserChip.fromPubkey(
-                      pubkey: pubkey,
-                      // TODO(l10n): Replace with context.l10n
-                      //   when localization is added.
-                      removeLabel: 'Remove collaborator',
-                      onRemove: () => ref
-                          .read(videoEditorProvider.notifier)
-                          .removeCollaborator(pubkey),
-                    ),
-                  )
-                  .toList(),
+              children: [
+                ...collaborators.map(
+                  (pubkey) => VideoMetadataUserChip.fromPubkey(
+                    pubkey: pubkey,
+                    // TODO(l10n): Replace with context.l10n when localization is added.
+                    removeLabel: 'Remove collaborator',
+                    onRemove: () => ref
+                        .read(videoEditorProvider.notifier)
+                        .removeCollaborator(pubkey),
+                  ),
+                ),
+                ...pendingCollaborators.map(
+                  (pubkey) => VideoMetadataUserChip.fromPubkey(
+                    pubkey: pubkey,
+                    isLoading: true,
+                  ),
+                ),
+              ],
             ),
           ),
       ],
@@ -148,11 +159,12 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
   }
 
   Future<void> _addCollaborator(BuildContext context, WidgetRef ref) async {
-    // Get current collaborators to exclude from picker
-    final currentCollaborators = ref
-        .read(videoEditorProvider)
-        .collaboratorPubkeys
-        .toSet();
+    // Get current and pending collaborators to exclude from picker
+    final editorState = ref.read(videoEditorProvider);
+    final excludePubkeys = {
+      ...editorState.collaboratorPubkeys,
+      ...editorState.pendingCollaboratorPubkeys,
+    };
 
     final profile = await showUserPickerSheet(
       context,
@@ -160,34 +172,40 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       // TODO(l10n): Replace with context.l10n when localization is added.
       title: 'Add collaborator',
       searchText: 'Mutual followers',
-      excludePubkeys: currentCollaborators,
+      excludePubkeys: excludePubkeys,
     );
 
     if (profile == null || !context.mounted) return;
 
-    // Verify mutual follow
+    // Add to pending immediately for instant UI feedback
+    final notifier = ref.read(videoEditorProvider.notifier);
+    notifier.addPendingCollaborator(profile.pubkey);
+
+    // Verify mutual follow in the background
     final followRepo = ref.read(followRepositoryProvider);
     final isMutual = await followRepo.isMutualFollow(profile.pubkey);
 
     if (!isMutual) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          behavior: SnackBarBehavior.floating,
-          content: DivineSnackbarContainer(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label:
-                'You need to mutually follow '
-                '${profile.bestDisplayName} to add '
-                'them as a collaborator.',
+      notifier.removePendingCollaborator(profile.pubkey);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            content: DivineSnackbarContainer(
+              // TODO(l10n): Replace with context.l10n when localization is added.
+              label:
+                  'You need to mutually follow '
+                  '${profile.bestDisplayName} to add '
+                  'them as a collaborator.',
+            ),
           ),
-        ),
-      );
+        );
+      }
       return;
     }
 
-    ref.read(videoEditorProvider.notifier).addCollaborator(profile.pubkey);
+    notifier.confirmCollaborator(profile.pubkey);
   }
 }

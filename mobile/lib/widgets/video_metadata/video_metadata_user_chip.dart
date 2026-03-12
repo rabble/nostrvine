@@ -19,6 +19,7 @@ class VideoMetadataUserChip extends ConsumerWidget {
   const VideoMetadataUserChip.fromPubkey({
     required String pubkey,
     this.onRemove,
+    this.isLoading = false,
     this.removeLabel = 'Remove',
     super.key,
   }) : _pubkey = pubkey,
@@ -28,6 +29,7 @@ class VideoMetadataUserChip extends ConsumerWidget {
   const VideoMetadataUserChip.fromNpub({
     required String npub,
     this.onRemove,
+    this.isLoading = false,
     this.removeLabel = 'Remove',
     super.key,
   }) : _npub = npub,
@@ -39,6 +41,9 @@ class VideoMetadataUserChip extends ConsumerWidget {
   /// Callback when the remove button is tapped. If null, no remove button
   /// is shown.
   final VoidCallback? onRemove;
+
+  /// Whether this chip is in a loading/pending state.
+  final bool isLoading;
 
   /// Accessibility label for the remove button.
   final String removeLabel;
@@ -87,7 +92,16 @@ class VideoMetadataUserChip extends ConsumerWidget {
               ),
             ),
           ),
-          if (onRemove != null)
+          if (isLoading)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: VineTheme.onSurfaceMuted,
+              ),
+            )
+          else if (onRemove != null)
             Semantics(
               label: removeLabel,
               button: true,

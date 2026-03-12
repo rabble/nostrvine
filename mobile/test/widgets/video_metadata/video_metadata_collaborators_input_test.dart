@@ -25,7 +25,7 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
   @override
   void addCollaborator(String pubkey) {
     state = state.copyWith(
-      collaboratorPubkeys: [...state.collaboratorPubkeys, pubkey],
+      collaboratorPubkeys: {...state.collaboratorPubkeys, pubkey},
     );
   }
 
@@ -34,7 +34,7 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
     state = state.copyWith(
       collaboratorPubkeys: state.collaboratorPubkeys
           .where((p) => p != pubkey)
-          .toList(),
+          .toSet(),
     );
   }
 }
@@ -99,10 +99,10 @@ void main() {
     ) async {
       // Use valid 64-character hex pubkeys (Nostr spec)
       final state = VideoEditorProviderState(
-        collaboratorPubkeys: [
+        collaboratorPubkeys: {
           '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           'fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321',
-        ],
+        },
       );
 
       await tester.pumpWidget(
@@ -207,7 +207,7 @@ void main() {
       final maxCollaborators = List.generate(
         VideoEditorNotifier.maxCollaborators,
         (i) => 'abcd${i.toString().padLeft(60, '0')}',
-      );
+      ).toSet();
       final state = VideoEditorProviderState(
         collaboratorPubkeys: maxCollaborators,
       );
@@ -243,10 +243,10 @@ void main() {
     ) async {
       // Use valid 64-character hex pubkeys (Nostr spec)
       final state = VideoEditorProviderState(
-        collaboratorPubkeys: [
+        collaboratorPubkeys: {
           '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
           'fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321',
-        ],
+        },
       );
 
       await tester.pumpWidget(

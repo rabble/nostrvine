@@ -574,6 +574,48 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Maximum number of collaborators allowed per video.
   static const int maxCollaborators = 5;
 
+  /// Add a collaborator pubkey to the pending verification set.
+  ///
+  /// Enforces a maximum of [maxCollaborators] total (confirmed + pending).
+  void addPendingCollaborator(String pubkey) {
+    final total =
+        state.collaboratorPubkeys.length +
+        state.pendingCollaboratorPubkeys.length;
+    if (total >= maxCollaborators) return;
+    if (state.collaboratorPubkeys.contains(pubkey)) return;
+    if (state.pendingCollaboratorPubkeys.contains(pubkey)) return;
+    state = state.copyWith(
+      pendingCollaboratorPubkeys: {
+        ...state.pendingCollaboratorPubkeys,
+        pubkey,
+      },
+    );
+  }
+
+  /// Confirm a pending collaborator after successful verification.
+  ///
+  /// Moves the pubkey from [pendingCollaboratorPubkeys] to
+  /// [collaboratorPubkeys].
+  void confirmCollaborator(String pubkey) {
+    if (!state.pendingCollaboratorPubkeys.contains(pubkey)) return;
+    state = state.copyWith(
+      pendingCollaboratorPubkeys: state.pendingCollaboratorPubkeys
+          .where((p) => p != pubkey)
+          .toSet(),
+      collaboratorPubkeys: {...state.collaboratorPubkeys, pubkey},
+    );
+    triggerAutosave();
+  }
+
+  /// Remove a pubkey from the pending verification set.
+  void removePendingCollaborator(String pubkey) {
+    state = state.copyWith(
+      pendingCollaboratorPubkeys: state.pendingCollaboratorPubkeys
+          .where((p) => p != pubkey)
+          .toSet(),
+    );
+  }
+
   /// Add a collaborator pubkey to the video.
   ///
   /// Enforces a maximum of [maxCollaborators] collaborators.
@@ -582,7 +624,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     if (state.collaboratorPubkeys.length >= maxCollaborators) return;
     if (state.collaboratorPubkeys.contains(pubkey)) return;
     state = state.copyWith(
-      collaboratorPubkeys: [...state.collaboratorPubkeys, pubkey],
+      collaboratorPubkeys: {...state.collaboratorPubkeys, pubkey},
     );
     triggerAutosave();
   }
@@ -592,7 +634,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(
       collaboratorPubkeys: state.collaboratorPubkeys
           .where((p) => p != pubkey)
-          .toList(),
+          .toSet(),
     );
     triggerAutosave();
   }
