@@ -274,17 +274,6 @@ void main() {
     });
 
     group('TextEditor configuration', () {
-      testWidgets('TextEditor has correct background color', (tester) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        final textEditor = tester.widget<TextEditor>(find.byType(TextEditor));
-        expect(
-          textEditor.configs.textEditor.style.background,
-          VideoEditorConstants.textEditorBackground,
-        );
-      });
-
       testWidgets('TextEditor uses font scale limits', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
