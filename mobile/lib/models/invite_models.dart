@@ -1,12 +1,12 @@
 // ABOUTME: Models for the invite gate, waitlist, and onboarding mode
 
-enum OnboardingMode { open, waitlistOnly, inviteCodeRequired }
+enum OnboardingMode { open, inviteCodeRequired }
 
 OnboardingMode parseOnboardingMode(String? rawValue) {
   final normalized = rawValue?.trim().toLowerCase().replaceAll('-', '_');
   switch (normalized) {
     case 'waitlist_only':
-      return OnboardingMode.waitlistOnly;
+    case 'invite_code':
     case 'invite_code_required':
       return OnboardingMode.inviteCodeRequired;
     case 'open':
