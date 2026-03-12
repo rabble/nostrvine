@@ -35,6 +35,8 @@ class EventKind {
 
   static const int privateDirectMessage = 14;
 
+  static const int fileMessage = 15;
+
   static const int genericRepost = 16;
 
   static const int picture = 20;

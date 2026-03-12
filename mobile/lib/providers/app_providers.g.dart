@@ -2027,7 +2027,7 @@ final class DraftStorageServiceProvider
 }
 
 String _$draftStorageServiceHash() =>
-    r'27a52029060a87f60092ca7b856ca61f8d6646e2';
+    r'1ef3ccee1fdbb86f842c2bdf448b7f72d4e8f629';
 
 /// Clip library service for persisting individual video clips
 
@@ -2080,7 +2080,7 @@ final class ClipLibraryServiceProvider
 }
 
 String _$clipLibraryServiceHash() =>
-    r'657ca5751fb520c4671997e6fbb8e87a760aecef';
+    r'f36b3e22012c58da8f70d620378448bbe500f0cc';
 
 /// Authentication service
 
@@ -4010,7 +4010,101 @@ final class BugReportServiceProvider
   }
 }
 
-String _$bugReportServiceHash() => r'250a5fce245b0ddfe83986b90719d24bff84b58a';
+String _$bugReportServiceHash() => r'abb60eedfb073bfc9c441bd7aca78bfe82114fb1';
+
+/// Provider for NIP-17 DM repository.
+///
+/// Creates a [DmRepository] that handles receiving, decrypting, persisting,
+/// and sending encrypted direct messages. Works with any [NostrSigner]
+/// (local keys, Keycast RPC, Amber, etc.).
+///
+/// Automatically starts listening for incoming gift-wrapped messages and
+/// stops when disposed.
+///
+/// Uses `keepAlive: true` because the relay subscription must survive
+/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
+/// provider auto-disposes during rebuild gaps, killing the subscription
+/// and causing incoming DMs to be silently dropped.
+///
+/// Non-nullable: the repository works without keys at construction time.
+/// Read operations return cached/empty data; write operations check keys.
+
+@ProviderFor(dmRepository)
+const dmRepositoryProvider = DmRepositoryProvider._();
+
+/// Provider for NIP-17 DM repository.
+///
+/// Creates a [DmRepository] that handles receiving, decrypting, persisting,
+/// and sending encrypted direct messages. Works with any [NostrSigner]
+/// (local keys, Keycast RPC, Amber, etc.).
+///
+/// Automatically starts listening for incoming gift-wrapped messages and
+/// stops when disposed.
+///
+/// Uses `keepAlive: true` because the relay subscription must survive
+/// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+/// `nostrServiceProvider` auth-state changes). Without keepAlive, the
+/// provider auto-disposes during rebuild gaps, killing the subscription
+/// and causing incoming DMs to be silently dropped.
+///
+/// Non-nullable: the repository works without keys at construction time.
+/// Read operations return cached/empty data; write operations check keys.
+
+final class DmRepositoryProvider
+    extends $FunctionalProvider<DmRepository, DmRepository, DmRepository>
+    with $Provider<DmRepository> {
+  /// Provider for NIP-17 DM repository.
+  ///
+  /// Creates a [DmRepository] that handles receiving, decrypting, persisting,
+  /// and sending encrypted direct messages. Works with any [NostrSigner]
+  /// (local keys, Keycast RPC, Amber, etc.).
+  ///
+  /// Automatically starts listening for incoming gift-wrapped messages and
+  /// stops when disposed.
+  ///
+  /// Uses `keepAlive: true` because the relay subscription must survive
+  /// transient dependency rebuilds (e.g. `isNostrReadyProvider` polling,
+  /// `nostrServiceProvider` auth-state changes). Without keepAlive, the
+  /// provider auto-disposes during rebuild gaps, killing the subscription
+  /// and causing incoming DMs to be silently dropped.
+  ///
+  /// Non-nullable: the repository works without keys at construction time.
+  /// Read operations return cached/empty data; write operations check keys.
+  const DmRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dmRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dmRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<DmRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  DmRepository create(Ref ref) {
+    return dmRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DmRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DmRepository>(value),
+    );
+  }
+}
+
+String _$dmRepositoryHash() => r'9c7cab6895add408bb3d0a0c93f96ffbbd076525';
 
 /// Provider for CommentsRepository instance
 ///

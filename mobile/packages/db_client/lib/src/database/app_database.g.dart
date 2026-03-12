@@ -6847,6 +6847,17 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         type: DriftSqlType.string,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6860,6 +6871,7 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
     data,
     renderedFilePath,
     renderedThumbnailPath,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6965,6 +6977,15 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         ),
       );
     }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7018,6 +7039,10 @@ class $DraftsTable extends Drafts with TableInfo<$DraftsTable, DraftRow> {
         DriftSqlType.string,
         data['${effectivePrefix}rendered_thumbnail_path'],
       ),
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
     );
   }
 
@@ -7060,6 +7085,10 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
 
   /// Basename of the final rendered thumbnail (for indexed lookups)
   final String? renderedThumbnailPath;
+
+  /// Hex public key of the account that owns this draft.
+  /// NULL for legacy drafts created before multi-account support.
+  final String? ownerPubkey;
   const DraftRow({
     required this.id,
     required this.title,
@@ -7072,6 +7101,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     required this.data,
     this.renderedFilePath,
     this.renderedThumbnailPath,
+    this.ownerPubkey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7092,6 +7122,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     }
     if (!nullToAbsent || renderedThumbnailPath != null) {
       map['rendered_thumbnail_path'] = Variable<String>(renderedThumbnailPath);
+    }
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
     }
     return map;
   }
@@ -7115,6 +7148,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       renderedThumbnailPath: renderedThumbnailPath == null && nullToAbsent
           ? const Value.absent()
           : Value(renderedThumbnailPath),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
     );
   }
 
@@ -7137,6 +7173,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       renderedThumbnailPath: serializer.fromJson<String?>(
         json['renderedThumbnailPath'],
       ),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
   @override
@@ -7156,6 +7193,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       'renderedThumbnailPath': serializer.toJson<String?>(
         renderedThumbnailPath,
       ),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
 
@@ -7171,6 +7209,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     String? data,
     Value<String?> renderedFilePath = const Value.absent(),
     Value<String?> renderedThumbnailPath = const Value.absent(),
+    Value<String?> ownerPubkey = const Value.absent(),
   }) => DraftRow(
     id: id ?? this.id,
     title: title ?? this.title,
@@ -7187,6 +7226,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     renderedThumbnailPath: renderedThumbnailPath.present
         ? renderedThumbnailPath.value
         : this.renderedThumbnailPath,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   DraftRow copyWithCompanion(DraftsCompanion data) {
     return DraftRow(
@@ -7215,6 +7255,9 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
       renderedThumbnailPath: data.renderedThumbnailPath.present
           ? data.renderedThumbnailPath.value
           : this.renderedThumbnailPath,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
     );
   }
 
@@ -7231,7 +7274,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           ..write('lastModified: $lastModified, ')
           ..write('data: $data, ')
           ..write('renderedFilePath: $renderedFilePath, ')
-          ..write('renderedThumbnailPath: $renderedThumbnailPath')
+          ..write('renderedThumbnailPath: $renderedThumbnailPath, ')
+          ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
   }
@@ -7249,6 +7293,7 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
     data,
     renderedFilePath,
     renderedThumbnailPath,
+    ownerPubkey,
   );
   @override
   bool operator ==(Object other) =>
@@ -7264,7 +7309,8 @@ class DraftRow extends DataClass implements Insertable<DraftRow> {
           other.lastModified == this.lastModified &&
           other.data == this.data &&
           other.renderedFilePath == this.renderedFilePath &&
-          other.renderedThumbnailPath == this.renderedThumbnailPath);
+          other.renderedThumbnailPath == this.renderedThumbnailPath &&
+          other.ownerPubkey == this.ownerPubkey);
 }
 
 class DraftsCompanion extends UpdateCompanion<DraftRow> {
@@ -7279,6 +7325,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
   final Value<String> data;
   final Value<String?> renderedFilePath;
   final Value<String?> renderedThumbnailPath;
+  final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const DraftsCompanion({
     this.id = const Value.absent(),
@@ -7292,6 +7339,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     this.data = const Value.absent(),
     this.renderedFilePath = const Value.absent(),
     this.renderedThumbnailPath = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   DraftsCompanion.insert({
@@ -7306,6 +7354,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     required String data,
     this.renderedFilePath = const Value.absent(),
     this.renderedThumbnailPath = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        createdAt = Value(createdAt),
@@ -7323,6 +7372,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Expression<String>? data,
     Expression<String>? renderedFilePath,
     Expression<String>? renderedThumbnailPath,
+    Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7338,6 +7388,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       if (renderedFilePath != null) 'rendered_file_path': renderedFilePath,
       if (renderedThumbnailPath != null)
         'rendered_thumbnail_path': renderedThumbnailPath,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7354,6 +7405,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
     Value<String>? data,
     Value<String?>? renderedFilePath,
     Value<String?>? renderedThumbnailPath,
+    Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
     return DraftsCompanion(
@@ -7369,6 +7421,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
       renderedFilePath: renderedFilePath ?? this.renderedFilePath,
       renderedThumbnailPath:
           renderedThumbnailPath ?? this.renderedThumbnailPath,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7411,6 +7464,9 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
         renderedThumbnailPath.value,
       );
     }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7431,6 +7487,7 @@ class DraftsCompanion extends UpdateCompanion<DraftRow> {
           ..write('data: $data, ')
           ..write('renderedFilePath: $renderedFilePath, ')
           ..write('renderedThumbnailPath: $renderedThumbnailPath, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7527,6 +7584,17 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _ownerPubkeyMeta = const VerificationMeta(
+    'ownerPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> ownerPubkey = GeneratedColumn<String>(
+    'owner_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7537,6 +7605,7 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
     data,
     filePath,
     thumbnailPath,
+    ownerPubkey,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7606,6 +7675,15 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         ),
       );
     }
+    if (data.containsKey('owner_pubkey')) {
+      context.handle(
+        _ownerPubkeyMeta,
+        ownerPubkey.isAcceptableOrUnknown(
+          data['owner_pubkey']!,
+          _ownerPubkeyMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -7647,6 +7725,10 @@ class $ClipsTable extends Clips with TableInfo<$ClipsTable, ClipRow> {
         DriftSqlType.string,
         data['${effectivePrefix}thumbnail_path'],
       ),
+      ownerPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_pubkey'],
+      ),
     );
   }
 
@@ -7681,6 +7763,10 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
 
   /// Basename of the thumbnail file (for indexed lookups)
   final String? thumbnailPath;
+
+  /// Hex public key of the account that owns this clip.
+  /// NULL for legacy clips created before multi-account support.
+  final String? ownerPubkey;
   const ClipRow({
     required this.id,
     this.draftId,
@@ -7690,6 +7776,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     required this.data,
     this.filePath,
     this.thumbnailPath,
+    this.ownerPubkey,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7707,6 +7794,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     }
     if (!nullToAbsent || thumbnailPath != null) {
       map['thumbnail_path'] = Variable<String>(thumbnailPath);
+    }
+    if (!nullToAbsent || ownerPubkey != null) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey);
     }
     return map;
   }
@@ -7727,6 +7817,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       thumbnailPath: thumbnailPath == null && nullToAbsent
           ? const Value.absent()
           : Value(thumbnailPath),
+      ownerPubkey: ownerPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerPubkey),
     );
   }
 
@@ -7744,6 +7837,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       data: serializer.fromJson<String>(json['data']),
       filePath: serializer.fromJson<String?>(json['filePath']),
       thumbnailPath: serializer.fromJson<String?>(json['thumbnailPath']),
+      ownerPubkey: serializer.fromJson<String?>(json['ownerPubkey']),
     );
   }
   @override
@@ -7758,6 +7852,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       'data': serializer.toJson<String>(data),
       'filePath': serializer.toJson<String?>(filePath),
       'thumbnailPath': serializer.toJson<String?>(thumbnailPath),
+      'ownerPubkey': serializer.toJson<String?>(ownerPubkey),
     };
   }
 
@@ -7770,6 +7865,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     String? data,
     Value<String?> filePath = const Value.absent(),
     Value<String?> thumbnailPath = const Value.absent(),
+    Value<String?> ownerPubkey = const Value.absent(),
   }) => ClipRow(
     id: id ?? this.id,
     draftId: draftId.present ? draftId.value : this.draftId,
@@ -7781,6 +7877,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     thumbnailPath: thumbnailPath.present
         ? thumbnailPath.value
         : this.thumbnailPath,
+    ownerPubkey: ownerPubkey.present ? ownerPubkey.value : this.ownerPubkey,
   );
   ClipRow copyWithCompanion(ClipsCompanion data) {
     return ClipRow(
@@ -7800,6 +7897,9 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
       thumbnailPath: data.thumbnailPath.present
           ? data.thumbnailPath.value
           : this.thumbnailPath,
+      ownerPubkey: data.ownerPubkey.present
+          ? data.ownerPubkey.value
+          : this.ownerPubkey,
     );
   }
 
@@ -7813,7 +7913,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           ..write('recordedAt: $recordedAt, ')
           ..write('data: $data, ')
           ..write('filePath: $filePath, ')
-          ..write('thumbnailPath: $thumbnailPath')
+          ..write('thumbnailPath: $thumbnailPath, ')
+          ..write('ownerPubkey: $ownerPubkey')
           ..write(')'))
         .toString();
   }
@@ -7828,6 +7929,7 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
     data,
     filePath,
     thumbnailPath,
+    ownerPubkey,
   );
   @override
   bool operator ==(Object other) =>
@@ -7840,7 +7942,8 @@ class ClipRow extends DataClass implements Insertable<ClipRow> {
           other.recordedAt == this.recordedAt &&
           other.data == this.data &&
           other.filePath == this.filePath &&
-          other.thumbnailPath == this.thumbnailPath);
+          other.thumbnailPath == this.thumbnailPath &&
+          other.ownerPubkey == this.ownerPubkey);
 }
 
 class ClipsCompanion extends UpdateCompanion<ClipRow> {
@@ -7852,6 +7955,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
   final Value<String> data;
   final Value<String?> filePath;
   final Value<String?> thumbnailPath;
+  final Value<String?> ownerPubkey;
   final Value<int> rowid;
   const ClipsCompanion({
     this.id = const Value.absent(),
@@ -7862,6 +7966,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     this.data = const Value.absent(),
     this.filePath = const Value.absent(),
     this.thumbnailPath = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   ClipsCompanion.insert({
@@ -7873,6 +7978,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     required String data,
     this.filePath = const Value.absent(),
     this.thumbnailPath = const Value.absent(),
+    this.ownerPubkey = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        durationMs = Value(durationMs),
@@ -7887,6 +7993,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Expression<String>? data,
     Expression<String>? filePath,
     Expression<String>? thumbnailPath,
+    Expression<String>? ownerPubkey,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7898,6 +8005,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       if (data != null) 'data': data,
       if (filePath != null) 'file_path': filePath,
       if (thumbnailPath != null) 'thumbnail_path': thumbnailPath,
+      if (ownerPubkey != null) 'owner_pubkey': ownerPubkey,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7911,6 +8019,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     Value<String>? data,
     Value<String?>? filePath,
     Value<String?>? thumbnailPath,
+    Value<String?>? ownerPubkey,
     Value<int>? rowid,
   }) {
     return ClipsCompanion(
@@ -7922,6 +8031,7 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
       data: data ?? this.data,
       filePath: filePath ?? this.filePath,
       thumbnailPath: thumbnailPath ?? this.thumbnailPath,
+      ownerPubkey: ownerPubkey ?? this.ownerPubkey,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7953,6 +8063,9 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
     if (thumbnailPath.present) {
       map['thumbnail_path'] = Variable<String>(thumbnailPath.value);
     }
+    if (ownerPubkey.present) {
+      map['owner_pubkey'] = Variable<String>(ownerPubkey.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -7970,6 +8083,1780 @@ class ClipsCompanion extends UpdateCompanion<ClipRow> {
           ..write('data: $data, ')
           ..write('filePath: $filePath, ')
           ..write('thumbnailPath: $thumbnailPath, ')
+          ..write('ownerPubkey: $ownerPubkey, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DirectMessagesTable extends DirectMessages
+    with TableInfo<$DirectMessagesTable, DirectMessageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DirectMessagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
+  );
+  @override
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _senderPubkeyMeta = const VerificationMeta(
+    'senderPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> senderPubkey = GeneratedColumn<String>(
+    'sender_pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _replyToIdMeta = const VerificationMeta(
+    'replyToId',
+  );
+  @override
+  late final GeneratedColumn<String> replyToId = GeneratedColumn<String>(
+    'reply_to_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _giftWrapIdMeta = const VerificationMeta(
+    'giftWrapId',
+  );
+  @override
+  late final GeneratedColumn<String> giftWrapId = GeneratedColumn<String>(
+    'gift_wrap_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _subjectMeta = const VerificationMeta(
+    'subject',
+  );
+  @override
+  late final GeneratedColumn<String> subject = GeneratedColumn<String>(
+    'subject',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _messageKindMeta = const VerificationMeta(
+    'messageKind',
+  );
+  @override
+  late final GeneratedColumn<int> messageKind = GeneratedColumn<int>(
+    'message_kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(14),
+  );
+  static const VerificationMeta _fileTypeMeta = const VerificationMeta(
+    'fileType',
+  );
+  @override
+  late final GeneratedColumn<String> fileType = GeneratedColumn<String>(
+    'file_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _encryptionAlgorithmMeta =
+      const VerificationMeta('encryptionAlgorithm');
+  @override
+  late final GeneratedColumn<String> encryptionAlgorithm =
+      GeneratedColumn<String>(
+        'encryption_algorithm',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _decryptionKeyMeta = const VerificationMeta(
+    'decryptionKey',
+  );
+  @override
+  late final GeneratedColumn<String> decryptionKey = GeneratedColumn<String>(
+    'decryption_key',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _decryptionNonceMeta = const VerificationMeta(
+    'decryptionNonce',
+  );
+  @override
+  late final GeneratedColumn<String> decryptionNonce = GeneratedColumn<String>(
+    'decryption_nonce',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fileHashMeta = const VerificationMeta(
+    'fileHash',
+  );
+  @override
+  late final GeneratedColumn<String> fileHash = GeneratedColumn<String>(
+    'file_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _originalFileHashMeta = const VerificationMeta(
+    'originalFileHash',
+  );
+  @override
+  late final GeneratedColumn<String> originalFileHash = GeneratedColumn<String>(
+    'original_file_hash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _fileSizeMeta = const VerificationMeta(
+    'fileSize',
+  );
+  @override
+  late final GeneratedColumn<int> fileSize = GeneratedColumn<int>(
+    'file_size',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _dimensionsMeta = const VerificationMeta(
+    'dimensions',
+  );
+  @override
+  late final GeneratedColumn<String> dimensions = GeneratedColumn<String>(
+    'dimensions',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _blurhashMeta = const VerificationMeta(
+    'blurhash',
+  );
+  @override
+  late final GeneratedColumn<String> blurhash = GeneratedColumn<String>(
+    'blurhash',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _thumbnailUrlMeta = const VerificationMeta(
+    'thumbnailUrl',
+  );
+  @override
+  late final GeneratedColumn<String> thumbnailUrl = GeneratedColumn<String>(
+    'thumbnail_url',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    conversationId,
+    senderPubkey,
+    content,
+    createdAt,
+    replyToId,
+    giftWrapId,
+    subject,
+    messageKind,
+    fileType,
+    encryptionAlgorithm,
+    decryptionKey,
+    decryptionNonce,
+    fileHash,
+    originalFileHash,
+    fileSize,
+    dimensions,
+    blurhash,
+    thumbnailUrl,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'direct_messages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DirectMessageRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('conversation_id')) {
+      context.handle(
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_conversationIdMeta);
+    }
+    if (data.containsKey('sender_pubkey')) {
+      context.handle(
+        _senderPubkeyMeta,
+        senderPubkey.isAcceptableOrUnknown(
+          data['sender_pubkey']!,
+          _senderPubkeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_senderPubkeyMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('reply_to_id')) {
+      context.handle(
+        _replyToIdMeta,
+        replyToId.isAcceptableOrUnknown(data['reply_to_id']!, _replyToIdMeta),
+      );
+    }
+    if (data.containsKey('gift_wrap_id')) {
+      context.handle(
+        _giftWrapIdMeta,
+        giftWrapId.isAcceptableOrUnknown(
+          data['gift_wrap_id']!,
+          _giftWrapIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_giftWrapIdMeta);
+    }
+    if (data.containsKey('subject')) {
+      context.handle(
+        _subjectMeta,
+        subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta),
+      );
+    }
+    if (data.containsKey('message_kind')) {
+      context.handle(
+        _messageKindMeta,
+        messageKind.isAcceptableOrUnknown(
+          data['message_kind']!,
+          _messageKindMeta,
+        ),
+      );
+    }
+    if (data.containsKey('file_type')) {
+      context.handle(
+        _fileTypeMeta,
+        fileType.isAcceptableOrUnknown(data['file_type']!, _fileTypeMeta),
+      );
+    }
+    if (data.containsKey('encryption_algorithm')) {
+      context.handle(
+        _encryptionAlgorithmMeta,
+        encryptionAlgorithm.isAcceptableOrUnknown(
+          data['encryption_algorithm']!,
+          _encryptionAlgorithmMeta,
+        ),
+      );
+    }
+    if (data.containsKey('decryption_key')) {
+      context.handle(
+        _decryptionKeyMeta,
+        decryptionKey.isAcceptableOrUnknown(
+          data['decryption_key']!,
+          _decryptionKeyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('decryption_nonce')) {
+      context.handle(
+        _decryptionNonceMeta,
+        decryptionNonce.isAcceptableOrUnknown(
+          data['decryption_nonce']!,
+          _decryptionNonceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('file_hash')) {
+      context.handle(
+        _fileHashMeta,
+        fileHash.isAcceptableOrUnknown(data['file_hash']!, _fileHashMeta),
+      );
+    }
+    if (data.containsKey('original_file_hash')) {
+      context.handle(
+        _originalFileHashMeta,
+        originalFileHash.isAcceptableOrUnknown(
+          data['original_file_hash']!,
+          _originalFileHashMeta,
+        ),
+      );
+    }
+    if (data.containsKey('file_size')) {
+      context.handle(
+        _fileSizeMeta,
+        fileSize.isAcceptableOrUnknown(data['file_size']!, _fileSizeMeta),
+      );
+    }
+    if (data.containsKey('dimensions')) {
+      context.handle(
+        _dimensionsMeta,
+        dimensions.isAcceptableOrUnknown(data['dimensions']!, _dimensionsMeta),
+      );
+    }
+    if (data.containsKey('blurhash')) {
+      context.handle(
+        _blurhashMeta,
+        blurhash.isAcceptableOrUnknown(data['blurhash']!, _blurhashMeta),
+      );
+    }
+    if (data.containsKey('thumbnail_url')) {
+      context.handle(
+        _thumbnailUrlMeta,
+        thumbnailUrl.isAcceptableOrUnknown(
+          data['thumbnail_url']!,
+          _thumbnailUrlMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DirectMessageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DirectMessageRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      conversationId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}conversation_id'],
+      )!,
+      senderPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sender_pubkey'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      replyToId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reply_to_id'],
+      ),
+      giftWrapId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gift_wrap_id'],
+      )!,
+      subject: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject'],
+      ),
+      messageKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}message_kind'],
+      )!,
+      fileType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_type'],
+      ),
+      encryptionAlgorithm: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}encryption_algorithm'],
+      ),
+      decryptionKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decryption_key'],
+      ),
+      decryptionNonce: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}decryption_nonce'],
+      ),
+      fileHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_hash'],
+      ),
+      originalFileHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_file_hash'],
+      ),
+      fileSize: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}file_size'],
+      ),
+      dimensions: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}dimensions'],
+      ),
+      blurhash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}blurhash'],
+      ),
+      thumbnailUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}thumbnail_url'],
+      ),
+    );
+  }
+
+  @override
+  $DirectMessagesTable createAlias(String alias) {
+    return $DirectMessagesTable(attachedDatabase, alias);
+  }
+}
+
+class DirectMessageRow extends DataClass
+    implements Insertable<DirectMessageRow> {
+  /// The rumor event ID (kind 14/15 id field).
+  final String id;
+
+  /// Deterministic conversation identifier (SHA-256 of sorted participant
+  /// pubkeys). Shared by all messages in the same chat room.
+  final String conversationId;
+
+  /// Public key of the message sender.
+  final String senderPubkey;
+
+  /// For kind 14: decrypted plaintext content.
+  /// For kind 15: the encrypted file URL.
+  final String content;
+
+  /// Unix timestamp from the rumor event's created_at.
+  final int createdAt;
+
+  /// Optional parent message ID (from `e` tag) for threaded replies.
+  final String? replyToId;
+
+  /// The gift-wrap event ID (kind 1059) used for deduplication.
+  final String giftWrapId;
+
+  /// Optional conversation subject/title (from `subject` tag).
+  final String? subject;
+
+  /// The inner event kind: 14 (text) or 15 (file). Defaults to 14.
+  final int messageKind;
+
+  /// MIME type of the file before encryption (e.g. `image/jpeg`).
+  final String? fileType;
+
+  /// Encryption algorithm (e.g. `aes-gcm`).
+  final String? encryptionAlgorithm;
+
+  /// Hex-encoded AES key for file decryption.
+  final String? decryptionKey;
+
+  /// Hex-encoded nonce/IV for file decryption.
+  final String? decryptionNonce;
+
+  /// SHA-256 hex hash of the encrypted file.
+  final String? fileHash;
+
+  /// SHA-256 hex hash of the original file before encryption.
+  final String? originalFileHash;
+
+  /// Size of the encrypted file in bytes.
+  final int? fileSize;
+
+  /// Dimensions in `<width>x<height>` format.
+  final String? dimensions;
+
+  /// BlurHash string for image preview.
+  final String? blurhash;
+
+  /// URL of an encrypted thumbnail (same key/nonce).
+  final String? thumbnailUrl;
+  const DirectMessageRow({
+    required this.id,
+    required this.conversationId,
+    required this.senderPubkey,
+    required this.content,
+    required this.createdAt,
+    this.replyToId,
+    required this.giftWrapId,
+    this.subject,
+    required this.messageKind,
+    this.fileType,
+    this.encryptionAlgorithm,
+    this.decryptionKey,
+    this.decryptionNonce,
+    this.fileHash,
+    this.originalFileHash,
+    this.fileSize,
+    this.dimensions,
+    this.blurhash,
+    this.thumbnailUrl,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['conversation_id'] = Variable<String>(conversationId);
+    map['sender_pubkey'] = Variable<String>(senderPubkey);
+    map['content'] = Variable<String>(content);
+    map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || replyToId != null) {
+      map['reply_to_id'] = Variable<String>(replyToId);
+    }
+    map['gift_wrap_id'] = Variable<String>(giftWrapId);
+    if (!nullToAbsent || subject != null) {
+      map['subject'] = Variable<String>(subject);
+    }
+    map['message_kind'] = Variable<int>(messageKind);
+    if (!nullToAbsent || fileType != null) {
+      map['file_type'] = Variable<String>(fileType);
+    }
+    if (!nullToAbsent || encryptionAlgorithm != null) {
+      map['encryption_algorithm'] = Variable<String>(encryptionAlgorithm);
+    }
+    if (!nullToAbsent || decryptionKey != null) {
+      map['decryption_key'] = Variable<String>(decryptionKey);
+    }
+    if (!nullToAbsent || decryptionNonce != null) {
+      map['decryption_nonce'] = Variable<String>(decryptionNonce);
+    }
+    if (!nullToAbsent || fileHash != null) {
+      map['file_hash'] = Variable<String>(fileHash);
+    }
+    if (!nullToAbsent || originalFileHash != null) {
+      map['original_file_hash'] = Variable<String>(originalFileHash);
+    }
+    if (!nullToAbsent || fileSize != null) {
+      map['file_size'] = Variable<int>(fileSize);
+    }
+    if (!nullToAbsent || dimensions != null) {
+      map['dimensions'] = Variable<String>(dimensions);
+    }
+    if (!nullToAbsent || blurhash != null) {
+      map['blurhash'] = Variable<String>(blurhash);
+    }
+    if (!nullToAbsent || thumbnailUrl != null) {
+      map['thumbnail_url'] = Variable<String>(thumbnailUrl);
+    }
+    return map;
+  }
+
+  DirectMessagesCompanion toCompanion(bool nullToAbsent) {
+    return DirectMessagesCompanion(
+      id: Value(id),
+      conversationId: Value(conversationId),
+      senderPubkey: Value(senderPubkey),
+      content: Value(content),
+      createdAt: Value(createdAt),
+      replyToId: replyToId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(replyToId),
+      giftWrapId: Value(giftWrapId),
+      subject: subject == null && nullToAbsent
+          ? const Value.absent()
+          : Value(subject),
+      messageKind: Value(messageKind),
+      fileType: fileType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fileType),
+      encryptionAlgorithm: encryptionAlgorithm == null && nullToAbsent
+          ? const Value.absent()
+          : Value(encryptionAlgorithm),
+      decryptionKey: decryptionKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(decryptionKey),
+      decryptionNonce: decryptionNonce == null && nullToAbsent
+          ? const Value.absent()
+          : Value(decryptionNonce),
+      fileHash: fileHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fileHash),
+      originalFileHash: originalFileHash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(originalFileHash),
+      fileSize: fileSize == null && nullToAbsent
+          ? const Value.absent()
+          : Value(fileSize),
+      dimensions: dimensions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(dimensions),
+      blurhash: blurhash == null && nullToAbsent
+          ? const Value.absent()
+          : Value(blurhash),
+      thumbnailUrl: thumbnailUrl == null && nullToAbsent
+          ? const Value.absent()
+          : Value(thumbnailUrl),
+    );
+  }
+
+  factory DirectMessageRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DirectMessageRow(
+      id: serializer.fromJson<String>(json['id']),
+      conversationId: serializer.fromJson<String>(json['conversationId']),
+      senderPubkey: serializer.fromJson<String>(json['senderPubkey']),
+      content: serializer.fromJson<String>(json['content']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      replyToId: serializer.fromJson<String?>(json['replyToId']),
+      giftWrapId: serializer.fromJson<String>(json['giftWrapId']),
+      subject: serializer.fromJson<String?>(json['subject']),
+      messageKind: serializer.fromJson<int>(json['messageKind']),
+      fileType: serializer.fromJson<String?>(json['fileType']),
+      encryptionAlgorithm: serializer.fromJson<String?>(
+        json['encryptionAlgorithm'],
+      ),
+      decryptionKey: serializer.fromJson<String?>(json['decryptionKey']),
+      decryptionNonce: serializer.fromJson<String?>(json['decryptionNonce']),
+      fileHash: serializer.fromJson<String?>(json['fileHash']),
+      originalFileHash: serializer.fromJson<String?>(json['originalFileHash']),
+      fileSize: serializer.fromJson<int?>(json['fileSize']),
+      dimensions: serializer.fromJson<String?>(json['dimensions']),
+      blurhash: serializer.fromJson<String?>(json['blurhash']),
+      thumbnailUrl: serializer.fromJson<String?>(json['thumbnailUrl']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'conversationId': serializer.toJson<String>(conversationId),
+      'senderPubkey': serializer.toJson<String>(senderPubkey),
+      'content': serializer.toJson<String>(content),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'replyToId': serializer.toJson<String?>(replyToId),
+      'giftWrapId': serializer.toJson<String>(giftWrapId),
+      'subject': serializer.toJson<String?>(subject),
+      'messageKind': serializer.toJson<int>(messageKind),
+      'fileType': serializer.toJson<String?>(fileType),
+      'encryptionAlgorithm': serializer.toJson<String?>(encryptionAlgorithm),
+      'decryptionKey': serializer.toJson<String?>(decryptionKey),
+      'decryptionNonce': serializer.toJson<String?>(decryptionNonce),
+      'fileHash': serializer.toJson<String?>(fileHash),
+      'originalFileHash': serializer.toJson<String?>(originalFileHash),
+      'fileSize': serializer.toJson<int?>(fileSize),
+      'dimensions': serializer.toJson<String?>(dimensions),
+      'blurhash': serializer.toJson<String?>(blurhash),
+      'thumbnailUrl': serializer.toJson<String?>(thumbnailUrl),
+    };
+  }
+
+  DirectMessageRow copyWith({
+    String? id,
+    String? conversationId,
+    String? senderPubkey,
+    String? content,
+    int? createdAt,
+    Value<String?> replyToId = const Value.absent(),
+    String? giftWrapId,
+    Value<String?> subject = const Value.absent(),
+    int? messageKind,
+    Value<String?> fileType = const Value.absent(),
+    Value<String?> encryptionAlgorithm = const Value.absent(),
+    Value<String?> decryptionKey = const Value.absent(),
+    Value<String?> decryptionNonce = const Value.absent(),
+    Value<String?> fileHash = const Value.absent(),
+    Value<String?> originalFileHash = const Value.absent(),
+    Value<int?> fileSize = const Value.absent(),
+    Value<String?> dimensions = const Value.absent(),
+    Value<String?> blurhash = const Value.absent(),
+    Value<String?> thumbnailUrl = const Value.absent(),
+  }) => DirectMessageRow(
+    id: id ?? this.id,
+    conversationId: conversationId ?? this.conversationId,
+    senderPubkey: senderPubkey ?? this.senderPubkey,
+    content: content ?? this.content,
+    createdAt: createdAt ?? this.createdAt,
+    replyToId: replyToId.present ? replyToId.value : this.replyToId,
+    giftWrapId: giftWrapId ?? this.giftWrapId,
+    subject: subject.present ? subject.value : this.subject,
+    messageKind: messageKind ?? this.messageKind,
+    fileType: fileType.present ? fileType.value : this.fileType,
+    encryptionAlgorithm: encryptionAlgorithm.present
+        ? encryptionAlgorithm.value
+        : this.encryptionAlgorithm,
+    decryptionKey: decryptionKey.present
+        ? decryptionKey.value
+        : this.decryptionKey,
+    decryptionNonce: decryptionNonce.present
+        ? decryptionNonce.value
+        : this.decryptionNonce,
+    fileHash: fileHash.present ? fileHash.value : this.fileHash,
+    originalFileHash: originalFileHash.present
+        ? originalFileHash.value
+        : this.originalFileHash,
+    fileSize: fileSize.present ? fileSize.value : this.fileSize,
+    dimensions: dimensions.present ? dimensions.value : this.dimensions,
+    blurhash: blurhash.present ? blurhash.value : this.blurhash,
+    thumbnailUrl: thumbnailUrl.present ? thumbnailUrl.value : this.thumbnailUrl,
+  );
+  DirectMessageRow copyWithCompanion(DirectMessagesCompanion data) {
+    return DirectMessageRow(
+      id: data.id.present ? data.id.value : this.id,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
+      senderPubkey: data.senderPubkey.present
+          ? data.senderPubkey.value
+          : this.senderPubkey,
+      content: data.content.present ? data.content.value : this.content,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      replyToId: data.replyToId.present ? data.replyToId.value : this.replyToId,
+      giftWrapId: data.giftWrapId.present
+          ? data.giftWrapId.value
+          : this.giftWrapId,
+      subject: data.subject.present ? data.subject.value : this.subject,
+      messageKind: data.messageKind.present
+          ? data.messageKind.value
+          : this.messageKind,
+      fileType: data.fileType.present ? data.fileType.value : this.fileType,
+      encryptionAlgorithm: data.encryptionAlgorithm.present
+          ? data.encryptionAlgorithm.value
+          : this.encryptionAlgorithm,
+      decryptionKey: data.decryptionKey.present
+          ? data.decryptionKey.value
+          : this.decryptionKey,
+      decryptionNonce: data.decryptionNonce.present
+          ? data.decryptionNonce.value
+          : this.decryptionNonce,
+      fileHash: data.fileHash.present ? data.fileHash.value : this.fileHash,
+      originalFileHash: data.originalFileHash.present
+          ? data.originalFileHash.value
+          : this.originalFileHash,
+      fileSize: data.fileSize.present ? data.fileSize.value : this.fileSize,
+      dimensions: data.dimensions.present
+          ? data.dimensions.value
+          : this.dimensions,
+      blurhash: data.blurhash.present ? data.blurhash.value : this.blurhash,
+      thumbnailUrl: data.thumbnailUrl.present
+          ? data.thumbnailUrl.value
+          : this.thumbnailUrl,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DirectMessageRow(')
+          ..write('id: $id, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('senderPubkey: $senderPubkey, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('replyToId: $replyToId, ')
+          ..write('giftWrapId: $giftWrapId, ')
+          ..write('subject: $subject, ')
+          ..write('messageKind: $messageKind, ')
+          ..write('fileType: $fileType, ')
+          ..write('encryptionAlgorithm: $encryptionAlgorithm, ')
+          ..write('decryptionKey: $decryptionKey, ')
+          ..write('decryptionNonce: $decryptionNonce, ')
+          ..write('fileHash: $fileHash, ')
+          ..write('originalFileHash: $originalFileHash, ')
+          ..write('fileSize: $fileSize, ')
+          ..write('dimensions: $dimensions, ')
+          ..write('blurhash: $blurhash, ')
+          ..write('thumbnailUrl: $thumbnailUrl')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    conversationId,
+    senderPubkey,
+    content,
+    createdAt,
+    replyToId,
+    giftWrapId,
+    subject,
+    messageKind,
+    fileType,
+    encryptionAlgorithm,
+    decryptionKey,
+    decryptionNonce,
+    fileHash,
+    originalFileHash,
+    fileSize,
+    dimensions,
+    blurhash,
+    thumbnailUrl,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DirectMessageRow &&
+          other.id == this.id &&
+          other.conversationId == this.conversationId &&
+          other.senderPubkey == this.senderPubkey &&
+          other.content == this.content &&
+          other.createdAt == this.createdAt &&
+          other.replyToId == this.replyToId &&
+          other.giftWrapId == this.giftWrapId &&
+          other.subject == this.subject &&
+          other.messageKind == this.messageKind &&
+          other.fileType == this.fileType &&
+          other.encryptionAlgorithm == this.encryptionAlgorithm &&
+          other.decryptionKey == this.decryptionKey &&
+          other.decryptionNonce == this.decryptionNonce &&
+          other.fileHash == this.fileHash &&
+          other.originalFileHash == this.originalFileHash &&
+          other.fileSize == this.fileSize &&
+          other.dimensions == this.dimensions &&
+          other.blurhash == this.blurhash &&
+          other.thumbnailUrl == this.thumbnailUrl);
+}
+
+class DirectMessagesCompanion extends UpdateCompanion<DirectMessageRow> {
+  final Value<String> id;
+  final Value<String> conversationId;
+  final Value<String> senderPubkey;
+  final Value<String> content;
+  final Value<int> createdAt;
+  final Value<String?> replyToId;
+  final Value<String> giftWrapId;
+  final Value<String?> subject;
+  final Value<int> messageKind;
+  final Value<String?> fileType;
+  final Value<String?> encryptionAlgorithm;
+  final Value<String?> decryptionKey;
+  final Value<String?> decryptionNonce;
+  final Value<String?> fileHash;
+  final Value<String?> originalFileHash;
+  final Value<int?> fileSize;
+  final Value<String?> dimensions;
+  final Value<String?> blurhash;
+  final Value<String?> thumbnailUrl;
+  final Value<int> rowid;
+  const DirectMessagesCompanion({
+    this.id = const Value.absent(),
+    this.conversationId = const Value.absent(),
+    this.senderPubkey = const Value.absent(),
+    this.content = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.replyToId = const Value.absent(),
+    this.giftWrapId = const Value.absent(),
+    this.subject = const Value.absent(),
+    this.messageKind = const Value.absent(),
+    this.fileType = const Value.absent(),
+    this.encryptionAlgorithm = const Value.absent(),
+    this.decryptionKey = const Value.absent(),
+    this.decryptionNonce = const Value.absent(),
+    this.fileHash = const Value.absent(),
+    this.originalFileHash = const Value.absent(),
+    this.fileSize = const Value.absent(),
+    this.dimensions = const Value.absent(),
+    this.blurhash = const Value.absent(),
+    this.thumbnailUrl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DirectMessagesCompanion.insert({
+    required String id,
+    required String conversationId,
+    required String senderPubkey,
+    required String content,
+    required int createdAt,
+    this.replyToId = const Value.absent(),
+    required String giftWrapId,
+    this.subject = const Value.absent(),
+    this.messageKind = const Value.absent(),
+    this.fileType = const Value.absent(),
+    this.encryptionAlgorithm = const Value.absent(),
+    this.decryptionKey = const Value.absent(),
+    this.decryptionNonce = const Value.absent(),
+    this.fileHash = const Value.absent(),
+    this.originalFileHash = const Value.absent(),
+    this.fileSize = const Value.absent(),
+    this.dimensions = const Value.absent(),
+    this.blurhash = const Value.absent(),
+    this.thumbnailUrl = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       conversationId = Value(conversationId),
+       senderPubkey = Value(senderPubkey),
+       content = Value(content),
+       createdAt = Value(createdAt),
+       giftWrapId = Value(giftWrapId);
+  static Insertable<DirectMessageRow> custom({
+    Expression<String>? id,
+    Expression<String>? conversationId,
+    Expression<String>? senderPubkey,
+    Expression<String>? content,
+    Expression<int>? createdAt,
+    Expression<String>? replyToId,
+    Expression<String>? giftWrapId,
+    Expression<String>? subject,
+    Expression<int>? messageKind,
+    Expression<String>? fileType,
+    Expression<String>? encryptionAlgorithm,
+    Expression<String>? decryptionKey,
+    Expression<String>? decryptionNonce,
+    Expression<String>? fileHash,
+    Expression<String>? originalFileHash,
+    Expression<int>? fileSize,
+    Expression<String>? dimensions,
+    Expression<String>? blurhash,
+    Expression<String>? thumbnailUrl,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (conversationId != null) 'conversation_id': conversationId,
+      if (senderPubkey != null) 'sender_pubkey': senderPubkey,
+      if (content != null) 'content': content,
+      if (createdAt != null) 'created_at': createdAt,
+      if (replyToId != null) 'reply_to_id': replyToId,
+      if (giftWrapId != null) 'gift_wrap_id': giftWrapId,
+      if (subject != null) 'subject': subject,
+      if (messageKind != null) 'message_kind': messageKind,
+      if (fileType != null) 'file_type': fileType,
+      if (encryptionAlgorithm != null)
+        'encryption_algorithm': encryptionAlgorithm,
+      if (decryptionKey != null) 'decryption_key': decryptionKey,
+      if (decryptionNonce != null) 'decryption_nonce': decryptionNonce,
+      if (fileHash != null) 'file_hash': fileHash,
+      if (originalFileHash != null) 'original_file_hash': originalFileHash,
+      if (fileSize != null) 'file_size': fileSize,
+      if (dimensions != null) 'dimensions': dimensions,
+      if (blurhash != null) 'blurhash': blurhash,
+      if (thumbnailUrl != null) 'thumbnail_url': thumbnailUrl,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DirectMessagesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? conversationId,
+    Value<String>? senderPubkey,
+    Value<String>? content,
+    Value<int>? createdAt,
+    Value<String?>? replyToId,
+    Value<String>? giftWrapId,
+    Value<String?>? subject,
+    Value<int>? messageKind,
+    Value<String?>? fileType,
+    Value<String?>? encryptionAlgorithm,
+    Value<String?>? decryptionKey,
+    Value<String?>? decryptionNonce,
+    Value<String?>? fileHash,
+    Value<String?>? originalFileHash,
+    Value<int?>? fileSize,
+    Value<String?>? dimensions,
+    Value<String?>? blurhash,
+    Value<String?>? thumbnailUrl,
+    Value<int>? rowid,
+  }) {
+    return DirectMessagesCompanion(
+      id: id ?? this.id,
+      conversationId: conversationId ?? this.conversationId,
+      senderPubkey: senderPubkey ?? this.senderPubkey,
+      content: content ?? this.content,
+      createdAt: createdAt ?? this.createdAt,
+      replyToId: replyToId ?? this.replyToId,
+      giftWrapId: giftWrapId ?? this.giftWrapId,
+      subject: subject ?? this.subject,
+      messageKind: messageKind ?? this.messageKind,
+      fileType: fileType ?? this.fileType,
+      encryptionAlgorithm: encryptionAlgorithm ?? this.encryptionAlgorithm,
+      decryptionKey: decryptionKey ?? this.decryptionKey,
+      decryptionNonce: decryptionNonce ?? this.decryptionNonce,
+      fileHash: fileHash ?? this.fileHash,
+      originalFileHash: originalFileHash ?? this.originalFileHash,
+      fileSize: fileSize ?? this.fileSize,
+      dimensions: dimensions ?? this.dimensions,
+      blurhash: blurhash ?? this.blurhash,
+      thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
+    }
+    if (senderPubkey.present) {
+      map['sender_pubkey'] = Variable<String>(senderPubkey.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (replyToId.present) {
+      map['reply_to_id'] = Variable<String>(replyToId.value);
+    }
+    if (giftWrapId.present) {
+      map['gift_wrap_id'] = Variable<String>(giftWrapId.value);
+    }
+    if (subject.present) {
+      map['subject'] = Variable<String>(subject.value);
+    }
+    if (messageKind.present) {
+      map['message_kind'] = Variable<int>(messageKind.value);
+    }
+    if (fileType.present) {
+      map['file_type'] = Variable<String>(fileType.value);
+    }
+    if (encryptionAlgorithm.present) {
+      map['encryption_algorithm'] = Variable<String>(encryptionAlgorithm.value);
+    }
+    if (decryptionKey.present) {
+      map['decryption_key'] = Variable<String>(decryptionKey.value);
+    }
+    if (decryptionNonce.present) {
+      map['decryption_nonce'] = Variable<String>(decryptionNonce.value);
+    }
+    if (fileHash.present) {
+      map['file_hash'] = Variable<String>(fileHash.value);
+    }
+    if (originalFileHash.present) {
+      map['original_file_hash'] = Variable<String>(originalFileHash.value);
+    }
+    if (fileSize.present) {
+      map['file_size'] = Variable<int>(fileSize.value);
+    }
+    if (dimensions.present) {
+      map['dimensions'] = Variable<String>(dimensions.value);
+    }
+    if (blurhash.present) {
+      map['blurhash'] = Variable<String>(blurhash.value);
+    }
+    if (thumbnailUrl.present) {
+      map['thumbnail_url'] = Variable<String>(thumbnailUrl.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DirectMessagesCompanion(')
+          ..write('id: $id, ')
+          ..write('conversationId: $conversationId, ')
+          ..write('senderPubkey: $senderPubkey, ')
+          ..write('content: $content, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('replyToId: $replyToId, ')
+          ..write('giftWrapId: $giftWrapId, ')
+          ..write('subject: $subject, ')
+          ..write('messageKind: $messageKind, ')
+          ..write('fileType: $fileType, ')
+          ..write('encryptionAlgorithm: $encryptionAlgorithm, ')
+          ..write('decryptionKey: $decryptionKey, ')
+          ..write('decryptionNonce: $decryptionNonce, ')
+          ..write('fileHash: $fileHash, ')
+          ..write('originalFileHash: $originalFileHash, ')
+          ..write('fileSize: $fileSize, ')
+          ..write('dimensions: $dimensions, ')
+          ..write('blurhash: $blurhash, ')
+          ..write('thumbnailUrl: $thumbnailUrl, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ConversationsTable extends Conversations
+    with TableInfo<$ConversationsTable, ConversationRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ConversationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _participantPubkeysMeta =
+      const VerificationMeta('participantPubkeys');
+  @override
+  late final GeneratedColumn<String> participantPubkeys =
+      GeneratedColumn<String>(
+        'participant_pubkeys',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _isGroupMeta = const VerificationMeta(
+    'isGroup',
+  );
+  @override
+  late final GeneratedColumn<bool> isGroup = GeneratedColumn<bool>(
+    'is_group',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_group" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _lastMessageContentMeta =
+      const VerificationMeta('lastMessageContent');
+  @override
+  late final GeneratedColumn<String> lastMessageContent =
+      GeneratedColumn<String>(
+        'last_message_content',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastMessageTimestampMeta =
+      const VerificationMeta('lastMessageTimestamp');
+  @override
+  late final GeneratedColumn<int> lastMessageTimestamp = GeneratedColumn<int>(
+    'last_message_timestamp',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastMessageSenderPubkeyMeta =
+      const VerificationMeta('lastMessageSenderPubkey');
+  @override
+  late final GeneratedColumn<String> lastMessageSenderPubkey =
+      GeneratedColumn<String>(
+        'last_message_sender_pubkey',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _subjectMeta = const VerificationMeta(
+    'subject',
+  );
+  @override
+  late final GeneratedColumn<String> subject = GeneratedColumn<String>(
+    'subject',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isReadMeta = const VerificationMeta('isRead');
+  @override
+  late final GeneratedColumn<bool> isRead = GeneratedColumn<bool>(
+    'is_read',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_read" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    participantPubkeys,
+    isGroup,
+    lastMessageContent,
+    lastMessageTimestamp,
+    lastMessageSenderPubkey,
+    subject,
+    isRead,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'conversations';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ConversationRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('participant_pubkeys')) {
+      context.handle(
+        _participantPubkeysMeta,
+        participantPubkeys.isAcceptableOrUnknown(
+          data['participant_pubkeys']!,
+          _participantPubkeysMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_participantPubkeysMeta);
+    }
+    if (data.containsKey('is_group')) {
+      context.handle(
+        _isGroupMeta,
+        isGroup.isAcceptableOrUnknown(data['is_group']!, _isGroupMeta),
+      );
+    }
+    if (data.containsKey('last_message_content')) {
+      context.handle(
+        _lastMessageContentMeta,
+        lastMessageContent.isAcceptableOrUnknown(
+          data['last_message_content']!,
+          _lastMessageContentMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_message_timestamp')) {
+      context.handle(
+        _lastMessageTimestampMeta,
+        lastMessageTimestamp.isAcceptableOrUnknown(
+          data['last_message_timestamp']!,
+          _lastMessageTimestampMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_message_sender_pubkey')) {
+      context.handle(
+        _lastMessageSenderPubkeyMeta,
+        lastMessageSenderPubkey.isAcceptableOrUnknown(
+          data['last_message_sender_pubkey']!,
+          _lastMessageSenderPubkeyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('subject')) {
+      context.handle(
+        _subjectMeta,
+        subject.isAcceptableOrUnknown(data['subject']!, _subjectMeta),
+      );
+    }
+    if (data.containsKey('is_read')) {
+      context.handle(
+        _isReadMeta,
+        isRead.isAcceptableOrUnknown(data['is_read']!, _isReadMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ConversationRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ConversationRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      participantPubkeys: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}participant_pubkeys'],
+      )!,
+      isGroup: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_group'],
+      )!,
+      lastMessageContent: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_message_content'],
+      ),
+      lastMessageTimestamp: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_message_timestamp'],
+      ),
+      lastMessageSenderPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_message_sender_pubkey'],
+      ),
+      subject: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subject'],
+      ),
+      isRead: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_read'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ConversationsTable createAlias(String alias) {
+    return $ConversationsTable(attachedDatabase, alias);
+  }
+}
+
+class ConversationRow extends DataClass implements Insertable<ConversationRow> {
+  /// Deterministic conversation identifier (SHA-256 of sorted participant
+  /// pubkeys).
+  final String id;
+
+  /// JSON-encoded list of participant pubkeys (sorted).
+  final String participantPubkeys;
+
+  /// Whether this is a group conversation (more than 2 participants).
+  final bool isGroup;
+
+  /// Preview text of the last message.
+  final String? lastMessageContent;
+
+  /// Unix timestamp of the last message.
+  final int? lastMessageTimestamp;
+
+  /// Pubkey of the last message sender.
+  final String? lastMessageSenderPubkey;
+
+  /// Optional conversation title (from `subject` tag).
+  final String? subject;
+
+  /// Whether the conversation has unread messages.
+  final bool isRead;
+
+  /// Unix timestamp when the conversation was first created.
+  final int createdAt;
+  const ConversationRow({
+    required this.id,
+    required this.participantPubkeys,
+    required this.isGroup,
+    this.lastMessageContent,
+    this.lastMessageTimestamp,
+    this.lastMessageSenderPubkey,
+    this.subject,
+    required this.isRead,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['participant_pubkeys'] = Variable<String>(participantPubkeys);
+    map['is_group'] = Variable<bool>(isGroup);
+    if (!nullToAbsent || lastMessageContent != null) {
+      map['last_message_content'] = Variable<String>(lastMessageContent);
+    }
+    if (!nullToAbsent || lastMessageTimestamp != null) {
+      map['last_message_timestamp'] = Variable<int>(lastMessageTimestamp);
+    }
+    if (!nullToAbsent || lastMessageSenderPubkey != null) {
+      map['last_message_sender_pubkey'] = Variable<String>(
+        lastMessageSenderPubkey,
+      );
+    }
+    if (!nullToAbsent || subject != null) {
+      map['subject'] = Variable<String>(subject);
+    }
+    map['is_read'] = Variable<bool>(isRead);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  ConversationsCompanion toCompanion(bool nullToAbsent) {
+    return ConversationsCompanion(
+      id: Value(id),
+      participantPubkeys: Value(participantPubkeys),
+      isGroup: Value(isGroup),
+      lastMessageContent: lastMessageContent == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastMessageContent),
+      lastMessageTimestamp: lastMessageTimestamp == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastMessageTimestamp),
+      lastMessageSenderPubkey: lastMessageSenderPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastMessageSenderPubkey),
+      subject: subject == null && nullToAbsent
+          ? const Value.absent()
+          : Value(subject),
+      isRead: Value(isRead),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ConversationRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ConversationRow(
+      id: serializer.fromJson<String>(json['id']),
+      participantPubkeys: serializer.fromJson<String>(
+        json['participantPubkeys'],
+      ),
+      isGroup: serializer.fromJson<bool>(json['isGroup']),
+      lastMessageContent: serializer.fromJson<String?>(
+        json['lastMessageContent'],
+      ),
+      lastMessageTimestamp: serializer.fromJson<int?>(
+        json['lastMessageTimestamp'],
+      ),
+      lastMessageSenderPubkey: serializer.fromJson<String?>(
+        json['lastMessageSenderPubkey'],
+      ),
+      subject: serializer.fromJson<String?>(json['subject']),
+      isRead: serializer.fromJson<bool>(json['isRead']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'participantPubkeys': serializer.toJson<String>(participantPubkeys),
+      'isGroup': serializer.toJson<bool>(isGroup),
+      'lastMessageContent': serializer.toJson<String?>(lastMessageContent),
+      'lastMessageTimestamp': serializer.toJson<int?>(lastMessageTimestamp),
+      'lastMessageSenderPubkey': serializer.toJson<String?>(
+        lastMessageSenderPubkey,
+      ),
+      'subject': serializer.toJson<String?>(subject),
+      'isRead': serializer.toJson<bool>(isRead),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  ConversationRow copyWith({
+    String? id,
+    String? participantPubkeys,
+    bool? isGroup,
+    Value<String?> lastMessageContent = const Value.absent(),
+    Value<int?> lastMessageTimestamp = const Value.absent(),
+    Value<String?> lastMessageSenderPubkey = const Value.absent(),
+    Value<String?> subject = const Value.absent(),
+    bool? isRead,
+    int? createdAt,
+  }) => ConversationRow(
+    id: id ?? this.id,
+    participantPubkeys: participantPubkeys ?? this.participantPubkeys,
+    isGroup: isGroup ?? this.isGroup,
+    lastMessageContent: lastMessageContent.present
+        ? lastMessageContent.value
+        : this.lastMessageContent,
+    lastMessageTimestamp: lastMessageTimestamp.present
+        ? lastMessageTimestamp.value
+        : this.lastMessageTimestamp,
+    lastMessageSenderPubkey: lastMessageSenderPubkey.present
+        ? lastMessageSenderPubkey.value
+        : this.lastMessageSenderPubkey,
+    subject: subject.present ? subject.value : this.subject,
+    isRead: isRead ?? this.isRead,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ConversationRow copyWithCompanion(ConversationsCompanion data) {
+    return ConversationRow(
+      id: data.id.present ? data.id.value : this.id,
+      participantPubkeys: data.participantPubkeys.present
+          ? data.participantPubkeys.value
+          : this.participantPubkeys,
+      isGroup: data.isGroup.present ? data.isGroup.value : this.isGroup,
+      lastMessageContent: data.lastMessageContent.present
+          ? data.lastMessageContent.value
+          : this.lastMessageContent,
+      lastMessageTimestamp: data.lastMessageTimestamp.present
+          ? data.lastMessageTimestamp.value
+          : this.lastMessageTimestamp,
+      lastMessageSenderPubkey: data.lastMessageSenderPubkey.present
+          ? data.lastMessageSenderPubkey.value
+          : this.lastMessageSenderPubkey,
+      subject: data.subject.present ? data.subject.value : this.subject,
+      isRead: data.isRead.present ? data.isRead.value : this.isRead,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationRow(')
+          ..write('id: $id, ')
+          ..write('participantPubkeys: $participantPubkeys, ')
+          ..write('isGroup: $isGroup, ')
+          ..write('lastMessageContent: $lastMessageContent, ')
+          ..write('lastMessageTimestamp: $lastMessageTimestamp, ')
+          ..write('lastMessageSenderPubkey: $lastMessageSenderPubkey, ')
+          ..write('subject: $subject, ')
+          ..write('isRead: $isRead, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    participantPubkeys,
+    isGroup,
+    lastMessageContent,
+    lastMessageTimestamp,
+    lastMessageSenderPubkey,
+    subject,
+    isRead,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ConversationRow &&
+          other.id == this.id &&
+          other.participantPubkeys == this.participantPubkeys &&
+          other.isGroup == this.isGroup &&
+          other.lastMessageContent == this.lastMessageContent &&
+          other.lastMessageTimestamp == this.lastMessageTimestamp &&
+          other.lastMessageSenderPubkey == this.lastMessageSenderPubkey &&
+          other.subject == this.subject &&
+          other.isRead == this.isRead &&
+          other.createdAt == this.createdAt);
+}
+
+class ConversationsCompanion extends UpdateCompanion<ConversationRow> {
+  final Value<String> id;
+  final Value<String> participantPubkeys;
+  final Value<bool> isGroup;
+  final Value<String?> lastMessageContent;
+  final Value<int?> lastMessageTimestamp;
+  final Value<String?> lastMessageSenderPubkey;
+  final Value<String?> subject;
+  final Value<bool> isRead;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const ConversationsCompanion({
+    this.id = const Value.absent(),
+    this.participantPubkeys = const Value.absent(),
+    this.isGroup = const Value.absent(),
+    this.lastMessageContent = const Value.absent(),
+    this.lastMessageTimestamp = const Value.absent(),
+    this.lastMessageSenderPubkey = const Value.absent(),
+    this.subject = const Value.absent(),
+    this.isRead = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ConversationsCompanion.insert({
+    required String id,
+    required String participantPubkeys,
+    this.isGroup = const Value.absent(),
+    this.lastMessageContent = const Value.absent(),
+    this.lastMessageTimestamp = const Value.absent(),
+    this.lastMessageSenderPubkey = const Value.absent(),
+    this.subject = const Value.absent(),
+    this.isRead = const Value.absent(),
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       participantPubkeys = Value(participantPubkeys),
+       createdAt = Value(createdAt);
+  static Insertable<ConversationRow> custom({
+    Expression<String>? id,
+    Expression<String>? participantPubkeys,
+    Expression<bool>? isGroup,
+    Expression<String>? lastMessageContent,
+    Expression<int>? lastMessageTimestamp,
+    Expression<String>? lastMessageSenderPubkey,
+    Expression<String>? subject,
+    Expression<bool>? isRead,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (participantPubkeys != null) 'participant_pubkeys': participantPubkeys,
+      if (isGroup != null) 'is_group': isGroup,
+      if (lastMessageContent != null)
+        'last_message_content': lastMessageContent,
+      if (lastMessageTimestamp != null)
+        'last_message_timestamp': lastMessageTimestamp,
+      if (lastMessageSenderPubkey != null)
+        'last_message_sender_pubkey': lastMessageSenderPubkey,
+      if (subject != null) 'subject': subject,
+      if (isRead != null) 'is_read': isRead,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ConversationsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? participantPubkeys,
+    Value<bool>? isGroup,
+    Value<String?>? lastMessageContent,
+    Value<int?>? lastMessageTimestamp,
+    Value<String?>? lastMessageSenderPubkey,
+    Value<String?>? subject,
+    Value<bool>? isRead,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ConversationsCompanion(
+      id: id ?? this.id,
+      participantPubkeys: participantPubkeys ?? this.participantPubkeys,
+      isGroup: isGroup ?? this.isGroup,
+      lastMessageContent: lastMessageContent ?? this.lastMessageContent,
+      lastMessageTimestamp: lastMessageTimestamp ?? this.lastMessageTimestamp,
+      lastMessageSenderPubkey:
+          lastMessageSenderPubkey ?? this.lastMessageSenderPubkey,
+      subject: subject ?? this.subject,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (participantPubkeys.present) {
+      map['participant_pubkeys'] = Variable<String>(participantPubkeys.value);
+    }
+    if (isGroup.present) {
+      map['is_group'] = Variable<bool>(isGroup.value);
+    }
+    if (lastMessageContent.present) {
+      map['last_message_content'] = Variable<String>(lastMessageContent.value);
+    }
+    if (lastMessageTimestamp.present) {
+      map['last_message_timestamp'] = Variable<int>(lastMessageTimestamp.value);
+    }
+    if (lastMessageSenderPubkey.present) {
+      map['last_message_sender_pubkey'] = Variable<String>(
+        lastMessageSenderPubkey.value,
+      );
+    }
+    if (subject.present) {
+      map['subject'] = Variable<String>(subject.value);
+    }
+    if (isRead.present) {
+      map['is_read'] = Variable<bool>(isRead.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ConversationsCompanion(')
+          ..write('id: $id, ')
+          ..write('participantPubkeys: $participantPubkeys, ')
+          ..write('isGroup: $isGroup, ')
+          ..write('lastMessageContent: $lastMessageContent, ')
+          ..write('lastMessageTimestamp: $lastMessageTimestamp, ')
+          ..write('lastMessageSenderPubkey: $lastMessageSenderPubkey, ')
+          ..write('subject: $subject, ')
+          ..write('isRead: $isRead, ')
+          ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -7996,6 +9883,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $Nip05VerificationsTable(this);
   late final $DraftsTable drafts = $DraftsTable(this);
   late final $ClipsTable clips = $ClipsTable(this);
+  late final $DirectMessagesTable directMessages = $DirectMessagesTable(this);
+  late final $ConversationsTable conversations = $ConversationsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -8030,6 +9919,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       Nip05VerificationsDao(this as AppDatabase);
   late final DraftsDao draftsDao = DraftsDao(this as AppDatabase);
   late final ClipsDao clipsDao = ClipsDao(this as AppDatabase);
+  late final DirectMessagesDao directMessagesDao = DirectMessagesDao(
+    this as AppDatabase,
+  );
+  late final ConversationsDao conversationsDao = ConversationsDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -8048,6 +9943,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     nip05Verifications,
     drafts,
     clips,
+    directMessages,
+    conversations,
   ];
 }
 
@@ -11335,6 +13232,7 @@ typedef $$DraftsTableCreateCompanionBuilder =
       required String data,
       Value<String?> renderedFilePath,
       Value<String?> renderedThumbnailPath,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 typedef $$DraftsTableUpdateCompanionBuilder =
@@ -11350,6 +13248,7 @@ typedef $$DraftsTableUpdateCompanionBuilder =
       Value<String> data,
       Value<String?> renderedFilePath,
       Value<String?> renderedThumbnailPath,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 
@@ -11414,6 +13313,11 @@ class $$DraftsTableFilterComposer
 
   ColumnFilters<String> get renderedThumbnailPath => $composableBuilder(
     column: $table.renderedThumbnailPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11481,6 +13385,11 @@ class $$DraftsTableOrderingComposer
     column: $table.renderedThumbnailPath,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$DraftsTableAnnotationComposer
@@ -11538,6 +13447,11 @@ class $$DraftsTableAnnotationComposer
     column: $table.renderedThumbnailPath,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
 }
 
 class $$DraftsTableTableManager
@@ -11579,6 +13493,7 @@ class $$DraftsTableTableManager
                 Value<String> data = const Value.absent(),
                 Value<String?> renderedFilePath = const Value.absent(),
                 Value<String?> renderedThumbnailPath = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion(
                 id: id,
@@ -11592,6 +13507,7 @@ class $$DraftsTableTableManager
                 data: data,
                 renderedFilePath: renderedFilePath,
                 renderedThumbnailPath: renderedThumbnailPath,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11607,6 +13523,7 @@ class $$DraftsTableTableManager
                 required String data,
                 Value<String?> renderedFilePath = const Value.absent(),
                 Value<String?> renderedThumbnailPath = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => DraftsCompanion.insert(
                 id: id,
@@ -11620,6 +13537,7 @@ class $$DraftsTableTableManager
                 data: data,
                 renderedFilePath: renderedFilePath,
                 renderedThumbnailPath: renderedThumbnailPath,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -11654,6 +13572,7 @@ typedef $$ClipsTableCreateCompanionBuilder =
       required String data,
       Value<String?> filePath,
       Value<String?> thumbnailPath,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 typedef $$ClipsTableUpdateCompanionBuilder =
@@ -11666,6 +13585,7 @@ typedef $$ClipsTableUpdateCompanionBuilder =
       Value<String> data,
       Value<String?> filePath,
       Value<String?> thumbnailPath,
+      Value<String?> ownerPubkey,
       Value<int> rowid,
     });
 
@@ -11714,6 +13634,11 @@ class $$ClipsTableFilterComposer extends Composer<_$AppDatabase, $ClipsTable> {
 
   ColumnFilters<String> get thumbnailPath => $composableBuilder(
     column: $table.thumbnailPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -11766,6 +13691,11 @@ class $$ClipsTableOrderingComposer
     column: $table.thumbnailPath,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ClipsTableAnnotationComposer
@@ -11808,6 +13738,11 @@ class $$ClipsTableAnnotationComposer
     column: $table.thumbnailPath,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get ownerPubkey => $composableBuilder(
+    column: $table.ownerPubkey,
+    builder: (column) => column,
+  );
 }
 
 class $$ClipsTableTableManager
@@ -11846,6 +13781,7 @@ class $$ClipsTableTableManager
                 Value<String> data = const Value.absent(),
                 Value<String?> filePath = const Value.absent(),
                 Value<String?> thumbnailPath = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion(
                 id: id,
@@ -11856,6 +13792,7 @@ class $$ClipsTableTableManager
                 data: data,
                 filePath: filePath,
                 thumbnailPath: thumbnailPath,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11868,6 +13805,7 @@ class $$ClipsTableTableManager
                 required String data,
                 Value<String?> filePath = const Value.absent(),
                 Value<String?> thumbnailPath = const Value.absent(),
+                Value<String?> ownerPubkey = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ClipsCompanion.insert(
                 id: id,
@@ -11878,6 +13816,7 @@ class $$ClipsTableTableManager
                 data: data,
                 filePath: filePath,
                 thumbnailPath: thumbnailPath,
+                ownerPubkey: ownerPubkey,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -11900,6 +13839,782 @@ typedef $$ClipsTableProcessedTableManager =
       $$ClipsTableUpdateCompanionBuilder,
       (ClipRow, BaseReferences<_$AppDatabase, $ClipsTable, ClipRow>),
       ClipRow,
+      PrefetchHooks Function()
+    >;
+typedef $$DirectMessagesTableCreateCompanionBuilder =
+    DirectMessagesCompanion Function({
+      required String id,
+      required String conversationId,
+      required String senderPubkey,
+      required String content,
+      required int createdAt,
+      Value<String?> replyToId,
+      required String giftWrapId,
+      Value<String?> subject,
+      Value<int> messageKind,
+      Value<String?> fileType,
+      Value<String?> encryptionAlgorithm,
+      Value<String?> decryptionKey,
+      Value<String?> decryptionNonce,
+      Value<String?> fileHash,
+      Value<String?> originalFileHash,
+      Value<int?> fileSize,
+      Value<String?> dimensions,
+      Value<String?> blurhash,
+      Value<String?> thumbnailUrl,
+      Value<int> rowid,
+    });
+typedef $$DirectMessagesTableUpdateCompanionBuilder =
+    DirectMessagesCompanion Function({
+      Value<String> id,
+      Value<String> conversationId,
+      Value<String> senderPubkey,
+      Value<String> content,
+      Value<int> createdAt,
+      Value<String?> replyToId,
+      Value<String> giftWrapId,
+      Value<String?> subject,
+      Value<int> messageKind,
+      Value<String?> fileType,
+      Value<String?> encryptionAlgorithm,
+      Value<String?> decryptionKey,
+      Value<String?> decryptionNonce,
+      Value<String?> fileHash,
+      Value<String?> originalFileHash,
+      Value<int?> fileSize,
+      Value<String?> dimensions,
+      Value<String?> blurhash,
+      Value<String?> thumbnailUrl,
+      Value<int> rowid,
+    });
+
+class $$DirectMessagesTableFilterComposer
+    extends Composer<_$AppDatabase, $DirectMessagesTable> {
+  $$DirectMessagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get senderPubkey => $composableBuilder(
+    column: $table.senderPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get replyToId => $composableBuilder(
+    column: $table.replyToId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get giftWrapId => $composableBuilder(
+    column: $table.giftWrapId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subject => $composableBuilder(
+    column: $table.subject,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get messageKind => $composableBuilder(
+    column: $table.messageKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileType => $composableBuilder(
+    column: $table.fileType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get encryptionAlgorithm => $composableBuilder(
+    column: $table.encryptionAlgorithm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decryptionKey => $composableBuilder(
+    column: $table.decryptionKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get decryptionNonce => $composableBuilder(
+    column: $table.decryptionNonce,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileHash => $composableBuilder(
+    column: $table.fileHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalFileHash => $composableBuilder(
+    column: $table.originalFileHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get fileSize => $composableBuilder(
+    column: $table.fileSize,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get dimensions => $composableBuilder(
+    column: $table.dimensions,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get blurhash => $composableBuilder(
+    column: $table.blurhash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get thumbnailUrl => $composableBuilder(
+    column: $table.thumbnailUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DirectMessagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DirectMessagesTable> {
+  $$DirectMessagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get senderPubkey => $composableBuilder(
+    column: $table.senderPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get replyToId => $composableBuilder(
+    column: $table.replyToId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get giftWrapId => $composableBuilder(
+    column: $table.giftWrapId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subject => $composableBuilder(
+    column: $table.subject,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get messageKind => $composableBuilder(
+    column: $table.messageKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileType => $composableBuilder(
+    column: $table.fileType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get encryptionAlgorithm => $composableBuilder(
+    column: $table.encryptionAlgorithm,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decryptionKey => $composableBuilder(
+    column: $table.decryptionKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get decryptionNonce => $composableBuilder(
+    column: $table.decryptionNonce,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileHash => $composableBuilder(
+    column: $table.fileHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originalFileHash => $composableBuilder(
+    column: $table.originalFileHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get fileSize => $composableBuilder(
+    column: $table.fileSize,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get dimensions => $composableBuilder(
+    column: $table.dimensions,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get blurhash => $composableBuilder(
+    column: $table.blurhash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get thumbnailUrl => $composableBuilder(
+    column: $table.thumbnailUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DirectMessagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DirectMessagesTable> {
+  $$DirectMessagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get conversationId => $composableBuilder(
+    column: $table.conversationId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get senderPubkey => $composableBuilder(
+    column: $table.senderPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get replyToId =>
+      $composableBuilder(column: $table.replyToId, builder: (column) => column);
+
+  GeneratedColumn<String> get giftWrapId => $composableBuilder(
+    column: $table.giftWrapId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => column);
+
+  GeneratedColumn<int> get messageKind => $composableBuilder(
+    column: $table.messageKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fileType =>
+      $composableBuilder(column: $table.fileType, builder: (column) => column);
+
+  GeneratedColumn<String> get encryptionAlgorithm => $composableBuilder(
+    column: $table.encryptionAlgorithm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get decryptionKey => $composableBuilder(
+    column: $table.decryptionKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get decryptionNonce => $composableBuilder(
+    column: $table.decryptionNonce,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get fileHash =>
+      $composableBuilder(column: $table.fileHash, builder: (column) => column);
+
+  GeneratedColumn<String> get originalFileHash => $composableBuilder(
+    column: $table.originalFileHash,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get fileSize =>
+      $composableBuilder(column: $table.fileSize, builder: (column) => column);
+
+  GeneratedColumn<String> get dimensions => $composableBuilder(
+    column: $table.dimensions,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get blurhash =>
+      $composableBuilder(column: $table.blurhash, builder: (column) => column);
+
+  GeneratedColumn<String> get thumbnailUrl => $composableBuilder(
+    column: $table.thumbnailUrl,
+    builder: (column) => column,
+  );
+}
+
+class $$DirectMessagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DirectMessagesTable,
+          DirectMessageRow,
+          $$DirectMessagesTableFilterComposer,
+          $$DirectMessagesTableOrderingComposer,
+          $$DirectMessagesTableAnnotationComposer,
+          $$DirectMessagesTableCreateCompanionBuilder,
+          $$DirectMessagesTableUpdateCompanionBuilder,
+          (
+            DirectMessageRow,
+            BaseReferences<
+              _$AppDatabase,
+              $DirectMessagesTable,
+              DirectMessageRow
+            >,
+          ),
+          DirectMessageRow,
+          PrefetchHooks Function()
+        > {
+  $$DirectMessagesTableTableManager(
+    _$AppDatabase db,
+    $DirectMessagesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DirectMessagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DirectMessagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DirectMessagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> conversationId = const Value.absent(),
+                Value<String> senderPubkey = const Value.absent(),
+                Value<String> content = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<String?> replyToId = const Value.absent(),
+                Value<String> giftWrapId = const Value.absent(),
+                Value<String?> subject = const Value.absent(),
+                Value<int> messageKind = const Value.absent(),
+                Value<String?> fileType = const Value.absent(),
+                Value<String?> encryptionAlgorithm = const Value.absent(),
+                Value<String?> decryptionKey = const Value.absent(),
+                Value<String?> decryptionNonce = const Value.absent(),
+                Value<String?> fileHash = const Value.absent(),
+                Value<String?> originalFileHash = const Value.absent(),
+                Value<int?> fileSize = const Value.absent(),
+                Value<String?> dimensions = const Value.absent(),
+                Value<String?> blurhash = const Value.absent(),
+                Value<String?> thumbnailUrl = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DirectMessagesCompanion(
+                id: id,
+                conversationId: conversationId,
+                senderPubkey: senderPubkey,
+                content: content,
+                createdAt: createdAt,
+                replyToId: replyToId,
+                giftWrapId: giftWrapId,
+                subject: subject,
+                messageKind: messageKind,
+                fileType: fileType,
+                encryptionAlgorithm: encryptionAlgorithm,
+                decryptionKey: decryptionKey,
+                decryptionNonce: decryptionNonce,
+                fileHash: fileHash,
+                originalFileHash: originalFileHash,
+                fileSize: fileSize,
+                dimensions: dimensions,
+                blurhash: blurhash,
+                thumbnailUrl: thumbnailUrl,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String conversationId,
+                required String senderPubkey,
+                required String content,
+                required int createdAt,
+                Value<String?> replyToId = const Value.absent(),
+                required String giftWrapId,
+                Value<String?> subject = const Value.absent(),
+                Value<int> messageKind = const Value.absent(),
+                Value<String?> fileType = const Value.absent(),
+                Value<String?> encryptionAlgorithm = const Value.absent(),
+                Value<String?> decryptionKey = const Value.absent(),
+                Value<String?> decryptionNonce = const Value.absent(),
+                Value<String?> fileHash = const Value.absent(),
+                Value<String?> originalFileHash = const Value.absent(),
+                Value<int?> fileSize = const Value.absent(),
+                Value<String?> dimensions = const Value.absent(),
+                Value<String?> blurhash = const Value.absent(),
+                Value<String?> thumbnailUrl = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DirectMessagesCompanion.insert(
+                id: id,
+                conversationId: conversationId,
+                senderPubkey: senderPubkey,
+                content: content,
+                createdAt: createdAt,
+                replyToId: replyToId,
+                giftWrapId: giftWrapId,
+                subject: subject,
+                messageKind: messageKind,
+                fileType: fileType,
+                encryptionAlgorithm: encryptionAlgorithm,
+                decryptionKey: decryptionKey,
+                decryptionNonce: decryptionNonce,
+                fileHash: fileHash,
+                originalFileHash: originalFileHash,
+                fileSize: fileSize,
+                dimensions: dimensions,
+                blurhash: blurhash,
+                thumbnailUrl: thumbnailUrl,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DirectMessagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DirectMessagesTable,
+      DirectMessageRow,
+      $$DirectMessagesTableFilterComposer,
+      $$DirectMessagesTableOrderingComposer,
+      $$DirectMessagesTableAnnotationComposer,
+      $$DirectMessagesTableCreateCompanionBuilder,
+      $$DirectMessagesTableUpdateCompanionBuilder,
+      (
+        DirectMessageRow,
+        BaseReferences<_$AppDatabase, $DirectMessagesTable, DirectMessageRow>,
+      ),
+      DirectMessageRow,
+      PrefetchHooks Function()
+    >;
+typedef $$ConversationsTableCreateCompanionBuilder =
+    ConversationsCompanion Function({
+      required String id,
+      required String participantPubkeys,
+      Value<bool> isGroup,
+      Value<String?> lastMessageContent,
+      Value<int?> lastMessageTimestamp,
+      Value<String?> lastMessageSenderPubkey,
+      Value<String?> subject,
+      Value<bool> isRead,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$ConversationsTableUpdateCompanionBuilder =
+    ConversationsCompanion Function({
+      Value<String> id,
+      Value<String> participantPubkeys,
+      Value<bool> isGroup,
+      Value<String?> lastMessageContent,
+      Value<int?> lastMessageTimestamp,
+      Value<String?> lastMessageSenderPubkey,
+      Value<String?> subject,
+      Value<bool> isRead,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ConversationsTableFilterComposer
+    extends Composer<_$AppDatabase, $ConversationsTable> {
+  $$ConversationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get participantPubkeys => $composableBuilder(
+    column: $table.participantPubkeys,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isGroup => $composableBuilder(
+    column: $table.isGroup,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastMessageContent => $composableBuilder(
+    column: $table.lastMessageContent,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastMessageTimestamp => $composableBuilder(
+    column: $table.lastMessageTimestamp,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastMessageSenderPubkey => $composableBuilder(
+    column: $table.lastMessageSenderPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get subject => $composableBuilder(
+    column: $table.subject,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isRead => $composableBuilder(
+    column: $table.isRead,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ConversationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ConversationsTable> {
+  $$ConversationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get participantPubkeys => $composableBuilder(
+    column: $table.participantPubkeys,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isGroup => $composableBuilder(
+    column: $table.isGroup,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastMessageContent => $composableBuilder(
+    column: $table.lastMessageContent,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastMessageTimestamp => $composableBuilder(
+    column: $table.lastMessageTimestamp,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastMessageSenderPubkey => $composableBuilder(
+    column: $table.lastMessageSenderPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get subject => $composableBuilder(
+    column: $table.subject,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isRead => $composableBuilder(
+    column: $table.isRead,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ConversationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ConversationsTable> {
+  $$ConversationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get participantPubkeys => $composableBuilder(
+    column: $table.participantPubkeys,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isGroup =>
+      $composableBuilder(column: $table.isGroup, builder: (column) => column);
+
+  GeneratedColumn<String> get lastMessageContent => $composableBuilder(
+    column: $table.lastMessageContent,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastMessageTimestamp => $composableBuilder(
+    column: $table.lastMessageTimestamp,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastMessageSenderPubkey => $composableBuilder(
+    column: $table.lastMessageSenderPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get subject =>
+      $composableBuilder(column: $table.subject, builder: (column) => column);
+
+  GeneratedColumn<bool> get isRead =>
+      $composableBuilder(column: $table.isRead, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ConversationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ConversationsTable,
+          ConversationRow,
+          $$ConversationsTableFilterComposer,
+          $$ConversationsTableOrderingComposer,
+          $$ConversationsTableAnnotationComposer,
+          $$ConversationsTableCreateCompanionBuilder,
+          $$ConversationsTableUpdateCompanionBuilder,
+          (
+            ConversationRow,
+            BaseReferences<_$AppDatabase, $ConversationsTable, ConversationRow>,
+          ),
+          ConversationRow,
+          PrefetchHooks Function()
+        > {
+  $$ConversationsTableTableManager(_$AppDatabase db, $ConversationsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ConversationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ConversationsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ConversationsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> participantPubkeys = const Value.absent(),
+                Value<bool> isGroup = const Value.absent(),
+                Value<String?> lastMessageContent = const Value.absent(),
+                Value<int?> lastMessageTimestamp = const Value.absent(),
+                Value<String?> lastMessageSenderPubkey = const Value.absent(),
+                Value<String?> subject = const Value.absent(),
+                Value<bool> isRead = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConversationsCompanion(
+                id: id,
+                participantPubkeys: participantPubkeys,
+                isGroup: isGroup,
+                lastMessageContent: lastMessageContent,
+                lastMessageTimestamp: lastMessageTimestamp,
+                lastMessageSenderPubkey: lastMessageSenderPubkey,
+                subject: subject,
+                isRead: isRead,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String participantPubkeys,
+                Value<bool> isGroup = const Value.absent(),
+                Value<String?> lastMessageContent = const Value.absent(),
+                Value<int?> lastMessageTimestamp = const Value.absent(),
+                Value<String?> lastMessageSenderPubkey = const Value.absent(),
+                Value<String?> subject = const Value.absent(),
+                Value<bool> isRead = const Value.absent(),
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ConversationsCompanion.insert(
+                id: id,
+                participantPubkeys: participantPubkeys,
+                isGroup: isGroup,
+                lastMessageContent: lastMessageContent,
+                lastMessageTimestamp: lastMessageTimestamp,
+                lastMessageSenderPubkey: lastMessageSenderPubkey,
+                subject: subject,
+                isRead: isRead,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ConversationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ConversationsTable,
+      ConversationRow,
+      $$ConversationsTableFilterComposer,
+      $$ConversationsTableOrderingComposer,
+      $$ConversationsTableAnnotationComposer,
+      $$ConversationsTableCreateCompanionBuilder,
+      $$ConversationsTableUpdateCompanionBuilder,
+      (
+        ConversationRow,
+        BaseReferences<_$AppDatabase, $ConversationsTable, ConversationRow>,
+      ),
+      ConversationRow,
       PrefetchHooks Function()
     >;
 
@@ -11932,4 +14647,8 @@ class $AppDatabaseManager {
       $$DraftsTableTableManager(_db, _db.drafts);
   $$ClipsTableTableManager get clips =>
       $$ClipsTableTableManager(_db, _db.clips);
+  $$DirectMessagesTableTableManager get directMessages =>
+      $$DirectMessagesTableTableManager(_db, _db.directMessages);
+  $$ConversationsTableTableManager get conversations =>
+      $$ConversationsTableTableManager(_db, _db.conversations);
 }

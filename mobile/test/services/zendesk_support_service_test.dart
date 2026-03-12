@@ -9,6 +9,7 @@ void main() {
   const MethodChannel channel = MethodChannel('com.openvine/zendesk_support');
 
   setUp(() {
+    ZendeskSupportService.resetForTesting();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
   });
@@ -159,130 +160,53 @@ void main() {
   });
 
   group('ZendeskSupportService.setUserIdentity', () {
-    test('uses NIP-05 as email when available', () async {
-      String? capturedName;
-      String? capturedEmail;
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (MethodCall call) async {
-            if (call.method == 'initialize') return true;
-            if (call.method == 'setUserIdentity') {
-              capturedName = call.arguments['name'] as String?;
-              capturedEmail = call.arguments['email'] as String?;
-              return true;
-            }
-            return null;
-          });
-
-      await ZendeskSupportService.initialize(
-        appId: 'test',
-        clientId: 'test',
-        zendeskUrl: 'https://test.zendesk.com',
-      );
-
-      await ZendeskSupportService.setUserIdentity(
+    test('uses NIP-05 as email when available', () {
+      ZendeskSupportService.setUserIdentity(
         displayName: 'Test User',
         nip05: 'testuser@example.com',
         npub: 'npub1testtesttesttesttesttesttesttesttesttesttesttesttesttest',
       );
 
-      expect(capturedName, 'Test User');
-      expect(capturedEmail, 'testuser@example.com');
+      expect(ZendeskSupportService.userName, 'Test User');
+      expect(ZendeskSupportService.userEmail, 'testuser@example.com');
     });
 
-    test('uses full npub as email when NIP-05 not available', () async {
-      String? capturedEmail;
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (MethodCall call) async {
-            if (call.method == 'initialize') return true;
-            if (call.method == 'setUserIdentity') {
-              capturedEmail = call.arguments['email'] as String?;
-              return true;
-            }
-            return null;
-          });
-
-      await ZendeskSupportService.initialize(
-        appId: 'test',
-        clientId: 'test',
-        zendeskUrl: 'https://test.zendesk.com',
-      );
-
+    test('uses full npub as email when NIP-05 not available', () {
       const testNpub =
           'npub1abcdef1234567890abcdef1234567890abcdef1234567890abcdef12345';
-      await ZendeskSupportService.setUserIdentity(npub: testNpub);
+      ZendeskSupportService.setUserIdentity(npub: testNpub);
 
       // CRITICAL: Uses full npub for unique user identification
       // Email format: {npub}@divine.video
-      expect(capturedEmail, '$testNpub@divine.video');
+      expect(ZendeskSupportService.userEmail, '$testNpub@divine.video');
     });
 
-    test('uses full npub as name when no displayName or NIP-05', () async {
-      String? capturedName;
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (MethodCall call) async {
-            if (call.method == 'initialize') return true;
-            if (call.method == 'setUserIdentity') {
-              capturedName = call.arguments['name'] as String?;
-              return true;
-            }
-            return null;
-          });
-
-      await ZendeskSupportService.initialize(
-        appId: 'test',
-        clientId: 'test',
-        zendeskUrl: 'https://test.zendesk.com',
-      );
-
+    test('uses full npub as name when no displayName or NIP-05', () {
       const testNpub =
           'npub1abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuv';
-      await ZendeskSupportService.setUserIdentity(npub: testNpub);
+      ZendeskSupportService.setUserIdentity(npub: testNpub);
 
       // CRITICAL: Uses full npub (never truncated) for traceability
-      expect(capturedName, testNpub);
+      expect(ZendeskSupportService.userName, testNpub);
     });
 
-    test(
-      'returns true even when native SDK not initialized (REST API fallback)',
-      () async {
-        // Don't initialize native SDK
-        final result = await ZendeskSupportService.setUserIdentity(
-          displayName: 'Test',
-          nip05: 'test@example.com',
-          npub: 'npub1test',
-        );
-
-        // Should still return true because REST API can use stored values
-        expect(result, true);
-      },
-    );
-
-    test('handles PlatformException gracefully', () async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (MethodCall call) async {
-            if (call.method == 'initialize') return true;
-            if (call.method == 'setUserIdentity') {
-              throw PlatformException(code: 'ERROR', message: 'Test error');
-            }
-            return null;
-          });
-
-      await ZendeskSupportService.initialize(
-        appId: 'test',
-        clientId: 'test',
-        zendeskUrl: 'https://test.zendesk.com',
-      );
-
-      // Should not throw, should return true (REST API fallback)
-      final result = await ZendeskSupportService.setUserIdentity(
+    test('returns true even when native SDK not initialized', () {
+      final result = ZendeskSupportService.setUserIdentity(
         displayName: 'Test',
+        nip05: 'test@example.com',
         npub: 'npub1test',
       );
 
       expect(result, true);
+    });
+
+    test('stores npub correctly', () {
+      ZendeskSupportService.setUserIdentity(
+        displayName: 'Test',
+        npub: 'npub1test',
+      );
+
+      expect(ZendeskSupportService.userNpub, 'npub1test');
     });
   });
 
@@ -358,52 +282,54 @@ void main() {
   });
 
   group('ZendeskSupportService identity consistency', () {
-    test('same npub produces same synthetic email', () async {
-      final emails = <String>[];
-
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (MethodCall call) async {
-            if (call.method == 'initialize') return true;
-            if (call.method == 'setUserIdentity') {
-              emails.add(call.arguments['email'] as String);
-              return true;
-            }
-            return null;
-          });
-
-      await ZendeskSupportService.initialize(
-        appId: 'test',
-        clientId: 'test',
-        zendeskUrl: 'https://test.zendesk.com',
-      );
-
+    test('same npub produces same synthetic email', () {
       const testNpub =
           'npub1consistent1234567890abcdef1234567890abcdef1234567890ab';
 
-      // Call setUserIdentity twice with same npub
-      await ZendeskSupportService.setUserIdentity(
+      ZendeskSupportService.setUserIdentity(
         displayName: 'User 1',
         npub: testNpub,
       );
+      final email1 = ZendeskSupportService.userEmail;
 
-      await ZendeskSupportService.setUserIdentity(
+      ZendeskSupportService.setUserIdentity(
         displayName: 'User 2',
         npub: testNpub,
       );
+      final email2 = ZendeskSupportService.userEmail;
 
-      // Both should produce the same email
-      expect(emails.length, 2);
-      expect(emails[0], emails[1]);
+      expect(email1, email2);
     });
 
-    test('different npubs produce different synthetic emails', () async {
-      final emails = <String>[];
+    test('different npubs produce different synthetic emails', () {
+      ZendeskSupportService.setUserIdentity(
+        npub: 'npub1user1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      );
+      final email1 = ZendeskSupportService.userEmail;
+
+      ZendeskSupportService.setUserIdentity(
+        npub: 'npub1user2bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      );
+      final email2 = ZendeskSupportService.userEmail;
+
+      expect(email1, isNot(email2));
+    });
+  });
+
+  group('ZendeskSupportService.createStructuredBugReport fallback', () {
+    test('uses native SDK when initialized', () async {
+      var createTicketCalled = false;
+      String? capturedSubject;
+      List<dynamic>? capturedCustomFields;
 
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (MethodCall call) async {
             if (call.method == 'initialize') return true;
-            if (call.method == 'setUserIdentity') {
-              emails.add(call.arguments['email'] as String);
+            if (call.method == 'createTicket') {
+              createTicketCalled = true;
+              capturedSubject = call.arguments['subject'] as String?;
+              capturedCustomFields =
+                  call.arguments['customFields'] as List<dynamic>?;
               return true;
             }
             return null;
@@ -415,16 +341,98 @@ void main() {
         zendeskUrl: 'https://test.zendesk.com',
       );
 
-      await ZendeskSupportService.setUserIdentity(
-        npub: 'npub1user1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      final result = await ZendeskSupportService.createStructuredBugReport(
+        subject: 'Test Bug',
+        description: 'Something broke',
+        reportId: 'test-report-123',
+        appVersion: '1.0.0+42',
+        deviceInfo: {'platform': 'ios', 'version': '17.0', 'model': 'iPhone'},
+        stepsToReproduce: '1. Tap button\n2. See crash',
+        expectedBehavior: 'Should not crash',
       );
 
-      await ZendeskSupportService.setUserIdentity(
-        npub: 'npub1user2bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      expect(result, isTrue);
+      expect(createTicketCalled, isTrue);
+      expect(capturedSubject, 'Test Bug');
+      // Verify custom fields include platform, OS version, build number
+      expect(capturedCustomFields, isNotNull);
+      final fieldIds = capturedCustomFields!
+          .map((f) => (f as Map)['id'])
+          .toList();
+      // Platform field
+      expect(fieldIds, contains(14884176561807));
+      // OS Version field
+      expect(fieldIds, contains(14884157556111));
+      // Build Number field
+      expect(fieldIds, contains(14884184890511));
+      // Steps to Reproduce field (optional, but provided)
+      expect(fieldIds, contains(14677364166031));
+      // Expected Behavior field (optional, but provided)
+      expect(fieldIds, contains(14677341431695));
+    });
+
+    test('falls back to REST API when SDK not initialized', () async {
+      // Reset _initialized by calling initialize with a handler that fails
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return false;
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
       );
 
-      expect(emails.length, 2);
-      expect(emails[0], isNot(emails[1]));
+      // SDK not initialized → falls to REST API → but API token not configured
+      // in test env, so returns false
+      final result = await ZendeskSupportService.createStructuredBugReport(
+        subject: 'Test Bug',
+        description: 'Something broke',
+        reportId: 'test-report-456',
+        appVersion: '1.0.0+42',
+        deviceInfo: {'platform': 'android', 'version': '14'},
+      );
+
+      // Without ZENDESK_API_TOKEN, REST API fallback returns false
+      expect(result, isFalse);
+    });
+
+    test('extracts build number from appVersion correctly', () async {
+      List<dynamic>? capturedCustomFields;
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (MethodCall call) async {
+            if (call.method == 'initialize') return true;
+            if (call.method == 'createTicket') {
+              capturedCustomFields =
+                  call.arguments['customFields'] as List<dynamic>?;
+              return true;
+            }
+            return null;
+          });
+
+      await ZendeskSupportService.initialize(
+        appId: 'test',
+        clientId: 'test',
+        zendeskUrl: 'https://test.zendesk.com',
+      );
+
+      await ZendeskSupportService.createStructuredBugReport(
+        subject: 'Test',
+        description: 'Test',
+        reportId: 'test-789',
+        appVersion: '2.1.0+99',
+        deviceInfo: {'platform': 'ios', 'version': '18.0'},
+      );
+
+      // Verify build number extracted from "2.1.0+99" → "99"
+      expect(capturedCustomFields, isNotNull);
+      final buildField = capturedCustomFields!.firstWhere(
+        (f) => (f as Map)['id'] == 14884184890511,
+      );
+      expect((buildField as Map)['value'], '99');
     });
   });
 
@@ -454,20 +462,5 @@ void main() {
       // When API token is not configured, should return false
       expect(result, ZendeskConfig.isRestApiConfigured);
     });
-
-    test(
-      'createBugReportTicketViaApi returns false when API not configured',
-      () async {
-        final result = await ZendeskSupportService.createBugReportTicketViaApi(
-          reportId: 'test-123',
-          userDescription: 'Test bug',
-          appVersion: '1.0.0',
-          deviceInfo: {'platform': 'test'},
-        );
-
-        // When API token is not configured, should return false
-        expect(result, ZendeskConfig.isRestApiConfigured);
-      },
-    );
   });
 }

@@ -19,11 +19,16 @@ class DraftStorageService {
   DraftStorageService({
     required DraftsDao draftsDao,
     required ClipsDao clipsDao,
+    this.ownerPubkey,
   }) : _draftsDao = draftsDao,
        _clipsDao = clipsDao;
 
   final DraftsDao _draftsDao;
   final ClipsDao _clipsDao;
+
+  /// Hex pubkey of the current account. When set, new drafts are tagged
+  /// with this owner and queries filter by it (plus legacy NULL rows).
+  final String? ownerPubkey;
 
   static const String _storageKey = 'vine_drafts';
 
@@ -212,11 +217,12 @@ class DraftStorageService {
           ? p.basename(draft.finalRenderedClip!.thumbnailPath!)
           : null,
       clipDataList: clipDataList,
+      ownerPubkey: ownerPubkey,
     );
   }
 
   /// Get total count of drafts without loading their data.
-  Future<int> getDraftCount() => _draftsDao.getCount();
+  Future<int> getDraftCount() => _draftsDao.getCount(ownerPubkey: ownerPubkey);
 
   Future<DivineVideoDraft?> getDraftById(String id) async {
     final row = await _draftsDao.getDraftById(id);
@@ -286,7 +292,9 @@ class DraftStorageService {
   /// Get all drafts from storage
   Future<List<DivineVideoDraft>> getAllDrafts() async {
     try {
-      final rows = await _draftsDao.getAllDrafts();
+      final rows = await _draftsDao.getAllDrafts(
+        ownerPubkey: ownerPubkey,
+      );
       final documentsPath = await getDocumentsPath();
       final drafts = <DivineVideoDraft>[];
       final corruptedDraftIds = <String>[];

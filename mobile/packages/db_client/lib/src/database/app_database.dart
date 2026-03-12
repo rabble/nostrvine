@@ -30,6 +30,8 @@ const _notificationRetentionDays = 7;
     Nip05Verifications,
     Drafts,
     Clips,
+    DirectMessages,
+    Conversations,
   ],
   daos: [
     UserProfilesDao,
@@ -45,6 +47,8 @@ const _notificationRetentionDays = 7;
     Nip05VerificationsDao,
     DraftsDao,
     ClipsDao,
+    DirectMessagesDao,
+    ConversationsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -255,6 +259,117 @@ class AppDatabase extends _$AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_draft_rendered_thumbnail_path
       ON drafts (rendered_thumbnail_path)
     ''');
+
+    // Add owner_pubkey columns for multi-account isolation
+    await _addColumnIfMissing('drafts', 'owner_pubkey', 'TEXT');
+    await _addColumnIfMissing('clips', 'owner_pubkey', 'TEXT');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_draft_owner_pubkey
+      ON drafts (owner_pubkey)
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS idx_clip_owner_pubkey
+      ON clips (owner_pubkey)
+    ''');
+
+    // Check if direct_messages table exists, create if missing
+    final dmResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='direct_messages'",
+    ).get();
+
+    if (dmResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE direct_messages (
+          id TEXT NOT NULL PRIMARY KEY,
+          conversation_id TEXT NOT NULL,
+          sender_pubkey TEXT NOT NULL,
+          content TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          reply_to_id TEXT,
+          gift_wrap_id TEXT NOT NULL,
+          subject TEXT,
+          message_kind INTEGER NOT NULL DEFAULT 14,
+          file_type TEXT,
+          encryption_algorithm TEXT,
+          decryption_key TEXT,
+          decryption_nonce TEXT,
+          file_hash TEXT,
+          original_file_hash TEXT,
+          file_size INTEGER,
+          dimensions TEXT,
+          blurhash TEXT,
+          thumbnail_url TEXT
+        )
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_dm_conversation_id
+        ON direct_messages (conversation_id)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_dm_conversation_created
+        ON direct_messages (conversation_id, created_at DESC)
+      ''');
+      await customStatement('''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_dm_gift_wrap_id
+        ON direct_messages (gift_wrap_id)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_dm_sender
+        ON direct_messages (sender_pubkey)
+      ''');
+    }
+
+    // Add Kind 15 file metadata columns to direct_messages (if missing)
+    await _addColumnIfMissing(
+      'direct_messages',
+      'message_kind',
+      'INTEGER NOT NULL DEFAULT 14',
+    );
+    await _addColumnIfMissing('direct_messages', 'file_type', 'TEXT');
+    await _addColumnIfMissing(
+      'direct_messages',
+      'encryption_algorithm',
+      'TEXT',
+    );
+    await _addColumnIfMissing('direct_messages', 'decryption_key', 'TEXT');
+    await _addColumnIfMissing('direct_messages', 'decryption_nonce', 'TEXT');
+    await _addColumnIfMissing('direct_messages', 'file_hash', 'TEXT');
+    await _addColumnIfMissing('direct_messages', 'original_file_hash', 'TEXT');
+    await _addColumnIfMissing('direct_messages', 'file_size', 'INTEGER');
+    await _addColumnIfMissing('direct_messages', 'dimensions', 'TEXT');
+    await _addColumnIfMissing('direct_messages', 'blurhash', 'TEXT');
+    await _addColumnIfMissing('direct_messages', 'thumbnail_url', 'TEXT');
+
+    // Check if conversations table exists, create if missing
+    final convResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='conversations'",
+    ).get();
+
+    if (convResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE conversations (
+          id TEXT NOT NULL PRIMARY KEY,
+          participant_pubkeys TEXT NOT NULL,
+          is_group INTEGER NOT NULL DEFAULT 0,
+          last_message_content TEXT,
+          last_message_timestamp INTEGER,
+          last_message_sender_pubkey TEXT,
+          subject TEXT,
+          is_read INTEGER NOT NULL DEFAULT 1,
+          created_at INTEGER NOT NULL
+        )
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_conversation_last_message
+        ON conversations (last_message_timestamp DESC)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_conversation_is_read
+        ON conversations (is_read)
+      ''');
+    }
 
     // Populate new columns from existing JSON data blobs
     await _backfillFilePathColumns();

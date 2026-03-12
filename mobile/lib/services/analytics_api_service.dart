@@ -4,9 +4,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:http/http.dart' as http;
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/utils/hashtag_extractor.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

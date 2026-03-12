@@ -104,6 +104,20 @@ class EnvironmentConfig {
     ];
   }
 
+  /// Get relay manager API URL (divine-relay-manager worker)
+  String get relayManagerApiUrl {
+    switch (environment) {
+      case AppEnvironment.local:
+        return 'http://$localHost:8787';
+      case AppEnvironment.poc:
+      case AppEnvironment.test:
+      case AppEnvironment.staging:
+        return 'https://api-relay-staging.divine.video';
+      case AppEnvironment.production:
+        return 'https://api-relay-prod.divine.video';
+    }
+  }
+
   /// Whether this is production environment
   bool get isProduction => environment == AppEnvironment.production;
 

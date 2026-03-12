@@ -162,6 +162,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                             child: ProfileFollowersStat(
                               pubkey: userIdHex,
                               displayName: displayName,
+                              isOwnProfile: isOwnProfile,
                             ),
                           ),
                           Flexible(

@@ -244,5 +244,197 @@ void main() {
         );
       });
     });
+
+    group('getTrendingHashtags', () {
+      late HashtagRepository cachingRepository;
+
+      setUp(() {
+        cachingRepository = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+        );
+      });
+
+      test('fetches from client on cache miss', () async {
+        final trendingHashtags = [
+          const TrendingHashtag(
+            tag: 'bitcoin',
+            videoCount: 42,
+            uniqueCreators: 10,
+            totalLoops: 1000,
+          ),
+        ];
+        when(
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => trendingHashtags);
+
+        final results = await cachingRepository.getTrendingHashtags();
+
+        expect(results, equals(trendingHashtags));
+        verify(
+          () => mockClient.fetchTrendingHashtags(),
+        ).called(1);
+      });
+
+      test(
+        'returns cached result on second call without force refresh',
+        () async {
+          final trendingHashtags = [
+            const TrendingHashtag(
+              tag: 'nostr',
+              videoCount: 30,
+              uniqueCreators: 8,
+              totalLoops: 500,
+            ),
+          ];
+          when(
+            () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+          ).thenAnswer((_) async => trendingHashtags);
+
+          await cachingRepository.getTrendingHashtags();
+          final secondResult = await cachingRepository.getTrendingHashtags();
+
+          expect(secondResult, equals(trendingHashtags));
+          // Client called only once; second call served from cache.
+          verify(
+            () => mockClient.fetchTrendingHashtags(),
+          ).called(1);
+        },
+      );
+
+      test('bypasses cache when forceRefresh is true', () async {
+        final firstBatch = [
+          const TrendingHashtag(
+            tag: 'vine',
+            videoCount: 10,
+            uniqueCreators: 3,
+            totalLoops: 100,
+          ),
+        ];
+        final secondBatch = [
+          const TrendingHashtag(
+            tag: 'openvine',
+            videoCount: 20,
+            uniqueCreators: 5,
+            totalLoops: 200,
+          ),
+        ];
+        var callCount = 0;
+        when(
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+        ).thenAnswer((_) async {
+          callCount++;
+          return callCount == 1 ? firstBatch : secondBatch;
+        });
+
+        await cachingRepository.getTrendingHashtags();
+        final refreshed = await cachingRepository.getTrendingHashtags(
+          forceRefresh: true,
+        );
+
+        expect(refreshed, equals(secondBatch));
+        verify(
+          () => mockClient.fetchTrendingHashtags(),
+        ).called(2);
+      });
+
+      test('cache expires after cacheDuration', () async {
+        final expiredRepository = HashtagRepository(
+          funnelcakeApiClient: mockClient,
+          cacheDuration: Duration.zero,
+        );
+        final hashtags = [
+          const TrendingHashtag(
+            tag: 'bitcoin',
+            videoCount: 42,
+            uniqueCreators: 10,
+            totalLoops: 1000,
+          ),
+        ];
+        when(
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => hashtags);
+
+        await expiredRepository.getTrendingHashtags();
+        await expiredRepository.getTrendingHashtags();
+
+        // With Duration.zero the cache is always stale, so client is called
+        // twice.
+        verify(
+          () => mockClient.fetchTrendingHashtags(),
+        ).called(2);
+      });
+
+      test('passes custom limit to client', () async {
+        when(
+          () => mockClient.fetchTrendingHashtags(limit: 50),
+        ).thenAnswer((_) async => []);
+
+        await cachingRepository.getTrendingHashtags(limit: 50);
+
+        verify(() => mockClient.fetchTrendingHashtags(limit: 50)).called(1);
+      });
+
+      test(
+        'returns default hashtags when API is not configured',
+        () async {
+          when(
+            () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+          ).thenThrow(const FunnelcakeNotConfiguredException());
+
+          final results = await cachingRepository.getTrendingHashtags();
+
+          expect(results, isNotEmpty);
+          expect(results.first, isA<TrendingHashtag>());
+          // Does not throw — callers always get a usable list.
+        },
+      );
+
+      test(
+        'default hashtags respect the limit parameter',
+        () async {
+          when(
+            () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+          ).thenThrow(const FunnelcakeNotConfiguredException());
+
+          final results = await cachingRepository.getTrendingHashtags(limit: 5);
+
+          expect(results, hasLength(5));
+        },
+      );
+
+      test('propagates FunnelcakeApiException', () {
+        when(
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+        ).thenThrow(
+          const FunnelcakeApiException(
+            message: 'Server error',
+            statusCode: 503,
+            url: 'https://example.com/api/hashtags',
+          ),
+        );
+
+        expect(
+          () => cachingRepository.getTrendingHashtags(),
+          throwsA(
+            isA<FunnelcakeApiException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              equals(503),
+            ),
+          ),
+        );
+      });
+
+      test('propagates FunnelcakeTimeoutException', () {
+        when(
+          () => mockClient.fetchTrendingHashtags(limit: any(named: 'limit')),
+        ).thenThrow(const FunnelcakeTimeoutException());
+
+        expect(
+          () => cachingRepository.getTrendingHashtags(),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+    });
   });
 }

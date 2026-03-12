@@ -10,8 +10,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
@@ -19,6 +21,8 @@ import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../mocks/mock_camera_service.dart';
+
+class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
 /// Mock for CameraPermissionBloc
 class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
@@ -36,8 +40,16 @@ class MockCameraPermissionBloc extends Mock implements CameraPermissionBloc {
 }
 
 /// Helper to build VideoRecorderScreen with required providers
-Widget buildTestWidget() {
+Widget buildTestWidget({List<Override> overrides = const []}) {
+  final mockDraftStorage = _MockDraftStorageService();
+  when(
+    () => mockDraftStorage.getDraftById(any()),
+  ).thenAnswer((_) async => null);
   return ProviderScope(
+    overrides: [
+      draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+      ...overrides,
+    ],
     child: BlocProvider<CameraPermissionBloc>(
       create: (_) => MockCameraPermissionBloc(),
       child: const MaterialApp(home: VideoRecorderScreen()),
@@ -47,8 +59,15 @@ Widget buildTestWidget() {
 
 /// Helper to build VideoRecorderScreen with provider overrides
 Widget buildTestWidgetWithOverrides(List<Override> overrides) {
+  final mockDraftStorage = _MockDraftStorageService();
+  when(
+    () => mockDraftStorage.getDraftById(any()),
+  ).thenAnswer((_) async => null);
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+      ...overrides,
+    ],
     child: BlocProvider<CameraPermissionBloc>(
       create: (_) => MockCameraPermissionBloc(),
       child: const MaterialApp(home: VideoRecorderScreen()),
@@ -318,8 +337,15 @@ void main() {
 
     group('Screen Integration', () {
       testWidgets('can be pushed onto navigation stack', (tester) async {
+        final mockDraftStorage = _MockDraftStorageService();
+        when(
+          () => mockDraftStorage.getDraftById(any()),
+        ).thenAnswer((_) async => null);
         await tester.pumpWidget(
           ProviderScope(
+            overrides: [
+              draftStorageServiceProvider.overrideWithValue(mockDraftStorage),
+            ],
             child: BlocProvider<CameraPermissionBloc>(
               create: (_) => MockCameraPermissionBloc(),
               child: MaterialApp(

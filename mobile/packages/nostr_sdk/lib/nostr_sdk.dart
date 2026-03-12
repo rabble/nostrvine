@@ -16,6 +16,7 @@ export 'nip02/contact_list.dart';
 export 'nip02/nip02.dart';
 export 'nip04/nip04.dart';
 export 'nip05/nip05_validor.dart';
+export 'nip17/file_encryption.dart';
 // Advanced NIPs - exported for users who need them
 export 'nip07/nip07_signer.dart';
 export 'nip19/hrps.dart';

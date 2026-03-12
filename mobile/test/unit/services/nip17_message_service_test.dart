@@ -4,15 +4,21 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/signer/local_nostr_signer.dart';
 import 'package:openvine/services/nip17_message_service.dart';
-
-class _MockNostrKeyManager extends Mock implements NostrKeyManager {}
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
 class _FakeEvent extends Fake implements Event {}
+
+// Valid 64-character hex keys for testing
+const _testPrivateKey =
+    '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+const _testPublicKey =
+    '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+const _recipientPubkey =
+    'e771af0b05c8e95fcdf6feb3500544d2fb1ccd384788e9f490bb3ee28e8ed66f';
 
 void main() {
   setUpAll(() {
@@ -21,52 +27,35 @@ void main() {
 
   group('NIP17MessageService', () {
     late NIP17MessageService service;
-    late _MockNostrKeyManager mockKeyManager;
     late _MockNostrClient mockNostrService;
 
-    const testPrivateKey =
-        '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    const testPublicKey =
-        '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
-    const recipientPubkey =
-        'e771af0b05c8e95fcdf6feb3500544d2fb1ccd384788e9f490bb3ee28e8ed66f'; // Rabble's pubkey (hex)
-
     setUp(() {
-      mockKeyManager = _MockNostrKeyManager();
       mockNostrService = _MockNostrClient();
 
-      // Setup mock key manager
-      when(() => mockKeyManager.hasKeys).thenReturn(true);
-      when(() => mockKeyManager.privateKey).thenReturn(testPrivateKey);
-      when(() => mockKeyManager.publicKey).thenReturn(testPublicKey);
-
       service = NIP17MessageService(
-        keyManager: mockKeyManager,
+        signer: LocalNostrSigner(_testPrivateKey),
+        senderPublicKey: _testPublicKey,
         nostrService: mockNostrService,
       );
     });
 
     test('should create encrypted gift wrap event', () async {
-      // Setup: Mock successful publish - returns the event on success
       when(() => mockNostrService.publishEvent(any())).thenAnswer((
         invocation,
       ) async {
         return invocation.positionalArguments[0] as Event;
       });
 
-      // Execute: Send encrypted message
       final result = await service.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
+        recipientPubkey: _recipientPubkey,
         content: 'Test bug report message',
       );
 
-      // Verify: Success
       expect(result.success, isTrue);
       expect(result.messageEventId, isNotNull);
-      expect(result.recipientPubkey, equals(recipientPubkey));
+      expect(result.recipientPubkey, equals(_recipientPubkey));
       expect(result.error, isNull);
 
-      // Verify: Event was published
       verify(() => mockNostrService.publishEvent(any())).called(1);
     });
 
@@ -81,13 +70,12 @@ void main() {
       });
 
       await service.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
+        recipientPubkey: _recipientPubkey,
         content: 'Test message',
       );
 
-      // Verify: Gift wrap event has correct kind
       expect(capturedEvent, isNotNull);
-      expect(capturedEvent!.kind, equals(1059)); // EventKind.GIFT_WRAP
+      expect(capturedEvent!.kind, equals(1059));
     });
 
     test('should include p tag with recipient pubkey', () async {
@@ -101,17 +89,16 @@ void main() {
       });
 
       await service.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
+        recipientPubkey: _recipientPubkey,
         content: 'Test message',
       );
 
-      // Verify: Gift wrap has p tag with recipient
       expect(capturedEvent, isNotNull);
       final pTags = capturedEvent!.tags.where(
         (tag) => tag.isNotEmpty && tag[0] == 'p',
       );
       expect(pTags, isNotEmpty);
-      expect(pTags.first[1], equals(recipientPubkey));
+      expect(pTags.first[1], equals(_recipientPubkey));
     });
 
     test('should use random ephemeral key for gift wrap', () async {
@@ -125,22 +112,22 @@ void main() {
         return event;
       });
 
-      // Send two messages
       await service.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
+        recipientPubkey: _recipientPubkey,
         content: 'Message 1',
       );
       await service.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
+        recipientPubkey: _recipientPubkey,
         content: 'Message 2',
       );
 
-      // Verify: Each gift wrap uses a different random ephemeral key
       expect(capturedEvents, hasLength(2));
-      expect(capturedEvents[0].pubkey, isNot(equals(capturedEvents[1].pubkey)));
-      // And neither should be the sender's real pubkey
-      expect(capturedEvents[0].pubkey, isNot(equals(testPublicKey)));
-      expect(capturedEvents[1].pubkey, isNot(equals(testPublicKey)));
+      expect(
+        capturedEvents[0].pubkey,
+        isNot(equals(capturedEvents[1].pubkey)),
+      );
+      expect(capturedEvents[0].pubkey, isNot(equals(_testPublicKey)));
+      expect(capturedEvents[1].pubkey, isNot(equals(_testPublicKey)));
     });
 
     test('should obfuscate timestamp with random offset', () async {
@@ -155,51 +142,29 @@ void main() {
 
       final beforeSend = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       await service.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
+        recipientPubkey: _recipientPubkey,
         content: 'Test message',
       );
       final afterSend = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
-      // Verify: Timestamp is offset (should be earlier than actual send time)
       expect(capturedEvent, isNotNull);
-      // Gift wrap timestamp should be within +-2 days of actual time
       final timeDiff = (capturedEvent!.createdAt - beforeSend).abs();
-      expect(timeDiff, lessThanOrEqualTo(60 * 60 * 24 * 2)); // +-2 days
-      // And typically it should be in the past (offset is negative)
+      expect(timeDiff, lessThanOrEqualTo(60 * 60 * 24 * 2));
       expect(capturedEvent!.createdAt, lessThan(afterSend));
     });
 
     test('should handle publish failure gracefully', () async {
-      // Setup: Mock publish failure - returns null on failure
       when(
         () => mockNostrService.publishEvent(any()),
       ).thenAnswer((_) async => null);
 
-      // Execute: Attempt to send message
       final result = await service.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
+        recipientPubkey: _recipientPubkey,
         content: 'Test message',
       );
 
-      // Verify: Failure reported correctly
       expect(result.success, isFalse);
       expect(result.error, contains('publish failed'));
-    });
-
-    test('should fail when no keys available', () async {
-      // Setup: No keys
-      when(() => mockKeyManager.hasKeys).thenReturn(false);
-      when(() => mockKeyManager.privateKey).thenReturn(null);
-
-      // Execute: Attempt to send message
-      final result = await service.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
-        content: 'Test message',
-      );
-
-      // Verify: Failure due to missing keys
-      expect(result.success, isFalse);
-      expect(result.error, contains('No private key'));
     });
 
     test('should include additional tags if provided', () async {
@@ -213,7 +178,7 @@ void main() {
       });
 
       await service.sendPrivateMessage(
-        recipientPubkey: recipientPubkey,
+        recipientPubkey: _recipientPubkey,
         content: 'Test message',
         additionalTags: [
           ['client', 'diVine_bug_report'],
@@ -221,10 +186,6 @@ void main() {
         ],
       );
 
-      // Note: Additional tags go into the rumor event (kind 14),
-      // not the gift wrap. The gift wrap only has the p tag.
-      // We can't easily verify rumor tags without decrypting,
-      // so just verify it doesn't crash.
       expect(capturedEvent, isNotNull);
     });
   });

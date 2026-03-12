@@ -1,6 +1,6 @@
 // ABOUTME: Data Access Object for video draft persistence operations.
-// ABOUTME: Provides CRUD with publish-status filtering and timestamp
-// ABOUTME: ordering.
+// ABOUTME: Provides CRUD with publish-status filtering, timestamp
+// ABOUTME: ordering, and per-account isolation via ownerPubkey.
 
 import 'package:db_client/db_client.dart';
 import 'package:drift/drift.dart';
@@ -32,6 +32,16 @@ class DraftClipData {
 class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
   DraftsDao(super.attachedDatabase);
 
+  /// Build a filter expression that returns rows owned by [ownerPubkey]
+  /// **or** legacy rows with no owner (NULL).
+  Expression<bool> _ownedOrLegacy(
+    GeneratedColumn<String> column,
+    String? ownerPubkey,
+  ) {
+    if (ownerPubkey == null) return const Constant(true);
+    return column.equals(ownerPubkey) | column.isNull();
+  }
+
   /// Upsert a draft (insert or update on conflict)
   Future<void> upsertDraft({
     required String id,
@@ -45,6 +55,7 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     required String? renderedThumbnailPath,
     int publishAttempts = 0,
     String? publishError,
+    String? ownerPubkey,
   }) {
     return into(drafts).insertOnConflictUpdate(
       DraftsCompanion.insert(
@@ -59,13 +70,20 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
         data: data,
         renderedFilePath: Value(renderedFilePath),
         renderedThumbnailPath: Value(renderedThumbnailPath),
+        ownerPubkey: Value(ownerPubkey),
       ),
     );
   }
 
-  /// Get all drafts sorted by last modified (newest first)
-  Future<List<DraftRow>> getAllDrafts({int? limit}) {
+  /// Get all drafts sorted by last modified (newest first).
+  /// When [ownerPubkey] is provided, returns only drafts owned by that
+  /// account **plus** legacy drafts with no owner.
+  Future<List<DraftRow>> getAllDrafts({
+    int? limit,
+    String? ownerPubkey,
+  }) {
     final query = select(drafts)
+      ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastModified,
@@ -83,10 +101,20 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     return (select(drafts)..where((t) => t.id.equals(id))).getSingleOrNull();
   }
 
-  /// Get drafts filtered by publish status
-  Future<List<DraftRow>> getDraftsByStatus(String status, {int? limit}) {
+  /// Get drafts filtered by publish status.
+  /// When [ownerPubkey] is provided, returns only drafts owned by that
+  /// account **plus** legacy drafts with no owner.
+  Future<List<DraftRow>> getDraftsByStatus(
+    String status, {
+    int? limit,
+    String? ownerPubkey,
+  }) {
     final query = select(drafts)
-      ..where((t) => t.publishStatus.equals(status))
+      ..where(
+        (t) =>
+            t.publishStatus.equals(status) &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+      )
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastModified,
@@ -132,9 +160,15 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     )..where((t) => t.lastModified.isSmallerThanValue(dateTime))).go();
   }
 
-  /// Watch all drafts (reactive stream)
-  Stream<List<DraftRow>> watchAllDrafts({int? limit}) {
+  /// Watch all drafts (reactive stream).
+  /// When [ownerPubkey] is provided, returns only drafts owned by that
+  /// account **plus** legacy drafts with no owner.
+  Stream<List<DraftRow>> watchAllDrafts({
+    int? limit,
+    String? ownerPubkey,
+  }) {
     final query = select(drafts)
+      ..where((t) => _ownedOrLegacy(t.ownerPubkey, ownerPubkey))
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastModified,
@@ -152,13 +186,20 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     return (select(drafts)..where((t) => t.id.equals(id))).watchSingleOrNull();
   }
 
-  /// Watch drafts filtered by publish status (reactive stream)
+  /// Watch drafts filtered by publish status (reactive stream).
+  /// When [ownerPubkey] is provided, returns only drafts owned by that
+  /// account **plus** legacy drafts with no owner.
   Stream<List<DraftRow>> watchDraftsByStatus(
     String status, {
     int? limit,
+    String? ownerPubkey,
   }) {
     final query = select(drafts)
-      ..where((t) => t.publishStatus.equals(status))
+      ..where(
+        (t) =>
+            t.publishStatus.equals(status) &
+            _ownedOrLegacy(t.ownerPubkey, ownerPubkey),
+      )
       ..orderBy([
         (t) => OrderingTerm(
           expression: t.lastModified,
@@ -171,18 +212,30 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     return query.watch();
   }
 
-  /// Get count of drafts by publish status
-  Future<int> getCountByStatus(String status) async {
+  /// Get count of drafts by publish status.
+  /// When [ownerPubkey] is provided, counts only drafts owned by that
+  /// account **plus** legacy drafts with no owner.
+  Future<int> getCountByStatus(
+    String status, {
+    String? ownerPubkey,
+  }) async {
     final query = selectOnly(drafts)
-      ..where(drafts.publishStatus.equals(status))
+      ..where(
+        drafts.publishStatus.equals(status) &
+            _ownedOrLegacy(drafts.ownerPubkey, ownerPubkey),
+      )
       ..addColumns([drafts.id.count()]);
     final result = await query.getSingle();
     return result.read(drafts.id.count()) ?? 0;
   }
 
-  /// Get total count of all drafts
-  Future<int> getCount() async {
-    final query = selectOnly(drafts)..addColumns([drafts.id.count()]);
+  /// Get total count of all drafts.
+  /// When [ownerPubkey] is provided, counts only drafts owned by that
+  /// account **plus** legacy drafts with no owner.
+  Future<int> getCount({String? ownerPubkey}) async {
+    final query = selectOnly(drafts)
+      ..where(_ownedOrLegacy(drafts.ownerPubkey, ownerPubkey))
+      ..addColumns([drafts.id.count()]);
     final result = await query.getSingle();
     return result.read(drafts.id.count()) ?? 0;
   }
@@ -221,6 +274,7 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
     required List<DraftClipData> clipDataList,
     int publishAttempts = 0,
     String? publishError,
+    String? ownerPubkey,
   }) {
     return transaction(() async {
       // 1. Upsert the draft row
@@ -237,6 +291,7 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
           data: data,
           renderedFilePath: Value(renderedFilePath),
           renderedThumbnailPath: Value(renderedThumbnailPath),
+          ownerPubkey: Value(ownerPubkey),
         ),
       );
 
@@ -255,6 +310,7 @@ class DraftsDao extends DatabaseAccessor<AppDatabase> with _$DraftsDaoMixin {
             data: clipData.data,
             filePath: Value(clipData.filePath),
             thumbnailPath: Value(clipData.thumbnailPath),
+            ownerPubkey: Value(ownerPubkey),
           ),
         );
       }

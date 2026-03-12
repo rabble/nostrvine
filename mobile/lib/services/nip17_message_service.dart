@@ -1,45 +1,53 @@
 // ABOUTME: Service for sending encrypted NIP-17 (gift-wrapped) private messages
 // ABOUTME: Handles three-layer encryption (kind 14 rumor → kind 13 seal → kind 1059 gift wrap)
+// ABOUTME: Works with any NostrSigner (local keys, Keycast RPC, Amber, etc.)
 
 import 'package:models/models.dart' show NIP17SendResult;
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/nip59/gift_wrap_util.dart';
 import 'package:nostr_sdk/nostr.dart';
 import 'package:nostr_sdk/relay/relay.dart';
-import 'package:nostr_sdk/signer/local_nostr_signer.dart';
+import 'package:nostr_sdk/signer/nostr_signer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-/// Service for sending encrypted private messages using NIP-17 gift wrapping
+/// Service for sending encrypted private messages using NIP-17 gift wrapping.
+///
+/// Accepts any [NostrSigner] implementation, supporting both local key
+/// signing and remote signing (e.g. Keycast RPC, Amber).
 class NIP17MessageService {
   NIP17MessageService({
-    required NostrKeyManager keyManager,
+    required NostrSigner signer,
+    required String senderPublicKey,
     required NostrClient nostrService,
-  }) : _keyManager = keyManager,
+  }) : _signer = signer,
+       _senderPublicKey = senderPublicKey,
        _nostrService = nostrService;
 
-  final NostrKeyManager _keyManager;
+  final NostrSigner _signer;
+  final String _senderPublicKey;
   final NostrClient _nostrService;
 
   /// Access to the underlying NostrService for relay management
   NostrClient get nostrService => _nostrService;
 
-  /// Send a private encrypted message to a recipient
+  /// Send a private encrypted message to a recipient.
   ///
   /// Uses NIP-17 three-layer encryption:
-  /// 1. Kind 14 (unsigned rumor) - the actual message content
-  /// 2. Kind 13 (seal) - signed and encrypted by sender
-  /// 3. Kind 1059 (gift wrap) - wrapped with random ephemeral key for anonymity
+  /// 1. Rumor (unsigned) — the actual message content
+  /// 2. Kind 13 (seal) — signed and encrypted by sender
+  /// 3. Kind 1059 (gift wrap) — wrapped with random ephemeral key
   ///
   /// Parameters:
   /// - [recipientPubkey]: Recipient's public key (hex format)
-  /// - [content]: Message content (will be encrypted)
+  /// - [content]: Message content (text for kind 14, file URL for kind 15)
+  /// - [eventKind]: The rumor event kind (14 = text, 15 = file)
   /// - [additionalTags]: Optional tags to include in the rumor event
   Future<NIP17SendResult> sendPrivateMessage({
     required String recipientPubkey,
     required String content,
+    int eventKind = EventKind.privateDirectMessage,
     List<List<String>> additionalTags = const [],
   }) async {
     try {
@@ -48,21 +56,10 @@ class NIP17MessageService {
         category: LogCategory.system,
       );
 
-      // Validate we have keys
-      if (!_keyManager.hasKeys || _keyManager.privateKey == null) {
-        return NIP17SendResult.failure('No private key available');
-      }
-
-      final senderPrivateKey = _keyManager.privateKey!;
-      final senderPublicKey = _keyManager.publicKey!;
-
-      // Create LocalNostrSigner for encryption and signing
-      final signer = LocalNostrSigner(senderPrivateKey);
-
-      // Create a minimal Nostr instance for GiftWrapUtil
-      // We only need it for signing/encryption, not for relay communication
+      // Create a minimal Nostr instance for GiftWrapUtil.
+      // Uses the injected signer (works with local or remote signing).
       final nostr = Nostr(
-        signer,
+        _signer,
         [], // Empty filters - not using for subscriptions
         _dummyRelayGenerator, // Dummy relay generator - not using relays
       );
@@ -75,13 +72,16 @@ class NIP17MessageService {
       ];
 
       final rumorEvent = Event(
-        senderPublicKey,
-        EventKind.privateDirectMessage, // Kind 14
+        _senderPublicKey,
+        eventKind,
         rumorTags,
         content,
       );
 
-      Log.debug('Created kind 14 rumor event', category: LogCategory.system);
+      Log.debug(
+        'Created kind $eventKind rumor event',
+        category: LogCategory.system,
+      );
 
       // Use GiftWrapUtil to create the three-layer encrypted gift wrap
       final giftWrapEvent = await GiftWrapUtil.getGiftWrapEvent(
@@ -95,7 +95,8 @@ class NIP17MessageService {
       }
 
       Log.debug(
-        'Created kind 1059 gift wrap event with ephemeral key: ${giftWrapEvent.pubkey}',
+        'Created kind 1059 gift wrap event with ephemeral key: '
+        '${giftWrapEvent.pubkey}',
         category: LogCategory.system,
       );
 

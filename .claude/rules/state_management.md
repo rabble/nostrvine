@@ -118,6 +118,53 @@ blocTest<MyBloc, MyState>(
 
 ---
 
+## Error Handling in BLoC
+
+State should never contain error messages or exception objects. Errors are transient events, not stable UI data. Use BLoC's built-in `addError` to report them.
+
+### Correct Pattern
+
+```dart
+// In BLoC — report error, then update status only
+catch (e, stackTrace) {
+  addError(e, stackTrace);
+  emit(state.copyWith(status: MyStatus.failure));
+}
+
+// In UI — react to the failure status
+BlocBuilder<MyBloc, MyState>(
+  builder: (context, state) {
+    if (state.status == MyStatus.failure) {
+      return const Text('Something went wrong');
+    }
+    return SuccessView(state.data);
+  },
+)
+```
+
+### Anti-Pattern
+
+```dart
+// DON'T store error strings in state
+class MyState {
+  final String? errorMessage;   // WRONG — pollutes state
+  final Exception? exception;   // WRONG
+}
+
+emit(state.copyWith(
+  status: MyStatus.failure,
+  errorMessage: e.toString(),  // WRONG
+));
+```
+
+### Why
+
+1. **State semantics** — state represents displayable UI data, not transient error info.
+2. **Lifecycle** — `addError` integrates with BLoC's error stream, logging, and `blocTest`'s `errors` parameter.
+3. **Cleaner copyWith** — no `clearError` flags or manual error reset logic.
+
+---
+
 ## State Handling: Enum vs Sealed Classes
 
 Choose based on whether you need to persist data across state changes.

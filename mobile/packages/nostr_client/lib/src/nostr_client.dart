@@ -101,6 +101,14 @@ class NostrClient {
   final RelayManager _relayManager;
   final AppDbClient? _dbClient;
 
+  /// The signer used by this client for event signing and NIP-44 encryption.
+  ///
+  /// Exposes the same `NostrSigner` instance that the client was created with.
+  /// Other components that need NIP-44 operations (e.g. DM decryption) should
+  /// reuse this signer rather than creating their own, to ensure consistent
+  /// key material.
+  NostrSigner get signer => _nostr.nostrSigner;
+
   /// Convenience getter for the NostrEventsDao
   NostrEventsDao? get _nostrEventsDao => _dbClient?.database.nostrEventsDao;
 

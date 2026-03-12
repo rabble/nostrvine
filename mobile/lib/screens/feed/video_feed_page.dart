@@ -728,11 +728,13 @@ class _FittedVideoPlayer extends StatelessWidget {
     // Portrait: fill screen (cover), Landscape: fit entirely (contain)
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
 
+    // Do not set filterQuality to high — on Android the bicubic
+    // interpolation causes visible blur on the Texture widget when
+    // the video resolution doesn't match the display size exactly.
     return Video(
       controller: videoController,
       fit: boxFit,
       alignment: alignment,
-      filterQuality: FilterQuality.high,
       controls: null,
     );
   }
