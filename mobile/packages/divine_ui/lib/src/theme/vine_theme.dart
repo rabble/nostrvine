@@ -545,6 +545,20 @@ class VineTheme {
         borderRadius: BorderRadius.all(Radius.circular(8)),
       ),
     ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return whiteText;
+        return onSurfaceDisabled;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return primary;
+        return surfaceContainer;
+      }),
+      trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+        if (states.contains(WidgetState.selected)) return Colors.transparent;
+        return outlineVariant;
+      }),
+    ),
   );
 
   static MaterialColor _createMaterialColor(Color color) {

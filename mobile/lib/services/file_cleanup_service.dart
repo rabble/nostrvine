@@ -87,7 +87,7 @@ class FileCleanupService {
     required ClipsDao clipsDao,
   }) async {
     await deleteFilesIfUnreferenced(
-      [clip.video.file?.path, clip.thumbnailPath],
+      [clip.video.file?.path, clip.thumbnailPath, clip.ghostFramePath],
       draftsDao: draftsDao,
       clipsDao: clipsDao,
     );
@@ -100,7 +100,13 @@ class FileCleanupService {
     required ClipsDao clipsDao,
   }) async {
     final paths = clips
-        .expand((clip) => [clip.video.file?.path, clip.thumbnailPath])
+        .expand(
+          (clip) => [
+            clip.video.file?.path,
+            clip.thumbnailPath,
+            clip.ghostFramePath,
+          ],
+        )
         .toList();
 
     await deleteFilesIfUnreferenced(
@@ -120,6 +126,7 @@ class FileCleanupService {
       for (final clip in clips) ...[
         await clip.video.safeFilePath(),
         clip.thumbnailPath,
+        clip.ghostFramePath,
       ],
     ];
 

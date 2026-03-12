@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 
@@ -45,22 +46,60 @@ class VideoRecorderBottomBar extends ConsumerWidget {
       ),
     );
     final clipsNotifier = ref.read(clipManagerProvider.notifier);
+    final hasClips = clipManager.hasClips;
+    final color = hasClips ? VineTheme.whiteText : VineTheme.onSurfaceDisabled;
+    final destructiveColor = hasClips
+        ? VineTheme.error
+        : VineTheme.onSurfaceDisabled;
 
     videoRecorderNotifier.pauseRemoteRecordControl();
 
-    await VineBottomSheetActionMenu.show(
+    final recorderNotifier = ref.read(videoRecorderProvider.notifier);
+
+    await VineBottomSheet.show(
       context: context,
-      options: [
-        VineBottomSheetActionData(
-          iconPath: 'assets/icon/save.svg',
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: clipManager.clipCount > 1
-              ? 'Save clips to Library'
-              : 'Save clip to Library',
-          onTap: clipManager.hasClips
+      expanded: false,
+      scrollable: false,
+      isScrollControlled: true,
+      children: [
+        Consumer(
+          builder: (context, ref, child) {
+            final showLastClipOverlay = ref.watch(
+              videoRecorderProvider.select((p) => p.showLastClipOverlay),
+            );
+
+            return SwitchListTile(
+              value: showLastClipOverlay,
+              onChanged: (_) => recorderNotifier.toggleShowLastClipOverlay(),
+              title: Text(
+                // TODO(l10n): Replace with context.l10n when localization is added.
+                'Show last clip overlay',
+                style: VineTheme.titleMediumFont(fontSize: 16),
+                maxLines: 1,
+                overflow: .ellipsis,
+              ),
+              secondary: const DivineIcon(icon: .userFocus),
+            );
+          },
+        ),
+        ListTile(
+          enabled: hasClips,
+          minTileHeight: 56,
+          leading: DivineIcon(icon: .save, color: color),
+          title: Text(
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            clipManager.clipCount > 1
+                ? 'Save clips to Library'
+                : 'Save clip to Library',
+            style: VineTheme.titleMediumFont(fontSize: 16, color: color),
+            maxLines: 1,
+            overflow: .ellipsis,
+          ),
+          onTap: hasClips
               ? () async {
                   final success = await clipsNotifier.saveClipsToLibrary();
                   if (!context.mounted) return;
+                  context.pop();
                   // TODO(l10n): Replace with context.l10n when localization is added.
                   _showSnackBar(
                     context: context,
@@ -72,35 +111,43 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                 }
               : null,
         ),
-        VineBottomSheetActionData(
-          iconPath: 'assets/icon/undo.svg',
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Remove last clip',
-          onTap: clipManager.hasClips
+        ListTile(
+          enabled: hasClips,
+          minTileHeight: 56,
+          leading: DivineIcon(icon: .trash, color: destructiveColor),
+          title: Text(
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            'Clear all clips',
+            style: VineTheme.titleMediumFont(
+              fontSize: 16,
+              color: destructiveColor,
+            ),
+            maxLines: 1,
+            overflow: .ellipsis,
+          ),
+          onTap: hasClips
               ? () {
-                  unawaited(clipsNotifier.removeLastClip());
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  _showSnackBar(context: context, message: 'Clip removed');
-                }
-              : null,
-        ),
-        VineBottomSheetActionData(
-          iconPath: 'assets/icon/trash.svg',
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Clear all clips',
-          onTap: clipManager.hasClips
-              ? () {
+                  context.pop();
                   unawaited(clipsNotifier.clearAll());
                   // TODO(l10n): Replace with context.l10n when localization is added.
                   _showSnackBar(context: context, message: 'All clips cleared');
                 }
               : null,
-          isDestructive: true,
         ),
       ],
     );
 
     videoRecorderNotifier.resumeRemoteRecordControl();
+  }
+
+  void _removeLastClip(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final clipsNotifier = ref.read(clipManagerProvider.notifier);
+    unawaited(clipsNotifier.removeLastClip());
+    // TODO(l10n): Replace with context.l10n when localization is added.
+    _showSnackBar(context: context, message: 'Clip removed');
   }
 
   @override
@@ -170,6 +217,16 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                       : null,
                 ),
 
+                // Undo last clip
+                _ActionButton(
+                  icon: .removeLastClip,
+                  // TODO(l10n): Replace with context.l10n when localization is added.
+                  tooltip: 'Remove last clip',
+                  onPressed: hasClips
+                      ? () => _removeLastClip(context, ref)
+                      : null,
+                ),
+
                 // More options
                 _ActionButton(
                   icon: .moreHoriz,
@@ -200,13 +257,15 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEnabled = onPressed != null;
 
-    return IconButton(
-      onPressed: onPressed,
-      tooltip: tooltip,
-      icon: DivineIcon(
-        icon: icon,
-        size: 32,
-        color: VineTheme.whiteText.withAlpha(isEnabled ? 255 : 80),
+    return Tooltip(
+      message: tooltip,
+      preferBelow: false,
+      child: IconButton(
+        onPressed: onPressed,
+        icon: DivineIcon(
+          icon: icon,
+          color: VineTheme.whiteText.withAlpha(isEnabled ? 255 : 80),
+        ),
       ),
     );
   }
