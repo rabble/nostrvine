@@ -420,8 +420,8 @@ class _DismissibleBottomSheetState extends State<_DismissibleBottomSheet> {
     if (_dismissed) return;
 
     if (_dragOffset > _dismissThreshold ||
-        details.primaryVelocity != null &&
-            details.primaryVelocity! > _flingVelocity) {
+        (details.primaryVelocity != null &&
+            details.primaryVelocity! > _flingVelocity)) {
       _dismissed = true;
       widget.onDismissed();
     } else {

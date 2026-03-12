@@ -1,5 +1,5 @@
 // ABOUTME: Bottom sheet for color selection in the video editor.
-// ABOUTME: Shows a grid of colors with iOS-style blurred background.
+// ABOUTME: Shows a grid of preset and recent colors with a custom color picker.
 // ABOUTME: Persists recently picked custom colors in SharedPreferences.
 
 import 'package:divine_ui/divine_ui.dart';
@@ -10,7 +10,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Bottom sheet for color selection with iOS-style blurred background.
+/// Bottom sheet for color selection in the video editor.
 class VideoEditorColorPickerSheet extends ConsumerStatefulWidget {
   const VideoEditorColorPickerSheet({
     required this.selectedColor,

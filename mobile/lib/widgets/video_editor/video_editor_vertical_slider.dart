@@ -106,8 +106,6 @@ class _SliderBody extends StatelessWidget {
   final GestureDragUpdateCallback onDragUpdate;
   final GestureDragEndCallback onDragEnd;
 
-  static const _trackWidth = 2.0;
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -127,7 +125,7 @@ class _SliderBody extends StatelessWidget {
             clipBehavior: .none,
             children: [
               // Track
-              _Track(height: height, trackWidth: _trackWidth, value: value),
+              _Track(height: height, value: value),
               // Thumb
               _Thumb(value: value, height: height),
             ],
@@ -142,12 +140,10 @@ class _SliderBody extends StatelessWidget {
 class _Track extends StatelessWidget {
   const _Track({
     required this.height,
-    required this.trackWidth,
     required this.value,
   });
 
   final double height;
-  final double trackWidth; // Not used anymore, kept for API compatibility
   final double value;
 
   @override

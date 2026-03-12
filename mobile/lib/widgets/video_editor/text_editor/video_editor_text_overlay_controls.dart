@@ -1,5 +1,5 @@
 // ABOUTME: Top overlay controls for the text editor screen.
-// ABOUTME: Displays close button, done button, style buttons, and vertical slider.
+// ABOUTME: Displays close/done buttons and vertical font size slider.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
