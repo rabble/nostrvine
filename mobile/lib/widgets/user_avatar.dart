@@ -190,8 +190,8 @@ class UserAvatar extends StatelessWidget {
                 center: const Alignment(0.55, -0.9),
                 radius: 1.15,
                 colors: [
-                  Colors.white.withValues(alpha: 0.18),
-                  Colors.transparent,
+                  VineTheme.whiteText.withValues(alpha: 0.18),
+                  VineTheme.transparent,
                 ],
               ),
             ),
@@ -250,7 +250,7 @@ class UserAvatar extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.transparent,
+                      VineTheme.transparent,
                       palette.shadow.withValues(alpha: 0.26),
                     ],
                   ),
@@ -283,10 +283,10 @@ class UserAvatar extends StatelessWidget {
   }
 
   static Color _lighten(Color color, double amount) =>
-      Color.lerp(color, Colors.white, amount) ?? color;
+      Color.lerp(color, VineTheme.whiteText, amount) ?? color;
 
   static Color _darken(Color color, double amount) =>
-      Color.lerp(color, Colors.black, amount) ?? color;
+      Color.lerp(color, VineTheme.backgroundColor, amount) ?? color;
 }
 
 class _AvatarPalette {

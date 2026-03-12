@@ -326,7 +326,7 @@ class _SafeNetworkImage extends StatelessWidget {
           return Container(
             width: width,
             height: height,
-            color: Colors.transparent,
+            color: VineTheme.transparent,
           );
         },
       );
@@ -341,7 +341,7 @@ class _SafeNetworkImage extends StatelessWidget {
       cacheManager: openVineImageCache,
       // Show transparent container so background surfaceContainer color shows through
       placeholder: (context, url) =>
-          Container(width: width, height: height, color: Colors.transparent),
+          Container(width: width, height: height, color: VineTheme.transparent),
       errorWidget: (context, url, error) {
         // 404s are expected - thumbnail may not exist yet. Handle silently.
         final errorStr = error.toString();
@@ -365,7 +365,7 @@ class _SafeNetworkImage extends StatelessWidget {
         return Container(
           width: width,
           height: height,
-          color: Colors.transparent,
+          color: VineTheme.transparent,
         );
       },
     );

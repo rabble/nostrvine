@@ -127,7 +127,7 @@ class CommentsScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: VineTheme.transparent,
       elevation: 0,
       builder: (builderContext) {
         final keyboardHeight = MediaQuery.of(builderContext).viewInsets.bottom;

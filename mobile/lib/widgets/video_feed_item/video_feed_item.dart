@@ -1154,7 +1154,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 right: 0,
                                 child: LinearProgressIndicator(
                                   minHeight: 12,
-                                  backgroundColor: Colors.transparent,
+                                  backgroundColor: VineTheme.transparent,
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                     VineTheme.whiteText,
                                   ),
@@ -1974,7 +1974,7 @@ class _VideoEditButton extends ConsumerWidget {
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints.tightFor(width: 48, height: 48),
             style: IconButton.styleFrom(
-              highlightColor: Colors.transparent,
+              highlightColor: VineTheme.transparent,
               splashFactory: NoSplash.splashFactory,
             ),
             onPressed: () {
@@ -2180,7 +2180,7 @@ class _CommentActionButton extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints.tightFor(width: 48, height: 48),
             style: IconButton.styleFrom(
-              highlightColor: Colors.transparent,
+              highlightColor: VineTheme.transparent,
               splashFactory: NoSplash.splashFactory,
             ),
             onPressed: () {

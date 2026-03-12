@@ -102,7 +102,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: VineTheme.transparent,
           elevation: 0,
           behavior: SnackBarBehavior.floating,
           content: DivineSnackbarContainer(
@@ -122,7 +122,7 @@ class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreview> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: VineTheme.transparent,
             elevation: 0,
             behavior: SnackBarBehavior.floating,
             content: DivineSnackbarContainer(

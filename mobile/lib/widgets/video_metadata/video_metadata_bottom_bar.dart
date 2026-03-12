@@ -51,7 +51,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
     scaffoldMessenger.showSnackBar(
       SnackBar(
         padding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
+        backgroundColor: VineTheme.transparent,
         elevation: 0,
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 5),

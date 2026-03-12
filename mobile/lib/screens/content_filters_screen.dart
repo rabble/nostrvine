@@ -273,7 +273,7 @@ class _FilterSegmentedControl extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? VineTheme.vineGreen : Colors.transparent,
+          color: selected ? VineTheme.vineGreen : VineTheme.transparent,
           borderRadius: BorderRadius.circular(7),
         ),
         child: Text(

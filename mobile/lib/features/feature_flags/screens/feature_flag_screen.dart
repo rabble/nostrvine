@@ -120,7 +120,7 @@ class FeatureFlagScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           const Text(
             'If the app is crashing or behaving strangely, try clearing the cache.',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: VineTheme.lightText),
           ),
           const SizedBox(height: 12),
           Row(
@@ -130,8 +130,8 @@ class FeatureFlagScreen extends ConsumerWidget {
                 icon: const Icon(Icons.cleaning_services),
                 label: const Text('Clear All Cache'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
+                  backgroundColor: VineTheme.accentOrange,
+                  foregroundColor: VineTheme.whiteText,
                 ),
               ),
               const SizedBox(width: 12),
@@ -169,7 +169,9 @@ class FeatureFlagScreen extends ConsumerWidget {
               ),
               ElevatedButton(
                 onPressed: () => context.pop(true),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: VineTheme.accentOrange,
+                ),
                 child: const Text('Clear Cache'),
               ),
             ],

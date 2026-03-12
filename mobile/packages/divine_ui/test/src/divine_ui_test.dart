@@ -12,9 +12,7 @@ void main() {
     });
     group('colors', () {
       test('has correct vineGreen color', () {
-        expect(VineTheme.vineGreen.r, closeTo(0, 0.01));
-        expect(VineTheme.vineGreen.g, closeTo(0.706, 0.01));
-        expect(VineTheme.vineGreen.b, closeTo(0.533, 0.01));
+        expect(VineTheme.vineGreen, const Color(0xFF27C58B));
       });
 
       test('has correct vineGreenDark color', () {
@@ -22,7 +20,7 @@ void main() {
       });
 
       test('has correct vineGreenLight color', () {
-        expect(VineTheme.vineGreenLight, const Color(0xFF33C49F));
+        expect(VineTheme.vineGreenLight, const Color(0xFFD0FBCB));
       });
 
       test('has correct backgroundColor', () {

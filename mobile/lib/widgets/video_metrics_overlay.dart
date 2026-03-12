@@ -2,6 +2,7 @@
 // ABOUTME: Shows real-time performance data when videos load, bypassing console logging issues
 
 import 'dart:async';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/services/video_loading_metrics.dart';
@@ -91,7 +92,7 @@ class _VideoMetricsOverlayState extends State<VideoMetricsOverlay> {
                 child: IgnorePointer(
                   ignoring: false,
                   child: Material(
-                    color: Colors.black.withValues(alpha: 0.8),
+                    color: VineTheme.backgroundColor.withValues(alpha: 0.8),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.all(12),
@@ -103,14 +104,14 @@ class _VideoMetricsOverlayState extends State<VideoMetricsOverlay> {
                             children: [
                               const Icon(
                                 Icons.analytics,
-                                color: Colors.green,
+                                color: VineTheme.success,
                                 size: 16,
                               ),
                               const SizedBox(width: 8),
                               const Text(
                                 'Video Metrics Debug',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: VineTheme.whiteText,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
                                 ),
@@ -120,7 +121,7 @@ class _VideoMetricsOverlayState extends State<VideoMetricsOverlay> {
                                 onTap: _clearMetrics,
                                 child: const Icon(
                                   Icons.clear,
-                                  color: Colors.grey,
+                                  color: VineTheme.lightText,
                                   size: 16,
                                 ),
                               ),
@@ -133,7 +134,7 @@ class _VideoMetricsOverlayState extends State<VideoMetricsOverlay> {
                               child: Text(
                                 metric,
                                 style: const TextStyle(
-                                  color: Colors.greenAccent,
+                                  color: VineTheme.success,
                                   fontSize: 11,
                                   fontFamily: 'monospace',
                                 ),
@@ -169,7 +170,7 @@ class VideoMetricsDebugInfo extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.purple.withValues(alpha: 0.8),
+          color: VineTheme.accentPurple.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
@@ -179,17 +180,17 @@ class VideoMetricsDebugInfo extends StatelessWidget {
             const Text(
               '📊 Metrics Status',
               style: TextStyle(
-                color: Colors.white,
+                color: VineTheme.whiteText,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               'Active Sessions: ${VideoLoadingMetrics.instance.activeSessions}',
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+              style: const TextStyle(color: VineTheme.whiteText, fontSize: 12),
             ),
             Text(
               'Total Started: ${VideoLoadingMetrics.metricsCount}',
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+              style: const TextStyle(color: VineTheme.whiteText, fontSize: 12),
             ),
           ],
         ),

@@ -359,7 +359,7 @@ class _FullscreenVideoFeedScreenState
           onBackPressed: context.pop,
           backButtonSemanticLabel: 'Close video player',
           backgroundMode: DiVineAppBarBackgroundMode.transparent,
-          surfaceTintColor: Colors.transparent,
+          surfaceTintColor: VineTheme.transparent,
           style: videoOverlayStyle,
         ),
         body: const Center(
@@ -380,7 +380,7 @@ class _FullscreenVideoFeedScreenState
         onBackPressed: context.pop,
         backButtonSemanticLabel: 'Close video player',
         backgroundMode: DiVineAppBarBackgroundMode.transparent,
-        surfaceTintColor: Colors.transparent,
+        surfaceTintColor: VineTheme.transparent,
         forceMaterialTransparency: true,
         systemOverlayStyle: SystemUiOverlayStyle.light,
         style: videoOverlayStyle,

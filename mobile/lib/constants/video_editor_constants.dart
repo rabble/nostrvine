@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -102,7 +103,7 @@ class VideoEditorConstants {
   static const Color textEditorBackground = Color(0x9B000000);
 
   static const uiOverlayStyle = SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
+    statusBarColor: VineTheme.transparent,
     statusBarIconBrightness: Brightness.light,
     systemNavigationBarIconBrightness: Brightness.light,
     statusBarBrightness: Brightness.dark,

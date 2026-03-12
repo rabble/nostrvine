@@ -237,7 +237,7 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
                     : widget.isReordering
                     // Yellow when reordering
                     ? VineTheme.accentYellow
-                    : Colors.transparent, // Transparent otherwise
+                    : VineTheme.transparent, // Transparent otherwise
                 width: 6,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),

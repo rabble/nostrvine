@@ -297,8 +297,8 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
   Color? _getBackgroundColor() {
     return switch (backgroundMode) {
       DiVineAppBarBackgroundMode.solid => backgroundColor ?? VineTheme.navGreen,
-      DiVineAppBarBackgroundMode.transparent => Colors.transparent,
-      DiVineAppBarBackgroundMode.gradient => Colors.transparent,
+      DiVineAppBarBackgroundMode.transparent => VineTheme.transparent,
+      DiVineAppBarBackgroundMode.gradient => VineTheme.transparent,
     };
   }
 }

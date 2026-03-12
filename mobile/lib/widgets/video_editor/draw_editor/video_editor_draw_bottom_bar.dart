@@ -28,7 +28,7 @@ class VideoEditorDrawBottomBar extends StatelessWidget {
     final scope = VideoEditorScope.of(context);
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.transparent,
+      backgroundColor: VineTheme.transparent,
       isScrollControlled: true,
       builder: (context) => VideoEditorColorPickerSheet(
         selectedColor: state.selectedColor,

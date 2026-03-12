@@ -37,7 +37,7 @@ class FindPeopleSheet extends ConsumerStatefulWidget {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
+      backgroundColor: VineTheme.transparent,
       builder: (context) => FindPeopleSheet(contacts: contacts),
     );
   }

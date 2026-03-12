@@ -149,7 +149,7 @@ class _SearchBarState extends State<_SearchBar> {
       snap: true,
       automaticallyImplyLeading: false,
       backgroundColor: VineTheme.surfaceBackground,
-      surfaceTintColor: Colors.transparent,
+      surfaceTintColor: VineTheme.transparent,
       toolbarHeight: 64,
       flexibleSpace: Padding(
         padding: const .symmetric(horizontal: 16, vertical: 8),
