@@ -18,17 +18,6 @@ class HttpOverrides {
   static dynamic global;
 }
 
-class Platform {
-  static String get version => 'web';
-  static String get operatingSystem => 'web';
-  static bool get isAndroid => false;
-  static bool get isIOS => false;
-  static bool get isMacOS => false;
-  static bool get isWindows => false;
-  static bool get isLinux => false;
-  static bool get isFuchsia => false;
-}
-
 // VineCdnHttpOverrides stub for web platform
 class VineCdnHttpOverrides {
   VineCdnHttpOverrides({required this.overrideAddress});
@@ -38,13 +27,15 @@ class VineCdnHttpOverrides {
 
 // Platform stub for web platform
 class Platform {
+  static String get version => 'web';
+  static String get operatingSystem => 'web';
+  static String get operatingSystemVersion => 'web';
   static bool get isAndroid => false;
   static bool get isIOS => false;
   static bool get isMacOS => false;
   static bool get isWindows => false;
   static bool get isLinux => false;
-  static String get operatingSystem => 'web';
-  static String get operatingSystemVersion => 'web';
+  static bool get isFuchsia => false;
 }
 
 // File stub for web platform
