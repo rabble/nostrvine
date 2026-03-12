@@ -16,14 +16,10 @@ class VideoEditorColorPickerSheet extends ConsumerStatefulWidget {
     required this.selectedColor,
     required this.onColorSelected,
     super.key,
-    this.height,
   });
 
   final Color selectedColor;
   final ValueChanged<Color> onColorSelected;
-
-  /// Optional height constraint for inline display (e.g., replacing keyboard).
-  final double? height;
 
   @override
   ConsumerState<VideoEditorColorPickerSheet> createState() =>
@@ -133,11 +129,12 @@ class _VideoEditorColorPickerSheetState
     );
     final totalCount = presetCount + _crossAxisCount;
 
-    Widget content = LayoutBuilder(
+    return LayoutBuilder(
       builder: (context, constraints) {
         final (itemSize, spacing) = _computeLayout(constraints.maxWidth);
 
         return SingleChildScrollView(
+          padding: .only(bottom: MediaQuery.viewPaddingOf(context).bottom),
           child: GridView.builder(
             padding: EdgeInsets.symmetric(
               horizontal: spacing,
@@ -188,12 +185,6 @@ class _VideoEditorColorPickerSheetState
         );
       },
     );
-
-    if (widget.height != null) {
-      content = SizedBox(height: widget.height, child: content);
-    }
-
-    return content;
   }
 }
 

@@ -4,7 +4,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
-import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_style_bar.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
@@ -27,14 +26,11 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
         // Close/Done buttons at the top
         Align(alignment: .topCenter, child: _TopBar()),
 
-        // Style controls (color, alignment, background, font) at the bottom
-        Align(alignment: .bottomCenter, child: VideoEditorTextStyleBar()),
-
         // Vertical slider for font size on the right side
         Align(
           alignment: .centerRight,
           child: Padding(
-            padding: .fromLTRB(0, 96, 10, 96),
+            padding: .fromLTRB(0, 96, 10, 16),
             child: _FontSizeSlider(),
           ),
         ),
