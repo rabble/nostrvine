@@ -4,10 +4,9 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/widgets/divine_secondary_button.dart';
 
 /// Widget for selecting content warning labels on a video.
 ///
@@ -28,9 +27,16 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
       videoEditorProvider.select((state) => state.contentWarnings),
     );
 
-    final result = await _ContentWarningMultiSelect.show(
+    final result = await VineBottomSheet.show<Set<ContentLabel>>(
       context: context,
-      selected: current,
+      title: const Text('Content Warnings'),
+      maxChildSize: 1,
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      buildScrollBody: (scrollController) => _ContentWarningMultiSelect(
+        selected: current,
+        scrollController: scrollController,
+      ),
     );
 
     if (result != null && context.mounted) {
@@ -48,73 +54,48 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
     final displayText = isSet
         ? warnings.map((label) => label.displayName).join(', ')
         : 'None';
-    final iconColor = isSet
-        ? const Color(0xFFFFB84D)
-        : VineTheme.tabIndicatorGreen;
 
     return Semantics(
       button: true,
+      // TODO(l10n): Replace with context.l10n when localization is added.
       label: 'Select content warnings',
       child: InkWell(
         onTap: () => _selectContentWarnings(context, ref),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const .all(16),
           child: Column(
             spacing: 8,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: .stretch,
             children: [
               Text(
+                // TODO(l10n): Replace with context.l10n when localization is added.
                 'Content Warning',
-                style: GoogleFonts.inter(
-                  color: const Color(0xBFFFFFFF),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  height: 1.45,
-                  letterSpacing: 0.5,
+                style: VineTheme.labelSmallFont(
+                  color: VineTheme.onSurfaceVariant,
                 ),
               ),
+              // Current selection with chevron icon
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: .spaceBetween,
+                spacing: 8,
                 children: [
                   Flexible(
                     child: Text(
                       displayText,
+                      maxLines: 2,
+                      overflow: .ellipsis,
                       style: VineTheme.titleFont(
-                        fontSize: 17,
-                        color: const Color(0xF2FFFFFF),
+                        fontSize: 16,
+                        color: VineTheme.onSurface,
                         letterSpacing: 0.15,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: const Color(0x8C032017),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: VineTheme.outlineVariant),
-                    ),
-                    child: Center(
-                      child: SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: isSet
-                            ? Icon(
-                                Icons.warning_amber_rounded,
-                                size: 18,
-                                color: iconColor,
-                              )
-                            : SvgPicture.asset(
-                                'assets/icon/caret_right.svg',
-                                colorFilter: ColorFilter.mode(
-                                  iconColor,
-                                  BlendMode.srcIn,
-                                ),
-                              ),
-                      ),
-                    ),
+                  DivineIcon(
+                    icon: isSet ? .warning : .caretRight,
+                    color: isSet
+                        ? VineTheme.contentWarningAmber
+                        : VineTheme.primary,
                   ),
                 ],
               ),
@@ -128,27 +109,13 @@ class VideoMetadataContentWarningSelector extends ConsumerWidget {
 
 /// Multi-select bottom sheet for choosing content warning labels.
 class _ContentWarningMultiSelect extends StatefulWidget {
-  const _ContentWarningMultiSelect({required this.selected});
+  const _ContentWarningMultiSelect({
+    required this.selected,
+    required this.scrollController,
+  });
 
   final Set<ContentLabel> selected;
-
-  /// Show the multi-select bottom sheet and return selected labels.
-  ///
-  /// Returns `null` if dismissed without saving.
-  static Future<Set<ContentLabel>?> show({
-    required BuildContext context,
-    required Set<ContentLabel> selected,
-  }) {
-    return showModalBottomSheet<Set<ContentLabel>>(
-      context: context,
-      backgroundColor: VineTheme.cardBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      isScrollControlled: true,
-      builder: (_) => _ContentWarningMultiSelect(selected: selected),
-    );
-  }
+  final ScrollController scrollController;
 
   @override
   State<_ContentWarningMultiSelect> createState() =>
@@ -175,99 +142,51 @@ class _ContentWarningMultiSelectState
     });
   }
 
-  void _clearAll() {
-    setState(_selected.clear);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.7,
-      maxChildSize: 0.9,
-      minChildSize: 0.4,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 4),
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: VineTheme.onSurfaceMuted,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+    return SafeArea(
+      child: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Select all that apply to your content',
+              style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Content Warnings',
-                    style: VineTheme.titleFont(fontSize: 18),
-                  ),
-                  if (_selected.isNotEmpty)
-                    TextButton(
-                      onPressed: _clearAll,
-                      child: const Text(
-                        'Clear All',
-                        style: TextStyle(color: VineTheme.vineGreen),
-                      ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              controller: widget.scrollController,
+              itemCount: ContentLabel.values.length,
+              itemBuilder: (context, index) {
+                final label = ContentLabel.values[index];
+                final isChecked = _selected.contains(label);
+                return CheckboxListTile(
+                  value: isChecked,
+                  onChanged: (_) => _toggle(label),
+                  title: Text(
+                    label.displayName,
+                    style: const TextStyle(
+                      color: VineTheme.whiteText,
+                      fontSize: 15,
                     ),
-                ],
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                'Select all that apply to your content',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: ContentLabel.values.length,
-                itemBuilder: (context, index) {
-                  final label = ContentLabel.values[index];
-                  final isChecked = _selected.contains(label);
-                  return CheckboxListTile(
-                    value: isChecked,
-                    onChanged: (_) => _toggle(label),
-                    title: Text(
-                      label.displayName,
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
-                        fontSize: 15,
-                      ),
-                    ),
-                    activeColor: VineTheme.vineGreen,
-                    checkColor: VineTheme.whiteText,
-                    controlAffinity: ListTileControlAffinity.leading,
-                  );
-                },
-              ),
-            ),
-            SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(_selected),
-                    child: const Text('Done'),
                   ),
-                ),
-              ),
+                  activeColor: VineTheme.vineGreen,
+                  checkColor: VineTheme.whiteText,
+                  controlAffinity: ListTileControlAffinity.leading,
+                );
+              },
             ),
-          ],
-        );
-      },
+          ),
+          Padding(
+            padding: const .fromLTRB(16, 8, 16, 16),
+            child: DivineSecondaryButton(
+              label: 'Done',
+              onPressed: () => Navigator.of(context).pop(_selected),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

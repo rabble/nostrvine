@@ -148,33 +148,18 @@ class VideoMetadataBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer90,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: VineTheme.outlineVariant),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x6B000000),
-              blurRadius: 20,
-              offset: Offset(0, 6),
+      padding: const .fromLTRB(16, 0, 16, 4),
+      child: Row(
+        crossAxisAlignment: .end,
+        spacing: 10,
+        children: [
+          Expanded(
+            child: _SaveForLaterButton(
+              onTap: () => _onSaveForLater(context, ref),
             ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: .end,
-          spacing: 10,
-          children: [
-            Expanded(
-              child: _SaveForLaterButton(
-                onTap: () => _onSaveForLater(context, ref),
-              ),
-            ),
-            Expanded(child: _PostButton(onTap: () => _onPost(context, ref))),
-          ],
-        ),
+          ),
+          Expanded(child: _PostButton(onTap: () => _onPost(context, ref))),
+        ],
       ),
     );
   }
@@ -218,37 +203,33 @@ class _SaveForLaterButton extends ConsumerWidget {
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 200),
             opacity: isSaving ? 0.6 : 1.0,
-            child: DecoratedBox(
+            child: Container(
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xAA0E2B21), VineTheme.surfaceContainer90],
-                ),
-                border: Border.all(color: const Color(0xFF184235), width: 1.5),
-                borderRadius: BorderRadius.circular(18),
+                color: VineTheme.surfaceContainer,
+                border: Border.all(color: VineTheme.containerLow, width: 2),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Center(
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: VineTheme.primary,
-                          ),
-                        )
-                      // TODO(l10n): Replace with context.l10n when localization
-                      // is added.
-                      : Text(
-                          'Save for Later',
-                          style: VineTheme.titleSmallFont(
-                            color: VineTheme.primary,
-                          ),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Center(
+                child: isSaving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: VineTheme.primary,
                         ),
-                ),
+                      )
+                    // TODO(l10n): Replace with context.l10n when localization
+                    // is added.
+                    : Text(
+                        'Save for Later',
+                        style: VineTheme.titleMediumFont(
+                          fontSize: 16,
+                          color: VineTheme.primary,
+                          height: 1.33,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -287,32 +268,21 @@ class _PostButton extends ConsumerWidget {
         enabled: isValidToPost,
         child: GestureDetector(
           onTap: isValidToPost ? onTap : null,
-          child: DecoratedBox(
+          child: Container(
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF3ED9A2), VineTheme.primary],
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x4D27C58B),
-                  blurRadius: 18,
-                  offset: Offset(0, 6),
-                ),
-              ],
+              color: VineTheme.primary,
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                // TODO(l10n): Replace with context.l10n when localization is
-                // added.
-                child: Text(
-                  'Post',
-                  style: VineTheme.titleSmallFont(
-                    color: VineTheme.surfaceContainer,
-                  ),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              // TODO(l10n): Replace with context.l10n when localization is
+              // added.
+              child: Text(
+                'Post',
+                style: VineTheme.titleMediumFont(
+                  fontSize: 16,
+                  height: 1.33,
+                  color: VineTheme.onPrimary,
                 ),
               ),
             ),

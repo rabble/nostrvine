@@ -322,17 +322,6 @@ class _ClipThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (clip.thumbnailPath == null) {
-      return const ColoredBox(
-        color: VineTheme.lightText,
-        child: Icon(
-          Icons.play_circle_outline,
-          size: 64,
-          color: VineTheme.whiteText,
-        ),
-      );
-    }
-
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 150),
       layoutBuilder: (current, previous) => Stack(
@@ -340,11 +329,20 @@ class _ClipThumbnail extends StatelessWidget {
         fit: .expand,
         children: <Widget>[...previous, ?current],
       ),
-      child: Image.file(
-        File(clip.thumbnailPath!),
-        key: ValueKey('${clip.id}-${clip.thumbnailPath}'),
-        fit: .cover,
-      ),
+      child: clip.thumbnailPath == null
+          ? const ColoredBox(
+              color: VineTheme.lightText,
+              child: DivineIcon(
+                icon: .playCircle,
+                size: 64,
+                color: VineTheme.whiteText,
+              ),
+            )
+          : Image.file(
+              File(clip.thumbnailPath!),
+              key: ValueKey('${clip.id}-${clip.thumbnailPath}'),
+              fit: .cover,
+            ),
     );
   }
 }

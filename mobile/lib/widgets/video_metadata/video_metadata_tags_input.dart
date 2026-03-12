@@ -147,7 +147,7 @@ class _VideoMetadataTagsInputState
       onTap: _focusNode.requestFocus,
       behavior: .opaque,
       child: Padding(
-        padding: const .all(16),
+        padding: const .symmetric(horizontal: 16),
         child: Column(
           crossAxisAlignment: .start,
           spacing: 12,
@@ -183,7 +183,7 @@ class _VideoMetadataTagsInputState
                     controller: _controller,
                     focusNode: _focusNode,
                     // TODO(l10n): Replace with context.l10n when localization is added.
-                    label: tags.isEmpty ? 'Tags' : null,
+                    labelText: tags.isEmpty ? 'Tags' : null,
                     contentPadding: .zero,
                     textInputAction: .done,
                     maxLines: 1,
