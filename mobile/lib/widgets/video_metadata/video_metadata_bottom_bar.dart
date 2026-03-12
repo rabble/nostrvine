@@ -47,7 +47,8 @@ class VideoMetadataBottomBar extends ConsumerWidget {
     String? actionLabel,
     VoidCallback? onActionPressed,
   }) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    scaffoldMessenger.showSnackBar(
       SnackBar(
         padding: EdgeInsets.zero,
         backgroundColor: Colors.transparent,
@@ -58,14 +59,19 @@ class VideoMetadataBottomBar extends ConsumerWidget {
           label: label,
           error: error,
           actionLabel: actionLabel,
-          onActionPressed: onActionPressed,
+          onActionPressed: onActionPressed != null
+              ? () {
+                  onActionPressed();
+                  scaffoldMessenger.hideCurrentSnackBar();
+                }
+              : null,
         ),
       ),
     );
   }
 
   Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
-    final gallerySave = _saveToGallery(ref);
+    final galleryResult = await _saveToGallery(ref);
     var draftSaved = true;
 
     try {
@@ -86,8 +92,6 @@ class VideoMetadataBottomBar extends ConsumerWidget {
       );
       draftSaved = false;
     }
-
-    final galleryResult = await gallerySave;
 
     if (!context.mounted) return;
 
@@ -112,10 +116,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
       label: label,
       error: !saveSuccess,
       actionLabel: 'Go to Library',
-      onActionPressed: () {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        router.push(LibraryScreen.draftsPath);
-      },
+      onActionPressed: () => router.push(LibraryScreen.draftsPath),
     );
 
     if (saveSuccess) {
