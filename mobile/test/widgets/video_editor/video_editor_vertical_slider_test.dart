@@ -44,7 +44,7 @@ void main() {
           find.descendant(
             of: find.byType(VideoEditorVerticalSlider),
             matching: find.byType(SizedBox),
-          ),
+          ).first,
         );
         expect(sizedBox.height, testHeight);
       });
@@ -119,11 +119,12 @@ void main() {
       testWidgets('thumb container has correct dimensions', (tester) async {
         await tester.pumpWidget(buildSlider());
 
-        // Find the thumb container (24x20)
+        // Find the thumb container (28x28 with decoration)
         final containers = tester.widgetList<Container>(find.byType(Container));
         final thumbContainer = containers.where((c) {
-          return c.constraints?.maxWidth == 24 &&
-              c.constraints?.maxHeight == 20;
+          return c.constraints?.maxWidth == 28 &&
+              c.constraints?.maxHeight == 28 &&
+              c.decoration != null;
         }).firstOrNull;
 
         expect(thumbContainer, isNotNull);
@@ -248,7 +249,7 @@ void main() {
           find.descendant(
             of: find.byType(VideoEditorVerticalSlider),
             matching: find.byType(Stack),
-          ),
+          ).first,
         );
         expect(stack.clipBehavior, Clip.none);
       });

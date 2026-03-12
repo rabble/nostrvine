@@ -44,11 +44,11 @@ void main() {
       testWidgets('renders GridView with correct item count', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        // Should have colors + 1 for color picker button
+        // Should have colors + 1 color picker button + 6 recent-color slots
         final gridView = tester.widget<GridView>(find.byType(GridView));
         expect(
           gridView.childrenDelegate.estimatedChildCount,
-          VideoEditorConstants.colors.length + 1,
+          VideoEditorConstants.colors.length + 1 + 6,
         );
       });
 
@@ -70,11 +70,11 @@ void main() {
       testWidgets('renders all color options', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        // Each color should have a GestureDetector
-        // Total: 1 color picker + 1 bottom-sheet-absorber + all colors
+        // Each grid item is a GestureDetector
+        // Total: 1 color picker + all preset colors + 6 recent-color slots
         expect(
           find.byType(GestureDetector),
-          findsNWidgets(VideoEditorConstants.colors.length + 2),
+          findsNWidgets(VideoEditorConstants.colors.length + 1 + 6),
         );
       });
     });
