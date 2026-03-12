@@ -80,7 +80,7 @@ class _VideoRecorderTopBarState extends ConsumerState<VideoRecorderTopBar> {
                             semanticLabel: 'Continue to video editor',
                             type: .tertiary,
                             size: .small,
-                            icon: .check,
+                            icon: .caretRight,
                             onPressed: hasClips
                                 ? () => notifier.openVideoEditor(context)
                                 : null,
