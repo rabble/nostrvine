@@ -41,10 +41,12 @@ void main() {
 
         // SizedBox should have the specified height
         final sizedBox = tester.widget<SizedBox>(
-          find.descendant(
-            of: find.byType(VideoEditorVerticalSlider),
-            matching: find.byType(SizedBox),
-          ).first,
+          find
+              .descendant(
+                of: find.byType(VideoEditorVerticalSlider),
+                matching: find.byType(SizedBox),
+              )
+              .first,
         );
         expect(sizedBox.height, testHeight);
       });
@@ -246,10 +248,12 @@ void main() {
         await tester.pumpWidget(buildSlider());
 
         final stack = tester.widget<Stack>(
-          find.descendant(
-            of: find.byType(VideoEditorVerticalSlider),
-            matching: find.byType(Stack),
-          ).first,
+          find
+              .descendant(
+                of: find.byType(VideoEditorVerticalSlider),
+                matching: find.byType(Stack),
+              )
+              .first,
         );
         expect(stack.clipBehavior, Clip.none);
       });
