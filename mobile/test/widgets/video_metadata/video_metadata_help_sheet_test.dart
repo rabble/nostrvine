@@ -1,8 +1,48 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_help_sheet.dart';
+
+// 1×1 transparent PNG bytes for asset loading in tests.
+final _transparentPng = Uint8List.fromList(const <int>[
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, //
+  0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+  0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+  0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41,
+  0x54, 0x78, 0x9c, 0x63, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00,
+  0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+  0x42, 0x60, 0x82,
+]);
+
+/// Serves a transparent PNG for any asset request so [Image.asset] renders
+/// without errors in unit tests.
+class _TestAssetBundle extends CachingAssetBundle {
+  _TestAssetBundle(this._assetPath) {
+    final manifest = <String, List<Map<String, Object>>>{
+      _assetPath: [
+        <String, Object>{'asset': _assetPath},
+      ],
+    };
+    _manifest = const StandardMessageCodec().encodeMessage(manifest)!;
+  }
+
+  final String _assetPath;
+  late final ByteData _manifest;
+  final ByteData _imageData = ByteData.sublistView(_transparentPng);
+
+  @override
+  Future<ByteData> load(String key) {
+    if (key == 'AssetManifest.bin') {
+      return SynchronousFuture<ByteData>(_manifest);
+    }
+    return SynchronousFuture<ByteData>(_imageData);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +54,7 @@ void main() {
     required String assetPath,
     VoidCallback? onPop,
   }) {
+    final bundle = _TestAssetBundle(assetPath);
     final router = GoRouter(
       routes: [
         GoRoute(
@@ -24,11 +65,14 @@ void main() {
                 onPressed: () {
                   showModalBottomSheet<void>(
                     context: context,
-                    builder: (_) => Material(
-                      child: VideoMetadataHelpSheet(
-                        title: title,
-                        message: message,
-                        assetPath: assetPath,
+                    builder: (_) => DefaultAssetBundle(
+                      bundle: bundle,
+                      child: Material(
+                        child: VideoMetadataHelpSheet(
+                          title: title,
+                          message: message,
+                          assetPath: assetPath,
+                        ),
                       ),
                     ),
                   );

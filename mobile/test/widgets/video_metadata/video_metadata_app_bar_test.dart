@@ -1,13 +1,13 @@
 // ABOUTME: Tests for VideoMetadataAppBar widget
 // ABOUTME: Verifies rendering, Hero animation, and navigation behavior
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/widgets/video_editor_icon_button.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_app_bar.dart';
 
 import '../../helpers/go_router.dart';
@@ -53,12 +53,12 @@ void main() {
       expect(find.text('Post details'), findsOneWidget);
     });
 
-    testWidgets('renders back button with $VideoEditorIconButton', (
+    testWidgets('renders back button with $DivineIconButton', (
       tester,
     ) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.byType(VideoEditorIconButton), findsOneWidget);
+      expect(find.byType(DivineIconButton), findsOneWidget);
     });
 
     testWidgets('renders back button icon', (tester) async {
@@ -104,7 +104,7 @@ void main() {
       // Verify we're showing the app bar
       expect(find.byType(VideoMetadataAppBar), findsOneWidget);
 
-      await tester.tap(find.byType(VideoEditorIconButton));
+      await tester.tap(find.byType(DivineIconButton));
       await tester.pumpAndSettle();
 
       verify(() => mockGoRouter.pop<Object?>(any())).called(1);
