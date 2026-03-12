@@ -268,7 +268,7 @@ class _DefaultLoadingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: Colors.black,
+      color: const Color(0xFF000000),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -279,7 +279,9 @@ class _DefaultLoadingState extends StatelessWidget {
               errorBuilder: (context, error, stackTrace) =>
                   const SizedBox.shrink(),
             ),
-          const Center(child: CircularProgressIndicator(color: Colors.white)),
+          const Center(
+            child: CircularProgressIndicator(color: Color(0xFFFFFFFF)),
+          ),
         ],
       ),
     );
@@ -293,16 +295,16 @@ class _DefaultErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ColoredBox(
-      color: Colors.black,
+      color: Color(0xFF000000),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, color: Colors.white70, size: 48),
+            Icon(Icons.error_outline, color: Color(0xB3FFFFFF), size: 48),
             SizedBox(height: 16),
             Text(
               'Failed to load video',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+              style: TextStyle(color: Color(0xB3FFFFFF), fontSize: 16),
             ),
           ],
         ),

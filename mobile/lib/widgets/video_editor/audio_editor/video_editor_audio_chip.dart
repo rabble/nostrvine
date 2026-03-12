@@ -64,7 +64,7 @@ class VideoEditorAudioChip extends StatelessWidget {
       final timingResult = await Navigator.of(context).push<AudioTimingResult>(
         PageRouteBuilder(
           opaque: false,
-          barrierColor: Colors.transparent,
+          barrierColor: VineTheme.transparent,
           pageBuilder: (_, _, _) => VideoAudioEditorTimingScreen(
             sound: soundToEdit!,
           ),

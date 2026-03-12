@@ -9,6 +9,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_moderation_service.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -210,6 +211,27 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
             );
           }
 
+          // Send DM to moderation team with report details (TC-025/026)
+          final dmRepo = ref.read(dmRepositoryProvider);
+          try {
+            await dmRepo.sendMessage(
+              recipientPubkey: ModerationLabelService.divineModerationPubkeyHex,
+              content: _formatReportDm(
+                reason: _selectedReason!,
+                eventId: widget.video.id,
+                details: _detailsController.text.trim(),
+              ),
+            );
+          } catch (e) {
+            // Report was already submitted via NIP-56 + ZenDesk;
+            // DM is a supplementary notification channel.
+            Log.warning(
+              'Failed to send moderation DM: $e',
+              name: 'ReportContentDialog',
+              category: LogCategory.system,
+            );
+          }
+
           // Show success confirmation dialog using root navigator
           if (mounted) {
             showDialog(
@@ -249,6 +271,21 @@ class _ReportContentDialogState extends ConsumerState<ReportContentDialog> {
     }
   }
 
+  String _formatReportDm({
+    required ContentFilterReason reason,
+    required String eventId,
+    required String details,
+  }) {
+    final buffer = StringBuffer()
+      ..writeln('Content Report')
+      ..writeln('Reason: ${_getReasonDisplayName(reason)}')
+      ..writeln('Event: $eventId');
+    if (details.isNotEmpty) {
+      buffer.writeln('Details: $details');
+    }
+    return buffer.toString().trimRight();
+  }
+
   @override
   void dispose() {
     _detailsController.dispose();
@@ -280,7 +317,8 @@ class ReportConfirmationDialog extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         const Text(
-          'Our team will review your report and take appropriate action.',
+          'Our team will review your report and take appropriate action. '
+          'You may receive updates via direct message.',
           style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
         ),
         const SizedBox(height: 20),

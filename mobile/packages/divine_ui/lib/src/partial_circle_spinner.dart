@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Custom circular progress spinner.
@@ -12,7 +13,7 @@ class PartialCircleSpinner extends StatefulWidget {
     required this.progress,
     this.size = 24,
     this.backgroundColor = const Color(0xFF737778),
-    this.progressColor = Colors.white,
+    this.progressColor = VineTheme.whiteText,
     super.key,
   });
 

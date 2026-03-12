@@ -45,10 +45,10 @@ void main() {
     testWidgets('displays flash toggle button', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      // Flash button should be visible - check for SVG with flash icon path
+      // Flash button should be visible - wrapped in Tooltip
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is IconButton && widget.tooltip == 'Toggle flash',
+          (widget) => widget is Tooltip && widget.message == 'Toggle flash',
         ),
         findsOneWidget,
       );
@@ -60,7 +60,7 @@ void main() {
       // Timer button should be visible
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is IconButton && widget.tooltip == 'Cycle timer',
+          (widget) => widget is Tooltip && widget.message == 'Cycle timer',
         ),
         findsOneWidget,
       );
@@ -73,7 +73,7 @@ void main() {
       expect(
         find.byWidgetPredicate(
           (widget) =>
-              widget is IconButton && widget.tooltip == 'Toggle aspect ratio',
+              widget is Tooltip && widget.message == 'Toggle aspect ratio',
         ),
         findsOneWidget,
       );
@@ -85,7 +85,19 @@ void main() {
       // Camera flip button should be visible
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is IconButton && widget.tooltip == 'Switch camera',
+          (widget) => widget is Tooltip && widget.message == 'Switch camera',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('displays remove last clip button', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      // Remove last clip button should be visible
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Tooltip && widget.message == 'Remove last clip',
         ),
         findsOneWidget,
       );
@@ -97,17 +109,17 @@ void main() {
       // More options button should be visible
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is IconButton && widget.tooltip == 'More options',
+          (widget) => widget is Tooltip && widget.message == 'More options',
         ),
         findsOneWidget,
       );
     });
 
-    testWidgets('has 5 control buttons', (tester) async {
+    testWidgets('has 6 control buttons', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      // Flash, Timer, Aspect Ratio, Sound, Flip Camera, More Options
-      expect(find.byType(IconButton), findsNWidgets(5));
+      // Flash, Timer, Aspect Ratio, Flip Camera, Undo Last Clip, More Options
+      expect(find.byType(IconButton), findsNWidgets(6));
     });
 
     testWidgets('uses SafeArea for bottom positioning', (tester) async {

@@ -404,7 +404,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             indicatorColor: VineTheme.tabIndicatorGreen,
             indicatorWeight: 4,
             indicatorSize: TabBarIndicatorSize.tab,
-            dividerColor: Colors.transparent,
+            dividerColor: VineTheme.transparent,
             labelColor: VineTheme.whiteText,
             unselectedLabelColor: VineTheme.tabIconInactive,
             labelPadding: const EdgeInsets.symmetric(horizontal: 14),

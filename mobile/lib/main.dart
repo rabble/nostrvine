@@ -346,30 +346,51 @@ Future<void> _startOpenVineApp() async {
   // Configure global error widget builder for user-friendly error display
   // Wrap in Directionality to enable Text widgets even before MaterialApp is ready
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    return const Directionality(
+    // On web, show error details for debugging
+    if (kIsWeb) {
+      print('ErrorWidget: ${details.exception}\n${details.stack}');
+    }
+    return Directionality(
       textDirection: TextDirection.ltr,
       child: ColoredBox(
         color: VineTheme.backgroundColor,
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                color: VineTheme.accentOrange,
-                size: 48,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Oops, something went wrong',
-                style: TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  decoration: TextDecoration.none,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.error_outline_rounded,
+                  color: VineTheme.accentOrange,
+                  size: 48,
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+                const Text(
+                  'Oops, something went wrong',
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    decoration: TextDecoration.none,
+                  ),
+                ),
+                if (kIsWeb) ...[
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      '${details.exception}',
+                      style: const TextStyle(
+                        color: VineTheme.secondaryText,
+                        fontSize: 12,
+                        decoration: TextDecoration.none,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -547,11 +568,15 @@ Future<void> _startOpenVineApp() async {
     ),
   );
 
-  // Initialize MediaKit for pooled_video_player (uses media_kit internally)
-  MediaKit.ensureInitialized();
+  // Initialize MediaKit for pooled_video_player (uses media_kit internally).
+  // Skip on web — media_kit requires native libraries (libmpv) that are not
+  // available in browser environments. Web uses video_player instead.
+  if (!kIsWeb) {
+    MediaKit.ensureInitialized();
 
-  // Initialize the player pool singleton
-  await PlayerPool.init();
+    // Initialize the player pool singleton
+    await PlayerPool.init();
+  }
 
   runApp(
     UncontrolledProviderScope(container: container, child: const DivineApp()),

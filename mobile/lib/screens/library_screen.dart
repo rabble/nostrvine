@@ -99,7 +99,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: VineTheme.transparent,
         elevation: 0,
         behavior: SnackBarBehavior.floating,
         content: DivineSnackbarContainer(label: label, error: error),
@@ -396,7 +396,7 @@ class _LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
         return DiVineAppBar(
           title: 'Library',
           backgroundColor: VineTheme.onPrimary,
-          surfaceTintColor: Colors.transparent,
+          surfaceTintColor: VineTheme.transparent,
           shape: const Border(
             bottom: BorderSide(color: VineTheme.outlineDisabled),
           ),

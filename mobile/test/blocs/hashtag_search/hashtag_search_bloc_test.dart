@@ -368,10 +368,7 @@ void main() {
         ),
         wait: debounceDuration,
         expect: () => const [
-          HashtagSearchState(
-            query: 'music',
-            resultCount: 4,
-          ),
+          HashtagSearchState(query: 'music', resultCount: 4),
         ],
         verify: (_) {
           verify(
@@ -406,10 +403,7 @@ void main() {
         },
         wait: debounceDuration,
         expect: () => const [
-          HashtagSearchState(
-            query: 'music',
-            resultCount: 2,
-          ),
+          HashtagSearchState(query: 'music', resultCount: 2),
           HashtagSearchState(
             status: HashtagSearchStatus.loading,
             query: 'music',
@@ -421,6 +415,29 @@ void main() {
             resultCount: 2,
           ),
         ],
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'preserves existing results for same query when fetchResults is false',
+        build: createBloc,
+        seed: () => const HashtagSearchState(
+          status: HashtagSearchStatus.success,
+          query: 'music',
+          results: ['music', 'musician'],
+          resultCount: 2,
+        ),
+        act: (bloc) => bloc.add(
+          const HashtagSearchQueryChanged('music', fetchResults: false),
+        ),
+        wait: debounceDuration,
+        expect: () => [],
+        verify: (_) {
+          verifyNever(
+            () => mockHashtagRepository.countHashtagsLocally(
+              query: any(named: 'query'),
+            ),
+          );
+        },
       );
     });
 
@@ -520,9 +537,7 @@ void main() {
         act: (bloc) => bloc.add(const HashtagSearchQueryChanged('music')),
         wait: debounceDuration,
         verify: (_) {
-          verify(
-            () => mockTracker.startFeedLoad('hashtag_search'),
-          ).called(1);
+          verify(() => mockTracker.startFeedLoad('hashtag_search')).called(1);
           verify(
             () => mockTracker.markFirstVideosReceived('hashtag_search', 3),
           ).called(1);
@@ -543,9 +558,7 @@ void main() {
         act: (bloc) => bloc.add(const HashtagSearchQueryChanged('error')),
         wait: debounceDuration,
         verify: (_) {
-          verify(
-            () => mockTracker.startFeedLoad('hashtag_search'),
-          ).called(1);
+          verify(() => mockTracker.startFeedLoad('hashtag_search')).called(1);
           verify(
             () => mockTracker.trackFeedError(
               'hashtag_search',
@@ -553,12 +566,8 @@ void main() {
               errorMessage: any(named: 'errorMessage'),
             ),
           ).called(1);
-          verifyNever(
-            () => mockTracker.markFirstVideosReceived(any(), any()),
-          );
-          verifyNever(
-            () => mockTracker.markFeedDisplayed(any(), any()),
-          );
+          verifyNever(() => mockTracker.markFirstVideosReceived(any(), any()));
+          verifyNever(() => mockTracker.markFeedDisplayed(any(), any()));
         },
       );
 

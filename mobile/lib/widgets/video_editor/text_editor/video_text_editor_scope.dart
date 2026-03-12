@@ -16,13 +16,19 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 class VideoTextEditorScope extends InheritedWidget {
   /// Creates a [VideoTextEditorScope].
   const VideoTextEditorScope({
-    required this.editor,
+    required this.editorKey,
     required super.child,
     super.key,
   });
 
+  /// The key for the [TextEditorState].
+  ///
+  /// Access the state lazily via [editor] to avoid null issues during
+  /// the first build frame.
+  final GlobalKey<TextEditorState> editorKey;
+
   /// The [TextEditorState] instance.
-  final TextEditorState editor;
+  TextEditorState get editor => editorKey.currentState!;
 
   /// Gets the nearest [VideoTextEditorScope] from the widget tree.
   ///
@@ -41,5 +47,5 @@ class VideoTextEditorScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(VideoTextEditorScope oldWidget) =>
-      editor != oldWidget.editor;
+      editorKey != oldWidget.editorKey;
 }

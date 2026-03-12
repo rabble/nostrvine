@@ -1527,16 +1527,21 @@ Future<MuteService> muteService(Ref ref) async {
 }
 
 /// Video sharing service
+///
+/// When a [DmRepository] is available the service sends videos via NIP-17
+/// encrypted DMs (NIP-17). Otherwise falls back to NIP-04 kind 4.
 @riverpod
 VideoSharingService videoSharingService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final profileRepository = ref.watch(profileRepositoryProvider);
+  final dmRepository = ref.watch(dmRepositoryProvider);
 
   return VideoSharingService(
     nostrService: nostrService,
     authService: authService,
     profileRepository: profileRepository!,
+    dmRepository: dmRepository,
   );
 }
 

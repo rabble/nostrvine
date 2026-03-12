@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -89,7 +87,8 @@ class CameraPermissionBloc
     // Linux has no camera support yet, so permissions are irrelevant.
     // So we bypass the permission check and assume authorized.
     if (!kIsWeb &&
-        (Platform.isMacOS || Platform.isLinux) &&
+        (defaultTargetPlatform == TargetPlatform.macOS ||
+            defaultTargetPlatform == TargetPlatform.linux) &&
         !_skipMacOSBypass) {
       Log.info(
         '🔐 Desktop detected - bypassing permission_handler, '

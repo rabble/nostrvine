@@ -119,7 +119,8 @@ class SecureKeyStorage {
     if (kIsWeb) {
       // Web: Use browser storage persistence, no hardware backing
       return SecurityConfig.desktop;
-    } else if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+    } else if (!kIsWeb &&
+        (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
       // Desktop: Use OS keychain/credential store, allow software fallback
       return SecurityConfig.desktop;
     } else {

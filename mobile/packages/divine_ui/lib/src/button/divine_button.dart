@@ -186,7 +186,7 @@ class _DivineButtonContent extends StatelessWidget {
     DivineButtonType.tertiary => VineTheme.inverseSurface,
     DivineButtonType.ghost => VineTheme.scrim65,
     DivineButtonType.ghostSecondary => VineTheme.scrim15,
-    DivineButtonType.link => Colors.transparent,
+    DivineButtonType.link => VineTheme.transparent,
     DivineButtonType.error => VineTheme.error,
   };
 
@@ -286,7 +286,7 @@ class _DivineButtonContent extends StatelessWidget {
       duration: const Duration(milliseconds: 150),
       opacity: _isEnabled ? 1.0 : _disabledOpacity,
       child: Material(
-        color: Colors.transparent,
+        color: VineTheme.transparent,
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(_borderRadius),

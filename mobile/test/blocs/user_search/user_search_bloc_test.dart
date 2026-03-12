@@ -239,12 +239,7 @@ void main() {
           const UserSearchQueryChanged('alice', fetchResults: false),
         ),
         wait: debounceDuration,
-        expect: () => const [
-          UserSearchState(
-            query: 'alice',
-            resultCount: 7,
-          ),
-        ],
+        expect: () => const [UserSearchState(query: 'alice', resultCount: 7)],
         verify: (_) {
           verify(
             () => mockProfileRepository.countUsersLocally(query: 'alice'),
@@ -283,10 +278,7 @@ void main() {
         },
         wait: debounceDuration,
         expect: () => [
-          const UserSearchState(
-            query: 'alice',
-            resultCount: 2,
-          ),
+          const UserSearchState(query: 'alice', resultCount: 2),
           const UserSearchState(
             status: UserSearchStatus.loading,
             query: 'alice',
@@ -296,6 +288,30 @@ void main() {
               .having((s) => s.results.length, 'results.length', 1)
               .having((s) => s.resultCount, 'resultCount', 1),
         ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'preserves existing results for same query when fetchResults is false',
+        build: createBloc,
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: [createTestProfile('a' * 64, 'Alice')],
+          resultCount: 1,
+          offset: 1,
+        ),
+        act: (bloc) => bloc.add(
+          const UserSearchQueryChanged('alice', fetchResults: false),
+        ),
+        wait: debounceDuration,
+        expect: () => [],
+        verify: (_) {
+          verifyNever(
+            () => mockProfileRepository.countUsersLocally(
+              query: any(named: 'query'),
+            ),
+          );
+        },
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
@@ -708,9 +724,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer(
-            (_) async => [createTestProfile('a' * 64, 'Alice')],
-          );
+          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
           when(
             () => mockProfileRepository.searchUsers(
               query: 'error',
@@ -738,18 +752,10 @@ void main() {
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.loading)
               .having((s) => s.query, 'query', 'error')
-              .having(
-                (s) => s.results.length,
-                'results preserved',
-                1,
-              ),
+              .having((s) => s.results.length, 'results preserved', 1),
           isA<UserSearchState>()
               .having((s) => s.status, 'status', UserSearchStatus.failure)
-              .having(
-                (s) => s.results.length,
-                'results still preserved',
-                1,
-              ),
+              .having((s) => s.results.length, 'results still preserved', 1),
         ],
       );
     });
@@ -767,9 +773,7 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer(
-            (_) async => [createTestProfile('a' * 64, 'Alice')],
-          );
+          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
           when(
             () => mockProfileRepository.searchUsers(
               query: 'bob',
@@ -832,13 +836,9 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer(
-            (_) async => [createTestProfile('a' * 64, 'Alice')],
-          );
+          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
         },
-        build: () => UserSearchBloc(
-          profileRepository: mockProfileRepository,
-        ),
+        build: () => UserSearchBloc(profileRepository: mockProfileRepository),
         act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
         wait: debounceDuration,
         expect: () => [
@@ -928,10 +928,8 @@ void main() {
         mockTracker = _MockFeedPerformanceTracker();
       });
 
-      UserSearchBloc createBlocWithTracker() => UserSearchBloc(
-        profileRepository: mockRepo,
-        feedTracker: mockTracker,
-      );
+      UserSearchBloc createBlocWithTracker() =>
+          UserSearchBloc(profileRepository: mockRepo, feedTracker: mockTracker);
 
       blocTest<UserSearchBloc, UserSearchState>(
         'calls startFeedLoad, markFirstVideosReceived, and '
@@ -944,17 +942,13 @@ void main() {
               sortBy: any(named: 'sortBy'),
               hasVideos: any(named: 'hasVideos'),
             ),
-          ).thenAnswer(
-            (_) async => [createTestProfile('a' * 64, 'Alice')],
-          );
+          ).thenAnswer((_) async => [createTestProfile('a' * 64, 'Alice')]);
         },
         build: createBlocWithTracker,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
         wait: debounceDuration,
         verify: (_) {
-          verify(
-            () => mockTracker.startFeedLoad('user_search'),
-          ).called(1);
+          verify(() => mockTracker.startFeedLoad('user_search')).called(1);
           verify(
             () => mockTracker.markFirstVideosReceived('user_search', 1),
           ).called(1);
@@ -980,9 +974,7 @@ void main() {
         act: (bloc) => bloc.add(const UserSearchQueryChanged('error')),
         wait: debounceDuration,
         verify: (_) {
-          verify(
-            () => mockTracker.startFeedLoad('user_search'),
-          ).called(1);
+          verify(() => mockTracker.startFeedLoad('user_search')).called(1);
           verify(
             () => mockTracker.trackFeedError(
               'user_search',
@@ -990,12 +982,8 @@ void main() {
               errorMessage: any(named: 'errorMessage'),
             ),
           ).called(1);
-          verifyNever(
-            () => mockTracker.markFirstVideosReceived(any(), any()),
-          );
-          verifyNever(
-            () => mockTracker.markFeedDisplayed(any(), any()),
-          );
+          verifyNever(() => mockTracker.markFirstVideosReceived(any(), any()));
+          verifyNever(() => mockTracker.markFeedDisplayed(any(), any()));
         },
       );
 

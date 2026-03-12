@@ -23,7 +23,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         padding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
+        backgroundColor: VineTheme.transparent,
         elevation: 0,
         behavior: .floating,
         duration: const Duration(seconds: 3),
@@ -115,7 +115,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                     spacing: 16,
                     children: [
                       VideoEditorIconButton(
-                        backgroundColor: Colors.transparent,
+                        backgroundColor: VineTheme.transparent,
                         icon: isPlaying ? .pause : .play,
                         onTap: () => context.read<ClipEditorBloc>().add(
                           const ClipEditorPlayPauseToggled(),
@@ -125,7 +125,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                       ),
                       if (isEditing)
                         VideoEditorIconButton(
-                          backgroundColor: Colors.transparent,
+                          backgroundColor: VineTheme.transparent,
                           icon: .scissors,
                           onTap: () => _handleSplitClip(context, ref),
                           // TODO(l10n): Replace with context.l10n when localization is added.

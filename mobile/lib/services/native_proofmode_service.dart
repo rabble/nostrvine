@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:app_device_integrity/app_device_integrity.dart';
 import 'package:crypto/crypto.dart' as crypto;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/services/c2pa_signing_service.dart';
@@ -148,7 +149,7 @@ class NativeProofModeService {
       );
 
       //add iOS specific device attestation
-      if (Platform.isIOS) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
         final appAttestationPlugin = AppDeviceIntegrity();
         final tokenReceived = await appAttestationPlugin
             .getAttestationServiceSupport(challengeString: proofHash);

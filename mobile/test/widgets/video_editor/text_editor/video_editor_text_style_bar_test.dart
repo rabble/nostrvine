@@ -23,6 +23,8 @@ class MockTextEditorState extends Mock implements TextEditorState {
       'MockTextEditorState';
 }
 
+class MockTextEditorKey extends Mock implements GlobalKey<TextEditorState> {}
+
 class MockFocusNode extends Mock implements FocusNode {
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
@@ -39,16 +41,19 @@ void main() {
 
   group('VideoEditorTextStyleBar', () {
     late MockVideoEditorTextBloc mockBloc;
+    late MockTextEditorKey mockKey;
     late MockTextEditorState mockEditor;
     late MockFocusNode mockFocusNode;
 
     setUp(() {
       mockBloc = MockVideoEditorTextBloc();
+      mockKey = MockTextEditorKey();
       mockEditor = MockTextEditorState();
       mockFocusNode = MockFocusNode();
 
       when(() => mockBloc.state).thenReturn(const VideoEditorTextState());
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockKey.currentState).thenReturn(mockEditor);
       when(() => mockEditor.focusNode).thenReturn(mockFocusNode);
       when(() => mockFocusNode.hasFocus).thenReturn(false);
     });
@@ -61,7 +66,7 @@ void main() {
       return MaterialApp(
         home: Scaffold(
           body: VideoTextEditorScope(
-            editor: mockEditor,
+            editorKey: mockKey,
             child: BlocProvider<VideoEditorTextBloc>.value(
               value: mockBloc,
               child: const SizedBox(

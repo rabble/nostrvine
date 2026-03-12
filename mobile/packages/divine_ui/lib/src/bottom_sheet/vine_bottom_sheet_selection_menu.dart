@@ -87,7 +87,7 @@ class _VineBottomSheetSelectionOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: isSelected ? VineTheme.surfaceContainer : Colors.transparent,
+      color: isSelected ? VineTheme.surfaceContainer : VineTheme.transparent,
       child: InkWell(
         onTap: onTap,
         child: Container(

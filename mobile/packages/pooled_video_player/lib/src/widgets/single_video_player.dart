@@ -216,9 +216,9 @@ class _DefaultLoadingState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const ColoredBox(
-      color: Colors.black,
+      color: Color(0xFF000000),
       child: Center(
-        child: CircularProgressIndicator(color: Colors.white),
+        child: CircularProgressIndicator(color: Color(0xFFFFFFFF)),
       ),
     );
   }
@@ -232,24 +232,24 @@ class _DefaultErrorState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: Colors.black,
+      color: const Color(0xFF000000),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: Colors.white70, size: 48),
+            const Icon(Icons.error_outline, color: Color(0xB3FFFFFF), size: 48),
             const SizedBox(height: 16),
             const Text(
               'Failed to load video',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+              style: TextStyle(color: Color(0xB3FFFFFF), fontSize: 16),
             ),
             const SizedBox(height: 16),
             TextButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh, color: Colors.white),
+              icon: const Icon(Icons.refresh, color: Color(0xFFFFFFFF)),
               label: const Text(
                 'Tap to retry',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Color(0xFFFFFFFF)),
               ),
             ),
           ],

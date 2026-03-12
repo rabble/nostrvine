@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_extensions.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
@@ -62,57 +61,65 @@ class VideoEditorTextStyleBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final textEditor = VideoTextEditorScope.of(context).editor;
 
-    return BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
-      buildWhen: (previous, current) =>
-          previous.selectedFontIndex != current.selectedFontIndex ||
-          previous.showFontSelector != current.showFontSelector ||
-          previous.showColorPicker != current.showColorPicker ||
-          previous.backgroundStyle != current.backgroundStyle ||
-          previous.alignment != current.alignment ||
-          previous.color != current.color,
-      builder: (context, state) {
-        return Padding(
-          padding: const .fromLTRB(16, 0, 16, 16),
-          child: Row(
-            spacing: 16,
-            mainAxisAlignment: .spaceBetween,
-            children: [
-              Row(
-                spacing: 8,
-                children: [
-                  _ColorSwatchButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    semanticsLabel: 'Text color',
-                    color: state.color,
-                    onTap: () => _toggleColorPicker(context, state),
-                  ),
-                  _StyleIconButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    semanticsLabel: 'Text alignment',
-                    semanticsValue: state.alignment.accessibilityName,
-                    iconPath: state.alignment.icon,
-                    onTap: textEditor.toggleTextAlign,
-                  ),
-                  _StyleIconButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    semanticsLabel: 'Text background',
-                    semanticsValue: state.backgroundStyle.accessibilityName,
-                    iconPath: state.backgroundStyle.icon,
-                    onTap: textEditor.toggleBackgroundMode,
-                  ),
-                ],
-              ),
-              // Font selector button
-              Flexible(
-                child: _FontSelectorButton(
-                  fontName: state.selectedFontName,
-                  onTap: () => _toggleFontSelector(context, state),
+    return Material(
+      type: .transparency,
+      child: Padding(
+        padding: const .symmetric(horizontal: 16),
+        child: BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
+          buildWhen: (previous, current) =>
+              previous.selectedFontIndex != current.selectedFontIndex ||
+              previous.showFontSelector != current.showFontSelector ||
+              previous.showColorPicker != current.showColorPicker ||
+              previous.backgroundStyle != current.backgroundStyle ||
+              previous.alignment != current.alignment ||
+              previous.color != current.color,
+          builder: (context, state) {
+            return Row(
+              spacing: 16,
+              mainAxisAlignment: .spaceBetween,
+              children: [
+                Row(
+                  spacing: 8,
+                  children: [
+                    _ColorSwatchButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      semanticsLabel: 'Text color',
+                      color: state.color,
+                      onTap: () => _toggleColorPicker(context, state),
+                    ),
+                    DivineIconButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      semanticLabel: 'Text alignment',
+                      semanticValue: state.alignment.accessibilityName,
+                      size: .small,
+                      type: .secondary,
+                      icon: state.alignment.icon,
+                      onPressed: textEditor.toggleTextAlign,
+                    ),
+                    DivineIconButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
+                      semanticLabel: 'Text background',
+                      semanticValue: state.backgroundStyle.accessibilityName,
+                      size: .small,
+                      type: .secondary,
+                      icon: state.backgroundStyle.icon,
+                      onPressed: textEditor.toggleBackgroundMode,
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+                // Font selector button
+                Flexible(
+                  child: _FontSelectorButton(
+                    fontName: state.selectedFontName,
+                    isOpen: state.showFontSelector,
+                    onTap: () => _toggleFontSelector(context, state),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }
@@ -134,62 +141,27 @@ class _ColorSwatchButton extends StatelessWidget {
     return Semantics(
       label: semanticsLabel,
       button: true,
-      child: GestureDetector(
+      child: InkWell(
         onTap: onTap,
-        child: Container(
-          padding: const .all(14),
+        borderRadius: BorderRadius.circular(16),
+        splashColor: VineTheme.primary.withValues(alpha: 0.1),
+        highlightColor: VineTheme.primary.withValues(alpha: 0.05),
+        child: Ink(
           decoration: BoxDecoration(
-            color: VineTheme.scrim65,
-            borderRadius: .circular(20),
+            color: VineTheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: VineTheme.outlineMuted, width: 2),
           ),
-          child: Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: color,
-              shape: .circle,
-              border: .all(color: VineTheme.whiteText, width: 2),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+              ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A styled icon button for text styling controls.
-class _StyleIconButton extends StatelessWidget {
-  const _StyleIconButton({
-    required this.semanticsLabel,
-    required this.semanticsValue,
-    required this.iconPath,
-    this.onTap,
-  });
-
-  final String semanticsLabel;
-  final String semanticsValue;
-  final String iconPath;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: semanticsLabel,
-      value: semanticsValue,
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const .all(12),
-          decoration: BoxDecoration(
-            color: VineTheme.scrim65,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: SvgPicture.asset(
-            iconPath,
-            width: 24,
-            height: 24,
-            colorFilter: const .mode(VineTheme.whiteText, .srcIn),
           ),
         ),
       ),
@@ -199,9 +171,14 @@ class _StyleIconButton extends StatelessWidget {
 
 /// Font selector button showing current font name with dropdown arrow.
 class _FontSelectorButton extends StatelessWidget {
-  const _FontSelectorButton({required this.fontName, this.onTap});
+  const _FontSelectorButton({
+    required this.fontName,
+    this.isOpen = false,
+    this.onTap,
+  });
 
   final String fontName;
+  final bool isOpen;
   final VoidCallback? onTap;
 
   @override
@@ -214,22 +191,11 @@ class _FontSelectorButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const .symmetric(horizontal: 24, vertical: 12),
+          padding: const .symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: VineTheme.scrim65,
-            borderRadius: .circular(20),
-            boxShadow: const [
-              BoxShadow(
-                color: VineTheme.innerShadow,
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-              BoxShadow(
-                color: VineTheme.innerShadow,
-                offset: Offset(0.4, 0.4),
-                blurRadius: 0.6,
-              ),
-            ],
+            color: VineTheme.surfaceContainer,
+            borderRadius: .circular(16),
+            border: Border.all(color: VineTheme.outlineMuted, width: 2),
           ),
           child: Row(
             mainAxisSize: .min,
@@ -239,17 +205,15 @@ class _FontSelectorButton extends StatelessWidget {
                 child: Text(
                   fontName,
                   overflow: .ellipsis,
-                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+                  style: VineTheme.titleMediumFont(color: VineTheme.primary),
                 ),
               ),
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: SvgPicture.asset(
-                  'assets/icon/CaretDown.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: const .mode(VineTheme.onSurface, .srcIn),
+              AnimatedRotation(
+                turns: isOpen ? 0.5 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: const DivineIcon(
+                  icon: .caretDown,
+                  color: VineTheme.primary,
                 ),
               ),
             ],

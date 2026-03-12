@@ -11,9 +11,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/widgets/report_content_dialog.dart';
 
@@ -26,6 +28,8 @@ class _MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}
 
 class _MockMuteService extends Mock implements MuteService {}
+
+class _MockDmRepository extends Mock implements DmRepository {}
 
 void main() {
   setUpAll(() {
@@ -523,7 +527,7 @@ void main() {
   });
 
   group('$ReportConfirmationDialog', () {
-    testWidgets('renders success content', (tester) async {
+    testWidgets('renders success content with DM mention', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -547,6 +551,11 @@ void main() {
       expect(
         find.text('Thank you for helping keep Divine safe.'),
         findsOneWidget,
+      );
+      expect(
+        find.textContaining('via direct message'),
+        findsOneWidget,
+        reason: 'TC-025: Confirmation should mention DM follow-up',
       );
       expect(find.text('Learn More'), findsOneWidget);
       expect(find.text('divine.video/safety'), findsOneWidget);
@@ -574,5 +583,235 @@ void main() {
 
       expect(find.text('Close'), findsOneWidget);
     });
+  });
+
+  group('moderation DM integration', () {
+    late MockNostrClient mockNostrClient;
+    late _MockDmRepository mockDmRepository;
+
+    setUp(() {
+      mockNostrClient = createMockNostrService();
+      mockDmRepository = _MockDmRepository();
+
+      when(() => mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
+      when(
+        () => mockDmRepository.sendMessage(
+          recipientPubkey: any(named: 'recipientPubkey'),
+          content: any(named: 'content'),
+          replyToId: any(named: 'replyToId'),
+        ),
+      ).thenAnswer(
+        (_) async => NIP17SendResult.success(
+          messageEventId: 'dm_event_id',
+          recipientPubkey: ModerationLabelService.divineModerationPubkeyHex,
+        ),
+      );
+    });
+
+    Widget buildSubject() {
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => ReportContentDialog(video: testVideo),
+                  ),
+                  child: const Text('Open Report'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      return testProviderScope(
+        mockNostrService: mockNostrClient,
+        additionalOverrides: [
+          contentReportingServiceProvider.overrideWith(
+            (ref) async => mockReportingService,
+          ),
+          contentBlocklistServiceProvider.overrideWith(
+            (ref) => mockBlocklistService,
+          ),
+          muteServiceProvider.overrideWith((ref) async => mockMuteService),
+          dmRepositoryProvider.overrideWithValue(mockDmRepository),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      );
+    }
+
+    Future<void> openAndSubmitReport(WidgetTester tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Report'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets(
+      'sends DM to moderation team after successful report',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openAndSubmitReport(tester);
+
+        verify(
+          () => mockDmRepository.sendMessage(
+            recipientPubkey: ModerationLabelService.divineModerationPubkeyHex,
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets(
+      'DM content includes report reason and event ID',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openAndSubmitReport(tester);
+
+        final captured = verify(
+          () => mockDmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: captureAny(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+          ),
+        ).captured;
+
+        final dmContent = captured.single as String;
+        expect(
+          dmContent,
+          contains('Content Report'),
+          reason: 'DM should be labeled as a content report',
+        );
+        expect(
+          dmContent,
+          contains('Spam or Unwanted Content'),
+          reason: 'DM should include the report reason',
+        );
+        expect(
+          dmContent,
+          contains(testVideo.id),
+          reason: 'DM should include the reported event ID',
+        );
+      },
+    );
+
+    testWidgets(
+      'report succeeds even if moderation DM fails',
+      (tester) async {
+        when(
+          () => mockDmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+          ),
+        ).thenThrow(Exception('DM relay unreachable'));
+
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await openAndSubmitReport(tester);
+
+        // Confirmation dialog should still appear
+        expect(
+          find.text('Report Received'),
+          findsOneWidget,
+          reason: 'Report should succeed even if DM fails',
+        );
+      },
+    );
+
+    testWidgets(
+      'report succeeds when DM send throws (unauthenticated/no keys)',
+      (tester) async {
+        // Simulate unauthenticated scenario where sendMessage throws
+        final noKeysDmRepo = _MockDmRepository();
+        when(
+          () => noKeysDmRepo.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+          ),
+        ).thenThrow(Exception('No keys available'));
+
+        final router = GoRouter(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => showDialog<void>(
+                      context: context,
+                      builder: (_) => ReportContentDialog(video: testVideo),
+                    ),
+                    child: const Text('Open Report'),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        await tester.pumpWidget(
+          testProviderScope(
+            mockNostrService: mockNostrClient,
+            additionalOverrides: [
+              contentReportingServiceProvider.overrideWith(
+                (ref) async => mockReportingService,
+              ),
+              dmRepositoryProvider.overrideWithValue(noKeysDmRepo),
+            ],
+            child: MaterialApp.router(routerConfig: router),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Report'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Spam or Unwanted Content'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.widgetWithText(TextButton, 'Report'));
+        await tester.pumpAndSettle();
+
+        // Report should succeed even when DM fails
+        expect(find.text('Report Received'), findsOneWidget);
+        verifyNever(
+          () => mockDmRepository.sendMessage(
+            recipientPubkey: any(named: 'recipientPubkey'),
+            content: any(named: 'content'),
+            replyToId: any(named: 'replyToId'),
+          ),
+        );
+      },
+    );
+  });
+
+  group('moderation constants', () {
+    test(
+      'moderation pubkey is a valid 64-character hex string',
+      () {
+        expect(
+          ModerationLabelService.divineModerationPubkeyHex.length,
+          equals(64),
+        );
+        expect(
+          RegExp(r'^[0-9a-f]{64}$').hasMatch(
+            ModerationLabelService.divineModerationPubkeyHex,
+          ),
+          isTrue,
+        );
+      },
+    );
   });
 }

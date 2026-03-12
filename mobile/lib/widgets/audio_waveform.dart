@@ -143,7 +143,7 @@ class _AudioWaveformState extends State<AudioWaveform>
   @override
   Widget build(BuildContext context) {
     final waveformColor = widget.color ?? VineTheme.vineGreen;
-    final bgColor = widget.backgroundColor ?? Colors.transparent;
+    final bgColor = widget.backgroundColor ?? VineTheme.transparent;
     // Total height: waveform + spacing + text
     final totalHeight = widget.height + _spacing + _textHeight;
 

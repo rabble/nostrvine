@@ -87,7 +87,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
     final statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Drawer(
-      backgroundColor: Colors.transparent,
+      backgroundColor: VineTheme.transparent,
       child: Container(
         margin: EdgeInsets.only(top: statusBarHeight),
         decoration: const BoxDecoration(

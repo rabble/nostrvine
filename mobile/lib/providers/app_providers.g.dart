@@ -3697,11 +3697,17 @@ final class MuteServiceProvider
 String _$muteServiceHash() => r'a7faf00b4fe5d420db0bff450d444db5aa5d4934';
 
 /// Video sharing service
+///
+/// When a [DmRepository] is available the service sends videos via NIP-17
+/// encrypted DMs (NIP-17). Otherwise falls back to NIP-04 kind 4.
 
 @ProviderFor(videoSharingService)
 const videoSharingServiceProvider = VideoSharingServiceProvider._();
 
 /// Video sharing service
+///
+/// When a [DmRepository] is available the service sends videos via NIP-17
+/// encrypted DMs (NIP-17). Otherwise falls back to NIP-04 kind 4.
 
 final class VideoSharingServiceProvider
     extends
@@ -3712,6 +3718,9 @@ final class VideoSharingServiceProvider
         >
     with $Provider<VideoSharingService> {
   /// Video sharing service
+  ///
+  /// When a [DmRepository] is available the service sends videos via NIP-17
+  /// encrypted DMs (NIP-17). Otherwise falls back to NIP-04 kind 4.
   const VideoSharingServiceProvider._()
     : super(
         from: null,
@@ -3747,7 +3756,7 @@ final class VideoSharingServiceProvider
 }
 
 String _$videoSharingServiceHash() =>
-    r'b001f6ce04c25673327f72bcfbbcd27db6e49e7e';
+    r'4c869ac60484c15c6c196f164af34d658d9f2cac';
 
 /// Content deletion service for NIP-09 delete events
 

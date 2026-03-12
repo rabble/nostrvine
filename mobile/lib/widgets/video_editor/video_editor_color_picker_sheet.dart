@@ -1,32 +1,25 @@
 // ABOUTME: Bottom sheet for color selection in the video editor.
-// ABOUTME: Shows a grid of colors with iOS-style blurred background.
+// ABOUTME: Shows a grid of preset and recent colors with a custom color picker.
 // ABOUTME: Persists recently picked custom colors in SharedPreferences.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/widgets/divine_secondary_button.dart';
-import 'package:openvine/widgets/video_editor/video_editor_blurred_panel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Bottom sheet for color selection with iOS-style blurred background.
+/// Bottom sheet for color selection in the video editor.
 class VideoEditorColorPickerSheet extends ConsumerStatefulWidget {
   const VideoEditorColorPickerSheet({
     required this.selectedColor,
     required this.onColorSelected,
     super.key,
-    this.height,
   });
 
   final Color selectedColor;
   final ValueChanged<Color> onColorSelected;
-
-  /// Optional height constraint for inline display (e.g., replacing keyboard).
-  final double? height;
 
   @override
   ConsumerState<VideoEditorColorPickerSheet> createState() =>
@@ -35,17 +28,20 @@ class VideoEditorColorPickerSheet extends ConsumerStatefulWidget {
 
 class _VideoEditorColorPickerSheetState
     extends ConsumerState<VideoEditorColorPickerSheet> {
-  /// Minimum size for color buttons. Items may grow larger to fill space.
-  static const double _minItemSize = 40;
+  /// Fixed number of items per row.
+  static const int _crossAxisCount = 6;
 
-  /// Spacing between items.
-  static const double _crossAxisSpacing = 10;
+  /// Preferred size for color buttons.
+  static const double _preferredItemSize = 48;
 
-  /// Spacing between rows.
-  static const double _mainAxisSpacing = 22;
+  /// Preferred spacing between items.
+  static const double _preferredSpacing = 16;
 
-  /// Horizontal padding.
-  static const double _horizontalPadding = 20;
+  /// Minimum spacing before item size is reduced.
+  static const double _minSpacing = 10;
+
+  /// Color shown for empty recent-color slots.
+  static const Color _emptySlotColor = Color(0xFF032017);
 
   /// SharedPreferences key for storing recent custom colors.
   static const _recentColorsKey = 'video_editor_recent_colors';
@@ -64,15 +60,13 @@ class _VideoEditorColorPickerSheetState
     return stored.map((hex) => Color(int.tryParse(hex) ?? 0)).toList();
   }
 
-  void _saveRecentColor(Color color, {required int maxCount}) {
+  void _saveRecentColor(Color color) {
     final prefs = ref.read(sharedPreferencesProvider);
-    // Remove if already present, then add to front
     _recentColors
       ..remove(color)
       ..insert(0, color);
-    // Limit to one row worth of items
-    if (_recentColors.length > maxCount) {
-      _recentColors = _recentColors.sublist(0, maxCount);
+    if (_recentColors.length > _crossAxisCount) {
+      _recentColors = _recentColors.sublist(0, _crossAxisCount);
     }
     prefs.setStringList(
       _recentColorsKey,
@@ -81,7 +75,7 @@ class _VideoEditorColorPickerSheetState
     setState(() {});
   }
 
-  void _openColorPicker(BuildContext context, {required int maxCount}) {
+  void _openColorPicker(BuildContext context) {
     VineBottomSheet.show(
       context: context,
       expanded: false,
@@ -90,109 +84,107 @@ class _VideoEditorColorPickerSheetState
       body: _FullColorPickerSheet(
         initialColor: VineTheme.primary,
         onColorSelected: (color) {
-          _saveRecentColor(color, maxCount: maxCount);
+          _saveRecentColor(color);
           widget.onColorSelected(color);
         },
       ),
     );
   }
 
-  /// Finds the best crossAxisCount that evenly divides [itemCount].
+  /// Returns (itemSize, spacing) that fit 6 items in [availableWidth].
   ///
-  /// Searches from [maxCount] down to [minCount] to find an even divisor.
-  /// This prefers more items per row (closer to min size) while ensuring
-  /// all rows have equal item counts.
-  int _findBestCrossAxisCount({
-    required int itemCount,
-    required double width,
-    int minCount = 4,
-  }) {
-    // Calculate max items that fit per row at minimum size
-    final availableWidth = width - (_horizontalPadding * 2);
-    const itemWithSpacing = _minItemSize + _crossAxisSpacing;
-    final maxCount = ((availableWidth + _crossAxisSpacing) / itemWithSpacing)
-        .floor()
-        .clamp(1, 10);
+  /// Keeps [_preferredItemSize] and shrinks spacing down to [_minSpacing]
+  /// first. Only reduces item size if spacing alone is not enough.
+  (double, double) _computeLayout(double availableWidth) {
+    double needed(double size, double gap) =>
+        _crossAxisCount * size + (_crossAxisCount - 1) * gap + 2 * gap;
 
-    for (int count = maxCount; count >= minCount; count--) {
-      if (itemCount % count == 0) return count;
+    if (needed(_preferredItemSize, _preferredSpacing) <= availableWidth) {
+      // Absorb excess space into spacing so items stay at 48
+      final gap =
+          (availableWidth - _crossAxisCount * _preferredItemSize) /
+          (_crossAxisCount + 1);
+      return (_preferredItemSize, gap);
     }
-    // No even divisor found - use maxCount (last row will be partial)
-    return maxCount;
+    if (needed(_preferredItemSize, _minSpacing) <= availableWidth) {
+      final gap =
+          (availableWidth - _crossAxisCount * _preferredItemSize) /
+          (_crossAxisCount + 1);
+      return (_preferredItemSize, gap);
+    }
+    final size =
+        (availableWidth - (_crossAxisCount + 1) * _minSpacing) /
+        _crossAxisCount;
+    return (size, _minSpacing);
   }
 
   @override
   Widget build(BuildContext context) {
+    // 1 color picker + 11 preset colors = 12 (2 rows of 6)
     final presetCount = VideoEditorConstants.colors.length + 1;
-    final totalCount = presetCount + _recentColors.length;
+    // 3rd row: recent colors padded to 6
+    final recentRow = List<Color?>.generate(
+      _crossAxisCount,
+      (i) => i < _recentColors.length ? _recentColors[i] : null,
+    );
+    final totalCount = presetCount + _crossAxisCount;
 
-    Widget content = VideoEditorBlurredPanel(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          // Find best count that evenly divides items (items grow to fill)
-          final crossAxisCount = _findBestCrossAxisCount(
-            itemCount: presetCount,
-            width: constraints.maxWidth,
-          );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final (itemSize, spacing) = _computeLayout(constraints.maxWidth);
 
-          return SingleChildScrollView(
-            child: GridView.builder(
-              padding: const .fromLTRB(
-                _horizontalPadding,
-                25,
-                _horizontalPadding,
-                32,
-              ),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: _mainAxisSpacing,
-                crossAxisSpacing: _crossAxisSpacing,
-              ),
-              itemBuilder: (context, index) {
-                if (index < presetCount) {
-                  final isColorPicker = index == 0;
-                  final color = isColorPicker
-                      ? VineTheme.whiteText
-                      : VideoEditorConstants.colors[index - 1];
-                  final isSelected = color == widget.selectedColor;
+        return SingleChildScrollView(
+          padding: .only(bottom: MediaQuery.viewPaddingOf(context).bottom),
+          child: GridView.builder(
+            padding: EdgeInsets.symmetric(
+              horizontal: spacing,
+              vertical: 32,
+            ),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _crossAxisCount,
+              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacing,
+            ),
+            itemBuilder: (context, index) {
+              if (index < presetCount) {
+                final isColorPicker = index == 0;
+                final color = isColorPicker
+                    ? VineTheme.surfaceContainer
+                    : VideoEditorConstants.colors[index - 1];
+                final isSelected = color == widget.selectedColor;
 
-                  return _ColorButton(
-                    color: color,
-                    isSelected: isSelected,
-                    isColorPicker: isColorPicker,
-                    onTap: () => isColorPicker
-                        ? _openColorPicker(
-                            context,
-                            maxCount: crossAxisCount,
-                          )
-                        : widget.onColorSelected(color),
-                  );
-                }
-
-                // Recent custom colors appended after preset colors
-                final color = _recentColors[index - presetCount];
                 return _ColorButton(
                   color: color,
-                  isSelected: color == widget.selectedColor,
-                  isColorPicker: false,
-                  onTap: () => widget.onColorSelected(color),
+                  isSelected: isSelected,
+                  isColorPicker: isColorPicker,
+                  onTap: () => isColorPicker
+                      ? _openColorPicker(context)
+                      : widget.onColorSelected(color),
                 );
-              },
-              itemCount: totalCount,
-            ),
-          );
-        },
-      ),
+              }
+
+              final recentIndex = index - presetCount;
+              final recentColor = recentRow[recentIndex];
+              final color = recentColor ?? _emptySlotColor;
+              final isEmpty = recentColor == null;
+
+              return _ColorButton(
+                color: color,
+                isSelected: !isEmpty && color == widget.selectedColor,
+                isColorPicker: false,
+                isEmpty: isEmpty,
+                onTap: isEmpty
+                    ? () => _openColorPicker(context)
+                    : () => widget.onColorSelected(color),
+              );
+            },
+            itemCount: totalCount,
+          ),
+        );
+      },
     );
-
-    // Wrap with SizedBox if height is specified (inline mode)
-    if (widget.height != null) {
-      content = SizedBox(height: widget.height, child: content);
-    }
-
-    return content;
   }
 }
 
@@ -202,11 +194,13 @@ class _ColorButton extends StatelessWidget {
     required this.isSelected,
     required this.isColorPicker,
     required this.onTap,
+    this.isEmpty = false,
   });
 
   final Color color;
   final bool isSelected;
   final bool isColorPicker;
+  final bool isEmpty;
   final VoidCallback onTap;
 
   String _getColorName(Color color) {
@@ -231,38 +225,68 @@ class _ColorButton extends StatelessWidget {
       button: true,
       child: GestureDetector(
         onTap: onTap,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: .circular(16),
-            border: isSelected
-                ? .all(
-                    strokeAlign: BorderSide.strokeAlignOutside,
-                    color: VineTheme.whiteText,
-                    width: 4,
-                  )
-                : null,
-          ),
-          child: Padding(
-            padding: isSelected ? const EdgeInsets.all(2) : EdgeInsets.zero,
-            child: DecoratedBox(
+        child: Stack(
+          fit: .expand,
+          clipBehavior: .none,
+          children: [
+            DecoratedBox(
               decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(isSelected ? 14 : 16),
+                borderRadius: .circular(22),
                 border: isSelected
-                    ? null
-                    : Border.all(color: VineTheme.onSurface, width: 2),
+                    ? .all(
+                        strokeAlign: BorderSide.strokeAlignOutside,
+                        color: VineTheme.primary,
+                        width: 4,
+                      )
+                    : null,
               ),
-              child: isColorPicker
-                  ? const Center(
-                      child: DivineIcon(
-                        icon: .paintBrush,
-                        color: VineTheme.inverseOnSurface,
-                        size: 28,
-                      ),
-                    )
-                  : null,
+              child: Padding(
+                padding: isSelected ? const .all(2) : .zero,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: .circular(20),
+                    border: isSelected
+                        ? null
+                        : .all(
+                            color: isColorPicker
+                                ? VineTheme.outlineMuted
+                                : VineTheme.onSurfaceDisabled,
+                            width: isColorPicker ? 2 : 1,
+                          ),
+                  ),
+                  child: isColorPicker
+                      ? const Center(
+                          child: DivineIcon(
+                            icon: .paintBrush,
+                            color: VineTheme.primary,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
             ),
-          ),
+            if (isSelected)
+              Positioned(
+                bottom: -4,
+                right: -4,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const ShapeDecoration(
+                    color: VineTheme.primary,
+                    shape: OvalBorder(),
+                  ),
+                  child: const Center(
+                    child: DivineIcon(
+                      icon: .check,
+                      color: VineTheme.whiteText,
+                      size: 15,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -283,35 +307,271 @@ class _FullColorPickerSheet extends StatefulWidget {
 }
 
 class _FullColorPickerSheetState extends State<_FullColorPickerSheet> {
-  late Color _pickerColor = widget.initialColor;
+  late HSVColor _hsvColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _hsvColor = HSVColor.fromColor(widget.initialColor);
+  }
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const .symmetric(vertical: 16),
       child: Column(
         crossAxisAlignment: .start,
         mainAxisSize: .min,
-        spacing: 16,
         children: [
-          ColorPicker(
-            pickerColor: _pickerColor,
-            onColorChanged: (color) => setState(() {
-              _pickerColor = color;
-            }),
-            enableAlpha: false,
-            displayThumbColor: true,
-            pickerAreaHeightPercent: 0.7,
-            pickerAreaBorderRadius: .circular(16),
+          Padding(
+            padding: const .symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: .spaceBetween,
+              spacing: 12,
+              children: [
+                DivineIconButton(
+                  icon: .x,
+                  type: .secondary,
+                  size: .small,
+                  semanticLabel: 'Close color picker',
+                  onPressed: context.pop,
+                ),
+                Flexible(
+                  child: Text(
+                    'Pick color',
+                    style: VineTheme.titleMediumFont(fontSize: 16),
+                  ),
+                ),
+                DivineIconButton(
+                  icon: .check,
+                  size: .small,
+                  semanticLabel: 'Confirm color',
+                  onPressed: () {
+                    widget.onColorSelected(_hsvColor.toColor());
+                    context.pop();
+                  },
+                ),
+              ],
+            ),
           ),
-          DivineSecondaryButton(
-            onPressed: () {
-              widget.onColorSelected(_pickerColor);
-              context.pop();
-            },
-            label: 'Select',
+          const Divider(
+            height: 32,
+            thickness: 2,
+            color: VineTheme.outlinedDisabled,
+          ),
+          Padding(
+            padding: const .symmetric(horizontal: 8),
+            child: _SaturationBrightnessPanel(
+              hsvColor: _hsvColor,
+              onChanged: (hsv) => setState(() => _hsvColor = hsv),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Padding(
+            padding: const .symmetric(horizontal: 8),
+            child: _HueBar(
+              hue: _hsvColor.hue,
+              onChanged: (hue) => setState(() {
+                _hsvColor = _hsvColor.withHue(hue);
+              }),
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SaturationBrightnessPanel extends StatelessWidget {
+  const _SaturationBrightnessPanel({
+    required this.hsvColor,
+    required this.onChanged,
+  });
+
+  final HSVColor hsvColor;
+  final ValueChanged<HSVColor> onChanged;
+
+  static const double _height = 224;
+  static const double _borderRadius = 16;
+  static const double _thumbSize = 24;
+
+  void _handleInteraction(Offset localPosition, Size size) {
+    final s = (localPosition.dx / size.width).clamp(0.0, 1.0);
+    final v = 1.0 - (localPosition.dy / size.height).clamp(0.0, 1.0);
+    onChanged(hsvColor.withSaturation(s).withValue(v));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, _height);
+        return GestureDetector(
+          onPanStart: (d) => _handleInteraction(d.localPosition, size),
+          onPanUpdate: (d) => _handleInteraction(d.localPosition, size),
+          onTapDown: (d) => _handleInteraction(d.localPosition, size),
+          child: SizedBox(
+            width: size.width,
+            height: size.height,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(_borderRadius),
+                  child: CustomPaint(
+                    size: size,
+                    painter: _SatBrightPainter(hue: hsvColor.hue),
+                  ),
+                ),
+                Positioned(
+                  left: hsvColor.saturation * size.width - _thumbSize / 2,
+                  top: (1 - hsvColor.value) * size.height - _thumbSize / 2,
+                  child: const _ColorThumb(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SatBrightPainter extends CustomPainter {
+  _SatBrightPainter({required this.hue});
+
+  final double hue;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final hueColor = HSVColor.fromAHSV(1, hue, 1, 1).toColor();
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          colors: [Colors.white, hueColor],
+        ).createShader(rect),
+    );
+
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.transparent, Colors.black],
+        ).createShader(rect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SatBrightPainter oldDelegate) => oldDelegate.hue != hue;
+}
+
+class _HueBar extends StatelessWidget {
+  const _HueBar({
+    required this.hue,
+    required this.onChanged,
+  });
+
+  final double hue;
+  final ValueChanged<double> onChanged;
+
+  static const double _height = 24;
+  static const double _thumbSize = 24;
+
+  void _handleInteraction(Offset localPosition, double width) {
+    final h = (localPosition.dx / width).clamp(0.0, 1.0) * 360;
+    onChanged(h);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        return GestureDetector(
+          onPanStart: (d) => _handleInteraction(d.localPosition, width),
+          onPanUpdate: (d) => _handleInteraction(d.localPosition, width),
+          onTapDown: (d) => _handleInteraction(d.localPosition, width),
+          child: SizedBox(
+            width: width,
+            height: _height,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipRRect(
+                  borderRadius: .circular(_height / 2),
+                  child: CustomPaint(
+                    size: Size(width, _height),
+                    painter: const _HueBarPainter(),
+                  ),
+                ),
+                Positioned(
+                  left: (hue / 360) * width - _thumbSize / 2,
+                  top: 0,
+                  child: const _ColorThumb(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HueBarPainter extends CustomPainter {
+  const _HueBarPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    const colors = <Color>[
+      Color(0xFFFF0000),
+      Color(0xFFFFFF00),
+      Color(0xFF00FF00),
+      Color(0xFF00FFFF),
+      Color(0xFF0000FF),
+      Color(0xFFFF00FF),
+      Color(0xFFFF0000),
+    ];
+    canvas.drawRect(
+      rect,
+      Paint()..shader = const LinearGradient(colors: colors).createShader(rect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _ColorThumb extends StatelessWidget {
+  const _ColorThumb();
+
+  static const double _size = 24;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: SizedBox(
+        width: _size,
+        height: _size,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            shape: .circle,
+            border: .all(color: VineTheme.whiteText, width: 3),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x40000000),
+                blurRadius: 4,
+                offset: Offset(0, 1),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

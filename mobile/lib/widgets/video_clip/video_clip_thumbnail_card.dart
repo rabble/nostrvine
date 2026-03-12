@@ -1,11 +1,12 @@
 // ABOUTME: Thumbnail card widget for displaying video clips in grid layout
 // ABOUTME: Shows thumbnail with duration badge, selection state, and tap handlers
 
+import 'dart:io';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 
 /// Thumbnail card for a single clip in the grid.

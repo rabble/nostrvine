@@ -13,23 +13,28 @@ class MockTextEditorState extends Mock implements TextEditorState {
       'MockTextEditorState';
 }
 
+class MockTextEditorKey extends Mock implements GlobalKey<TextEditorState> {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoTextEditorScope', () {
+    late MockTextEditorKey mockKey;
     late MockTextEditorState mockEditor;
 
     setUp(() {
+      mockKey = MockTextEditorKey();
       mockEditor = MockTextEditorState();
+      when(() => mockKey.currentState).thenReturn(mockEditor);
     });
 
     Widget buildWidget({
-      required TextEditorState editor,
+      required GlobalKey<TextEditorState> editorKey,
       required Widget child,
     }) {
       return Directionality(
         textDirection: TextDirection.ltr,
-        child: VideoTextEditorScope(editor: editor, child: child),
+        child: VideoTextEditorScope(editorKey: editorKey, child: child),
       );
     }
 
@@ -39,7 +44,7 @@ void main() {
 
         await tester.pumpWidget(
           buildWidget(
-            editor: mockEditor,
+            editorKey: mockKey,
             child: Builder(
               builder: (context) {
                 foundScope = VideoTextEditorScope.of(context);
@@ -50,7 +55,7 @@ void main() {
         );
 
         expect(foundScope, isNotNull);
-        expect(foundScope!.editor, mockEditor);
+        expect(foundScope!.editorKey, mockKey);
       });
 
       testWidgets('throws assertion when no scope found', (tester) async {
@@ -78,7 +83,7 @@ void main() {
 
         await tester.pumpWidget(
           buildWidget(
-            editor: mockEditor,
+            editorKey: mockKey,
             child: Builder(
               builder: (context) {
                 foundScope = VideoTextEditorScope.maybeOf(context);
@@ -89,7 +94,7 @@ void main() {
         );
 
         expect(foundScope, isNotNull);
-        expect(foundScope!.editor, mockEditor);
+        expect(foundScope!.editorKey, mockKey);
       });
 
       testWidgets('returns null when no scope found', (tester) async {
@@ -112,15 +117,15 @@ void main() {
     });
 
     group('updateShouldNotify', () {
-      testWidgets('returns true when editor changes', (tester) async {
-        final oldEditor = MockTextEditorState();
-        final newEditor = MockTextEditorState();
+      testWidgets('returns true when editorKey changes', (tester) async {
+        final oldKey = MockTextEditorKey();
+        final newKey = MockTextEditorKey();
 
         int buildCount = 0;
 
         await tester.pumpWidget(
           buildWidget(
-            editor: oldEditor,
+            editorKey: oldKey,
             child: Builder(
               builder: (context) {
                 VideoTextEditorScope.of(context);
@@ -133,10 +138,10 @@ void main() {
 
         expect(buildCount, 1);
 
-        // Update with a new editor
+        // Update with a new key
         await tester.pumpWidget(
           buildWidget(
-            editor: newEditor,
+            editorKey: newKey,
             child: Builder(
               builder: (context) {
                 VideoTextEditorScope.of(context);
@@ -147,23 +152,23 @@ void main() {
           ),
         );
 
-        // Should rebuild because editor changed
+        // Should rebuild because editorKey changed
         expect(buildCount, 2);
       });
     });
 
     group('nested scopes', () {
       testWidgets('inner scope overrides outer scope', (tester) async {
-        final outerEditor = MockTextEditorState();
-        final innerEditor = MockTextEditorState();
+        final outerKey = MockTextEditorKey();
+        final innerKey = MockTextEditorKey();
 
         VideoTextEditorScope? foundScope;
 
         await tester.pumpWidget(
           buildWidget(
-            editor: outerEditor,
+            editorKey: outerKey,
             child: VideoTextEditorScope(
-              editor: innerEditor,
+              editorKey: innerKey,
               child: Builder(
                 builder: (context) {
                   foundScope = VideoTextEditorScope.of(context);
@@ -175,8 +180,8 @@ void main() {
         );
 
         expect(foundScope, isNotNull);
-        expect(foundScope!.editor, innerEditor);
-        expect(foundScope!.editor, isNot(outerEditor));
+        expect(foundScope!.editorKey, innerKey);
+        expect(foundScope!.editorKey, isNot(outerKey));
       });
     });
   });

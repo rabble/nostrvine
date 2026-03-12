@@ -2,6 +2,7 @@
 // ABOUTME: Manages video player lifecycle for the currently selected clip
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -250,7 +251,7 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
                       : widget.isReordering
                       // Yellow when reordering
                       ? VineTheme.accentYellow
-                      : Colors.transparent, // Transparent otherwise
+                      : VineTheme.transparent, // Transparent otherwise
                   width: 6,
                   strokeAlign: BorderSide.strokeAlignOutside,
                 ),
@@ -343,8 +344,8 @@ class _ClipThumbnail extends StatelessWidget {
     if (clip.thumbnailPath == null) {
       return const ColoredBox(
         color: VineTheme.lightText,
-        child: Icon(
-          Icons.play_circle_outline,
+        child: DivineIcon(
+          icon: .playCircle,
           size: 64,
           color: VineTheme.whiteText,
         ),

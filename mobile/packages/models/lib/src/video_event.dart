@@ -64,6 +64,7 @@ class VideoEvent {
     this.textTrackRef,
     this.textTrackContent,
     this.contentWarningLabels = const [],
+    this.moderationLabels = const [],
     this.warnLabels = const [],
   });
 
@@ -732,6 +733,14 @@ class VideoEvent {
   /// `["content-warning", "<reason>"]` tags. Empty if no warnings.
   final List<String> contentWarningLabels;
 
+  /// ML-generated moderation labels from Funnelcake's classifier.
+  ///
+  /// These are separate from [contentWarningLabels] (author self-labels)
+  /// because ML labels are noisy and should only trigger "hide" filtering,
+  /// not "warn" blur overlays that block autoplay.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final List<String> moderationLabels;
+
   /// Content warning labels that triggered the "warn" filter preference.
   ///
   /// Set during feed processing based on user's per-category filter settings.
@@ -1143,6 +1152,7 @@ class VideoEvent {
     String? textTrackRef,
     String? textTrackContent,
     List<String>? contentWarningLabels,
+    List<String>? moderationLabels,
     List<String>? warnLabels,
   }) => VideoEvent(
     id: id ?? this.id,
@@ -1197,6 +1207,7 @@ class VideoEvent {
     textTrackRef: textTrackRef ?? this.textTrackRef,
     textTrackContent: textTrackContent ?? this.textTrackContent,
     contentWarningLabels: contentWarningLabels ?? this.contentWarningLabels,
+    moderationLabels: moderationLabels ?? this.moderationLabels,
     warnLabels: warnLabels ?? this.warnLabels,
   );
 

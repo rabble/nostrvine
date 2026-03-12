@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +27,11 @@ Widget _createTestApp(Widget child) {
       ),
       GoRoute(
         path: '/home/:index',
-        builder: (context, state) => Scaffold(body: child),
+        builder: (context, state) => const Scaffold(body: Placeholder()),
+      ),
+      GoRoute(
+        path: '/drafts',
+        builder: (context, state) => const Scaffold(body: Placeholder()),
       ),
     ],
   );
@@ -280,16 +285,407 @@ void main() {
       expect(postVideoCalled, isTrue);
       expect(find.textContaining('permission denied'), findsOneWidget);
     });
+
+    group('snackbar error state', () {
+      VideoEditorProviderState validState0() => VideoEditorProviderState(
+        title: 'Test',
+        finalRenderedClip: DivineVideoClip(
+          id: 'test',
+          video: EditorVideo.file('test.mp4'),
+          duration: const Duration(seconds: 5),
+          recordedAt: DateTime.now(),
+          targetAspectRatio: models.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
+        ),
+      );
+
+      DivineSnackbarContainer findSnackbarContainer(
+        WidgetTester tester,
+      ) {
+        return tester.widget<DivineSnackbarContainer>(
+          find.byType(DivineSnackbarContainer),
+        );
+      }
+
+      testWidgets(
+        'save for later shows non-error snackbar '
+        'when gallery and draft both succeed',
+        (tester) async {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final mockNotifier = _MockVideoEditorNotifier(validState0());
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          await tester.tap(find.text('Save for Later'));
+          await tester.pumpAndSettle();
+
+          final snackbar = findSnackbarContainer(tester);
+          expect(snackbar.error, isFalse);
+          expect(snackbar.label, equals('Saved to library'));
+        },
+      );
+
+      testWidgets(
+        'save for later shows error snackbar when draft save fails '
+        'but gallery succeeds',
+        (tester) async {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final destination = GallerySaveService.destinationName;
+          final mockNotifier = _MockVideoEditorNotifier(
+            validState0(),
+            saveAsDraftResult: false,
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          await tester.tap(find.text('Save for Later'));
+          await tester.pumpAndSettle();
+
+          final snackbar = findSnackbarContainer(tester);
+          expect(snackbar.error, isTrue);
+          expect(
+            snackbar.label,
+            equals(
+              'Saved to $destination, but failed to save to library',
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'save for later shows error snackbar when gallery '
+        'save fails with reason',
+        (tester) async {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer(
+            (_) async => const GallerySaveFailure('disk full'),
+          );
+
+          final destination = GallerySaveService.destinationName;
+          final mockNotifier = _MockVideoEditorNotifier(validState0());
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          await tester.tap(find.text('Save for Later'));
+          await tester.pumpAndSettle();
+
+          final snackbar = findSnackbarContainer(tester);
+          expect(snackbar.error, isTrue);
+          expect(
+            snackbar.label,
+            equals(
+              'Saved to library, but '
+              'failed to save to $destination: disk full',
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'save for later shows error snackbar '
+        'when both draft and gallery fail',
+        (tester) async {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer(
+            (_) async => const GallerySavePermissionDenied(),
+          );
+
+          final destination = GallerySaveService.destinationName;
+          final mockNotifier = _MockVideoEditorNotifier(
+            validState0(),
+            saveAsDraftResult: false,
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          await tester.tap(find.text('Save for Later'));
+          await tester.pumpAndSettle();
+
+          final snackbar = findSnackbarContainer(tester);
+          expect(snackbar.error, isTrue);
+          expect(
+            snackbar.label,
+            equals(
+              'Failed to save to library, '
+              'and $destination permission denied',
+            ),
+          );
+        },
+      );
+
+      testWidgets(
+        'save for later shows error snackbar '
+        'when draft fails and no clip for gallery',
+        (tester) async {
+          // State without finalRenderedClip so gallery save returns null.
+          final mockNotifier = _MockVideoEditorNotifier(
+            VideoEditorProviderState(title: 'Test'),
+            saveAsDraftResult: false,
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          await tester.tap(find.text('Save for Later'));
+          await tester.pumpAndSettle();
+
+          final snackbar = findSnackbarContainer(tester);
+          expect(snackbar.error, isTrue);
+          expect(snackbar.label, equals('Failed to save'));
+        },
+      );
+
+      testWidgets(
+        'save for later snackbar shows Go to Library action',
+        (tester) async {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final mockNotifier = _MockVideoEditorNotifier(validState0());
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          await tester.tap(find.text('Save for Later'));
+          await tester.pumpAndSettle();
+
+          final snackbar = findSnackbarContainer(tester);
+          expect(snackbar.actionLabel, equals('Go to Library'));
+          expect(snackbar.onActionPressed, isNotNull);
+        },
+      );
+
+      testWidgets(
+        'save for later navigates to feed on success',
+        (tester) async {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final mockNotifier = _MockVideoEditorNotifier(validState0());
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          // Verify we start on the page with the bottom bar.
+          expect(
+            find.byType(VideoMetadataBottomBar),
+            findsOneWidget,
+          );
+
+          await tester.tap(find.text('Save for Later'));
+          await tester.pumpAndSettle();
+
+          // After successful save, navigates away from the bottom bar.
+          expect(find.byType(Placeholder), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'save for later does not navigate to feed on failure',
+        (tester) async {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer(
+            (_) async => const GallerySavePermissionDenied(),
+          );
+
+          final mockNotifier = _MockVideoEditorNotifier(
+            validState0(),
+            saveAsDraftResult: false,
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          await tester.tap(find.text('Save for Later'));
+          await tester.pumpAndSettle();
+
+          // Stays on the bottom bar page, does not navigate away.
+          expect(
+            find.byType(VideoMetadataBottomBar),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'post shows no snackbar when gallery save succeeds',
+        (tester) async {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer((_) async => const GallerySaveSuccess());
+
+          final mockNotifier = _MockVideoEditorNotifier(
+            validState0(),
+            onPostVideo: () {},
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          await tester.tap(find.text('Post'));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.byType(DivineSnackbarContainer),
+            findsNothing,
+          );
+        },
+      );
+
+      testWidgets(
+        'post shows error snackbar with gallery failure reason',
+        (tester) async {
+          when(
+            () => mockGallerySaveService.saveVideoToGallery(any()),
+          ).thenAnswer(
+            (_) async => const GallerySaveFailure('no space'),
+          );
+
+          final destination = GallerySaveService.destinationName;
+          final mockNotifier = _MockVideoEditorNotifier(
+            validState0(),
+            onPostVideo: () {},
+          );
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                videoEditorProvider.overrideWith(() => mockNotifier),
+                gallerySaveServiceProvider.overrideWith(
+                  (ref) => mockGallerySaveService,
+                ),
+              ],
+              child: _createTestApp(const VideoMetadataBottomBar()),
+            ),
+          );
+
+          await tester.tap(find.text('Post'));
+          await tester.pumpAndSettle();
+
+          final snackbar = findSnackbarContainer(tester);
+          expect(snackbar.error, isTrue);
+          expect(
+            snackbar.label,
+            equals(
+              'failed to save to $destination: '
+              'no space. Video will still post.',
+            ),
+          );
+        },
+      );
+    });
   });
 }
 
 /// Mock notifier for testing
 class _MockVideoEditorNotifier extends VideoEditorNotifier {
-  _MockVideoEditorNotifier(this._state, {this.onPostVideo, this.onSaveAsDraft});
+  _MockVideoEditorNotifier(
+    this._state, {
+    this.onPostVideo,
+    this.onSaveAsDraft,
+    this.saveAsDraftResult = true,
+  });
 
   final VideoEditorProviderState _state;
   final VoidCallback? onPostVideo;
   final VoidCallback? onSaveAsDraft;
+  final bool saveAsDraftResult;
 
   @override
   VideoEditorProviderState build() => _state;
@@ -302,6 +698,6 @@ class _MockVideoEditorNotifier extends VideoEditorNotifier {
   @override
   Future<bool> saveAsDraft() async {
     onSaveAsDraft?.call();
-    return true;
+    return saveAsDraftResult;
   }
 }

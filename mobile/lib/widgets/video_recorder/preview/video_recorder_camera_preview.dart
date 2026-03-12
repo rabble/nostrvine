@@ -1,8 +1,6 @@
 // ABOUTME: Camera preview widget with animated aspect ratio transitions and grid overlay
 // ABOUTME: Handles tap-to-focus and displays rule-of-thirds grid during non-recording state
 
-import 'dart:io';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -122,9 +120,9 @@ class _CameraPreview extends ConsumerWidget {
             Container(color: const Color(0xFF141414)),
 
             /// Preview widget
-            if (!kIsWeb && Platform.isMacOS)
+            if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS)
               const VideoRecorderMacosPreview()
-            else if (!kIsWeb && Platform.isLinux)
+            else if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux)
               const SizedBox.shrink()
             else
               const VideoRecorderMobilePreview(),

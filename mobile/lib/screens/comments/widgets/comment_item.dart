@@ -75,7 +75,7 @@ class _CommentItemState extends ConsumerState<CommentItem> {
         });
       },
       child: ColoredBox(
-        color: _isHeld ? VineTheme.containerLow : Colors.transparent,
+        color: _isHeld ? VineTheme.containerLow : VineTheme.transparent,
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,

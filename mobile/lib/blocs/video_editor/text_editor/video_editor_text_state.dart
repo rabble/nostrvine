@@ -6,7 +6,7 @@ class VideoEditorTextState extends Equatable {
     this.text = '',
     this.selectedFontIndex = 0,
     this.alignment = .center,
-    this.color = Colors.black,
+    this.color = VineTheme.backgroundColor,
     this.backgroundStyle = .backgroundAndColor,
     this.fontSize = 0.5,
     this.showFontSelector = false,

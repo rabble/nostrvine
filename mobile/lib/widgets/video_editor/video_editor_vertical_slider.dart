@@ -106,8 +106,6 @@ class _SliderBody extends StatelessWidget {
   final GestureDragUpdateCallback onDragUpdate;
   final GestureDragEndCallback onDragEnd;
 
-  static const _trackWidth = 2.0;
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -123,11 +121,11 @@ class _SliderBody extends StatelessWidget {
             minWidth: kMinInteractiveDimension,
           ),
           child: Stack(
-            alignment: .centerRight,
+            alignment: .center,
             clipBehavior: .none,
             children: [
               // Track
-              _Track(height: height, trackWidth: _trackWidth, value: value),
+              _Track(height: height, value: value),
               // Thumb
               _Thumb(value: value, height: height),
             ],
@@ -142,12 +140,10 @@ class _SliderBody extends StatelessWidget {
 class _Track extends StatelessWidget {
   const _Track({
     required this.height,
-    required this.trackWidth,
     required this.value,
   });
 
   final double height;
-  final double trackWidth; // Not used anymore, kept for API compatibility
   final double value;
 
   @override
@@ -197,7 +193,6 @@ class _TrackPainter extends CustomPainter {
         bottom: splitY,
         topWidth: topWidth,
         bottomWidth: splitWidth,
-        totalHeight: height,
       );
       canvas.drawPath(inactivePath, Paint()..color = inactiveColor);
     }
@@ -209,7 +204,6 @@ class _TrackPainter extends CustomPainter {
         bottom: height,
         topWidth: splitWidth,
         bottomWidth: bottomWidth,
-        totalHeight: height,
       );
       canvas.drawPath(activePath, Paint()..color = activeColor);
     }
@@ -220,35 +214,32 @@ class _TrackPainter extends CustomPainter {
     required double bottom,
     required double topWidth,
     required double bottomWidth,
-    required double totalHeight,
   }) {
     final path = Path();
 
-    // Right side is aligned to the right edge (x = 16)
-    // Left side is angled
-    const rightEdge = _TrackPainter.topWidth;
+    // Symmetric funnel: both edges taper toward center
+    const center = _TrackPainter.topWidth / 2;
 
-    final topLeft = rightEdge - topWidth;
-    final bottomLeft = rightEdge - bottomWidth;
+    final topLeft = center - topWidth / 2;
+    final topRight = center + topWidth / 2;
+    final bottomLeft = center - bottomWidth / 2;
+    final bottomRight = center + bottomWidth / 2;
 
     // Start at top-right, go clockwise
-    // Top-right corner (rounded)
     path
-      ..moveTo(rightEdge - borderRadius, top)
-      ..quadraticBezierTo(rightEdge, top, rightEdge, top + borderRadius)
-      // Right edge (straight down)
-      ..lineTo(rightEdge, bottom - borderRadius)
-      // Bottom-right corner (rounded)
-      ..quadraticBezierTo(rightEdge, bottom, rightEdge - borderRadius, bottom)
-      // Bottom edge
+      ..moveTo(topRight - borderRadius, top)
+      ..quadraticBezierTo(topRight, top, topRight, top + borderRadius)
+      ..lineTo(bottomRight, bottom - borderRadius)
+      ..quadraticBezierTo(
+        bottomRight,
+        bottom,
+        bottomRight - borderRadius,
+        bottom,
+      )
       ..lineTo(bottomLeft + borderRadius, bottom)
-      // Bottom-left corner (rounded)
       ..quadraticBezierTo(bottomLeft, bottom, bottomLeft, bottom - borderRadius)
-      // Left edge (angled up)
       ..lineTo(topLeft, top + borderRadius)
-      // Top-left corner (rounded)
       ..quadraticBezierTo(topLeft, top, topLeft + borderRadius, top)
-      // Top edge back to start
       ..close();
 
     return path;
@@ -269,41 +260,56 @@ class _Thumb extends StatelessWidget {
   final double value;
   final double height;
 
-  static const double _width = 24;
-  static const double _height = 20;
+  static const double _size = 28;
 
   @override
   Widget build(BuildContext context) {
     // Position from bottom (0) to top (1)
-    final thumbTop = (1 - value) * (height - _height);
+    final thumbTop = (1 - value) * (height - _size);
 
     return Positioned(
       top: thumbTop,
-      child: Row(
-        spacing: 8,
-        children: [
-          Text(
-            (value * 100).toStringAsFixed(0),
-            style: VineTheme.labelMediumFont(
-              fontFeatures: [const .tabularFigures()],
+      child: SizedBox(
+        width: _size,
+        height: _size,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: _size,
+              height: _size,
+              decoration: BoxDecoration(
+                color: VineTheme.whiteText,
+                borderRadius: .circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: VineTheme.innerShadow,
+                    offset: Offset(0.4, 0.4),
+                    blurRadius: 0.6,
+                  ),
+                  BoxShadow(
+                    color: VineTheme.innerShadow,
+                    offset: Offset(1, 1),
+                    blurRadius: 1,
+                  ),
+                ],
+              ),
             ),
-          ),
-          Container(
-            width: _width,
-            height: _height,
-            decoration: const BoxDecoration(
-              color: VineTheme.whiteText,
-              borderRadius: BorderRadius.horizontal(left: .circular(3)),
-              boxShadow: [
-                BoxShadow(
-                  color: VineTheme.innerShadowPressed,
-                  offset: Offset(1, 1),
-                  blurRadius: 1,
+            Positioned(
+              right: _size + 8,
+              top: 0,
+              bottom: 0,
+              child: Center(
+                child: Text(
+                  (value * 100).toStringAsFixed(0),
+                  style: VineTheme.labelMediumFont(
+                    fontFeatures: [const .tabularFigures()],
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

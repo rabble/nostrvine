@@ -870,7 +870,7 @@ class _SoundVideoFeedOverlayState extends State<_SoundVideoFeedOverlay> {
                     end: Alignment.bottomCenter,
                     colors: [
                       VineTheme.backgroundColor.withValues(alpha: 0.7),
-                      Colors.transparent,
+                      VineTheme.transparent,
                     ],
                   ),
                 ),

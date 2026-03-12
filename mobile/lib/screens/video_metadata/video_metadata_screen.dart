@@ -82,11 +82,11 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
           children: [
             const Positioned.fill(child: _BackgroundGradient()),
             Scaffold(
-              backgroundColor: Colors.transparent,
+              backgroundColor: VineTheme.transparent,
               appBar: DiVineAppBar(
                 title: 'Post details',
                 backgroundMode: DiVineAppBarBackgroundMode.transparent,
-                surfaceTintColor: Colors.transparent,
+                surfaceTintColor: VineTheme.transparent,
                 showBackButton: true,
                 onBackPressed: context.pop,
                 backButtonHeroTag: VideoEditorConstants.heroBackButtonId,

@@ -2,9 +2,8 @@
 // ABOUTME: Options: Email sign-in, Import Nostr Key, Signer App, or Amber
 // DESIGN: https://www.figma.com/design/rp1DsDEUuCaicW0lk6I2aZ/UI-Design?node-id=5061-65986
 
-import 'dart:io' show Platform;
-
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -193,7 +192,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               padding: EdgeInsets.zero,
-              backgroundColor: Colors.transparent,
+              backgroundColor: VineTheme.transparent,
               elevation: 0,
               behavior: SnackBarBehavior.floating,
               duration: Duration(seconds: 3),
@@ -358,7 +357,8 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
                       : () => context.push(NostrConnectScreen.path),
                 ),
 
-                if (Platform.isAndroid) ...[
+                if (!kIsWeb &&
+                    defaultTargetPlatform == TargetPlatform.android) ...[
                   const SizedBox(height: 12),
                   DivineSecondaryButton(
                     label: 'Sign in with Amber',
@@ -405,7 +405,7 @@ void _showInfoSheet(BuildContext context) {
               'Connect using a NIP-46 compatible remote signer '
               'like nsecBunker for enhanced key security.',
         ),
-        if (Platform.isAndroid) ...[
+        if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) ...[
           const SizedBox(height: 16),
           const _InfoItem(
             title: 'Amber',

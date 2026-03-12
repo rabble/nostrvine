@@ -85,7 +85,7 @@ class VideoExploreTile extends ConsumerWidget {
                       end: Alignment.topCenter,
                       colors: [
                         VineTheme.backgroundColor.withValues(alpha: 0.8),
-                        Colors.transparent,
+                        VineTheme.transparent,
                       ],
                     ),
                   ),

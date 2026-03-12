@@ -21,6 +21,7 @@ class DivineVideoClip {
     Duration? thumbnailTimestamp,
     this.processingCompleter,
     this.lensMetadata,
+    this.ghostFramePath,
   }) : _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
 
@@ -43,6 +44,9 @@ class DivineVideoClip {
 
   /// Camera lens metadata at the time of recording (focal length, aperture, etc.)
   final CameraLensMetadata? lensMetadata;
+
+  /// File path to the last frame of this clip (used for ghost frame overlay).
+  final String? ghostFramePath;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
   bool get isProcessing =>
@@ -71,6 +75,7 @@ class DivineVideoClip {
     model.AspectRatio? targetAspectRatio,
     Completer<bool>? processingCompleter,
     CameraLensMetadata? lensMetadata,
+    String? ghostFramePath,
   }) {
     return DivineVideoClip(
       id: id ?? this.id,
@@ -83,6 +88,7 @@ class DivineVideoClip {
       targetAspectRatio: targetAspectRatio ?? this.targetAspectRatio,
       processingCompleter: processingCompleter ?? this.processingCompleter,
       lensMetadata: lensMetadata ?? this.lensMetadata,
+      ghostFramePath: ghostFramePath ?? this.ghostFramePath,
     );
   }
 

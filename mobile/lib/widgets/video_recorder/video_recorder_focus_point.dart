@@ -1,11 +1,9 @@
 // ABOUTME: Animated focus point indicator widget for camera tap-to-focus
 // ABOUTME: Shows a circular indicator at tap location with scale and fade animations
 
-import 'dart:io' show Platform;
-
 import 'package:divine_camera/divine_camera.dart';
 import 'package:divine_ui/divine_ui.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
@@ -37,7 +35,7 @@ class _VideoRecorderFocusPointState
     if (!isFront) return false;
 
     // On iOS, mirror preview only when native isn't mirroring
-    if (Platform.isIOS) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       return !camera.mirrorFrontCameraOutput;
     }
     return false;

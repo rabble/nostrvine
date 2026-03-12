@@ -466,6 +466,13 @@ class VideoEventService extends ChangeNotifier {
   /// Filter a list of [VideoEvent]s based on the user's content filter
   /// preferences. Videos matching "hide" labels are removed from the list.
   /// Videos matching "warn" labels are kept (the UI shows an overlay).
+  ///
+  /// [contentWarningLabels] (author self-labels from NIP-32/NIP-36) trigger
+  /// both "hide" and "warn" behaviour.
+  ///
+  /// [moderationLabels] (ML-generated from Funnelcake) only trigger "hide"
+  /// filtering — never "warn" blur overlays — because ML classifiers are
+  /// noisy and would otherwise block autoplay on ordinary videos.
   List<VideoEvent> filterVideoList(List<VideoEvent> videos) {
     final service = _contentFilterService;
     final baseVideos = videos
@@ -475,6 +482,8 @@ class VideoEventService extends ChangeNotifier {
 
     return baseVideos
         .map((video) {
+          // Only self-applied content-warning labels can trigger "warn"
+          // overlays. Moderation labels are handled in the hide filter below.
           final labels = video.contentWarningLabels;
           if (labels.isEmpty) {
             return video.warnLabels.isEmpty
@@ -498,10 +507,24 @@ class VideoEventService extends ChangeNotifier {
               : video;
         })
         .where((video) {
-          final labels = video.contentWarningLabels;
-          if (labels.isEmpty) return true;
-          final pref = service.getPreferenceForLabels(labels);
-          return pref != ContentFilterPreference.hide;
+          // Hide check considers both self-labels AND moderation labels.
+          final selfLabels = video.contentWarningLabels;
+          final modLabels = video.moderationLabels;
+          if (selfLabels.isEmpty && modLabels.isEmpty) return true;
+
+          // Check self-labels
+          if (selfLabels.isNotEmpty) {
+            final pref = service.getPreferenceForLabels(selfLabels);
+            if (pref == ContentFilterPreference.hide) return false;
+          }
+
+          // Check moderation labels (hide-only — never warn)
+          if (modLabels.isNotEmpty) {
+            final pref = service.getPreferenceForLabels(modLabels);
+            if (pref == ContentFilterPreference.hide) return false;
+          }
+
+          return true;
         })
         .toList();
   }

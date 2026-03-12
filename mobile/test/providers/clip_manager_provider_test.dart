@@ -371,5 +371,63 @@ void main() {
         );
       });
     });
+
+    group('updateGhostFrame', () {
+      test('updates ghost frame path for existing clip', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        final clipId = container.read(clipManagerProvider).clips[0].id;
+
+        notifier.updateGhostFrame(
+          clipId: clipId,
+          ghostFramePath: '/path/to/ghost.jpg',
+        );
+
+        final state = container.read(clipManagerProvider);
+        expect(state.clips[0].ghostFramePath, equals('/path/to/ghost.jpg'));
+      });
+
+      test('does not throw for non-existent clip', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        // Should log a warning but not throw
+        notifier.updateGhostFrame(
+          clipId: 'non_existent',
+          ghostFramePath: '/path/to/ghost.jpg',
+        );
+
+        final state = container.read(clipManagerProvider);
+        expect(state.clips, isEmpty);
+      });
+
+      test('preserves other clip fields when updating ghost frame', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        notifier.addClip(
+          video: EditorVideo.file('/path/to/video.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          thumbnailPath: '/path/to/thumb.jpg',
+        );
+        final clipId = container.read(clipManagerProvider).clips[0].id;
+
+        notifier.updateGhostFrame(
+          clipId: clipId,
+          ghostFramePath: '/path/to/ghost.jpg',
+        );
+
+        final clip = container.read(clipManagerProvider).clips[0];
+        expect(clip.thumbnailPath, equals('/path/to/thumb.jpg'));
+        expect(clip.duration, equals(const Duration(seconds: 2)));
+        expect(clip.ghostFramePath, equals('/path/to/ghost.jpg'));
+      });
+    });
   });
 }

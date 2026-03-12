@@ -1,11 +1,19 @@
 // ABOUTME: Tests for shake detector service
 // ABOUTME: Verifies shake detection logic without actual accelerometer
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/shake_detector_service.dart';
 
 void main() {
   group('ShakeDetectorService', () {
+    setUp(() {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    });
+
+    tearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+    });
     test('can be instantiated with default values', () {
       final service = ShakeDetectorService();
       expect(service.shakeThreshold, 15.0);

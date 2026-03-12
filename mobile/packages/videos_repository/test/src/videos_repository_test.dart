@@ -511,7 +511,8 @@ void main() {
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
-        test('applies warning labels from REST moderation labels', () async {
+        test('maps REST moderation labels to moderationLabels '
+            '(not contentWarningLabels) and does not apply warn', () async {
           when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
           when(
             () => mockFunnelcakeClient.getHomeFeed(
@@ -536,6 +537,7 @@ void main() {
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
             funnelcakeApiClient: mockFunnelcakeClient,
+            // ML moderation labels should NOT trigger warn
             warningLabelsResolver: (video) => video.contentWarningLabels
                 .where((label) => label == 'violence')
                 .toList(),
@@ -547,11 +549,14 @@ void main() {
           );
 
           expect(result.videos, hasLength(1));
+          // Moderation labels go to moderationLabels, not contentWarningLabels
+          expect(result.videos.first.contentWarningLabels, isEmpty);
           expect(
-            result.videos.first.contentWarningLabels,
+            result.videos.first.moderationLabels,
             equals(['violence']),
           );
-          expect(result.videos.first.warnLabels, equals(['violence']));
+          // ML labels should not trigger warn behaviour
+          expect(result.videos.first.warnLabels, isEmpty);
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
@@ -592,11 +597,53 @@ void main() {
           );
 
           expect(result.videos, hasLength(1));
+          // Moderation labels go to moderationLabels, not contentWarningLabels
+          expect(result.videos.first.contentWarningLabels, isEmpty);
           expect(
-            result.videos.first.contentWarningLabels,
+            result.videos.first.moderationLabels,
             equals(['violence']),
           );
           expect(result.videos.first.warnLabels, isEmpty);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
+        test('applies non-empty warn labels from resolver', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getHomeFeed(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => HomeFeedResponse(
+              videos: [
+                _createVideoStats(
+                  id: 'event-1',
+                  pubkey: 'followed-user',
+                  dTag: 'dtag-1',
+                  videoUrl: 'https://example.com/video.mp4',
+                ),
+              ],
+            ),
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            warningLabelsResolver: (_) => const ['nudity'],
+          );
+
+          final result = await repositoryWithApi.getHomeFeedVideos(
+            authors: ['followed-user'],
+            userPubkey: 'my-pubkey',
+          );
+
+          expect(result.videos, hasLength(1));
+          expect(
+            result.videos.first.warnLabels,
+            equals(['nudity']),
+          );
           verifyNever(() => mockNostrClient.queryEvents(any()));
         });
 
@@ -625,8 +672,8 @@ void main() {
           final repositoryWithApi = VideosRepository(
             nostrClient: mockNostrClient,
             funnelcakeApiClient: mockFunnelcakeClient,
-            contentFilter: (video) =>
-                video.contentWarningLabels.contains('nudity'),
+            // Moderation labels now go to video.moderationLabels
+            contentFilter: (video) => video.moderationLabels.contains('nudity'),
           );
           final result = await repositoryWithApi.getHomeFeedVideos(
             authors: ['followed-user'],
@@ -3481,6 +3528,30 @@ void main() {
         expect(filter.calls, hasLength(1));
         expect(filter.calls.first.id, equals('video-1'));
         expect(filter.calls.first.pubkey, equals('user-1'));
+      });
+
+      test('applies warn labels from relay content-warning tags', () async {
+        final event = _createVideoEvent(
+          id: 'cw-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+          hasContentWarning: true,
+        );
+
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => [event]);
+
+        final repositoryWithResolver = VideosRepository(
+          nostrClient: mockNostrClient,
+          warningLabelsResolver: (video) => video.contentWarningLabels,
+        );
+
+        final result = await repositoryWithResolver.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.warnLabels, equals(['adult content']));
       });
     });
 

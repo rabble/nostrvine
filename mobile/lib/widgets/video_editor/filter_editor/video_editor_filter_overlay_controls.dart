@@ -3,11 +3,11 @@
 
 import 'dart:math';
 
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
 
 /// Overlay controls for the filter editor.
@@ -104,38 +104,15 @@ class _TopBarContent extends StatelessWidget {
 
     return Align(
       alignment: .topCenter,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Close button
-            DivineIconButton(
-              icon: .x,
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              semanticLabel: 'Close',
-              type: .ghostSecondary,
-              size: .small,
-              onPressed: () {
-                bloc.add(const VideoEditorFilterCancelled());
-                scope.filterEditor?.close();
-              },
-            ),
-
-            // Done button
-            DivineIconButton(
-              icon: .check,
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              semanticLabel: 'Done',
-              type: .tertiary,
-              size: .small,
-              onPressed: () {
-                bloc.add(const VideoEditorFilterCancelled());
-                scope.filterEditor?.done();
-              },
-            ),
-          ],
-        ),
+      child: VideoEditorToolbar(
+        onClose: () {
+          bloc.add(const VideoEditorFilterCancelled());
+          scope.filterEditor?.close();
+        },
+        onDone: () {
+          bloc.add(const VideoEditorFilterCancelled());
+          scope.filterEditor?.done();
+        },
       ),
     );
   }

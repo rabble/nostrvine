@@ -547,7 +547,7 @@ class _VideoInfoSection extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Colors.transparent, VineTheme.scrim50],
+          colors: [VineTheme.transparent, VineTheme.scrim50],
         ),
       ),
       child: Column(

@@ -34,34 +34,15 @@ class VideoEditorConstants {
   static const colors = [
     Color(0xFFF9F7F6),
     Color(0xFF000000),
-    Color(0xFF404040),
-    Color(0xFF07241B),
     Color(0xFF27C58B),
     Color(0xFFD0FBCB),
-
-    Color(0xFFCCEEFE),
-    Color(0xFFDDD4FF),
-    Color(0xFFE1E3FF),
-    Color(0xFFFFD8C9),
-    Color(0xFFFFDEEA),
-    Color(0xFFF1FFC8),
-    Color(0xFFFFFABB),
-
-    Color(0xFF34BBF1),
-    Color(0xFF8568FF),
-    Color(0xFFA3A9FF),
-    Color(0xFFFF7640),
-    Color(0xFFFF7FAF),
-    Color(0xFFD2FF40),
     Color(0xFFFFF140),
-
-    Color(0xFF0A223C),
-    Color(0xFF231557),
-    Color(0xFF2D214D),
-    Color(0xFF471F10),
-    Color(0xFF3E0C1F),
-    Color(0xFF272F0E),
-    Color(0xFF363313),
+    Color(0xFFD2FF40),
+    Color(0xFFFF7FAF),
+    Color(0xFFFF7640),
+    Color(0xFFA3A9FF),
+    Color(0xFF8568FF),
+    Color(0xFF34BBF1),
   ];
 
   /// Available text fonts for text overlays.
@@ -103,7 +84,7 @@ class VideoEditorConstants {
   static const Color textEditorBackground = Color(0x9B000000);
 
   static const uiOverlayStyle = SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
+    statusBarColor: VineTheme.transparent,
     statusBarIconBrightness: Brightness.light,
     systemNavigationBarIconBrightness: Brightness.light,
     statusBarBrightness: Brightness.dark,

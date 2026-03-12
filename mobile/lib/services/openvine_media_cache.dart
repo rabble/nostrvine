@@ -1,6 +1,7 @@
 // ABOUTME: Video file cache singleton using media_cache package
 // ABOUTME: Replaces video_cache_manager.dart with cleaner abstraction
 
+import 'package:flutter/foundation.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -43,6 +44,8 @@ MediaCacheManager mediaCache(Ref ref) => openVineMediaCache;
 ///
 /// Loads the in-memory manifest for synchronous cache lookups.
 /// Call this in main.dart after WidgetsFlutterBinding.ensureInitialized().
+/// Skipped on web where file-based caching is not available.
 Future<void> initializeMediaCache() async {
+  if (kIsWeb) return;
   await openVineMediaCache.initialize();
 }

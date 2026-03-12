@@ -2,9 +2,10 @@
 // ABOUTME: Only deletes files when not referenced by drafts OR clip library
 // ABOUTME: Uses indexed file_path columns for efficient lookups
 
+import 'dart:io';
+
 import 'package:db_client/db_client.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
 
@@ -87,7 +88,7 @@ class FileCleanupService {
     required ClipsDao clipsDao,
   }) async {
     await deleteFilesIfUnreferenced(
-      [clip.video.file?.path, clip.thumbnailPath],
+      [clip.video.file?.path, clip.thumbnailPath, clip.ghostFramePath],
       draftsDao: draftsDao,
       clipsDao: clipsDao,
     );
@@ -100,7 +101,13 @@ class FileCleanupService {
     required ClipsDao clipsDao,
   }) async {
     final paths = clips
-        .expand((clip) => [clip.video.file?.path, clip.thumbnailPath])
+        .expand(
+          (clip) => [
+            clip.video.file?.path,
+            clip.thumbnailPath,
+            clip.ghostFramePath,
+          ],
+        )
         .toList();
 
     await deleteFilesIfUnreferenced(
@@ -120,6 +127,7 @@ class FileCleanupService {
       for (final clip in clips) ...[
         await clip.video.safeFilePath(),
         clip.thumbnailPath,
+        clip.ghostFramePath,
       ],
     ];
 

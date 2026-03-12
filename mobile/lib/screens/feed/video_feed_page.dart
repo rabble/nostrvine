@@ -1,4 +1,5 @@
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,6 +20,7 @@ import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_presentation.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Compares two [VideoItem] lists for equality by id and url.
@@ -194,6 +196,7 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
   /// Called from [didChangeDependencies] for eager setup and from
   /// [BlocListener] when videos arrive asynchronously.
   void handleVideoController([VideoFeedState? state]) {
+    if (kIsWeb) return; // Skip media_kit controller on web
     if (!ownsController) return;
 
     final effectiveState = state ?? context.read<VideoFeedBloc>().state;
@@ -430,75 +433,96 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
             // instead.
             return Stack(
               children: [
-                PooledVideoFeed(
-                  key: ValueKey(state.mode),
-                  videos: pooledVideos,
-                  controller: controller,
-                  onScrollOffsetChanged: (page) => _pagePosition.value = page,
-                  itemBuilder: (context, video, index, {required isActive}) {
-                    final originalEvent = eventsById[video.id];
-                    if (originalEvent == null) {
+                if (kIsWeb)
+                  WebVideoFeed(
+                    videos: state.videos
+                        .where((v) => v.videoUrl != null)
+                        .toList(),
+                    onActiveVideoChanged: (video, index) {
+                      prefetchProfiles(state.videos, index);
+                    },
+                    onNearEnd: (index) {
+                      if (state.hasMore) {
+                        context.read<VideoFeedBloc>().add(
+                          const VideoFeedLoadMoreRequested(),
+                        );
+                      }
+                    },
+                  )
+                else
+                  PooledVideoFeed(
+                    key: ValueKey(state.mode),
+                    videos: pooledVideos,
+                    controller: controller,
+                    onScrollOffsetChanged: (page) => _pagePosition.value = page,
+                    itemBuilder: (context, video, index, {required isActive}) {
+                      final originalEvent = eventsById[video.id];
+                      if (originalEvent == null) {
+                        Log.debug(
+                          'Feed item missing original event: '
+                          'mode=${state.mode.name}, index=$index, '
+                          'videoId=${video.id}, playbackUrl=${video.url}, '
+                          'stateVideoCount=${state.videos.length}',
+                          name: 'VideoFeedPage',
+                          category: LogCategory.video,
+                        );
+                        return const ColoredBox(
+                          color: VineTheme.backgroundColor,
+                        );
+                      }
                       Log.debug(
-                        'Feed item missing original event: '
-                        'mode=${state.mode.name}, index=$index, '
-                        'videoId=${video.id}, playbackUrl=${video.url}, '
-                        'stateVideoCount=${state.videos.length}',
+                        'Feed item build: mode=${state.mode.name}, index=$index, '
+                        'eventId=${originalEvent.id}, isActive=$isActive, '
+                        'playbackUrl=${video.url}, originalUrl=${originalEvent.videoUrl}, '
+                        'thumbnailUrl=${originalEvent.thumbnailUrl}',
                         name: 'VideoFeedPage',
                         category: LogCategory.video,
                       );
-                      return const ColoredBox(color: VineTheme.backgroundColor);
-                    }
-                    Log.debug(
-                      'Feed item build: mode=${state.mode.name}, index=$index, '
-                      'eventId=${originalEvent.id}, isActive=$isActive, '
-                      'playbackUrl=${video.url}, originalUrl=${originalEvent.videoUrl}, '
-                      'thumbnailUrl=${originalEvent.thumbnailUrl}',
-                      name: 'VideoFeedPage',
-                      category: LogCategory.video,
-                    );
-                    final listSources =
-                        state.listOnlyVideoIds.contains(originalEvent.id)
-                        ? state.videoListSources[originalEvent.id]
-                        : null;
-                    return _PooledVideoFeedItem(
-                      video: originalEvent,
-                      index: index,
-                      isActive: isActive,
-                      pagePosition: _pagePosition,
-                      contextTitle: state.mode.name,
-                      listSources: listSources,
-                    );
-                  },
-                  onActiveVideoChanged: (video, index) {
-                    FeedPerformanceTracker().startVideoSwipeTracking(video.id);
-                    final sourceIndex = state.videos.indexWhere(
-                      (event) => event.id == video.id,
-                    );
-                    if (sourceIndex != -1) {
-                      final event = state.videos[sourceIndex];
-                      Log.info(
-                        '📺 Feed active video: mode=${state.mode.name}, '
-                        'index=$index, eventId=${event.id}, pubkey=${event.pubkey}, '
-                        'playbackUrl=${video.url}, originalUrl=${event.videoUrl}, '
-                        'thumbnailUrl=${event.thumbnailUrl}',
-                        name: 'VideoFeedPage',
-                        category: LogCategory.video,
+                      final listSources =
+                          state.listOnlyVideoIds.contains(originalEvent.id)
+                          ? state.videoListSources[originalEvent.id]
+                          : null;
+                      return _PooledVideoFeedItem(
+                        video: originalEvent,
+                        index: index,
+                        isActive: isActive,
+                        pagePosition: _pagePosition,
+                        contextTitle: state.mode.name,
+                        listSources: listSources,
                       );
-                      prefetchProfiles(state.videos, sourceIndex);
-                    }
-                  },
-                  onNearEnd: (index) {
-                    // PooledVideoFeed fires this when the user is within
-                    // nearEndThreshold (default 3) of the end, using the
-                    // controller's actual video count (not the BlocBuilder's
-                    // list length, which may differ due to deduplication).
-                    if (state.hasMore) {
-                      context.read<VideoFeedBloc>().add(
-                        const VideoFeedLoadMoreRequested(),
+                    },
+                    onActiveVideoChanged: (video, index) {
+                      FeedPerformanceTracker().startVideoSwipeTracking(
+                        video.id,
                       );
-                    }
-                  },
-                ),
+                      final sourceIndex = state.videos.indexWhere(
+                        (event) => event.id == video.id,
+                      );
+                      if (sourceIndex != -1) {
+                        final event = state.videos[sourceIndex];
+                        Log.info(
+                          '📺 Feed active video: mode=${state.mode.name}, '
+                          'index=$index, eventId=${event.id}, pubkey=${event.pubkey}, '
+                          'playbackUrl=${video.url}, originalUrl=${event.videoUrl}, '
+                          'thumbnailUrl=${event.thumbnailUrl}',
+                          name: 'VideoFeedPage',
+                          category: LogCategory.video,
+                        );
+                        prefetchProfiles(state.videos, sourceIndex);
+                      }
+                    },
+                    onNearEnd: (index) {
+                      // PooledVideoFeed fires this when the user is within
+                      // nearEndThreshold (default 3) of the end, using the
+                      // controller's actual video count (not the BlocBuilder's
+                      // list length, which may differ due to deduplication).
+                      if (state.hasMore) {
+                        context.read<VideoFeedBloc>().add(
+                          const VideoFeedLoadMoreRequested(),
+                        );
+                      }
+                    },
+                  ),
                 const FeedModeSwitch(),
               ],
             );
