@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/my_followers/my_followers_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 
