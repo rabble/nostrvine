@@ -11,6 +11,7 @@ on:
       - ready_for_review
 
 permissions:
+  pull-requests: read
   contents: read
 
 jobs:
