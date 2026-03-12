@@ -465,260 +465,274 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
 
     // Listen for playback control requests from BLoC
-    return MultiBlocListener(
-      listeners: [
-        BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
-          listenWhen: (previous, current) =>
-              previous.isExternalPauseRequested !=
-              current.isExternalPauseRequested,
-          listener: (context, state) {
-            _onExternalPauseChanged(isPaused: state.isExternalPauseRequested);
-          },
-        ),
-        BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
-          listenWhen: (previous, current) =>
-              previous.playbackRestartCounter != current.playbackRestartCounter,
-          listener: (context, state) {
-            _onPlaybackRestartRequested();
-          },
-        ),
-        BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
-          listenWhen: (previous, current) =>
-              previous.playbackToggleCounter != current.playbackToggleCounter,
-          listener: (context, state) {
-            _onPlaybackToggleRequested();
-          },
-        ),
-      ],
-      child: ProImageEditor.video(
-        _proVideoController,
-        key: scope.editorKey,
+    return _OverlayCutArea(
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+            listenWhen: (previous, current) =>
+                previous.isExternalPauseRequested !=
+                current.isExternalPauseRequested,
+            listener: (context, state) {
+              _onExternalPauseChanged(isPaused: state.isExternalPauseRequested);
+            },
+          ),
+          BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+            listenWhen: (previous, current) =>
+                previous.playbackRestartCounter !=
+                current.playbackRestartCounter,
+            listener: (context, state) {
+              _onPlaybackRestartRequested();
+            },
+          ),
+          BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+            listenWhen: (previous, current) =>
+                previous.playbackToggleCounter != current.playbackToggleCounter,
+            listener: (context, state) {
+              _onPlaybackToggleRequested();
+            },
+          ),
+        ],
+        child: ProImageEditor.video(
+          _proVideoController,
+          key: scope.editorKey,
 
-        /// TODO(@hm21): Once all subeditors have been implemented,
-        /// separate the configs/callbacks for better readability.
-        configs: ProImageEditorConfigs(
-          stateHistory: !_hasImportedHistory && editorStateHistory.isNotEmpty
-              ? StateHistoryConfigs(
-                  initStateHistory: ImportStateHistory.fromMap(
-                    editorStateHistory,
-                  ),
-                )
-              : const StateHistoryConfigs(),
-          imageGeneration: ImageGenerationConfigs(
-            captureImageByteFormat: .rawStraightRgba,
-            customPixelRatio: max(
-              1,
-              VideoEditorConstants.renderWidth / widget.renderSize.width,
+          /// TODO(@hm21): Once all subeditors have been implemented,
+          /// separate the configs/callbacks for better readability.
+          configs: ProImageEditorConfigs(
+            stateHistory: !_hasImportedHistory && editorStateHistory.isNotEmpty
+                ? StateHistoryConfigs(
+                    initStateHistory: ImportStateHistory.fromMap(
+                      editorStateHistory,
+                    ),
+                  )
+                : const StateHistoryConfigs(),
+            imageGeneration: ImageGenerationConfigs(
+              captureImageByteFormat: .rawStraightRgba,
+              customPixelRatio: max(
+                1,
+                VideoEditorConstants.renderWidth / widget.renderSize.width,
+              ),
             ),
-          ),
-          mainEditor: MainEditorConfigs(
-            safeArea: const EditorSafeArea.none(),
-            style: const MainEditorStyle(
-              uiOverlayStyle: VideoEditorConstants.uiOverlayStyle,
-              background: VineTheme.surfaceContainerHigh,
+            mainEditor: MainEditorConfigs(
+              safeArea: const EditorSafeArea.none(),
+              style: const MainEditorStyle(
+                uiOverlayStyle: VideoEditorConstants.uiOverlayStyle,
+                background: VineTheme.backgroundColor,
+              ),
+              widgets: MainEditorWidgets(
+                appBar: (_, _) => null,
+                bottomBar: (_, _, key) => null,
+                removeLayerArea: (key, _, _, _) => SizedBox.shrink(key: key),
+              ),
             ),
-            widgets: MainEditorWidgets(
-              appBar: (_, _) => null,
-              bottomBar: (_, _, key) => null,
-              removeLayerArea: (key, _, _, _) => SizedBox.shrink(key: key),
+            paintEditor: PaintEditorConfigs(
+              eraserSize:
+                  DrawToolType.eraser.config.strokeWidth /
+                  scope.fittedBoxScale /
+                  2,
+              safeArea: const EditorSafeArea.none(),
+              style: const PaintEditorStyle(
+                background: VineTheme.backgroundColor,
+              ),
+              widgets: PaintEditorWidgets(
+                appBar: (_, _) => null,
+                bottomBar: (_, _) => null,
+                colorPicker: (_, _, _, _) => null,
+              ),
             ),
-          ),
-          paintEditor: PaintEditorConfigs(
-            eraserSize:
-                DrawToolType.eraser.config.strokeWidth /
-                scope.fittedBoxScale /
-                2,
-            safeArea: const EditorSafeArea.none(),
-            widgets: PaintEditorWidgets(
-              appBar: (_, _) => null,
-              bottomBar: (_, _) => null,
-              colorPicker: (_, _, _, _) => null,
+            filterEditor: FilterEditorConfigs(
+              safeArea: const EditorSafeArea.none(),
+              enableMultiSelection: false,
+              style: const FilterEditorStyle(
+                background: VineTheme.backgroundColor,
+              ),
+              widgets: FilterEditorWidgets(
+                appBar: (_, _) => null,
+                bottomBar: (_, _) => null,
+              ),
             ),
-          ),
-          filterEditor: FilterEditorConfigs(
-            safeArea: const EditorSafeArea.none(),
-            enableMultiSelection: false,
-            widgets: FilterEditorWidgets(
-              appBar: (_, _) => null,
-              bottomBar: (_, _) => null,
+            helperLines: HelperLineConfigs(
+              style: HelperLineStyle(
+                // 1.25 is the pro_image_editor default; we divide by fittedBoxScale
+                // to compensate for the FittedBox transformation.
+                strokeWidth: 1.25 / scope.fittedBoxScale,
+                horizontalColor: VideoEditorConstants.primaryColor,
+                verticalColor: VideoEditorConstants.primaryColor,
+                rotateColor: VideoEditorConstants.primaryColor,
+                layerAlignColor: VideoEditorConstants.primaryColor,
+              ),
             ),
-          ),
-          helperLines: HelperLineConfigs(
-            style: HelperLineStyle(
-              // 1.25 is the pro_image_editor default; we divide by fittedBoxScale
-              // to compensate for the FittedBox transformation.
-              strokeWidth: 1.25 / scope.fittedBoxScale,
-              horizontalColor: VideoEditorConstants.primaryColor,
-              verticalColor: VideoEditorConstants.primaryColor,
-              rotateColor: VideoEditorConstants.primaryColor,
-              layerAlignColor: VideoEditorConstants.primaryColor,
+            dialogConfigs: DialogConfigs(
+              widgets: DialogWidgets(
+                loadingDialog: (message, configs) => const SizedBox.shrink(),
+              ),
             ),
-          ),
-          dialogConfigs: DialogConfigs(
-            widgets: DialogWidgets(
-              loadingDialog: (message, configs) => const SizedBox.shrink(),
-            ),
-          ),
-          videoEditor: VideoEditorConfigs(
-            showControls: false,
-            widgets: VideoEditorWidgets(
-              videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
-                renderSize: widget.renderSize,
-                bodySize: widget.bodySize,
-                targetAspectRatio: targetAspectRatio,
+            videoEditor: VideoEditorConfigs(
+              showControls: false,
+              widgets: VideoEditorWidgets(
+                videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
+                  renderSize: widget.renderSize,
+                  bodySize: widget.bodySize,
+                  targetAspectRatio: targetAspectRatio,
+                ),
               ),
             ),
           ),
-        ),
-        callbacks: ProImageEditorCallbacks(
-          onCompleteWithParameters: _handleEditorComplete,
-          mainEditorCallbacks: MainEditorCallbacks(
-            onAfterViewInit: () {
-              _isInitialized = true;
-              _hasImportedHistory = true;
-              _syncMainCapabilities(scope, bloc);
-            },
-            onDone: _handleDone,
-            onImportHistoryStart: (state, import) {
-              Log.debug(
-                '🎬 Importing history started',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              _isImportingHistory = true;
-            },
-            onImportHistoryEnd: (state, import) {
-              Log.debug(
-                '🎬 Importing history completed',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              _isImportingHistory = false;
-              _syncMainCapabilities(scope, bloc);
-            },
-            onStateHistoryChange: (_, _) => _onStateHistoryChange(scope, bloc),
-            onOpenSubEditor: (editorMode) {
-              Log.debug(
-                '🎬 Opening sub-editor: $editorMode',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              final SubEditorType? subEditorType = switch (editorMode) {
-                .paint => .draw,
-                .text => .text,
-                .filter => .filter,
-                .sticker => .stickers,
-                _ => null,
-              };
-              if (subEditorType != null) {
-                bloc.add(VideoEditorMainOpenSubEditor(subEditorType));
-              }
-            },
-            onStartCloseSubEditor: (_) {
-              Log.debug(
-                '🎬 Closing sub-editor',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              bloc.add(const VideoEditorMainSubEditorClosed());
-            },
-            onScaleStart: (_) {
-              Log.debug(
-                '🎬 Layer interaction started',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              bloc.add(const VideoEditorLayerInteractionStarted());
-              _selectedLayer = scope.editor?.selectedLayer;
-            },
-            onScaleUpdate: (details) {
-              if (!_isLayerBeingTransformed) return;
-              final isOverRemoveArea = scope.isOverRemoveArea(
-                details.focalPoint,
-              );
+          callbacks: ProImageEditorCallbacks(
+            onCompleteWithParameters: _handleEditorComplete,
+            mainEditorCallbacks: MainEditorCallbacks(
+              onAfterViewInit: () {
+                _isInitialized = true;
+                _hasImportedHistory = true;
+                _syncMainCapabilities(scope, bloc);
+              },
+              onDone: _handleDone,
+              onImportHistoryStart: (state, import) {
+                Log.debug(
+                  '🎬 Importing history started',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                _isImportingHistory = true;
+              },
+              onImportHistoryEnd: (state, import) {
+                Log.debug(
+                  '🎬 Importing history completed',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                _isImportingHistory = false;
+                _syncMainCapabilities(scope, bloc);
+              },
+              onStateHistoryChange: (_, _) =>
+                  _onStateHistoryChange(scope, bloc),
+              onOpenSubEditor: (editorMode) {
+                Log.debug(
+                  '🎬 Opening sub-editor: $editorMode',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                final SubEditorType? subEditorType = switch (editorMode) {
+                  .paint => .draw,
+                  .text => .text,
+                  .filter => .filter,
+                  .sticker => .stickers,
+                  _ => null,
+                };
+                if (subEditorType != null) {
+                  bloc.add(VideoEditorMainOpenSubEditor(subEditorType));
+                }
+              },
+              onStartCloseSubEditor: (_) {
+                Log.debug(
+                  '🎬 Closing sub-editor',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                bloc.add(const VideoEditorMainSubEditorClosed());
+              },
+              onScaleStart: (_) {
+                Log.debug(
+                  '🎬 Layer interaction started',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                bloc.add(const VideoEditorLayerInteractionStarted());
+                _selectedLayer = scope.editor?.selectedLayer;
+              },
+              onScaleUpdate: (details) {
+                if (!_isLayerBeingTransformed) return;
+                final isOverRemoveArea = scope.isOverRemoveArea(
+                  details.focalPoint,
+                );
 
-              // Trigger haptic feedback when entering the remove area
-              if (isOverRemoveArea && !_wasOverRemoveArea) {
-                unawaited(HapticService.destructiveZoneFeedback());
-              }
-              _wasOverRemoveArea = isOverRemoveArea;
+                // Trigger haptic feedback when entering the remove area
+                if (isOverRemoveArea && !_wasOverRemoveArea) {
+                  unawaited(HapticService.destructiveZoneFeedback());
+                }
+                _wasOverRemoveArea = isOverRemoveArea;
 
-              bloc.add(
-                VideoEditorLayerOverRemoveAreaChanged(isOver: isOverRemoveArea),
-              );
-            },
-            onScaleEnd: (_) {
-              if (_isLayerBeingTransformed) {
-                if (bloc.state.isLayerOverRemoveArea) {
-                  Log.debug(
-                    '🎬 Layer removed via drag',
-                    name: 'VideoEditorCanvas',
-                    category: LogCategory.video,
-                  );
-                  scope.editor?.activeLayers.remove(_selectedLayer);
+                bloc.add(
+                  VideoEditorLayerOverRemoveAreaChanged(
+                    isOver: isOverRemoveArea,
+                  ),
+                );
+              },
+              onScaleEnd: (_) {
+                if (_isLayerBeingTransformed) {
+                  if (bloc.state.isLayerOverRemoveArea) {
+                    Log.debug(
+                      '🎬 Layer removed via drag',
+                      name: 'VideoEditorCanvas',
+                      category: LogCategory.video,
+                    );
+                    scope.editor?.activeLayers.remove(_selectedLayer);
+                  }
+
+                  _onStateHistoryChange(scope, bloc);
+                  _selectedLayer = null;
                 }
 
-                _onStateHistoryChange(scope, bloc);
-                _selectedLayer = null;
-              }
-
-              _wasOverRemoveArea = false;
-              bloc.add(const VideoEditorLayerInteractionEnded());
-            },
-            onAddLayer: (layer) {
-              Log.debug(
-                '🎬 Layer added: ${layer.runtimeType}',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              _syncMainCapabilities(scope, bloc);
-            },
-            onRemoveLayer: (layer) {
-              Log.debug(
-                '🎬 Layer removed: ${layer.runtimeType}',
-                name: 'VideoEditorCanvas',
-                category: LogCategory.video,
-              );
-              _syncMainCapabilities(scope, bloc);
-            },
-            onCreateTextLayer: scope.onAddEditTextLayer,
-            onEditTextLayer: scope.onAddEditTextLayer,
-            helperLines: HelperLinesCallbacks(
-              onLineHit: () => unawaited(HapticService.snapFeedback()),
+                _wasOverRemoveArea = false;
+                bloc.add(const VideoEditorLayerInteractionEnded());
+              },
+              onAddLayer: (layer) {
+                Log.debug(
+                  '🎬 Layer added: ${layer.runtimeType}',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                _syncMainCapabilities(scope, bloc);
+              },
+              onRemoveLayer: (layer) {
+                Log.debug(
+                  '🎬 Layer removed: ${layer.runtimeType}',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
+                _syncMainCapabilities(scope, bloc);
+              },
+              onCreateTextLayer: scope.onAddEditTextLayer,
+              onEditTextLayer: scope.onAddEditTextLayer,
+              helperLines: HelperLinesCallbacks(
+                onLineHit: () => unawaited(HapticService.snapFeedback()),
+              ),
             ),
-          ),
-          paintEditorCallbacks: PaintEditorCallbacks(
-            onInit: () {
-              drawBloc.add(const VideoEditorDrawReset());
+            paintEditorCallbacks: PaintEditorCallbacks(
+              onInit: () {
+                drawBloc.add(const VideoEditorDrawReset());
 
-              final paintEditor = scope.paintEditor;
-              final drawState = context.read<VideoEditorDrawBloc>().state;
-              final toolConfig = drawState.selectedTool.config;
-              // Sync editor with current BLoC state - use tool config for
-              // strokeWidth/opacity/mode to ensure consistency with tool switch
-              paintEditor
-                ?..setColor(drawState.selectedColor)
-                ..setStrokeWidth(toolConfig.strokeWidth / scope.fittedBoxScale)
-                ..setOpacity(toolConfig.opacity)
-                ..setMode(toolConfig.mode);
-            },
-            onDrawingDone: () => _syncDrawCapabilities(scope, drawBloc),
-            onRedo: () => _syncDrawCapabilities(scope, drawBloc),
-            onUndo: () => _syncDrawCapabilities(scope, drawBloc),
-          ),
-          filterEditorCallbacks: FilterEditorCallbacks(
-            onInit: () {
-              final filterBloc = context.read<VideoEditorFilterBloc>();
-              filterBloc.add(const VideoEditorFilterEditorInitialized());
-              final filterState = filterBloc.state;
+                final paintEditor = scope.paintEditor;
+                final drawState = context.read<VideoEditorDrawBloc>().state;
+                final toolConfig = drawState.selectedTool.config;
+                // Sync editor with current BLoC state - use tool config for
+                // strokeWidth/opacity/mode to ensure consistency with tool switch
+                paintEditor
+                  ?..setColor(drawState.selectedColor)
+                  ..setStrokeWidth(
+                    toolConfig.strokeWidth / scope.fittedBoxScale,
+                  )
+                  ..setOpacity(toolConfig.opacity)
+                  ..setMode(toolConfig.mode);
+              },
+              onDrawingDone: () => _syncDrawCapabilities(scope, drawBloc),
+              onRedo: () => _syncDrawCapabilities(scope, drawBloc),
+              onUndo: () => _syncDrawCapabilities(scope, drawBloc),
+            ),
+            filterEditorCallbacks: FilterEditorCallbacks(
+              onInit: () {
+                final filterBloc = context.read<VideoEditorFilterBloc>();
+                filterBloc.add(const VideoEditorFilterEditorInitialized());
+                final filterState = filterBloc.state;
 
-              // Sync editor with current BLoC state
-              final filterEditor = scope.filterEditor;
-              if (filterState.selectedFilter != null) {
-                filterEditor?.setFilter(filterState.selectedFilter!);
-              }
-              filterEditor?.setFilterOpacity(filterState.opacity);
-            },
+                // Sync editor with current BLoC state
+                final filterEditor = scope.filterEditor;
+                if (filterState.selectedFilter != null) {
+                  filterEditor?.setFilter(filterState.selectedFilter!);
+                }
+                filterEditor?.setFilterOpacity(filterState.opacity);
+              },
+            ),
           ),
         ),
       ),
@@ -853,6 +867,92 @@ class _CanvasFitter extends ConsumerWidget {
             ),
           );
         }
+      },
+    );
+  }
+}
+
+class _OverlayCutArea extends ConsumerWidget {
+  const _OverlayCutArea({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final targetAspectRatio = ref.read(
+      clipManagerProvider.select((s) => s.clips.first.targetAspectRatio),
+    );
+
+    if (targetAspectRatio == .vertical) return child;
+
+    return BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
+      buildWhen: (previous, current) =>
+          previous.isLayerInteractionActive != current.isLayerInteractionActive,
+      builder: (context, state) {
+        final hideOverlay = state.isLayerInteractionActive;
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final boxSize = constraints.biggest;
+            // Child is always 1:1 and BoxFit.contain, so it fills the
+            // shorter dimension fully.
+            final childSide = boxSize.shortestSide;
+            final verticalGap = (boxSize.height - childSide) / 2;
+            final horizontalGap = (boxSize.width - childSide) / 2;
+
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                child,
+                AnimatedOpacity(
+                  opacity: hideOverlay ? 0 : 1,
+                  duration: const Duration(milliseconds: 200),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Top bar
+                      if (verticalGap > 0)
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: verticalGap,
+                          child: const ColoredBox(color: VineTheme.scrim65),
+                        ),
+                      // Bottom bar
+                      if (verticalGap > 0)
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: verticalGap,
+                          child: const ColoredBox(color: VineTheme.scrim65),
+                        ),
+                      // Left bar
+                      if (horizontalGap > 0)
+                        Positioned(
+                          top: 0,
+                          bottom: 0,
+                          left: 0,
+                          width: horizontalGap,
+                          child: const ColoredBox(color: VineTheme.scrim65),
+                        ),
+                      // Right bar
+                      if (horizontalGap > 0)
+                        Positioned(
+                          top: 0,
+                          bottom: 0,
+                          right: 0,
+                          width: horizontalGap,
+                          child: const ColoredBox(color: VineTheme.scrim65),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
+        );
       },
     );
   }
