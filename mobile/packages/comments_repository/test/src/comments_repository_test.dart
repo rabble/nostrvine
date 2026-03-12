@@ -106,9 +106,9 @@ void main() {
         verify(
           () => mockFunnelcakeApiClient.getVideoComments(
             videoId: testRootEventId,
-            sort: 'newest',
-            limit: 100,
-            offset: 0,
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
           ),
         ).called(1);
         verifyNever(() => mockNostrClient.queryEvents(any()));

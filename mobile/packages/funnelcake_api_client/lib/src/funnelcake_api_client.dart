@@ -1073,15 +1073,16 @@ class FunnelcakeApiClient {
       throw const FunnelcakeException('Video ID cannot be empty');
     }
 
-    final uri = Uri.parse(
-      '$_baseUrl/api/videos/$videoId/comments',
-    ).replace(
-      queryParameters: {
-        'sort': sort,
-        'limit': limit.toString(),
-        'offset': offset.toString(),
-      },
-    );
+    final uri =
+        Uri.parse(
+          '$_baseUrl/api/videos/$videoId/comments',
+        ).replace(
+          queryParameters: {
+            'sort': sort,
+            'limit': limit.toString(),
+            'offset': offset.toString(),
+          },
+        );
 
     try {
       final response = await _get(uri);

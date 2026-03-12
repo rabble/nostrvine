@@ -2608,7 +2608,8 @@ void main() {
       const testVideoId =
           'feedfeedfeedfeedfeedfeedfeedfeed'
           'feedfeedfeedfeedfeedfeedfeedfeed';
-      const validResponse = '''
+      const validResponse =
+          '''
 {
   "comments": [
     {
