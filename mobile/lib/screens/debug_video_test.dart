@@ -55,7 +55,10 @@ class _DebugVideoTestScreenState extends ConsumerState<DebugVideoTestScreen> {
               testVideo != null
                   ? 'Video URL: ${testVideo.videoUrl}'
                   : 'No videos available in feed',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: const TextStyle(
+                color: VineTheme.onSurfaceVariant,
+                fontSize: 12,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -65,7 +68,7 @@ class _DebugVideoTestScreenState extends ConsumerState<DebugVideoTestScreen> {
               width: 300,
               height: 400,
               decoration: BoxDecoration(
-                color: Colors.black,
+                color: VineTheme.backgroundColor,
                 border: Border.all(color: VineTheme.vineGreen, width: 2),
               ),
               child: (_isPlaying && testVideo != null)
@@ -80,12 +83,12 @@ class _DebugVideoTestScreenState extends ConsumerState<DebugVideoTestScreen> {
                           Icon(
                             Icons.play_circle_outline,
                             size: 64,
-                            color: Colors.white54,
+                            color: VineTheme.onSurfaceMuted,
                           ),
                           SizedBox(height: 16),
                           Text(
                             'Tap Play to test video',
-                            style: TextStyle(color: Colors.white54),
+                            style: TextStyle(color: VineTheme.onSurfaceMuted),
                           ),
                         ],
                       ),
@@ -102,7 +105,7 @@ class _DebugVideoTestScreenState extends ConsumerState<DebugVideoTestScreen> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,
-                foregroundColor: Colors.white,
+                foregroundColor: VineTheme.whiteText,
               ),
               child: Text(_isPlaying ? 'Stop' : 'Play'),
             ),

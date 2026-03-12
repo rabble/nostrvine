@@ -48,9 +48,8 @@ void main() {
         ),
       ).thenAnswer((_) => const Stream.empty());
       when(
-        () => mockVideosRepository.countVideosLocally(
-          query: any(named: 'query'),
-        ),
+        () =>
+            mockVideosRepository.countVideosLocally(query: any(named: 'query')),
       ).thenAnswer((_) async => 0);
     });
 
@@ -303,9 +302,7 @@ void main() {
         expect: () => <VideoSearchState>[],
         verify: (_) {
           verifyNever(
-            () => mockVideosRepository.searchVideos(
-              query: any(named: 'query'),
-            ),
+            () => mockVideosRepository.searchVideos(query: any(named: 'query')),
           );
         },
       );
@@ -323,10 +320,7 @@ void main() {
         ),
         wait: debounceDuration,
         expect: () => const [
-          VideoSearchState(
-            query: 'flutter',
-            resultCount: 5,
-          ),
+          VideoSearchState(query: 'flutter', resultCount: 5),
         ],
         verify: (_) {
           verify(
@@ -362,10 +356,7 @@ void main() {
         },
         wait: debounceDuration,
         expect: () => [
-          const VideoSearchState(
-            query: 'flutter',
-            resultCount: 1,
-          ),
+          const VideoSearchState(query: 'flutter', resultCount: 1),
           isA<VideoSearchState>()
               .having((s) => s.status, 'status', VideoSearchStatus.searching)
               .having((s) => s.query, 'query', 'flutter'),
@@ -378,6 +369,29 @@ void main() {
               .having((s) => s.videos.length, 'videos.length', 1)
               .having((s) => s.resultCount, 'resultCount', 1),
         ],
+      );
+
+      blocTest<VideoSearchBloc, VideoSearchState>(
+        'preserves existing videos for same query when fetchResults is false',
+        build: createBloc,
+        seed: () => VideoSearchState(
+          status: VideoSearchStatus.success,
+          query: 'flutter',
+          videos: [createVideo(id: 'v1', title: 'Flutter Tutorial')],
+          resultCount: 1,
+        ),
+        act: (bloc) => bloc.add(
+          const VideoSearchQueryChanged('flutter', fetchResults: false),
+        ),
+        wait: debounceDuration,
+        expect: () => [],
+        verify: (_) {
+          verifyNever(
+            () => mockVideosRepository.countVideosLocally(
+              query: any(named: 'query'),
+            ),
+          );
+        },
       );
 
       blocTest<VideoSearchBloc, VideoSearchState>(

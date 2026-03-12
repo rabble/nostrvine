@@ -313,7 +313,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
     final statusSummary = stats?.statusSummary ?? 'External relay';
 
     return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      data: Theme.of(context).copyWith(dividerColor: VineTheme.transparent),
       child: ExpansionTile(
         leading: Icon(
           isConnected ? Icons.cloud_done : Icons.cloud_off,

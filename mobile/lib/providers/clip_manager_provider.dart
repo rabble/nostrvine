@@ -375,6 +375,31 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     _triggerAutosave();
   }
 
+  /// Update ghost frame path for a clip.
+  void updateGhostFrame({
+    required String clipId,
+    required String ghostFramePath,
+  }) {
+    final index = _clips.indexWhere((c) => c.id == clipId);
+    if (index != -1) {
+      _clips[index] = _clips[index].copyWith(
+        ghostFramePath: ghostFramePath,
+      );
+      state = state.copyWith(clips: List.unmodifiable(_clips));
+      Log.debug(
+        '👻 Updated ghost frame for clip: $clipId',
+        name: 'ClipManagerNotifier',
+        category: .video,
+      );
+    } else {
+      Log.warning(
+        '⚠️ Cannot update ghost frame - clip not found: $clipId',
+        name: 'ClipManagerNotifier',
+        category: .video,
+      );
+    }
+  }
+
   /// Update duration for a clip (from metadata extraction).
   void updateClipDuration(String clipId, Duration duration) {
     final index = _clips.indexWhere((c) => c.id == clipId);

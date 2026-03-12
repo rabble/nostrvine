@@ -66,7 +66,7 @@ class _MinimalFallbackError extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               // vineGreen at 40% opacity - gentle, branded, not alarming
-              color: Color(0x6600B488),
+              color: Color(0x6627C58B),
               shape: BoxShape.circle,
             ),
           ),
@@ -262,7 +262,7 @@ class _TangledVinePainter extends CustomPainter {
     // Faded leaf paint for droopy leaves
     final fadedLeafPaint = Paint()
       ..color =
-          const Color(0x9900B488) // 60% vineGreen
+          const Color(0x9927C58B) // 60% vineGreen
       ..style = PaintingStyle.fill;
 
     // --- Vine stem from bottom, curving up ---
@@ -392,7 +392,7 @@ class _TangledVinePainter extends CustomPainter {
     // --- Small dots / tendrils ---
     final dotPaint = Paint()
       ..color =
-          const Color(0x6600B488) // 40% vineGreen
+          const Color(0x6627C58B) // 40% vineGreen
       ..style = PaintingStyle.fill;
 
     // Little curly tendril from the knot

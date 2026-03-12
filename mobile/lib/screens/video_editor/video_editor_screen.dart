@@ -192,7 +192,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       PageRouteBuilder<TextLayer>(
         opaque: false,
         barrierDismissible: true,
-        barrierColor: Colors.transparent,
+        barrierColor: VineTheme.transparent,
         pageBuilder: (_, _, _) => BlocProvider.value(
           value: textBloc,
           child: VideoTextEditorScreen(layer: layer),

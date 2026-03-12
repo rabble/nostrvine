@@ -958,6 +958,7 @@ class AnalyticsApiService {
     try {
       final uri = _buildVideoUri('/api/users/$pubkey/videos', {
         'limit': limit.toString(),
+        'sort': 'recent',
         if (before != null) 'before': before.toString(),
       });
       final url = uri.toString();

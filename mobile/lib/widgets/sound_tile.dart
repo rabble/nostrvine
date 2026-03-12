@@ -154,7 +154,7 @@ class SoundTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         child: Material(
-          color: Colors.transparent,
+          color: VineTheme.transparent,
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(12),

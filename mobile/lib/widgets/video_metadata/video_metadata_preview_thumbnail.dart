@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -19,7 +20,7 @@ class VideoMetadataPreviewThumbnail extends ConsumerWidget {
 
     if (clip.thumbnailPath == null) {
       return const Center(
-        child: Icon(Icons.broken_image, size: 32, color: Colors.grey),
+        child: Icon(Icons.broken_image, size: 32, color: VineTheme.lightText),
       );
     }
 

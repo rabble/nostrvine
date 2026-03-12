@@ -159,7 +159,7 @@ class _VideoEditorMoreButtonState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         padding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
+        backgroundColor: VineTheme.transparent,
         elevation: 0,
         behavior: .floating,
         duration: Duration(seconds: isError ? 3 : 2),
@@ -209,7 +209,7 @@ class _VideoEditorMoreButtonState
   @override
   Widget build(BuildContext context) {
     return VideoEditorIconButton(
-      backgroundColor: Colors.transparent,
+      backgroundColor: VineTheme.transparent,
       icon: .moreHoriz,
       onTap: _showMoreOptions,
       // TODO(l10n): Replace with context.l10n when localization is added.

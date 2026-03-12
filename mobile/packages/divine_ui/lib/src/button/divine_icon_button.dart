@@ -212,7 +212,7 @@ class _DivineIconButtonContent extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         opacity: _isEnabled ? 1.0 : _disabledOpacity,
         child: Material(
-          color: Colors.transparent,
+          color: VineTheme.transparent,
           child: InkWell(
             onTap: onPressed,
             borderRadius: BorderRadius.circular(_borderRadius),

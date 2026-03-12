@@ -371,7 +371,7 @@ class _ClassicVideoItem extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Color(0xCC000000)],
+                    colors: [VineTheme.transparent, VineTheme.scrim80],
                   ),
                 ),
                 child: UserName.fromPubKey(

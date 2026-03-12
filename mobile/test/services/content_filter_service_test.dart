@@ -232,17 +232,23 @@ void main() {
       });
 
       test(
-        'always returns hide for ai-generated labels in feed filtering',
+        'respects user preference for ai-generated labels',
         () async {
           await service.initialize();
 
+          // Default is show
+          final defaultResult = service.getPreferenceForLabels([
+            'ai-generated',
+          ]);
+          expect(defaultResult, equals(ContentFilterPreference.show));
+
+          // User can change to warn or hide
           await service.setPreference(
             ContentLabel.aiGenerated,
-            ContentFilterPreference.show,
+            ContentFilterPreference.warn,
           );
-
-          final result = service.getPreferenceForLabels(['ai-generated']);
-          expect(result, equals(ContentFilterPreference.hide));
+          final warnResult = service.getPreferenceForLabels(['ai-generated']);
+          expect(warnResult, equals(ContentFilterPreference.warn));
         },
       );
     });

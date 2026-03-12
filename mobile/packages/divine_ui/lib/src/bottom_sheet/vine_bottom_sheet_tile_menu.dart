@@ -97,9 +97,9 @@ class _VineBottomSheetListTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveColor = data.onTap != null
         ? data.isDestructive
-              ? Colors.white
-              : const Color(0xFFF44336)
-        : Colors.white.withAlpha(64);
+              ? VineTheme.whiteText
+              : VineTheme.error
+        : VineTheme.onSurfaceDisabled;
 
     return ListTile(
       iconColor: effectiveColor,

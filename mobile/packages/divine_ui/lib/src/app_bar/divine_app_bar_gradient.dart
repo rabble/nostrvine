@@ -52,7 +52,7 @@ class DiVineAppBarGradient extends Equatable {
   static DiVineAppBarGradient videoOverlay = DiVineAppBarGradient(
     colors: [
       VineTheme.backgroundColor.withValues(alpha: 0.7),
-      Colors.transparent,
+      VineTheme.transparent,
     ],
   );
 
@@ -62,7 +62,7 @@ class DiVineAppBarGradient extends Equatable {
   static DiVineAppBarGradient subtleOverlay = DiVineAppBarGradient(
     colors: [
       VineTheme.backgroundColor.withValues(alpha: 0.4),
-      Colors.transparent,
+      VineTheme.transparent,
     ],
   );
 

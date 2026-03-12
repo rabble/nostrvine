@@ -180,7 +180,7 @@ class _ContentWarningState extends State<ContentWarning>
     width: double.infinity,
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: Colors.red.shade800,
+      color: VineTheme.errorContainer,
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: VineTheme.error, width: 2),
     ),
@@ -234,9 +234,9 @@ class _ContentWarningState extends State<ContentWarning>
       case ContentSeverity.warning:
         return VineTheme.warning;
       case ContentSeverity.hide:
-        return Colors.red.shade600;
+        return VineTheme.error;
       case ContentSeverity.block:
-        return Colors.red.shade800;
+        return VineTheme.errorContainer;
     }
   }
 
@@ -362,7 +362,10 @@ class _VideoContentWarningState extends State<VideoContentWarning> {
                   VineTheme.backgroundColor.withValues(alpha: 0.8),
                   BlendMode.srcOver,
                 )
-              : const ColorFilter.mode(Colors.transparent, BlendMode.multiply),
+              : const ColorFilter.mode(
+                  VineTheme.transparent,
+                  BlendMode.multiply,
+                ),
           child: widget.thumbnail,
         ),
 

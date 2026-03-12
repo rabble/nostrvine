@@ -32,7 +32,6 @@ class ProfileFeed extends _$ProfileFeed {
   // REST API mode state
   bool _usingRestApi = false;
   int? _nextCursor; // Cursor for REST API pagination
-
   // Cache of video metadata from REST API (preserves loops, likes, etc.)
   // Key: video ID, Value: metadata fields
   final Map<String, _VideoMetadataCache> _metadataCache = {};
@@ -61,8 +60,8 @@ class ProfileFeed extends _$ProfileFeed {
     // Use ref.read() instead of ref.watch() to prevent cascade rebuilds
     // when funnelcake availability resolves. ProfileFeed is keepAlive, so
     // cascade rebuilds create new instances and lose state.
-    final funnelcakeAvailable =
-        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+    final funnelcakeAsync = ref.read(funnelcakeAvailableProvider);
+    final funnelcakeAvailable = funnelcakeAsync.asData?.value ?? false;
     final analyticsService = ref.read(analyticsApiServiceProvider);
     if (funnelcakeAvailable) {
       Log.info(
@@ -106,12 +105,6 @@ class ProfileFeed extends _$ProfileFeed {
             },
             callerName: 'ProfileFeedProvider',
           );
-
-          Log.info(
-            '✅ ProfileFeed: Got ${authorVideos.length} videos from REST API for user=$userId, cursor: $_nextCursor',
-            name: 'ProfileFeedProvider',
-            category: LogCategory.video,
-          );
         } else {
           Log.warning(
             'ProfileFeed: REST API returned empty for user=$userId, falling back to Nostr',
@@ -146,12 +139,6 @@ class ProfileFeed extends _$ProfileFeed {
 
       // Apply cached metadata to preserve engagement stats from previous REST API calls
       authorVideos = _applyMetadataCache(authorVideos);
-
-      Log.info(
-        'ProfileFeed: Got ${authorVideos.length} videos from Nostr for user=$userId',
-        name: 'ProfileFeedProvider',
-        category: LogCategory.video,
-      );
 
       // Set up continuous listener for progressive updates from Nostr
       void onNostrVideosChanged() {
@@ -374,8 +361,11 @@ class ProfileFeed extends _$ProfileFeed {
       return;
     }
 
-    // Add new video to the front of the list (most recent first)
-    final updatedVideos = <VideoEvent>[newVideo, ...currentState.videos];
+    // Add new video and maintain newest-first sort order.
+    // Simple prepend is insufficient because during initial Nostr subscription
+    // events arrive newest-first, so prepending each one reverses the order.
+    final updatedVideos = <VideoEvent>[newVideo, ...currentState.videos]
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
     Log.info(
       'ProfileFeed: Optimistically added new video ${newVideo.id} to state (total: ${updatedVideos.length})',

@@ -28,6 +28,7 @@ class VideoRecorderProviderState {
     this.timerDuration = .off,
     this.initializationErrorMessage,
     this.selectedSound,
+    this.showLastClipOverlay = false,
   });
 
   /// Camera focus point in normalized coordinates (0.0-1.0).
@@ -81,6 +82,10 @@ class VideoRecorderProviderState {
   /// with the recorded video clips.
   final AudioEvent? selectedSound;
 
+  /// Whether to show a semi-transparent overlay of the last recorded clip
+  /// on the camera preview (ghost frame).
+  final bool showLastClipOverlay;
+
   // Convenience getters used by UI
   /// Whether currently recording.
   bool get isRecording => recordingState == .recording;
@@ -117,6 +122,7 @@ class VideoRecorderProviderState {
     String? initializationErrorMessage,
     AudioEvent? selectedSound,
     bool clearSelectedSound = false,
+    bool? showLastClipOverlay,
   }) {
     return VideoRecorderProviderState(
       recordingState: recordingState ?? this.recordingState,
@@ -138,6 +144,7 @@ class VideoRecorderProviderState {
       selectedSound: clearSelectedSound
           ? null
           : (selectedSound ?? this.selectedSound),
+      showLastClipOverlay: showLastClipOverlay ?? this.showLastClipOverlay,
     );
   }
 }

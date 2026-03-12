@@ -32,7 +32,7 @@ class CcActionButton extends ConsumerWidget {
         padding: const EdgeInsets.all(8),
         constraints: const BoxConstraints.tightFor(width: 48, height: 48),
         style: IconButton.styleFrom(
-          highlightColor: Colors.transparent,
+          highlightColor: VineTheme.transparent,
           splashFactory: NoSplash.splashFactory,
         ),
         onPressed: () {

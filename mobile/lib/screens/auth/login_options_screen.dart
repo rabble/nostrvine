@@ -193,7 +193,7 @@ class _SignInContentState extends ConsumerState<_SignInContent> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               padding: EdgeInsets.zero,
-              backgroundColor: Colors.transparent,
+              backgroundColor: VineTheme.transparent,
               elevation: 0,
               behavior: SnackBarBehavior.floating,
               duration: Duration(seconds: 3),

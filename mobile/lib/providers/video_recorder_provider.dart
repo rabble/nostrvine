@@ -788,8 +788,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     /// We used the stopwatch as a temporary timer to set an expected duration.
     /// However, we now read the exact video duration in the background and
     /// update it.
-    // Extract video metadata and update duration
-    final metadata = await ProVideoEditor.instance.getMetadata(videoResult);
+    // Extract video metadata and resolve file path in parallel.
+    final (metadata, videoPath) = await (
+      ProVideoEditor.instance.getMetadata(videoResult),
+      videoResult.safeFilePath(),
+    ).wait;
     clipProvider.updateClipDuration(clip.id, metadata.duration);
     Log.debug(
       '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
@@ -807,10 +810,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         halfDuration < VideoEditorConstants.defaultThumbnailExtractTime
         ? halfDuration
         : VideoEditorConstants.defaultThumbnailExtractTime;
-    final thumbnailResult = await VideoThumbnailService.extractThumbnail(
-      videoPath: await videoResult.safeFilePath(),
-      targetTimestamp: targetTimestamp,
-    );
+    // Extract thumbnail and ghost frame in parallel.
+    final (thumbnailResult, ghostResult) = await (
+      VideoThumbnailService.extractThumbnail(
+        videoPath: videoPath,
+        targetTimestamp: targetTimestamp,
+      ),
+      VideoThumbnailService.extractThumbnail(
+        videoPath: videoPath,
+        targetTimestamp: metadata.duration,
+      ),
+    ).wait;
+
     if (thumbnailResult != null) {
       clipProvider.updateThumbnail(
         clipId: clip.id,
@@ -825,6 +836,24 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     } else {
       Log.warning(
         '⚠️ Thumbnail generation failed',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    }
+
+    if (ghostResult != null) {
+      clipProvider.updateGhostFrame(
+        clipId: clip.id,
+        ghostFramePath: ghostResult.path,
+      );
+      Log.debug(
+        '👻 Ghost frame generated: ${ghostResult.path}',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    } else {
+      Log.warning(
+        '⚠️ Ghost frame generation failed',
         name: 'VideoRecorderNotifier',
         category: .video,
       );
@@ -1038,6 +1067,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
     state = const VideoRecorderProviderState();
+  }
+
+  /// Toggle whether the last clip overlay (ghost frame) is shown.
+  void toggleShowLastClipOverlay() {
+    state = state.copyWith(
+      showLastClipOverlay: !state.showLastClipOverlay,
+    );
   }
 
   // === SOUND PLAYBACK DURING RECORDING ===

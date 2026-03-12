@@ -102,9 +102,9 @@ class _VineBottomSheetListTile extends StatelessWidget {
 
     final color = isEnabled
         ? data.isDestructive
-              ? const Color(0xFFF44336)
-              : Colors.white
-        : const Color(0x40FFFFFF);
+              ? VineTheme.error
+              : VineTheme.whiteText
+        : VineTheme.onSurfaceDisabled;
 
     return ListTile(
       enabled: isEnabled,

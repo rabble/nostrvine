@@ -241,7 +241,7 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
                       end: Alignment.bottomCenter,
                       colors: [
                         VineTheme.scrim70,
-                        Colors.transparent,
+                        VineTheme.transparent,
                       ],
                     ),
                   ),
