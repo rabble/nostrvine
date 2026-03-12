@@ -23,8 +23,7 @@ class MockTextEditorState extends Mock implements TextEditorState {
       'MockTextEditorState';
 }
 
-class MockTextEditorKey extends Mock
-    implements GlobalKey<TextEditorState> {}
+class MockTextEditorKey extends Mock implements GlobalKey<TextEditorState> {}
 
 class MockFocusNode extends Mock implements FocusNode {
   @override
