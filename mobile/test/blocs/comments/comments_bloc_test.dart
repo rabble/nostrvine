@@ -99,6 +99,7 @@ void main() {
           rootEventKind: any(named: 'rootEventKind'),
           rootAddressableId: any(named: 'rootAddressableId'),
           since: any(named: 'since'),
+          onEose: any(named: 'onEose'),
         ),
       ).thenAnswer((_) => const Stream<Comment>.empty());
       when(
@@ -117,6 +118,7 @@ void main() {
     CommentsBloc createBloc({
       String? rootEventId,
       String? rootAuthorPubkey,
+      int? initialTotalCount,
       ProfileRepository? profileRepository,
       FollowRepository? followRepository,
     }) => CommentsBloc(
@@ -128,6 +130,7 @@ void main() {
       rootEventId: rootEventId ?? validId('root'),
       rootEventKind: testRootEventKind,
       rootAuthorPubkey: rootAuthorPubkey ?? validId('author'),
+      initialTotalCount: initialTotalCount,
       profileRepository: profileRepository ?? mockProfileRepository,
       followRepository: followRepository ?? mockFollowRepository,
     );
@@ -288,6 +291,67 @@ void main() {
               .where((c) => c.replyToEventId == parentComments.first.id)
               .toList();
           expect(replies.length, 1);
+        },
+      );
+
+      test(
+        'renders streamed comments before initial load completes and deduplicates bootstrap results',
+        () async {
+          final streamController = StreamController<Comment>.broadcast();
+          final loadCompleter = Completer<CommentThread>();
+          final streamedComment = Comment(
+            id: validId('streamed'),
+            content: 'From websocket first',
+            authorPubkey: validId('streamAuthor'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+
+          when(
+            () => mockCommentsRepository.watchComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              since: any(named: 'since'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((_) => streamController.stream);
+
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => loadCompleter.future);
+
+          final bloc = createBloc();
+          bloc.add(const CommentsLoadRequested());
+
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+          streamController.add(streamedComment);
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+
+          expect(bloc.state.status, CommentsStatus.success);
+          expect(bloc.state.commentsById.keys, [streamedComment.id]);
+          expect(bloc.state.newCommentCount, 0);
+
+          loadCompleter.complete(
+            CommentThread(
+              rootEventId: validId('root'),
+              comments: [streamedComment],
+              totalCount: 1,
+              commentCache: {streamedComment.id: streamedComment},
+            ),
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+
+          expect(bloc.state.commentsById.keys, [streamedComment.id]);
+
+          await streamController.close();
+          await bloc.close();
         },
       );
     });
@@ -2706,6 +2770,70 @@ void main() {
         ),
         expect: () => <CommentsState>[],
       );
+
+      test(
+        'treats comments as backlog until EOSE, then counts live comments',
+        () async {
+          final streamController = StreamController<Comment>.broadcast();
+          void Function()? onEose;
+
+          when(
+            () => mockCommentsRepository.watchComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              since: any(named: 'since'),
+              onEose: any(named: 'onEose'),
+            ),
+          ).thenAnswer((invocation) {
+            onEose = invocation.namedArguments[#onEose] as void Function()?;
+            return streamController.stream;
+          });
+
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+          final backlogComment = Comment(
+            id: validId('backlog'),
+            content: 'Historical comment',
+            authorPubkey: validId('historyAuthor'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final liveComment = Comment(
+            id: validId('live'),
+            content: 'Live comment',
+            authorPubkey: validId('liveAuthor'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+
+          final bloc = createBloc()..add(const CommentsLoadRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          streamController.add(backlogComment);
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+          expect(bloc.state.newCommentCount, 0);
+
+          onEose?.call();
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+
+          streamController.add(liveComment);
+          await Future<void>.delayed(const Duration(milliseconds: 25));
+          expect(bloc.state.newCommentCount, 1);
+
+          await streamController.close();
+          await bloc.close();
+        },
+      );
     });
 
     group('NewCommentsAcknowledged', () {
@@ -2767,6 +2895,7 @@ void main() {
               rootEventKind: any(named: 'rootEventKind'),
               rootAddressableId: any(named: 'rootAddressableId'),
               since: any(named: 'since'),
+              onEose: any(named: 'onEose'),
             ),
           ).called(1);
 
@@ -2783,6 +2912,7 @@ void main() {
 
       test('new comments from stream are added to state', () async {
         final streamController = StreamController<Comment>.broadcast();
+        void Function()? onEose;
 
         when(
           () => mockCommentsRepository.watchComments(
@@ -2790,8 +2920,12 @@ void main() {
             rootEventKind: any(named: 'rootEventKind'),
             rootAddressableId: any(named: 'rootAddressableId'),
             since: any(named: 'since'),
+            onEose: any(named: 'onEose'),
           ),
-        ).thenAnswer((_) => streamController.stream);
+        ).thenAnswer((invocation) {
+          onEose = invocation.namedArguments[#onEose] as void Function()?;
+          return streamController.stream;
+        });
 
         final existingComment = Comment(
           id: validId('existing'),
@@ -2819,6 +2953,8 @@ void main() {
 
         final bloc = createBloc()..add(const CommentsLoadRequested());
         await Future<void>.delayed(const Duration(milliseconds: 100));
+        onEose?.call();
+        await Future<void>.delayed(const Duration(milliseconds: 25));
 
         // Emit a new comment via the stream
         final newComment = Comment(
@@ -2851,6 +2987,7 @@ void main() {
             rootEventKind: any(named: 'rootEventKind'),
             rootAddressableId: any(named: 'rootAddressableId'),
             since: any(named: 'since'),
+            onEose: any(named: 'onEose'),
           ),
         ).thenAnswer((_) => streamController.stream);
 

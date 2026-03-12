@@ -195,6 +195,11 @@ final class NewCommentReceived extends CommentsEvent {
   final Comment comment;
 }
 
+/// The initial relay backfill reached EOSE; subsequent events are live.
+final class CommentsInitialBackfillCompleted extends CommentsEvent {
+  const CommentsInitialBackfillCompleted();
+}
+
 /// User acknowledged the new comments (e.g., tapped the pill or scrolled to top)
 final class NewCommentsAcknowledged extends CommentsEvent {
   const NewCommentsAcknowledged();

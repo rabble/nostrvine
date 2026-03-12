@@ -1689,7 +1689,11 @@ DmRepository dmRepository(Ref ref) {
 @Riverpod(keepAlive: true)
 CommentsRepository commentsRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
-  return CommentsRepository(nostrClient: nostrClient);
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  return CommentsRepository(
+    nostrClient: nostrClient,
+    funnelcakeApiClient: funnelcakeClient,
+  );
 }
 
 // =============================================================================
