@@ -1,9 +1,8 @@
 import 'dart:async';
 
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 
 /// Large centered play affordance shown when a pooled video is paused.
 class PausedVideoPlayOverlay extends StatefulWidget {
@@ -23,6 +22,10 @@ class PausedVideoPlayOverlay extends StatefulWidget {
 }
 
 class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
+  static final Expando<bool> _playerPlaybackSeen = Expando<bool>(
+    'playerPlaybackSeen',
+  );
+
   StreamSubscription<bool>? _playingSubscription;
   bool _hasStartedPlayback = false;
 
@@ -42,8 +45,16 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
   }
 
   void _subscribeToPlayback() {
-    _hasStartedPlayback = widget.player.state.playing;
+    final playerIsPlaying = widget.player.state.playing;
+    _hasStartedPlayback =
+        playerIsPlaying || (_playerPlaybackSeen[widget.player] ?? false);
+    if (playerIsPlaying) {
+      _playerPlaybackSeen[widget.player] = true;
+    }
     _playingSubscription = widget.player.stream.playing.listen((isPlaying) {
+      if (isPlaying) {
+        _playerPlaybackSeen[widget.player] = true;
+      }
       if (isPlaying && !_hasStartedPlayback && mounted) {
         setState(() {
           _hasStartedPlayback = true;
@@ -107,8 +118,10 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
                       );
                     },
                     child: shouldShow
-                        ? const _PausedPlayAffordance(
+                        ? const CenterPlaybackControl(
                             key: ValueKey('paused-play'),
+                            state: CenterPlaybackControlState.play,
+                            semanticsLabel: 'Play video',
                           )
                         : const SizedBox.shrink(
                             key: ValueKey('paused-hidden'),
@@ -120,41 +133,6 @@ class _PausedVideoPlayOverlayState extends State<PausedVideoPlayOverlay> {
           },
         );
       },
-    );
-  }
-}
-
-class _PausedPlayAffordance extends StatelessWidget {
-  const _PausedPlayAffordance({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 64,
-        height: 64,
-        decoration: BoxDecoration(
-          color: VineTheme.scrim65,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Semantics(
-          identifier: 'play_button',
-          container: true,
-          explicitChildNodes: true,
-          label: 'Play video',
-          child: Center(
-            child: SvgPicture.asset(
-              'assets/icon/content-controls/play.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.whiteText,
-                BlendMode.srcIn,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

@@ -50,6 +50,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
+import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
@@ -1164,34 +1165,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             if (isActive &&
                                 value.isInitialized &&
                                 !value.isPlaying)
-                              Center(
-                                child: Container(
-                                  width: 64,
-                                  height: 64,
-                                  decoration: BoxDecoration(
-                                    color: VineTheme.backgroundColor.withValues(
-                                      alpha: 0.65,
-                                    ),
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  child: Semantics(
-                                    identifier: 'play_button',
-                                    container: true,
-                                    explicitChildNodes: true,
-                                    label: 'Play video',
-                                    child: Center(
-                                      child: SvgPicture.asset(
-                                        'assets/icon/content-controls/play.svg',
-                                        width: 32,
-                                        height: 32,
-                                        colorFilter: const ColorFilter.mode(
-                                          VineTheme.whiteText,
-                                          BlendMode.srcIn,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                              const CenterPlaybackControl(
+                                state: CenterPlaybackControlState.play,
+                                semanticsLabel: 'Play video',
                               ),
                             // Fading pause button when resuming playback
                             if (_showFadingPauseButton &&
@@ -1202,24 +1178,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 child: AnimatedOpacity(
                                   opacity: _pauseButtonOpacity,
                                   duration: const Duration(milliseconds: 500),
-                                  child: Container(
-                                    width: 64,
-                                    height: 64,
-                                    decoration: BoxDecoration(
-                                      color: VineTheme.scrim65,
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    child: Center(
-                                      child: SvgPicture.asset(
-                                        'assets/icon/content-controls/pause.svg',
-                                        width: 32,
-                                        height: 32,
-                                        colorFilter: const ColorFilter.mode(
-                                          VineTheme.whiteText,
-                                          BlendMode.srcIn,
-                                        ),
-                                      ),
-                                    ),
+                                  child: const CenterPlaybackControl(
+                                    state: CenterPlaybackControlState.pause,
                                   ),
                                 ),
                               ),
