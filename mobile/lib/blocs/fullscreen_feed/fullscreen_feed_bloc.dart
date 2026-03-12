@@ -55,7 +55,7 @@ class FullscreenFeedBloc
   FullscreenFeedBloc({
     required Stream<List<VideoEvent>> videosStream,
     required int initialIndex,
-    required MediaCacheManager mediaCache,
+    MediaCacheManager? mediaCache,
     VoidCallback? onLoadMore,
     BlossomAuthService? blossomAuthService,
   }) : _videosStream = videosStream,
@@ -78,7 +78,7 @@ class FullscreenFeedBloc
 
   final Stream<List<VideoEvent>> _videosStream;
   final VoidCallback? _onLoadMore;
-  final MediaCacheManager _mediaCache;
+  final MediaCacheManager? _mediaCache;
   final BlossomAuthService? _blossomAuthService;
 
   /// Queue of video IDs waiting to be cached in the background.
@@ -189,9 +189,11 @@ class FullscreenFeedBloc
     if (event.index < 0 || event.index >= state.videos.length) return;
 
     final video = state.videos[event.index];
+    final cache = _mediaCache;
+    if (cache == null) return;
 
     // Skip if already cached
-    if (_mediaCache.getCachedFileSync(video.id) != null) {
+    if (cache.getCachedFileSync(video.id) != null) {
       Log.debug(
         'FullscreenFeedBloc: Video ${video.id} already cached, skipping',
         name: 'FullscreenFeedBloc',
@@ -249,8 +251,11 @@ class FullscreenFeedBloc
     final request = _cacheQueue.removeFirst();
 
     try {
+      final cache = _mediaCache;
+      if (cache == null) return;
+
       // Re-check cache (may have been cached while queued)
-      if (_mediaCache.getCachedFileSync(request.videoId) != null) {
+      if (cache.getCachedFileSync(request.videoId) != null) {
         return;
       }
 
@@ -273,7 +278,7 @@ class FullscreenFeedBloc
         }
       }
 
-      await _mediaCache.downloadFile(
+      await cache.downloadFile(
         request.videoUrl,
         key: request.videoId,
         authHeaders: authHeaders,

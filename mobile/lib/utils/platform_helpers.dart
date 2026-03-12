@@ -1,8 +1,9 @@
 // ABOUTME: Platform detection helpers for consistent desktop/mobile checks.
 // ABOUTME: Centralizes platform logic to avoid scattered inline checks.
 
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
-import 'package:openvine/platform_io.dart';
 
 /// Whether the current platform is a desktop OS (macOS, Windows, or Linux).
 ///

@@ -199,13 +199,13 @@ class _VideoAudioEditorTimingScreenState
       ],
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: const SystemUiOverlayStyle(
-          statusBarColor: Colors.transparent,
-          systemNavigationBarColor: Colors.transparent,
+          statusBarColor: VineTheme.transparent,
+          systemNavigationBarColor: VineTheme.transparent,
           statusBarIconBrightness: Brightness.light,
           statusBarBrightness: Brightness.dark,
         ),
         child: Scaffold(
-          backgroundColor: Colors.transparent,
+          backgroundColor: VineTheme.transparent,
           body: Stack(
             fit: StackFit.expand,
             children: [

@@ -19,11 +19,23 @@ import 'package:videos_repository/videos_repository.dart';
 /// depending directly on app-level services.
 VideoContentFilter createNsfwFilter(ContentFilterService contentFilterService) {
   return (VideoEvent video) {
+    // Check self-applied content-warning labels (NIP-32/NIP-36)
     final labels = _getContentLabels(video);
-    if (labels.isEmpty) return false;
+    if (labels.isNotEmpty) {
+      final pref = contentFilterService.getPreferenceForLabels(labels);
+      if (pref == ContentFilterPreference.hide) return true;
+    }
 
-    final preference = contentFilterService.getPreferenceForLabels(labels);
-    return preference == ContentFilterPreference.hide;
+    // Also check ML-generated moderation labels from Funnelcake.
+    // These only trigger "hide" (never "warn") because ML classifiers
+    // are noisy and would otherwise block autoplay on ordinary videos.
+    final modLabels = video.moderationLabels;
+    if (modLabels.isNotEmpty) {
+      final pref = contentFilterService.getPreferenceForLabels(modLabels);
+      if (pref == ContentFilterPreference.hide) return true;
+    }
+
+    return false;
   };
 }
 

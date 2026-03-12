@@ -191,13 +191,21 @@ class MediaCacheManager extends CacheManager {
        _databasePathProvider = databasePathProvider ?? sqflite.getDatabasesPath,
        _databaseOpener = databaseOpener ?? _defaultDatabaseOpener,
        super(
-         Config(
-           config.cacheKey,
-           stalePeriod: config.stalePeriod,
-           maxNrOfCacheObjects: config.maxNrOfCacheObjects,
-           repo: SafeCacheInfoRepository(databaseName: config.cacheKey),
-           fileService: _createHttpFileService(config),
-         ),
+         kIsWeb
+             // coverage:ignore-start
+             ? Config(
+                 config.cacheKey,
+                 stalePeriod: config.stalePeriod,
+                 maxNrOfCacheObjects: config.maxNrOfCacheObjects,
+               )
+             // coverage:ignore-end
+             : Config(
+                 config.cacheKey,
+                 stalePeriod: config.stalePeriod,
+                 maxNrOfCacheObjects: config.maxNrOfCacheObjects,
+                 repo: SafeCacheInfoRepository(databaseName: config.cacheKey),
+                 fileService: _createHttpFileService(config),
+               ),
        );
 
   final MediaCacheConfig _config;
@@ -241,6 +249,7 @@ class MediaCacheManager extends CacheManager {
     // In debug mode on desktop, allow self-signed certificates
     if (config.allowBadCertificatesInDebug &&
         kDebugMode &&
+        !kIsWeb &&
         (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
       httpClient.badCertificateCallback = (cert, host, port) => true;
     }
@@ -255,6 +264,13 @@ class MediaCacheManager extends CacheManager {
   ///
   /// Safe to call multiple times - subsequent calls are no-ops.
   Future<void> initialize() async {
+    // coverage:ignore-start
+    if (kIsWeb) {
+      _manifestInitialized = true;
+      return;
+    }
+    // coverage:ignore-end
+
     if (!_config.enableSyncManifest || _manifestInitialized) {
       _manifestInitialized = true;
       return;

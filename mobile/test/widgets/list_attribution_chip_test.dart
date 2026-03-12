@@ -1,6 +1,7 @@
 // ABOUTME: Tests for ListAttributionChip widget - displays curated list attribution
 // ABOUTME: Verifies dark theme styling, list name display, and navigation on tap
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
@@ -122,8 +123,7 @@ void main() {
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.playlist_play));
       expect(icon.size, equals(14));
-      // VineTheme.vineGreen is Color(0xFF00B488)
-      expect(icon.color, equals(const Color(0xFF00B488)));
+      expect(icon.color, equals(VineTheme.vineGreen));
     });
 
     testWidgets('text is vineGreen color and 12px size', (tester) async {
@@ -136,7 +136,7 @@ void main() {
 
       final text = tester.widget<Text>(find.text('Cool Videos'));
       expect(text.style?.fontSize, equals(12));
-      expect(text.style?.color, equals(const Color(0xFF00B488)));
+      expect(text.style?.color, equals(VineTheme.vineGreen));
     });
 
     testWidgets('uses Wrap widget with 4px spacing', (tester) async {

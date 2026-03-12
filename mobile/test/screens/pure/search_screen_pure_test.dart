@@ -83,6 +83,11 @@ void main() {
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) => Stream.value([]));
+
+      when(
+        () =>
+            mockVideosRepository.countVideosLocally(query: any(named: 'query')),
+      ).thenAnswer((_) async => 0);
     });
 
     Widget createTestWidget({List<VideoEvent>? searchResults}) {

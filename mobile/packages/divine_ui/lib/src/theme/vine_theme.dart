@@ -238,7 +238,7 @@ class VineTheme {
   // Classic Vine green color palette
 
   /// Primary brand green color.
-  static const Color vineGreen = Color(0xFF00B488);
+  static const Color vineGreen = Color(0xFF27C58B);
 
   /// On-primary color (text/icons on primary background).
   static const Color onPrimary = Color(0xFF00150D);
@@ -250,10 +250,10 @@ class VineTheme {
   static const Color vineGreenDark = Color(0xFF009A72);
 
   /// Dark green for primary accents on dark backgrounds.
-  static const Color primaryDarkGreen = Color(0xFF06281D);
+  static const Color primaryDarkGreen = Color(0xFF07241B);
 
   /// Lighter variant of the brand green.
-  static const Color vineGreenLight = Color(0xFF33C49F);
+  static const Color vineGreenLight = Color(0xFFD0FBCB);
 
   // Navigation colors
 
@@ -392,6 +392,9 @@ class VineTheme {
   /// Tertiary/light text color (medium gray).
   static const Color lightText = Color(0xFF888888);
 
+  /// Off-white surface color for light-on-dark text and backgrounds.
+  static const Color offWhite = Color(0xFFF9F7F6);
+
   /// White text color alias.
   static const Color whiteText = Colors.white;
 
@@ -477,6 +480,12 @@ class VineTheme {
 
   /// Accent purple color.
   static const Color accentPurple = Color(0xFF8568FF);
+
+  /// Fully transparent color sentinel.
+  static const Color transparent = Color(0x00000000);
+
+  /// Scrim at 80% opacity (black 80%).
+  static const Color scrim80 = Color(0xCC000000);
 
   /// The complete theme data for the app.
   static ThemeData get theme => ThemeData(

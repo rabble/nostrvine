@@ -1,13 +1,14 @@
 // ABOUTME: Inline font selector that replaces the keyboard.
 // ABOUTME: Displays font options in a scrollable list matching keyboard height.
 
+import 'dart:math';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_extensions.dart';
-import 'package:openvine/widgets/video_editor/video_editor_blurred_panel.dart';
 
 /// Inline font selector that replaces the keyboard.
 ///
@@ -25,28 +26,35 @@ class VideoEditorTextFontSelector extends StatelessWidget {
       (bloc) => bloc.state.selectedFontIndex,
     );
 
-    return VideoEditorBlurredPanel(
-      child: ListView.builder(
-        padding: const .symmetric(vertical: 16),
-        itemCount: VideoEditorConstants.textFonts.length,
-        itemBuilder: (context, index) {
-          final font = VideoEditorConstants.textFonts[index];
-          final isSelected = index == selectedFontIndex;
-          return _FontListItem(
-            font: font,
-            isSelected: isSelected,
-            onTap: () {
-              // Apply font via callback
-              onFontSelected?.call(font());
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          height: min(380, constraints.maxHeight),
+          child: ListView.builder(
+            padding: .only(
+              bottom: MediaQuery.viewPaddingOf(context).bottom,
+            ),
+            itemCount: VideoEditorConstants.textFonts.length,
+            itemBuilder: (context, index) {
+              final font = VideoEditorConstants.textFonts[index];
+              final isSelected = index == selectedFontIndex;
+              return _FontListItem(
+                font: font,
+                isSelected: isSelected,
+                onTap: () {
+                  // Apply font via callback
+                  onFontSelected?.call(font());
 
-              // Update BLoC state
-              context.read<VideoEditorTextBloc>().add(
-                VideoEditorTextFontSelected(index),
+                  // Update BLoC state
+                  context.read<VideoEditorTextBloc>().add(
+                    VideoEditorTextFontSelected(index),
+                  );
+                },
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

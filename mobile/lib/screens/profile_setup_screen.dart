@@ -1874,7 +1874,7 @@ class _ColorSwatch extends StatelessWidget {
           color: color ?? VineTheme.surfaceContainer,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? VineTheme.whiteText : Colors.transparent,
+            color: isSelected ? VineTheme.whiteText : VineTheme.transparent,
             width: 3,
           ),
         ),

@@ -126,7 +126,7 @@ extension PauseAwareModals on BuildContext {
         builder: builder,
         isScrollControlled: true,
         useSafeArea: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: VineTheme.transparent,
       ).whenComplete(() {
         overlayNotifier.setBottomSheetOpen(false);
       });

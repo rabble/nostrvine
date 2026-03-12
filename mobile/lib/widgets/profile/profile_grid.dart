@@ -315,7 +315,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 indicatorColor: VineTheme.tabIndicatorGreen,
                 indicatorWeight: 4,
                 indicatorSize: TabBarIndicatorSize.tab,
-                dividerColor: Colors.transparent,
+                dividerColor: VineTheme.transparent,
                 tabs: [
                   Tab(
                     icon: Semantics(

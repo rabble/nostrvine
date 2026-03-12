@@ -24,7 +24,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         padding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
+        backgroundColor: VineTheme.transparent,
         elevation: 0,
         behavior: .floating,
         margin: const .fromLTRB(16, 0, 16, 68),

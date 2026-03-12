@@ -9,6 +9,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_font_selector.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_overlay_controls.dart';
+import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_style_bar.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -114,12 +115,8 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
 
     return Stack(
       children: [
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: MediaQuery.paddingOf(context).top,
-          child: const ColoredBox(
+        const Positioned.fill(
+          child: ColoredBox(
             color: VideoEditorConstants.textEditorBackground,
           ),
         ),
@@ -133,100 +130,143 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
               final showBottomPanel =
                   state.showFontSelector || state.showColorPicker;
 
-              return Column(
-                children: [
-                  // TextEditor with padding when panel is shown
-                  Expanded(
-                    child: MediaQuery.removeViewPadding(
-                      context: context,
-                      removeBottom: true,
-                      child: TextEditor(
-                        key: _textEditorKey,
-                        layer: widget.layer,
-                        theme: Theme.of(context),
-                        heroTag: widget.layer?.id,
-                        callbacks: ProImageEditorCallbacks(
-                          textEditorCallbacks: TextEditorCallbacks(
-                            onBackgroundModeChanged: (value) {
-                              context.read<VideoEditorTextBloc>().add(
-                                VideoEditorTextBackgroundStyleChanged(value),
-                              );
-                            },
-                            onTextAlignChanged: (value) {
-                              context.read<VideoEditorTextBloc>().add(
-                                VideoEditorTextAlignmentChanged(value),
-                              );
-                            },
-                          ),
-                        ),
-                        configs: ProImageEditorConfigs(
-                          i18n: const I18n(
-                            textEditor: I18nTextEditor(inputHintText: ''),
-                          ),
-                          textEditor: TextEditorConfigs(
-                            style: const TextEditorStyle(
-                              inputCursorColor: VineTheme.whiteText,
-                              inputTextFieldPadding: .only(left: 16, right: 48),
+              return VideoTextEditorScope(
+                editorKey: _textEditorKey,
+                child: Column(
+                  children: [
+                    // TextEditor with padding when panel is shown
+                    Expanded(
+                      child: MediaQuery.removeViewPadding(
+                        context: context,
+                        removeBottom: true,
+                        child: TextEditor(
+                          key: _textEditorKey,
+                          layer: widget.layer,
+                          theme: Theme.of(context),
+                          heroTag: widget.layer?.id,
+                          callbacks: ProImageEditorCallbacks(
+                            textEditorCallbacks: TextEditorCallbacks(
+                              onBackgroundModeChanged: (value) {
+                                context.read<VideoEditorTextBloc>().add(
+                                  VideoEditorTextBackgroundStyleChanged(value),
+                                );
+                              },
+                              onTextAlignChanged: (value) {
+                                context.read<VideoEditorTextBloc>().add(
+                                  VideoEditorTextAlignmentChanged(value),
+                                );
+                              },
                             ),
-                            resizeToAvoidBottomInset: false,
-                            minFontScale: VideoEditorConstants.minFontScale,
-                            maxFontScale: VideoEditorConstants.maxFontScale,
-                            initFontScale: _getFontScale(fontSize),
-                            initialBackgroundColorMode: backgroundStyle,
-                            initialTextAlign: alignment,
-                            initialPrimaryColor: state.color,
-                            defaultTextStyle: VideoEditorConstants
-                                .textFonts[state.selectedFontIndex](),
-                            inputTextFieldAlign: _getInputAlignment(alignment),
-                            enableAutoOverflow: false,
-                            widgets: TextEditorWidgets(
-                              appBar: (_, _) => null,
-                              bottomBar: (_, _) => null,
-                              colorPicker: (_, _, _, _) => null,
-                              bodyItemsOverlay: (editor, rebuildStream) => [
-                                ReactiveWidget(
-                                  stream: rebuildStream,
-                                  builder: (_) => VideoTextEditorScope(
-                                    editor: editor,
-                                    child:
+                          ),
+                          configs: ProImageEditorConfigs(
+                            i18n: const I18n(
+                              textEditor: I18nTextEditor(inputHintText: ''),
+                            ),
+                            textEditor: TextEditorConfigs(
+                              style: const TextEditorStyle(
+                                background: Colors.transparent,
+                                inputCursorColor: VineTheme.whiteText,
+                                inputTextFieldPadding: .only(
+                                  top: 96,
+                                  left: 16,
+                                  right: 48,
+                                ),
+                              ),
+                              resizeToAvoidBottomInset: false,
+                              minFontScale: VideoEditorConstants.minFontScale,
+                              maxFontScale: VideoEditorConstants.maxFontScale,
+                              initFontScale: _getFontScale(fontSize),
+                              initialBackgroundColorMode: backgroundStyle,
+                              initialTextAlign: alignment,
+                              initialPrimaryColor: state.color,
+                              defaultTextStyle: VideoEditorConstants
+                                  .textFonts[state.selectedFontIndex](),
+                              inputTextFieldAlign: _getInputAlignment(
+                                alignment,
+                              ),
+                              enableAutoOverflow: false,
+                              widgets: TextEditorWidgets(
+                                appBar: (_, _) => null,
+                                bottomBar: (_, _) => null,
+                                colorPicker: (_, _, _, _) => null,
+                                bodyItemsOverlay: (editor, rebuildStream) => [
+                                  ReactiveWidget(
+                                    stream: rebuildStream,
+                                    builder: (_) =>
                                         const VideoEditorTextOverlayControls(),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  // Bottom panels (font selector / color picker)
-                  _KeyboardHeightPanel(
-                    showBottomPanel: showBottomPanel,
-                    backgroundColor: VideoEditorConstants.textEditorBackground,
-                    onKeyboardClosedWithoutPanel: () {
-                      if (mounted) context.pop();
-                    },
-                    builder: (height) => state.showFontSelector
-                        ? VideoEditorTextFontSelector(
-                            onFontSelected: (textStyle) {
-                              _textEditorKey.currentState?.setTextStyle(
-                                textStyle,
-                              );
-                            },
-                          )
-                        : VideoEditorColorPickerSheet(
-                            height: height,
-                            selectedColor: state.color,
-                            onColorSelected: (color) {
-                              _textEditorKey.currentState?.primaryColor = color;
-                              context.read<VideoEditorTextBloc>().add(
-                                VideoEditorTextColorSelected(color),
-                              );
-                            },
+                    // Bottom panels (font selector / color picker)
+                    _DismissibleBottomSheet(
+                      onDismissed: () {
+                        if (mounted) context.pop();
+                      },
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          color: VineTheme.surfaceBackground,
+                          borderRadius: .vertical(
+                            top: .circular(
+                              VineTheme.bottomSheetBorderRadius,
+                            ),
                           ),
-                  ),
-                ],
+                        ),
+                        child: Column(
+                          children: [
+                            const VineBottomSheetHeader(),
+
+                            const Padding(
+                              padding: .symmetric(vertical: 16),
+                              child: VideoEditorTextStyleBar(),
+                            ),
+
+                            const Divider(
+                              height: 2,
+                              color: VineTheme.outlinedDisabled,
+                            ),
+
+                            _KeyboardHeightPanel(
+                              showBottomPanel: showBottomPanel,
+                              backgroundColor: VineTheme.surfaceBackground,
+                              onKeyboardClosedWithoutPanel: () {
+                                if (mounted) context.pop();
+                              },
+                              child: state.showFontSelector
+                                  ? VideoEditorTextFontSelector(
+                                      onFontSelected: (textStyle) {
+                                        _textEditorKey.currentState
+                                            ?.setTextStyle(
+                                              textStyle,
+                                            );
+                                      },
+                                    )
+                                  : VideoEditorColorPickerSheet(
+                                      selectedColor: state.color,
+                                      onColorSelected: (color) {
+                                        _textEditorKey
+                                                .currentState
+                                                ?.primaryColor =
+                                            color;
+                                        context.read<VideoEditorTextBloc>().add(
+                                          VideoEditorTextColorSelected(
+                                            color,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -240,13 +280,13 @@ class _KeyboardHeightPanel extends StatefulWidget {
   const _KeyboardHeightPanel({
     required this.showBottomPanel,
     required this.backgroundColor,
-    required this.builder,
+    required this.child,
     this.onKeyboardClosedWithoutPanel,
   });
 
   final bool showBottomPanel;
   final Color backgroundColor;
-  final Widget Function(double height) builder;
+  final Widget child;
   final VoidCallback? onKeyboardClosedWithoutPanel;
 
   @override
@@ -255,9 +295,6 @@ class _KeyboardHeightPanel extends StatefulWidget {
 
 class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel>
     with WidgetsBindingObserver {
-  /// Minimum fallback height for the panel.
-  static const double _minPanelHeight = 200.0;
-
   /// Threshold to consider keyboard as "open".
   static const double _keyboardThreshold = 100.0;
 
@@ -316,38 +353,94 @@ class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel>
   @override
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
+    final isKeyboardVisible = keyboardHeight > _keyboardThreshold;
 
-    // Update last known keyboard height when keyboard is visible
-    if (keyboardHeight > _lastKeyboardHeight) {
+    if (isKeyboardVisible && keyboardHeight > _lastKeyboardHeight) {
       _lastKeyboardHeight = keyboardHeight;
     }
 
-    // Ensure minimum height when panel should be shown
-    if (widget.showBottomPanel && _lastKeyboardHeight < _minPanelHeight) {
-      _lastKeyboardHeight = _minPanelHeight;
+    Widget content;
+    if (widget.showBottomPanel) {
+      // Panel visible → panel determines its own height
+      content = widget.child;
+    } else {
+      content = SizedBox(height: _lastKeyboardHeight, width: double.infinity);
     }
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 100),
-      height: _lastKeyboardHeight,
+    return ColoredBox(
       color: widget.backgroundColor,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeOutCubic,
-        switchOutCurve: Curves.easeInCubic,
-        transitionBuilder: (child, animation) => SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0, 1),
-            end: Offset.zero,
-          ).animate(animation),
-          child: child,
-        ),
-        child: widget.showBottomPanel
-            ? Material(
-                type: .transparency,
-                child: widget.builder(_lastKeyboardHeight),
-              )
-            : const SizedBox(width: .infinity),
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        alignment: Alignment.topCenter,
+        curve: Curves.easeInOut,
+        child: Material(type: .transparency, child: content),
+      ),
+    );
+  }
+}
+
+/// Wraps a child in a vertical drag gesture that slides the sheet down
+/// and calls [onDismissed] when the user drags past the threshold or
+/// flings downward.
+class _DismissibleBottomSheet extends StatefulWidget {
+  const _DismissibleBottomSheet({
+    required this.child,
+    required this.onDismissed,
+  });
+
+  final Widget child;
+  final VoidCallback onDismissed;
+
+  @override
+  State<_DismissibleBottomSheet> createState() =>
+      _DismissibleBottomSheetState();
+}
+
+class _DismissibleBottomSheetState extends State<_DismissibleBottomSheet> {
+  /// Distance the user must drag down to dismiss.
+  static const double _dismissThreshold = 80.0;
+
+  /// Fling velocity (px/s) that triggers instant dismiss.
+  static const double _flingVelocity = 700.0;
+
+  double _dragOffset = 0.0;
+  bool _dismissed = false;
+
+  void _onDragUpdate(DragUpdateDetails details) {
+    if (_dismissed) return;
+    setState(() {
+      _dragOffset = (_dragOffset + details.delta.dy).clamp(
+        0.0,
+        double.infinity,
+      );
+    });
+  }
+
+  void _onDragEnd(DragEndDetails details) {
+    if (_dismissed) return;
+
+    if (_dragOffset > _dismissThreshold ||
+        (details.primaryVelocity != null &&
+            details.primaryVelocity! > _flingVelocity)) {
+      _dismissed = true;
+      widget.onDismissed();
+    } else {
+      setState(() => _dragOffset = 0.0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onVerticalDragUpdate: _onDragUpdate,
+      onVerticalDragEnd: _onDragEnd,
+      child: AnimatedContainer(
+        duration: _dragOffset == 0.0
+            ? const Duration(milliseconds: 200)
+            : Duration.zero,
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(0, _dragOffset, 0),
+        child: widget.child,
       ),
     );
   }

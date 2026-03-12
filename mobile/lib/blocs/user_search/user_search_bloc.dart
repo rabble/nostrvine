@@ -63,13 +63,11 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     }
 
     if (!event.fetchResults) {
+      if (query == state.query && state.status != UserSearchStatus.initial) {
+        return; // preserve existing state including resultCount
+      }
       final count = await _profileRepository.countUsersLocally(query: query);
-      emit(
-        UserSearchState(
-          query: query,
-          resultCount: count,
-        ),
-      );
+      emit(UserSearchState(query: query, resultCount: count));
       return;
     }
 
@@ -103,10 +101,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         name: 'UserSearchBloc',
       );
 
-      _feedTracker?.markFirstVideosReceived(
-        'user_search',
-        results.length,
-      );
+      _feedTracker?.markFirstVideosReceived('user_search', results.length);
 
       emit(
         state.copyWith(

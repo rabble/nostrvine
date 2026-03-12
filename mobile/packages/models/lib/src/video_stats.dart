@@ -437,7 +437,7 @@ class VideoStats {
       originalLoops: loops,
       textTrackRef: textTrackRef,
       textTrackContent: textTrackContent,
-      contentWarningLabels: moderationLabels,
+      moderationLabels: moderationLabels,
       rawTags: {
         ...rawTags,
         // Note: Do NOT inject engagement `loops` here — rawTags['loops']

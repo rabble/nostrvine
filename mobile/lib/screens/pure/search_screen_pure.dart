@@ -135,6 +135,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     _dispatchSearch(_searchController.text.trim());
   }
 
+  /// Dispatches to all blocs; blocs skip fetch when they already have results.
   void _dispatchSearch(String query) {
     final activeIndex = _tabController.index;
     _videoSearchBloc.add(
@@ -291,7 +292,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                     indicatorColor: VineTheme.tabIndicatorGreen,
                     indicatorWeight: 4,
                     indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
+                    dividerColor: VineTheme.transparent,
                     labelColor: VineTheme.whiteText,
                     unselectedLabelColor: VineTheme.tabIconInactive,
                     labelPadding: const EdgeInsets.symmetric(horizontal: 14),

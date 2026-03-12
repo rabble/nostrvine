@@ -34,7 +34,7 @@ class DraftsTab extends ConsumerWidget {
         final isSuccess = state is DraftsLibraryDraftDeleted;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.transparent,
+            backgroundColor: VineTheme.transparent,
             elevation: 0,
             behavior: SnackBarBehavior.floating,
             content: DivineSnackbarContainer(

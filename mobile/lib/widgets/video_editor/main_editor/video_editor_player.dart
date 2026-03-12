@@ -36,6 +36,7 @@ class VideoEditorPlayer extends StatelessWidget {
         clipper: _RoundedRectClipper(
           bodySize: bodySize,
           enableFullScreen: useFullSize,
+          borderRadius: targetAspectRatio == .square ? 0 : 32,
         ),
         child: AspectRatio(
           aspectRatio: aspectRatio,
@@ -69,10 +70,12 @@ class _RoundedRectClipper extends CustomClipper<Path> {
   const _RoundedRectClipper({
     required this.bodySize,
     required this.enableFullScreen,
+    required this.borderRadius,
   });
 
   final Size bodySize;
   final bool enableFullScreen;
+  final double borderRadius;
 
   @override
   Path getClip(Size size) {
@@ -94,7 +97,9 @@ class _RoundedRectClipper extends CustomClipper<Path> {
     }
 
     // Convert 32px screen radius to widget coordinates
-    final radius = Radius.circular(32 * clipSize.width / bodySize.width);
+    final radius = Radius.circular(
+      borderRadius * clipSize.width / bodySize.width,
+    );
 
     return Path()..addRRect(
       RRect.fromRectAndCorners(

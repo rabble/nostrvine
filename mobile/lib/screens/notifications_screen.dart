@@ -75,7 +75,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
             indicatorColor: VineTheme.tabIndicatorGreen,
             indicatorWeight: 4,
             indicatorSize: TabBarIndicatorSize.tab,
-            dividerColor: Colors.transparent,
+            dividerColor: VineTheme.transparent,
             labelColor: VineTheme.whiteText,
             unselectedLabelColor: VineTheme.tabIconInactive,
             labelStyle: VineTheme.tabTextStyle(),

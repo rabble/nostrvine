@@ -1,6 +1,7 @@
 // ABOUTME: Mixin that provides proactive video prefetching for grid views
 // ABOUTME: Pre-caches video files based on grid position and bandwidth
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
@@ -80,5 +81,5 @@ mixin GridPrefetchMixin<T extends StatefulWidget> on State<T> {
   }
 
   bool get _shouldPrefetch =>
-      BandwidthTrackerService.instance.shouldUseHighQuality;
+      !kIsWeb && BandwidthTrackerService.instance.shouldUseHighQuality;
 }

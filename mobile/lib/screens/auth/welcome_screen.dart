@@ -492,7 +492,7 @@ class _AccountTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? VineTheme.vineGreen.withValues(alpha: 0.1)
-              : Colors.transparent,
+              : VineTheme.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(

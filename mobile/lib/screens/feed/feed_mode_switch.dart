@@ -37,7 +37,7 @@ class FeedModeSwitch extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [VineTheme.innerShadowPressed, Colors.transparent],
+            colors: [VineTheme.innerShadowPressed, VineTheme.transparent],
           ),
         ),
         child: SafeArea(

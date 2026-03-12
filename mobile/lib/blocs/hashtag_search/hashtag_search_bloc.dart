@@ -63,12 +63,11 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     }
 
     if (!event.fetchResults) {
-      emit(
-        HashtagSearchState(
-          query: query,
-          resultCount: _hashtagRepository.countHashtagsLocally(query: query),
-        ),
-      );
+      if (query == state.query && state.status != HashtagSearchStatus.initial) {
+        return; // preserve existing state including resultCount
+      }
+      final count = _hashtagRepository.countHashtagsLocally(query: query);
+      emit(HashtagSearchState(query: query, resultCount: count));
       return;
     }
 
@@ -92,10 +91,7 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
       );
       final results = await _resolveResults(query, remoteResults);
 
-      _feedTracker?.markFirstVideosReceived(
-        'hashtag_search',
-        results.length,
-      );
+      _feedTracker?.markFirstVideosReceived('hashtag_search', results.length);
 
       emit(
         state.copyWith(

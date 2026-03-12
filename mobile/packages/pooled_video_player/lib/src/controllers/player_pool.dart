@@ -338,16 +338,18 @@ class PlayerPool {
     final player = Player();
 
     // Suppress FFmpeg codec warnings (e.g. smpte170m color transfer) that
-    // bypass MPV's API log callback and go directly to stderr.
-    // Use dynamic dispatch because the web NativePlayer stub doesn't
-    // expose setProperty, causing a dart2js compile-time error.
-    try {
-      final nativePlayer = player.platform;
-      if (!kIsWeb && nativePlayer is NativePlayer) {
-        await (nativePlayer as dynamic).setProperty('msg-level', 'all=error');
+    // bypass MPV's API log callback and go directly to stderr. Skip on web,
+    // and use dynamic dispatch so Dart2JS does not type-check the missing
+    // setProperty member on the web NativePlayer stub.
+    if (!kIsWeb) {
+      try {
+        final nativePlayer = player.platform;
+        if (nativePlayer is NativePlayer) {
+          await (nativePlayer as dynamic).setProperty('msg-level', 'all=error');
+        }
+      } on Object catch (_) {
+        // Ignore — some platforms or stubs don't support setProperty.
       }
-    } on Exception {
-      // Ignore — non-native platforms don't support setProperty.
     }
 
     final videoController = VideoController(player);

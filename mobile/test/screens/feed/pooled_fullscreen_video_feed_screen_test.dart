@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,8 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/web_video_feed.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 import '../../helpers/test_provider_overrides.dart';
@@ -230,6 +233,27 @@ void main() {
         // Note: Individual video items may still show their own loading states
         expect(find.byType(PooledVideoFeed), findsOneWidget);
       });
+
+      testWidgets(
+        'shows social overlay actions on web',
+        (tester) async {
+          final videos = createTestVideos();
+
+          await tester.pumpWidget(
+            buildSubject(
+              state: FullscreenFeedState(
+                status: FullscreenFeedStatus.ready,
+                videos: videos,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(find.byType(WebVideoFeed), findsOneWidget);
+          expect(find.byType(VideoOverlayActions), findsOneWidget);
+        },
+        skip: !kIsWeb,
+      );
     });
 
     group('BLoC event dispatching', () {

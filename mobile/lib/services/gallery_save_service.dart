@@ -3,8 +3,7 @@
 
 import 'dart:io';
 
-import 'package:flutter/foundation.dart'
-    show TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
 import 'package:models/models.dart' as model show AspectRatio;
@@ -113,7 +112,7 @@ class GallerySaveService {
       // On iOS, don't use album parameter - it requires full photo library access
       // With album, iOS shows a second permission dialog for full access
       // Without album, it only needs photosAddOnly permission
-      if (Platform.isIOS) {
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
         await Gal.putVideo(resolvedPath);
       } else {
         await Gal.putVideo(resolvedPath, album: albumName);

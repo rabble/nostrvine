@@ -2,10 +2,9 @@
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via autoDispose
 
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart' show ChangeNotifier, kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:models/models.dart' show VideoEvent;
@@ -324,7 +323,7 @@ VideoPlayerController individualVideoController(
     // Android uses shorter timeout (3s) to prevent MediaCodec accumulation crash
     // iOS/desktop use longer timeout (15s) for smoother scroll-back experience
     // Short timeout prevents OOM with high-resolution videos (4K = ~25MB/frame)
-    final timeout = !kIsWeb && Platform.isAndroid
+    final timeout = !kIsWeb && defaultTargetPlatform == TargetPlatform.android
         ? const Duration(seconds: 3)
         : const Duration(seconds: 15);
     cacheTimer = Timer(timeout, link.close);
@@ -788,7 +787,9 @@ VideoPlayerController individualVideoController(
 
         // Add Android device info for codec-related errors
         // This helps diagnose hardware decoder issues on specific devices
-        if (!kIsWeb && Platform.isAndroid && _isCodecError(errorMessage)) {
+        if (!kIsWeb &&
+            defaultTargetPlatform == TargetPlatform.android &&
+            _isCodecError(errorMessage)) {
           logMessage += '\n📱 Android Device Info (codec error detected):';
           // Device info is async, so we log it separately
           _logAndroidDeviceInfo(params.videoId, errorMessage);
@@ -870,7 +871,7 @@ VideoPlayerController individualVideoController(
           );
         } else if (_isCodecError(errorMessage) &&
             !kIsWeb &&
-            Platform.isAndroid) {
+            defaultTargetPlatform == TargetPlatform.android) {
           // Android codec error - try HLS fallback with H.264 Baseline Profile
           // IMPORTANT: Read all provider state SYNCHRONOUSLY before any async work
           // to avoid "Cannot use Ref inside life-cycles" crashes when keepAlive timer fires

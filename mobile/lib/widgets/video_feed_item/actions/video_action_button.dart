@@ -49,7 +49,7 @@ class VideoActionButton extends StatelessWidget {
   /// Color applied to the SVG icon. Defaults to white.
   final Color iconColor;
 
-  /// Count to display beneath the icon. Hidden when 0.
+  /// Count to display beneath the icon. Shows empty space when 0.
   final int count;
 
   /// When true, shows a loading spinner instead of the icon.
@@ -70,7 +70,7 @@ class VideoActionButton extends StatelessWidget {
             padding: const EdgeInsets.all(8),
             constraints: const BoxConstraints.tightFor(width: 48, height: 48),
             style: IconButton.styleFrom(
-              highlightColor: Colors.transparent,
+              highlightColor: VineTheme.transparent,
               splashFactory: NoSplash.splashFactory,
             ),
             onPressed: isLoading ? null : onPressed,
@@ -103,18 +103,17 @@ class VideoActionButton extends StatelessWidget {
                   ),
           ),
         ),
-        if (count > 0)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: SizedBox(
-              width: 48,
-              child: Text(
-                StringUtils.formatCompactNumber(count),
-                style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
-                textAlign: TextAlign.center,
-              ),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: SizedBox(
+            width: 48,
+            child: Text(
+              count > 0 ? StringUtils.formatCompactNumber(count) : '',
+              style: VineTheme.labelSmallFont(color: VineTheme.onSurface),
+              textAlign: TextAlign.center,
             ),
           ),
+        ),
       ],
     );
   }

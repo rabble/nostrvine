@@ -481,6 +481,7 @@ class VideoLoadingMetrics {
   /// Called automatically every 50 video loads, or can be called manually
   /// (e.g., on app background).
   void reportCacheMetrics() {
+    if (kIsWeb) return;
     final metrics = openVineMediaCache.metrics;
     final metricsMap = metrics.toMap();
 

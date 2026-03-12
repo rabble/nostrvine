@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 
 /// Top overlay controls for the draw editor screen.
 ///
@@ -19,29 +20,21 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
 
     return Align(
       alignment: Alignment.topCenter,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        child:
-            BlocSelector<
-              VideoEditorDrawBloc,
-              VideoEditorDrawState,
-              ({bool canUndo, bool canRedo})
-            >(
-              selector: (state) =>
-                  (canUndo: state.canUndo, canRedo: state.canRedo),
-              builder: (context, state) {
-                return Row(
+      child:
+          BlocSelector<
+            VideoEditorDrawBloc,
+            VideoEditorDrawState,
+            ({bool canUndo, bool canRedo})
+          >(
+            selector: (state) =>
+                (canUndo: state.canUndo, canRedo: state.canRedo),
+            builder: (context, state) {
+              return VideoEditorToolbar(
+                onClose: () => scope.editor?.closeSubEditor(),
+                onDone: () => scope.paintEditor?.done(),
+                center: Row(
                   spacing: 8,
                   children: [
-                    DivineIconButton(
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      semanticLabel: 'Close',
-                      icon: .x,
-                      size: .small,
-                      type: .ghostSecondary,
-                      onPressed: () => scope.editor?.closeSubEditor(),
-                    ),
-                    const Spacer(),
                     DivineIconButton(
                       icon: .arrowArcLeft,
                       // TODO(l10n): Replace with context.l10n when localization is added.
@@ -62,22 +55,11 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
                           ? () => scope.paintEditor?.redoAction()
                           : null,
                     ),
-
-                    const Spacer(),
-
-                    DivineIconButton(
-                      size: .small,
-                      type: .tertiary,
-                      // TODO(l10n): Replace with context.l10n when localization is added.
-                      semanticLabel: 'Done',
-                      icon: .check,
-                      onPressed: () => scope.paintEditor?.done(),
-                    ),
                   ],
-                );
-              },
-            ),
-      ),
+                ),
+              );
+            },
+          ),
     );
   }
 }

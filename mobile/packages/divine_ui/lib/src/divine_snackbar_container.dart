@@ -21,7 +21,7 @@ class DivineSnackbarContainer extends StatelessWidget {
     String? actionLabel,
     VoidCallback? onActionPressed,
   }) => SnackBar(
-    backgroundColor: Colors.transparent,
+    backgroundColor: VineTheme.transparent,
     elevation: 0,
     padding: EdgeInsets.zero,
     behavior: SnackBarBehavior.floating,

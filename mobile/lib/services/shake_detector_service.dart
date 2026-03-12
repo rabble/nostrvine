@@ -2,7 +2,6 @@
 // ABOUTME: Uses accelerometer to detect shake gestures on mobile platforms
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -35,7 +34,9 @@ class ShakeDetectorService {
   /// Start listening for shake events
   void start() {
     // Only works on mobile platforms
-    if (kIsWeb || (!Platform.isIOS && !Platform.isAndroid)) {
+    if (kIsWeb ||
+        (defaultTargetPlatform != TargetPlatform.iOS &&
+            defaultTargetPlatform != TargetPlatform.android)) {
       return;
     }
 

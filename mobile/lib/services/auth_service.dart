@@ -5,8 +5,8 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
@@ -1544,7 +1544,7 @@ class AuthService implements BackgroundAwareService {
   bool _isAndroid() {
     try {
       // This import is available at the top of the file
-      return Platform.isAndroid;
+      return !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     } catch (_) {
       return false;
     }

@@ -177,9 +177,9 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
     if (!_camera.isInitialized || textureToShow == null) {
       return widget.loadingWidget ??
           const ColoredBox(
-            color: Colors.black,
+            color: Color(0xFF000000),
             child: Center(
-              child: CircularProgressIndicator(color: Colors.white),
+              child: CircularProgressIndicator(color: Color(0xFFFFFFFF)),
             ),
           );
     }

@@ -61,35 +61,23 @@ class _OverlayControls extends StatelessWidget {
               previous.isLayerInteractionActive !=
                   current.isLayerInteractionActive ||
               previous.openSubEditor != current.openSubEditor,
-          builder: (context, state) {
-            final child = switch (state) {
-              _ when state.isLayerInteractionActive => const SizedBox(),
-              // Text-Editor
-              VideoEditorMainState(openSubEditor: .text) =>
-                const SizedBox.shrink(),
-              // Draw-Editor
-              VideoEditorMainState(openSubEditor: .draw) =>
-                const VideoEditorDrawOverlayControls(
-                  key: ValueKey('Draw-Overlay-Controls'),
-                ),
-              // Filter-Editor
-              VideoEditorMainState(openSubEditor: .filter) =>
-                const VideoEditorFilterOverlayControls(
-                  key: ValueKey('Filter-Overlay-Controls'),
-                ),
-              // Fallback
-              _ => const VideoEditorMainOverlayActions(),
-            };
-
-            return AnimatedSwitcher(
-              layoutBuilder: (currentChild, previousChildren) => Stack(
-                fit: .expand,
-                alignment: .center,
-                children: <Widget>[...previousChildren, ?currentChild],
+          builder: (context, state) => switch (state) {
+            _ when state.isLayerInteractionActive => const SizedBox(),
+            // Text-Editor
+            VideoEditorMainState(openSubEditor: .text) =>
+              const SizedBox.shrink(),
+            // Draw-Editor
+            VideoEditorMainState(openSubEditor: .draw) =>
+              const VideoEditorDrawOverlayControls(
+                key: ValueKey('Draw-Overlay-Controls'),
               ),
-              duration: const Duration(milliseconds: 200),
-              child: child,
-            );
+            // Filter-Editor
+            VideoEditorMainState(openSubEditor: .filter) =>
+              const VideoEditorFilterOverlayControls(
+                key: ValueKey('Filter-Overlay-Controls'),
+              ),
+            // Fallback
+            _ => const VideoEditorMainOverlayActions(),
           },
         ),
       ),

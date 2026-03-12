@@ -27,6 +27,8 @@ class MockTextEditorConfigs extends Mock implements TextEditorConfigs {}
 
 class MockProImageEditorConfigs extends Mock implements ProImageEditorConfigs {}
 
+class MockTextEditorKey extends Mock implements GlobalKey<TextEditorState> {}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -36,18 +38,21 @@ void main() {
 
   group('VideoEditorTextOverlayControls', () {
     late MockVideoEditorTextBloc mockBloc;
+    late MockTextEditorKey mockKey;
     late MockTextEditorState mockEditor;
     late MockProImageEditorConfigs mockConfigs;
     late MockTextEditorConfigs mockTextEditorConfigs;
 
     setUp(() {
       mockBloc = MockVideoEditorTextBloc();
+      mockKey = MockTextEditorKey();
       mockEditor = MockTextEditorState();
       mockConfigs = MockProImageEditorConfigs();
       mockTextEditorConfigs = MockTextEditorConfigs();
 
       when(() => mockBloc.state).thenReturn(const VideoEditorTextState());
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+      when(() => mockKey.currentState).thenReturn(mockEditor);
       when(() => mockEditor.configs).thenReturn(mockConfigs);
       when(() => mockConfigs.textEditor).thenReturn(mockTextEditorConfigs);
       when(() => mockTextEditorConfigs.minFontScale).thenReturn(0.5);
@@ -62,7 +67,7 @@ void main() {
       return MaterialApp(
         home: Scaffold(
           body: VideoTextEditorScope(
-            editor: mockEditor,
+            editorKey: mockKey,
             child: BlocProvider<VideoEditorTextBloc>.value(
               value: mockBloc,
               child: const SizedBox(
@@ -176,23 +181,6 @@ void main() {
           (a) => a.alignment == Alignment.topCenter,
         );
         expect(topAlign, isNotEmpty);
-      });
-
-      testWidgets('style bar is aligned to bottom center', (tester) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        final aligns = tester.widgetList<Align>(
-          find.descendant(
-            of: find.byType(VideoEditorTextOverlayControls),
-            matching: find.byType(Align),
-          ),
-        );
-
-        final bottomAlign = aligns.where(
-          (a) => a.alignment == Alignment.bottomCenter,
-        );
-        expect(bottomAlign, isNotEmpty);
       });
 
       testWidgets('slider is aligned to center right', (tester) async {

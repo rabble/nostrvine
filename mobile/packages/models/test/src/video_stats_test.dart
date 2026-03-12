@@ -773,8 +773,11 @@ void main() {
             stats.moderationLabels,
             equals(['nudity', 'violence', 'spam']),
           );
+          // Moderation labels go to VideoEvent.moderationLabels (ML-generated),
+          // NOT contentWarningLabels (which are for author self-labels only)
+          expect(event.contentWarningLabels, isEmpty);
           expect(
-            event.contentWarningLabels,
+            event.moderationLabels,
             equals(['nudity', 'violence', 'spam']),
           );
         },

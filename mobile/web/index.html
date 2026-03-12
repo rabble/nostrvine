@@ -49,10 +49,6 @@
   
   <!-- Preload critical resources -->
   <link rel="preload" href="flutter_bootstrap.js" as="script">
-  <link rel="preload" href="main.dart.js" as="script">
-  <link rel="preload" href="flutter.js" as="script">
-  <link rel="preload" href="assets/FontManifest.json" as="fetch" crossorigin>
-  <link rel="preload" href="assets/AssetManifest.json" as="fetch" crossorigin>
   
   <style>
     /* Reset browser defaults for full-screen app */
@@ -69,6 +65,11 @@
       height: 100%;
       overflow: hidden;
       background: #000;
+    }
+
+    /* Let Flutter overlays receive taps above platform-view backed video. */
+    video {
+      pointer-events: none;
     }
     
     /* Ensure Material Icons load properly */
@@ -127,6 +128,25 @@
     // Register service worker early
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW registration failed:', e));
+    }
+  </script>
+
+  <!-- sql.js for drift/web IndexedDB-backed persistence -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"
+    type="application/javascript"
+  ></script>
+  <script>
+    const sqlJsBaseUrl = 'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/';
+    const originalInitSqlJs = window.initSqlJs;
+    if (typeof originalInitSqlJs === 'function') {
+      window.initSqlJs = (config = {}) => originalInitSqlJs({
+        ...config,
+        locateFile:
+            config.locateFile ?? ((file) => `${sqlJsBaseUrl}${file}`),
+      });
+    } else {
+      console.warn('sql.js failed to load before Flutter bootstrap');
     }
   </script>
 

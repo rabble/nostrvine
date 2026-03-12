@@ -183,10 +183,6 @@ class ContentFilterService extends ChangeNotifier {
       final label = ContentLabel.fromValue(value);
       if (label == null) continue;
 
-      if (label == ContentLabel.aiGenerated) {
-        return ContentFilterPreference.hide;
-      }
-
       final pref = getPreference(label);
       if (pref == ContentFilterPreference.hide) {
         return ContentFilterPreference.hide;
