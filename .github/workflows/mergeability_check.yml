@@ -16,10 +16,10 @@ permissions:
 jobs:
   mergeability:
     name: mergeability
-    uses: divinevideo/.github/.github/workflows/mergeability_check.yml@d663ac7ed7c0c05c5597c22738e8f96729d4baf9
+    uses: divinevideo/.github/.github/workflows/mergeability_check.yml@ef85c8070802b40f1bc8692c45127847e032dbed
     with:
       base-ref: ${{ github.event.pull_request.base.ref }}
       base-repository: ${{ github.repository }}
       head-repository: ${{ github.event.pull_request.head.repo.full_name }}
       head-sha: ${{ github.event.pull_request.head.sha }}
-      workflow-repository-ref: d663ac7ed7c0c05c5597c22738e8f96729d4baf9
+      workflow-repository-ref: ef85c8070802b40f1bc8692c45127847e032dbed
