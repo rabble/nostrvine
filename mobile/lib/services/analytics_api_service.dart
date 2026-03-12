@@ -13,7 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Sort options for funnelcake video API
 enum VideoSortOption {
   recent('recent'),
-  trending('trending');
+  trending('trending')
+  ;
 
   const VideoSortOption(this.value);
   final String value;
