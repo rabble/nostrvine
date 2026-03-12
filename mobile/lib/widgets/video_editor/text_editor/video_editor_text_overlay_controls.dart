@@ -1,12 +1,12 @@
 // ABOUTME: Top overlay controls for the text editor screen.
 // ABOUTME: Displays close button, done button, style buttons, and vertical slider.
 
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_style_bar.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
 
 /// Top overlay controls for the text editor screen.
@@ -34,7 +34,7 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
         Align(
           alignment: .centerRight,
           child: Padding(
-            padding: .fromLTRB(0, 96, 16, 96),
+            padding: .fromLTRB(0, 96, 10, 96),
             child: _FontSizeSlider(),
           ),
         ),
@@ -85,30 +85,9 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      bottom: false,
-      child: Padding(
-        padding: const .fromLTRB(12, 12, 12, 0),
-        child: Row(
-          mainAxisAlignment: .spaceBetween,
-          children: [
-            DivineIconButton(
-              icon: .x,
-              onPressed: () => VideoTextEditorScope.of(context).editor.close(),
-              size: .small,
-              type: .ghostSecondary,
-              semanticLabel: 'Close',
-            ),
-            DivineIconButton(
-              icon: .check,
-              onPressed: () => VideoTextEditorScope.of(context).editor.done(),
-              size: .small,
-              type: .tertiary,
-              semanticLabel: 'Done',
-            ),
-          ],
-        ),
-      ),
+    return VideoEditorToolbar(
+      onClose: () => VideoTextEditorScope.of(context).editor.close(),
+      onDone: () => VideoTextEditorScope.of(context).editor.done(),
     );
   }
 }
