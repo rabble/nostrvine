@@ -1,4 +1,6 @@
+/// A single comment returned by the FunnelCake video comments endpoint.
 class VideoComment {
+  /// Creates a parsed video comment model.
   const VideoComment({
     required this.id,
     required this.pubkey,
@@ -13,6 +15,7 @@ class VideoComment {
     this.replyToPubkey,
   });
 
+  /// Parses a comment payload from the FunnelCake API.
   factory VideoComment.fromJson(Map<String, dynamic> json) {
     final rawTags = json['tags'] as List<dynamic>? ?? const [];
     return VideoComment(
@@ -33,15 +36,36 @@ class VideoComment {
     );
   }
 
+  /// The Nostr event ID for the comment.
   final String id;
+
+  /// The comment author's public key.
   final String pubkey;
+
+  /// The Unix timestamp when the comment event was created.
   final int createdAt;
+
+  /// The Nostr kind for the comment event.
   final int kind;
+
+  /// The raw comment body.
   final String content;
+
+  /// The event signature.
   final String sig;
+
+  /// The raw Nostr tags attached to the comment event.
   final List<List<String>> tags;
+
+  /// The resolved display name for the author when available.
   final String? authorName;
+
+  /// The resolved avatar URL for the author when available.
   final String? authorAvatar;
+
+  /// The parent event ID when this comment is a reply.
   final String? replyToEventId;
+
+  /// The parent author's public key when this comment is a reply.
   final String? replyToPubkey;
 }
