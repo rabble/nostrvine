@@ -2,7 +2,6 @@
 // ABOUTME: Manages video player lifecycle for the currently selected clip
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';

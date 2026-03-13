@@ -61,7 +61,7 @@ void main() {
         description: 'Test Description',
         tags: const {'tag1', 'tag2'},
         metadataLimitReached: true,
-        collaboratorPubkeys: const ['pubkey1'],
+        collaboratorPubkeys: const {'pubkey1'},
         contentWarnings: const {ContentLabel.nudity},
       );
 
