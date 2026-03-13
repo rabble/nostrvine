@@ -102,5 +102,72 @@ void main() {
         expect(result, matches(RegExp(r'^[A-Z][a-z]+ \d+$')));
       });
     });
+
+    group('formatMessageTime', () {
+      test('returns "Now" for less than 60 seconds ago', () {
+        final ts = unixSecondsAgo(const Duration(seconds: 30));
+        expect(TimeFormatter.formatMessageTime(ts), equals('Now'));
+      });
+
+      test('returns time format for today', () {
+        final ts = unixSecondsAgo(const Duration(hours: 2));
+        final result = TimeFormatter.formatMessageTime(ts);
+        // Matches patterns like "9:41 AM" or "2:30 PM"
+        // intl uses Unicode narrow no-break space (U+202F) before AM/PM
+        expect(result, matches(RegExp(r'^\d{1,2}:\d{2}\s[AP]M$')));
+      });
+
+      test('returns "Yesterday" for previous day', () {
+        final now = DateTime.now();
+        final yesterday = DateTime(now.year, now.month, now.day - 1, 12);
+        final ts = yesterday.millisecondsSinceEpoch ~/ 1000;
+        expect(TimeFormatter.formatMessageTime(ts), equals('Yesterday'));
+      });
+
+      test('returns day name for 2-6 days ago', () {
+        final now = DateTime.now();
+        final threeDaysAgo = DateTime(now.year, now.month, now.day - 3, 12);
+        final ts = threeDaysAgo.millisecondsSinceEpoch ~/ 1000;
+        final result = TimeFormatter.formatMessageTime(ts);
+        expect(
+          [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+          ],
+          contains(result),
+        );
+      });
+
+      test('returns abbreviated month and day for same year', () {
+        final now = DateTime.now();
+        final twoMonthsAgo = DateTime(
+          now.year,
+          now.month - 2,
+          now.day.clamp(1, 28),
+          12,
+        );
+        final ts = twoMonthsAgo.millisecondsSinceEpoch ~/ 1000;
+        final result = TimeFormatter.formatMessageTime(ts);
+        // Matches patterns like "Mar 3" or "Jan 15"
+        expect(result, matches(RegExp(r'^[A-Z][a-z]{2} \d{1,2}$')));
+      });
+
+      test('returns abbreviated month, day, and year for previous year', () {
+        final now = DateTime.now();
+        final lastYear = DateTime(now.year - 1, 6, 15, 12);
+        final ts = lastYear.millisecondsSinceEpoch ~/ 1000;
+        final result = TimeFormatter.formatMessageTime(ts);
+        // Matches patterns like "Jun 15, 2025"
+        expect(
+          result,
+          matches(RegExp(r'^[A-Z][a-z]{2} \d{1,2}, \d{4}$')),
+        );
+      });
+    });
   });
 }
