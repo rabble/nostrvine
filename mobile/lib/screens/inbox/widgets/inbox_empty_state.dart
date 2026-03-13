@@ -18,6 +18,7 @@ class InboxEmptyState extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 48),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          spacing: 8,
           children: [
             Text(
               'No messages yet',
@@ -28,7 +29,6 @@ class InboxEmptyState extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
             Text(
               "That + button won't bite.",
               style: VineTheme.bodyMediumFont(

@@ -49,6 +49,7 @@ void main() {
     ConversationBloc buildBloc() => ConversationBloc(
       dmRepository: mockDmRepository,
       conversationId: conversationId,
+      currentUserPubkey: senderPubkey,
     );
 
     test('initial state is correct', () {
@@ -189,7 +190,8 @@ void main() {
     group('ConversationMessageSent', () {
       group('1:1 message', () {
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending, sent] on successful sendMessage',
+          'emits [sending with optimistic message, sent] '
+          'on successful sendMessage',
           setUp: () {
             when(
               () => mockDmRepository.sendMessage(
@@ -211,13 +213,38 @@ void main() {
             ),
           ),
           expect: () => [
-            const ConversationState(sendStatus: SendStatus.sending),
-            const ConversationState(sendStatus: SendStatus.sent),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sending,
+                )
+                .having(
+                  (s) => s.messages.length,
+                  'messages.length',
+                  1,
+                )
+                .having(
+                  (s) => s.messages.first.content,
+                  'optimistic message content',
+                  'Hello',
+                )
+                .having(
+                  (s) => s.messages.first.senderPubkey,
+                  'optimistic message sender',
+                  senderPubkey,
+                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
           ],
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending, failed] on failed sendMessage',
+          'emits [sending with optimistic message, failed] '
+          'on failed sendMessage',
           setUp: () {
             when(
               () => mockDmRepository.sendMessage(
@@ -236,8 +263,22 @@ void main() {
             ),
           ),
           expect: () => [
-            const ConversationState(sendStatus: SendStatus.sending),
-            const ConversationState(sendStatus: SendStatus.failed),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sending,
+                )
+                .having(
+                  (s) => s.messages.length,
+                  'messages.length',
+                  1,
+                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.failed,
+            ),
           ],
           errors: () => [isA<Exception>()],
         );
@@ -245,7 +286,8 @@ void main() {
 
       group('group message', () {
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending, sent] when at least one sendGroupMessage succeeds',
+          'emits [sending with optimistic message, sent] '
+          'when at least one sendGroupMessage succeeds',
           setUp: () {
             when(
               () => mockDmRepository.sendGroupMessage(
@@ -270,13 +312,28 @@ void main() {
             ),
           ),
           expect: () => [
-            const ConversationState(sendStatus: SendStatus.sending),
-            const ConversationState(sendStatus: SendStatus.sent),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sending,
+                )
+                .having(
+                  (s) => s.messages.first.content,
+                  'optimistic message content',
+                  'Group hello',
+                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
           ],
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending, failed] when all sendGroupMessage fail',
+          'emits [sending with optimistic message, failed] '
+          'when all sendGroupMessage fail',
           setUp: () {
             when(
               () => mockDmRepository.sendGroupMessage(
@@ -298,8 +355,22 @@ void main() {
             ),
           ),
           expect: () => [
-            const ConversationState(sendStatus: SendStatus.sending),
-            const ConversationState(sendStatus: SendStatus.failed),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sending,
+                )
+                .having(
+                  (s) => s.messages.length,
+                  'messages.length',
+                  1,
+                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.failed,
+            ),
           ],
           errors: () => [isA<Exception>()],
         );
@@ -307,7 +378,8 @@ void main() {
 
       group('exception handling', () {
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending, failed] when sendMessage throws an exception',
+          'emits [sending with optimistic message, failed] '
+          'when sendMessage throws an exception',
           setUp: () {
             when(
               () => mockDmRepository.sendMessage(
@@ -324,14 +396,29 @@ void main() {
             ),
           ),
           expect: () => [
-            const ConversationState(sendStatus: SendStatus.sending),
-            const ConversationState(sendStatus: SendStatus.failed),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sending,
+                )
+                .having(
+                  (s) => s.messages.length,
+                  'messages.length',
+                  1,
+                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.failed,
+            ),
           ],
           errors: () => [isA<Exception>()],
         );
 
         blocTest<ConversationBloc, ConversationState>(
-          'emits [sending, failed] when sendGroupMessage throws an exception',
+          'emits [sending with optimistic message, failed] '
+          'when sendGroupMessage throws an exception',
           setUp: () {
             when(
               () => mockDmRepository.sendGroupMessage(
@@ -348,8 +435,22 @@ void main() {
             ),
           ),
           expect: () => [
-            const ConversationState(sendStatus: SendStatus.sending),
-            const ConversationState(sendStatus: SendStatus.failed),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sending,
+                )
+                .having(
+                  (s) => s.messages.length,
+                  'messages.length',
+                  1,
+                ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.failed,
+            ),
           ],
           errors: () => [isA<Exception>()],
         );
@@ -403,14 +504,42 @@ void main() {
           },
           wait: const Duration(milliseconds: 200),
           expect: () => [
-            // First send starts
-            const ConversationState(sendStatus: SendStatus.sending),
+            // First send starts (with optimistic message)
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sending,
+                )
+                .having(
+                  (s) => s.messages.first.content,
+                  'content',
+                  'First message',
+                ),
             // First send completes
-            const ConversationState(sendStatus: SendStatus.sent),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
             // Second send starts (sequential: waited for first)
-            const ConversationState(sendStatus: SendStatus.sending),
+            isA<ConversationState>()
+                .having(
+                  (s) => s.sendStatus,
+                  'sendStatus',
+                  SendStatus.sending,
+                )
+                .having(
+                  (s) => s.messages.first.content,
+                  'content',
+                  'Second message',
+                ),
             // Second send completes
-            const ConversationState(sendStatus: SendStatus.sent),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
           ],
           verify: (_) {
             verify(
@@ -480,12 +609,28 @@ void main() {
           },
           wait: const Duration(milliseconds: 150),
           expect: () => [
-            // First send
-            const ConversationState(sendStatus: SendStatus.sending),
-            const ConversationState(sendStatus: SendStatus.sent),
+            // First send (with optimistic message)
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
             // Second send (not dropped)
-            const ConversationState(sendStatus: SendStatus.sending),
-            const ConversationState(sendStatus: SendStatus.sent),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sending,
+            ),
+            isA<ConversationState>().having(
+              (s) => s.sendStatus,
+              'sendStatus',
+              SendStatus.sent,
+            ),
           ],
         );
       });

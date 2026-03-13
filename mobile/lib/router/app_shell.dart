@@ -574,10 +574,10 @@ class _AppShellState extends ConsumerState<AppShell> {
                 child: _buildTabButton(
                   context,
                   ref,
-                  'assets/icon/chat.svg',
+                  'assets/icon/${DivineIconName.chat.fileName}.svg',
                   2,
                   currentIndex,
-                  'notifications_tab',
+                  'inbox_tab',
                 ),
               ),
               _buildTabButton(

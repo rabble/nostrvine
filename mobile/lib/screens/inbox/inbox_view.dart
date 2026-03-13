@@ -12,7 +12,10 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
-import 'package:openvine/screens/inbox/widgets/widgets.dart';
+import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
+import 'package:openvine/screens/inbox/widgets/following_bar.dart';
+import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
+import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
@@ -70,36 +73,24 @@ class _MessagesContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = context.watch<ConversationListBloc>().state;
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
-    return Stack(
+    return Column(
       children: [
-        Column(
-          children: [
-            // Following users horizontal bar
-            FollowingBar(
-              onUserTapped: (pubkey) => _onFollowingUserTapped(
-                context,
-                ref,
-                pubkey,
-              ),
-            ),
-            // Conversation list or empty state
-            Expanded(
-              child: _ConversationListContent(
-                state: state,
-                currentUserPubkey: currentPubkey,
-              ),
-            ),
-          ],
+        // Following users horizontal bar
+        FollowingBar(
+          onUserTapped: (pubkey) => _onFollowingUserTapped(
+            context,
+            ref,
+            pubkey,
+          ),
         ),
-        // FAB positioned bottom-right
-        Positioned(
-          right: 16,
-          bottom: 16,
-          child: InboxFab(onPressed: () => _onNewConversation(context, ref)),
+        // Conversation list or empty state
+        Expanded(
+          child: _ConversationListContent(
+            currentUserPubkey: currentPubkey,
+          ),
         ),
       ],
     );
@@ -122,10 +113,6 @@ class _MessagesContent extends ConsumerWidget {
     _pushConversation(context, conversationId, participantPubkeys);
   }
 
-  void _onNewConversation(BuildContext context, WidgetRef ref) {
-    // TODO(dm): Open user-picker then navigate to conversation.
-  }
-
   void _pushConversation(
     BuildContext context,
     String conversationId,
@@ -145,50 +132,55 @@ class _MessagesContent extends ConsumerWidget {
 /// Switches between loading, error, empty, and conversation list states.
 class _ConversationListContent extends StatelessWidget {
   const _ConversationListContent({
-    required this.state,
     required this.currentUserPubkey,
   });
 
-  final ConversationListState state;
   final String currentUserPubkey;
 
   @override
   Widget build(BuildContext context) {
-    return switch (state.status) {
+    final status = context.select<ConversationListBloc, ConversationListStatus>(
+      (bloc) => bloc.state.status,
+    );
+
+    return switch (status) {
       ConversationListStatus.initial ||
       ConversationListStatus.loading => const Center(
         child: CircularProgressIndicator(color: VineTheme.primary),
       ),
       ConversationListStatus.error => const InboxEmptyState(),
-      ConversationListStatus.loaded =>
-        state.conversations.isEmpty
-            ? const InboxEmptyState()
-            : _ConversationList(
-                conversations: state.conversations,
-                currentUserPubkey: currentUserPubkey,
-                hasMore: state.hasMore,
-              ),
+      ConversationListStatus.loaded => _ConversationList(
+        currentUserPubkey: currentUserPubkey,
+      ),
     };
   }
 }
 
 class _ConversationList extends StatelessWidget {
   const _ConversationList({
-    required this.conversations,
     required this.currentUserPubkey,
-    required this.hasMore,
   });
 
-  final List<DmConversation> conversations;
+  static const double _paginationThreshold = 200;
+
   final String currentUserPubkey;
-  final bool hasMore;
 
   @override
   Widget build(BuildContext context) {
+    final conversations = context
+        .select<ConversationListBloc, List<DmConversation>>(
+          (bloc) => bloc.state.conversations,
+        );
+    final hasMore = context.select<ConversationListBloc, bool>(
+      (bloc) => bloc.state.hasMore,
+    );
+
+    if (conversations.isEmpty) return const InboxEmptyState();
+
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
         if (hasMore &&
-            notification.metrics.extentAfter < 200 &&
+            notification.metrics.extentAfter < _paginationThreshold &&
             notification is ScrollUpdateNotification) {
           context.read<ConversationListBloc>().add(
             const ConversationListLoadMore(),

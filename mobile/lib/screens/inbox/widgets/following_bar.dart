@@ -61,8 +61,8 @@ class _FollowingUserButton extends ConsumerWidget {
     final displayName = profileAsync.maybeWhen(
       data: (profile) => profile?.displayName?.isNotEmpty == true
           ? profile!.displayName!
-          : profile?.name ?? _truncatePubkey(pubkey),
-      orElse: () => _truncatePubkey(pubkey),
+          : profile?.name ?? NostrKeyUtils.truncateNpub(pubkey),
+      orElse: () => NostrKeyUtils.truncateNpub(pubkey),
     );
 
     final imageUrl = profileAsync.maybeWhen(
@@ -76,9 +76,9 @@ class _FollowingUserButton extends ConsumerWidget {
         width: 72,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          spacing: 8,
           children: [
             UserAvatar(imageUrl: imageUrl, name: displayName, size: 48),
-            const SizedBox(height: 8),
             Text(
               displayName,
               style: VineTheme.bodySmallFont(
@@ -93,7 +93,4 @@ class _FollowingUserButton extends ConsumerWidget {
       ),
     );
   }
-
-  static String _truncatePubkey(String pubkey) =>
-      NostrKeyUtils.truncateNpub(pubkey);
 }

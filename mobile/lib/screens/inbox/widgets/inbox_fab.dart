@@ -13,41 +13,37 @@ class InboxFab extends StatelessWidget {
 
   final VoidCallback onPressed;
 
+  static const double _borderRadius = 24;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 56,
       height: 56,
-      child: Material(
-        color: VineTheme.primary,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(24),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: const [
-                BoxShadow(
-                  color: VineTheme.innerShadow,
-                  blurRadius: 1,
-                  offset: Offset(1, 1),
-                ),
-                BoxShadow(
-                  color: VineTheme.innerShadow,
-                  blurRadius: 0.6,
-                  offset: Offset(0.4, 0.4),
-                ),
-              ],
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.add,
-                size: 32,
-                color: VineTheme.onPrimary,
+      child: GestureDetector(
+        onTap: onPressed,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: VineTheme.primary,
+            borderRadius: BorderRadius.circular(_borderRadius),
+            boxShadow: const [
+              BoxShadow(
+                color: VineTheme.innerShadow,
+                blurRadius: 1,
+                offset: Offset(1, 1),
               ),
+              BoxShadow(
+                color: VineTheme.innerShadow,
+                blurRadius: 0.6,
+                offset: Offset(0.4, 0.4),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: DivineIcon(
+              icon: DivineIconName.plus,
+              color: VineTheme.onPrimary,
+              size: 32,
             ),
           ),
         ),

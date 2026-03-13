@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -13,6 +12,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/conversation/widgets/widgets.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:time_formatter/time_formatter.dart';
 
 /// View for a single DM conversation.
 ///
@@ -46,9 +46,9 @@ class ConversationView extends ConsumerWidget {
         NostrKeyUtils.truncateNpub(otherPubkey);
     final handle = _resolveHandle(profile);
 
-    return ColoredBox(
-      color: VineTheme.surfaceBackground,
-      child: Column(
+    return Scaffold(
+      backgroundColor: VineTheme.surfaceBackground,
+      body: Column(
         children: [
           // Custom app bar
           ConversationAppBar(
@@ -181,54 +181,12 @@ class _MessageList extends StatelessWidget {
 
         return MessageBubble(
           message: message.content,
-          timestamp: _formatTimestamp(message.createdAt),
+          timestamp: TimeFormatter.formatMessageTime(message.createdAt),
           isSent: isSent,
           isFirstInGroup: isFirstInGroup,
           isLastInGroup: isLastInGroup,
         );
       },
     );
-  }
-
-  /// Formats a Unix timestamp to a user-friendly time string.
-  ///
-  /// - Less than 60 seconds ago: "Now"
-  /// - Today: "9:41 AM"
-  /// - Yesterday: "Yesterday"
-  /// - Within 7 calendar days: day name ("Monday")
-  /// - Same year: "Mar 3"
-  /// - Older: "Mar 3, 2025"
-  static String _formatTimestamp(int unixSeconds) {
-    final now = DateTime.now();
-    final messageTime = DateTime.fromMillisecondsSinceEpoch(unixSeconds * 1000);
-    final diff = now.difference(messageTime);
-
-    if (diff.inSeconds < 60) return 'Now';
-
-    final today = DateTime(now.year, now.month, now.day);
-    final messageDay = DateTime(
-      messageTime.year,
-      messageTime.month,
-      messageTime.day,
-    );
-
-    if (messageDay == today) {
-      return DateFormat.jm().format(messageTime); // "9:41 AM"
-    }
-
-    final yesterday = today.subtract(const Duration(days: 1));
-    if (messageDay == yesterday) return 'Yesterday';
-
-    // Use calendar-day diff for consistency with ConversationTile.
-    final dayDiff = today.difference(messageDay).inDays;
-    if (dayDiff >= 2 && dayDiff <= 6) {
-      return DateFormat.EEEE().format(messageTime); // "Monday"
-    }
-
-    if (messageTime.year == now.year) {
-      return DateFormat.MMMd().format(messageTime); // "Mar 3"
-    }
-
-    return DateFormat.yMMMd().format(messageTime); // "Mar 3, 2025"
   }
 }

@@ -27,33 +27,31 @@ class InboxSegmentedToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: VineTheme.surfaceContainer,
-          border: Border.all(color: VineTheme.outlineMuted, width: 2),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: _ToggleButton(
-                label: 'Messages',
-                isSelected: selected == InboxTab.messages,
-                onTap: () => onChanged(InboxTab.messages),
-              ),
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceContainer,
+        border: Border.all(color: VineTheme.outlineMuted, width: 2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ToggleButton(
+              label: 'Messages',
+              isSelected: selected == InboxTab.messages,
+              onTap: () => onChanged(InboxTab.messages),
             ),
-            Expanded(
-              child: _ToggleButton(
-                label: 'Notifications',
-                isSelected: selected == InboxTab.notifications,
-                onTap: () => onChanged(InboxTab.notifications),
-                badgeCount: notificationCount,
-              ),
+          ),
+          Expanded(
+            child: _ToggleButton(
+              label: 'Notifications',
+              isSelected: selected == InboxTab.notifications,
+              onTap: () => onChanged(InboxTab.notifications),
+              badgeCount: notificationCount,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -74,51 +72,56 @@ class _ToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(4),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          height: 40,
-          decoration: BoxDecoration(
-            color: isSelected ? VineTheme.primary : VineTheme.transparent,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: isSelected
-                ? const [
-                    BoxShadow(
-                      color: VineTheme.innerShadow,
-                      blurRadius: 1,
-                      offset: Offset(1, 1),
-                    ),
-                    BoxShadow(
-                      color: VineTheme.innerShadow,
-                      blurRadius: 0.6,
-                      offset: Offset(0.4, 0.4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: VineTheme.titleMediumFont(
-                  fontSize: 16,
-                  height: 24 / 16,
-                  color: isSelected
-                      ? VineTheme.onPrimaryButton
-                      : VineTheme.onSurfaceMuted,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isSelected ? VineTheme.primary : VineTheme.transparent,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: isSelected
+                  ? const [
+                      BoxShadow(
+                        color: VineTheme.innerShadow,
+                        blurRadius: 1,
+                        offset: Offset(1, 1),
+                      ),
+                      BoxShadow(
+                        color: VineTheme.innerShadow,
+                        blurRadius: 0.6,
+                        offset: Offset(0.4, 0.4),
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: VineTheme.titleMediumFont(
+                    fontSize: 16,
+                    height: 24 / 16,
+                    color: isSelected
+                        ? VineTheme.onPrimaryButton
+                        : VineTheme.onSurfaceMuted,
+                  ),
                 ),
-              ),
-              if (badgeCount > 0) ...[
-                const SizedBox(width: 8),
-                _NotificationBadge(count: badgeCount),
+                if (badgeCount > 0) ...[
+                  const SizedBox(width: 8),
+                  _NotificationBadge(count: badgeCount),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -143,12 +146,7 @@ class _NotificationBadge extends StatelessWidget {
       child: Center(
         child: Text(
           count > 99 ? '99+' : '$count',
-          style: VineTheme.labelSmallFont().copyWith(
-            fontSize: 11,
-            height: 16 / 11,
-            letterSpacing: 0.5,
-            fontWeight: FontWeight.w600,
-          ),
+          style: VineTheme.labelSmallFont(),
         ),
       ),
     );

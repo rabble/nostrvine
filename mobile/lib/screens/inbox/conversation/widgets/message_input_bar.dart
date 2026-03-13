@@ -106,19 +106,25 @@ class _MessageInputBarState extends State<MessageInputBar> {
                       height: 40,
                       decoration: BoxDecoration(
                         color: VineTheme.primary,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: widget.isSending
-                          ? const Padding(
-                              padding: EdgeInsets.all(10),
-                              child: CircularProgressIndicator(
-                                color: VineTheme.surfaceBackground,
-                                strokeWidth: 2,
+                          ? const Center(
+                              child: SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: VineTheme.surfaceBackground,
+                                  strokeWidth: 2,
+                                ),
                               ),
                             )
-                          : const DivineIcon(
-                              icon: DivineIconName.arrowUp,
-                              color: VineTheme.surfaceBackground,
+                          : const Center(
+                              child: DivineIcon(
+                                icon: DivineIconName.arrowUp,
+                                color: VineTheme.surfaceBackground,
+                                size: 20,
+                              ),
                             ),
                     ),
                   ),

@@ -30,7 +30,7 @@ class ConversationAppBar extends StatelessWidget {
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          padding: const EdgeInsets.all(12),
           child: Row(
             children: [
               // Leading: back button
@@ -73,7 +73,7 @@ class ConversationAppBar extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.all(4),
                 child: _IconButton(
-                  icon: DivineIconName.dotsThreeDuo,
+                  icon: DivineIconName.dotsThreeVertical,
                   onTap: onOptions,
                 ),
               ),

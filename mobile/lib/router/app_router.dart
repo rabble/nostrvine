@@ -859,7 +859,6 @@ int tabIndexFromLocation(String loc) {
     case 'hashtag':
       return 1; // Hashtag keeps explore tab active
     case 'notifications':
-      return 2;
     case 'inbox':
       return 2; // Inbox replaces notifications in the same tab position
     case 'profile':

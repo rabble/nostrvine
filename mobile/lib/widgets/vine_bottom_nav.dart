@@ -167,7 +167,7 @@ class VineBottomNav extends ConsumerWidget {
               child: _buildTabButton(
                 context,
                 ref,
-                'assets/icon/chat.svg',
+                'assets/icon/${DivineIconName.chat.fileName}.svg',
                 2,
                 'inbox_tab',
               ),

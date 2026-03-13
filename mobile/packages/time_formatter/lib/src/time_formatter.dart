@@ -48,4 +48,28 @@ abstract class TimeFormatter {
     if (diff < 7) return DateFormat('EEEE').format(date);
     return DateFormat('MMMM d').format(date);
   }
+
+  /// Formats a Unix timestamp (seconds) for message bubble timestamps.
+  ///
+  /// Returns "Now" for < 60s, "9:41 AM" for today, "Yesterday" for
+  /// yesterday, day name for 2–6 days, "Mar 3" for same year, or
+  /// "Mar 3, 2025" for older.
+  static String formatMessageTime(int unixSeconds) {
+    final now = DateTime.now();
+    final date = DateTime.fromMillisecondsSinceEpoch(unixSeconds * 1000);
+    final diff = now.difference(date);
+
+    if (diff.inSeconds < 60) return 'Now';
+
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDay = DateTime(date.year, date.month, date.day);
+
+    if (messageDay == today) return DateFormat.jm().format(date);
+
+    final dayDiff = today.difference(messageDay).inDays;
+    if (dayDiff == 1) return 'Yesterday';
+    if (dayDiff >= 2 && dayDiff <= 6) return DateFormat.EEEE().format(date);
+    if (date.year == now.year) return DateFormat.MMMd().format(date);
+    return DateFormat.yMMMd().format(date);
+  }
 }

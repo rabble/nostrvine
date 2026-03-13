@@ -40,11 +40,14 @@ class ConversationPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dmRepository = ref.watch(dmRepositoryProvider);
+    final authService = ref.watch(authServiceProvider);
+    final currentPubkey = authService.currentPublicKeyHex ?? '';
 
     return BlocProvider(
       create: (_) => ConversationBloc(
         dmRepository: dmRepository,
         conversationId: conversationId,
+        currentUserPubkey: currentPubkey,
       )..add(const ConversationStarted()),
       child: ConversationView(participantPubkeys: participantPubkeys),
     );
