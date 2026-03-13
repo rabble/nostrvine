@@ -108,6 +108,7 @@ void main() {
       test(
         'consumes invite with exchanged session before sign in',
         () async {
+          when(() => mockAuthService.isRegistered).thenReturn(false);
           when(() => mockAuthService.isAuthenticated).thenReturn(false);
           when(() => mockAuthService.isAnonymous).thenReturn(false);
           when(() => mockOAuth.config).thenReturn(
@@ -171,6 +172,7 @@ void main() {
       );
 
       test('emits failure when invite activation fails', () async {
+        when(() => mockAuthService.isRegistered).thenReturn(false);
         when(() => mockAuthService.isAuthenticated).thenReturn(false);
         when(() => mockOAuth.config).thenReturn(
           const OAuthConfig(
