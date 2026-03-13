@@ -602,7 +602,7 @@ class FollowRepository {
       // (list stays [] = same as seed). Force-emit so subscribers can
       // distinguish "init not done" from "genuinely empty."
       if (_followingPubkeys.isEmpty && !_followingSubject.isClosed) {
-        _followingSubject.add(const []);
+        _followingSubject.add(<String>[]);
       }
     } catch (e) {
       Log.error(
