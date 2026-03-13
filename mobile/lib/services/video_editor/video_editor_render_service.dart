@@ -365,9 +365,10 @@ class VideoEditorRenderService {
         'trimmed_${DateTime.now().microsecondsSinceEpoch}.mp4',
       );
 
-      await ProVideoEditor.instance.renderVideoToFile(
+      final taskId = DateTime.now().microsecondsSinceEpoch.toString();
+      await _cancelAndRender(
         outputPath,
-        VideoRenderData(video: clip.video, endTime: duration),
+        VideoRenderData(id: taskId, video: clip.video, endTime: duration),
       );
 
       // Replace original file with trimmed version
@@ -449,7 +450,7 @@ class VideoEditorRenderService {
       transform: cropParams.toExportTransform(),
     );
 
-    await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
+    await _cancelAndRender(outputPath, task);
 
     Log.debug(
       '✅ Video cropped to: $outputPath',
@@ -603,7 +604,7 @@ class VideoEditorRenderService {
       ),
     );
 
-    await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
+    await _cancelAndRender(outputPath, task);
 
     Log.debug(
       '✅ Clip ${clip.id} normalized to: $outputPath',
@@ -668,7 +669,7 @@ class VideoEditorRenderService {
           : null,
     );
 
-    await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
+    await _cancelAndRender(outputPath, task);
 
     return outputPath;
   }
@@ -697,6 +698,38 @@ class VideoEditorRenderService {
           category: .video,
         );
       }
+    }
+  }
+
+  /// Cancels any in-progress render for [task], then renders to [outputPath].
+  static Future<void> _cancelAndRender(
+    String outputPath,
+    VideoRenderData task,
+  ) async {
+    await cancelTask(task.id);
+    await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
+  }
+
+  static Future<void> cancelTask(String id) async {
+    try {
+      Log.info(
+        '⏹️ Cancelling video render',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
+      await ProVideoEditor.instance.cancel(id);
+      Log.info(
+        '✅ Video render cancelled',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
+    } catch (e) {
+      // May fail if render already completed or was cancelled - not an error
+      Log.debug(
+        '⏹️ Cancel video render returned: $e',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
     }
   }
 }

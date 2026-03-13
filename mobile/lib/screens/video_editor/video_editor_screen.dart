@@ -140,6 +140,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     _isLoadingDraft.dispose();
     _bodySizeNotifier.dispose();
     _videoOutputPathNotifier.dispose();
+    VideoEditorRenderService.cancelTask(VideoEditorConstants.renderMergeTaskId);
     super.dispose();
   }
 

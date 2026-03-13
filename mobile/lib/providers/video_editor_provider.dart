@@ -26,7 +26,6 @@ import 'package:openvine/services/video_editor/video_editor_render_service.dart'
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 
 final videoEditorProvider =
     NotifierProvider<VideoEditorNotifier, VideoEditorProviderState>(
@@ -800,26 +799,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Cancel an ongoing video render operation.
   Future<void> cancelRenderVideo() async {
-    try {
-      Log.info(
-        '⏹️ Cancelling video render',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-      await ProVideoEditor.instance.cancel(_clips.first.id);
-      Log.info(
-        '✅ Video render cancelled',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-    } catch (e) {
-      // May fail if render already completed or was cancelled - not an error
-      Log.debug(
-        '⏹️ Cancel video render returned: $e',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-    }
+    await VideoEditorRenderService.cancelTask(_clips.first.id);
 
     state = state.copyWith(isProcessing: false);
   }
