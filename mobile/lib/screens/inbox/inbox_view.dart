@@ -11,6 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
+import 'package:openvine/router/navigator_keys.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
@@ -66,6 +67,19 @@ class _InboxViewState extends ConsumerState<InboxView> {
   }
 }
 
+/// Pushes the conversation page using the root navigator context so that
+/// GoRouter handles the route even when called from inside the inbox tab's
+/// nested Navigator.
+void _pushConversation(String conversationId, List<String> participantPubkeys) {
+  final rootContext = NavigatorKeys.root.currentContext;
+  if (rootContext != null) {
+    GoRouter.of(rootContext).push(
+      ConversationPage.pathForId(conversationId),
+      extra: participantPubkeys,
+    );
+  }
+}
+
 /// Content for the Messages tab: following bar + conversation list or
 /// empty state, with a FAB for composing new messages.
 class _MessagesContent extends ConsumerWidget {
@@ -89,9 +103,9 @@ class _MessagesContent extends ConsumerWidget {
           const ConversationListNavigationConsumed(),
         );
 
-        context.push(
-          ConversationPage.pathForId(target.conversationId),
-          extra: target.participantPubkeys,
+        _pushConversation(
+          target.conversationId,
+          target.participantPubkeys,
         );
       },
       child: Column(
@@ -213,9 +227,6 @@ class _ConversationList extends StatelessWidget {
         .where((pk) => pk != currentUserPubkey)
         .toList();
 
-    context.push(
-      ConversationPage.pathForId(conversation.id),
-      extra: otherPubkeys,
-    );
+    _pushConversation(conversation.id, otherPubkeys);
   }
 }

@@ -41,28 +41,26 @@ class ConversationListBloc
 
   final DmRepository _dmRepository;
 
-  /// Number of conversations loaded per page.
-  static const _pageSize = 20;
-
-  /// Current watch limit — grows as the user loads more pages.
-  int _currentLimit = _pageSize;
-
   Future<void> _onStarted(
     ConversationListStarted event,
     Emitter<ConversationListState> emit,
   ) async {
     // Only show the loading spinner and reset limit on first load.
     if (state.status == ConversationListStatus.initial) {
-      emit(state.copyWith(status: ConversationListStatus.loading));
-      _currentLimit = _pageSize;
+      emit(
+        state.copyWith(
+          status: ConversationListStatus.loading,
+          currentLimit: ConversationListState.pageSize,
+        ),
+      );
     }
 
     await emit.forEach(
-      _dmRepository.watchConversations(limit: _currentLimit),
+      _dmRepository.watchConversations(limit: state.currentLimit),
       onData: (conversations) => state.copyWith(
         status: ConversationListStatus.loaded,
         conversations: conversations,
-        hasMore: conversations.length >= _currentLimit,
+        hasMore: conversations.length >= state.currentLimit,
         isLoadingMore: false,
       ),
       onError: (error, stackTrace) {
@@ -84,8 +82,12 @@ class ConversationListBloc
       return;
     }
 
-    emit(state.copyWith(isLoadingMore: true));
-    _currentLimit += _pageSize;
+    emit(
+      state.copyWith(
+        isLoadingMore: true,
+        currentLimit: state.currentLimit + ConversationListState.pageSize,
+      ),
+    );
 
     // Re-trigger the watched stream with the larger limit.
     // restartable() on ConversationListStarted cancels the previous watch.

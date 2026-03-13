@@ -26,8 +26,12 @@ class ConversationListState extends Equatable {
     this.conversations = const [],
     this.hasMore = true,
     this.isLoadingMore = false,
+    this.currentLimit = ConversationListState.pageSize,
     this.navigationTarget,
   });
+
+  /// Number of conversations loaded per page.
+  static const pageSize = 20;
 
   final ConversationListStatus status;
   final List<DmConversation> conversations;
@@ -38,6 +42,9 @@ class ConversationListState extends Equatable {
   /// Whether a load-more operation is currently in progress.
   final bool isLoadingMore;
 
+  /// Current watch limit — grows as the user loads more pages.
+  final int currentLimit;
+
   /// Set when the user requests navigation to a specific conversation.
   /// Consumed and cleared by the UI after navigating.
   final ConversationNavigationTarget? navigationTarget;
@@ -47,6 +54,7 @@ class ConversationListState extends Equatable {
     List<DmConversation>? conversations,
     bool? hasMore,
     bool? isLoadingMore,
+    int? currentLimit,
     ConversationNavigationTarget? navigationTarget,
     bool clearNavigationTarget = false,
   }) {
@@ -55,6 +63,7 @@ class ConversationListState extends Equatable {
       conversations: conversations ?? this.conversations,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      currentLimit: currentLimit ?? this.currentLimit,
       navigationTarget: clearNavigationTarget
           ? null
           : navigationTarget ?? this.navigationTarget,
@@ -67,6 +76,7 @@ class ConversationListState extends Equatable {
     conversations,
     hasMore,
     isLoadingMore,
+    currentLimit,
     navigationTarget,
   ];
 }

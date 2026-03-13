@@ -1,21 +1,28 @@
 // ABOUTME: Widget tests for InboxPage, verifying BLoC setup and route constants.
-// ABOUTME: Ensures InboxPage provides ConversationListBloc and DmUnreadCountCubit
-// ABOUTME: to InboxView via MultiBlocProvider.
+// ABOUTME: Ensures InboxPage provides ConversationListBloc, DmUnreadCountCubit,
+// ABOUTME: and MyFollowingBloc to InboxView via MultiBlocProvider.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
+
+class _MockContentBlocklistService extends Mock
+    implements ContentBlocklistService {}
 
 void main() {
   const testPubkey =
@@ -24,10 +31,14 @@ void main() {
   group(InboxPage, () {
     late _MockDmRepository mockDmRepository;
     late _MockAuthService mockAuthService;
+    late _MockFollowRepository mockFollowRepository;
+    late _MockContentBlocklistService mockBlocklistService;
 
     setUp(() {
       mockDmRepository = _MockDmRepository();
       mockAuthService = _MockAuthService();
+      mockFollowRepository = _MockFollowRepository();
+      mockBlocklistService = _MockContentBlocklistService();
 
       when(
         () => mockDmRepository.watchConversations(limit: any(named: 'limit')),
@@ -43,6 +54,15 @@ void main() {
       when(
         () => mockAuthService.authStateStream,
       ).thenAnswer((_) => const Stream<AuthState>.empty());
+
+      when(() => mockFollowRepository.followingPubkeys).thenReturn(const []);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => const Stream.empty());
+
+      when(
+        () => mockBlocklistService.isBlocked(any()),
+      ).thenReturn(false);
     });
 
     test('has correct route constants', () {
@@ -58,7 +78,10 @@ void main() {
             mockAuthService: mockAuthService,
             additionalOverrides: [
               dmRepositoryProvider.overrideWithValue(mockDmRepository),
-              cachedFollowingListProvider.overrideWithValue(const []),
+              followRepositoryProvider.overrideWithValue(mockFollowRepository),
+              contentBlocklistServiceProvider.overrideWithValue(
+                mockBlocklistService,
+              ),
               relayNotificationUnreadCountProvider.overrideWithValue(0),
             ],
           ),

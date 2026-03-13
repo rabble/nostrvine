@@ -4,46 +4,53 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Horizontal scrollable bar showing following users.
 ///
-/// Displays a row of avatars with display names from the cached following list.
+/// Displays a row of avatars with display names from [MyFollowingBloc].
 /// Tapping a user triggers [onUserTapped] with their pubkey.
-class FollowingBar extends ConsumerWidget {
+class FollowingBar extends StatelessWidget {
   const FollowingBar({required this.onUserTapped, super.key});
 
   final ValueChanged<String> onUserTapped;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final followingPubkeys = ref.watch(cachedFollowingListProvider);
+  Widget build(BuildContext context) {
+    return BlocSelector<MyFollowingBloc, MyFollowingState, List<String>>(
+      selector: (state) => state.followingPubkeys,
+      builder: (context, followingPubkeys) {
+        if (followingPubkeys.isEmpty) return const SizedBox.shrink();
 
-    if (followingPubkeys.isEmpty) return const SizedBox.shrink();
-
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: VineTheme.outlineDisabled),
-        ),
-      ),
-      child: SizedBox(
-        height: 128,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-          itemCount: followingPubkeys.length,
-          separatorBuilder: (_, _) => const SizedBox(width: 8),
-          itemBuilder: (context, index) => _FollowingUserButton(
-            pubkey: followingPubkeys[index],
-            onTap: () => onUserTapped(followingPubkeys[index]),
+        return DecoratedBox(
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: VineTheme.outlineDisabled),
+            ),
           ),
-        ),
-      ),
+          child: SizedBox(
+            height: 128,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 20,
+              ),
+              itemCount: followingPubkeys.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) => _FollowingUserButton(
+                pubkey: followingPubkeys[index],
+                onTap: () => onUserTapped(followingPubkeys[index]),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

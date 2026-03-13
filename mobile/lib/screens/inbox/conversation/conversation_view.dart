@@ -19,6 +19,9 @@ import 'package:time_formatter/time_formatter.dart';
 ///
 /// Reads the [ConversationBloc] from the widget tree and renders messages
 /// in a reverse-scrolling list with a bottom input bar.
+///
+/// Uses [BlocSelector] for child widgets that depend on specific slices of
+/// [ConversationState] to avoid unnecessary rebuilds.
 class ConversationView extends ConsumerWidget {
   const ConversationView({
     required this.participantPubkeys,
@@ -30,8 +33,6 @@ class ConversationView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final bloc = context.watch<ConversationBloc>();
-    final state = bloc.state;
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
@@ -45,13 +46,12 @@ class ConversationView extends ConsumerWidget {
         profile?.displayName ??
         profile?.name ??
         NostrKeyUtils.truncateNpub(otherPubkey);
-    final handle = _resolveHandle(profile);
+    final handle = profile?.handle ?? '';
 
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
       body: Column(
         children: [
-          // Custom app bar
           ConversationAppBar(
             displayName: displayName,
             handle: handle,
@@ -60,10 +60,8 @@ class ConversationView extends ConsumerWidget {
               // TODO(dm): Show conversation options (mute, block, etc.)
             },
           ),
-          // Message list
           Expanded(
             child: _ConversationContent(
-              state: state,
               currentPubkey: currentPubkey,
               displayName: displayName,
               imageUrl: profile?.picture,
@@ -76,36 +74,44 @@ class ConversationView extends ConsumerWidget {
               },
             ),
           ),
-          // Input bar
-          MessageInputBar(
-            isSending: state.sendStatus == SendStatus.sending,
-            onSend: (text) {
-              bloc.add(
-                ConversationMessageSent(
-                  recipientPubkeys: participantPubkeys,
-                  content: text,
-                ),
-              );
-            },
-          ),
+          _SendBar(participantPubkeys: participantPubkeys),
         ],
       ),
     );
   }
+}
 
-  static String _resolveHandle(UserProfile? profile) {
-    final nip05 = profile?.nip05;
-    if (nip05 != null && nip05.isNotEmpty) return '@$nip05';
-    final name = profile?.name;
-    if (name != null && name.isNotEmpty) return '@$name';
-    return '';
+/// Selects [SendStatus] from the bloc and renders [MessageInputBar].
+class _SendBar extends StatelessWidget {
+  const _SendBar({required this.participantPubkeys});
+
+  final List<String> participantPubkeys;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<ConversationBloc, ConversationState, SendStatus>(
+      selector: (state) => state.sendStatus,
+      builder: (context, sendStatus) {
+        return MessageInputBar(
+          isSending: sendStatus == SendStatus.sending,
+          onSend: (text) {
+            context.read<ConversationBloc>().add(
+              ConversationMessageSent(
+                recipientPubkeys: participantPubkeys,
+                content: text,
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }
 
-/// Switches between loading, error, empty, and message-list states.
+/// Selects status and messages from the bloc and switches between loading,
+/// error, empty, and message-list states.
 class _ConversationContent extends StatelessWidget {
   const _ConversationContent({
-    required this.state,
     required this.currentPubkey,
     required this.displayName,
     this.imageUrl,
@@ -113,7 +119,6 @@ class _ConversationContent extends StatelessWidget {
     this.onViewProfile,
   });
 
-  final ConversationState state;
   final String currentPubkey;
   final String displayName;
   final String? imageUrl;
@@ -122,29 +127,39 @@ class _ConversationContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return switch (state.status) {
-      ConversationStatus.initial || ConversationStatus.loading => const Center(
-        child: CircularProgressIndicator(color: VineTheme.primary),
-      ),
-      ConversationStatus.error => Center(
-        child: Text(
-          'Could not load messages',
-          style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-        ),
-      ),
-      ConversationStatus.loaded =>
-        state.messages.isEmpty
-            ? EmptyConversation(
-                displayName: displayName,
-                imageUrl: imageUrl,
-                nip05: nip05,
-                onViewProfile: onViewProfile,
-              )
-            : _MessageList(
-                messages: state.messages,
-                currentPubkey: currentPubkey,
-              ),
-    };
+    return BlocSelector<
+      ConversationBloc,
+      ConversationState,
+      ({ConversationStatus status, List<DmMessage> messages})
+    >(
+      selector: (state) => (status: state.status, messages: state.messages),
+      builder: (context, selected) {
+        return switch (selected.status) {
+          ConversationStatus.initial ||
+          ConversationStatus.loading => const Center(
+            child: CircularProgressIndicator(color: VineTheme.primary),
+          ),
+          ConversationStatus.error => Center(
+            child: Text(
+              'Could not load messages',
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+            ),
+          ),
+          ConversationStatus.loaded =>
+            selected.messages.isEmpty
+                ? EmptyConversation(
+                    displayName: displayName,
+                    imageUrl: imageUrl,
+                    nip05: nip05,
+                    onViewProfile: onViewProfile,
+                  )
+                : _MessageList(
+                    messages: selected.messages,
+                    currentPubkey: currentPubkey,
+                  ),
+        };
+      },
+    );
   }
 }
 

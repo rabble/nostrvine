@@ -8,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
@@ -21,6 +21,9 @@ import '../../helpers/test_provider_overrides.dart';
 class _MockConversationListBloc
     extends MockBloc<ConversationListEvent, ConversationListState>
     implements ConversationListBloc {}
+
+class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
+    implements MyFollowingBloc {}
 
 class _MockAuthService extends MockAuthService {
   _MockAuthService(this._pubkey);
@@ -41,11 +44,19 @@ void main() {
 
   group(InboxView, () {
     late _MockConversationListBloc mockBloc;
+    late _MockMyFollowingBloc mockFollowingBloc;
     late _MockAuthService mockAuthService;
 
     setUp(() {
       mockBloc = _MockConversationListBloc();
+      mockFollowingBloc = _MockMyFollowingBloc();
       mockAuthService = _MockAuthService(currentPubkey);
+
+      whenListen(
+        mockFollowingBloc,
+        const Stream<MyFollowingState>.empty(),
+        initialState: const MyFollowingState(),
+      );
     });
 
     Widget buildSubject({ConversationListState? state}) {
@@ -66,11 +77,13 @@ void main() {
       return testMaterialApp(
         mockAuthService: mockAuthService,
         additionalOverrides: [
-          cachedFollowingListProvider.overrideWithValue(const []),
           relayNotificationUnreadCountProvider.overrideWithValue(0),
         ],
-        home: BlocProvider<ConversationListBloc>.value(
-          value: mockBloc,
+        home: MultiBlocProvider(
+          providers: [
+            BlocProvider<ConversationListBloc>.value(value: mockBloc),
+            BlocProvider<MyFollowingBloc>.value(value: mockFollowingBloc),
+          ],
           child: const InboxView(),
         ),
       );

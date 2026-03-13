@@ -1,15 +1,20 @@
 // ABOUTME: Widget tests for FollowingBar.
 // ABOUTME: Verifies empty state, avatar rendering, and user tap callback.
 
+import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 import '../../../helpers/test_provider_overrides.dart';
+
+class _MockMyFollowingBloc extends MockBloc<MyFollowingEvent, MyFollowingState>
+    implements MyFollowingBloc {}
 
 void main() {
   const pubkey1 =
@@ -36,19 +41,40 @@ void main() {
   }
 
   group(FollowingBar, () {
+    late _MockMyFollowingBloc mockFollowingBloc;
+
+    setUp(() {
+      mockFollowingBloc = _MockMyFollowingBloc();
+    });
+
+    Widget buildSubject({
+      required MyFollowingState state,
+      List<dynamic> additionalOverrides = const [],
+      ValueChanged<String>? onUserTapped,
+    }) {
+      whenListen(
+        mockFollowingBloc,
+        Stream<MyFollowingState>.value(state),
+        initialState: state,
+      );
+
+      return testMaterialApp(
+        additionalOverrides: additionalOverrides,
+        home: BlocProvider<MyFollowingBloc>.value(
+          value: mockFollowingBloc,
+          child: Scaffold(
+            body: FollowingBar(onUserTapped: onUserTapped ?? (_) {}),
+          ),
+        ),
+      );
+    }
+
     group('renders', () {
       testWidgets('renders $SizedBox when following list is empty', (
         tester,
       ) async {
         await tester.pumpWidget(
-          testMaterialApp(
-            additionalOverrides: [
-              cachedFollowingListProvider.overrideWith((ref) => <String>[]),
-            ],
-            home: Scaffold(
-              body: FollowingBar(onUserTapped: (_) {}),
-            ),
-          ),
+          buildSubject(state: const MyFollowingState()),
         );
         await tester.pumpAndSettle();
 
@@ -70,11 +96,12 @@ void main() {
         );
 
         await tester.pumpWidget(
-          testMaterialApp(
+          buildSubject(
+            state: const MyFollowingState(
+              status: MyFollowingStatus.success,
+              followingPubkeys: [pubkey1, pubkey2],
+            ),
             additionalOverrides: [
-              cachedFollowingListProvider.overrideWith(
-                (ref) => [pubkey1, pubkey2],
-              ),
               fetchUserProfileProvider(pubkey1).overrideWith(
                 (ref) async => profile1,
               ),
@@ -82,9 +109,6 @@ void main() {
                 (ref) async => profile2,
               ),
             ],
-            home: Scaffold(
-              body: FollowingBar(onUserTapped: (_) {}),
-            ),
           ),
         );
         await tester.pumpAndSettle();
@@ -108,11 +132,12 @@ void main() {
           );
 
           await tester.pumpWidget(
-            testMaterialApp(
+            buildSubject(
+              state: const MyFollowingState(
+                status: MyFollowingStatus.success,
+                followingPubkeys: [pubkey1, pubkey2],
+              ),
               additionalOverrides: [
-                cachedFollowingListProvider.overrideWith(
-                  (ref) => [pubkey1, pubkey2],
-                ),
                 fetchUserProfileProvider(pubkey1).overrideWith(
                   (ref) async => profile1,
                 ),
@@ -120,11 +145,7 @@ void main() {
                   (ref) async => profile2,
                 ),
               ],
-              home: Scaffold(
-                body: FollowingBar(
-                  onUserTapped: (pk) => tappedPubkey = pk,
-                ),
-              ),
+              onUserTapped: (pk) => tappedPubkey = pk,
             ),
           );
           await tester.pumpAndSettle();
