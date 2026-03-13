@@ -30,6 +30,13 @@ class ConversationListBloc
       _onMarkRead,
       transformer: droppable(),
     );
+    on<ConversationListNavigateToUser>(
+      _onNavigateToUser,
+      transformer: droppable(),
+    );
+    on<ConversationListNavigationConsumed>(
+      _onNavigationConsumed,
+    );
   }
 
   final DmRepository _dmRepository;
@@ -90,5 +97,32 @@ class ConversationListBloc
     Emitter<ConversationListState> emit,
   ) async {
     await _dmRepository.markConversationAsRead(event.conversationId);
+  }
+
+  void _onNavigateToUser(
+    ConversationListNavigateToUser event,
+    Emitter<ConversationListState> emit,
+  ) {
+    final currentPubkey = _dmRepository.userPubkey;
+    if (currentPubkey.isEmpty) return;
+
+    final conversationId = DmRepository.computeConversationId(
+      [currentPubkey, event.participantPubkey],
+    );
+    emit(
+      state.copyWith(
+        navigationTarget: ConversationNavigationTarget(
+          conversationId: conversationId,
+          participantPubkeys: [event.participantPubkey],
+        ),
+      ),
+    );
+  }
+
+  void _onNavigationConsumed(
+    ConversationListNavigationConsumed event,
+    Emitter<ConversationListState> emit,
+  ) {
+    emit(state.copyWith(clearNavigationTarget: true));
   }
 }

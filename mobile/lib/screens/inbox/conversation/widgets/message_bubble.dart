@@ -7,8 +7,8 @@ import 'package:flutter/material.dart';
 
 /// A single chat message bubble.
 ///
-/// Sent messages (right-aligned): surfaceContainer background.
-/// Received messages (left-aligned): neutral10 background.
+/// Sent messages (right-aligned): primaryAccessible background.
+/// Received messages (left-aligned): containerLow background.
 ///
 /// Grouping behaviour:
 /// - Only the first message in a group shows a timestamp (inside the bubble,
@@ -55,7 +55,9 @@ class MessageBubble extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isSent ? VineTheme.surfaceContainer : VineTheme.neutral10,
+            color: isSent
+                ? VineTheme.primaryAccessible
+                : VineTheme.containerLow,
             borderRadius: _borderRadius,
           ),
           child: Column(

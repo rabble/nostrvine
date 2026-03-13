@@ -6,11 +6,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
@@ -76,54 +76,41 @@ class _MessagesContent extends ConsumerWidget {
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
 
-    return Column(
-      children: [
-        // Following users horizontal bar
-        FollowingBar(
-          onUserTapped: (pubkey) => _onFollowingUserTapped(
-            context,
-            ref,
-            pubkey,
+    return BlocListener<ConversationListBloc, ConversationListState>(
+      listenWhen: (prev, curr) =>
+          curr.navigationTarget != null &&
+          prev.navigationTarget != curr.navigationTarget,
+      listener: (context, state) {
+        final target = state.navigationTarget;
+        if (target == null) return;
+
+        // Clear the navigation target so it doesn't re-fire.
+        context.read<ConversationListBloc>().add(
+          const ConversationListNavigationConsumed(),
+        );
+
+        context.push(
+          ConversationPage.pathForId(target.conversationId),
+          extra: target.participantPubkeys,
+        );
+      },
+      child: Column(
+        children: [
+          // Following users horizontal bar
+          FollowingBar(
+            onUserTapped: (pubkey) {
+              context.read<ConversationListBloc>().add(
+                ConversationListNavigateToUser(pubkey),
+              );
+            },
           ),
-        ),
-        // Conversation list or empty state
-        Expanded(
-          child: _ConversationListContent(
-            currentUserPubkey: currentPubkey,
+          // Conversation list or empty state
+          Expanded(
+            child: _ConversationListContent(
+              currentUserPubkey: currentPubkey,
+            ),
           ),
-        ),
-      ],
-    );
-  }
-
-  void _onFollowingUserTapped(
-    BuildContext context,
-    WidgetRef ref,
-    String pubkey,
-  ) {
-    final authService = ref.read(authServiceProvider);
-    final currentPubkey = authService.currentPublicKeyHex;
-    if (currentPubkey == null) return;
-
-    final participantPubkeys = [pubkey];
-    final conversationId = DmRepository.computeConversationId(
-      [currentPubkey, pubkey],
-    );
-
-    _pushConversation(context, conversationId, participantPubkeys);
-  }
-
-  void _pushConversation(
-    BuildContext context,
-    String conversationId,
-    List<String> participantPubkeys,
-  ) {
-    Navigator.of(context, rootNavigator: true).push<void>(
-      MaterialPageRoute(
-        builder: (_) => ConversationPage(
-          conversationId: conversationId,
-          participantPubkeys: participantPubkeys,
-        ),
+        ],
       ),
     );
   }
@@ -226,13 +213,9 @@ class _ConversationList extends StatelessWidget {
         .where((pk) => pk != currentUserPubkey)
         .toList();
 
-    Navigator.of(context, rootNavigator: true).push<void>(
-      MaterialPageRoute(
-        builder: (_) => ConversationPage(
-          conversationId: conversation.id,
-          participantPubkeys: otherPubkeys,
-        ),
-      ),
+    context.push(
+      ConversationPage.pathForId(conversation.id),
+      extra: otherPubkeys,
     );
   }
 }

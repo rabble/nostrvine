@@ -97,30 +97,21 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           recipientPubkey: event.recipientPubkeys.first,
           content: event.content,
         );
-        if (result.success) {
-          emit(state.copyWith(sendStatus: SendStatus.sent));
-        } else {
-          addError(
-            Exception(result.error ?? 'Failed to send message'),
-            StackTrace.current,
-          );
-          emit(state.copyWith(sendStatus: SendStatus.failed));
+        if (!result.success) {
+          throw Exception(result.error ?? 'Failed to send message');
         }
       } else {
         final results = await _dmRepository.sendGroupMessage(
           recipientPubkeys: event.recipientPubkeys,
           content: event.content,
         );
-        if (results.any((r) => r.success)) {
-          emit(state.copyWith(sendStatus: SendStatus.sent));
-        } else {
-          addError(
-            Exception(results.first.error ?? 'Failed to send group message'),
-            StackTrace.current,
+        if (!results.any((r) => r.success)) {
+          throw Exception(
+            results.first.error ?? 'Failed to send group message',
           );
-          emit(state.copyWith(sendStatus: SendStatus.failed));
         }
       }
+      emit(state.copyWith(sendStatus: SendStatus.sent));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(state.copyWith(sendStatus: SendStatus.failed));

@@ -238,6 +238,82 @@ void main() {
       );
     });
 
+    group('ConversationListNavigateToUser', () {
+      blocTest<ConversationListBloc, ConversationListState>(
+        'emits state with navigationTarget '
+        'containing computed conversation ID',
+        setUp: () {
+          when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ConversationListNavigateToUser(_testPubkey2),
+        ),
+        expect: () => [
+          isA<ConversationListState>()
+              .having(
+                (s) => s.navigationTarget,
+                'navigationTarget',
+                isNotNull,
+              )
+              .having(
+                (s) => s.navigationTarget!.participantPubkeys,
+                'participantPubkeys',
+                equals([_testPubkey2]),
+              )
+              .having(
+                (s) => s.navigationTarget!.conversationId,
+                'conversationId',
+                equals(
+                  DmRepository.computeConversationId(
+                    [_testPubkey1, _testPubkey2],
+                  ),
+                ),
+              ),
+        ],
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'does not emit when userPubkey is empty',
+        setUp: () {
+          when(() => mockDmRepository.userPubkey).thenReturn('');
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ConversationListNavigateToUser(_testPubkey2),
+        ),
+        expect: () => const <ConversationListState>[],
+      );
+    });
+
+    group('ConversationListNavigationConsumed', () {
+      blocTest<ConversationListBloc, ConversationListState>(
+        'clears the navigation target',
+        setUp: () {
+          when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+        },
+        seed: () => ConversationListState(
+          navigationTarget: ConversationNavigationTarget(
+            conversationId: DmRepository.computeConversationId(
+              [_testPubkey1, _testPubkey2],
+            ),
+            participantPubkeys: const [_testPubkey2],
+          ),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ConversationListNavigationConsumed(),
+        ),
+        expect: () => [
+          isA<ConversationListState>().having(
+            (s) => s.navigationTarget,
+            'navigationTarget',
+            isNull,
+          ),
+        ],
+      );
+    });
+
     group('event transformers', () {
       group('droppable() on $ConversationListMarkRead', () {
         blocTest<ConversationListBloc, ConversationListState>(
@@ -497,6 +573,7 @@ void main() {
         conversations,
         true,
         false,
+        null,
       ]);
     });
   });
@@ -533,6 +610,69 @@ void main() {
       const event = ConversationListMarkRead(_testConversationId1);
 
       expect(event.props, equals([_testConversationId1]));
+    });
+
+    test('$ConversationListNavigateToUser supports value equality', () {
+      const event1 = ConversationListNavigateToUser(_testPubkey1);
+      const event2 = ConversationListNavigateToUser(_testPubkey1);
+
+      expect(event1, equals(event2));
+    });
+
+    test('$ConversationListNavigateToUser with different pubkeys '
+        'are not equal', () {
+      const event1 = ConversationListNavigateToUser(_testPubkey1);
+      const event2 = ConversationListNavigateToUser(_testPubkey2);
+
+      expect(event1, isNot(equals(event2)));
+    });
+
+    test('$ConversationListNavigateToUser props contains '
+        'participantPubkey', () {
+      const event = ConversationListNavigateToUser(_testPubkey1);
+
+      expect(event.props, equals([_testPubkey1]));
+    });
+
+    test('$ConversationListNavigationConsumed supports value equality', () {
+      const event1 = ConversationListNavigationConsumed();
+      const event2 = ConversationListNavigationConsumed();
+
+      expect(event1, equals(event2));
+    });
+
+    test('$ConversationListNavigationConsumed props is empty', () {
+      const event = ConversationListNavigationConsumed();
+
+      expect(event.props, equals(const <Object?>[]));
+    });
+  });
+
+  group(ConversationNavigationTarget, () {
+    test('supports value equality', () {
+      const target1 = ConversationNavigationTarget(
+        conversationId: _testConversationId1,
+        participantPubkeys: [_testPubkey2],
+      );
+      const target2 = ConversationNavigationTarget(
+        conversationId: _testConversationId1,
+        participantPubkeys: [_testPubkey2],
+      );
+
+      expect(target1, equals(target2));
+    });
+
+    test('targets with different conversation IDs are not equal', () {
+      const target1 = ConversationNavigationTarget(
+        conversationId: _testConversationId1,
+        participantPubkeys: [_testPubkey2],
+      );
+      const target2 = ConversationNavigationTarget(
+        conversationId: _testConversationId2,
+        participantPubkeys: [_testPubkey2],
+      );
+
+      expect(target1, isNot(equals(target2)));
     });
   });
 }

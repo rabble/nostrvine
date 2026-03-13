@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation/conversation_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -54,7 +55,7 @@ class ConversationView extends ConsumerWidget {
           ConversationAppBar(
             displayName: displayName,
             handle: handle,
-            onBack: () => Navigator.of(context).pop(),
+            onBack: () => context.pop(),
             onOptions: () {
               // TODO(dm): Show conversation options (mute, block, etc.)
             },
@@ -69,12 +70,8 @@ class ConversationView extends ConsumerWidget {
               nip05: profile?.nip05,
               onViewProfile: () {
                 final npub = NostrKeyUtils.encodePubKey(otherPubkey);
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute(
-                    builder: (_) => OtherProfileScreen(
-                      npub: npub,
-                    ),
-                  ),
+                context.push(
+                  '${OtherProfileScreen.path}/$npub',
                 );
               },
             ),
