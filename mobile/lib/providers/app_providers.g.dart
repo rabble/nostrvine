@@ -2253,7 +2253,7 @@ final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$isNostrReadyHash() => r'ea9cfcc9e19612778d785043dbe87d4259ddea0a';
+String _$isNostrReadyHash() => r'fbbb0c3d96960fd4b2c49cc9180437f988da3b41';
 
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
