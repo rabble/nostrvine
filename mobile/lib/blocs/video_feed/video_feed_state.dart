@@ -58,6 +58,7 @@ final class VideoFeedState extends Equatable {
     this.error,
     this.videoListSources = const {},
     this.listOnlyVideoIds = const {},
+    this.creatorProfiles = const {},
   });
 
   /// The current loading status.
@@ -90,6 +91,13 @@ final class VideoFeedState extends Equatable {
   /// list attribution for them (Phase 4).
   final Set<String> listOnlyVideoIds;
 
+  /// Creator profiles keyed by pubkey.
+  ///
+  /// Populated by batch-fetching profiles for video creators after
+  /// videos load. Warms the repository's Drift cache so individual
+  /// profile lookups are instant hits.
+  final Map<String, UserProfile> creatorProfiles;
+
   /// Whether data has been successfully loaded.
   bool get isLoaded => status == VideoFeedStatus.success;
 
@@ -110,6 +118,7 @@ final class VideoFeedState extends Equatable {
     bool clearError = false,
     Map<String, Set<String>>? videoListSources,
     Set<String>? listOnlyVideoIds,
+    Map<String, UserProfile>? creatorProfiles,
   }) {
     return VideoFeedState(
       status: status ?? this.status,
@@ -120,6 +129,7 @@ final class VideoFeedState extends Equatable {
       error: clearError ? null : (error ?? this.error),
       videoListSources: videoListSources ?? this.videoListSources,
       listOnlyVideoIds: listOnlyVideoIds ?? this.listOnlyVideoIds,
+      creatorProfiles: creatorProfiles ?? this.creatorProfiles,
     );
   }
 
@@ -133,5 +143,6 @@ final class VideoFeedState extends Equatable {
     error,
     videoListSources,
     listOnlyVideoIds,
+    creatorProfiles,
   ];
 }

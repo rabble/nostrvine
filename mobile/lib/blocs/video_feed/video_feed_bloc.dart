@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -37,6 +38,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     required VideosRepository videosRepository,
     required FollowRepository followRepository,
     required CuratedListRepository curatedListRepository,
+    ProfileRepository? profileRepository,
     String? userPubkey,
     SharedPreferences? sharedPreferences,
     bool serveCachedHomeFeed = true,
@@ -46,6 +48,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
        _curatedListRepository = curatedListRepository,
+       _profileRepository = profileRepository,
        _userPubkey = userPubkey,
        _sharedPreferences = sharedPreferences,
        _serveCachedHomeFeed = serveCachedHomeFeed,
@@ -68,6 +71,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   final VideosRepository _videosRepository;
   final FollowRepository _followRepository;
   final CuratedListRepository _curatedListRepository;
+  final ProfileRepository? _profileRepository;
   final String? _userPubkey;
   final SharedPreferences? _sharedPreferences;
   final bool _serveCachedHomeFeed;
@@ -256,6 +260,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           listOnlyVideoIds: mergedListOnly,
         ),
       );
+
+      // Batch-fetch profiles for new creators only.
+      await _fetchCreatorProfiles(validNewVideos, emit);
     } catch (e) {
       Log.error(
         'VideoFeedBloc: Failed to load more videos - $e',
@@ -439,6 +446,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
       _feedTracker?.markFeedDisplayed(mode.name, validVideos.length);
 
+      // Batch-fetch creator profiles to warm the Drift cache.
+      await _fetchCreatorProfiles(validVideos, emit);
+
       // Cache the raw response for next cold start (fire-and-forget).
       if ((mode == FeedMode.home || mode == FeedMode.forYou) &&
           _sharedPreferences != null &&
@@ -494,4 +504,44 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
               .getPopularVideos(until: until)
               .then((videos) => HomeFeedResult(videos: videos)),
       };
+
+  /// Batch-fetch creator profiles for the given videos.
+  ///
+  /// Only fetches profiles for pubkeys not already in
+  /// [state.creatorProfiles]. Does not block video display — called
+  /// after videos are already emitted.
+  Future<void> _fetchCreatorProfiles(
+    List<VideoEvent> videos,
+    Emitter<VideoFeedState> emit,
+  ) async {
+    if (_profileRepository == null || videos.isEmpty) return;
+
+    final newPubkeys = videos
+        .map((v) => v.pubkey)
+        .toSet()
+        .difference(state.creatorProfiles.keys.toSet())
+        .toList();
+
+    if (newPubkeys.isEmpty) return;
+
+    try {
+      final profiles = await _profileRepository.fetchBatchProfiles(
+        pubkeys: newPubkeys,
+      );
+
+      if (profiles.isNotEmpty) {
+        emit(
+          state.copyWith(
+            creatorProfiles: {...state.creatorProfiles, ...profiles},
+          ),
+        );
+      }
+    } catch (e) {
+      Log.error(
+        'VideoFeedBloc: Failed to batch-fetch creator profiles - $e',
+        name: 'VideoFeedBloc',
+        category: LogCategory.video,
+      );
+    }
+  }
 }

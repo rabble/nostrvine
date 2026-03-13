@@ -14,6 +14,7 @@ import 'package:openvine/blocs/video_feed/home_feed_cache.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -27,6 +28,8 @@ class _MockCuratedListRepository extends Mock
 class _MockFeedPerformanceTracker extends Mock
     implements FeedPerformanceTracker {}
 
+class _MockProfileRepository extends Mock implements ProfileRepository {}
+
 class _MockHomeFeedCache extends Mock implements HomeFeedCache {}
 
 class _FakeSharedPreferences extends Fake implements SharedPreferences {}
@@ -36,6 +39,7 @@ void main() {
     late _MockVideosRepository mockVideosRepository;
     late _MockFollowRepository mockFollowRepository;
     late _MockCuratedListRepository mockCuratedListRepository;
+    late _MockProfileRepository mockProfileRepository;
     late StreamController<List<String>> followingController;
     late StreamController<List<CuratedList>> curatedListsController;
 
@@ -43,6 +47,7 @@ void main() {
       mockVideosRepository = _MockVideosRepository();
       mockFollowRepository = _MockFollowRepository();
       mockCuratedListRepository = _MockCuratedListRepository();
+      mockProfileRepository = _MockProfileRepository();
       followingController = StreamController<List<String>>.broadcast();
       curatedListsController = StreamController<List<CuratedList>>.broadcast();
 
@@ -58,6 +63,12 @@ void main() {
       when(
         () => mockCuratedListRepository.getSubscribedListVideoRefs(),
       ).thenReturn({});
+
+      when(
+        () => mockProfileRepository.fetchBatchProfiles(
+          pubkeys: any(named: 'pubkeys'),
+        ),
+      ).thenAnswer((_) async => {});
     });
 
     tearDown(() {
@@ -312,10 +323,7 @@ void main() {
         expect: () => [
           const VideoFeedState(),
           // _loadVideos emits success with empty videos
-          const VideoFeedState(
-            status: VideoFeedStatus.success,
-            hasMore: false,
-          ),
+          const VideoFeedState(status: VideoFeedStatus.success, hasMore: false),
           // _onStarted detects empty follows → noFollowedUsers CTA
           const VideoFeedState(
             status: VideoFeedStatus.success,
@@ -416,9 +424,7 @@ void main() {
               limit: any(named: 'limit'),
               until: any(named: 'until'),
             ),
-          ).thenAnswer(
-            (_) async => HomeFeedResult(videos: videos),
-          );
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
         },
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
@@ -1714,20 +1720,12 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'cached count', 2)
-              .having(
-                (s) => s.videos[0].id,
-                'first cached id',
-                'cached-0',
-              ),
+              .having((s) => s.videos[0].id, 'first cached id', 'cached-0'),
           // 3. Fresh videos replace cached
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'fresh count', 3)
-              .having(
-                (s) => s.videos[0].id,
-                'first fresh id',
-                'fresh-0',
-              ),
+              .having((s) => s.videos[0].id, 'first fresh id', 'fresh-0'),
         ],
         verify: (_) {
           verify(() => mockCache.read(sharedPreferences)).called(1);
@@ -1826,10 +1824,8 @@ void main() {
         act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
         verify: (_) {
           verify(
-            () => mockCache.write(
-              sharedPreferences,
-              '{"videos":[{"id":"v1"}]}',
-            ),
+            () =>
+                mockCache.write(sharedPreferences, '{"videos":[{"id":"v1"}]}'),
           ).called(1);
         },
       );
@@ -1947,6 +1943,241 @@ void main() {
         verify: (_) {
           // Cache read should only be called once (on first load)
           verify(() => mockCache.read(sharedPreferences)).called(1);
+        },
+      );
+    });
+
+    group('creator profile prefetching', () {
+      final pubkeyA = 'a' * 64;
+      final pubkeyB = 'b' * 64;
+      final pubkeyC = 'c' * 64;
+
+      VideoEvent videoWithPubkey(String id, String pubkey, {int? createdAt}) {
+        final timestamp =
+            createdAt ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
+        return VideoEvent(
+          id: id,
+          pubkey: pubkey,
+          createdAt: timestamp,
+          content: '',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(timestamp * 1000),
+          title: 'Test Video $id',
+          videoUrl: 'https://example.com/$id.mp4',
+          thumbnailUrl: 'https://example.com/$id.jpg',
+        );
+      }
+
+      UserProfile profileForPubkey(String pubkey) => UserProfile(
+        pubkey: pubkey,
+        eventId: 'event-$pubkey',
+        rawData: const {},
+        createdAt: DateTime(2024),
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'fetches creator profiles when videos load',
+        setUp: () {
+          final baseTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final videos = [
+            videoWithPubkey('v1', pubkeyA, createdAt: baseTime),
+            videoWithPubkey('v2', pubkeyB, createdAt: baseTime - 1),
+          ];
+
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => HomeFeedResult(videos: videos));
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).thenAnswer(
+            (_) async => {
+              pubkeyA: profileForPubkey(pubkeyA),
+              pubkeyB: profileForPubkey(pubkeyB),
+            },
+          );
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          profileRepository: mockProfileRepository,
+        ),
+        act: (bloc) => bloc.add(const VideoFeedStarted(mode: FeedMode.home)),
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).called(1);
+        },
+        expect: () => [
+          const VideoFeedState(),
+          // Videos loaded (no profiles yet)
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos, 'videos', hasLength(2))
+              .having((s) => s.creatorProfiles, 'profiles', isEmpty),
+          // Profiles fetched
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.creatorProfiles, 'profiles', hasLength(2)),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'fetches only new profiles on pagination',
+        setUp: () {
+          final baseTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final initialVideos = [
+            videoWithPubkey('v1', pubkeyA, createdAt: baseTime),
+          ];
+          final moreVideos = [
+            videoWithPubkey('v2', pubkeyB, createdAt: baseTime - 2),
+            videoWithPubkey('v3', pubkeyC, createdAt: baseTime - 3),
+          ];
+
+          var callCount = 0;
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return HomeFeedResult(videos: initialVideos);
+            }
+            return HomeFeedResult(videos: moreVideos);
+          });
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(pubkeys: [pubkeyA]),
+          ).thenAnswer((_) async => {pubkeyA: profileForPubkey(pubkeyA)});
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys', that: isNot(equals([pubkeyA]))),
+            ),
+          ).thenAnswer(
+            (_) async => {
+              pubkeyB: profileForPubkey(pubkeyB),
+              pubkeyC: profileForPubkey(pubkeyC),
+            },
+          );
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          profileRepository: mockProfileRepository,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          bloc.add(const VideoFeedLoadMoreRequested());
+        },
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).called(2);
+        },
+        expect: () => [
+          // Loading
+          const VideoFeedState(),
+          // Initial videos loaded
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos, 'videos', hasLength(1)),
+          // Profiles for initial videos
+          isA<VideoFeedState>().having(
+            (s) => s.creatorProfiles,
+            'profiles after initial',
+            hasLength(1),
+          ),
+          // Pagination loading
+          isA<VideoFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            isTrue,
+          ),
+          // Pagination complete
+          isA<VideoFeedState>()
+              .having((s) => s.videos, 'videos', hasLength(3))
+              .having((s) => s.isLoadingMore, 'isLoadingMore', isFalse),
+          // Profiles for new creators
+          isA<VideoFeedState>().having(
+            (s) => s.creatorProfiles,
+            'profiles after pagination',
+            hasLength(3),
+          ),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does not re-fetch existing profiles on pagination',
+        setUp: () {
+          final baseTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          final initialVideos = [
+            videoWithPubkey('v1', pubkeyA, createdAt: baseTime),
+          ];
+          // Pagination returns a video from the same creator
+          final moreVideos = [
+            videoWithPubkey('v2', pubkeyA, createdAt: baseTime - 2),
+          ];
+
+          var callCount = 0;
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              videoRefs: any(named: 'videoRefs'),
+              userPubkey: any(named: 'userPubkey'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async {
+            callCount++;
+            if (callCount == 1) {
+              return HomeFeedResult(videos: initialVideos);
+            }
+            return HomeFeedResult(videos: moreVideos);
+          });
+
+          when(
+            () => mockProfileRepository.fetchBatchProfiles(pubkeys: [pubkeyA]),
+          ).thenAnswer((_) async => {pubkeyA: profileForPubkey(pubkeyA)});
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          curatedListRepository: mockCuratedListRepository,
+          profileRepository: mockProfileRepository,
+        ),
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted(mode: FeedMode.home));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          bloc.add(const VideoFeedLoadMoreRequested());
+        },
+        verify: (_) {
+          // fetchBatchProfiles should only be called once (initial load).
+          // Pagination has no new pubkeys, so no second call.
+          verify(
+            () => mockProfileRepository.fetchBatchProfiles(
+              pubkeys: any(named: 'pubkeys'),
+            ),
+          ).called(1);
         },
       );
     });
