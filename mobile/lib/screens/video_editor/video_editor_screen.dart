@@ -17,6 +17,7 @@ import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.da
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
+import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
@@ -170,9 +171,23 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   /// Renders the video from current clips and updates the output path notifier.
+  ///
+  /// Reuses the cached merge output when clips haven't changed.
   Future<void> _renderVideo() async {
-    final clips = ref.read(clipManagerProvider).clips;
+    final clipState = ref.read(clipManagerProvider);
+    final clips = clipState.clips;
     if (clips.isEmpty) return;
+
+    final cached = clipState.mergeOutputPath;
+    if (cached != null && File(cached).existsSync()) {
+      Log.debug(
+        '⚡ Reusing cached merge output',
+        name: 'VideoEditorScreen',
+        category: LogCategory.video,
+      );
+      _videoOutputPathNotifier.value = cached;
+      return;
+    }
 
     Log.debug(
       '🎬 Rendering video from ${clips.length} clip(s)',
@@ -189,6 +204,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
     if (mounted && outputPath != null) {
       _videoOutputPathNotifier.value = outputPath;
+      ref.read(clipManagerProvider.notifier).cacheMergeOutput(outputPath);
     }
   }
 

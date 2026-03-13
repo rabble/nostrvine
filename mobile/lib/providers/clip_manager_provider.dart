@@ -70,17 +70,27 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   }
 
   /// Trigger autosave via VideoEditorProvider (debounced).
+  ///
+  /// Also clears the cached merge output since clips have changed.
   void _triggerAutosave() {
     final notifier = ref.read(videoEditorProvider.notifier);
 
     notifier.invalidateFinalRenderedClip();
     notifier.triggerAutosave();
+
+    state = state.copyWith(clearMergeOutputPath: true);
   }
 
   /// Force immediate autosave without debounce.
   /// Use this before file cleanup to ensure references are updated.
   Future<void> _forceAutosave() =>
       ref.read(videoEditorProvider.notifier).autosaveChanges();
+
+  /// Caches the merge-render output path so the video editor can skip
+  /// re-rendering when the screen is re-opened with unchanged clips.
+  void cacheMergeOutput(String outputPath) {
+    state = state.copyWith(mergeOutputPath: outputPath);
+  }
 
   /// Manually trigger a state refresh with current clips.
   ///
