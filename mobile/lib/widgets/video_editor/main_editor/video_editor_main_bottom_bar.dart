@@ -27,16 +27,10 @@ class VideoEditorMainBottomBar extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(minWidth: constraints.maxWidth - 32),
               child: Row(
-                spacing: 12,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                spacing: 32,
+                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  _ActionButton(
-                    // TODO(l10n): Replace with context.l10n when localization is added.
-                    label: 'Text',
-                    icon: .textAa,
-                    onTap: () => scope.editor?.openTextEditor(),
-                  ),
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Clips',
@@ -45,16 +39,23 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                   ),
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
+                    label: 'Text',
+                    icon: .textAa,
+                    onTap: () => scope.editor?.openTextEditor(),
+                  ),
+                  _ActionButton(
+                    // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Draw',
                     icon: .scribble,
                     onTap: () => scope.editor?.openPaintEditor(),
                   ),
+                  /* TODO(hm21): uncomment stickers once we have a license for them
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Stickers',
                     icon: .sticker,
                     onTap: scope.onAddStickers,
-                  ),
+                  ),*/
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Effects',
@@ -92,7 +93,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: .min,
-      spacing: 4,
+      spacing: 8,
       children: [
         Semantics(
           label: label,
