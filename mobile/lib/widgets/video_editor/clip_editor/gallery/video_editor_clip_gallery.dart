@@ -9,7 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -214,7 +213,7 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     _reorderController.addDragOffset(event.delta.dx);
 
     // Check if threshold exceeded for page switch
-    final clips = ref.read(clipManagerProvider).clips;
+    final clips = context.read<ClipEditorBloc>().state.clips;
     final threshold = _calculateReorderThreshold(
       constraints.maxWidth,
       clips.length,
@@ -246,19 +245,18 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
 
     if (isOverDeleteZone) {
       // Delete the clip if released over delete zone
-      final clips = ref.read(clipManagerProvider).clips;
+      final bloc = context.read<ClipEditorBloc>();
+      final clips = bloc.state.clips;
       if (startIndex >= 0 && startIndex < clips.length) {
         final clipToDelete = clips[startIndex];
-        unawaited(
-          ref
-              .read(clipManagerProvider.notifier)
-              .removeClipById(clipToDelete.id),
-        );
-        context.read<ClipEditorBloc>().add(
-          const ClipEditorDeleteZoneChanged(isOver: false),
-        );
+        bloc
+          ..add(ClipEditorClipRemoved(clipToDelete.id))
+          ..add(
+            const ClipEditorDeleteZoneChanged(isOver: false),
+          );
 
-        if (ref.read(clipManagerProvider.notifier).clips.isEmpty) {
+        // Check if all clips will be gone after removal.
+        if (clips.length <= 1) {
           if (mounted) {
             Navigator.of(
               context,
@@ -274,9 +272,9 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
 
         // Update selected index after deletion - based on startIndex since
         // that's where the deleted clip was
-        final remainingClips = ref.read(clipManagerProvider).clips;
+        final remainingCount = clips.length - 1;
         final newIndex = _reorderController.calculateIndexAfterDeletion(
-          remainingClips.length,
+          remainingCount,
         );
         _reorderController.updateTargetIndex(newIndex);
         context.read<ClipEditorBloc>().add(ClipEditorClipSelected(newIndex));
@@ -301,13 +299,15 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     }
     _reorderController.completeReorder();
 
+    if (!mounted) return;
+
     // Only reorder if we didn't delete
-    ref
-        .read(clipManagerProvider.notifier)
-        .reorderClip(
-          _reorderController.startIndex,
-          _reorderController.updatedIndex,
-        );
+    context.read<ClipEditorBloc>().add(
+      ClipEditorClipReordered(
+        oldIndex: _reorderController.startIndex,
+        newIndex: _reorderController.updatedIndex,
+      ),
+    );
 
     // Exit reorder mode (after animation completes)
     if (!mounted) return;
@@ -322,7 +322,9 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
 
   @override
   Widget build(BuildContext context) {
-    final clips = ref.watch(clipManagerProvider.select((state) => state.clips));
+    final clips = context.select(
+      (ClipEditorBloc bloc) => bloc.state.clips,
+    );
 
     if (clips.isEmpty) {
       return const SizedBox.shrink();

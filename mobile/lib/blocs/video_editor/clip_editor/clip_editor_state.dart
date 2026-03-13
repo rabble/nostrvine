@@ -1,12 +1,26 @@
 part of 'clip_editor_bloc.dart';
 
+/// Immutable snapshot of the clip list used for undo/redo history.
+class ClipSnapshot extends Equatable {
+  const ClipSnapshot(this.clips);
+
+  final List<DivineVideoClip> clips;
+
+  @override
+  List<Object?> get props => [clips];
+}
+
 /// State for the clip editor screen.
 ///
-/// Manages playback, clip selection, editing mode, and reorder state.
-/// Uses a single class with enum-like booleans because clip editing
-/// accumulates incremental updates (position, selection, mode toggles).
+/// Manages playback, clip selection, editing mode, reorder state,
+/// and a local copy of clips with undo/redo history.
+///
+/// Clip mutations happen locally in this state. The parent screen
+/// syncs the final clip list back to the Riverpod provider when
+/// the editor is closed.
 class ClipEditorState extends Equatable {
   const ClipEditorState({
+    this.clips = const [],
     this.currentClipIndex = 0,
     this.currentPosition = Duration.zero,
     this.splitPosition = Duration.zero,
@@ -17,7 +31,12 @@ class ClipEditorState extends Equatable {
     this.isPlayerReady = false,
     this.hasPlayedOnce = false,
     this.isMuted = false,
+    this.undoStack = const [],
+    this.redoStack = const [],
   });
+
+  /// Local copy of clips managed by this editor session.
+  final List<DivineVideoClip> clips;
 
   /// Index of the currently active/selected clip (0-based).
   final int currentClipIndex;
@@ -50,8 +69,25 @@ class ClipEditorState extends Equatable {
   /// Whether audio is muted during playback.
   final bool isMuted;
 
+  /// Stack of previous clip states for undo.
+  final List<ClipSnapshot> undoStack;
+
+  /// Stack of undone clip states for redo.
+  final List<ClipSnapshot> redoStack;
+
+  /// Whether an undo operation is available.
+  bool get canUndo => undoStack.isNotEmpty;
+
+  /// Whether a redo operation is available.
+  bool get canRedo => redoStack.isNotEmpty;
+
+  /// Total duration of all clips.
+  Duration get totalDuration =>
+      clips.fold(Duration.zero, (sum, clip) => sum + clip.duration);
+
   /// Creates a copy with the given fields replaced.
   ClipEditorState copyWith({
+    List<DivineVideoClip>? clips,
     int? currentClipIndex,
     Duration? currentPosition,
     Duration? splitPosition,
@@ -62,8 +98,11 @@ class ClipEditorState extends Equatable {
     bool? isPlayerReady,
     bool? hasPlayedOnce,
     bool? isMuted,
+    List<ClipSnapshot>? undoStack,
+    List<ClipSnapshot>? redoStack,
   }) {
     return ClipEditorState(
+      clips: clips ?? this.clips,
       currentClipIndex: currentClipIndex ?? this.currentClipIndex,
       currentPosition: currentPosition ?? this.currentPosition,
       splitPosition: splitPosition ?? this.splitPosition,
@@ -74,11 +113,14 @@ class ClipEditorState extends Equatable {
       isPlayerReady: isPlayerReady ?? this.isPlayerReady,
       hasPlayedOnce: hasPlayedOnce ?? this.hasPlayedOnce,
       isMuted: isMuted ?? this.isMuted,
+      undoStack: undoStack ?? this.undoStack,
+      redoStack: redoStack ?? this.redoStack,
     );
   }
 
   @override
   List<Object?> get props => [
+    clips,
     currentClipIndex,
     currentPosition,
     splitPosition,
@@ -89,5 +131,7 @@ class ClipEditorState extends Equatable {
     isPlayerReady,
     hasPlayedOnce,
     isMuted,
+    undoStack,
+    redoStack,
   ];
 }

@@ -18,8 +18,7 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 class _TestClipEditorBloc extends ClipEditorBloc {
   _TestClipEditorBloc({
     ClipEditorState initialState = const ClipEditorState(),
-    ClipsGetter? clipsGetter,
-  }) : super(clipsGetter: clipsGetter ?? () => []) {
+  }) {
     emit(initialState);
   }
 }
@@ -63,7 +62,6 @@ void main() {
           splitPosition: splitPosition,
           currentClipIndex: currentClipIndex,
         ),
-        clipsGetter: () => testClips,
       );
 
       return ProviderScope(

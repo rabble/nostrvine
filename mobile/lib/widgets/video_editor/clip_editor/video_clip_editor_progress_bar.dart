@@ -4,22 +4,20 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 
 /// Displays a progress bar showing all video clips as segments.
-class VideoClipEditorProgressBar extends ConsumerWidget {
+class VideoClipEditorProgressBar extends StatelessWidget {
   /// Creates a video progress bar widget.
   const VideoClipEditorProgressBar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clips = ref.watch(clipManagerProvider.select((state) => state.clips));
-    final (currentClipIndex, isReordering) = context.select(
+  Widget build(BuildContext context) {
+    final (currentClipIndex, isReordering, clips) = context.select(
       (ClipEditorBloc bloc) => (
         bloc.state.currentClipIndex,
         bloc.state.isReordering,
+        bloc.state.clips,
       ),
     );
 

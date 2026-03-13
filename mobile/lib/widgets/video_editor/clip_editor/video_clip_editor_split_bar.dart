@@ -6,40 +6,36 @@ import 'dart:math';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 
 /// A video editor split bar using Material Slider with custom styling.
 /// The left section is highlighted in primary color, the right section is
 /// disabled.
-class VideoClipEditorSplitBar extends ConsumerWidget {
+class VideoClipEditorSplitBar extends StatelessWidget {
   const VideoClipEditorSplitBar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final (currentClipIndex, splitPosition) = context.select(
       (ClipEditorBloc bloc) => (
         bloc.state.currentClipIndex,
         bloc.state.splitPosition,
       ),
     );
-    final clipDuration = ref.watch(
-      clipManagerProvider.select((p) {
-        final clipIndex = currentClipIndex;
-
-        if (clipIndex >= p.clips.length) {
-          assert(
-            false,
-            'Clip index $clipIndex is out of bounds. '
-            'Total clips: ${p.clips.length}',
-          );
-          return Duration.zero;
-        }
-
-        return p.clips[clipIndex].duration;
-      }),
+    final clips = context.select(
+      (ClipEditorBloc bloc) => bloc.state.clips,
     );
+    final clipDuration = () {
+      if (currentClipIndex >= clips.length) {
+        assert(
+          false,
+          'Clip index $currentClipIndex is out of bounds. '
+          'Total clips: ${clips.length}',
+        );
+        return Duration.zero;
+      }
+      return clips[currentClipIndex].duration;
+    }();
     const handleColor = VineTheme.whiteText;
     final disabledColor = VineTheme.whiteText.withAlpha(65);
 

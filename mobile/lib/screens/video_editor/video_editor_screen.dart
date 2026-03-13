@@ -209,36 +209,31 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 
   Future<void> _openClipsEditor() async {
-    // Snapshot clip IDs before opening the editor.
-    final clipsBefore = ref
-        .read(clipManagerProvider)
-        .clips
-        .map((c) => c.id)
-        .toList();
-
     // Pause playback while the clip editor is open.
     final currentPath = _videoOutputPathNotifier.value;
+    final initialClips = ref.read(clipManagerProvider).clips;
 
-    await Navigator.push<void>(
+    final clips = await Navigator.push<List<DivineVideoClip>>(
       context,
-      _ZoomFadePageRoute(
-        child: const VideoClipEditorScreen(),
+      _ZoomFadePageRoute<List<DivineVideoClip>>(
+        child: VideoClipEditorScreen(
+          initialClips: initialClips.map((e) => e.copyWith()).toList(),
+        ),
       ),
     );
 
-    // Check if clips changed (added, removed, or reordered).
-    final clipsAfter = ref
-        .read(clipManagerProvider)
-        .clips
-        .map((c) => c.id)
-        .toList();
-
-    if (!listEquals(clipsBefore, clipsAfter)) {
+    if (clips != null) {
       Log.info(
         '🎬 Clips changed after clip editor – re-rendering video',
         name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
+
+      final clipManager = ref.read(clipManagerProvider.notifier);
+      clipManager
+        ..clearClips()
+        ..addMultipleClips(clips);
+
       _videoOutputPathNotifier.value = null;
       await _renderVideo();
     } else {

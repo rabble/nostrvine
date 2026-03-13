@@ -153,7 +153,10 @@ class _PageViewState extends State<VideoEditorGalleryPageView> {
                       ? 0.0
                       : calculations.calculateXOffset(index);
                   final reorderOffset = _calculateReorderOffset(index);
+
                   final targetOffset = Offset(targetXOffset + reorderOffset, 0);
+
+                  final isSelected = index == widget.selectedClipIndex;
 
                   return _AnimatedGalleryItem(
                     clip: widget.clips[index],
@@ -163,6 +166,7 @@ class _PageViewState extends State<VideoEditorGalleryPageView> {
                     targetOffset: targetOffset,
                     enableTweenOffset: reorderCtrl.enableTweenOffset,
                     canStartReorder: _canStartReorder(index),
+                    isVisible: !widget.isEditing || isSelected,
                     onTap: () => _handleItemTap(index),
                   );
                 }, childCount: widget.clips.length),
@@ -185,6 +189,7 @@ class _AnimatedGalleryItem extends StatelessWidget {
     required this.targetOffset,
     required this.enableTweenOffset,
     required this.canStartReorder,
+    required this.isVisible,
     required this.onTap,
   });
 
@@ -192,6 +197,7 @@ class _AnimatedGalleryItem extends StatelessWidget {
 
   final bool enableTweenOffset;
   final bool canStartReorder;
+  final bool isVisible;
 
   final int index;
 
@@ -213,14 +219,18 @@ class _AnimatedGalleryItem extends StatelessWidget {
           : .zero,
       curve: Curves.easeInOut,
       builder: (context, offset, child) {
-        return VideoEditorGalleryItem(
-          clip: clip,
-          index: index,
-          page: page,
-          scale: scale,
-          xOffset: offset.dx,
-          onTap: onTap,
-          onLongPress: canStartReorder ? callbacks.onStartReordering : null,
+        return AnimatedOpacity(
+          duration: VideoEditorGalleryConstants.scaleAnimationDuration,
+          opacity: isVisible ? 1.0 : 0.0,
+          child: VideoEditorGalleryItem(
+            clip: clip,
+            index: index,
+            page: page,
+            scale: scale,
+            xOffset: offset.dx,
+            onTap: onTap,
+            onLongPress: canStartReorder ? callbacks.onStartReordering : null,
+          ),
         );
       },
     );

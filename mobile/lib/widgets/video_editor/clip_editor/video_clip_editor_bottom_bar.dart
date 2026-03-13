@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_more_button.dart';
@@ -15,7 +15,7 @@ import 'package:openvine/widgets/video_editor/clip_editor/video_time_display.dar
 import 'package:openvine/widgets/video_editor_icon_button.dart';
 
 /// Bottom bar with playback controls and time display.
-class VideoClipEditorBottomBar extends ConsumerWidget {
+class VideoClipEditorBottomBar extends StatelessWidget {
   /// Creates a video editor bottom bar widget.
   const VideoClipEditorBottomBar({super.key});
 
@@ -32,12 +32,12 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
     );
   }
 
-  void _handleSplitClip(BuildContext context, WidgetRef ref) {
+  void _handleSplitClip(BuildContext context) {
     final clipEditorState = context.read<ClipEditorBloc>().state;
     final splitPosition = clipEditorState.splitPosition;
     final currentClipIndex = clipEditorState.currentClipIndex;
 
-    final clips = ref.read(clipManagerProvider).clips;
+    final clips = clipEditorState.clips;
     if (currentClipIndex >= clips.length) {
       return;
     }
@@ -76,7 +76,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final (
       :isReordering,
       :isPlaying,
@@ -127,7 +127,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                         VideoEditorIconButton(
                           backgroundColor: VineTheme.transparent,
                           icon: .scissors,
-                          onTap: () => _handleSplitClip(context, ref),
+                          onTap: () => _handleSplitClip(context),
                           // TODO(l10n): Replace with context.l10n when localization is added.
                           semanticLabel: 'Crop',
                         ),
@@ -136,34 +136,31 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                   ),
 
                   // Time display
-                  // TODO(migration): clipManagerProvider still uses Riverpod.
-                  Consumer(
-                    builder: (_, ref, _) {
-                      Duration totalDuration = .zero;
+                  BlocSelector<
+                    ClipEditorBloc,
+                    ClipEditorState,
+                    ({Duration totalDuration, List<DivineVideoClip> clips})
+                  >(
+                    selector: (state) => (
+                      totalDuration: state.totalDuration,
+                      clips: state.clips,
+                    ),
+                    builder: (context, data) {
+                      Duration totalDuration;
 
                       if (isEditing) {
-                        totalDuration = ref.watch(
-                          clipManagerProvider.select((p) {
-                            final clipIndex = currentClipIndex;
-
-                            if (clipIndex >= p.clips.length) {
-                              assert(
-                                false,
-                                'Clip index $clipIndex is out of bounds. '
-                                'Total clips: ${p.clips.length}',
-                              );
-                              return Duration.zero;
-                            }
-
-                            return p.clips[clipIndex].duration;
-                          }),
-                        );
+                        if (currentClipIndex >= data.clips.length) {
+                          assert(
+                            false,
+                            'Clip index $currentClipIndex is out of bounds. '
+                            'Total clips: ${data.clips.length}',
+                          );
+                          totalDuration = Duration.zero;
+                        } else {
+                          totalDuration = data.clips[currentClipIndex].duration;
+                        }
                       } else {
-                        totalDuration = ref.watch(
-                          clipManagerProvider.select(
-                            (state) => state.totalDuration,
-                          ),
-                        );
+                        totalDuration = data.totalDuration;
                       }
 
                       return VideoTimeDisplay(

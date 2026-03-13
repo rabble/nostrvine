@@ -4,14 +4,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 
 /// Top bar with close button, clip counter, and done button.
-class VideoClipEditorTopBar extends ConsumerWidget {
+class VideoClipEditorTopBar extends StatelessWidget {
   /// Creates a video editor top bar widget.
   const VideoClipEditorTopBar({super.key, this.fromLibrary = false});
 
@@ -19,17 +17,16 @@ class VideoClipEditorTopBar extends ConsumerWidget {
   final bool fromLibrary;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final totalClips = ref.watch(
-      clipManagerProvider.select((state) => state.clips.length),
-    );
-    final (currentClipIndex, isEditing, isReordering) = context.select(
-      (ClipEditorBloc bloc) => (
-        bloc.state.currentClipIndex,
-        bloc.state.isEditing,
-        bloc.state.isReordering,
-      ),
-    );
+  Widget build(BuildContext context) {
+    final (currentClipIndex, isEditing, isReordering, totalClips) = context
+        .select(
+          (ClipEditorBloc bloc) => (
+            bloc.state.currentClipIndex,
+            bloc.state.isEditing,
+            bloc.state.isReordering,
+            bloc.state.clips.length,
+          ),
+        );
 
     return Padding(
       padding: const .fromLTRB(10, 16, 16, 16),
@@ -78,11 +75,9 @@ class VideoClipEditorTopBar extends ConsumerWidget {
                         size: .small,
                         type: .tertiary,
                         onPressed: () {
-                          context.read<ClipEditorBloc>().add(
-                            const ClipEditorPlaybackPaused(),
-                          );
-
-                          context.pop();
+                          final bloc = context.read<ClipEditorBloc>();
+                          bloc.add(const ClipEditorPlaybackPaused());
+                          context.pop(bloc.state.clips);
                         },
                       ),
                     ),

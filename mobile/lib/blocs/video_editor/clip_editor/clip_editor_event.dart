@@ -8,6 +8,79 @@ sealed class ClipEditorEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+// === CLIP DATA ===
+
+/// Initialize the local clip list from an external source.
+///
+/// Typically called once when the editor screen opens, passing
+/// the current clips from the Riverpod provider.
+class ClipEditorInitialized extends ClipEditorEvent {
+  const ClipEditorInitialized(this.clips);
+
+  final List<DivineVideoClip> clips;
+
+  @override
+  List<Object?> get props => [clips];
+}
+
+/// Remove a clip by its ID.
+class ClipEditorClipRemoved extends ClipEditorEvent {
+  const ClipEditorClipRemoved(this.clipId);
+
+  final String clipId;
+
+  @override
+  List<Object?> get props => [clipId];
+}
+
+/// Reorder a clip from [oldIndex] to [newIndex].
+class ClipEditorClipReordered extends ClipEditorEvent {
+  const ClipEditorClipReordered({
+    required this.oldIndex,
+    required this.newIndex,
+  });
+
+  final int oldIndex;
+  final int newIndex;
+
+  @override
+  List<Object?> get props => [oldIndex, newIndex];
+}
+
+/// Insert a clip at a specific index.
+class ClipEditorClipInserted extends ClipEditorEvent {
+  const ClipEditorClipInserted({required this.index, required this.clip});
+
+  final int index;
+  final DivineVideoClip clip;
+
+  @override
+  List<Object?> get props => [index, clip];
+}
+
+/// Replace a clip with updated data (e.g. after split rendering).
+class ClipEditorClipUpdated extends ClipEditorEvent {
+  const ClipEditorClipUpdated({required this.clipId, required this.clip});
+
+  final String clipId;
+  final DivineVideoClip clip;
+
+  @override
+  List<Object?> get props => [clipId, clip];
+}
+
+// === UNDO / REDO ===
+
+/// Undo the last clip mutation.
+class ClipEditorUndoRequested extends ClipEditorEvent {
+  const ClipEditorUndoRequested();
+}
+
+/// Redo the last undone clip mutation.
+class ClipEditorRedoRequested extends ClipEditorEvent {
+  const ClipEditorRedoRequested();
+}
+
 // === CLIP SELECTION ===
 
 /// Select a clip by its index in the clip list.

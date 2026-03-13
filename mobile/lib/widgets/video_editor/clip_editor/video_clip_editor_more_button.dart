@@ -27,10 +27,10 @@ class _VideoEditorMoreButtonState
   int get _currentClipIndex =>
       context.read<ClipEditorBloc>().state.currentClipIndex;
 
-  /// Gets the current clip from the clip manager.
+  /// Gets the current clip from the BLoC's local clip list.
   DivineVideoClip get _currentClip {
-    final clipManager = ref.read(clipManagerProvider.notifier);
-    return clipManager.clips[_currentClipIndex];
+    final state = context.read<ClipEditorBloc>().state;
+    return state.clips[_currentClipIndex];
   }
 
   /// Show the more options bottom sheet.
@@ -118,42 +118,28 @@ class _VideoEditorMoreButtonState
 
   /// Removes the current clip from the timeline.
   ///
-  /// If no clips remain, navigates back to the previous screen.
-  Future<void> _removeClip() async {
-    final clipManager = ref.read(clipManagerProvider.notifier);
-    final success = await clipManager.removeClipById(_currentClip.id);
-    if (!mounted) return;
+  /// If only one clip remains, navigates back to the previous screen.
+  void _removeClip() {
+    final bloc = context.read<ClipEditorBloc>();
+    final clips = bloc.state.clips;
+    final clipId = _currentClip.id;
 
-    if (!success) {
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      _showSnackBar(
-        message: 'Failed to delete clip: Clip not found',
-        isError: true,
-      );
+    if (clips.length <= 1) {
+      // Last clip — navigate back to the video recorder.
+      _deleteAndStartOver();
       return;
     }
 
-    // Check if there are any clips left
-    final remainingClips = ref.read(clipManagerProvider).clips;
+    bloc.add(ClipEditorClipRemoved(clipId));
 
-    if (remainingClips.isEmpty) {
-      // No clips left, navigate back to the video recorder.
-      _popToVideoRecorder();
-    } else {
-      // Update currentClipIndex if it's now out of bounds
-      final currentIndex = context
-          .read<ClipEditorBloc>()
-          .state
-          .currentClipIndex;
-      if (currentIndex >= remainingClips.length) {
-        context.read<ClipEditorBloc>().add(
-          ClipEditorClipSelected(remainingClips.length - 1),
-        );
-      }
-      context.read<ClipEditorBloc>().add(const ClipEditorEditingStopped());
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      _showSnackBar(message: 'Clip deleted');
+    // Adjust index if it would be out of bounds after removal.
+    final currentIndex = bloc.state.currentClipIndex;
+    if (currentIndex >= clips.length - 1) {
+      bloc.add(ClipEditorClipSelected(clips.length - 2));
     }
+    bloc.add(const ClipEditorEditingStopped());
+    // TODO(l10n): Replace with context.l10n when localization is added.
+    _showSnackBar(message: 'Clip deleted');
   }
 
   /// Shows a styled snackbar with the given message.
@@ -208,17 +194,46 @@ class _VideoEditorMoreButtonState
       category: .video,
     );
 
-    await VineBottomSheet.show(
+    final bloc = context.read<ClipEditorBloc>();
+    final selectedClips = await VineBottomSheet.show<List<DivineVideoClip>>(
       context: context,
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
       showHeaderDivider: false,
-      body: const LibraryScreen(selectionMode: true),
+      body: LibraryScreen(
+        selectionMode: true,
+        editorClips: bloc.state.clips,
+      ),
     );
 
+    if (selectedClips == null || selectedClips.isEmpty || !context.mounted) {
+      return;
+    }
+
+    final currentCount = bloc.state.clips.length;
+
+    for (var i = 0; i < selectedClips.length; i++) {
+      final clip = selectedClips[i];
+      final newClip = DivineVideoClip(
+        id: 'clip_${DateTime.now().millisecondsSinceEpoch}_$i',
+        video: clip.video,
+        duration: clip.duration,
+        recordedAt: DateTime.now(),
+        thumbnailPath: clip.thumbnailPath,
+        targetAspectRatio: clip.targetAspectRatio,
+        originalAspectRatio: clip.targetAspectRatio.value,
+        lensMetadata: clip.lensMetadata,
+        ghostFramePath: clip.ghostFramePath,
+        thumbnailTimestamp: clip.thumbnailTimestamp,
+      );
+      bloc.add(
+        ClipEditorClipInserted(index: currentCount + i, clip: newClip),
+      );
+    }
+
     Log.info(
-      '📹 Closed clip library',
+      '📹 Added ${selectedClips.length} clips from library',
       name: 'ClipManagerNotifier',
       category: .video,
     );

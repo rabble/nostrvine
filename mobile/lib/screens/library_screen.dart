@@ -37,6 +37,7 @@ class LibraryScreen extends ConsumerStatefulWidget {
     super.key,
     this.initialTabIndex = 0,
     this.selectionMode = false,
+    this.editorClips = const [],
   });
 
   /// Index of the tab to show when the screen opens.
@@ -52,6 +53,10 @@ class LibraryScreen extends ConsumerStatefulWidget {
   /// - A header shows remaining duration and "Add" button
   /// - Selected clips are added to the video editor on confirmation
   final bool selectionMode;
+
+  /// Current editor clips, used to calculate remaining duration and
+  /// target aspect ratio in selection mode.
+  final List<DivineVideoClip> editorClips;
 
   @override
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
@@ -87,7 +92,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     ClipsLibraryState clipsState,
   ) {
     final editorRemaining = widget.selectionMode
-        ? ref.watch(clipManagerProvider.select((s) => s.remainingDuration))
+        ? VideoEditorConstants.maxDuration -
+              widget.editorClips.fold<Duration>(
+                Duration.zero,
+                (sum, c) => sum + c.duration,
+              )
         : VideoEditorConstants.maxDuration;
     return editorRemaining - clipsState.selectedDuration;
   }
@@ -173,18 +182,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
     if (!widget.selectionMode) {
       await ref.read(videoPublishProvider.notifier).clearAll();
-    }
 
-    final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
-    for (final clip in selectedClips) {
-      clipManagerNotifier.addClip(
-        video: clip.video,
-        duration: clip.duration,
-        thumbnailPath: clip.thumbnailPath,
-        targetAspectRatio: clip.targetAspectRatio,
-        originalAspectRatio: clip.targetAspectRatio.value,
-        lensMetadata: clip.lensMetadata,
-      );
+      final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
+      for (final clip in selectedClips) {
+        clipManagerNotifier.addClip(
+          video: clip.video,
+          duration: clip.duration,
+          thumbnailPath: clip.thumbnailPath,
+          targetAspectRatio: clip.targetAspectRatio,
+          originalAspectRatio: clip.targetAspectRatio.value,
+          lensMetadata: clip.lensMetadata,
+        );
+      }
     }
 
     clipsBloc.add(const ClipsLibraryClearSelection());
@@ -192,7 +201,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     if (!context.mounted) return;
 
     if (widget.selectionMode) {
-      context.pop();
+      context.pop(selectedClips);
     } else {
       await context.push(
         VideoEditorScreen.path,
@@ -203,7 +212,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final editorClips = ref.watch(clipManagerProvider.select((s) => s.clips));
+    final editorClips = widget.selectionMode
+        ? widget.editorClips
+        : ref.watch(clipManagerProvider.select((s) => s.clips));
     final publishState = ref.watch(
       videoPublishProvider.select((s) => s.publishState),
     );

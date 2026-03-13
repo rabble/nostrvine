@@ -42,7 +42,6 @@ void main() {
           currentClipIndex: currentClipIndex,
           isEditing: isEditing,
         ),
-        clipsGetter: () => clips,
       );
 
       return ProviderScope(
@@ -140,8 +139,7 @@ class _TestClipManagerNotifier extends ClipManagerNotifier {
 class _TestClipEditorBloc extends ClipEditorBloc {
   _TestClipEditorBloc({
     ClipEditorState initialState = const ClipEditorState(),
-    ClipsGetter? clipsGetter,
-  }) : super(clipsGetter: clipsGetter ?? () => []) {
+  }) {
     emit(initialState);
   }
 }
