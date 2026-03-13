@@ -791,7 +791,9 @@ bool isNostrReady(Ref ref) {
   // Watch auth state to rebuild when auth changes
   ref.watch(currentAuthStateProvider);
 
-  if (!authService.isAuthenticated) return false;
+  if (!authService.isAuthenticated) {
+    return false;
+  }
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final ready = nostrClient.hasKeys;
@@ -800,22 +802,24 @@ bool isNostrReady(Ref ref) {
     // NostrClient.initialize() runs asynchronously in a Future.microtask
     // after NostrService.build() returns. Riverpod can't detect when
     // hasKeys transitions because it's the same object reference.
-    // Schedule retries at increasing intervals to catch the transition.
-    var disposed = false;
-    ref.onDispose(() => disposed = true);
-
-    for (final delayMs in [100, 500, 2000]) {
-      Future.delayed(Duration(milliseconds: delayMs), () {
-        if (!disposed && nostrClient.hasKeys) {
+    // Poll with a periodic timer until hasKeys becomes true.
+    const pollInterval = Duration(milliseconds: 50);
+    final timer = Timer.periodic(
+      pollInterval,
+      (timer) {
+        if (nostrClient.hasKeys) {
+          timer.cancel();
           Log.info(
-            'isNostrReady: NostrClient.hasKeys became true after ${delayMs}ms, invalidating',
+            'isNostrReady: NostrClient.hasKeys became true after '
+            '${timer.tick * pollInterval.inMilliseconds}ms, invalidating',
             name: 'isNostrReadyProvider',
             category: LogCategory.system,
           );
           ref.invalidateSelf();
         }
-      });
-    }
+      },
+    );
+    ref.onDispose(timer.cancel);
   }
 
   return ready;

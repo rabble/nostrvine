@@ -73,9 +73,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   /// Whether a refresh is currently in progress.
   bool _isRefreshing = false;
 
-  /// Key used to open the drawer from the AppBar leading button.
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
-
   void _fetchProfileIfNeeded(String userIdHex, bool isOwnProfile) {
     if (isOwnProfile) return; // Own profile loads automatically
 
@@ -160,12 +157,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     };
 
     if (isOwnProfileGrid) {
-      final environment = ref.watch(currentEnvironmentProvider);
       final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
       final profileRepository = ref.watch(profileRepositoryProvider);
 
       if (userIdHex == null || profileRepository == null) {
-        return const ProfileLoadingView();
+        return _ProfileScaffold(
+          body: const ProfileLoadingView(),
+        );
       }
 
       return BlocProvider<MyProfileBloc>(
@@ -197,49 +195,17 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
               _ => null,
             };
 
-            return Scaffold(
-              key: _scaffoldKey,
-              backgroundColor: VineTheme.backgroundColor,
+            return _ProfileScaffold(
               onDrawerChanged: (isOpen) {
                 ref
                     .read(overlayVisibilityProvider.notifier)
                     .setDrawerOpen(isOpen);
               },
-              appBar: DiVineAppBar(
-                title: 'My Profile',
-                backgroundColor:
-                    profileColor ?? getEnvironmentAppBarColor(environment),
-                showMenuButton: true,
-                onMenuPressed: () {
-                  Log.info(
-                    '👆 User tapped menu button',
-                    name: 'Navigation',
-                    category: LogCategory.ui,
-                  );
-                  _scaffoldKey.currentState?.openDrawer();
-                },
-                actions: [
-                  DiVineAppBarAction(
-                    icon: _isRefreshing
-                        ? const MaterialIconSource(Icons.refresh)
-                        : const SvgIconSource('assets/icon/refresh.svg'),
-                    onPressed: !_isRefreshing
-                        ? () => _refreshProfile(userIdHex)
-                        : null,
-                    tooltip: 'Refresh',
-                    semanticLabel: 'Refresh profile',
-                  ),
-                  DiVineAppBarAction(
-                    icon: const SvgIconSource('assets/icon/DotsThree.svg'),
-                    onPressed: () => _more(userIdHex),
-                    tooltip: 'More',
-                    semanticLabel: 'More options',
-                  ),
-                ],
-              ),
-              drawer: const VineDrawer(),
+              onRefreshPressed: () => _refreshProfile(userIdHex),
+              onMorePressed: () => _more(userIdHex),
+              appBarColor: profileColor,
+              isRefreshing: _isRefreshing,
               body: content,
-              bottomNavigationBar: const VineBottomNav(currentIndex: 3),
             );
           },
         ),
@@ -465,6 +431,73 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         const SnackBar(content: Text('Embed code copied to clipboard')),
       );
     }
+  }
+}
+
+class _ProfileScaffold extends ConsumerWidget {
+  _ProfileScaffold({
+    required this.body,
+    this.isRefreshing = false,
+    this.appBarColor,
+    this.onDrawerChanged,
+    this.onRefreshPressed,
+    this.onMorePressed,
+  });
+
+  final bool isRefreshing;
+
+  final Color? appBarColor;
+
+  final Widget body;
+
+  final DrawerCallback? onDrawerChanged;
+  final VoidCallback? onRefreshPressed;
+  final VoidCallback? onMorePressed;
+
+  /// Key used to open the drawer from the AppBar leading button.
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final environment = ref.watch(currentEnvironmentProvider);
+
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: VineTheme.backgroundColor,
+      onDrawerChanged: onDrawerChanged,
+      appBar: DiVineAppBar(
+        title: 'My Profile',
+        backgroundColor: appBarColor ?? getEnvironmentAppBarColor(environment),
+        showMenuButton: true,
+        onMenuPressed: () {
+          Log.info(
+            '👆 User tapped menu button',
+            name: 'Navigation',
+            category: LogCategory.ui,
+          );
+          _scaffoldKey.currentState?.openDrawer();
+        },
+        actions: [
+          DiVineAppBarAction(
+            icon: isRefreshing
+                ? const MaterialIconSource(Icons.refresh)
+                : const SvgIconSource('assets/icon/refresh.svg'),
+            onPressed: isRefreshing ? null : onRefreshPressed,
+            tooltip: 'Refresh',
+            semanticLabel: 'Refresh profile',
+          ),
+          DiVineAppBarAction(
+            icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+            onPressed: onMorePressed,
+            tooltip: 'More',
+            semanticLabel: 'More options',
+          ),
+        ],
+      ),
+      drawer: const VineDrawer(),
+      body: body,
+      bottomNavigationBar: const VineBottomNav(currentIndex: 3),
+    );
   }
 }
 
