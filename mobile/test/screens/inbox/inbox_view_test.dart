@@ -138,12 +138,11 @@ void main() {
         (tester) async {
           final conversation = DmConversation(
             id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-            participantPubkeys: [currentPubkey, otherPubkey],
+            participantPubkeys: const [currentPubkey, otherPubkey],
             isGroup: false,
             createdAt: nowUnix,
             lastMessageContent: 'Hello',
             lastMessageTimestamp: nowUnix,
-            isRead: true,
           );
 
           await tester.pumpWidget(

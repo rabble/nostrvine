@@ -41,7 +41,7 @@ void main() {
   }) {
     return DmConversation(
       id: 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
-      participantPubkeys: [currentPubkey, otherPubkey],
+      participantPubkeys: const [currentPubkey, otherPubkey],
       isGroup: false,
       createdAt: nowUnix,
       lastMessageContent: lastMessageContent,
@@ -169,7 +169,7 @@ void main() {
         'does not render unread indicator when conversation is read',
         (tester) async {
           final testProfile = createTestProfile(displayName: 'Alice');
-          final testConversation = createTestConversation(isRead: true);
+          final testConversation = createTestConversation();
 
           await tester.pumpWidget(
             testMaterialApp(

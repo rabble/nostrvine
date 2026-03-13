@@ -64,7 +64,7 @@ void main() {
       testWidgets('renders $ConversationView', (tester) async {
         await tester.pumpWidget(
           testMaterialApp(
-            home: ConversationPage(
+            home: const ConversationPage(
               conversationId: testConversationId,
               participantPubkeys: [otherPubkey],
             ),
