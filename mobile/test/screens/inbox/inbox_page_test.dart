@@ -8,11 +8,13 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/inbox/inbox_view.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 
+import '../../helpers/go_router.dart';
 import '../../helpers/test_provider_overrides.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
@@ -33,12 +35,14 @@ void main() {
     late _MockAuthService mockAuthService;
     late _MockFollowRepository mockFollowRepository;
     late _MockContentBlocklistService mockBlocklistService;
+    late MockGoRouter mockGoRouter;
 
     setUp(() {
       mockDmRepository = _MockDmRepository();
       mockAuthService = _MockAuthService();
       mockFollowRepository = _MockFollowRepository();
       mockBlocklistService = _MockContentBlocklistService();
+      mockGoRouter = MockGoRouter();
 
       when(
         () => mockDmRepository.watchConversations(limit: any(named: 'limit')),
@@ -82,6 +86,7 @@ void main() {
               contentBlocklistServiceProvider.overrideWithValue(
                 mockBlocklistService,
               ),
+              goRouterProvider.overrideWithValue(mockGoRouter),
               relayNotificationUnreadCountProvider.overrideWithValue(0),
             ],
           ),
