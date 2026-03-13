@@ -97,7 +97,9 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                       // Processing overlay with play button
                       VideoClipEditorProcessingOverlay(
                         clip: clip,
-                        isProcessing: state.isProcessing,
+                        isProcessing:
+                            state.finalRenderedClip == null &&
+                            state.isProcessing,
                         inactivePlaceholder: Center(
                           child: DivineIconButton(
                             icon: .play,

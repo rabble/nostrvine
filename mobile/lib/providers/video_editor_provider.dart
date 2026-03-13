@@ -5,10 +5,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/complete_parameters_extensions.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/content_label.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -381,6 +383,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// This updates the editor's local state. The sound is persisted
   /// in drafts and used for audio playback during editing.
   void selectSound(AudioEvent? sound) {
+    if (sound == state.selectedSound) return;
+
     state = state.copyWith(
       selectedSound: sound,
       clearSelectedSound: sound == null,
@@ -398,7 +402,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Update the start offset of the currently selected sound.
   void updateSoundStartOffset(Duration offset) {
-    if (state.selectedSound != null) {
+    if (state.selectedSound != null &&
+        offset != state.selectedSound?.startOffset) {
       state = state.copyWith(
         selectedSound: state.selectedSound!.copyWith(startOffset: offset),
       );
@@ -462,6 +467,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// This stores the serialized state history from ProImageEditor,
   /// allowing users to restore their editing progress when reopening a draft.
   void updateEditorStateHistory(Map<String, dynamic> stateHistory) {
+    if (mapEquals(state.editorStateHistory, stateHistory)) return;
+
     Log.debug(
       '📜 Updated editor state history',
       name: 'VideoEditorNotifier',
@@ -477,11 +484,22 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// This stores the serialized editing parameters from ProImageEditor,
   /// enabling restoration of all applied effects when reopening a draft.
   void updateEditorEditingParameters(CompleteParameters editingParameters) {
-    Log.debug(
-      '🎨 Updated editor editing parameters',
-      name: 'VideoEditorNotifier',
-      category: LogCategory.video,
-    );
+    final old = state.editorEditingParameters;
+    if (old != null) {
+      final diffs = old.diff(editingParameters);
+      if (diffs.isEmpty) return;
+      Log.debug(
+        '🎨 Editor editing parameters changed: ${diffs.join(", ")}',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+    } else {
+      Log.debug(
+        '🎨 Editor editing parameters set (was null)',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+    }
     invalidateFinalRenderedClip();
     state = state.copyWith(editorEditingParameters: editingParameters);
     triggerAutosave();
