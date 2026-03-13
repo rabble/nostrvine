@@ -1,12 +1,15 @@
 // ABOUTME: Top toolbar for the video editor with navigation and history controls.
 // ABOUTME: Contains close, undo, redo, done, and audio buttons with BLoC integration.
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
@@ -15,6 +18,7 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_layer_reo
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_toolbar.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Top action bar for the video editor.
 ///
@@ -34,15 +38,13 @@ class VideoEditorMainOverlayActions extends StatelessWidget {
       child: AnimatedOpacity(
         opacity: isHidden ? 0 : 1,
         duration: const Duration(milliseconds: 200),
-        child: const SafeArea(
-          child: Stack(
-            fit: .expand,
-            children: [
-              Align(alignment: .topCenter, child: _TopActions()),
-              Center(child: _CenterPlayButton()),
-              Align(alignment: .bottomCenter, child: _BottomActions()),
-            ],
-          ),
+        child: const Stack(
+          fit: .expand,
+          children: [
+            _PlayStateIndicator(),
+            Align(alignment: .topCenter, child: _TopActions()),
+            Align(alignment: .bottomCenter, child: _BottomActions()),
+          ],
         ),
       ),
     );
@@ -110,58 +112,6 @@ class _TopActions extends ConsumerWidget {
   }
 }
 
-/// Center play/pause button overlay.
-class _CenterPlayButton extends StatelessWidget {
-  const _CenterPlayButton();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocSelector<
-      VideoEditorMainBloc,
-      VideoEditorMainState,
-      ({bool isPlaying, bool isPlayerReady})
-    >(
-      selector: (state) => (
-        isPlaying: state.isPlaying,
-        isPlayerReady: state.isPlayerReady,
-      ),
-      builder: (context, state) {
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: !state.isPlayerReady
-              ? Container(
-                  width: 40,
-                  height: 40,
-                  padding: const .all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.black12,
-                    borderRadius: .circular(16),
-                  ),
-                  child: const CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(
-                      VineTheme.whiteText,
-                    ),
-                  ),
-                )
-              : DivineIconButton(
-                  size: .small,
-                  type: .ghostSecondary,
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  semanticLabel: state.isPlaying ? 'Pause' : 'Play',
-                  icon: state.isPlaying ? .pause : .play,
-                  onPressed: () {
-                    context.read<VideoEditorMainBloc>().add(
-                      const VideoEditorPlaybackToggleRequested(),
-                    );
-                  },
-                ),
-        );
-      },
-    );
-  }
-}
-
 /// Bottom row actions: reorder layers.
 class _BottomActions extends StatelessWidget {
   const _BottomActions();
@@ -195,25 +145,137 @@ class _BottomActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final scope = VideoEditorScope.of(context);
 
-    return Padding(
-      padding: const .fromLTRB(16, 0, 16, 16),
-      child: BlocSelector<VideoEditorMainBloc, VideoEditorMainState, List<Layer>>(
-        selector: (state) => state.layers,
-        builder: (context, layers) {
-          return DivineIconButton(
-            size: .small,
-            type: .ghostSecondary,
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            semanticLabel: 'Reorder',
-            icon: .stackSimple,
-            onPressed: layers.length > 1
-                ? () => _reorderLayers(
-                    context,
-                    scope.editor?.activeLayers ?? layers,
-                  )
-                : null,
-          );
-        },
+    return SafeArea(
+      child: Padding(
+        padding: const .fromLTRB(16, 0, 16, 16),
+        child: BlocSelector<VideoEditorMainBloc, VideoEditorMainState, List<Layer>>(
+          selector: (state) => state.layers,
+          builder: (context, layers) {
+            return DivineIconButton(
+              size: .small,
+              type: .ghostSecondary,
+              // TODO(l10n): Replace with context.l10n when localization is added.
+              semanticLabel: 'Reorder',
+              icon: .stackSimple,
+              onPressed: layers.length > 1
+                  ? () => _reorderLayers(
+                      context,
+                      scope.editor?.activeLayers ?? layers,
+                    )
+                  : null,
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// Center play/pause button overlay.
+///
+/// Fades out the pause icon after 1 second of playback so it doesn't
+/// permanently obstruct the video preview.
+class _PlayStateIndicator extends StatefulWidget {
+  const _PlayStateIndicator();
+
+  @override
+  State<_PlayStateIndicator> createState() => _PlayStateIndicatorState();
+}
+
+class _PlayStateIndicatorState extends State<_PlayStateIndicator> {
+  static const double _iconSize = 32;
+  static const _hideDelay = Duration(seconds: 1);
+
+  Timer? _hideTimer;
+  final _iconVisible = ValueNotifier<bool>(true);
+  bool _didSyncInitialState = false;
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    _iconVisible.dispose();
+    super.dispose();
+  }
+
+  void _onPlayingChanged({required bool isPlaying}) {
+    _hideTimer?.cancel();
+    if (isPlaying) {
+      _iconVisible.value = true;
+      _hideTimer = Timer(_hideDelay, () {
+        if (mounted) _iconVisible.value = false;
+      });
+    } else {
+      _iconVisible.value = true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (:isPlaying, :isPlayerReady) = context.select(
+      (VideoEditorMainBloc b) =>
+          (isPlaying: b.state.isPlaying, isPlayerReady: b.state.isPlayerReady),
+    );
+
+    return IgnorePointer(
+      child: BlocListener<VideoEditorMainBloc, VideoEditorMainState>(
+        listenWhen: (prev, curr) => prev.isPlaying != curr.isPlaying,
+        listener: (_, state) => _onPlayingChanged(isPlaying: state.isPlaying),
+        child: Builder(
+          builder: (context) {
+            // Sync once: if already playing at first build, hide immediately.
+            if (!_didSyncInitialState && isPlayerReady) {
+              _didSyncInitialState = true;
+              if (isPlaying) _iconVisible.value = false;
+            }
+
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 200),
+              layoutBuilder: (currentChild, previousChildren) => Stack(
+                alignment: .center,
+                fit: .expand,
+                children: <Widget>[...previousChildren, ?currentChild],
+              ),
+              child: isPlayerReady
+                  ? Center(
+                      child: ValueListenableBuilder<bool>(
+                        valueListenable: _iconVisible,
+                        builder: (_, visible, child) => AnimatedOpacity(
+                          opacity: visible ? 1 : 0,
+                          duration: const Duration(milliseconds: 200),
+                          child: child,
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: VineTheme.scrim65,
+                            borderRadius: .circular(24),
+                          ),
+                          padding: const .all(16),
+                          child: DivineIcon(
+                            icon: isPlaying ? .pauseFill : .playFill,
+                            size: _iconSize,
+                          ),
+                        ),
+                      ),
+                    )
+                  : ColoredBox(
+                      color: VineTheme.scrim65,
+                      child: Center(
+                        child: RepaintBoundary(
+                          child: StreamBuilder<ProgressModel>(
+                            stream: ProVideoEditor.instance.progressStreamById(
+                              VideoEditorConstants.renderMergeTaskId,
+                            ),
+                            builder: (context, snapshot) {
+                              final progress = snapshot.data?.progress ?? 0;
+                              return PartialCircleSpinner(progress: progress);
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+            );
+          },
+        ),
       ),
     );
   }

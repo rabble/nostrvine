@@ -59,33 +59,30 @@ class _OverlayControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
-        child: BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
-          buildWhen: (previous, current) =>
-              previous.isLayerInteractionActive !=
-                  current.isLayerInteractionActive ||
-              previous.openSubEditor != current.openSubEditor,
-          builder: (context, state) => switch (state) {
-            _ when state.isLayerInteractionActive => const SizedBox(),
-            // Text-Editor
-            VideoEditorMainState(openSubEditor: .text) =>
-              const SizedBox.shrink(),
-            // Draw-Editor
-            VideoEditorMainState(openSubEditor: .draw) =>
-              const VideoEditorDrawOverlayControls(
-                key: ValueKey('Draw-Overlay-Controls'),
-              ),
-            // Filter-Editor
-            VideoEditorMainState(openSubEditor: .filter) =>
-              const VideoEditorFilterOverlayControls(
-                key: ValueKey('Filter-Overlay-Controls'),
-              ),
-            // Fallback
-            _ => const VideoEditorMainOverlayActions(),
-          },
-        ),
+    return Padding(
+      padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
+      child: BlocBuilder<VideoEditorMainBloc, VideoEditorMainState>(
+        buildWhen: (previous, current) =>
+            previous.isLayerInteractionActive !=
+                current.isLayerInteractionActive ||
+            previous.openSubEditor != current.openSubEditor,
+        builder: (context, state) => switch (state) {
+          _ when state.isLayerInteractionActive => const SizedBox(),
+          // Text-Editor
+          VideoEditorMainState(openSubEditor: .text) => const SizedBox.shrink(),
+          // Draw-Editor
+          VideoEditorMainState(openSubEditor: .draw) =>
+            const VideoEditorDrawOverlayControls(
+              key: ValueKey('Draw-Overlay-Controls'),
+            ),
+          // Filter-Editor
+          VideoEditorMainState(openSubEditor: .filter) =>
+            const VideoEditorFilterOverlayControls(
+              key: ValueKey('Filter-Overlay-Controls'),
+            ),
+          // Fallback
+          _ => const VideoEditorMainOverlayActions(),
+        },
       ),
     );
   }

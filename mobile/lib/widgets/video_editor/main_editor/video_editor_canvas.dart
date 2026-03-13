@@ -635,6 +635,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 _hasImportedHistory = true;
                 _syncMainCapabilities(scope, bloc);
               },
+              onTap: () {
+                context.read<VideoEditorMainBloc>().add(
+                  const VideoEditorPlaybackToggleRequested(),
+                );
+              },
               onDone: _handleDone,
               onImportHistoryStart: (state, import) {
                 Log.debug(

@@ -15,6 +15,7 @@ import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bl
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -60,8 +61,6 @@ class VideoEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
-  static const _renderTaskId = 'Divine_Editor_Merger';
-
   final _editorKey = GlobalKey<ProImageEditorState>();
   final GlobalKey<State<StatefulWidget>> _removeAreaKey = GlobalKey();
 
@@ -183,7 +182,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     _videoOutputPathNotifier.value = null;
 
     final outputPath = await VideoEditorRenderService.renderVideo(
-      taskId: _renderTaskId,
+      taskId: VideoEditorConstants.renderMergeTaskId,
       clips: clips,
     );
 
