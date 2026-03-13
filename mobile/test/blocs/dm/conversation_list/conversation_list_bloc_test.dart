@@ -69,7 +69,9 @@ void main() {
             _createConversation(id: _testConversationId2),
           ];
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.value(conversations));
         },
         build: createBloc,
@@ -84,6 +86,7 @@ void main() {
               _createConversation(id: _testConversationId1),
               _createConversation(id: _testConversationId2),
             ],
+            hasMore: false,
           ),
         ],
       );
@@ -93,7 +96,9 @@ void main() {
         'when stream emits no conversations',
         setUp: () {
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.value(const []));
         },
         build: createBloc,
@@ -104,6 +109,7 @@ void main() {
           ),
           const ConversationListState(
             status: ConversationListStatus.loaded,
+            hasMore: false,
           ),
         ],
       );
@@ -112,7 +118,9 @@ void main() {
         'emits [loading, error] when stream emits an error',
         setUp: () {
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.error(Exception('db failure')));
         },
         build: createBloc,
@@ -136,7 +144,9 @@ void main() {
             isRead: false,
           );
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.value([conversation]));
         },
         build: createBloc,
@@ -164,7 +174,9 @@ void main() {
             _createConversation(id: _testConversationId2),
           ];
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.fromIterable([first, second]));
         },
         build: createBloc,
@@ -178,6 +190,7 @@ void main() {
             conversations: [
               _createConversation(id: _testConversationId1),
             ],
+            hasMore: false,
           ),
           ConversationListState(
             status: ConversationListStatus.loaded,
@@ -185,6 +198,7 @@ void main() {
               _createConversation(id: _testConversationId1),
               _createConversation(id: _testConversationId2),
             ],
+            hasMore: false,
           ),
         ],
       );
@@ -319,7 +333,9 @@ void main() {
             var watchCallCount = 0;
 
             when(
-              () => mockDmRepository.watchConversations(),
+              () => mockDmRepository.watchConversations(
+                limit: any(named: 'limit'),
+              ),
             ).thenAnswer((_) {
               watchCallCount++;
               if (watchCallCount == 1) return controller1.stream;
@@ -367,7 +383,7 @@ void main() {
           },
           wait: const Duration(milliseconds: 200),
           expect: () => [
-            // First subscription starts
+            // First subscription starts (initial → loading)
             const ConversationListState(
               status: ConversationListStatus.loading,
             ),
@@ -377,15 +393,10 @@ void main() {
               conversations: [
                 _createConversation(id: _testConversationId1),
               ],
+              hasMore: false,
             ),
-            // Second ConversationListStarted restarts: emits loading.
-            // copyWith preserves conversations from previous state.
-            ConversationListState(
-              status: ConversationListStatus.loading,
-              conversations: [
-                _createConversation(id: _testConversationId1),
-              ],
-            ),
+            // Second ConversationListStarted: no loading emission
+            // because status is already loaded (not initial).
             // Second stream emits (old stream's late emission is
             // ignored because restartable() cancelled it)
             ConversationListState(
@@ -393,11 +404,14 @@ void main() {
               conversations: [
                 _createConversation(id: _testConversationId2),
               ],
+              hasMore: false,
             ),
           ],
           verify: (_) {
             verify(
-              () => mockDmRepository.watchConversations(),
+              () => mockDmRepository.watchConversations(
+                limit: any(named: 'limit'),
+              ),
             ).called(2);
           },
         );
@@ -478,7 +492,12 @@ void main() {
         conversations: conversations,
       );
 
-      expect(state.props, [ConversationListStatus.loaded, conversations]);
+      expect(state.props, [
+        ConversationListStatus.loaded,
+        conversations,
+        true,
+        false,
+      ]);
     });
   });
 
