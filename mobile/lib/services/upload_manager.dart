@@ -84,9 +84,12 @@ class UploadMetrics {
 class UploadManager {
   UploadManager({
     required BlossomUploadService blossomService,
+    String? defaultBlossomUrl,
     VideoCircuitBreaker? circuitBreaker,
     UploadRetryConfig? retryConfig,
   }) : _blossomService = blossomService,
+       _defaultBlossomUrl =
+           defaultBlossomUrl ?? BlossomUploadService.defaultBlossomServer,
        _circuitBreaker = circuitBreaker ?? VideoCircuitBreaker(),
        _retryConfig = retryConfig ?? const UploadRetryConfig();
   // Removed unused _uploadsBoxName constant
@@ -95,6 +98,7 @@ class UploadManager {
   // Core services
   Box<PendingUpload>? _uploadsBox;
   final BlossomUploadService _blossomService;
+  final String _defaultBlossomUrl;
   final VideoCircuitBreaker _circuitBreaker;
   final UploadRetryConfig _retryConfig;
   final Dio _dio = Dio();
@@ -848,7 +852,7 @@ class UploadManager {
           category: LogCategory.video,
         );
       } else {
-        blossomServer = BlossomUploadService.defaultBlossomServer;
+        blossomServer = _defaultBlossomUrl;
         Log.info(
           '🌸 Uploading to default Divine Blossom server: $blossomServer',
           name: 'UploadManager',

@@ -8,7 +8,7 @@ docker compose -f ../local_stack/docker-compose.yml up -d
 docker compose -f ../local_stack/docker-compose.yml up -d --wait \
   keycast keycast-postgres keycast-redis \
   funnelcake-relay funnelcake-api funnelcake-redis funnelcake-clickhouse \
-  blossom
+  blossom invite-stub
 docker compose -f ../local_stack/docker-compose.yml wait e2e-seed
 """
 

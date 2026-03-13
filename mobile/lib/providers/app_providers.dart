@@ -1294,14 +1294,22 @@ MediaAuthInterceptor mediaAuthInterceptor(Ref ref) {
 @riverpod
 BlossomUploadService blossomUploadService(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  return BlossomUploadService(authService: authService);
+  final env = ref.read(currentEnvironmentProvider);
+  return BlossomUploadService(
+    authService: authService,
+    defaultServerUrl: env.blossomUrl,
+  );
 }
 
 /// Upload manager uses only Blossom upload service
 @Riverpod(keepAlive: true)
 UploadManager uploadManager(Ref ref) {
   final blossomService = ref.watch(blossomUploadServiceProvider);
-  return UploadManager(blossomService: blossomService);
+  final env = ref.read(currentEnvironmentProvider);
+  return UploadManager(
+    blossomService: blossomService,
+    defaultBlossomUrl: env.blossomUrl,
+  );
 }
 
 /// API service depends on auth service
