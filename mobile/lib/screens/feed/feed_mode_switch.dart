@@ -5,9 +5,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 
 /// Feed mode picker overlay that displays the current feed mode
 /// and allows users to switch between modes via a bottom sheet.
@@ -96,7 +96,8 @@ class FeedModeSwitch extends StatelessWidget {
                       ),
                     ),
                     _SearchButton(
-                      onTap: () => context.push(SearchScreenPure.path),
+                      onTap: () =>
+                          context.pushWithVideoPause(SearchScreenPure.path),
                     ),
                   ],
                 );
