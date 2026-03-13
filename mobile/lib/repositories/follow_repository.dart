@@ -100,9 +100,11 @@ class FollowRepository {
   // Default indexer relays come from IndexerRelayConfig.defaultIndexers.
 
   // BehaviorSubject replays last value to late subscribers, fixing race condition
-  // where BLoC subscribes AFTER initial emission
-  final _followingSubject = BehaviorSubject<List<String>>.seeded(const []);
-  Stream<List<String>> get followingStream => _followingSubject.stream;
+  // where BLoC subscribes AFTER initial emission.
+  // Seeded with null to distinguish "not yet initialized" from "empty following list".
+  final _followingSubject = BehaviorSubject<List<String>?>.seeded(null);
+  Stream<List<String>> get followingStream =>
+      _followingSubject.stream.whereType<List<String>>();
 
   // In-memory cache — following
   List<String> _followingPubkeys = [];
@@ -599,10 +601,10 @@ class FollowRepository {
 
       // Guarantee at least one post-seed emission for "no follows" users.
       // When the user follows nobody, _emitFollowingList() never fires
-      // (list stays [] = same as seed). Force-emit so subscribers can
-      // distinguish "init not done" from "genuinely empty."
+      // because the list stays [] which equals the previous value.
+      // With null seed, this force-emit of [] will always be distinct.
       if (_followingPubkeys.isEmpty && !_followingSubject.isClosed) {
-        _followingSubject.add(List<String>.from(_followingPubkeys));
+        _followingSubject.add(const []);
       }
     } catch (e) {
       Log.error(
