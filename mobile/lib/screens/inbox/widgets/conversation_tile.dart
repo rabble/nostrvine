@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:time_formatter/time_formatter.dart';
 
@@ -57,7 +58,14 @@ class ConversationTile extends ConsumerWidget {
       button: true,
       label: '$displayName conversation',
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () {
+          Log.debug(
+            '🎯 ConversationTile tapped: ${conversation.id}',
+            name: 'ConversationTile',
+            category: LogCategory.ui,
+          );
+          onTap();
+        },
         behavior: HitTestBehavior.opaque,
         child: DecoratedBox(
           decoration: const BoxDecoration(

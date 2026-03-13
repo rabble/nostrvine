@@ -11,13 +11,14 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:openvine/router/navigator_keys.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_segmented_toggle.dart';
 import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Main inbox view containing the Messages/Notifications segmented toggle
 /// and the corresponding content for each tab.
@@ -67,17 +68,23 @@ class _InboxViewState extends ConsumerState<InboxView> {
   }
 }
 
-/// Pushes the conversation page using the root navigator context so that
-/// GoRouter handles the route even when called from inside the inbox tab's
-/// nested Navigator.
-void _pushConversation(String conversationId, List<String> participantPubkeys) {
-  final rootContext = NavigatorKeys.root.currentContext;
-  if (rootContext != null) {
-    GoRouter.of(rootContext).push(
-      ConversationPage.pathForId(conversationId),
-      extra: participantPubkeys,
-    );
-  }
+/// Pushes the conversation page using the [GoRouter] instance directly,
+/// bypassing the nested Navigator's context which cannot reach GoRouter.
+void _pushConversation(
+  GoRouter router,
+  String conversationId,
+  List<String> participantPubkeys,
+) {
+  Log.info(
+    '🚀 Pushing conversation: id=$conversationId',
+    name: 'InboxView',
+    category: LogCategory.ui,
+  );
+  router.pushNamed(
+    ConversationPage.routeName,
+    pathParameters: {'id': conversationId},
+    extra: participantPubkeys,
+  );
 }
 
 /// Content for the Messages tab: following bar + conversation list or
@@ -89,6 +96,7 @@ class _MessagesContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
+    final router = ref.read(goRouterProvider);
 
     return BlocListener<ConversationListBloc, ConversationListState>(
       listenWhen: (prev, curr) =>
@@ -98,12 +106,19 @@ class _MessagesContent extends ConsumerWidget {
         final target = state.navigationTarget;
         if (target == null) return;
 
+        Log.info(
+          '🎯 Navigation target received: ${target.conversationId}',
+          name: 'InboxView',
+          category: LogCategory.ui,
+        );
+
         // Clear the navigation target so it doesn't re-fire.
         context.read<ConversationListBloc>().add(
           const ConversationListNavigationConsumed(),
         );
 
         _pushConversation(
+          router,
           target.conversationId,
           target.participantPubkeys,
         );
@@ -113,6 +128,11 @@ class _MessagesContent extends ConsumerWidget {
           // Following users horizontal bar
           FollowingBar(
             onUserTapped: (pubkey) {
+              Log.info(
+                '👤 User tapped in following bar: $pubkey',
+                name: 'InboxView',
+                category: LogCategory.ui,
+              );
               context.read<ConversationListBloc>().add(
                 ConversationListNavigateToUser(pubkey),
               );
@@ -122,6 +142,7 @@ class _MessagesContent extends ConsumerWidget {
           Expanded(
             child: _ConversationListContent(
               currentUserPubkey: currentPubkey,
+              router: router,
             ),
           ),
         ],
@@ -134,9 +155,11 @@ class _MessagesContent extends ConsumerWidget {
 class _ConversationListContent extends StatelessWidget {
   const _ConversationListContent({
     required this.currentUserPubkey,
+    required this.router,
   });
 
   final String currentUserPubkey;
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +175,7 @@ class _ConversationListContent extends StatelessWidget {
       ConversationListStatus.error => const InboxEmptyState(),
       ConversationListStatus.loaded => _ConversationList(
         currentUserPubkey: currentUserPubkey,
+        router: router,
       ),
     };
   }
@@ -160,11 +184,13 @@ class _ConversationListContent extends StatelessWidget {
 class _ConversationList extends StatelessWidget {
   const _ConversationList({
     required this.currentUserPubkey,
+    required this.router,
   });
 
   static const double _paginationThreshold = 200;
 
   final String currentUserPubkey;
+  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
@@ -223,10 +249,15 @@ class _ConversationList extends StatelessWidget {
     BuildContext context,
     DmConversation conversation,
   ) {
+    Log.info(
+      '💬 Conversation tapped: ${conversation.id}',
+      name: 'InboxView',
+      category: LogCategory.ui,
+    );
     final otherPubkeys = conversation.participantPubkeys
         .where((pk) => pk != currentUserPubkey)
         .toList();
 
-    _pushConversation(conversation.id, otherPubkeys);
+    _pushConversation(router, conversation.id, otherPubkeys);
   }
 }
