@@ -165,6 +165,11 @@ class GallerySaveService {
       if (status == PermissionStatus.canRequest) {
         final requested = await _permissionsService.requestGalleryPermission();
         if (requested == PermissionStatus.granted) return null;
+
+        // Some platforms can briefly report a stale non-granted request result
+        // immediately after the user accepts the OS prompt.
+        final refreshedStatus = await _permissionsService.checkGalleryStatus();
+        if (refreshedStatus == PermissionStatus.granted) return null;
       }
 
       // Permanently denied or still not granted

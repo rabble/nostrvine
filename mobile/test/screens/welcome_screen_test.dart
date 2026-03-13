@@ -94,6 +94,11 @@ void main() {
               builder: (context, state) => const WelcomeScreen(),
               routes: [
                 GoRoute(
+                  path: 'invite',
+                  builder: (context, state) =>
+                      const Scaffold(body: Text('Invite Gate')),
+                ),
+                GoRoute(
                   path: 'create-account',
                   builder: (context, state) =>
                       const Scaffold(body: Text('Create Account')),
@@ -162,7 +167,7 @@ void main() {
         await tester.pumpAndSettle();
 
         verify(() => mockAuthService.acceptTerms()).called(1);
-        expect(find.text('Create Account'), findsOneWidget);
+        expect(find.text('Invite Gate'), findsOneWidget);
       });
 
       testWidgets('tapping login button calls acceptTerms and navigates', (
@@ -337,7 +342,7 @@ void main() {
           await tester.pumpAndSettle();
 
           verify(() => mockAuthService.acceptTerms()).called(1);
-          expect(find.text('Create Account'), findsOneWidget);
+          expect(find.text('Invite Gate'), findsOneWidget);
         },
       );
 

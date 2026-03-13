@@ -130,6 +130,62 @@ void main() {
     await authService.dispose();
   });
 
+  group('initialize', () {
+    test('fresh install with no auth source stays unauthenticated', () async {
+      SharedPreferences.setMockInitialValues({});
+
+      await authService.initialize();
+
+      expect(authService.authState, equals(AuthState.unauthenticated));
+      verifyNever(
+        () => mockKeyStorage.generateAndStoreKeys(
+          biometricPrompt: any(named: 'biometricPrompt'),
+        ),
+      );
+    });
+
+    test(
+      'automatic auth source with no keys stays unauthenticated',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+        });
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => false);
+
+        await authService.initialize();
+
+        expect(authService.authState, equals(AuthState.unauthenticated));
+        verify(() => mockKeyStorage.hasKeys()).called(1);
+        verifyNever(
+          () => mockKeyStorage.generateAndStoreKeys(
+            biometricPrompt: any(named: 'biometricPrompt'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'automatic auth source with keys restores authenticated session',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'authentication_source': 'automatic',
+        });
+        when(() => mockKeyStorage.hasKeys()).thenAnswer((_) async => true);
+        when(
+          () => mockKeyStorage.getKeyContainer(),
+        ).thenAnswer((_) async => testKeyContainer);
+
+        await _ignoringDiscoveryErrors(authService.initialize);
+
+        expect(authService.authState, equals(AuthState.authenticated));
+        expect(
+          authService.currentPublicKeyHex,
+          equals(testKeyContainer.publicKeyHex),
+        );
+      },
+    );
+  });
+
   group('getKnownAccounts', () {
     test('returns empty list when key exists but is empty string', () async {
       SharedPreferences.setMockInitialValues({kKnownAccountsKey: ''});
@@ -893,7 +949,7 @@ void main() {
           ),
         );
 
-        // _checkExistingAuth with no keys calls createNewIdentity
+        // _checkExistingAuth should fall back to the unauthenticated flow
         verify(() => mockKeyStorage.hasKeys()).called(1);
       },
     );

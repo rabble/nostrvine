@@ -139,7 +139,7 @@ class VideoPublishService {
                   draft.expireTime!.inSeconds
             : null,
         allowAudioReuse: draft.allowAudioReuse,
-        collaboratorPubkeys: draft.collaboratorPubkeys,
+        collaboratorPubkeys: draft.collaboratorPubkeys.toList(),
         inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
         inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
         inspiredByNpub: draft.inspiredByNpub,

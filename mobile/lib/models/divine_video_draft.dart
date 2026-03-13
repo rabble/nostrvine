@@ -34,7 +34,7 @@ class DivineVideoDraft {
     this.editorStateHistory = const {},
     this.editorEditingParameters = const {},
     this.finalRenderedClip,
-    this.collaboratorPubkeys = const [],
+    this.collaboratorPubkeys = const {},
     this.inspiredByVideo,
     this.inspiredByNpub,
     this.selectedSound,
@@ -54,7 +54,7 @@ class DivineVideoDraft {
     Map<String, dynamic>? editorStateHistory,
     Map<String, dynamic>? editorEditingParameters,
     DivineVideoClip? finalRenderedClip,
-    List<String> collaboratorPubkeys = const [],
+    Set<String> collaboratorPubkeys = const {},
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
     AudioEvent? selectedSound,
@@ -162,8 +162,8 @@ class DivineVideoDraft {
             )
           : null,
       collaboratorPubkeys: json['collaboratorPubkeys'] != null
-          ? List<String>.from(json['collaboratorPubkeys'] as Iterable)
-          : const [],
+          ? Set<String>.from(json['collaboratorPubkeys'] as Iterable)
+          : const {},
       inspiredByVideo: json['inspiredByVideo'] != null
           ? InspiredByInfo.fromJson(
               json['inspiredByVideo'] as Map<String, dynamic>,
@@ -220,7 +220,7 @@ class DivineVideoDraft {
   final DivineVideoClip? finalRenderedClip;
 
   /// Pubkeys of collaborators tagged in this video.
-  final List<String> collaboratorPubkeys;
+  final Set<String> collaboratorPubkeys;
 
   /// Reference to a specific video that inspired this one (a-tag).
   final InspiredByInfo? inspiredByVideo;
@@ -278,7 +278,7 @@ class DivineVideoDraft {
     Map<String, dynamic>? editorEditingParameters,
     DivineVideoClip? finalRenderedClip,
     bool clearFinalRenderedClip = false,
-    List<String>? collaboratorPubkeys,
+    Set<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
     AudioEvent? selectedSound,

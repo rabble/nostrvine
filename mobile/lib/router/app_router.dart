@@ -13,6 +13,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
+import 'package:openvine/screens/auth/invite_gate_screen.dart';
+import 'package:openvine/screens/auth/invite_protected_create_account_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
@@ -105,6 +107,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
               location == NostrConnectScreen.path ||
+              location == WelcomeScreen.inviteGatePath ||
               location == WelcomeScreen.createAccountPath ||
               location == WelcomeScreen.loginOptionsPath)) {
         // Allow expired-session users through to login options
@@ -138,6 +141,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           location.startsWith(WelcomeScreen.path) ||
           location.startsWith(KeyImportScreen.path) ||
           location.startsWith(NostrConnectScreen.path) ||
+          location.startsWith(WelcomeScreen.inviteGatePath) ||
           location.startsWith(WelcomeScreen.resetPasswordPath) ||
           location.startsWith(ResetPasswordScreen.path) ||
           location.startsWith(EmailVerificationScreen.path);
@@ -436,9 +440,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const WelcomeScreen(),
         routes: [
           GoRoute(
+            path: 'invite',
+            name: InviteGateScreen.routeName,
+            builder: (_, state) => InviteGateScreen(
+              initialCode: state.uri.queryParameters['code'],
+              initialError: state.uri.queryParameters['error'],
+            ),
+          ),
+          GoRoute(
             path: 'create-account',
             name: CreateAccountScreen.routeName,
-            builder: (_, _) => const CreateAccountScreen(),
+            builder: (_, _) => const InviteProtectedCreateAccountScreen(),
           ),
           GoRoute(
             path: 'login-options',

@@ -2604,6 +2604,149 @@ void main() {
       });
     });
 
+    group('getVideoComments', () {
+      const testVideoId =
+          'feedfeedfeedfeedfeedfeedfeedfeed'
+          'feedfeedfeedfeedfeedfeedfeedfeed';
+      const validResponse =
+          '''
+{
+  "comments": [
+    {
+      "id": "comment1",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 1111,
+      "content": "First",
+      "sig": "sig1",
+      "tags": [["E", "$testVideoId"], ["e", "$testVideoId"]],
+      "author_name": "Tester",
+      "author_avatar": "https://example.com/avatar.jpg",
+      "reply_to_event_id": null,
+      "reply_to_pubkey": null
+    },
+    {
+      "id": "comment2",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000010,
+      "kind": 1111,
+      "content": "Reply",
+      "sig": "sig2",
+      "tags": [["E", "$testVideoId"], ["e", "comment1"]],
+      "author_name": null,
+      "author_avatar": null,
+      "reply_to_event_id": "comment1",
+      "reply_to_pubkey": "$testPubkey"
+    }
+  ],
+  "total": 42
+}
+''';
+
+      test('returns parsed comments response on success', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
+
+        final response = await client.getVideoComments(videoId: testVideoId);
+
+        expect(response, isNotNull);
+        expect(response!.total, equals(42));
+        expect(response.comments, hasLength(2));
+        expect(response.comments.first.id, equals('comment1'));
+        expect(response.comments.first.authorName, equals('Tester'));
+        expect(
+          response.comments.first.authorAvatar,
+          equals('https://example.com/avatar.jpg'),
+        );
+        expect(response.comments.last.replyToEventId, equals('comment1'));
+        expect(response.comments.last.replyToPubkey, equals(testPubkey));
+      });
+
+      test('constructs correct URL with query parameters', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response(validResponse, 200));
+
+        await client.getVideoComments(
+          videoId: testVideoId,
+          sort: 'oldest',
+          limit: 50,
+          offset: 100,
+        );
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/videos/$testVideoId/comments'));
+        expect(uri.queryParameters['sort'], equals('oldest'));
+        expect(uri.queryParameters['limit'], equals('50'));
+        expect(uri.queryParameters['offset'], equals('100'));
+      });
+
+      test('returns null on 404', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Not found', 404));
+
+        final response = await client.getVideoComments(videoId: testVideoId);
+
+        expect(response, isNull);
+      });
+
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          () => emptyClient.getVideoComments(videoId: testVideoId),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test('throws FunnelcakeException when video ID is empty', () {
+        expect(
+          () => client.getVideoComments(videoId: ''),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Video ID cannot be empty'),
+            ),
+          ),
+        );
+      });
+
+      test('throws FunnelcakeApiException on error status codes', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => http.Response('Internal Server Error', 500));
+
+        expect(
+          () => client.getVideoComments(videoId: testVideoId),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
+
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer((_) async => throw TimeoutException('Request timed out'));
+
+        expect(
+          () => client.getVideoComments(videoId: testVideoId),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+    });
+
     group('getUserProfile', () {
       test('returns profile on successful response', () async {
         const validResponse = '''

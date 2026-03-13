@@ -9,6 +9,8 @@ environment:
 
 dependencies:
   equatable: ^2.0.5
+  funnelcake_api_client:
+    path: ../funnelcake_api_client
   nostr_client:
     path: ../nostr_client
   nostr_sdk:

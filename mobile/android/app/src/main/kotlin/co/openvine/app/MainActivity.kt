@@ -10,7 +10,6 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Log
 import android.window.OnBackInvokedCallback
-import co.openvine.app.proofmode.C2PAIdentityManager
 import co.openvine.app.proofmode.HardwareAttestationNotarizationProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -195,32 +194,8 @@ class MainActivity : FlutterActivity() {
         }
         super.onDestroy()
     }
-    private fun initC2PA () {
-        var keyAlias = "c2pa_signing_divine";
-        var fileCert = File(context.filesDir.parent + "/app_flutter","$keyAlias.cert")
-
-        activityScope.launch {
-            try {
-                C2PAIdentityManager(this@MainActivity).createHardwareSigner(
-                    keyAlias,
-                    C2PAIdentityManager.TSA_DIGICERT,
-                    fileCert.canonicalPath
-                )
-
-                fileCert = File(fileCert.canonicalPath)
-                if (fileCert.exists())
-                    Log.d(PROOFMODE_TAG, "C2PA signer init success: " + fileCert.canonicalPath)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e(PROOFMODE_TAG, "C2PA hardware signer init failed", e)
-            }
-        }
-    }
 
     private fun setupProofModeChannel(flutterEngine: FlutterEngine) {
-
-        initC2PA()
 
         //add custom notarization for Android Hardware Attestation
         ProofMode.addNotarizationProvider(this, HardwareAttestationNotarizationProvider(this))

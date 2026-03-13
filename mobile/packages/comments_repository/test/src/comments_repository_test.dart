@@ -1,12 +1,15 @@
 import 'dart:async';
 
 import 'package:comments_repository/comments_repository.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:test/test.dart';
 
 class MockNostrClient extends Mock implements NostrClient {}
+
+class MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 class FakeEvent extends Fake implements Event {}
 
@@ -22,6 +25,7 @@ const int _testRootEventKind = EventKind.videoVertical;
 void main() {
   group('CommentsRepository', () {
     late MockNostrClient mockNostrClient;
+    late MockFunnelcakeApiClient mockFunnelcakeApiClient;
     late CommentsRepository repository;
 
     const testRootEventId =
@@ -38,6 +42,7 @@ void main() {
 
     setUp(() {
       mockNostrClient = MockNostrClient();
+      mockFunnelcakeApiClient = MockFunnelcakeApiClient();
       when(() => mockNostrClient.publicKey).thenReturn(testUserPubkey);
       repository = CommentsRepository(nostrClient: mockNostrClient);
     });
@@ -50,6 +55,105 @@ void main() {
     });
 
     group('loadComments', () {
+      test('uses REST bootstrap when Funnelcake client is available', () async {
+        when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeApiClient.getVideoComments(
+            videoId: any(named: 'videoId'),
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer(
+          (_) async => VideoCommentsResponse(
+            comments: [
+              VideoComment(
+                id: 'rest_comment',
+                pubkey: testUserPubkey,
+                createdAt: 1000,
+                kind: _commentKind,
+                content: 'REST comment',
+                sig: 'sig',
+                tags: [
+                  ['E', testRootEventId],
+                  ['K', _testRootEventKind.toString()],
+                  ['P', testRootAuthorPubkey],
+                  ['e', testRootEventId],
+                  ['k', _testRootEventKind.toString()],
+                  ['p', testRootAuthorPubkey],
+                ],
+                authorName: 'Tester',
+                authorAvatar: 'https://example.com/avatar.jpg',
+              ),
+            ],
+            total: 12,
+          ),
+        );
+
+        repository = CommentsRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeApiClient,
+        );
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        expect(result.totalCount, equals(12));
+        expect(result.comments, hasLength(1));
+        expect(result.comments.first.content, equals('REST comment'));
+        verify(
+          () => mockFunnelcakeApiClient.getVideoComments(
+            videoId: testRootEventId,
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).called(1);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
+      test('falls back to relay query when REST bootstrap throws', () async {
+        when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeApiClient.getVideoComments(
+            videoId: any(named: 'videoId'),
+            sort: any(named: 'sort'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenThrow(
+          const FunnelcakeApiException(message: 'boom', statusCode: 500),
+        );
+
+        final relayEvent = _createCommentEvent(
+          id: 'relay_comment',
+          content: 'Relay fallback comment',
+          pubkey: testUserPubkey,
+          rootEventId: testRootEventId,
+          rootAuthorPubkey: testRootAuthorPubkey,
+          rootEventKind: _testRootEventKind,
+        );
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [relayEvent],
+        );
+
+        repository = CommentsRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeApiClient,
+        );
+
+        final result = await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        expect(result.comments, hasLength(1));
+        expect(result.comments.first.content, equals('Relay fallback comment'));
+        verify(() => mockNostrClient.queryEvents(any())).called(1);
+      });
+
       test('returns empty thread when no comments', () async {
         when(
           () => mockNostrClient.queryEvents(any()),
@@ -1237,6 +1341,48 @@ void main() {
         expect(filters.first.kinds, contains(_commentKind));
         expect(filters.first.uppercaseE, contains(testRootEventId));
         expect(filters.first.since, equals(2000000 ~/ 1000));
+
+        await controller.close();
+      });
+
+      test('allows watchComments without since and forwards onEose', () async {
+        final controller = StreamController<Event>.broadcast();
+        void Function()? capturedOnEose;
+
+        when(
+          () => mockNostrClient.subscribe(
+            any(),
+            subscriptionId: any(named: 'subscriptionId'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedOnEose =
+              invocation.namedArguments[#onEose] as void Function()?;
+          return controller.stream;
+        });
+
+        var didReceiveEose = false;
+        repository.watchComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          onEose: () {
+            didReceiveEose = true;
+          },
+        );
+
+        final captured = verify(
+          () => mockNostrClient.subscribe(
+            captureAny(),
+            subscriptionId: any(named: 'subscriptionId'),
+            onEose: any(named: 'onEose'),
+          ),
+        ).captured;
+
+        final filters = captured.first as List<Filter>;
+        expect(filters.first.since, isNull);
+
+        capturedOnEose?.call();
+        expect(didReceiveEose, isTrue);
 
         await controller.close();
       });

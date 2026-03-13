@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show VideoEvent;
@@ -95,35 +96,38 @@ class _VideoMetadataPreviewScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: VineTheme.surfaceContainerHigh,
-      body: Stack(
-        children: [
-          Column(
-            spacing: 16,
-            children: [
-              // Video preview area with close button
-              Expanded(
-                child: Stack(
-                  fit: .expand,
-                  children: [
-                    _VideoPreviewContent(
-                      clip: widget.clip,
-                      controller: _controller,
-                      isInitialized: _isInitialized,
-                      isPreviewReady: _isPreviewReady,
-                    ),
-                    const _CloseButton(),
-                  ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: VideoEditorConstants.uiOverlayStyle,
+      child: Scaffold(
+        backgroundColor: VineTheme.surfaceContainerHigh,
+        body: Stack(
+          children: [
+            Column(
+              spacing: 16,
+              children: [
+                // Video preview area with close button
+                Expanded(
+                  child: Stack(
+                    fit: .expand,
+                    children: [
+                      _VideoPreviewContent(
+                        clip: widget.clip,
+                        controller: _controller,
+                        isInitialized: _isInitialized,
+                        isPreviewReady: _isPreviewReady,
+                      ),
+                      const _CloseButton(),
+                    ],
+                  ),
                 ),
-              ),
-              // Post button at bottom
-              const SafeArea(top: false, child: VideoMetadataBottomBar()),
-            ],
-          ),
+                // Post button at bottom
+                const SafeArea(top: false, child: VideoMetadataBottomBar()),
+              ],
+            ),
 
-          const VideoMetadataUploadStatus(),
-        ],
+            const VideoMetadataUploadStatus(),
+          ],
+        ),
       ),
     );
   }
@@ -149,7 +153,7 @@ class _VideoPreviewContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Hero animation from metadata screen
     return Hero(
-      tag: 'Video-metadata-clip-preview-video',
+      tag: VideoEditorConstants.heroMetaPreviewId,
       // Use linear flight path instead of curved arc
       createRectTween: (begin, end) => RectTween(begin: begin, end: end),
       child: Stack(
@@ -304,11 +308,11 @@ class _CloseButton extends StatelessWidget {
         child: Hero(
           tag: VideoEditorConstants.heroBackButtonId,
           child: DivineIconButton(
+            icon: .x,
             type: .ghostSecondary,
             size: .small,
             // TODO(l10n): Replace with context.l10n when localization is added.
             semanticLabel: 'Close video recorder',
-            icon: .x,
             onPressed: () => context.pop(),
           ),
         ),

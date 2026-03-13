@@ -15,6 +15,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/welcome_screen.dart';
@@ -102,6 +104,7 @@ class _EmailVerificationScreenState
         );
         _cubit.stopPolling();
         ref.read(pendingVerificationServiceProvider).clear();
+        context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
         ref.read(forceExploreTabNameProvider.notifier).state = 'popular';
         context.go(ExploreScreen.path);
       }
@@ -120,6 +123,7 @@ class _EmailVerificationScreenState
         deviceCode: widget.deviceCode!,
         verifier: widget.verifier!,
         email: widget.email ?? '',
+        inviteCode: context.read<InviteGateBloc>().state.accessGrant?.code,
       );
     } else if (widget.isTokenMode) {
       // Token mode - check for persisted verification data for auto-login
@@ -168,6 +172,7 @@ class _EmailVerificationScreenState
         deviceCode: pending.deviceCode,
         verifier: pending.verifier,
         email: pending.email,
+        inviteCode: pending.inviteCode,
       );
     } else {
       Log.info(
@@ -312,6 +317,15 @@ class _EmailVerificationScreenState
     context.go('/');
   }
 
+  void _handleInviteRecovery(String inviteCode, String? error) {
+    _cubit.stopPolling();
+    ref.read(pendingVerificationServiceProvider).clear();
+    context.read<InviteGateBloc>().add(const InviteGateAccessCleared());
+    context.go(
+      WelcomeScreen.inviteGatePathWithCode(inviteCode, error: error),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -362,7 +376,16 @@ class _EmailVerificationScreenState
                       EmailVerificationStatus.success =>
                         const _SuccessContent(),
                       EmailVerificationStatus.failure => _ErrorContent(
+                        error: state.error,
                         onStartOver: _handleStartOver,
+                        onReturnToInviteGate:
+                            state.showInviteGateRecovery &&
+                                state.inviteRecoveryCode != null
+                            ? () => _handleInviteRecovery(
+                                state.inviteRecoveryCode!,
+                                state.error,
+                              )
+                            : null,
                       ),
                     },
                   ),
@@ -661,9 +684,15 @@ class _SuccessContent extends StatelessWidget {
 
 /// Error content shown when verification fails.
 class _ErrorContent extends StatelessWidget {
-  const _ErrorContent({required this.onStartOver});
+  const _ErrorContent({
+    required this.onStartOver,
+    required this.error,
+    this.onReturnToInviteGate,
+  });
 
   final VoidCallback onStartOver;
+  final String? error;
+  final VoidCallback? onReturnToInviteGate;
 
   @override
   Widget build(BuildContext context) {
@@ -686,9 +715,9 @@ class _ErrorContent extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
-        const Text(
-          'We failed to verify your email.\nPlease try again.',
-          style: TextStyle(
+        Text(
+          error ?? 'We failed to verify your email.\nPlease try again.',
+          style: const TextStyle(
             fontSize: 16,
             color: VineTheme.secondaryText,
             height: 1.4,
@@ -702,8 +731,10 @@ class _ErrorContent extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 32),
           child: DivinePrimaryButton(
-            label: 'Start over',
-            onPressed: onStartOver,
+            label: onReturnToInviteGate == null
+                ? 'Start over'
+                : 'Back to invite code',
+            onPressed: onReturnToInviteGate ?? onStartOver,
           ),
         ),
       ],

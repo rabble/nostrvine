@@ -7,7 +7,6 @@ import 'package:c2pa_flutter/c2pa.dart';
 import 'package:flutter/foundation.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:path_provider/path_provider.dart';
 
 /// Result of a C2PA signing operation
 class C2paSigningResult {
@@ -81,7 +80,7 @@ class C2paSigningService {
       );
       Log.info('prepared C2PA manifest json: $manifestJsonSource');
 
-      // Create signer for RemoteSigning against proofsign.proofmode.org
+      // Create signer for RemoteSigning against proofsign
       final signer = _createSigner();
 
       // Sign the file
@@ -223,21 +222,10 @@ class C2paSigningService {
       args += 'ios';
     }
 
-    const keyAlias = 'c2pa_signing_divine';
-    final filesDir = await getApplicationDocumentsDirectory();
-    final certFile = File('${filesDir.path}/$keyAlias.cert');
-    if (certFile.existsSync()) {
-      final certificateChainPem = certFile.readAsStringSync();
-      return HardwareSigner(
-        certificateChainPem: certificateChainPem,
-        keyAlias: keyAlias,
-      );
-    } else {
-      return RemoteSigner(
-        configurationUrl: SIGNING_SERVER_ENDPOINT + args,
-        bearerToken: SIGNING_SERVER_TOKEN,
-      );
-    }
+    return RemoteSigner(
+      configurationUrl: SIGNING_SERVER_ENDPOINT + args,
+      bearerToken: SIGNING_SERVER_TOKEN,
+    );
   }
 
   // add ?platform=android or ios

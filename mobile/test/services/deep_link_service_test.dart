@@ -178,6 +178,32 @@ void main() {
       });
     });
 
+    group('Invite URL Parsing', () {
+      test('parses /invite/{code} correctly', () {
+        final result = service.parseDeepLink(
+          'https://divine.video/invite/ABCD-EFGH',
+        );
+
+        expect(result.type, equals(DeepLinkType.invite));
+        expect(result.inviteCode, equals('ABCD-EFGH'));
+      });
+
+      test('parses /invite?code={code} correctly', () {
+        final result = service.parseDeepLink(
+          'https://divine.video/invite?code=WXYZ-1234',
+        );
+
+        expect(result.type, equals(DeepLinkType.invite));
+        expect(result.inviteCode, equals('WXYZ-1234'));
+      });
+
+      test('rejects invite URL without code', () {
+        final result = service.parseDeepLink('https://divine.video/invite');
+
+        expect(result.type, equals(DeepLinkType.unknown));
+      });
+    });
+
     group('Unknown URL Patterns', () {
       test('rejects non-divine.video domain', () {
         const url = 'https://example.com/video/abc123';
@@ -288,6 +314,16 @@ void main() {
         expect(deepLink.type, equals(DeepLinkType.search));
         expect(deepLink.searchTerm, equals('test'));
       });
+
+      test('creates invite deep link', () {
+        const deepLink = DeepLink(
+          type: DeepLinkType.invite,
+          inviteCode: 'ABCD-EFGH',
+        );
+
+        expect(deepLink.type, equals(DeepLinkType.invite));
+        expect(deepLink.inviteCode, equals('ABCD-EFGH'));
+      });
     });
 
     group('$DeepLink toString', () {
@@ -321,6 +357,17 @@ void main() {
         expect(
           link.toString(),
           equals('DeepLink(type: search, searchTerm: q)'),
+        );
+      });
+
+      test('formats invite deep link', () {
+        const link = DeepLink(
+          type: DeepLinkType.invite,
+          inviteCode: 'ABCD-EFGH',
+        );
+        expect(
+          link.toString(),
+          equals('DeepLink(type: invite, inviteCode: ABCD-EFGH)'),
         );
       });
 

@@ -655,6 +655,62 @@ class AuthService implements BackgroundAwareService {
     );
   }
 
+  /// Create a new anonymous account from a pre-generated key container.
+  ///
+  /// Used by invite-gated signup so the app can consume the invite with the
+  /// new key before persisting it to secure storage.
+  Future<void> createAnonymousAccountFromKeyContainer(
+    SecureKeyContainer keyContainer,
+  ) async {
+    String? privateKeyHex;
+    keyContainer.withPrivateKey<void>((privateKey) {
+      privateKeyHex = privateKey;
+    });
+
+    if (privateKeyHex == null || privateKeyHex!.isEmpty) {
+      throw Exception('Failed to read generated identity key');
+    }
+
+    await createAnonymousAccountFromPrivateKeyHex(privateKeyHex!);
+  }
+
+  /// Create a new anonymous account from a known private key.
+  Future<void> createAnonymousAccountFromPrivateKeyHex(
+    String privateKeyHex,
+  ) async {
+    Log.info(
+      'createAnonymousAccountFromPrivateKeyHex: starting — '
+      'clearing primary key slot',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    _setAuthState(AuthState.authenticating);
+    _lastError = null;
+
+    try {
+      await _keyStorage.deleteKeys();
+      final keyContainer = await _keyStorage.importFromHex(privateKeyHex);
+      await _setupUserSession(keyContainer, AuthenticationSource.automatic);
+      await acceptTerms();
+
+      Log.info(
+        'createAnonymousAccountFromPrivateKeyHex: complete',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'createAnonymousAccountFromPrivateKeyHex failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _lastError = 'Failed to create identity: $e';
+      _setAuthState(AuthState.unauthenticated);
+      rethrow;
+    }
+  }
+
   Future<AuthenticationSource> _loadAuthSource() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -2749,18 +2805,19 @@ class AuthService implements BackgroundAwareService {
   /// Check for existing authentication
   Future<void> _checkExistingAuth() async {
     // If storage already failed once, the user saw the error and chose to
-    // continue anyway. Skip the storage check and create a new identity
-    // (same as a fresh install).
+    // continue anyway. Skip the storage check and continue as
+    // unauthenticated (same as a fresh install).
     if (_storageErrorOccurred) {
       Log.info(
         'Storage previously failed — user chose to continue. '
-        'Creating new identity as fresh install.',
+        'Proceeding unauthenticated as fresh install.',
         name: 'AuthService',
         category: LogCategory.auth,
       );
       _storageErrorOccurred = false;
       _lastError = null;
-      // Fall through to step 3 (create new identity) below
+      _setAuthState(AuthState.unauthenticated);
+      return;
     } else {
       // Step 1: Check if keys exist in storage.
       // Keep this separate so storage errors don't silently fall through
@@ -2855,38 +2912,13 @@ class AuthService implements BackgroundAwareService {
       }
     } // end else (no prior storage error)
 
-    // Step 3: Genuinely no keys — fresh install, create new identity
+    // Step 3: Genuinely no keys — fresh install, wait for onboarding
     Log.info(
-      'No existing secure keys found, creating new identity automatically...',
+      'No existing secure keys found, staying unauthenticated for onboarding.',
       name: 'AuthService',
       category: LogCategory.auth,
     );
-
-    try {
-      final result = await createNewIdentity();
-      if (result.success && result.keyContainer != null) {
-        Log.info(
-          'Auto-created NEW secure Nostr identity: '
-          '${NostrKeyUtils.maskKey(result.keyContainer!.npub)}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-      } else {
-        Log.error(
-          'Failed to auto-create identity: ${result.errorMessage}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        _setAuthState(AuthState.unauthenticated);
-      }
-    } catch (e) {
-      Log.error(
-        'Error creating new identity: $e',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
-      _setAuthState(AuthState.unauthenticated);
-    }
+    _setAuthState(AuthState.unauthenticated);
   }
 
   Future<void> acceptTerms() async {

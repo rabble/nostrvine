@@ -13,10 +13,12 @@ import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/widgets/divine_primary_button.dart';
 
@@ -32,11 +34,14 @@ class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 class _MockPendingVerificationService extends Mock
     implements PendingVerificationService {}
 
+class _MockInviteApiService extends Mock implements InviteApiService {}
+
 void main() {
   late _MockEmailVerificationCubit mockCubit;
   late _MockAuthService mockAuthService;
   late _MockKeycastOAuth mockOAuth;
   late _MockPendingVerificationService mockPendingVerification;
+  late _MockInviteApiService mockInviteApiService;
   late StreamController<AuthState> authStateController;
 
   setUp(() {
@@ -44,6 +49,7 @@ void main() {
     mockAuthService = _MockAuthService();
     mockOAuth = _MockKeycastOAuth();
     mockPendingVerification = _MockPendingVerificationService();
+    mockInviteApiService = _MockInviteApiService();
     authStateController = StreamController<AuthState>.broadcast();
 
     // Stub authService stream
@@ -85,33 +91,40 @@ void main() {
         ),
         forceExploreTabNameProvider.overrideWith((ref) => null),
       ],
-      child: MaterialApp.router(
-        theme: VineTheme.theme,
-        routerConfig: GoRouter(
-          initialLocation: '/verify-email',
-          routes: [
-            GoRoute(path: '/', builder: (_, _) => const Scaffold()),
-            GoRoute(
-              path: '/verify-email',
-              builder: (_, _) => BlocProvider<EmailVerificationCubit>.value(
-                value: mockCubit,
-                child: EmailVerificationScreen(
-                  deviceCode: deviceCode,
-                  verifier: verifier,
-                  email: email,
-                  token: token,
+      child: RepositoryProvider<InviteApiService>.value(
+        value: mockInviteApiService,
+        child: BlocProvider(
+          create: (_) => InviteGateBloc(inviteApiService: mockInviteApiService),
+          child: MaterialApp.router(
+            theme: VineTheme.theme,
+            routerConfig: GoRouter(
+              initialLocation: '/verify-email',
+              routes: [
+                GoRoute(path: '/', builder: (_, _) => const Scaffold()),
+                GoRoute(
+                  path: '/verify-email',
+                  builder: (_, _) => BlocProvider<EmailVerificationCubit>.value(
+                    value: mockCubit,
+                    child: EmailVerificationScreen(
+                      deviceCode: deviceCode,
+                      verifier: verifier,
+                      email: email,
+                      token: token,
+                    ),
+                  ),
                 ),
-              ),
+                GoRoute(
+                  path: '/login-options',
+                  builder: (_, _) =>
+                      const Scaffold(body: Text('Login Options')),
+                ),
+                GoRoute(
+                  path: '/explore',
+                  builder: (_, _) => const Scaffold(body: Text('Explore')),
+                ),
+              ],
             ),
-            GoRoute(
-              path: '/login-options',
-              builder: (_, _) => const Scaffold(body: Text('Login Options')),
-            ),
-            GoRoute(
-              path: '/explore',
-              builder: (_, _) => const Scaffold(body: Text('Explore')),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -321,8 +334,28 @@ void main() {
         );
         await tester.pump();
 
+        expect(find.text('Verification failed'), findsOneWidget);
+      });
+
+      testWidgets('renders invite recovery button when available', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            deviceCode: 'test-device-code',
+            verifier: 'test-verifier',
+            initialState: const EmailVerificationState(
+              status: EmailVerificationStatus.failure,
+              error: 'Invite problem',
+              showInviteGateRecovery: true,
+              inviteRecoveryCode: 'AB12-EF34',
+            ),
+          ),
+        );
+        await tester.pump();
+
         expect(
-          find.textContaining('We failed to verify your email'),
+          find.widgetWithText(DivinePrimaryButton, 'Back to invite code'),
           findsOneWidget,
         );
       });

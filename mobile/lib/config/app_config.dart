@@ -8,6 +8,11 @@ class AppConfig {
     defaultValue: 'https://api.openvine.co',
   );
 
+  static const String inviteServerBaseUrl = String.fromEnvironment(
+    'INVITE_SERVER_URL',
+    defaultValue: 'https://invite.divine.video',
+  );
+
   // Environment detection
   static const String environment = String.fromEnvironment(
     'ENVIRONMENT',
@@ -79,6 +84,7 @@ class AppConfig {
   static Map<String, dynamic> getConfigSummary() => {
     'environment': environment,
     'backendUrl': backendBaseUrl,
+    'inviteServerUrl': inviteServerBaseUrl,
     'isDevelopment': isDevelopment,
     'isProduction': isProduction,
     'enableStreamCDN': enableStreamCDN,

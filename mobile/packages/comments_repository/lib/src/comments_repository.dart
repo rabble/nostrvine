@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:comments_repository/src/exceptions.dart';
 import 'package:comments_repository/src/models/models.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
@@ -37,9 +38,12 @@ class CommentsRepository {
   /// - [nostrClient]: Client for Nostr relay communication (handles signing)
   CommentsRepository({
     required NostrClient nostrClient,
-  }) : _nostrClient = nostrClient;
+    FunnelcakeApiClient? funnelcakeApiClient,
+  }) : _nostrClient = nostrClient,
+       _funnelcakeApiClient = funnelcakeApiClient;
 
   final NostrClient _nostrClient;
+  final FunnelcakeApiClient? _funnelcakeApiClient;
 
   /// Subscription ID for the active comment watch, if any.
   String? _watchSubscriptionId;
@@ -79,8 +83,29 @@ class CommentsRepository {
     String? rootAddressableId,
     int limit = _defaultLimit,
     DateTime? before,
+    int offset = 0,
   }) async {
     try {
+      if (before == null && (_funnelcakeApiClient?.isAvailable ?? false)) {
+        try {
+          final response = await _funnelcakeApiClient!.getVideoComments(
+            videoId: rootEventId,
+            limit: limit,
+            offset: offset,
+          );
+          if (response != null) {
+            return _buildThreadFromRestComments(
+              response,
+              rootEventId,
+              rootEventKind,
+              rootAddressableId: rootAddressableId,
+            );
+          }
+        } on FunnelcakeException {
+          // Fall back to relay query when REST bootstrap is unavailable.
+        }
+      }
+
       final untilTimestamp = before != null
           ? before.millisecondsSinceEpoch ~/ 1000
           : null;
@@ -350,11 +375,14 @@ class CommentsRepository {
   Stream<Comment> watchComments({
     required String rootEventId,
     required int rootEventKind,
-    required DateTime since,
+    DateTime? since,
     String? rootAddressableId,
+    void Function()? onEose,
   }) {
     try {
-      final sinceTimestamp = since.millisecondsSinceEpoch ~/ 1000;
+      final sinceTimestamp = since != null
+          ? since.millisecondsSinceEpoch ~/ 1000
+          : null;
 
       final filters = <Filter>[
         Filter(
@@ -375,6 +403,7 @@ class CommentsRepository {
       final eventStream = _nostrClient.subscribe(
         filters,
         subscriptionId: _watchSubscriptionId,
+        onEose: onEose,
       );
 
       // When dual-filter subscriptions are active (E + A tags), the same
@@ -645,6 +674,90 @@ class CommentsRepository {
     }
 
     return _buildThreadFromComments(commentMap, rootEventId);
+  }
+
+  CommentThread _buildThreadFromRestComments(
+    VideoCommentsResponse response,
+    String rootEventId,
+    int rootEventKind, {
+    String? rootAddressableId,
+  }) {
+    final commentMap = <String, Comment>{};
+
+    for (final restComment in response.comments) {
+      final comment = _restCommentToComment(
+        restComment,
+        rootEventId,
+        rootEventKind,
+        rootAddressableId: rootAddressableId,
+      );
+      if (comment != null) {
+        commentMap[comment.id] = comment;
+      }
+    }
+
+    final thread = _buildThreadFromComments(commentMap, rootEventId);
+    return thread.copyWith(totalCount: response.total);
+  }
+
+  Comment? _restCommentToComment(
+    VideoComment restComment,
+    String rootEventId,
+    int rootEventKind, {
+    String? rootAddressableId,
+  }) {
+    try {
+      String? parsedRootEventId;
+      String? parsedRootAddressableId;
+      String? rootAuthorPubkey;
+
+      for (final tag in restComment.tags) {
+        if (tag.length < 2) continue;
+        switch (tag[0]) {
+          case 'E':
+            parsedRootEventId = tag[1];
+            if (tag.length >= 4) {
+              rootAuthorPubkey = tag[3];
+            }
+          case 'A':
+            parsedRootAddressableId = tag[1];
+          case 'P':
+            rootAuthorPubkey ??= tag[1];
+        }
+      }
+
+      if (rootAuthorPubkey == null && parsedRootAddressableId != null) {
+        final parts = parsedRootAddressableId.split(':');
+        if (parts.length >= 2) {
+          rootAuthorPubkey = parts[1];
+        }
+      }
+      if (rootAuthorPubkey == null && rootAddressableId != null) {
+        final parts = rootAddressableId.split(':');
+        if (parts.length >= 2) {
+          rootAuthorPubkey = parts[1];
+        }
+      }
+
+      final parsedReplyToEventId = restComment.replyToEventId;
+      final isTopLevel =
+          parsedReplyToEventId == null || parsedReplyToEventId == rootEventId;
+
+      return Comment(
+        id: restComment.id,
+        content: restComment.content,
+        authorPubkey: restComment.pubkey,
+        createdAt: DateTime.fromMillisecondsSinceEpoch(
+          restComment.createdAt * 1000,
+        ),
+        rootEventId: parsedRootEventId ?? rootEventId,
+        rootAuthorPubkey: rootAuthorPubkey ?? '',
+        replyToEventId: isTopLevel ? null : parsedReplyToEventId,
+        replyToAuthorPubkey: isTopLevel ? null : restComment.replyToPubkey,
+      );
+    } on Exception {
+      return null;
+    }
   }
 
   /// Builds a CommentThread from a map of comments.

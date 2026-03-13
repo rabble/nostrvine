@@ -7,7 +7,15 @@ import 'package:app_links/app_links.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Types of deep links supported by the app
-enum DeepLinkType { video, profile, hashtag, search, signerCallback, unknown }
+enum DeepLinkType {
+  video,
+  profile,
+  hashtag,
+  search,
+  invite,
+  signerCallback,
+  unknown,
+}
 
 /// Represents a parsed deep link
 class DeepLink {
@@ -17,6 +25,7 @@ class DeepLink {
     this.npub,
     this.hashtag,
     this.searchTerm,
+    this.inviteCode,
     this.index,
   });
 
@@ -25,6 +34,7 @@ class DeepLink {
   final String? npub;
   final String? hashtag;
   final String? searchTerm;
+  final String? inviteCode;
   final int? index; // Optional video index for feed view
 
   @override
@@ -39,6 +49,8 @@ class DeepLink {
         return 'DeepLink(type: hashtag, hashtag: $hashtag$indexStr)';
       case DeepLinkType.search:
         return 'DeepLink(type: search, searchTerm: $searchTerm$indexStr)';
+      case DeepLinkType.invite:
+        return 'DeepLink(type: invite, inviteCode: $inviteCode)';
       case DeepLinkType.signerCallback:
         return 'DeepLink(type: signerCallback)';
       case DeepLinkType.unknown:
@@ -184,6 +196,24 @@ class DeepLinkService {
           searchTerm: searchTerm,
           index: index,
         );
+      }
+
+      // Handle /invite/{code} or /invite?code=ABCD-EFGH
+      if (pathSegments.isNotEmpty && pathSegments[0] == 'invite') {
+        final inviteCode = pathSegments.length > 1
+            ? Uri.decodeComponent(pathSegments[1])
+            : uri.queryParameters['code'];
+
+        if (inviteCode != null && inviteCode.isNotEmpty) {
+          Log.info(
+            'Parsed invite deep link: $inviteCode',
+            name: 'DeepLinkService',
+            category: LogCategory.ui,
+          );
+          return DeepLink(type: DeepLinkType.invite, inviteCode: inviteCode);
+        }
+
+        return const DeepLink(type: DeepLinkType.unknown);
       }
 
       Log.warning(

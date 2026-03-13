@@ -119,6 +119,42 @@ void main() {
     });
 
     test(
+      're-checks gallery status after a stale non-granted request result',
+      () async {
+        var statusChecks = 0;
+        when(() => mockPermissionsService.checkGalleryStatus()).thenAnswer((
+          _,
+        ) async {
+          statusChecks += 1;
+          return statusChecks == 1
+              ? PermissionStatus.canRequest
+              : PermissionStatus.granted;
+        });
+        when(
+          () => mockPermissionsService.requestGalleryPermission(),
+        ).thenAnswer((_) async => PermissionStatus.canRequest);
+
+        final tempDir = Directory.systemTemp.createTempSync('gallery_test_');
+        final tempFile = File('${tempDir.path}/test_video.mp4');
+        tempFile.writeAsBytesSync([0, 1, 2, 3]);
+
+        try {
+          final result = await service.saveVideoToGallery(
+            EditorVideo.file(tempFile.path),
+          );
+
+          expect(result, isNot(isA<GallerySavePermissionDenied>()));
+          verify(() => mockPermissionsService.checkGalleryStatus()).called(2);
+          verify(
+            () => mockPermissionsService.requestGalleryPermission(),
+          ).called(1);
+        } finally {
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
+
+    test(
       'skips permission check on MissingPluginException (desktop)',
       () async {
         // Simulate desktop platform where permission_handler is unavailable

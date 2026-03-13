@@ -6,6 +6,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -26,27 +27,31 @@ enum UserPickerFilterMode {
 Future<UserProfile?> showUserPickerSheet(
   BuildContext context, {
   required UserPickerFilterMode filterMode,
-  String? title,
+  required String title,
+  bool autoFocus = false,
+  String searchText = 'Search by name',
   Set<String> excludePubkeys = const {},
 }) {
-  return showModalBottomSheet<UserProfile>(
+  return VineBottomSheet.show<UserProfile>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: VineTheme.backgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    initialChildSize: 1,
+    maxChildSize: 1,
+    minChildSize: 0.8,
+    title: Column(
+      spacing: 2,
+      children: [
+        Text(
+          title,
+          style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5),
+        ),
+        Text(searchText, style: VineTheme.bodySmallFont()),
+      ],
     ),
-    builder: (_) => DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) => UserPickerSheet(
-        filterMode: filterMode,
-        title: title,
-        scrollController: scrollController,
-        excludePubkeys: excludePubkeys,
-      ),
+    buildScrollBody: (scrollController) => UserPickerSheet(
+      filterMode: filterMode,
+      scrollController: scrollController,
+      autoFocus: autoFocus,
+      excludePubkeys: excludePubkeys,
     ),
   );
 }
@@ -56,8 +61,8 @@ class UserPickerSheet extends ConsumerStatefulWidget {
   /// Creates a user picker bottom sheet.
   const UserPickerSheet({
     required this.filterMode,
-    this.title,
     this.scrollController,
+    this.autoFocus = false,
     this.excludePubkeys = const {},
     super.key,
   });
@@ -65,14 +70,13 @@ class UserPickerSheet extends ConsumerStatefulWidget {
   /// How to filter search results.
   final UserPickerFilterMode filterMode;
 
-  /// Optional title displayed at the top.
-  final String? title;
-
-  /// Pubkeys to exclude from results (e.g. already-selected collaborators).
-  final Set<String> excludePubkeys;
-
   /// Scroll controller for the draggable sheet.
   final ScrollController? scrollController;
+
+  final bool autoFocus;
+
+  /// Pubkeys to exclude from search results (already selected users).
+  final Set<String> excludePubkeys;
 
   @override
   ConsumerState<UserPickerSheet> createState() => _UserPickerSheetState();
@@ -128,15 +132,11 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     );
 
     if (mounted) {
-      // Remove already-selected users from results
-      final filtered = widget.excludePubkeys.isEmpty
-          ? profiles
-          : profiles
-                .where((p) => !widget.excludePubkeys.contains(p.pubkey))
-                .toList();
+      // Keep all profiles including excluded ones — excluded users are shown
+      // as disabled in the UI rather than being filtered out entirely.
       setState(() {
-        _followProfiles = filtered;
-        _filteredFollowProfiles = filtered;
+        _followProfiles = profiles;
+        _filteredFollowProfiles = profiles;
         _followListLoaded = true;
       });
     }
@@ -183,112 +183,233 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultTitle =
-        widget.filterMode == UserPickerFilterMode.mutualFollowsOnly
-        ? 'Add collaborator'
-        : 'Search users';
+    final hintText = _useLocalSearch
+        ? 'Filter by name...'
+        : 'Search by name...';
 
     return Column(
       children: [
-        // Drag handle
-        const SizedBox(height: 8),
-        Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: VineTheme.onSurfaceMuted,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Title
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            widget.title ?? defaultTitle,
-            style: VineTheme.bodyFont(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              height: 1.33,
+        // Search field
+        Semantics(
+          textField: true,
+          label: hintText,
+          child: Container(
+            margin: const .fromLTRB(16, 16, 16, 4),
+            decoration: BoxDecoration(
+              color: VineTheme.surfaceContainer,
+              borderRadius: .circular(20),
+            ),
+            child: TextField(
+              autofocus: widget.autoFocus,
+              controller: _searchController,
+              textInputAction: .search,
+              onChanged: _onSearchChanged,
+              onSubmitted: _onSearchChanged,
+              cursorColor: VineTheme.vineGreen,
+              style: VineTheme.bodyFont(
+                color: VineTheme.onSurface,
+                height: 1.5,
+              ),
+              decoration: InputDecoration(
+                hintText: hintText,
+                hintStyle: VineTheme.bodyFont(
+                  color: VineTheme.onSurfaceMuted,
+                  height: 1.5,
+                ),
+                prefixIcon: const Padding(
+                  padding: .only(left: 16, right: 8),
+                  child: Icon(
+                    Icons.search,
+                    color: VineTheme.onSurfaceMuted,
+                    size: 24,
+                  ),
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                filled: false,
+                contentPadding: const .symmetric(horizontal: 16, vertical: 14),
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
-
-        // Search field
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: DivineTextField(
-            controller: _searchController,
-            label: _useLocalSearch ? 'Filter by name' : 'Search by name',
-            textInputAction: TextInputAction.search,
-            onChanged: _onSearchChanged,
-          ),
-        ),
-        const SizedBox(height: 8),
 
         // Results list
         Expanded(
           child: _useLocalSearch
-              ? _buildLocalResults()
-              : _buildNetworkResults(),
+              ? _LocalResults(
+                  scrollController: widget.scrollController,
+                  followListLoaded: _followListLoaded,
+                  followProfiles: _followProfiles,
+                  filteredFollowProfiles: _filteredFollowProfiles,
+                  onUserSelected: _onUserSelected,
+                  excludePubkeys: widget.excludePubkeys,
+                )
+              : _NetworkResults(
+                  searchBloc: _searchBloc,
+                  scrollController: widget.scrollController,
+                  onUserSelected: _onUserSelected,
+                  excludePubkeys: widget.excludePubkeys,
+                ),
         ),
+
+        SizedBox(height: MediaQuery.viewInsetsOf(context).bottom),
       ],
     );
   }
+}
 
-  /// Builds the results list for local follow-list search.
-  Widget _buildLocalResults() {
-    if (!_followListLoaded) {
-      return const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      );
-    }
+/// A tile displaying a user profile in the search results.
+class _UserSearchTile extends StatelessWidget {
+  const _UserSearchTile({
+    required this.profile,
+    required this.onTap,
+    this.isDisabled = false,
+  });
 
-    if (_followProfiles.isEmpty) {
-      return _buildEmptyFollowList();
-    }
+  final UserProfile profile;
+  final VoidCallback onTap;
 
-    if (_filteredFollowProfiles.isEmpty) {
-      return _buildNoResults();
-    }
+  /// Whether this user is already selected and cannot be tapped.
+  final bool isDisabled;
 
-    return ListView.builder(
-      controller: widget.scrollController,
-      itemCount: _filteredFollowProfiles.length,
+  @override
+  Widget build(BuildContext context) {
+    final textColor = isDisabled
+        ? VineTheme.onSurfaceMuted
+        : VineTheme.onSurface;
+
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemBuilder: (context, index) {
-        final profile = _filteredFollowProfiles[index];
-        return _UserSearchTile(
-          profile: profile,
-          onTap: () => _onUserSelected(profile),
-        );
-      },
-    );
-  }
-
-  /// Builds the results list using the network search BLoC.
-  Widget _buildNetworkResults() {
-    return BlocBuilder<UserSearchBloc, UserSearchState>(
-      bloc: _searchBloc,
-      builder: (context, state) {
-        return switch (state.status) {
-          UserSearchStatus.initial => _buildEmptyHint(),
-          UserSearchStatus.loading => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      child: Row(
+        spacing: 16,
+        children: [
+          Opacity(
+            opacity: isDisabled ? 0.5 : 1.0,
+            child: UserAvatar(
+              imageUrl: profile.picture,
+              name: profile.bestDisplayName,
+              size: 40,
+            ),
           ),
-          UserSearchStatus.failure => _buildErrorState(),
-          UserSearchStatus.success =>
-            state.results.isEmpty
-                ? _buildNoResults()
-                : _buildResultsList(state),
-        };
-      },
+          Expanded(
+            child: Column(
+              crossAxisAlignment: .start,
+              children: [
+                Text(
+                  profile.bestDisplayName,
+                  maxLines: 1,
+                  overflow: .ellipsis,
+                  style: VineTheme.titleMediumFont(
+                    fontSize: 16,
+                    color: textColor,
+                  ),
+                ),
+                if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                  Text(
+                    profile.nip05!,
+                    maxLines: 1,
+                    overflow: .ellipsis,
+                    style: VineTheme.bodyMediumFont(color: textColor),
+                  ),
+              ],
+            ),
+          ),
+
+          Semantics(
+            button: !isDisabled,
+            label: isDisabled
+                ? '${profile.bestDisplayName} already added'
+                : 'Select ${profile.bestDisplayName}',
+            child: InkWell(
+              onTap: isDisabled ? null : onTap,
+              child: Container(
+                padding: const .all(8),
+                decoration: ShapeDecoration(
+                  color: isDisabled
+                      ? VineTheme.surfaceContainer
+                      : VineTheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+                ),
+                child: DivineIcon(
+                  icon: isDisabled ? .check : .plus,
+                  color: isDisabled
+                      ? VineTheme.onSurfaceMuted
+                      : VineTheme.onPrimary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildEmptyHint() {
+class _EmptyFollowList extends StatelessWidget {
+  const _EmptyFollowList();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: .center,
+        children: [
+          Text(
+            'Your crew is out there',
+            style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+            textAlign: .center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Follow people you vibe with. '
+            'When they follow back, you can collab.',
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            textAlign: .center,
+          ),
+          const SizedBox(height: 32),
+          Semantics(
+            button: true,
+            label: 'Go back',
+            child: InkWell(
+              onTap: context.pop,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const .symmetric(horizontal: 24, vertical: 12),
+                decoration: ShapeDecoration(
+                  color: VineTheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    side: const BorderSide(
+                      width: 2,
+                      color: VineTheme.outlineMuted,
+                    ),
+                    borderRadius: .circular(20),
+                  ),
+                ),
+                child: Text(
+                  'Go back',
+                  textAlign: TextAlign.center,
+                  style: VineTheme.titleMediumFont(
+                    fontSize: 16,
+                    color: VineTheme.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyHint extends StatelessWidget {
+  const _EmptyHint();
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -302,23 +423,13 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       ),
     );
   }
+}
 
-  Widget _buildEmptyFollowList() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          'No followed users found',
-          style: VineTheme.bodyFont(
-            color: VineTheme.onSurfaceMuted,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
+class _ErrorState extends StatelessWidget {
+  const _ErrorState();
 
-  Widget _buildErrorState() {
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -332,8 +443,13 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       ),
     );
   }
+}
 
-  Widget _buildNoResults() {
+class _NoResults extends StatelessWidget {
+  const _NoResults();
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -347,80 +463,146 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
       ),
     );
   }
+}
 
-  Widget _buildResultsList(UserSearchState state) {
-    final results = widget.excludePubkeys.isEmpty
-        ? state.results
-        : state.results
-              .where((p) => !widget.excludePubkeys.contains(p.pubkey))
-              .toList();
-    return ListView.builder(
-      controller: widget.scrollController,
+class _ResultsList extends StatelessWidget {
+  const _ResultsList({
+    required this.scrollController,
+    required this.results,
+    required this.onUserSelected,
+    this.excludePubkeys = const {},
+  });
+
+  final ScrollController? scrollController;
+  final List<UserProfile> results;
+  final ValueChanged<UserProfile> onUserSelected;
+  final Set<String> excludePubkeys;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      controller: scrollController,
       itemCount: results.length,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: .fromLTRB(
+        0,
+        32,
+        0,
+        32 + MediaQuery.viewPaddingOf(context).bottom,
+      ),
+      separatorBuilder: (context, index) => const Divider(
+        height: 40,
+        thickness: 1,
+        color: VineTheme.outlineDisabled,
+      ),
       itemBuilder: (context, index) {
         final profile = results[index];
+        final isDisabled = excludePubkeys.contains(profile.pubkey);
         return _UserSearchTile(
           profile: profile,
-          onTap: () => _onUserSelected(profile),
+          onTap: () => onUserSelected(profile),
+          isDisabled: isDisabled,
         );
       },
     );
   }
 }
 
-/// A tile displaying a user profile in the search results.
-class _UserSearchTile extends StatelessWidget {
-  const _UserSearchTile({required this.profile, required this.onTap});
+class _NetworkResults extends StatelessWidget {
+  const _NetworkResults({
+    required this.searchBloc,
+    required this.scrollController,
+    required this.onUserSelected,
+    this.excludePubkeys = const {},
+  });
 
-  final UserProfile profile;
-  final VoidCallback onTap;
+  final UserSearchBloc searchBloc;
+  final ScrollController? scrollController;
+  final ValueChanged<UserProfile> onUserSelected;
+  final Set<String> excludePubkeys;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            UserAvatar(
-              imageUrl: profile.picture,
-              name: profile.bestDisplayName,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    profile.bestDisplayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: VineTheme.bodyFont(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      height: 1.33,
-                    ),
-                  ),
-                  if (profile.nip05 != null && profile.nip05!.isNotEmpty)
-                    Text(
-                      profile.nip05!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: VineTheme.bodyFont(
-                        color: VineTheme.onSurfaceMuted,
-                        fontSize: 12,
-                        height: 1.33,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
+    return BlocBuilder<UserSearchBloc, UserSearchState>(
+      bloc: searchBloc,
+      builder: (context, state) {
+        return switch (state.status) {
+          UserSearchStatus.initial => const _EmptyHint(),
+          UserSearchStatus.loading => const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          ),
+          UserSearchStatus.failure => const _ErrorState(),
+          UserSearchStatus.success => () {
+            return state.results.isEmpty
+                ? const _NoResults()
+                : _ResultsList(
+                    scrollController: scrollController,
+                    results: state.results,
+                    onUserSelected: onUserSelected,
+                    excludePubkeys: excludePubkeys,
+                  );
+          }(),
+        };
+      },
+    );
+  }
+}
+
+class _LocalResults extends StatelessWidget {
+  const _LocalResults({
+    required this.scrollController,
+    required this.followListLoaded,
+    required this.followProfiles,
+    required this.filteredFollowProfiles,
+    required this.onUserSelected,
+    this.excludePubkeys = const {},
+  });
+
+  final ScrollController? scrollController;
+  final bool followListLoaded;
+  final List<UserProfile> followProfiles;
+  final List<UserProfile> filteredFollowProfiles;
+  final ValueChanged<UserProfile> onUserSelected;
+  final Set<String> excludePubkeys;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!followListLoaded) {
+      return const Center(
+        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      );
+    }
+
+    if (followProfiles.isEmpty) {
+      return const _EmptyFollowList();
+    }
+
+    if (filteredFollowProfiles.isEmpty) {
+      return const _NoResults();
+    }
+
+    return ListView.separated(
+      controller: scrollController,
+      itemCount: filteredFollowProfiles.length,
+      padding: .fromLTRB(
+        0,
+        32,
+        0,
+        32 + MediaQuery.viewPaddingOf(context).bottom,
       ),
+      separatorBuilder: (context, index) => const Divider(
+        height: 40,
+        thickness: 1,
+        color: VineTheme.outlineDisabled,
+      ),
+      itemBuilder: (context, index) {
+        final profile = filteredFollowProfiles[index];
+        final isDisabled = excludePubkeys.contains(profile.pubkey);
+        return _UserSearchTile(
+          profile: profile,
+          onTap: () => onUserSelected(profile),
+          isDisabled: isDisabled,
+        );
+      },
     );
   }
 }

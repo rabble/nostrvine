@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart' hide AspectRatio;
 import 'package:flutter/widgets.dart' show AspectRatio;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,7 +71,13 @@ void main() {
       );
 
       // Should display placeholder icon
-      expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is DivineIcon && widget.icon == DivineIconName.playCircle,
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows processing overlay when isProcessing is true', (

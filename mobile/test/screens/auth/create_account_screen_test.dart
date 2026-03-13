@@ -4,13 +4,17 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/create_account_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/widgets/auth_back_button.dart';
 
@@ -23,15 +27,25 @@ class _MockAuthService extends Mock implements AuthService {}
 class _MockPendingVerificationService extends Mock
     implements PendingVerificationService {}
 
+class _MockInviteApiService extends Mock implements InviteApiService {}
+
+class _FakeSecureKeyContainer extends Fake implements SecureKeyContainer {}
+
 void main() {
   late _MockKeycastOAuth mockOAuth;
   late _MockAuthService mockAuthService;
   late _MockPendingVerificationService mockPendingVerification;
+  late _MockInviteApiService mockInviteApiService;
+
+  setUpAll(() {
+    registerFallbackValue(_FakeSecureKeyContainer());
+  });
 
   setUp(() {
     mockOAuth = _MockKeycastOAuth();
     mockAuthService = _MockAuthService();
     mockPendingVerification = _MockPendingVerificationService();
+    mockInviteApiService = _MockInviteApiService();
 
     when(
       () => mockAuthService.createAnonymousAccount(),
@@ -47,9 +61,15 @@ void main() {
           mockPendingVerification,
         ),
       ],
-      child: MaterialApp(
-        theme: VineTheme.theme,
-        home: const CreateAccountScreen(),
+      child: RepositoryProvider<InviteApiService>.value(
+        value: mockInviteApiService,
+        child: BlocProvider(
+          create: (_) => InviteGateBloc(inviteApiService: mockInviteApiService),
+          child: MaterialApp(
+            theme: VineTheme.theme,
+            home: const CreateAccountScreen(),
+          ),
+        ),
       ),
     );
   }

@@ -91,6 +91,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<CommentEditModeCancelled>(_onEditModeCancelled);
     on<CommentEditSubmitted>(_onEditSubmitted);
     on<NewCommentReceived>(_onNewCommentReceived);
+    on<CommentsInitialBackfillCompleted>(_onInitialBackfillCompleted);
     on<NewCommentsAcknowledged>(_onNewCommentsAcknowledged);
   }
 
@@ -109,6 +110,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   final ContentBlocklistService _contentBlocklistService;
   final ProfileRepository? _profileRepository;
   final FollowRepository? _followRepository;
+  bool _isInitialBackfillComplete = true;
 
   Future<void> _onLoadRequested(
     CommentsLoadRequested event,
@@ -116,7 +118,14 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   ) async {
     if (state.status == CommentsStatus.loading) return;
 
-    emit(state.copyWith(status: CommentsStatus.loading));
+    _isInitialBackfillComplete = false;
+    emit(
+      state.copyWith(
+        status: CommentsStatus.loading,
+        newCommentCount: 0,
+      ),
+    );
+    _startWatchingComments();
 
     try {
       final thread = await _commentsRepository.loadComments(
@@ -126,15 +135,15 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         limit: _pageSize,
       );
 
-      // Convert to Map for O(1) deduplication on pagination
-      final commentsById = {for (final c in thread.comments) c.id: c};
-
-      // Determine if there are more comments to load:
-      // 1. If we have a known total count, compare loaded count to it
-      // 2. Otherwise, use page size heuristic (if we got a full page, there might be more)
-      final hasMore = _initialTotalCount != null
-          ? thread.comments.length < _initialTotalCount
-          : thread.comments.length >= _pageSize;
+      final commentsById = {
+        ...state.commentsById,
+        for (final comment in thread.comments) comment.id: comment,
+      };
+      final hasMore = _hasMoreContent(
+        loadedCount: commentsById.length,
+        lastBatchCount: thread.comments.length,
+        threadTotalCount: thread.totalCount,
+      );
 
       emit(
         state.copyWith(
@@ -146,13 +155,20 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       );
 
       add(const CommentVoteCountsFetchRequested());
-      _startWatchingComments();
     } catch (e) {
       Log.error(
         'Error loading comments: $e',
         name: 'CommentsBloc',
         category: LogCategory.ui,
       );
+      if (state.commentsById.isNotEmpty) {
+        emit(
+          state.copyWith(
+            status: CommentsStatus.success,
+          ),
+        );
+        return;
+      }
       emit(
         state.copyWith(
           status: CommentsStatus.failure,
@@ -207,9 +223,11 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       // Determine if there are more comments to load:
       // 1. If we have a known total count, compare loaded count to it
       // 2. Otherwise, use page size heuristic (if we got a full page, there might be more)
-      final hasMore = _initialTotalCount != null
-          ? allCommentsById.length < _initialTotalCount
-          : thread.comments.length >= _pageSize;
+      final hasMore = _hasMoreContent(
+        loadedCount: allCommentsById.length,
+        lastBatchCount: thread.comments.length,
+        threadTotalCount: thread.totalCount,
+      );
 
       emit(
         state.copyWith(
@@ -844,11 +862,21 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
     emit(
       state.copyWith(
+        status: CommentsStatus.success,
         commentsById: updatedCommentsById,
         replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
-        newCommentCount: state.newCommentCount + 1,
+        newCommentCount: _isInitialBackfillComplete
+            ? state.newCommentCount + 1
+            : state.newCommentCount,
       ),
     );
+  }
+
+  void _onInitialBackfillCompleted(
+    CommentsInitialBackfillCompleted event,
+    Emitter<CommentsState> emit,
+  ) {
+    _isInitialBackfillComplete = true;
   }
 
   void _onNewCommentsAcknowledged(
@@ -878,7 +906,11 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         rootEventId: state.rootEventId,
         rootEventKind: state.rootEventKind,
         rootAddressableId: state.rootAddressableId,
-        since: DateTime.now(),
+        onEose: () {
+          if (!isClosed) {
+            add(const CommentsInitialBackfillCompleted());
+          }
+        },
       );
 
       _commentStreamSubscription = _throttledListen(
@@ -980,5 +1012,25 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       }
     }
     return counts;
+  }
+
+  bool _hasMoreContent({
+    required int loadedCount,
+    required int lastBatchCount,
+    required int threadTotalCount,
+  }) {
+    final effectiveTotalCount =
+        _initialTotalCount ??
+        (threadTotalCount > lastBatchCount
+            ? threadTotalCount
+            : lastBatchCount < _pageSize
+            ? loadedCount
+            : null);
+
+    if (effectiveTotalCount != null) {
+      return loadedCount < effectiveTotalCount;
+    }
+
+    return lastBatchCount >= _pageSize;
   }
 }

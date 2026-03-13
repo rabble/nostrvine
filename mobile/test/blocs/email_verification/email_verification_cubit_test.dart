@@ -6,22 +6,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/models/invite_models.dart';
+import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/invite_api_service.dart';
 
 class _MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
 class _MockAuthService extends Mock implements AuthService {}
+
+class _MockInviteApiService extends Mock implements InviteApiService {}
 
 class _FakeKeycastSession extends Fake implements KeycastSession {}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(_FakeKeycastSession());
+    registerFallbackValue(
+      const OAuthConfig(
+        serverUrl: 'https://login.divine.video',
+        clientId: 'client-id',
+        redirectUri: 'divine://auth',
+      ),
+    );
   });
 
   group('EmailVerificationCubit', () {
     late _MockKeycastOAuth mockOAuth;
     late _MockAuthService mockAuthService;
+    late _MockInviteApiService mockInviteApiService;
 
     const testDeviceCode = 'test-device-code-abc123';
     const testVerifier = 'test-verifier-xyz789';
@@ -30,6 +43,7 @@ void main() {
     setUp(() {
       mockOAuth = _MockKeycastOAuth();
       mockAuthService = _MockAuthService();
+      mockInviteApiService = _MockInviteApiService();
       // Reset static state to ensure test isolation
       EmailVerificationCubit.resetCompletedDeviceCode();
     });
@@ -38,6 +52,7 @@ void main() {
       return EmailVerificationCubit(
         oauthClient: mockOAuth,
         authService: mockAuthService,
+        inviteApiService: mockInviteApiService,
       );
     }
 
@@ -85,6 +100,123 @@ void main() {
           expect(cubit.state.pendingEmail, testEmail);
         },
       );
+    });
+
+    group('invite activation', () {
+      const testCode = 'auth-code-from-server';
+
+      test(
+        'consumes invite with exchanged session before sign in',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(() => mockAuthService.isAnonymous).thenReturn(false);
+          when(() => mockOAuth.config).thenReturn(
+            const OAuthConfig(
+              serverUrl: 'https://login.divine.video',
+              clientId: 'client-id',
+              redirectUri: 'divine://auth',
+            ),
+          );
+          when(
+            () => mockOAuth.pollForCode(testDeviceCode),
+          ).thenAnswer((_) async => PollResult.complete(testCode));
+          when(
+            () =>
+                mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
+          ).thenAnswer(
+            (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+          );
+          when(
+            () => mockInviteApiService.consumeInviteWithSession(
+              code: any(named: 'code'),
+              oauthConfig: any(named: 'oauthConfig'),
+              session: any(named: 'session'),
+            ),
+          ).thenAnswer(
+            (_) async => const InviteConsumeResult(
+              message: 'Welcome',
+              codesAllocated: 5,
+            ),
+          );
+          when(
+            () => mockAuthService.signInWithDivineOAuth(any()),
+          ).thenAnswer((_) async {});
+
+          final cubit = buildCubit();
+          cubit.startPolling(
+            deviceCode: testDeviceCode,
+            verifier: testVerifier,
+            email: testEmail,
+            inviteCode: 'ab12ef34',
+          );
+
+          await Future<void>.delayed(const Duration(seconds: 4));
+
+          expect(cubit.state.status, EmailVerificationStatus.success);
+          verifyInOrder([
+            () => mockOAuth.exchangeCode(
+              code: testCode,
+              verifier: testVerifier,
+            ),
+            () => mockInviteApiService.consumeInviteWithSession(
+              code: 'AB12-EF34',
+              oauthConfig: any(named: 'oauthConfig'),
+              session: any(named: 'session'),
+            ),
+            () => mockAuthService.signInWithDivineOAuth(any()),
+          ]);
+
+          await cubit.close();
+        },
+      );
+
+      test('emits failure when invite activation fails', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        when(() => mockOAuth.config).thenReturn(
+          const OAuthConfig(
+            serverUrl: 'https://login.divine.video',
+            clientId: 'client-id',
+            redirectUri: 'divine://auth',
+          ),
+        );
+        when(
+          () => mockOAuth.pollForCode(testDeviceCode),
+        ).thenAnswer((_) async => PollResult.complete(testCode));
+        when(
+          () => mockOAuth.exchangeCode(code: testCode, verifier: testVerifier),
+        ).thenAnswer(
+          (_) async => const TokenResponse(bunkerUrl: 'wss://relay.test'),
+        );
+        when(
+          () => mockInviteApiService.consumeInviteWithSession(
+            code: any(named: 'code'),
+            oauthConfig: any(named: 'oauthConfig'),
+            session: any(named: 'session'),
+          ),
+        ).thenThrow(const ApiException('Invite activation failed'));
+
+        final cubit = buildCubit();
+        cubit.startPolling(
+          deviceCode: testDeviceCode,
+          verifier: testVerifier,
+          email: testEmail,
+          inviteCode: 'ab12ef34',
+        );
+
+        await Future<void>.delayed(const Duration(seconds: 4));
+
+        expect(cubit.state.status, EmailVerificationStatus.failure);
+        expect(
+          cubit.state.error,
+          "We couldn't activate your invite. "
+          'Go back to your invite code, join the waitlist, or contact support.',
+        );
+        expect(cubit.state.showInviteGateRecovery, isTrue);
+        expect(cubit.state.inviteRecoveryCode, 'AB12-EF34');
+        verifyNever(() => mockAuthService.signInWithDivineOAuth(any()));
+
+        await cubit.close();
+      });
     });
 
     group('stopPolling', () {

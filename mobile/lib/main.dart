@@ -18,6 +18,7 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/blocs/dm/unread_count/dm_unread_count_cubit.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/blocs/invite_gate/invite_gate_bloc.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
@@ -27,6 +28,7 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -38,6 +40,7 @@ import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
+import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -918,6 +921,32 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
               }
+            case DeepLinkType.invite:
+              if (deepLink.inviteCode != null) {
+                final targetPath = WelcomeScreen.inviteGatePathWithCode(
+                  deepLink.inviteCode!,
+                );
+                Log.info(
+                  '📱 Navigating to invite gate: $targetPath',
+                  name: 'DeepLinkHandler',
+                  category: LogCategory.ui,
+                );
+                try {
+                  router.go(targetPath);
+                } catch (e) {
+                  Log.error(
+                    '❌ Invite navigation failed: $e',
+                    name: 'DeepLinkHandler',
+                    category: LogCategory.ui,
+                  );
+                }
+              } else {
+                Log.warning(
+                  '⚠️ Invite deep link missing code',
+                  name: 'DeepLinkHandler',
+                  category: LogCategory.ui,
+                );
+              }
             case DeepLinkType.signerCallback:
               Log.info(
                 '📱 Signer callback - triggering relay reconnection',
@@ -1138,23 +1167,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     }
 
     // Wrap with geo-blocking check first, then lifecycle handler
-    Widget wrapped = MultiBlocProvider(
+    Widget wrapped = MultiRepositoryProvider(
       providers: [
-        BlocProvider(
-          create: (_) => BackgroundPublishBloc(
-            videoPublishServiceFactory: createPublishService,
+        RepositoryProvider(
+          create: (_) => InviteApiService(
+            authService: ref.read(nip98AuthServiceProvider),
           ),
-        ),
-        BlocProvider(
-          create: (_) => CameraPermissionBloc(
-            permissionsService: const PermissionHandlerPermissionsService(),
-          )..add(const CameraPermissionRefresh()),
-        ),
-        BlocProvider(
-          create: (_) => EmailVerificationCubit(
-            oauthClient: ref.read(oauthClientProvider),
-            authService: ref.read(authServiceProvider),
-          ),
+          dispose: (service) => service.dispose(),
         ),
         BlocProvider(
           create: (_) => DmUnreadCountCubit(
@@ -1162,26 +1181,52 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           ),
         ),
       ],
-      // Global listener for email verification failures - shows snackbar
-      // when verification times out or fails while user is elsewhere in app
-      child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
-        listenWhen: (previous, current) =>
-            current.status == EmailVerificationStatus.failure &&
-            previous.status != EmailVerificationStatus.failure,
-        listener: (context, state) {
-          final messenger = ScaffoldMessenger.maybeOf(context);
-          if (messenger != null && state.error != null) {
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text(state.error!),
-                backgroundColor: VineTheme.error,
-                behavior: SnackBarBehavior.floating,
-                duration: const Duration(seconds: 5),
-              ),
-            );
-          }
-        },
-        child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (_) => BackgroundPublishBloc(
+              videoPublishServiceFactory: createPublishService,
+            ),
+          ),
+          BlocProvider(
+            create: (_) => CameraPermissionBloc(
+              permissionsService: const PermissionHandlerPermissionsService(),
+            )..add(const CameraPermissionRefresh()),
+          ),
+          BlocProvider(
+            create: (context) => InviteGateBloc(
+              inviteApiService: context.read<InviteApiService>(),
+            ),
+          ),
+          BlocProvider(
+            create: (context) => EmailVerificationCubit(
+              oauthClient: ref.read(oauthClientProvider),
+              authService: ref.read(authServiceProvider),
+              inviteApiService: context.read<InviteApiService>(),
+            ),
+          ),
+        ],
+        // Global listener for email verification failures - shows snackbar
+        // when verification times out or fails while user is elsewhere in app
+        child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
+          listenWhen: (previous, current) =>
+              current.status == EmailVerificationStatus.failure &&
+              previous.status != EmailVerificationStatus.failure,
+          listener: (context, state) {
+            final messenger = ScaffoldMessenger.maybeOf(context);
+            if (messenger != null && state.error != null) {
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(state.error!),
+                  backgroundColor: VineTheme.error,
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+            }
+          },
+          child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+        ),
       ),
     );
 

@@ -7,7 +7,10 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/invite_api_service.dart';
+import 'package:openvine/utils/invite_error_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 part 'email_verification_state.dart';
@@ -26,12 +29,15 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   EmailVerificationCubit({
     required KeycastOAuth oauthClient,
     required AuthService authService,
+    InviteApiService? inviteApiService,
   }) : _oauthClient = oauthClient,
        _authService = authService,
+       _inviteApiService = inviteApiService,
        super(const EmailVerificationState());
 
   final KeycastOAuth _oauthClient;
   final AuthService _authService;
+  final InviteApiService? _inviteApiService;
 
   /// Tracks the device code that was already successfully exchanged.
   ///
@@ -46,6 +52,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   Timer? _timeoutTimer;
   String? _pendingDeviceCode;
   String? _pendingVerifier;
+  String? _pendingInviteCode;
 
   /// Reset the static completed device code tracking.
   /// Only for use in tests to ensure test isolation.
@@ -63,6 +70,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     required String deviceCode,
     required String verifier,
     required String email,
+    String? inviteCode,
   }) {
     Log.info(
       'startPolling called for $email '
@@ -74,6 +82,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
 
     _pendingDeviceCode = deviceCode;
     _pendingVerifier = verifier;
+    _pendingInviteCode = inviteCode == null
+        ? null
+        : InviteApiService.normalizeCode(inviteCode);
 
     emit(
       EmailVerificationState(
@@ -311,6 +322,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         );
 
         final session = KeycastSession.fromTokenResponse(tokenResponse);
+        await _consumeInviteWithSessionIfNeeded(session);
 
         Log.info(
           'Token exchange successful, showing verification confirmation',
@@ -354,6 +366,23 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         }
 
         return; // Success - exit the retry loop
+      } on ApiException catch (e) {
+        Log.error(
+          'Invite activation failed: ${e.message}',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+        final inviteCode = _pendingInviteCode;
+        _cleanup();
+        emit(
+          EmailVerificationState(
+            status: EmailVerificationStatus.failure,
+            error: InviteErrorUtils.activationFailureMessage(e),
+            showInviteGateRecovery: inviteCode != null,
+            inviteRecoveryCode: inviteCode,
+          ),
+        );
+        return;
       } on OAuthException catch (e) {
         // OAuth errors are not retryable (e.g., invalid code, expired code)
         Log.error(
@@ -413,6 +442,21 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
     _timeoutTimer = null;
     _pendingDeviceCode = null;
     _pendingVerifier = null;
+    _pendingInviteCode = null;
+  }
+
+  Future<void> _consumeInviteWithSessionIfNeeded(KeycastSession session) async {
+    final inviteCode = _pendingInviteCode;
+    final inviteApiService = _inviteApiService;
+    if (inviteCode == null || inviteApiService == null) {
+      return;
+    }
+
+    await inviteApiService.consumeInviteWithSession(
+      code: inviteCode,
+      oauthConfig: _oauthClient.config,
+      session: session,
+    );
   }
 
   @override

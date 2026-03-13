@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:funnelcake_api_client/src/exceptions.dart';
+import 'package:funnelcake_api_client/src/models/models.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
@@ -1048,6 +1049,62 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to fetch video views: $e');
+    }
+  }
+
+  /// Fetches paginated comments for a specific video.
+  ///
+  /// [videoId] accepts either a video event ID or a d-tag supported by
+  /// the FunnelCake API.
+  ///
+  /// Returns a [VideoCommentsResponse] on success, or `null` when the video
+  /// is not found.
+  Future<VideoCommentsResponse?> getVideoComments({
+    required String videoId,
+    String sort = 'newest',
+    int limit = 25,
+    int offset = 0,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    if (videoId.isEmpty) {
+      throw const FunnelcakeException('Video ID cannot be empty');
+    }
+
+    final uri =
+        Uri.parse(
+          '$_baseUrl/api/videos/$videoId/comments',
+        ).replace(
+          queryParameters: {
+            'sort': sort,
+            'limit': limit.toString(),
+            'offset': offset.toString(),
+          },
+        );
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return VideoCommentsResponse.fromJson(data);
+      } else if (response.statusCode == 404) {
+        return null;
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch video comments',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch video comments: $e');
     }
   }
 

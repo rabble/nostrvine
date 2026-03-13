@@ -11,12 +11,14 @@ class PendingVerification {
     required this.verifier,
     required this.email,
     required this.createdAt,
+    this.inviteCode,
   });
 
   final String deviceCode;
   final String verifier;
   final String email;
   final DateTime createdAt;
+  final String? inviteCode;
 
   /// Expiration duration for pending verification data (30 minutes).
   /// OAuth device codes typically expire in 15-30 minutes.
@@ -42,6 +44,7 @@ class PendingVerificationService {
   static const _keyVerifier = 'pending_verification_verifier';
   static const _keyEmail = 'pending_verification_email';
   static const _keyCreatedAt = 'pending_verification_created_at';
+  static const _keyInviteCode = 'pending_verification_invite_code';
 
   /// Save pending verification data to secure storage.
   ///
@@ -50,6 +53,7 @@ class PendingVerificationService {
     required String deviceCode,
     required String verifier,
     required String email,
+    String? inviteCode,
   }) async {
     try {
       final createdAt = DateTime.now().toIso8601String();
@@ -58,6 +62,7 @@ class PendingVerificationService {
         _storage.write(key: _keyVerifier, value: verifier),
         _storage.write(key: _keyEmail, value: email),
         _storage.write(key: _keyCreatedAt, value: createdAt),
+        _storage.write(key: _keyInviteCode, value: inviteCode),
       ]);
       Log.info(
         'Saved pending verification for $email',
@@ -85,12 +90,14 @@ class PendingVerificationService {
         _storage.read(key: _keyVerifier),
         _storage.read(key: _keyEmail),
         _storage.read(key: _keyCreatedAt),
+        _storage.read(key: _keyInviteCode),
       ]);
 
       final deviceCode = results[0];
       final verifier = results[1];
       final email = results[2];
       final createdAtStr = results[3];
+      final inviteCode = results[4];
 
       // All fields required
       if (deviceCode == null || verifier == null || email == null) {
@@ -108,6 +115,7 @@ class PendingVerificationService {
         verifier: verifier,
         email: email,
         createdAt: createdAt,
+        inviteCode: inviteCode,
       );
 
       // Check expiration
@@ -150,6 +158,7 @@ class PendingVerificationService {
         _storage.delete(key: _keyVerifier),
         _storage.delete(key: _keyEmail),
         _storage.delete(key: _keyCreatedAt),
+        _storage.delete(key: _keyInviteCode),
       ]);
       Log.info(
         'Cleared pending verification',

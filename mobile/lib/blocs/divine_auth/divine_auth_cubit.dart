@@ -4,8 +4,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/invite_api_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
+import 'package:openvine/utils/invite_error_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 
@@ -23,14 +27,22 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     required KeycastOAuth oauthClient,
     required AuthService authService,
     required PendingVerificationService pendingVerificationService,
+    InviteApiService? inviteApiService,
+    String? inviteCode,
   }) : _oauthClient = oauthClient,
        _authService = authService,
        _pendingVerificationService = pendingVerificationService,
+       _inviteApiService = inviteApiService,
+       _inviteCode = inviteCode == null
+           ? null
+           : InviteApiService.normalizeCode(inviteCode),
        super(const DivineAuthInitial());
 
   final KeycastOAuth _oauthClient;
   final AuthService _authService;
   final PendingVerificationService _pendingVerificationService;
+  final InviteApiService? _inviteApiService;
+  final String? _inviteCode;
 
   /// Initialize form with default state (sign up mode)
   void initialize({bool isSignIn = false, String? initialEmail}) {
@@ -47,6 +59,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         email: email,
         clearEmailError: true,
         clearGeneralError: true,
+        clearInviteGateRecovery: true,
       ),
     );
   }
@@ -61,6 +74,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         password: password,
         clearPasswordError: true,
         clearGeneralError: true,
+        clearInviteGateRecovery: true,
       ),
     );
   }
@@ -91,7 +105,13 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     }
 
     // Start submission
-    emit(current.copyWith(isSubmitting: true, clearGeneralError: true));
+    emit(
+      current.copyWith(
+        isSubmitting: true,
+        clearGeneralError: true,
+        clearInviteGateRecovery: true,
+      ),
+    );
 
     try {
       if (current.isSignIn) {
@@ -198,6 +218,7 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         deviceCode: result.deviceCode!,
         verifier: verifier,
         email: email,
+        inviteCode: _inviteCode,
       );
 
       // Emit email verification state
@@ -234,8 +255,10 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         verifier: verifier,
       );
 
-      // Get the session and sign in
       final session = KeycastSession.fromTokenResponse(tokenResponse);
+      await _consumeInviteWithSessionIfNeeded(session);
+
+      // Get the session and sign in
       await _authService.signInWithDivineOAuth(session);
 
       Log.info(
@@ -245,6 +268,24 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       emit(const DivineAuthSuccess());
+    } on ApiException catch (e) {
+      Log.error(
+        'Invite activation failed: ${e.message}',
+        name: 'DivineAuthCubit',
+        category: LogCategory.auth,
+      );
+
+      final current = state;
+      if (current is DivineAuthFormState) {
+        emit(
+          current.copyWith(
+            isSubmitting: false,
+            generalError: InviteErrorUtils.activationFailureMessage(e),
+            showInviteGateRecovery: true,
+            inviteRecoveryCode: _inviteCode,
+          ),
+        );
+      }
     } on OAuthException catch (e) {
       Log.error(
         'OAuth exchange failed: ${e.message}',
@@ -310,10 +351,33 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
     if (current is! DivineAuthFormState) return;
     if (current.isSubmitting || current.isSkipping) return;
 
-    emit(current.copyWith(isSkipping: true, clearGeneralError: true));
+    emit(
+      current.copyWith(
+        isSkipping: true,
+        clearGeneralError: true,
+        clearInviteGateRecovery: true,
+      ),
+    );
 
     try {
-      await _authService.createAnonymousAccount();
+      final inviteCode = _inviteCode;
+      final inviteApiService = _inviteApiService;
+      if (inviteCode != null && inviteApiService != null) {
+        final pendingKey = await SecureKeyContainer.generate();
+        try {
+          await inviteApiService.consumeInviteWithKeyContainer(
+            code: inviteCode,
+            keyContainer: pendingKey,
+          );
+          await _authService.createAnonymousAccountFromKeyContainer(
+            pendingKey,
+          );
+        } finally {
+          pendingKey.dispose();
+        }
+      } else {
+        await _authService.createAnonymousAccount();
+      }
 
       Log.info(
         'Anonymous account created successfully',
@@ -322,6 +386,24 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
       );
 
       emit(const DivineAuthSuccess());
+    } on ApiException catch (e) {
+      Log.error(
+        'Anonymous account invite activation failed: ${e.message}',
+        name: 'DivineAuthCubit',
+        category: LogCategory.auth,
+      );
+
+      final currentState = state;
+      if (currentState is DivineAuthFormState) {
+        emit(
+          currentState.copyWith(
+            isSkipping: false,
+            generalError: InviteErrorUtils.activationFailureMessage(e),
+            showInviteGateRecovery: true,
+            inviteRecoveryCode: _inviteCode,
+          ),
+        );
+      }
     } catch (e) {
       Log.error(
         'Anonymous account creation failed: $e',
@@ -339,6 +421,20 @@ class DivineAuthCubit extends Cubit<DivineAuthState> {
         );
       }
     }
+  }
+
+  Future<void> _consumeInviteWithSessionIfNeeded(KeycastSession session) async {
+    final inviteCode = _inviteCode;
+    final inviteApiService = _inviteApiService;
+    if (inviteCode == null || inviteApiService == null) {
+      return;
+    }
+
+    await inviteApiService.consumeInviteWithSession(
+      code: inviteCode,
+      oauthConfig: _oauthClient.config,
+      session: session,
+    );
   }
 
   /// Return to form from email verification state
