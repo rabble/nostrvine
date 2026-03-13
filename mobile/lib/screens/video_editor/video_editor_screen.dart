@@ -218,12 +218,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
     // Pause playback while the clip editor is open.
     final currentPath = _videoOutputPathNotifier.value;
-    _videoOutputPathNotifier.value = null;
 
-    await Navigator.push<TextLayer>(
+    await Navigator.push<void>(
       context,
-      MaterialPageRoute(
-        builder: (context) => const VideoClipEditorScreen(),
+      _ZoomFadePageRoute(
+        child: const VideoClipEditorScreen(),
       ),
     );
 
@@ -240,6 +239,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
+      _videoOutputPathNotifier.value = null;
       await _renderVideo();
     } else {
       // Clips unchanged – restore the previous output path to resume playback.
@@ -379,6 +379,49 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+class _ZoomFadePageRoute<T> extends PageRoute<T> {
+  _ZoomFadePageRoute({required this.child});
+
+  final Widget child;
+
+  @override
+  Color? get barrierColor => null;
+
+  @override
+  String? get barrierLabel => null;
+
+  @override
+  bool get maintainState => true;
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 300);
+
+  @override
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
+    return child;
+  }
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return const FadeUpwardsPageTransitionsBuilder().buildTransitions(
+      this,
+      context,
+      animation,
+      secondaryAnimation,
+      child,
     );
   }
 }

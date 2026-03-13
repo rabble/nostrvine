@@ -40,12 +40,14 @@ class VideoClipEditorTopBar extends ConsumerWidget {
             Expanded(
               child: Align(
                 alignment: .centerLeft,
-                child: isReordering || !isEditing
+                child: isReordering
                     ? const SizedBox.shrink()
                     : DivineIconButton(
-                        onPressed: () => context.read<ClipEditorBloc>().add(
-                          const ClipEditorEditingStopped(),
-                        ),
+                        onPressed: isEditing
+                            ? () => context.read<ClipEditorBloc>().add(
+                                const ClipEditorEditingStopped(),
+                              )
+                            : context.pop,
                         icon: .x,
                         type: .ghostSecondary,
                       ),
@@ -70,8 +72,9 @@ class VideoClipEditorTopBar extends ConsumerWidget {
                   ? const SizedBox.shrink()
                   : Align(
                       alignment: .centerRight,
-                      child: DivineButton(
-                        label: 'Done',
+                      child: DivineIconButton(
+                        icon: .check,
+                        semanticLabel: 'Done',
                         size: .small,
                         type: .tertiary,
                         onPressed: () {

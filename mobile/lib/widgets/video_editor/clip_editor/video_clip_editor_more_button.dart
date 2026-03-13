@@ -68,13 +68,6 @@ class _VideoEditorMoreButtonState
           label: 'Save selected clip',
           onTap: _saveClipToLibrary,
         ),
-        VineBottomSheetActionData(
-          iconPath: 'assets/icon/trash.svg',
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: 'Delete clips & start over',
-          onTap: _deleteAndStartOver,
-          isDestructive: true,
-        ),
       ],
     );
   }
