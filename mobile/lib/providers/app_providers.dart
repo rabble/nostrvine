@@ -941,13 +941,13 @@ HashtagService hashtagService(Ref ref) {
   return HashtagService(videoEventService, cacheService);
 }
 
-/// Social service depends on Nostr service, Auth service, and Analytics API
+/// Social service depends on Nostr service, Auth service, and ProfileRepository
 @Riverpod(keepAlive: true)
 SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
-  final analyticsApiService = ref.watch(analyticsApiServiceProvider);
+  final profileRepository = ref.watch(profileRepositoryProvider);
 
   final env = ref.watch(currentEnvironmentProvider);
 
@@ -955,7 +955,7 @@ SocialService socialService(Ref ref) {
     nostrService,
     authService,
     personalEventCache: personalEventCache,
-    analyticsApiService: analyticsApiService,
+    profileRepository: profileRepository,
     indexerRelayUrls: env.indexerRelays,
   );
 }
@@ -1002,9 +1002,6 @@ FollowRepository followRepository(Ref ref) {
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
 
-  // Get analytics API service for fast REST-based following list bootstrap
-  final analyticsService = ref.read(analyticsApiServiceProvider);
-
   // Get FunnelcakeApiClient for direct API access
   final funnelcakeApiClient = ref.watch(funnelcakeApiClientProvider);
 
@@ -1026,14 +1023,6 @@ FollowRepository followRepository(Ref ref) {
             );
           }
         : null,
-    fetchFollowingFromApi: (pubkey) async {
-      final result = await analyticsService.getFollowing(pubkey, limit: 5000);
-      return result.pubkeys;
-    },
-    fetchFollowersFromApi: (pubkey) async {
-      final result = await analyticsService.getFollowers(pubkey, limit: 5000);
-      return result.pubkeys;
-    },
     fetchFollowerCount: (pubkey) async {
       final socialService = ref.read(socialServiceProvider);
       final stats = await socialService.getFollowerStats(pubkey);

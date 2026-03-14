@@ -598,6 +598,18 @@ class ProfileRepository {
     return _funnelcakeApiClient.getUserProfile(pubkey);
   }
 
+  /// Fetches follower/following counts from the Funnelcake REST API.
+  ///
+  /// Returns [SocialCounts] or null if the API is unavailable.
+  ///
+  /// Throws [FunnelcakeException] subtypes on API errors.
+  Future<SocialCounts?> getSocialCounts(String pubkey) async {
+    if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+      return null;
+    }
+    return _funnelcakeApiClient.getSocialCounts(pubkey);
+  }
+
   /// Fetches multiple user profiles in bulk from the Funnelcake REST API.
   ///
   /// Returns a [BulkProfilesResponse] containing a map of pubkey to profile

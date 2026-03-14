@@ -9,12 +9,12 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/nostr_event_kinds.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 /// Represents a follow set (NIP-51 Kind 30000)
 class FollowSet {
@@ -88,10 +88,10 @@ class SocialService {
     this._nostrService,
     this._authService, {
     PersonalEventCacheService? personalEventCache,
-    AnalyticsApiService? analyticsApiService,
+    ProfileRepository? profileRepository,
     List<String>? indexerRelayUrls,
   }) : _personalEventCache = personalEventCache,
-       _analyticsApiService = analyticsApiService,
+       _profileRepository = profileRepository,
        _indexerRelayUrls =
            indexerRelayUrls ?? IndexerRelayConfig.defaultIndexers {
     _initialize();
@@ -99,7 +99,7 @@ class SocialService {
   final NostrClient _nostrService;
   final AuthService _authService;
   final PersonalEventCacheService? _personalEventCache;
-  final AnalyticsApiService? _analyticsApiService;
+  final ProfileRepository? _profileRepository;
   final List<String> _indexerRelayUrls;
 
   // Cache for follower/following counts
@@ -247,13 +247,13 @@ class SocialService {
   ///
   /// Returns null if the REST API is unavailable or the request fails.
   Future<Map<String, int>?> _fetchFollowerStatsViaRest(String pubkey) async {
-    final analyticsApi = _analyticsApiService;
-    if (analyticsApi == null || !analyticsApi.isAvailable) {
+    final profileRepo = _profileRepository;
+    if (profileRepo == null) {
       return null;
     }
 
     try {
-      final counts = await analyticsApi.getSocialCounts(pubkey);
+      final counts = await profileRepo.getSocialCounts(pubkey);
       if (counts != null) {
         Log.debug(
           'REST API follower stats: ${counts.followerCount} followers, '
