@@ -95,12 +95,15 @@ void main() {
           relayNotificationUnreadCountProvider.overrideWithValue(0),
           goRouterProvider.overrideWithValue(mockGoRouter),
         ],
-        home: MultiBlocProvider(
-          providers: [
-            BlocProvider<ConversationListBloc>.value(value: mockBloc),
-            BlocProvider<MyFollowingBloc>.value(value: mockFollowingBloc),
-          ],
-          child: const InboxView(),
+        home: MockGoRouterProvider(
+          goRouter: mockGoRouter,
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider<ConversationListBloc>.value(value: mockBloc),
+              BlocProvider<MyFollowingBloc>.value(value: mockFollowingBloc),
+            ],
+            child: const InboxView(),
+          ),
         ),
       );
     }
@@ -191,7 +194,7 @@ void main() {
     });
 
     group('navigation', () {
-      testWidgets('calls pushNamed when a conversation is tapped', (
+      testWidgets('calls push when a conversation is tapped', (
         tester,
       ) async {
         final conversation = DmConversation(
@@ -215,9 +218,8 @@ void main() {
         await tester.pumpAndSettle();
 
         when(
-          () => mockGoRouter.pushNamed(
+          () => mockGoRouter.push(
             any(),
-            pathParameters: any(named: 'pathParameters'),
             extra: any(named: 'extra'),
           ),
         ).thenAnswer((_) async => null);
@@ -226,9 +228,8 @@ void main() {
         await tester.pump();
 
         verify(
-          () => mockGoRouter.pushNamed(
-            ConversationPage.routeName,
-            pathParameters: {'id': 'conv123'},
+          () => mockGoRouter.push(
+            ConversationPage.pathForId('conv123'),
             extra: [otherPubkey],
           ),
         ).called(1);
