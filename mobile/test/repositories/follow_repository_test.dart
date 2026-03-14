@@ -126,7 +126,7 @@ void main() {
             limit: any(named: 'limit'),
           ),
         ).thenAnswer(
-          (_) async => PaginatedPubkeys(
+          (_) async => const PaginatedPubkeys(
             pubkeys: [testTargetPubkey, testTargetPubkey2],
           ),
         );
