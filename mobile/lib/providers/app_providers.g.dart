@@ -2512,17 +2512,17 @@ final class HashtagServiceProvider
 
 String _$hashtagServiceHash() => r'5cd38d3c2e8d78a6f7b74a72b650d79e28938fe4';
 
-/// Social service depends on Nostr service, Auth service, and Analytics API
+/// Social service depends on Nostr service, Auth service, and ProfileRepository
 
 @ProviderFor(socialService)
 const socialServiceProvider = SocialServiceProvider._();
 
-/// Social service depends on Nostr service, Auth service, and Analytics API
+/// Social service depends on Nostr service, Auth service, and ProfileRepository
 
 final class SocialServiceProvider
     extends $FunctionalProvider<SocialService, SocialService, SocialService>
     with $Provider<SocialService> {
-  /// Social service depends on Nostr service, Auth service, and Analytics API
+  /// Social service depends on Nostr service, Auth service, and ProfileRepository
   const SocialServiceProvider._()
     : super(
         from: null,
@@ -2556,7 +2556,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'6bcd6a86c6f0d5b42f84dc8cac32c9de51a3b950';
+String _$socialServiceHash() => r'7f858c18bfb9a531aef63fad0086233718f71a6a';
 
 /// Cached following list loaded directly from SharedPreferences.
 ///
@@ -2690,7 +2690,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'b26951609811714d4830b2c8388b1f168d66b516';
+String _$followRepositoryHash() => r'1f2f6ee87179a7ca7cb52695e4e304ff56704c41';
 
 /// Provider for [CuratedListRepository] instance.
 ///
