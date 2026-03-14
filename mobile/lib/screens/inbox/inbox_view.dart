@@ -11,7 +11,6 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
@@ -71,7 +70,7 @@ class _InboxViewState extends ConsumerState<InboxView> {
 /// Pushes the conversation page using the [GoRouter] instance directly,
 /// bypassing the nested Navigator's context which cannot reach GoRouter.
 void _pushConversation(
-  GoRouter router,
+  BuildContext context,
   String conversationId,
   List<String> participantPubkeys,
 ) {
@@ -80,9 +79,8 @@ void _pushConversation(
     name: 'InboxView',
     category: LogCategory.ui,
   );
-  router.pushNamed(
-    ConversationPage.routeName,
-    pathParameters: {'id': conversationId},
+  context.push(
+    ConversationPage.pathForId(conversationId),
     extra: participantPubkeys,
   );
 }
@@ -96,7 +94,6 @@ class _MessagesContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authService = ref.watch(authServiceProvider);
     final currentPubkey = authService.currentPublicKeyHex ?? '';
-    final router = ref.read(goRouterProvider);
 
     return BlocListener<ConversationListBloc, ConversationListState>(
       listenWhen: (prev, curr) =>
@@ -118,7 +115,7 @@ class _MessagesContent extends ConsumerWidget {
         );
 
         _pushConversation(
-          router,
+          context,
           target.conversationId,
           target.participantPubkeys,
         );
@@ -140,10 +137,7 @@ class _MessagesContent extends ConsumerWidget {
           ),
           // Conversation list or empty state
           Expanded(
-            child: _ConversationListContent(
-              currentUserPubkey: currentPubkey,
-              router: router,
-            ),
+            child: _ConversationListContent(currentUserPubkey: currentPubkey),
           ),
         ],
       ),
@@ -155,11 +149,9 @@ class _MessagesContent extends ConsumerWidget {
 class _ConversationListContent extends StatelessWidget {
   const _ConversationListContent({
     required this.currentUserPubkey,
-    required this.router,
   });
 
   final String currentUserPubkey;
-  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
@@ -175,7 +167,6 @@ class _ConversationListContent extends StatelessWidget {
       ConversationListStatus.error => const InboxEmptyState(),
       ConversationListStatus.loaded => _ConversationList(
         currentUserPubkey: currentUserPubkey,
-        router: router,
       ),
     };
   }
@@ -184,13 +175,11 @@ class _ConversationListContent extends StatelessWidget {
 class _ConversationList extends StatelessWidget {
   const _ConversationList({
     required this.currentUserPubkey,
-    required this.router,
   });
 
   static const double _paginationThreshold = 200;
 
   final String currentUserPubkey;
-  final GoRouter router;
 
   @override
   Widget build(BuildContext context) {
@@ -258,6 +247,6 @@ class _ConversationList extends StatelessWidget {
         .where((pk) => pk != currentUserPubkey)
         .toList();
 
-    _pushConversation(router, conversation.id, otherPubkeys);
+    _pushConversation(context, conversation.id, otherPubkeys);
   }
 }
