@@ -137,17 +137,17 @@ class _NotificationBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+      height: 20,
+      constraints: const BoxConstraints(minWidth: 20),
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: const BoxDecoration(
         color: VineTheme.error,
         borderRadius: BorderRadius.all(Radius.circular(1000)),
       ),
-      child: Center(
-        child: Text(
-          count > 99 ? '99+' : '$count',
-          style: VineTheme.labelSmallFont(),
-        ),
+      alignment: Alignment.center,
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        style: VineTheme.labelSmallFont(),
       ),
     );
   }

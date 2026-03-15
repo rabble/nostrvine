@@ -49,6 +49,34 @@ abstract class TimeFormatter {
     return DateFormat('MMMM d').format(date);
   }
 
+  /// Formats a Unix timestamp (seconds) for conversation list timestamps.
+  ///
+  /// - Under 1 minute: "now"
+  /// - Under 1 hour: relative minutes — "1m", "5m", "59m"
+  /// - Under 24 hours: relative hours — "1h", "3h", "23h"
+  /// - Yesterday: "Yesterday"
+  /// - 2–6 days ago: day of week — "Monday", "Tuesday"
+  /// - 7–364 days (same year): "Mar 3", "Jan 15"
+  /// - 1+ years ago: "Mar 3, 2025"
+  static String formatConversationTimestamp(int unixSeconds) {
+    final now = DateTime.now();
+    final date = DateTime.fromMillisecondsSinceEpoch(unixSeconds * 1000);
+    final diff = now.difference(date);
+
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m';
+    if (diff.inHours < 24) return '${diff.inHours}h';
+
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDay = DateTime(date.year, date.month, date.day);
+    final dayDiff = today.difference(messageDay).inDays;
+
+    if (dayDiff == 1) return 'Yesterday';
+    if (dayDiff >= 2 && dayDiff <= 6) return DateFormat.EEEE().format(date);
+    if (date.year == now.year) return DateFormat.MMMd().format(date);
+    return DateFormat.yMMMd().format(date);
+  }
+
   /// Formats a Unix timestamp (seconds) for message bubble timestamps.
   ///
   /// Returns "Now" for < 60s, "9:41 AM" for today, "Yesterday" for
