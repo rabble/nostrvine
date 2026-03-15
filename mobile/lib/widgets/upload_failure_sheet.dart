@@ -55,8 +55,8 @@ Future<void> showUploadFailureSheet(
       messenger?.showSnackBar(
         DivineSnackbarContainer.snackBar('Retrying upload…'),
       );
-    case _:
-      // Dismissed or 'save_drafts': remove from queue, draft stays in library
+    case 'save_drafts':
+      // Explicit save: remove from queue, draft stays in library
       context.read<BackgroundPublishBloc>().add(
         BackgroundPublishVanished(draftId: upload.draft.id),
       );
@@ -70,6 +70,12 @@ Future<void> showUploadFailureSheet(
             context.push(LibraryScreen.draftsPath);
           },
         ),
+      );
+    case _:
+      // Sheet was popped externally (e.g. during route transition).
+      // Save to drafts silently so the user's content is preserved.
+      context.read<BackgroundPublishBloc>().add(
+        BackgroundPublishVanished(draftId: upload.draft.id),
       );
   }
 }
