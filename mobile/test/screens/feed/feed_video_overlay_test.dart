@@ -46,6 +46,8 @@ void main() {
     late PlayerStream mockStream;
     late PlayerState mockPlayerState;
     late CuratedListRepository mockCuratedListRepository;
+    late MockProfileRepository mockProfileRepository;
+    late MockNip05VerificationService mockNip05VerificationService;
     late VideoEvent testVideo;
     late StreamController<bool> playingController;
     late StreamController<bool> bufferingController;
@@ -61,6 +63,8 @@ void main() {
       mockStream = _MockPlayerStream();
       mockPlayerState = _MockPlayerState();
       mockCuratedListRepository = _MockCuratedListRepository();
+      mockProfileRepository = createMockProfileRepository();
+      mockNip05VerificationService = createMockNip05VerificationService();
       playingController = StreamController<bool>.broadcast();
       bufferingController = StreamController<bool>.broadcast();
       pagePosition = ValueNotifier<double>(0);
@@ -116,6 +120,8 @@ void main() {
             mockCuratedListRepository,
           ),
         ],
+        mockProfileRepository: mockProfileRepository,
+        mockNip05VerificationService: mockNip05VerificationService,
         home: Scaffold(
           body: BlocProvider<VideoInteractionsBloc>.value(
             value: mockInteractionsBloc,
@@ -163,7 +169,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 220));
 
-        expect(find.bySemanticsLabel('Play video'), findsOneWidget);
+        expect(find.byKey(const ValueKey('paused-play')), findsOneWidget);
       });
 
       testWidgets('hides the centered play affordance while playing', (
@@ -174,7 +180,7 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pump();
 
-        expect(find.bySemanticsLabel('Play video'), findsNothing);
+        expect(find.byKey(const ValueKey('paused-play')), findsNothing);
       });
 
       testWidgets(
@@ -187,11 +193,11 @@ void main() {
           );
           await tester.pump();
 
-          expect(find.bySemanticsLabel('Play video'), findsNothing);
+          expect(find.byKey(const ValueKey('paused-play')), findsNothing);
 
           firstFrameCompleter.complete();
           await tester.pump();
-          expect(find.bySemanticsLabel('Play video'), findsNothing);
+          expect(find.byKey(const ValueKey('paused-play')), findsNothing);
 
           playingController.add(true);
           await tester.pump();
@@ -199,7 +205,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 220));
 
-          expect(find.bySemanticsLabel('Play video'), findsOneWidget);
+          expect(find.byKey(const ValueKey('paused-play')), findsOneWidget);
         },
       );
 
