@@ -53,8 +53,7 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
       // Defer one more frame so the GoRouter auth-redirect can settle
       // before we surface pending publish failures.
       final settled = Completer<void>();
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => settled.complete());
+      WidgetsBinding.instance.addPostFrameCallback((_) => settled.complete());
       await settled.future;
       if (!mounted) return;
 
