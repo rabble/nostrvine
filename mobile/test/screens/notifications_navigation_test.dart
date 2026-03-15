@@ -49,7 +49,7 @@ void main() {
         videoEventServiceProvider.overrideWithValue(videoService),
         nostrServiceProvider.overrideWithValue(nostrClient),
       ],
-      child: MaterialApp(
+      child: const MaterialApp(
         home: Scaffold(body: NotificationsScreen()),
       ),
     );
