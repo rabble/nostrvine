@@ -53,8 +53,9 @@ class VideoMetadataBottomBar extends ConsumerWidget {
       permissionsService: permissionsService,
     );
 
-    if (choice == GalleryPermissionChoice.openedSettings) {
-      // Retry once — the user may have just granted access in Settings.
+    if (choice == GalleryPermissionChoice.openedSettings ||
+        choice == GalleryPermissionChoice.granted) {
+      // Retry once — the user may have just granted access.
       await gallerySaveService.saveVideoToGallery(
         finalRenderedClip.video,
       );

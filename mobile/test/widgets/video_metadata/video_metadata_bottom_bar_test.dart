@@ -75,8 +75,7 @@ void main() {
           child: MaterialApp(home: Scaffold(body: VideoMetadataBottomBar())),
         ),
       );
-      // TODO(@hm21): Once the Drafts library exists, uncomment below
-      // expect(find.text('Save draft'), findsOneWidget);
+      expect(find.text('Save for Later'), findsOneWidget);
       expect(find.text('Post'), findsOneWidget);
     });
 
@@ -187,6 +186,9 @@ void main() {
         when(
           () => mockGallerySaveService.saveVideoToGallery(any()),
         ).thenAnswer((_) async => const GallerySavePermissionDenied());
+        when(
+          () => mockPermissionsService.checkGalleryStatus(),
+        ).thenAnswer((_) async => PermissionStatus.requiresSettings);
 
         final mockNotifier = _MockVideoEditorNotifier(
           VideoEditorProviderState(
@@ -280,6 +282,9 @@ void main() {
       when(
         () => mockGallerySaveService.saveVideoToGallery(any()),
       ).thenAnswer((_) async => const GallerySavePermissionDenied());
+      when(
+        () => mockPermissionsService.checkGalleryStatus(),
+      ).thenAnswer((_) async => PermissionStatus.requiresSettings);
 
       final mockNotifier = _MockVideoEditorNotifier(
         VideoEditorProviderState(

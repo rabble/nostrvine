@@ -18,6 +18,9 @@ enum GalleryPermissionChoice {
   /// User tapped "Open Settings" and may have granted permission.
   openedSettings,
 
+  /// User granted permission via the OS dialog.
+  granted,
+
   /// User tapped "Don't Ask Again" — skip gallery saves from now on.
   dismissedForever,
 
@@ -41,6 +44,16 @@ Future<GalleryPermissionChoice> showGalleryPermissionSheet(
   required PermissionsService permissionsService,
 }) async {
   final destination = GallerySaveService.destinationName;
+  final status = await permissionsService.checkGalleryStatus();
+
+  // Permission may have been granted since the save attempt.
+  if (status == PermissionStatus.granted) {
+    return GalleryPermissionChoice.granted;
+  } else if (!context.mounted) {
+    return GalleryPermissionChoice.skipped;
+  }
+
+  final requiresSettings = status == PermissionStatus.requiresSettings;
 
   final result = await VineBottomSheet.show<GalleryPermissionChoice>(
     context: context,
@@ -48,14 +61,27 @@ Future<GalleryPermissionChoice> showGalleryPermissionSheet(
     children: [
       _GalleryPermissionSheetContent(
         destination: destination,
-        onOpenSettings: () async {
-          await permissionsService.openAppSettings();
-          if (context.mounted) {
-            Navigator.of(
-              context,
-            ).pop(GalleryPermissionChoice.openedSettings);
-          }
-        },
+        requiresSettings: requiresSettings,
+        onPrimaryAction: requiresSettings
+            ? () async {
+                await permissionsService.openAppSettings();
+                if (context.mounted) {
+                  Navigator.of(
+                    context,
+                  ).pop(GalleryPermissionChoice.openedSettings);
+                }
+              }
+            : () async {
+                final requested = await permissionsService
+                    .requestGalleryPermission();
+                if (context.mounted) {
+                  Navigator.of(context).pop(
+                    requested == PermissionStatus.granted
+                        ? GalleryPermissionChoice.granted
+                        : GalleryPermissionChoice.skipped,
+                  );
+                }
+              },
         onDismissForever: () async {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setBool(_kGalleryPermissionDismissedKey, true);
@@ -78,13 +104,15 @@ Future<GalleryPermissionChoice> showGalleryPermissionSheet(
 class _GalleryPermissionSheetContent extends StatelessWidget {
   const _GalleryPermissionSheetContent({
     required this.destination,
-    required this.onOpenSettings,
+    required this.requiresSettings,
+    required this.onPrimaryAction,
     required this.onDismissForever,
     required this.onSkip,
   });
 
   final String destination;
-  final VoidCallback onOpenSettings;
+  final bool requiresSettings;
+  final VoidCallback onPrimaryAction;
   final VoidCallback onDismissForever;
   final VoidCallback onSkip;
 
@@ -113,8 +141,11 @@ class _GalleryPermissionSheetContent extends StatelessWidget {
           Text(
             // TODO(l10n): Replace with context.l10n when localization
             // is added.
-            'To save a copy of your videos, allow '
-            '$destination access in Settings.',
+            requiresSettings
+                ? 'To save a copy of your videos, allow '
+                      '$destination access in Settings.'
+                : 'Divine needs $destination access to '
+                      'save a copy of your videos.',
             style: VineTheme.bodyLargeFont(
               color: VineTheme.onSurfaceVariant,
             ),
@@ -125,8 +156,8 @@ class _GalleryPermissionSheetContent extends StatelessWidget {
           DivinePrimaryButton(
             // TODO(l10n): Replace with context.l10n when localization
             // is added.
-            label: 'Open Settings',
-            onPressed: onOpenSettings,
+            label: requiresSettings ? 'Open Settings' : 'Allow Access',
+            onPressed: onPrimaryAction,
           ),
 
           const SizedBox(height: 16),

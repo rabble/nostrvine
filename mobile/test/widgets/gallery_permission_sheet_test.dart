@@ -1,5 +1,7 @@
 // ABOUTME: Widget tests for the gallery permission bottom sheet.
-// ABOUTME: Verifies Open Settings, Not Now, and Don't Ask Again actions.
+// ABOUTME: Verifies Open Settings, Allow Access, Not Now, and
+// ABOUTME: Don't Ask Again actions for both canRequest and
+// ABOUTME: requiresSettings permission states.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +24,12 @@ void main() {
     when(
       () => mockPermissionsService.openAppSettings(),
     ).thenAnswer((_) async => true);
+    when(
+      () => mockPermissionsService.checkGalleryStatus(),
+    ).thenAnswer((_) async => PermissionStatus.requiresSettings);
+    when(
+      () => mockPermissionsService.requestGalleryPermission(),
+    ).thenAnswer((_) async => PermissionStatus.granted);
   });
 
   Widget buildSubject() {
@@ -173,6 +181,123 @@ void main() {
         },
       );
     });
+
+    group('when permission can be requested', () {
+      setUp(() {
+        when(
+          () => mockPermissionsService.checkGalleryStatus(),
+        ).thenAnswer((_) async => PermissionStatus.canRequest);
+      });
+
+      group('renders', () {
+        testWidgets('Allow Access primary button', (tester) async {
+          await tester.pumpWidget(buildSubject());
+          await tester.tap(find.text('Open Sheet'));
+          await tester.pumpAndSettle();
+
+          expect(find.byType(DivinePrimaryButton), findsOneWidget);
+          expect(find.text('Allow Access'), findsOneWidget);
+          expect(find.text('Open Settings'), findsNothing);
+        });
+
+        testWidgets('request description text', (tester) async {
+          await tester.pumpWidget(buildSubject());
+          await tester.tap(find.text('Open Sheet'));
+          await tester.pumpAndSettle();
+
+          expect(
+            find.textContaining(
+              'Divine needs Gallery access to save a copy of your videos',
+            ),
+            findsOneWidget,
+          );
+        });
+      });
+
+      group('interactions', () {
+        testWidgets(
+          'tapping Allow Access calls requestGalleryPermission '
+          'and returns $GalleryPermissionChoice.granted when granted',
+          (tester) async {
+            await tester.pumpWidget(buildSubject());
+            await tester.tap(find.text('Open Sheet'));
+            await tester.pumpAndSettle();
+
+            await tester.tap(find.text('Allow Access'));
+            await tester.pumpAndSettle();
+
+            // Sheet dismissed
+            expect(find.text('Gallery Access Needed'), findsNothing);
+
+            verify(
+              () => mockPermissionsService.requestGalleryPermission(),
+            ).called(1);
+            verifyNever(() => mockPermissionsService.openAppSettings());
+            expect(find.text('result:granted'), findsOneWidget);
+          },
+        );
+
+        testWidgets(
+          'tapping Allow Access returns '
+          '$GalleryPermissionChoice.skipped when denied',
+          (tester) async {
+            when(
+              () => mockPermissionsService.requestGalleryPermission(),
+            ).thenAnswer(
+              (_) async => PermissionStatus.requiresSettings,
+            );
+
+            await tester.pumpWidget(buildSubject());
+            await tester.tap(find.text('Open Sheet'));
+            await tester.pumpAndSettle();
+
+            await tester.tap(find.text('Allow Access'));
+            await tester.pumpAndSettle();
+
+            expect(find.text('Gallery Access Needed'), findsNothing);
+
+            verify(
+              () => mockPermissionsService.requestGalleryPermission(),
+            ).called(1);
+            expect(find.text('result:skipped'), findsOneWidget);
+          },
+        );
+
+        testWidgets(
+          'tapping Not Now returns $GalleryPermissionChoice.skipped',
+          (tester) async {
+            await tester.pumpWidget(buildSubject());
+            await tester.tap(find.text('Open Sheet'));
+            await tester.pumpAndSettle();
+
+            await tester.tap(find.text('Not Now'));
+            await tester.pumpAndSettle();
+
+            expect(find.text('Gallery Access Needed'), findsNothing);
+            expect(find.text('result:skipped'), findsOneWidget);
+          },
+        );
+      });
+    });
+
+    testWidgets(
+      'returns $GalleryPermissionChoice.granted without showing sheet '
+      'when permission is already granted',
+      (tester) async {
+        when(
+          () => mockPermissionsService.checkGalleryStatus(),
+        ).thenAnswer((_) async => PermissionStatus.granted);
+
+        await tester.pumpWidget(buildSubject());
+        await tester.tap(find.text('Open Sheet'));
+        await tester.pumpAndSettle();
+
+        // Sheet should not appear
+        expect(find.text('Gallery Access Needed'), findsNothing);
+        // Result should be granted
+        expect(find.text('result:granted'), findsOneWidget);
+      },
+    );
   });
 
   group('isGalleryPermissionDismissedForever', () {
