@@ -413,11 +413,14 @@ class DmRepository {
           replyToId: replyToId,
         );
 
+        final existingSend = await _conversationsDao.getConversation(
+          conversationId,
+        );
         await _conversationsDao.upsertConversation(
           id: conversationId,
           participantPubkeys: jsonEncode(participants),
           isGroup: false,
-          createdAt: now,
+          createdAt: existingSend?.createdAt ?? now,
           lastMessageContent: content,
           lastMessageTimestamp: now,
           lastMessageSenderPubkey: _userPubkey,
@@ -505,11 +508,14 @@ class DmRepository {
         replyToId: replyToId,
       );
 
+      final existingGroup = await _conversationsDao.getConversation(
+        conversationId,
+      );
       await _conversationsDao.upsertConversation(
         id: conversationId,
         participantPubkeys: jsonEncode(participants),
         isGroup: true,
-        createdAt: now,
+        createdAt: existingGroup?.createdAt ?? now,
         lastMessageContent: content,
         lastMessageTimestamp: now,
         lastMessageSenderPubkey: _userPubkey,
@@ -595,11 +601,14 @@ class DmRepository {
         thumbnailUrl: fileMetadata.thumbnailUrl,
       );
 
+      final existingFile = await _conversationsDao.getConversation(
+        conversationId,
+      );
       await _conversationsDao.upsertConversation(
         id: conversationId,
         participantPubkeys: jsonEncode(participants),
         isGroup: false,
-        createdAt: now,
+        createdAt: existingFile?.createdAt ?? now,
         lastMessageContent: _filePreviewText(fileMetadata.fileType),
         lastMessageTimestamp: now,
         lastMessageSenderPubkey: _userPubkey,

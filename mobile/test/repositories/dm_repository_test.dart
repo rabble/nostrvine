@@ -250,6 +250,9 @@ void main() {
             currentUserHasSent: any(named: 'currentUserHasSent'),
           ),
         ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.getConversation(any()),
+        ).thenAnswer((_) async => null);
 
         final repository = createRepository();
 
@@ -1964,6 +1967,9 @@ void main() {
             currentUserHasSent: any(named: 'currentUserHasSent'),
           ),
         ).thenAnswer((_) async {});
+        when(
+          () => mockConversationsDao.getConversation(any()),
+        ).thenAnswer((_) async => null);
 
         final repository = createRepository();
 

@@ -100,8 +100,13 @@ class _ProfileContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageUrl = profile?.picture;
     final nip05 = profile?.nip05;
-    final followerCount = profile?.rawData['follower_count'];
-    final videoCount = profile?.rawData['video_count'];
+    // REST API uses follower_count/video_count; Nostr Kind 0 uses
+    // vine_followers/vine_loops. Check both sources.
+    final followerCount =
+        profile?.rawData['follower_count'] ??
+        profile?.rawData['vine_followers'];
+    final videoCount =
+        profile?.rawData['video_count'] ?? profile?.rawData['vine_loops'];
 
     return ColoredBox(
       color: VineTheme.scrim15,
