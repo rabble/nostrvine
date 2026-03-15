@@ -531,6 +531,66 @@ void main() {
       });
     });
 
+    group('updateMetadata hashtag extraction', () {
+      test('extracts hashtag when # is typed before existing word', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        // First type "hello"
+        notifier.updateMetadata(description: 'hello');
+        expect(container.read(videoEditorProvider).tags, isEmpty);
+
+        // Then insert # before "hello" to make "#hello"
+        notifier.updateMetadata(description: '#hello');
+        expect(container.read(videoEditorProvider).tags, contains('hello'));
+      });
+
+      test('extracts hashtag at end of description', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        notifier.updateMetadata(description: 'check out #flutter');
+        expect(container.read(videoEditorProvider).tags, contains('flutter'));
+      });
+
+      test('extracts hashtag in middle of description', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        notifier.updateMetadata(description: 'check #dart today');
+        expect(container.read(videoEditorProvider).tags, contains('dart'));
+      });
+
+      test('removes tag when # is deleted from description', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        notifier.updateMetadata(description: 'hello #world');
+        expect(container.read(videoEditorProvider).tags, contains('world'));
+
+        notifier.updateMetadata(description: 'hello world');
+        expect(
+          container.read(videoEditorProvider).tags,
+          isNot(contains('world')),
+        );
+      });
+
+      test('preserves manually added tags when description changes', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        // Manually add a tag
+        notifier.updateMetadata(tags: {'manual'});
+        expect(container.read(videoEditorProvider).tags, contains('manual'));
+
+        // Change description - manual tag should persist
+        notifier.updateMetadata(description: 'some text');
+        expect(container.read(videoEditorProvider).tags, contains('manual'));
+      });
+
+      test('extracts hashtag from title field', () {
+        final notifier = container.read(videoEditorProvider.notifier);
+
+        notifier.updateMetadata(title: 'My #video title');
+        expect(container.read(videoEditorProvider).tags, contains('video'));
+      });
+    });
+
     group('setDraftId', () {
       test('should set the draft ID', () {
         const id = 'test-draft-id';
