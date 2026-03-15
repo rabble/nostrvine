@@ -173,8 +173,7 @@ class _VideoPreviewContent extends ConsumerWidget {
             isInitialized: isInitialized,
           ),
           // Metadata overlay layer
-          if (!previewOnly)
-            _PreviewOverlay(isPreviewReady: isPreviewReady),
+          if (!previewOnly) _PreviewOverlay(isPreviewReady: isPreviewReady),
         ],
       ),
     );

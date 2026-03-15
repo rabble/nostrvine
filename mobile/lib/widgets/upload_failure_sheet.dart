@@ -1,13 +1,14 @@
 // ABOUTME: Bottom sheet shown when a background video upload fails.
 // ABOUTME: Displays error reason with retry and save-to-drafts actions.
 
+import 'dart:io';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
