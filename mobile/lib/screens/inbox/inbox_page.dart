@@ -33,9 +33,10 @@ class InboxPage extends ConsumerWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) =>
-              ConversationListBloc(dmRepository: dmRepository)
-                ..add(const ConversationListStarted()),
+          create: (_) => ConversationListBloc(
+            dmRepository: dmRepository,
+            followRepository: followRepository,
+          )..add(const ConversationListStarted()),
         ),
         BlocProvider(
           create: (_) => DmUnreadCountCubit(dmRepository: dmRepository),

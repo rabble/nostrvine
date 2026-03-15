@@ -1,6 +1,7 @@
 // ABOUTME: BLoC for the conversation list (Messages tab).
 // ABOUTME: Manages loading conversations with pagination, handling real-time
-// ABOUTME: updates, and marking conversations as read.
+// ABOUTME: updates, marking conversations as read, and splitting conversations
+// ABOUTME: into normal inbox vs message requests based on follow state.
 
 import 'dart:async';
 
@@ -9,15 +10,19 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
 import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 
 part 'conversation_list_event.dart';
 part 'conversation_list_state.dart';
 
 class ConversationListBloc
     extends Bloc<ConversationListEvent, ConversationListState> {
-  ConversationListBloc({required DmRepository dmRepository})
-    : _dmRepository = dmRepository,
-      super(const ConversationListState()) {
+  ConversationListBloc({
+    required DmRepository dmRepository,
+    required FollowRepository followRepository,
+  }) : _dmRepository = dmRepository,
+       _followRepository = followRepository,
+       super(const ConversationListState()) {
     on<ConversationListStarted>(
       _onStarted,
       transformer: restartable(),
@@ -37,9 +42,63 @@ class ConversationListBloc
     on<ConversationListNavigationConsumed>(
       _onNavigationConsumed,
     );
+    on<_ConversationListFollowingChanged>(
+      _onFollowingChanged,
+      transformer: restartable(),
+    );
+
+    // Listen to follow-list changes and re-split conversations.
+    _followingSubscription = _followRepository.followingStream.listen((_) {
+      add(const _ConversationListFollowingChanged());
+    });
   }
 
   final DmRepository _dmRepository;
+  final FollowRepository _followRepository;
+  StreamSubscription<List<String>>? _followingSubscription;
+
+  @override
+  Future<void> close() {
+    _followingSubscription?.cancel();
+    return super.close();
+  }
+
+  /// Splits all conversations into normal (followed) and requests (not followed).
+  ({
+    List<DmConversation> followed,
+    List<DmConversation> requests,
+  })
+  _splitConversations(List<DmConversation> all) {
+    final userPubkey = _dmRepository.userPubkey;
+    final followed = <DmConversation>[];
+    final requests = <DmConversation>[];
+
+    for (final conversation in all) {
+      final otherPubkeys = conversation.participantPubkeys.where(
+        (pk) => pk != userPubkey,
+      );
+
+      // A conversation is a request when the current user has never
+      // sent a message in it.  For 1:1 conversations, conversations
+      // from followed contacts skip the request classification.
+      // For groups, follow state is irrelevant per the spec.
+      final isFollowedContact =
+          !conversation.isGroup &&
+          otherPubkeys.any(_followRepository.isFollowing);
+      final isRequest =
+          otherPubkeys.isNotEmpty &&
+          !conversation.currentUserHasSent &&
+          !isFollowedContact;
+
+      if (isRequest) {
+        requests.add(conversation);
+      } else {
+        followed.add(conversation);
+      }
+    }
+
+    return (followed: followed, requests: requests);
+  }
 
   Future<void> _onStarted(
     ConversationListStarted event,
@@ -57,18 +116,43 @@ class ConversationListBloc
 
     await emit.forEach(
       _dmRepository.watchConversations(limit: state.currentLimit),
-      onData: (conversations) => state.copyWith(
-        status: ConversationListStatus.loaded,
-        conversations: conversations,
-        hasMore: conversations.length >= state.currentLimit,
-        isLoadingMore: false,
-      ),
+      onData: (allConversations) {
+        final split = _splitConversations(allConversations);
+        return state.copyWith(
+          status: ConversationListStatus.loaded,
+          conversations: split.followed,
+          requestConversations: split.requests,
+          hasMore: allConversations.length >= state.currentLimit,
+          isLoadingMore: false,
+        );
+      },
       onError: (error, stackTrace) {
         addError(error, stackTrace);
         return state.copyWith(
           status: ConversationListStatus.error,
         );
       },
+    );
+  }
+
+  void _onFollowingChanged(
+    _ConversationListFollowingChanged event,
+    Emitter<ConversationListState> emit,
+  ) {
+    // Re-split existing conversations when the follow list changes.
+    if (state.status != ConversationListStatus.loaded) return;
+    final all = [...state.conversations, ...state.requestConversations]
+      ..sort((a, b) {
+        final aTime = a.lastMessageTimestamp ?? a.createdAt;
+        final bTime = b.lastMessageTimestamp ?? b.createdAt;
+        return bTime.compareTo(aTime);
+      });
+    final split = _splitConversations(all);
+    emit(
+      state.copyWith(
+        conversations: split.followed,
+        requestConversations: split.requests,
+      ),
     );
   }
 

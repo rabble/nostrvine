@@ -358,6 +358,7 @@ class AppDatabase extends _$AppDatabase {
           last_message_sender_pubkey TEXT,
           subject TEXT,
           is_read INTEGER NOT NULL DEFAULT 1,
+          current_user_has_sent INTEGER NOT NULL DEFAULT 0,
           created_at INTEGER NOT NULL
         )
       ''');
@@ -370,6 +371,13 @@ class AppDatabase extends _$AppDatabase {
         ON conversations (is_read)
       ''');
     }
+
+    // Add current_user_has_sent column to existing conversations tables.
+    await _addColumnIfMissing(
+      'conversations',
+      'current_user_has_sent',
+      'INTEGER NOT NULL DEFAULT 0',
+    );
 
     // Populate new columns from existing JSON data blobs
     await _backfillFilePathColumns();

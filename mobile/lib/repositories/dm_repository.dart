@@ -330,16 +330,24 @@ class DmRepository {
           ? _filePreviewText(fileMetadata?.fileType)
           : rumorEvent.content;
 
+      // Preserve sticky state from any existing conversation row so that
+      // the full-row upsert does not clobber previous values.
+      final existing = await _conversationsDao.getConversation(
+        conversationId,
+      );
+
       await _conversationsDao.upsertConversation(
         id: conversationId,
         participantPubkeys: jsonEncode(participants),
         isGroup: isGroup,
-        createdAt: rumorEvent.createdAt,
+        createdAt: existing?.createdAt ?? rumorEvent.createdAt,
         lastMessageContent: previewContent,
         lastMessageTimestamp: rumorEvent.createdAt,
         lastMessageSenderPubkey: rumorEvent.pubkey,
         subject: subject,
         isRead: isSentByMe,
+        currentUserHasSent:
+            isSentByMe || (existing?.currentUserHasSent ?? false),
       );
 
       Log.debug(
@@ -413,6 +421,7 @@ class DmRepository {
           lastMessageContent: content,
           lastMessageTimestamp: now,
           lastMessageSenderPubkey: _userPubkey,
+          currentUserHasSent: true,
         );
 
         Log.debug(
@@ -504,6 +513,7 @@ class DmRepository {
         lastMessageContent: content,
         lastMessageTimestamp: now,
         lastMessageSenderPubkey: _userPubkey,
+        currentUserHasSent: true,
       );
     }
 
@@ -593,6 +603,7 @@ class DmRepository {
         lastMessageContent: _filePreviewText(fileMetadata.fileType),
         lastMessageTimestamp: now,
         lastMessageSenderPubkey: _userPubkey,
+        currentUserHasSent: true,
       );
     }
 
@@ -615,6 +626,14 @@ class DmRepository {
         );
   }
 
+  /// Get a single conversation by ID.
+  ///
+  /// Returns `null` if no conversation with the given ID exists.
+  Future<DmConversation?> getConversation(String conversationId) async {
+    final row = await _conversationsDao.getConversation(conversationId);
+    return row == null ? null : _conversationFromRow(row);
+  }
+
   /// Get all conversations.
   Future<List<DmConversation>> getConversations() async {
     final rows = await _conversationsDao.getAllConversations();
@@ -627,6 +646,50 @@ class DmRepository {
   /// Mark a conversation as read.
   Future<void> markConversationAsRead(String conversationId) {
     return _conversationsDao.markAsRead(conversationId);
+  }
+
+  /// Mark multiple conversations as read in a single batch.
+  ///
+  /// No-op when [conversationIds] is empty.
+  Future<void> markConversationsAsRead(List<String> conversationIds) {
+    return _conversationsDao.markMultipleAsRead(conversationIds);
+  }
+
+  /// Remove a conversation and all its messages atomically.
+  ///
+  /// Deletes the messages first, then the conversation metadata
+  /// inside a single database transaction.
+  ///
+  /// Throws:
+  ///
+  /// * [InvalidDataException] if a database constraint is violated.
+  Future<void> removeConversation(String conversationId) {
+    return _conversationsDao.runInTransaction(() async {
+      await _directMessagesDao.deleteConversationMessages(conversationId);
+      await _conversationsDao.deleteConversation(conversationId);
+    });
+  }
+
+  /// Remove multiple conversations and all their messages atomically.
+  ///
+  /// No-op when [conversationIds] is empty.
+  ///
+  /// Throws:
+  ///
+  /// * [InvalidDataException] if a database constraint is violated.
+  Future<void> removeConversations(List<String> conversationIds) {
+    if (conversationIds.isEmpty) return Future.value();
+    return _conversationsDao.runInTransaction(() async {
+      await _directMessagesDao.deleteMultipleConversationMessages(
+        conversationIds,
+      );
+      await _conversationsDao.deleteMultiple(conversationIds);
+    });
+  }
+
+  /// Count the total number of messages in a conversation.
+  Future<int> countMessagesInConversation(String conversationId) {
+    return _directMessagesDao.countMessages(conversationId);
   }
 
   // -------------------------------------------------------------------------
@@ -775,6 +838,7 @@ class DmRepository {
       lastMessageSenderPubkey: row.lastMessageSenderPubkey,
       subject: row.subject,
       isRead: row.isRead,
+      currentUserHasSent: row.currentUserHasSent,
     );
   }
 

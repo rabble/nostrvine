@@ -46,3 +46,8 @@ class ConversationListMarkRead extends ConversationListEvent {
   @override
   List<Object?> get props => [conversationId];
 }
+
+/// Internal event: re-split conversations when following list changes.
+class _ConversationListFollowingChanged extends ConversationListEvent {
+  const _ConversationListFollowingChanged();
+}

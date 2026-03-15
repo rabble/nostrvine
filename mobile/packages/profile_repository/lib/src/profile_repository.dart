@@ -199,13 +199,18 @@ class ProfileRepository {
     });
   }
 
-  /// Fetches a fresh profile from Nostr relays and updates the local cache.
+  /// Fetches a fresh profile and updates the local cache.
   ///
-  /// Skips the relay fetch if the pubkey is confirmed missing (no Kind 0).
-  /// Deduplicates concurrent calls for the same pubkey — only one relay
-  /// request is made, and all callers share the result.
+  /// Uses a layered strategy matching `fetchBatchProfiles`:
+  /// 1. Funnelcake REST API (fast, broad coverage)
+  /// 2. User's connected relays (WebSocket)
+  /// 3. Well-known indexer relays (Purple Pages, Kind Pages)
   ///
-  /// Returns `null` if no profile exists on relays for the given pubkey.
+  /// Skips all fetches if the pubkey is confirmed missing.
+  /// Deduplicates concurrent calls for the same pubkey — only one fetch
+  /// pipeline runs, and all callers share the result.
+  ///
+  /// Returns `null` if no profile exists across all sources.
   /// On success, the profile is automatically cached locally.
   Future<UserProfile?> fetchFreshProfile({required String pubkey}) {
     if (_confirmedMissing.contains(pubkey)) return Future.value();
@@ -221,25 +226,102 @@ class ProfileRepository {
   }
 
   Future<UserProfile?> _doFetchFreshProfile(String pubkey) async {
-    final profileEvent = await _nostrClient.fetchProfile(pubkey);
-    if (profileEvent == null) {
-      _confirmedMissing.add(pubkey);
-      developer.log(
-        'No profile found for $pubkey (relay miss, marked missing)',
-        name: 'ProfileRepository.fetchFreshProfile',
-      );
-      return null;
+    // Step 1: Try Funnelcake REST API (fast, broad coverage).
+    if (_funnelcakeApiClient?.isAvailable ?? false) {
+      try {
+        final data = await _funnelcakeApiClient!.getUserProfile(pubkey);
+        if (data != null && data['_noProfile'] != true) {
+          final profile = UserProfile(
+            pubkey: pubkey,
+            name: data['name'] as String?,
+            displayName: data['display_name'] as String?,
+            about: data['about'] as String?,
+            picture: data['picture'] as String?,
+            banner: data['banner'] as String?,
+            nip05: data['nip05'] as String?,
+            lud16: data['lud16'] as String?,
+            rawData: data,
+            createdAt: DateTime.now(),
+            eventId: 'rest-$pubkey',
+          );
+          developer.log(
+            'Fetched from REST API and caching: '
+            '${profile.bestDisplayName}',
+            name: 'ProfileRepository.fetchFreshProfile',
+          );
+          _knownCached.add(pubkey);
+          await _userProfilesDao.upsertProfile(profile);
+          return profile;
+        }
+        // _noProfile sentinel — user exists but has no Kind 0.
+        // Skip relay/indexer fallback.
+        if (data != null && data['_noProfile'] == true) {
+          _confirmedMissing.add(pubkey);
+          return null;
+        }
+      } on Exception catch (e) {
+        developer.log(
+          'REST API fetch failed (falling back to relay): $e',
+          name: 'ProfileRepository.fetchFreshProfile',
+        );
+      }
     }
 
-    final profile = UserProfile.fromNostrEvent(profileEvent);
+    // Step 2: Try user's connected relays (WebSocket).
+    final profileEvent = await _nostrClient.fetchProfile(pubkey);
+    if (profileEvent != null) {
+      final profile = UserProfile.fromNostrEvent(profileEvent);
+      developer.log(
+        'Fetched from relay and caching: ${profile.bestDisplayName}, '
+        'picture=${profile.picture ?? "null"}',
+        name: 'ProfileRepository.fetchFreshProfile',
+      );
+      _knownCached.add(pubkey);
+      await _userProfilesDao.upsertProfile(profile);
+      return profile;
+    }
+
+    // Step 3: Try well-known indexer relays (NIP-65 discovery points).
+    try {
+      final indexerEvents = await _nostrClient
+          .queryEvents(
+            [
+              Filter(
+                kinds: [0],
+                authors: [pubkey],
+                limit: 1,
+              ),
+            ],
+            tempRelays: _profileIndexerRelays,
+            useCache: false,
+          )
+          .timeout(const Duration(seconds: 5), onTimeout: () => <Event>[]);
+
+      if (indexerEvents.isNotEmpty && indexerEvents.first.kind == 0) {
+        final profile = UserProfile.fromNostrEvent(indexerEvents.first);
+        developer.log(
+          'Fetched from indexer relay and caching: '
+          '${profile.bestDisplayName}',
+          name: 'ProfileRepository.fetchFreshProfile',
+        );
+        _knownCached.add(pubkey);
+        await _userProfilesDao.upsertProfile(profile);
+        return profile;
+      }
+    } on Exception catch (e) {
+      developer.log(
+        'Indexer relay fetch failed: $e',
+        name: 'ProfileRepository.fetchFreshProfile',
+      );
+    }
+
+    // All sources exhausted — mark as confirmed missing.
+    _confirmedMissing.add(pubkey);
     developer.log(
-      'Fetched from relay and caching: ${profile.bestDisplayName}, '
-      'picture=${profile.picture ?? "null"}',
+      'No profile found for $pubkey across all sources, marked missing',
       name: 'ProfileRepository.fetchFreshProfile',
     );
-    _knownCached.add(pubkey);
-    await _userProfilesDao.upsertProfile(profile);
-    return profile;
+    return null;
   }
 
   /// Publishes profile metadata to Nostr relays and updates the local cache.

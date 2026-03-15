@@ -27,6 +27,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     String? lastMessageSenderPubkey,
     String? subject,
     bool isRead = true,
+    bool currentUserHasSent = false,
   }) {
     return into(conversations).insertOnConflictUpdate(
       ConversationsCompanion.insert(
@@ -39,6 +40,7 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
         lastMessageSenderPubkey: Value(lastMessageSenderPubkey),
         subject: Value(subject),
         isRead: Value(isRead),
+        currentUserHasSent: Value(currentUserHasSent),
       ),
     );
   }
@@ -121,9 +123,28 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     );
   }
 
+  /// Mark multiple conversations as read in a single batch.
+  Future<void> markMultipleAsRead(List<String> ids) async {
+    if (ids.isEmpty) return;
+    await (update(conversations)..where((t) => t.id.isIn(ids))).write(
+      const ConversationsCompanion(isRead: Value(true)),
+    );
+  }
+
   /// Delete a conversation by ID.
   Future<int> deleteConversation(String id) {
     return (delete(conversations)..where((t) => t.id.equals(id))).go();
+  }
+
+  /// Delete multiple conversations in a single batch.
+  Future<int> deleteMultiple(List<String> ids) {
+    if (ids.isEmpty) return Future.value(0);
+    return (delete(conversations)..where((t) => t.id.isIn(ids))).go();
+  }
+
+  /// Run a callback inside a database transaction.
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    return attachedDatabase.transaction(action);
   }
 
   /// Delete all conversations.

@@ -10,8 +10,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/dm/conversation_list/conversation_list_bloc.dart';
 import 'package:openvine/repositories/dm_repository.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 
 class _MockDmRepository extends Mock implements DmRepository {}
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 // Full 64-character hex Nostr IDs for test data.
 const _testConversationId1 =
@@ -22,33 +25,51 @@ const _testPubkey1 =
     'c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4';
 const _testPubkey2 =
     'd4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5';
+const _testPubkey3 =
+    'e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6';
 
 DmConversation _createConversation({
   required String id,
   bool isRead = true,
+  bool isGroup = false,
+  bool currentUserHasSent = false,
+  List<String>? participantPubkeys,
 }) {
   return DmConversation(
     id: id,
-    participantPubkeys: const [_testPubkey1, _testPubkey2],
-    isGroup: false,
+    participantPubkeys:
+        participantPubkeys ?? const [_testPubkey1, _testPubkey2],
+    isGroup: isGroup,
     createdAt: 1700000000,
     lastMessageContent: 'Hello',
     lastMessageTimestamp: 1700000100,
     lastMessageSenderPubkey: _testPubkey1,
     isRead: isRead,
+    currentUserHasSent: currentUserHasSent,
   );
 }
 
 void main() {
   group(ConversationListBloc, () {
     late _MockDmRepository mockDmRepository;
+    late _MockFollowRepository mockFollowRepository;
 
     setUp(() {
       mockDmRepository = _MockDmRepository();
+      mockFollowRepository = _MockFollowRepository();
+
+      // Default: all pubkeys are followed (existing tests expect no splitting).
+      when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
+      when(
+        () => mockFollowRepository.followingStream,
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
+      when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
     });
 
-    ConversationListBloc createBloc() =>
-        ConversationListBloc(dmRepository: mockDmRepository);
+    ConversationListBloc createBloc() => ConversationListBloc(
+      dmRepository: mockDmRepository,
+      followRepository: mockFollowRepository,
+    );
 
     test('initial state is $ConversationListState with initial status', () {
       final bloc = createBloc();
@@ -493,6 +514,257 @@ void main() {
         );
       });
     });
+
+    group('ConversationListLoadMore', () {
+      blocTest<ConversationListBloc, ConversationListState>(
+        'increments currentLimit and re-triggers started',
+        setUp: () {
+          final conversations = List.generate(
+            ConversationListState.pageSize,
+            (i) => _createConversation(
+              id: 'a${i.toRadixString(16).padLeft(63, '0')}',
+            ),
+          );
+          when(
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => Stream.value(conversations));
+        },
+        seed: () => ConversationListState(
+          status: ConversationListStatus.loaded,
+          conversations: List.generate(
+            ConversationListState.pageSize,
+            (i) => _createConversation(
+              id: 'a${i.toRadixString(16).padLeft(63, '0')}',
+            ),
+          ),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListLoadMore()),
+        wait: const Duration(milliseconds: 100),
+        verify: (bloc) {
+          expect(
+            bloc.state.currentLimit,
+            equals(ConversationListState.pageSize * 2),
+          );
+        },
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'does not emit when hasMore is false',
+        seed: () => const ConversationListState(
+          status: ConversationListStatus.loaded,
+          hasMore: false,
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListLoadMore()),
+        expect: () => const <ConversationListState>[],
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'does not emit when status is not loaded',
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListLoadMore()),
+        expect: () => const <ConversationListState>[],
+      );
+    });
+
+    group('message request splitting', () {
+      blocTest<ConversationListBloc, ConversationListState>(
+        'splits conversations into followed and requests '
+        'based on FollowRepository',
+        setUp: () {
+          // Only _testPubkey1 is followed; _testPubkey2 is not.
+          when(
+            () => mockFollowRepository.isFollowing(_testPubkey1),
+          ).thenReturn(true);
+          when(
+            () => mockFollowRepository.isFollowing(_testPubkey2),
+          ).thenReturn(false);
+          when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+
+          final conversations = [
+            _createConversation(id: _testConversationId1),
+            _createConversation(id: _testConversationId2),
+          ];
+          when(
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => Stream.value(conversations));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        verify: (bloc) {
+          // Both conversations have participants [_testPubkey1, _testPubkey2].
+          // The "other" pubkey from user _testPubkey1's perspective is
+          // _testPubkey2, which is NOT followed. So both are requests.
+          expect(bloc.state.conversations, isEmpty);
+          expect(bloc.state.requestConversations, hasLength(2));
+        },
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'conversations from followed users stay in normal list',
+        setUp: () {
+          // All participants are followed.
+          when(() => mockFollowRepository.isFollowing(any())).thenReturn(true);
+          when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+
+          final conversations = [
+            _createConversation(id: _testConversationId1),
+          ];
+          when(
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) => Stream.value(conversations));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        verify: (bloc) {
+          expect(bloc.state.conversations, hasLength(1));
+          expect(bloc.state.requestConversations, isEmpty);
+        },
+      );
+
+      test('requestUnreadCount counts unread requests', () {
+        final state = ConversationListState(
+          status: ConversationListStatus.loaded,
+          requestConversations: [
+            _createConversation(id: _testConversationId1, isRead: false),
+            _createConversation(id: _testConversationId2),
+          ],
+        );
+
+        expect(state.requestUnreadCount, equals(1));
+      });
+
+      group('following changes', () {
+        blocTest<ConversationListBloc, ConversationListState>(
+          're-splits conversations when follow list changes',
+          setUp: () {
+            final followingController = StreamController<List<String>>();
+
+            // Initially _testPubkey2 is NOT followed.
+            when(
+              () => mockFollowRepository.isFollowing(_testPubkey2),
+            ).thenReturn(false);
+            when(
+              () => mockFollowRepository.followingStream,
+            ).thenAnswer((_) => followingController.stream);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+
+            final conversations = [
+              _createConversation(id: _testConversationId1),
+            ];
+            when(
+              () => mockDmRepository.watchConversations(
+                limit: any(named: 'limit'),
+              ),
+            ).thenAnswer((_) => Stream.value(conversations));
+
+            // After a short delay, update follow state and emit on stream.
+            Future<void>.delayed(
+              const Duration(milliseconds: 50),
+            ).then((_) {
+              when(
+                () => mockFollowRepository.isFollowing(_testPubkey2),
+              ).thenReturn(true);
+              followingController.add([_testPubkey2]);
+            });
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const ConversationListStarted()),
+          wait: const Duration(milliseconds: 200),
+          verify: (bloc) {
+            // After following change, the conversation should move
+            // from requestConversations to conversations.
+            expect(bloc.state.conversations, hasLength(1));
+            expect(bloc.state.requestConversations, isEmpty);
+          },
+        );
+      });
+
+      group('group conversation classification', () {
+        blocTest<ConversationListBloc, ConversationListState>(
+          'classifies group conversation as request '
+          'when user has not sent regardless of follow state',
+          setUp: () {
+            // _testPubkey2 is followed, _testPubkey3 is not.
+            when(
+              () => mockFollowRepository.isFollowing(_testPubkey2),
+            ).thenReturn(true);
+            when(
+              () => mockFollowRepository.isFollowing(_testPubkey3),
+            ).thenReturn(false);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+
+            final conversations = [
+              _createConversation(
+                id: _testConversationId1,
+                isGroup: true,
+                participantPubkeys: [
+                  _testPubkey1,
+                  _testPubkey2,
+                  _testPubkey3,
+                ],
+              ),
+            ];
+            when(
+              () => mockDmRepository.watchConversations(
+                limit: any(named: 'limit'),
+              ),
+            ).thenAnswer((_) => Stream.value(conversations));
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const ConversationListStarted()),
+          verify: (bloc) {
+            expect(bloc.state.conversations, isEmpty);
+            expect(bloc.state.requestConversations, hasLength(1));
+          },
+        );
+
+        blocTest<ConversationListBloc, ConversationListState>(
+          'classifies group conversation as normal '
+          'when user has sent',
+          setUp: () {
+            when(
+              () => mockFollowRepository.isFollowing(_testPubkey2),
+            ).thenReturn(true);
+            when(
+              () => mockFollowRepository.isFollowing(_testPubkey3),
+            ).thenReturn(false);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+
+            final conversations = [
+              _createConversation(
+                id: _testConversationId1,
+                isGroup: true,
+                currentUserHasSent: true,
+                participantPubkeys: [
+                  _testPubkey1,
+                  _testPubkey2,
+                  _testPubkey3,
+                ],
+              ),
+            ];
+            when(
+              () => mockDmRepository.watchConversations(
+                limit: any(named: 'limit'),
+              ),
+            ).thenAnswer((_) => Stream.value(conversations));
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const ConversationListStarted()),
+          verify: (bloc) {
+            expect(bloc.state.conversations, hasLength(1));
+            expect(bloc.state.requestConversations, isEmpty);
+          },
+        );
+      });
+    });
   });
 
   group('$ConversationListState', () {
@@ -571,6 +843,7 @@ void main() {
       expect(state.props, [
         ConversationListStatus.loaded,
         conversations,
+        const <DmConversation>[],
         true,
         false,
         ConversationListState.pageSize,

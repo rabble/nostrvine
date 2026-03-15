@@ -1,0 +1,396 @@
+// ABOUTME: View for the message request preview screen.
+// ABOUTME: Shows sender profile info, message count, and accept/decline actions.
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:models/models.dart';
+import 'package:openvine/blocs/dm/message_requests/message_request_actions_cubit.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/widgets/user_avatar.dart';
+
+/// View for the message request preview screen.
+///
+/// Displays the sender's profile (avatar, name, NIP-05, stats),
+/// a "View profile" button, message count text, and two action buttons:
+/// "View messages" (accept) and "Decline and remove".
+class RequestPreviewView extends ConsumerWidget {
+  const RequestPreviewView({
+    required this.conversationId,
+    required this.participantPubkeys,
+    required this.messageCount,
+    super.key,
+  });
+
+  final String conversationId;
+  final List<String> participantPubkeys;
+
+  /// Number of messages the requester has sent.
+  final AsyncValue<int> messageCount;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final otherPubkey = participantPubkeys.isNotEmpty
+        ? participantPubkeys.first
+        : '';
+
+    final profileAsync = ref.watch(userProfileReactiveProvider(otherPubkey));
+
+    final profile = profileAsync.asData?.value;
+
+    final displayName = profile?.displayName?.isNotEmpty == true
+        ? profile!.displayName!
+        : profile?.name ?? NostrKeyUtils.truncateNpub(otherPubkey);
+
+    return Scaffold(
+      backgroundColor: VineTheme.surfaceBackground,
+      appBar: DiVineAppBar(
+        title: displayName,
+        showBackButton: true,
+        onBackPressed: context.pop,
+      ),
+      body: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(32),
+          topRight: Radius.circular(32),
+        ),
+        child: ColoredBox(
+          color: VineTheme.surfaceContainerHigh,
+          child: Column(
+            children: [
+              Expanded(
+                child: _ProfileContent(
+                  displayName: displayName,
+                  profile: profile,
+                  otherPubkey: otherPubkey,
+                  messageCount: messageCount,
+                ),
+              ),
+              _ActionButtons(
+                conversationId: conversationId,
+                participantPubkeys: participantPubkeys,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileContent extends StatelessWidget {
+  const _ProfileContent({
+    required this.displayName,
+    required this.profile,
+    required this.otherPubkey,
+    required this.messageCount,
+  });
+
+  final String displayName;
+  final UserProfile? profile;
+  final String otherPubkey;
+  final AsyncValue<int> messageCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = profile?.picture;
+    final nip05 = profile?.nip05;
+    final followerCount = profile?.rawData['follower_count'];
+    final videoCount = profile?.rawData['video_count'];
+
+    return ColoredBox(
+      color: VineTheme.scrim15,
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 64,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              UserAvatar(
+                imageUrl: imageUrl,
+                name: displayName,
+                size: 96,
+              ),
+              const SizedBox(height: 32),
+              Text(
+                displayName,
+                style: VineTheme.titleMediumFont(
+                  fontSize: 20,
+                  height: 28 / 20,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (nip05 != null && nip05.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  nip05,
+                  style: VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              if (followerCount != null || videoCount != null) ...[
+                const SizedBox(height: 4),
+                _StatsLine(
+                  followerCount: followerCount,
+                  videoCount: videoCount,
+                ),
+              ],
+              const SizedBox(height: 16),
+              _OutlinedActionButton(
+                label: 'View profile',
+                onTap: () => context.push(
+                  OtherProfileScreen.pathForNpub(
+                    NostrKeyUtils.encodePubKey(otherPubkey),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              _MessageCountDescription(
+                displayName: displayName,
+                messageCount: messageCount,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatsLine extends StatelessWidget {
+  const _StatsLine({this.followerCount, this.videoCount});
+
+  final Object? followerCount;
+  final Object? videoCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[];
+    if (followerCount != null) {
+      parts.add('${_formatCount(followerCount!)} Followers');
+    }
+    if (videoCount != null) {
+      parts.add('${_formatCount(videoCount!)} videos');
+    }
+
+    return Text(
+      parts.join(' \u2022 '),
+      style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
+      textAlign: TextAlign.center,
+    );
+  }
+
+  static String _formatCount(Object count) {
+    final n = count is int ? count : int.tryParse('$count') ?? 0;
+    if (n >= 1000000) {
+      final m = n / 1000000;
+      return m == m.roundToDouble()
+          ? '${m.round()}m'
+          : '${m.toStringAsFixed(1)}m';
+    }
+    if (n >= 1000) {
+      final k = n / 1000;
+      if (k >= 999.95) return '1m';
+      return k == k.roundToDouble()
+          ? '${k.round()}k'
+          : '${k.toStringAsFixed(1)}k';
+    }
+    return '$n';
+  }
+}
+
+class _MessageCountDescription extends StatelessWidget {
+  const _MessageCountDescription({
+    required this.displayName,
+    required this.messageCount,
+  });
+
+  final String displayName;
+  final AsyncValue<int> messageCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = messageCount.asData?.value ?? 0;
+    final msgText = count == 1 ? '1 message' : '$count messages';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Text(
+        "$displayName wants to message you, they've sent $msgText.",
+        style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
+class _ActionButtons extends StatelessWidget {
+  const _ActionButtons({
+    required this.conversationId,
+    required this.participantPubkeys,
+  });
+
+  final String conversationId;
+  final List<String> participantPubkeys;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 16,
+          children: [
+            _PrimaryActionButton(
+              label: 'View messages',
+              onTap: () {
+                context.pushReplacementNamed(
+                  ConversationPage.routeName,
+                  pathParameters: {'id': conversationId},
+                  extra: participantPubkeys,
+                );
+              },
+            ),
+            _SecondaryActionButton(
+              label: 'Decline and remove',
+              onTap: () async {
+                await context.read<MessageRequestActionsCubit>().declineRequest(
+                  conversationId,
+                );
+                if (context.mounted) context.pop();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryActionButton extends StatelessWidget {
+  const _PrimaryActionButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: GestureDetector(
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: VineTheme.primary,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: Text(
+              label,
+              style: VineTheme.titleMediumFont(
+                fontSize: 16,
+                height: 24 / 16,
+                color: VineTheme.onPrimary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OutlinedActionButton extends StatelessWidget {
+  const _OutlinedActionButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: VineTheme.surfaceContainer,
+          border: Border.all(color: VineTheme.outlineMuted, width: 2),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            label,
+            style: VineTheme.titleMediumFont(
+              fontSize: 16,
+              height: 24 / 16,
+              color: VineTheme.primary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryActionButton extends StatelessWidget {
+  const _SecondaryActionButton({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: GestureDetector(
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: VineTheme.surfaceContainer,
+            border: Border.all(color: VineTheme.outlineMuted, width: 2),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            child: Text(
+              label,
+              style: VineTheme.titleMediumFont(
+                fontSize: 16,
+                height: 24 / 16,
+                color: VineTheme.primary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

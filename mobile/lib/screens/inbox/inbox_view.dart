@@ -13,6 +13,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/inbox/message_requests/message_requests_page.dart';
+import 'package:openvine/screens/inbox/message_requests/widgets/message_requests_banner.dart';
 import 'package:openvine/screens/inbox/widgets/conversation_tile.dart';
 import 'package:openvine/screens/inbox/widgets/following_bar.dart';
 import 'package:openvine/screens/inbox/widgets/inbox_empty_state.dart';
@@ -198,11 +200,31 @@ class _ConversationList extends StatelessWidget {
         .select<ConversationListBloc, List<DmConversation>>(
           (bloc) => bloc.state.conversations,
         );
+    final requestConversations = context
+        .select<ConversationListBloc, List<DmConversation>>(
+          (bloc) => bloc.state.requestConversations,
+        );
     final hasMore = context.select<ConversationListBloc, bool>(
       (bloc) => bloc.state.hasMore,
     );
 
-    if (conversations.isEmpty) return const InboxEmptyState();
+    final hasRequests = requestConversations.isNotEmpty;
+    final hasBanner = hasRequests ? 1 : 0;
+
+    if (conversations.isEmpty && !hasRequests) return const InboxEmptyState();
+
+    // Only requests, no followed conversations — show banner + empty state
+    if (conversations.isEmpty && hasRequests) {
+      return Column(
+        children: [
+          MessageRequestsBanner(
+            requestCount: requestConversations.length,
+            onTap: _openMessageRequests,
+          ),
+          const Expanded(child: InboxEmptyState()),
+        ],
+      );
+    }
 
     return NotificationListener<ScrollNotification>(
       onNotification: (notification) {
@@ -216,9 +238,20 @@ class _ConversationList extends StatelessWidget {
         return false;
       },
       child: ListView.builder(
-        itemCount: conversations.length + (hasMore ? 1 : 0),
+        itemCount: conversations.length + hasBanner + (hasMore ? 1 : 0),
         itemBuilder: (context, index) {
-          if (index == conversations.length) {
+          // Banner at position 0 when requests exist
+          if (hasRequests && index == 0) {
+            return MessageRequestsBanner(
+              requestCount: requestConversations.length,
+              onTap: _openMessageRequests,
+            );
+          }
+
+          final conversationIndex = index - hasBanner;
+
+          // Loading indicator at the end
+          if (conversationIndex == conversations.length) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(
@@ -234,7 +267,7 @@ class _ConversationList extends StatelessWidget {
             );
           }
 
-          final conversation = conversations[index];
+          final conversation = conversations[conversationIndex];
           return ConversationTile(
             conversation: conversation,
             currentUserPubkey: currentUserPubkey,
@@ -243,6 +276,10 @@ class _ConversationList extends StatelessWidget {
         },
       ),
     );
+  }
+
+  void _openMessageRequests() {
+    router.pushNamed(MessageRequestsPage.routeName);
   }
 
   void _onConversationTapped(
