@@ -834,7 +834,11 @@ void zendeskIdentitySync(Ref ref) {
 
   // Set initial identity if already authenticated
   if (authService.isAuthenticated && authService.currentPublicKeyHex != null) {
-    _setZendeskIdentity(authService.currentPublicKeyHex!, profileRepository);
+    _setZendeskIdentity(
+      authService.currentPublicKeyHex!,
+      profileRepository,
+      ref,
+    );
   }
 
   // Listen to auth state changes
@@ -842,7 +846,7 @@ void zendeskIdentitySync(Ref ref) {
     if (authState == AuthState.authenticated) {
       final pubkeyHex = authService.currentPublicKeyHex;
       if (pubkeyHex != null) {
-        await _setZendeskIdentity(pubkeyHex, profileRepository);
+        await _setZendeskIdentity(pubkeyHex, profileRepository, ref);
       }
     } else if (authState == AuthState.unauthenticated) {
       await ZendeskSupportService.clearUserIdentity();
@@ -861,6 +865,7 @@ void zendeskIdentitySync(Ref ref) {
 Future<void> _setZendeskIdentity(
   String pubkeyHex,
   ProfileRepository? profileRepository,
+  Ref ref,
 ) async {
   try {
     final npub = NostrKeyUtils.encodePubKey(pubkeyHex);
@@ -868,11 +873,50 @@ Future<void> _setZendeskIdentity(
       pubkey: pubkeyHex,
     );
 
+    // 1. Store user info locally (for REST API fallback)
     ZendeskSupportService.setUserIdentity(
       displayName: profile?.bestDisplayName,
       nip05: profile?.nip05,
       npub: npub,
     );
+
+    // 2. Set anonymous identity on native SDK immediately (no network call)
+    // This ensures createTicket() works for content reports right away
+    await ZendeskSupportService.setAnonymousIdentityWithUserInfo();
+
+    // 3. Upgrade to JWT identity asynchronously (network call)
+    // If this fails, anonymous identity remains and tickets still work
+    try {
+      final nip98Service = ref.read(nip98AuthServiceProvider);
+      final relayManagerUrl = ref
+          .read(currentEnvironmentProvider)
+          .relayManagerApiUrl;
+
+      final jwtSet = await ZendeskSupportService.setJwtIdentity(
+        nip98Service: nip98Service,
+        relayManagerUrl: relayManagerUrl,
+      );
+
+      if (jwtSet) {
+        Log.info(
+          'Zendesk JWT identity set for user',
+          name: 'ZendeskIdentitySync',
+          category: LogCategory.system,
+        );
+      } else {
+        Log.info(
+          'Zendesk JWT upgrade failed, anonymous identity active',
+          name: 'ZendeskIdentitySync',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e) {
+      Log.info(
+        'Zendesk JWT upgrade failed ($e), anonymous identity active',
+        name: 'ZendeskIdentitySync',
+        category: LogCategory.system,
+      );
+    }
 
     Log.info(
       'Zendesk identity set for user: ${profile?.bestDisplayName ?? npub}',
