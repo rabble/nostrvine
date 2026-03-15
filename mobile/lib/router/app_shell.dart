@@ -297,7 +297,8 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     // Inbox manages its own header (segmented toggle replaces app bar)
     final isInbox = pageCtxAsync.maybeWhen(
-      data: (ctx) => ctx.type == RouteType.inbox,
+      data: (ctx) =>
+          ctx.type == RouteType.inbox || ctx.type == RouteType.conversation,
       orElse: () => false,
     );
 

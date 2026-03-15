@@ -37,6 +37,7 @@ class ConversationAppBar extends StatelessWidget
       style: DiVineAppBarStyle(
         titleStyle: VineTheme.titleMediumFont(),
       ),
+      /* TODO(meylis1998): Uncomment the button below once it has a function.
       actions: [
         DiVineAppBarAction(
           icon: const SvgIconSource(
@@ -45,7 +46,7 @@ class ConversationAppBar extends StatelessWidget
           onPressed: onOptions,
           semanticLabel: 'Options',
         ),
-      ],
+      ],*/
     );
   }
 }

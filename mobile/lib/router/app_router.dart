@@ -422,7 +422,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: ConversationPage.pathPattern,
         name: ConversationPage.routeName,
-        parentNavigatorKey: NavigatorKeys.root,
         builder: (ctx, st) {
           final id = st.pathParameters['id'];
           if (id == null || id.isEmpty) {
