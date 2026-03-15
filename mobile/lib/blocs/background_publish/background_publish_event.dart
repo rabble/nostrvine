@@ -48,3 +48,17 @@ class BackgroundPublishRetryRequested extends BackgroundPublishEvent {
   @override
   List<Object?> get props => [draftId];
 }
+
+/// Marks a draft as a failed upload without starting a publish process.
+///
+/// Used to surface interrupted uploads (e.g. from a previous session) in
+/// the failure sheet so the user can decide whether to retry or discard.
+class BackgroundPublishFailed extends BackgroundPublishEvent {
+  BackgroundPublishFailed({required this.draft, required this.userMessage});
+
+  final DivineVideoDraft draft;
+  final String userMessage;
+
+  @override
+  List<Object?> get props => [draft, userMessage];
+}
