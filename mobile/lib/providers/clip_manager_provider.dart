@@ -556,7 +556,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Remove all clips and reset state.
   ///
   /// Clears all recorded clips and resets to initial state.
-  /// Also deletes the autosave draft and associated files.
+  /// Also deletes the autosave draft unless [keepAutosavedDraft] is true.
   Future<void> clearAll({bool keepAutosavedDraft = false}) async {
     final clipCount = _clips.length;
     _clips.clear();

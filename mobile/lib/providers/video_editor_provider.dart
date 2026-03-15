@@ -160,7 +160,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Reset editor state and metadata to defaults.
   ///
-  /// Also cancels any pending autosave and deletes the autosaved draft.
+  /// Also cancels any pending autosave and deletes the autosaved draft
+  /// unless [keepAutosavedDraft] is true.
   Future<void> reset({bool keepAutosavedDraft = false}) async {
     Log.debug(
       '🔄 Resetting editor state',

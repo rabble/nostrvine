@@ -1,6 +1,7 @@
 // ABOUTME: Drafts tab widget for the clip library screen
 // ABOUTME: Displays a list of saved video drafts with options to edit or delete
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
@@ -218,9 +219,11 @@ class DraftsTab extends ConsumerWidget {
         DraftsLibraryDeleteRequested(draft.id),
       );
       if (draft.id == VideoEditorConstants.autoSaveId) {
-        ref
-            .read(videoPublishProvider.notifier)
-            .clearAll(keepAutosavedDraft: true);
+        unawaited(
+          ref
+              .read(videoPublishProvider.notifier)
+              .clearAll(keepAutosavedDraft: true),
+        );
       }
     }
   }

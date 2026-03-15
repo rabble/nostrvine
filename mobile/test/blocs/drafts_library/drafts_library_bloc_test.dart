@@ -4,10 +4,13 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/blocs/drafts_library/drafts_library_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/divine_video_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 class _MockDraftStorageService extends Mock implements DraftStorageService {}
 
@@ -19,10 +22,11 @@ void main() {
       String? id,
       PublishStatus publishStatus = PublishStatus.draft,
       DateTime? lastModified,
+      List<DivineVideoClip> clips = const [],
     }) {
       return DivineVideoDraft(
         id: id ?? 'draft-${DateTime.now().millisecondsSinceEpoch}',
-        clips: const [],
+        clips: clips,
         title: 'Test Draft',
         description: 'Test Description',
         hashtags: const {},
@@ -88,6 +92,40 @@ void main() {
           isA<DraftsLibraryLoaded>()
               .having((s) => s.drafts.length, 'drafts.length', 1)
               .having((s) => s.drafts.first.id, 'first draft id', 'draft1'),
+        ],
+      );
+
+      blocTest<DraftsLibraryBloc, DraftsLibraryState>(
+        'includes autosave draft when it has clips',
+        setUp: () {
+          when(() => mockDraftStorageService.getAllDrafts()).thenAnswer(
+            (_) async => [
+              createDraft(id: 'draft1'),
+              createDraft(
+                id: VideoEditorConstants.autoSaveId,
+                clips: [
+                  DivineVideoClip(
+                    id: 'clip1',
+                    video: EditorVideo.file('/path/to/video.mp4'),
+                    duration: const Duration(seconds: 5),
+                    recordedAt: DateTime(2026),
+                    targetAspectRatio: AspectRatio.vertical,
+                    originalAspectRatio: 9 / 16,
+                  ),
+                ],
+              ),
+            ],
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const DraftsLibraryLoadRequested()),
+        expect: () => [
+          const DraftsLibraryLoading(),
+          isA<DraftsLibraryLoaded>().having(
+            (s) => s.drafts.length,
+            'drafts.length',
+            2,
+          ),
         ],
       );
 
