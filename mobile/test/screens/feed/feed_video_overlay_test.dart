@@ -134,6 +134,23 @@ void main() {
     }
 
     group('list attribution', () {
+      testWidgets(
+        'shows the content warning overlay for flagged videos even without warn labels',
+        (tester) async {
+          testVideo = testVideo.copyWith(
+            contentWarningLabels: const ['violence'],
+          );
+
+          await tester.pumpWidget(buildSubject());
+          await tester.pump();
+
+          expect(find.text('Sensitive Content'), findsOneWidget);
+          expect(find.text('View Anyway'), findsOneWidget);
+          expect(find.text('Hide all content like this'), findsOneWidget);
+          expect(find.byType(ProofModeBadgeRow), findsNothing);
+        },
+      );
+
       testWidgets('renders a centered play affordance when paused', (
         tester,
       ) async {
