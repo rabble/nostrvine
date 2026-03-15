@@ -322,7 +322,7 @@ class VideoPublishService {
         final upload = uploadManager.getUpload(_backgroundUploadId!);
         _backgroundUploadId = null;
         return await _handleUploadError(
-          Exception(upload?.errorMessage ?? 'Retry failed'),
+          upload?.errorMessage ?? 'Retry failed',
           StackTrace.current,
           draft,
         );

@@ -94,7 +94,6 @@ class _UploadFailureSheetContent extends StatelessWidget {
 
     final draft = upload.draft;
     final clip = draft.clips.isNotEmpty ? draft.clips.first : null;
-    final title = draft.title.isNotEmpty ? draft.title : null;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -102,7 +101,7 @@ class _UploadFailureSheetContent extends StatelessWidget {
         child: Column(
           children: [
             const SizedBox(height: 8),
-            _DraftPreview(clip: clip, title: title),
+            _DraftPreview(clip: clip),
 
             const SizedBox(height: 16),
             Text(
@@ -138,10 +137,9 @@ class _UploadFailureSheetContent extends StatelessWidget {
 }
 
 class _DraftPreview extends StatefulWidget {
-  const _DraftPreview({this.clip, this.title});
+  const _DraftPreview({this.clip});
 
   final DivineVideoClip? clip;
-  final String? title;
 
   @override
   State<_DraftPreview> createState() => _DraftPreviewState();
