@@ -38,7 +38,7 @@ class _MockVideoEventService extends Mock implements VideoEventService {}
 class _MockNostrClient extends Mock implements NostrClient {}
 
 void main() {
-  Widget _screen(
+  Widget screen(
     RelayNotifications Function() notifierFactory, {
     required VideoEventService videoService,
     required NostrClient nostrClient,
@@ -50,12 +50,12 @@ void main() {
         nostrServiceProvider.overrideWithValue(nostrClient),
       ],
       child: MaterialApp(
-        home: const Scaffold(body: NotificationsScreen()),
+        home: Scaffold(body: NotificationsScreen()),
       ),
     );
   }
 
-  VideoEvent _video(String id) => VideoEvent(
+  VideoEvent video(String id) => VideoEvent(
     id: id,
     pubkey: 'pubkey_$id',
     createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -66,8 +66,8 @@ void main() {
     thumbnailUrl: 'https://example.com/$id.jpg',
   );
 
-  Event _commentEvent({required String rootVideoId}) => Event(
-    'comment_author',
+  Event commentEvent({required String rootVideoId}) => Event(
+    'd' * 64,
     1111,
     [
       ['e', rootVideoId, '', 'root'],
@@ -84,12 +84,12 @@ void main() {
       final mockVideoService = _MockVideoEventService();
       final mockNostrClient = _MockNostrClient();
 
-      final resolvedVideo = _video('video_root_1');
+      final resolvedVideo = video('video_root_1');
       when(() => mockVideoService.getVideoById('comment_event_1')).thenReturn(null);
       when(() => mockVideoService.getVideoById('video_root_1')).thenReturn(resolvedVideo);
-      when(() => mockVideoService.shouldHideVideo(resolvedVideo)).thenReturn(false);
+      when(() => mockVideoService.shouldHideVideo(resolvedVideo)).thenReturn(true);
       when(() => mockNostrClient.fetchEventById('comment_event_1'))
-          .thenAnswer((_) async => _commentEvent(rootVideoId: 'video_root_1'));
+          .thenAnswer((_) async => commentEvent(rootVideoId: 'video_root_1'));
 
       final notifier = _MockRelayNotifications([
         NotificationModel(
@@ -104,7 +104,7 @@ void main() {
       ]);
 
       await tester.pumpWidget(
-        _screen(
+        screen(
           () => notifier,
           videoService: mockVideoService,
           nostrClient: mockNostrClient,
@@ -115,7 +115,7 @@ void main() {
       await tester.tap(find.byType(NotificationListItem).first);
       await tester.pumpAndSettle();
 
-      // This should pass only after resolver integration is implemented.
+      verify(() => mockVideoService.getVideoById('video_root_1')).called(1);
       expect(find.text('Video not found'), findsNothing);
     });
 
@@ -140,7 +140,7 @@ void main() {
       ]);
 
       await tester.pumpWidget(
-        _screen(
+        screen(
           () => notifier,
           videoService: mockVideoService,
           nostrClient: mockNostrClient,
