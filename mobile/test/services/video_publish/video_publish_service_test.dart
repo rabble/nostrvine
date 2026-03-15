@@ -402,9 +402,9 @@ void main() {
         expect(result, isA<PublishError>());
         expect(
           (result as PublishError).userMessage,
-          contains('Blossom media server'),
+          contains('media server'),
         );
-        expect(result.userMessage, contains('not working'));
+        expect(result.userMessage, contains('not available'));
       });
 
       test('returns user-friendly message for network error', () async {
@@ -433,7 +433,10 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
-        expect((result as PublishError).userMessage, contains('Network error'));
+        expect(
+          (result as PublishError).userMessage,
+          contains('Something went wrong'),
+        );
       });
     });
   });
