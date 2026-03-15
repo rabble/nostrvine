@@ -64,7 +64,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// Resets all video-related providers.
   ///
   /// Clears recorder, editor, clip manager, and publish state.
-  Future<void> clearAll() async {
+  Future<void> clearAll({bool keepAutosavedDraft = false}) async {
     Log.debug(
       '🧹 Clearing all video providers',
       name: 'VideoPublishNotifier',
@@ -75,8 +75,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       reset();
 
       await Future.wait([
-        ref.read(clipManagerProvider.notifier).clearAll(),
-        ref.read(videoEditorProvider.notifier).reset(),
+        ref
+            .read(clipManagerProvider.notifier)
+            .clearAll(keepAutosavedDraft: keepAutosavedDraft),
+        ref
+            .read(videoEditorProvider.notifier)
+            .reset(keepAutosavedDraft: keepAutosavedDraft),
       ]);
     } catch (error, stackTrace) {
       Log.error(

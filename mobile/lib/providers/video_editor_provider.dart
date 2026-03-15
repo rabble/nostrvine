@@ -48,8 +48,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   static const Duration _autosaveDebounce = Duration(milliseconds: 800);
 
   /// Current draft ID for save/load operations.
-  @visibleForTesting
-  String? draftId;
+  String? _draftId;
+  String get draftId => _draftId ?? VideoEditorConstants.autoSaveId;
+  set draftId(String? id) {
+    _draftId = id;
+  }
 
   Timer? _autosaveTimer;
 
@@ -152,13 +155,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         );
       }
     }
-    this.draftId = draftId ?? 'Draft_${DateTime.now().microsecondsSinceEpoch}';
+    this.draftId = draftId ?? VideoEditorConstants.autoSaveId;
   }
 
   /// Reset editor state and metadata to defaults.
   ///
   /// Also cancels any pending autosave and deletes the autosaved draft.
-  Future<void> reset() async {
+  Future<void> reset({bool keepAutosavedDraft = false}) async {
     Log.debug(
       '🔄 Resetting editor state',
       name: 'VideoEditorNotifier',
@@ -166,8 +169,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
     state = VideoEditorProviderState();
     _autosaveTimer?.cancel();
-
-    unawaited(removeAutosavedDraft());
+    draftId = null;
+    if (!keepAutosavedDraft) {
+      unawaited(removeAutosavedDraft());
+    }
   }
 
   // === CLIP SELECTION & NAVIGATION ===
@@ -820,7 +825,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      final draft = getActiveDraft(isAutosave: true);
+      final draft = getActiveDraft(isAutosave: isAutosavedDraft);
       await _draftService.saveDraft(draft);
 
       Log.info(
