@@ -2303,7 +2303,7 @@ final class ZendeskIdentitySyncProvider
 }
 
 String _$zendeskIdentitySyncHash() =>
-    r'ce4114939fc8a9124bc1b657defc0a6eea432d70';
+    r'e49d4f9cedf56ec4131b30a6f1d9d45dada68bed';
 
 /// User data cleanup service for handling identity changes
 /// Prevents data leakage between different Nostr accounts
