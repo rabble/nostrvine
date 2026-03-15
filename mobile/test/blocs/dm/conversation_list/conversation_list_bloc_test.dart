@@ -1,6 +1,7 @@
 // ABOUTME: Tests for ConversationListBloc - DM conversation list management.
-// ABOUTME: Tests loading conversations via stream, error handling,
-// ABOUTME: marking conversations as read, and event transformer behavior.
+// ABOUTME: Tests loading conversations via split streams (accepted + potential
+// ABOUTME: requests), error handling, marking conversations as read, message
+// ABOUTME: request classification, and event transformer behavior.
 
 import 'dart:async';
 
@@ -49,6 +50,23 @@ DmConversation _createConversation({
   );
 }
 
+/// Stubs both split streams on the mock repository.
+///
+/// [accepted] goes to `watchAcceptedConversations` (currentUserHasSent=true).
+/// [potentialRequests] goes to `watchPotentialRequests` (currentUserHasSent=false).
+void _stubStreams(
+  _MockDmRepository repo, {
+  List<DmConversation> accepted = const [],
+  List<DmConversation> potentialRequests = const [],
+}) {
+  when(
+    () => repo.watchAcceptedConversations(limit: any(named: 'limit')),
+  ).thenAnswer((_) => Stream.value(accepted));
+  when(
+    () => repo.watchPotentialRequests(),
+  ).thenAnswer((_) => Stream.value(potentialRequests));
+}
+
 void main() {
   group(ConversationListBloc, () {
     late _MockDmRepository mockDmRepository;
@@ -89,11 +107,12 @@ void main() {
             _createConversation(id: _testConversationId1),
             _createConversation(id: _testConversationId2),
           ];
-          when(
-            () => mockDmRepository.watchConversations(
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) => Stream.value(conversations));
+          // Default currentUserHasSent=false → potential requests.
+          // Default isFollowing=true → classified as followed.
+          _stubStreams(
+            mockDmRepository,
+            potentialRequests: conversations,
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -107,6 +126,10 @@ void main() {
               _createConversation(id: _testConversationId1),
               _createConversation(id: _testConversationId2),
             ],
+            potentialRequests: [
+              _createConversation(id: _testConversationId1),
+              _createConversation(id: _testConversationId2),
+            ],
             hasMore: false,
           ),
         ],
@@ -116,11 +139,7 @@ void main() {
         'emits [loading, loaded] with empty list '
         'when stream emits no conversations',
         setUp: () {
-          when(
-            () => mockDmRepository.watchConversations(
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) => Stream.value(const []));
+          _stubStreams(mockDmRepository);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -136,13 +155,16 @@ void main() {
       );
 
       blocTest<ConversationListBloc, ConversationListState>(
-        'emits [loading, error] when stream emits an error',
+        'emits [loading, error] when accepted stream emits an error',
         setUp: () {
           when(
-            () => mockDmRepository.watchConversations(
+            () => mockDmRepository.watchAcceptedConversations(
               limit: any(named: 'limit'),
             ),
           ).thenAnswer((_) => Stream.error(Exception('db failure')));
+          when(
+            () => mockDmRepository.watchPotentialRequests(),
+          ).thenAnswer((_) => Stream.value(const []));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -164,11 +186,10 @@ void main() {
             id: _testConversationId1,
             isRead: false,
           );
-          when(
-            () => mockDmRepository.watchConversations(
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) => Stream.value([conversation]));
+          _stubStreams(
+            mockDmRepository,
+            potentialRequests: [conversation],
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -187,21 +208,49 @@ void main() {
       );
 
       blocTest<ConversationListBloc, ConversationListState>(
-        'emits updated state when stream emits multiple values',
+        'emits updated state when streams emit multiple values',
         setUp: () {
-          final first = [_createConversation(id: _testConversationId1)];
-          final second = [
-            _createConversation(id: _testConversationId1),
-            _createConversation(id: _testConversationId2),
-          ];
+          final acceptedController = StreamController<List<DmConversation>>();
+          final requestsController = StreamController<List<DmConversation>>();
+
           when(
-            () => mockDmRepository.watchConversations(
+            () => mockDmRepository.watchAcceptedConversations(
               limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) => Stream.fromIterable([first, second]));
+          ).thenAnswer((_) => acceptedController.stream);
+          when(
+            () => mockDmRepository.watchPotentialRequests(),
+          ).thenAnswer((_) => requestsController.stream);
+
+          // Emit initial empty requests, then accepted values.
+          Future<void>.delayed(const Duration(milliseconds: 10)).then((_) {
+            requestsController.add(const []);
+            acceptedController.add([
+              _createConversation(
+                id: _testConversationId1,
+                currentUserHasSent: true,
+              ),
+            ]);
+          });
+
+          Future<void>.delayed(const Duration(milliseconds: 50)).then((_) {
+            acceptedController.add([
+              _createConversation(
+                id: _testConversationId1,
+                currentUserHasSent: true,
+              ),
+              _createConversation(
+                id: _testConversationId2,
+                currentUserHasSent: true,
+              ),
+            ]);
+            acceptedController.close();
+            requestsController.close();
+          });
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
+        wait: const Duration(milliseconds: 200),
         expect: () => [
           const ConversationListState(
             status: ConversationListStatus.loading,
@@ -209,15 +258,24 @@ void main() {
           ConversationListState(
             status: ConversationListStatus.loaded,
             conversations: [
-              _createConversation(id: _testConversationId1),
+              _createConversation(
+                id: _testConversationId1,
+                currentUserHasSent: true,
+              ),
             ],
             hasMore: false,
           ),
           ConversationListState(
             status: ConversationListStatus.loaded,
             conversations: [
-              _createConversation(id: _testConversationId1),
-              _createConversation(id: _testConversationId2),
+              _createConversation(
+                id: _testConversationId1,
+                currentUserHasSent: true,
+              ),
+              _createConversation(
+                id: _testConversationId2,
+                currentUserHasSent: true,
+              ),
             ],
             hasMore: false,
           ),
@@ -425,26 +483,41 @@ void main() {
           'cancels the old subscription and starts a new one '
           'when $ConversationListStarted is re-added',
           setUp: () {
-            final controller1 = StreamController<List<DmConversation>>();
-            final controller2 = StreamController<List<DmConversation>>();
-            var watchCallCount = 0;
+            final acceptedCtrl1 = StreamController<List<DmConversation>>();
+            final acceptedCtrl2 = StreamController<List<DmConversation>>();
+            final requestsCtrl1 = StreamController<List<DmConversation>>();
+            final requestsCtrl2 = StreamController<List<DmConversation>>();
+            var acceptedCallCount = 0;
+            var requestsCallCount = 0;
 
             when(
-              () => mockDmRepository.watchConversations(
+              () => mockDmRepository.watchAcceptedConversations(
                 limit: any(named: 'limit'),
               ),
             ).thenAnswer((_) {
-              watchCallCount++;
-              if (watchCallCount == 1) return controller1.stream;
-              return controller2.stream;
+              acceptedCallCount++;
+              if (acceptedCallCount == 1) return acceptedCtrl1.stream;
+              return acceptedCtrl2.stream;
             });
 
-            // First stream emits quickly
+            when(
+              () => mockDmRepository.watchPotentialRequests(),
+            ).thenAnswer((_) {
+              requestsCallCount++;
+              if (requestsCallCount == 1) return requestsCtrl1.stream;
+              return requestsCtrl2.stream;
+            });
+
+            // First streams emit quickly
             Future<void>.delayed(
               const Duration(milliseconds: 10),
             ).then((_) {
-              controller1.add([
-                _createConversation(id: _testConversationId1),
+              requestsCtrl1.add(const []);
+              acceptedCtrl1.add([
+                _createConversation(
+                  id: _testConversationId1,
+                  currentUserHasSent: true,
+                ),
               ]);
             });
 
@@ -452,21 +525,33 @@ void main() {
             Future<void>.delayed(
               const Duration(milliseconds: 60),
             ).then((_) {
-              controller1.add([
-                _createConversation(id: _testConversationId1),
-                _createConversation(id: _testConversationId2),
+              acceptedCtrl1.add([
+                _createConversation(
+                  id: _testConversationId1,
+                  currentUserHasSent: true,
+                ),
+                _createConversation(
+                  id: _testConversationId2,
+                  currentUserHasSent: true,
+                ),
               ]);
-              controller1.close();
+              acceptedCtrl1.close();
+              requestsCtrl1.close();
             });
 
             // New stream emits its data
             Future<void>.delayed(
               const Duration(milliseconds: 70),
             ).then((_) {
-              controller2.add([
-                _createConversation(id: _testConversationId2),
+              requestsCtrl2.add(const []);
+              acceptedCtrl2.add([
+                _createConversation(
+                  id: _testConversationId2,
+                  currentUserHasSent: true,
+                ),
               ]);
-              controller2.close();
+              acceptedCtrl2.close();
+              requestsCtrl2.close();
             });
           },
           build: createBloc,
@@ -484,29 +569,35 @@ void main() {
             const ConversationListState(
               status: ConversationListStatus.loading,
             ),
-            // First stream emits
+            // First streams emit
             ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: [
-                _createConversation(id: _testConversationId1),
+                _createConversation(
+                  id: _testConversationId1,
+                  currentUserHasSent: true,
+                ),
               ],
               hasMore: false,
             ),
             // Second ConversationListStarted: no loading emission
             // because status is already loaded (not initial).
-            // Second stream emits (old stream's late emission is
+            // Second streams emit (old streams' late emission is
             // ignored because restartable() cancelled it)
             ConversationListState(
               status: ConversationListStatus.loaded,
               conversations: [
-                _createConversation(id: _testConversationId2),
+                _createConversation(
+                  id: _testConversationId2,
+                  currentUserHasSent: true,
+                ),
               ],
               hasMore: false,
             ),
           ],
           verify: (_) {
             verify(
-              () => mockDmRepository.watchConversations(
+              () => mockDmRepository.watchAcceptedConversations(
                 limit: any(named: 'limit'),
               ),
             ).called(2);
@@ -523,13 +614,10 @@ void main() {
             ConversationListState.pageSize,
             (i) => _createConversation(
               id: 'a${i.toRadixString(16).padLeft(63, '0')}',
+              currentUserHasSent: true,
             ),
           );
-          when(
-            () => mockDmRepository.watchConversations(
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) => Stream.value(conversations));
+          _stubStreams(mockDmRepository, accepted: conversations);
         },
         seed: () => ConversationListState(
           status: ConversationListStatus.loaded,
@@ -537,6 +625,7 @@ void main() {
             ConversationListState.pageSize,
             (i) => _createConversation(
               id: 'a${i.toRadixString(16).padLeft(63, '0')}',
+              currentUserHasSent: true,
             ),
           ),
         ),
@@ -572,10 +661,9 @@ void main() {
 
     group('message request splitting', () {
       blocTest<ConversationListBloc, ConversationListState>(
-        'splits conversations into followed and requests '
-        'based on FollowRepository',
+        'classifies unfollowed contacts as requests',
         setUp: () {
-          // Only _testPubkey1 is followed; _testPubkey2 is not.
+          // _testPubkey2 is NOT followed.
           when(
             () => mockFollowRepository.isFollowing(_testPubkey1),
           ).thenReturn(true);
@@ -584,15 +672,15 @@ void main() {
           ).thenReturn(false);
           when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
 
+          // currentUserHasSent=false → come from potentialRequests stream.
           final conversations = [
             _createConversation(id: _testConversationId1),
             _createConversation(id: _testConversationId2),
           ];
-          when(
-            () => mockDmRepository.watchConversations(
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) => Stream.value(conversations));
+          _stubStreams(
+            mockDmRepository,
+            potentialRequests: conversations,
+          );
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -615,11 +703,35 @@ void main() {
           final conversations = [
             _createConversation(id: _testConversationId1),
           ];
-          when(
-            () => mockDmRepository.watchConversations(
-              limit: any(named: 'limit'),
+          _stubStreams(
+            mockDmRepository,
+            potentialRequests: conversations,
+          );
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ConversationListStarted()),
+        verify: (bloc) {
+          expect(bloc.state.conversations, hasLength(1));
+          expect(bloc.state.requestConversations, isEmpty);
+        },
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'accepted conversations always go to conversations list '
+        'regardless of follow state',
+        setUp: () {
+          // Nobody is followed.
+          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
+          when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+
+          // currentUserHasSent=true → accepted stream.
+          final conversations = [
+            _createConversation(
+              id: _testConversationId1,
+              currentUserHasSent: true,
             ),
-          ).thenAnswer((_) => Stream.value(conversations));
+          ];
+          _stubStreams(mockDmRepository, accepted: conversations);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -659,11 +771,10 @@ void main() {
             final conversations = [
               _createConversation(id: _testConversationId1),
             ];
-            when(
-              () => mockDmRepository.watchConversations(
-                limit: any(named: 'limit'),
-              ),
-            ).thenAnswer((_) => Stream.value(conversations));
+            _stubStreams(
+              mockDmRepository,
+              potentialRequests: conversations,
+            );
 
             // After a short delay, update follow state and emit on stream.
             Future<void>.delayed(
@@ -712,11 +823,10 @@ void main() {
                 ],
               ),
             ];
-            when(
-              () => mockDmRepository.watchConversations(
-                limit: any(named: 'limit'),
-              ),
-            ).thenAnswer((_) => Stream.value(conversations));
+            _stubStreams(
+              mockDmRepository,
+              potentialRequests: conversations,
+            );
           },
           build: createBloc,
           act: (bloc) => bloc.add(const ConversationListStarted()),
@@ -750,17 +860,55 @@ void main() {
                 ],
               ),
             ];
-            when(
-              () => mockDmRepository.watchConversations(
-                limit: any(named: 'limit'),
-              ),
-            ).thenAnswer((_) => Stream.value(conversations));
+            // currentUserHasSent=true → accepted stream.
+            _stubStreams(mockDmRepository, accepted: conversations);
           },
           build: createBloc,
           act: (bloc) => bloc.add(const ConversationListStarted()),
           verify: (bloc) {
             expect(bloc.state.conversations, hasLength(1));
             expect(bloc.state.requestConversations, isEmpty);
+          },
+        );
+      });
+
+      group('pagination does not truncate requests', () {
+        blocTest<ConversationListBloc, ConversationListState>(
+          'requests appear even when accepted list fills page',
+          setUp: () {
+            when(
+              () => mockFollowRepository.isFollowing(any()),
+            ).thenReturn(false);
+            when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+
+            // Page-sized accepted list (simulates full page).
+            final accepted = List.generate(
+              ConversationListState.pageSize,
+              (i) => _createConversation(
+                id: 'a${i.toRadixString(16).padLeft(63, '0')}',
+                currentUserHasSent: true,
+              ),
+            );
+            // Requests loaded separately, not truncated.
+            final requests = [
+              _createConversation(id: _testConversationId1),
+              _createConversation(id: _testConversationId2),
+            ];
+            _stubStreams(
+              mockDmRepository,
+              accepted: accepted,
+              potentialRequests: requests,
+            );
+          },
+          build: createBloc,
+          act: (bloc) => bloc.add(const ConversationListStarted()),
+          verify: (bloc) {
+            expect(
+              bloc.state.conversations,
+              hasLength(ConversationListState.pageSize),
+            );
+            expect(bloc.state.requestConversations, hasLength(2));
+            expect(bloc.state.hasMore, isTrue);
           },
         );
       });
@@ -843,6 +991,7 @@ void main() {
       expect(state.props, [
         ConversationListStatus.loaded,
         conversations,
+        const <DmConversation>[],
         const <DmConversation>[],
         true,
         false,

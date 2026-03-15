@@ -77,6 +77,54 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     return query.watch();
   }
 
+  /// Watch conversations where the user has sent at least one message.
+  ///
+  /// These are "accepted" conversations that are never message requests.
+  /// Supports pagination via [limit] and [offset].
+  Stream<List<ConversationRow>> watchAcceptedConversations({
+    int? limit,
+    int? offset,
+  }) {
+    final query = select(conversations)
+      ..where((t) => t.currentUserHasSent.equals(true))
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.lastMessageTimestamp,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    if (limit != null) query.limit(limit, offset: offset);
+    return query.watch();
+  }
+
+  /// Watch conversations where the user has never sent a message.
+  ///
+  /// These are potential message requests (final classification depends
+  /// on follow state, which is applied in the BLoC layer). Returned
+  /// without pagination since the count is typically small and needed
+  /// in full for accurate badge counts.
+  Stream<List<ConversationRow>> watchPotentialRequestConversations() {
+    final query = select(conversations)
+      ..where((t) => t.currentUserHasSent.equals(false))
+      ..orderBy([
+        (t) => OrderingTerm(
+          expression: t.lastMessageTimestamp,
+          mode: OrderingMode.desc,
+        ),
+      ]);
+    return query.watch();
+  }
+
+  /// Watch count of potential request conversations.
+  Stream<int> watchPotentialRequestCount() {
+    final query = selectOnly(conversations)
+      ..where(conversations.currentUserHasSent.equals(false))
+      ..addColumns([conversations.id.count()]);
+    return query.watchSingle().map(
+      (row) => row.read(conversations.id.count()) ?? 0,
+    );
+  }
+
   /// Get a single conversation by ID.
   Future<ConversationRow?> getConversation(String id) {
     return (select(
@@ -113,10 +161,27 @@ class ConversationsDao extends DatabaseAccessor<AppDatabase>
     return result.read(conversations.id.count()) ?? 0;
   }
 
-  /// Watch unread conversation count.
+  /// Watch unread conversation count (all conversations).
   Stream<int> watchUnreadCount() {
     final query = selectOnly(conversations)
       ..where(conversations.isRead.equals(false))
+      ..addColumns([conversations.id.count()]);
+    return query.watchSingle().map(
+      (row) => row.read(conversations.id.count()) ?? 0,
+    );
+  }
+
+  /// Watch unread count for accepted conversations only.
+  ///
+  /// Excludes conversations where the user has never sent a message
+  /// (potential requests), so the badge on the nav bar reflects only
+  /// the "Messages" tab unreads.
+  Stream<int> watchUnreadAcceptedCount() {
+    final query = selectOnly(conversations)
+      ..where(
+        conversations.isRead.equals(false) &
+            conversations.currentUserHasSent.equals(true),
+      )
       ..addColumns([conversations.id.count()]);
     return query.watchSingle().map(
       (row) => row.read(conversations.id.count()) ?? 0,

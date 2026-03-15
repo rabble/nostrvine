@@ -649,8 +649,33 @@ class DmRepository {
     return rows.map(_conversationFromRow).toList();
   }
 
-  /// Watch unread conversation count.
+  /// Watch conversations where the user has sent at least one message.
+  ///
+  /// Supports pagination via [limit]. These conversations are never
+  /// message requests.
+  Stream<List<DmConversation>> watchAcceptedConversations({int? limit}) {
+    return _conversationsDao
+        .watchAcceptedConversations(limit: limit)
+        .map((rows) => rows.map(_conversationFromRow).toList());
+  }
+
+  /// Watch conversations where the user has never sent a message.
+  ///
+  /// These are potential message requests. Final classification (based on
+  /// follow state) is applied by the BLoC layer. Returned without
+  /// pagination since the list is typically small and needed in full.
+  Stream<List<DmConversation>> watchPotentialRequests() {
+    return _conversationsDao.watchPotentialRequestConversations().map(
+      (rows) => rows.map(_conversationFromRow).toList(),
+    );
+  }
+
+  /// Watch unread conversation count (all conversations).
   Stream<int> watchUnreadCount() => _conversationsDao.watchUnreadCount();
+
+  /// Watch unread count for accepted conversations only (excludes requests).
+  Stream<int> watchUnreadAcceptedCount() =>
+      _conversationsDao.watchUnreadAcceptedCount();
 
   /// Mark a conversation as read.
   Future<void> markConversationAsRead(String conversationId) {

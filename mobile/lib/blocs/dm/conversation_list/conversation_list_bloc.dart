@@ -11,6 +11,7 @@ import 'package:equatable/equatable.dart';
 import 'package:models/models.dart';
 import 'package:openvine/repositories/dm_repository.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:rxdart/rxdart.dart';
 
 part 'conversation_list_event.dart';
 part 'conversation_list_state.dart';
@@ -63,41 +64,54 @@ class ConversationListBloc
     return super.close();
   }
 
-  /// Splits all conversations into normal (followed) and requests (not followed).
+  /// Splits potential request conversations by follow state.
+  ///
+  /// Conversations where `currentUserHasSent == false` are "potential
+  /// requests". For 1:1 conversations from followed contacts, they go to
+  /// the followed list (Messages tab). Everything else is a true request.
   ({
     List<DmConversation> followed,
     List<DmConversation> requests,
   })
-  _splitConversations(List<DmConversation> all) {
+  _splitPotentialRequests(List<DmConversation> potentialRequests) {
     final userPubkey = _dmRepository.userPubkey;
     final followed = <DmConversation>[];
     final requests = <DmConversation>[];
 
-    for (final conversation in all) {
+    for (final conversation in potentialRequests) {
       final otherPubkeys = conversation.participantPubkeys.where(
         (pk) => pk != userPubkey,
       );
 
-      // A conversation is a request when the current user has never
-      // sent a message in it.  For 1:1 conversations, conversations
-      // from followed contacts skip the request classification.
-      // For groups, follow state is irrelevant per the spec.
+      // A 1:1 conversation from a followed contact is not a request
+      // even if the user hasn't replied yet. For groups, follow state
+      // is irrelevant per the spec.
       final isFollowedContact =
           !conversation.isGroup &&
           otherPubkeys.any(_followRepository.isFollowing);
-      final isRequest =
-          otherPubkeys.isNotEmpty &&
-          !conversation.currentUserHasSent &&
-          !isFollowedContact;
 
-      if (isRequest) {
-        requests.add(conversation);
-      } else {
+      if (otherPubkeys.isEmpty || isFollowedContact) {
         followed.add(conversation);
+      } else {
+        requests.add(conversation);
       }
     }
 
     return (followed: followed, requests: requests);
+  }
+
+  /// Merges accepted conversations with followed-but-unreplied ones
+  /// and sorts by timestamp descending.
+  List<DmConversation> _mergeAndSort(
+    List<DmConversation> accepted,
+    List<DmConversation> followedPotential,
+  ) {
+    if (followedPotential.isEmpty) return accepted;
+    return [...accepted, ...followedPotential]..sort((a, b) {
+      final aTime = a.lastMessageTimestamp ?? a.createdAt;
+      final bTime = b.lastMessageTimestamp ?? b.createdAt;
+      return bTime.compareTo(aTime);
+    });
   }
 
   Future<void> _onStarted(
@@ -114,15 +128,28 @@ class ConversationListBloc
       );
     }
 
+    // Stream 1: accepted conversations (paginated, user has sent).
+    // Stream 2: potential requests (unpaginated, user has NOT sent).
+    // Combining ensures requests are never truncated by pagination.
     await emit.forEach(
-      _dmRepository.watchConversations(limit: state.currentLimit),
-      onData: (allConversations) {
-        final split = _splitConversations(allConversations);
+      Rx.combineLatest2(
+        _dmRepository.watchAcceptedConversations(
+          limit: state.currentLimit,
+        ),
+        _dmRepository.watchPotentialRequests(),
+        (accepted, potentialRequests) => (
+          accepted: accepted,
+          potentialRequests: potentialRequests,
+        ),
+      ),
+      onData: (data) {
+        final split = _splitPotentialRequests(data.potentialRequests);
         return state.copyWith(
           status: ConversationListStatus.loaded,
-          conversations: split.followed,
+          conversations: _mergeAndSort(data.accepted, split.followed),
           requestConversations: split.requests,
-          hasMore: allConversations.length >= state.currentLimit,
+          potentialRequests: data.potentialRequests,
+          hasMore: data.accepted.length >= state.currentLimit,
           isLoadingMore: false,
         );
       },
@@ -139,18 +166,25 @@ class ConversationListBloc
     _ConversationListFollowingChanged event,
     Emitter<ConversationListState> emit,
   ) {
-    // Re-split existing conversations when the follow list changes.
+    // Re-split potential requests when the follow list changes.
+    // Accepted conversations (currentUserHasSent == true) are unaffected.
     if (state.status != ConversationListStatus.loaded) return;
-    final all = [...state.conversations, ...state.requestConversations]
-      ..sort((a, b) {
-        final aTime = a.lastMessageTimestamp ?? a.createdAt;
-        final bTime = b.lastMessageTimestamp ?? b.createdAt;
-        return bTime.compareTo(aTime);
-      });
-    final split = _splitConversations(all);
+    if (state.potentialRequests.isEmpty) return;
+
+    final split = _splitPotentialRequests(state.potentialRequests);
+
+    // Rebuild the conversations list: keep only the accepted ones
+    // (those NOT in potentialRequests) and merge with newly classified
+    // followed conversations.
+    final acceptedOnly = state.conversations
+        .where(
+          (c) => c.currentUserHasSent,
+        )
+        .toList();
+
     emit(
       state.copyWith(
-        conversations: split.followed,
+        conversations: _mergeAndSort(acceptedOnly, split.followed),
         requestConversations: split.requests,
       ),
     );

@@ -25,6 +25,7 @@ class ConversationListState extends Equatable {
     this.status = ConversationListStatus.initial,
     this.conversations = const [],
     this.requestConversations = const [],
+    this.potentialRequests = const [],
     this.hasMore = true,
     this.isLoadingMore = false,
     this.currentLimit = ConversationListState.pageSize,
@@ -36,13 +37,18 @@ class ConversationListState extends Equatable {
 
   final ConversationListStatus status;
 
-  /// Conversations from followed users (shown in normal inbox).
+  /// Conversations shown in the Messages tab (accepted + followed contacts).
   final List<DmConversation> conversations;
 
-  /// Conversations from non-followed users (message requests).
+  /// Conversations shown in the Requests tab (non-followed, never replied).
   final List<DmConversation> requestConversations;
 
-  /// Whether more conversations may exist beyond the current page.
+  /// Raw potential requests from DB (`currentUserHasSent == false`).
+  ///
+  /// Stored so that follow-list changes can re-split without a DB query.
+  final List<DmConversation> potentialRequests;
+
+  /// Whether more accepted conversations may exist beyond the current page.
   final bool hasMore;
 
   /// Whether a load-more operation is currently in progress.
@@ -63,6 +69,7 @@ class ConversationListState extends Equatable {
     ConversationListStatus? status,
     List<DmConversation>? conversations,
     List<DmConversation>? requestConversations,
+    List<DmConversation>? potentialRequests,
     bool? hasMore,
     bool? isLoadingMore,
     int? currentLimit,
@@ -73,6 +80,7 @@ class ConversationListState extends Equatable {
       status: status ?? this.status,
       conversations: conversations ?? this.conversations,
       requestConversations: requestConversations ?? this.requestConversations,
+      potentialRequests: potentialRequests ?? this.potentialRequests,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       currentLimit: currentLimit ?? this.currentLimit,
@@ -87,6 +95,7 @@ class ConversationListState extends Equatable {
     status,
     conversations,
     requestConversations,
+    potentialRequests,
     hasMore,
     isLoadingMore,
     currentLimit,
