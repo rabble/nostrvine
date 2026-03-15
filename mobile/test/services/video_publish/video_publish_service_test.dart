@@ -467,8 +467,7 @@ void main() {
         );
       });
 
-      test('returns user-friendly message for TLS/certificate error',
-          () async {
+      test('returns user-friendly message for TLS/certificate error', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
         when(
           () => mockAuthService.currentPublicKeyHex,
@@ -496,8 +495,7 @@ void main() {
         );
       });
 
-      test('returns user-friendly message for 413 payload too large',
-          () async {
+      test('returns user-friendly message for 413 payload too large', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
         when(
           () => mockAuthService.currentPublicKeyHex,
@@ -525,61 +523,69 @@ void main() {
         );
       });
 
-      test('returns user-friendly message for 500 internal server error',
-          () async {
-        when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        when(
-          () => mockAuthService.currentPublicKeyHex,
-        ).thenReturn('test_pubkey');
-        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
-        when(() => mockUploadManager.isInitialized).thenReturn(true);
-        when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
-            nostrPubkey: any(named: 'nostrPubkey'),
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenThrow(Exception('500 internal server error'));
-        when(
-          () => mockBlossomService.getBlossomServer(),
-        ).thenAnswer((_) async => 'https://media.divine.video');
+      test(
+        'returns user-friendly message for 500 internal server error',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenThrow(Exception('500 internal server error'));
+          when(
+            () => mockBlossomService.getBlossomServer(),
+          ).thenAnswer((_) async => 'https://media.divine.video');
 
-        final draft = _createTestDraft();
-        final result = await service.publishVideo(draft: draft);
+          final draft = _createTestDraft();
+          final result = await service.publishVideo(draft: draft);
 
-        expect(result, isA<PublishError>());
-        final msg = (result as PublishError).userMessage;
-        expect(msg, contains('internal error'));
-        expect(msg, contains('media.divine.video'));
-      });
+          expect(result, isA<PublishError>());
+          final msg = (result as PublishError).userMessage;
+          expect(msg, contains('internal error'));
+          expect(msg, contains('media.divine.video'));
+        },
+      );
 
-      test('returns user-friendly message for 502/503 service unavailable',
-          () async {
-        when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        when(
-          () => mockAuthService.currentPublicKeyHex,
-        ).thenReturn('test_pubkey');
-        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
-        when(() => mockUploadManager.isInitialized).thenReturn(true);
-        when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
-            nostrPubkey: any(named: 'nostrPubkey'),
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenThrow(Exception('502 bad gateway'));
-        when(
-          () => mockBlossomService.getBlossomServer(),
-        ).thenAnswer((_) async => 'https://media.divine.video');
+      test(
+        'returns user-friendly message for 502/503 service unavailable',
+        () async {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenThrow(Exception('502 bad gateway'));
+          when(
+            () => mockBlossomService.getBlossomServer(),
+          ).thenAnswer((_) async => 'https://media.divine.video');
 
-        final draft = _createTestDraft();
-        final result = await service.publishVideo(draft: draft);
+          final draft = _createTestDraft();
+          final result = await service.publishVideo(draft: draft);
 
-        expect(result, isA<PublishError>());
-        final msg = (result as PublishError).userMessage;
-        expect(msg, contains('temporarily down'));
-        expect(msg, contains('media.divine.video'));
-      });
+          expect(result, isA<PublishError>());
+          final msg = (result as PublishError).userMessage;
+          expect(msg, contains('temporarily down'));
+          expect(msg, contains('media.divine.video'));
+        },
+      );
 
       test('returns user-friendly message for 401 unauthorized', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
@@ -719,8 +725,7 @@ void main() {
         expect(msg, contains('relay'));
       });
 
-      test(
-          'returns user-friendly message for SocketException '
+      test('returns user-friendly message for SocketException '
           '(no internet)', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
         when(

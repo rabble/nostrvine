@@ -552,26 +552,28 @@ void main() {
         );
       }
 
-      test('should return only drafts matching the requested statuses',
-          () async {
-        await service.saveDraft(
-          createDraftWithStatus('d1', PublishStatus.draft),
-        );
-        await service.saveDraft(
-          createDraftWithStatus('d2', PublishStatus.publishing),
-        );
-        await service.saveDraft(
-          createDraftWithStatus('d3', PublishStatus.failed),
-        );
+      test(
+        'should return only drafts matching the requested statuses',
+        () async {
+          await service.saveDraft(
+            createDraftWithStatus('d1', PublishStatus.draft),
+          );
+          await service.saveDraft(
+            createDraftWithStatus('d2', PublishStatus.publishing),
+          );
+          await service.saveDraft(
+            createDraftWithStatus('d3', PublishStatus.failed),
+          );
 
-        final results = await service.getDraftsByPublishStatuses(
-          {PublishStatus.publishing, PublishStatus.failed},
-        );
+          final results = await service.getDraftsByPublishStatuses(
+            {PublishStatus.publishing, PublishStatus.failed},
+          );
 
-        expect(results, hasLength(2));
-        final ids = results.map((d) => d.id).toSet();
-        expect(ids, containsAll(['d2', 'd3']));
-      });
+          expect(results, hasLength(2));
+          final ids = results.map((d) => d.id).toSet();
+          expect(ids, containsAll(['d2', 'd3']));
+        },
+      );
 
       test('should return empty list when no drafts match', () async {
         await service.saveDraft(
@@ -626,8 +628,10 @@ void main() {
         );
 
         expect(results, hasLength(2));
-        expect(results.every((d) => d.publishStatus == PublishStatus.failed),
-            isTrue);
+        expect(
+          results.every((d) => d.publishStatus == PublishStatus.failed),
+          isTrue,
+        );
       });
     });
 
