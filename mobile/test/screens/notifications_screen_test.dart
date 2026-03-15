@@ -4,9 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 
 /// Mock notifier that returns test notifications
@@ -71,6 +76,10 @@ class _MockEmptyRelayNotifications extends RelayNotifications {
   Future<void> refresh() async {}
 }
 
+class _MockVideoEventService extends Mock implements VideoEventService {}
+
+class _MockNostrClient extends Mock implements NostrClient {}
+
 void main() {
   // Full 64-char test pubkeys
   const pubkeyAlice =
@@ -83,9 +92,15 @@ void main() {
       'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee';
 
   /// Build the NotificationsScreen directly in a ProviderScope
-  Widget buildScreenWidget(RelayNotifications Function() notifierFactory) {
+  Widget buildScreenWidget(
+    RelayNotifications Function() notifierFactory, {
+    List overrides = const [],
+  }) {
     return ProviderScope(
-      overrides: [relayNotificationsProvider.overrideWith(notifierFactory)],
+      overrides: [
+        relayNotificationsProvider.overrideWith(notifierFactory),
+        ...overrides,
+      ],
       child: MaterialApp(
         theme: ThemeData.dark(),
         home: const Scaffold(body: NotificationsScreen()),
@@ -405,6 +420,45 @@ void main() {
 
         // Verify markAsRead was called with the correct notification ID
         expect(mockNotifier.markedAsReadIds, contains('notif-to-read'));
+      });
+
+      testWidgets('shows fallback snackbar when comment target cannot be resolved', (
+        WidgetTester tester,
+      ) async {
+        final now = DateTime.now();
+        final notifications = [
+          NotificationModel(
+            id: 'notif-missing',
+            type: NotificationType.comment,
+            actorPubkey: pubkeyAlice,
+            message: 'Alice commented on your video',
+            timestamp: now.subtract(const Duration(minutes: 1)),
+            targetEventId: 'missing-comment-event',
+          ),
+        ];
+
+        final mockVideoService = _MockVideoEventService();
+        final mockNostrClient = _MockNostrClient();
+        when(() => mockVideoService.getVideoById(any())).thenReturn(null);
+        when(() => mockNostrClient.fetchEventById('missing-comment-event'))
+            .thenAnswer((_) async => null);
+
+        final mockNotifier = _MockRelayNotifications(notifications);
+        await tester.pumpWidget(
+          buildScreenWidget(
+            () => mockNotifier,
+            overrides: [
+              videoEventServiceProvider.overrideWithValue(mockVideoService),
+              nostrServiceProvider.overrideWithValue(mockNostrClient),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byType(NotificationListItem).first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Video not found'), findsOneWidget);
       });
     });
 
