@@ -576,7 +576,7 @@ Future<void> _startOpenVineApp() async {
   // Skip on web — media_kit requires native libraries (libmpv) that are not
   // available in browser environments. Web uses video_player instead.
   if (!kIsWeb) {
-    // MediaKit.ensureInitialized();
+    MediaKit.ensureInitialized();
 
     // Initialize the player pool singleton
     await PlayerPool.init();
@@ -1283,8 +1283,9 @@ class _UploadFailureListenerState extends State<_UploadFailureListener> {
         // (e.g. still on the login screen after a cold start).
         // Also don't update _lastKnownFailedIds so these failures are
         // detected as "new" once the user eventually authenticates.
-        final authService =
-            ProviderScope.containerOf(context).read(authServiceProvider);
+        final authService = ProviderScope.containerOf(
+          context,
+        ).read(authServiceProvider);
         if (!authService.isAuthenticated) return;
 
         final currentFailedIds = state.uploads
