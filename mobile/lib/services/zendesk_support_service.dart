@@ -97,13 +97,12 @@ class ZendeskSupportService {
     }
   }
 
-  /// Store user identity for Zendesk tickets (REST API fallback only).
+  /// Store user identity for Zendesk tickets.
   ///
-  /// Call this after user login. Stores name/email/npub locally for REST API
-  /// ticket creation. Does NOT set identity on the native SDK — the SDK uses
-  /// JWT identity exclusively, set when the user accesses support.
-  /// Setting anonymous identity here would lock the SDK into anonymous auth
-  /// mode and prevent JWT from working.
+  /// Call this after user login. Stores name/email/npub locally.
+  /// After calling this, call setAnonymousIdentityWithUserInfo() to set
+  /// the native SDK identity, then setJwtIdentity() to upgrade to
+  /// authenticated identity. See zendeskIdentitySync provider.
   ///
   /// Returns true always (local storage only).
   static bool setUserIdentity({
@@ -136,6 +135,34 @@ class ZendeskSupportService {
     );
 
     return true;
+  }
+
+  /// Set anonymous identity on native SDK with user info.
+  ///
+  /// This provides a baseline identity so createTicket() works immediately
+  /// after login without a network call. JWT identity upgrade happens
+  /// asynchronously afterward and overrides this when successful.
+  static Future<bool> setAnonymousIdentityWithUserInfo() async {
+    if (!_initialized) return false;
+    if (_userName == null || _userEmail == null) return false;
+
+    try {
+      await _channel.invokeMethod('setUserIdentity', {
+        'name': _userName,
+        'email': _userEmail,
+      });
+      Log.info(
+        'Zendesk SDK: anonymous identity set with user info',
+        category: LogCategory.system,
+      );
+      return true;
+    } catch (e) {
+      Log.warning(
+        'Zendesk SDK: failed to set anonymous identity: $e',
+        category: LogCategory.system,
+      );
+      return false;
+    }
   }
 
   /// Clear user identity (call on logout)
