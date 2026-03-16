@@ -190,28 +190,37 @@ class VideoClipEditorBottomBar extends StatelessWidget {
 class _ClipRemoveArea extends ConsumerWidget {
   const _ClipRemoveArea();
 
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deleteButtonKey = ref.read(videoEditorProvider).deleteButtonKey;
-    final isOverDeleteZone = context.select<ClipEditorBloc, bool>(
-      (bloc) => bloc.state.isOverDeleteZone,
+    final (:isOverDeleteZone, :isLastClip) =
+        context.select<ClipEditorBloc, ({bool isOverDeleteZone, bool isLastClip})>(
+      (bloc) => (
+        isOverDeleteZone: bloc.state.isOverDeleteZone,
+        isLastClip: bloc.state.clips.length <= 1,
+      ),
     );
     return Align(
       child: AnimatedScale(
-        scale: isOverDeleteZone ? 1.4 : 1.0,
+        scale: isOverDeleteZone && !isLastClip ? 1.4 : 1.0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        child: Container(
-          key: deleteButtonKey,
-          padding: const .all(10),
-          decoration: ShapeDecoration(
-            color: VineTheme.error,
-            shape: RoundedRectangleBorder(borderRadius: .circular(20)),
-          ),
-          child: const DivineIcon(
-            icon: .trash,
-            size: 28,
-            color: VineTheme.backgroundColor,
+        child: AnimatedOpacity(
+          opacity: isLastClip ? 0.3 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            key: deleteButtonKey,
+            padding: const .all(10),
+            decoration: ShapeDecoration(
+              color: VineTheme.error,
+              shape: RoundedRectangleBorder(borderRadius: .circular(20)),
+            ),
+            child: const DivineIcon(
+              icon: .trash,
+              size: 28,
+              color: VineTheme.backgroundColor,
+            ),
           ),
         ),
       ),

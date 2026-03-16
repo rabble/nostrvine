@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
@@ -132,6 +131,12 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
       constraints.maxHeight,
     );
 
+    // Don't activate delete zone when only one clip remains
+    final clips = context.read<ClipEditorBloc>().state.clips;
+    if (clips.length <= 1) {
+      return isLeavingClipArea;
+    }
+
     final isOverDeleteZone = _isPointerOverDeleteButton(event.position);
 
     // Trigger haptic feedback when entering the delete zone
@@ -246,6 +251,12 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
       // Delete the clip if released over delete zone
       final bloc = context.read<ClipEditorBloc>();
       final clips = bloc.state.clips;
+      // Prevent deleting the last remaining clip
+      if (clips.length <= 1) {
+        _reorderController.completeReorder();
+        bloc.add(const ClipEditorReorderingStopped());
+        return;
+      }
       if (startIndex >= 0 && startIndex < clips.length) {
         final clipToDelete = clips[startIndex];
         bloc
@@ -253,24 +264,6 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
           ..add(
             const ClipEditorDeleteZoneChanged(isOver: false),
           );
-
-        // Check if all clips will be gone after removal.
-        if (clips.length <= 1) {
-          // TODO(hm21): reimplement after design decision is done
-          // if we go back to camera and also clean all clips or not.
-          // if (mounted) {
-          //   Navigator.of(
-          //     context,
-          //   ).popUntil(
-          //     (route) =>
-          //         route.settings.name == VideoRecorderScreen.routeName ||
-          //         route.settings.name == LibraryScreen.draftsRouteName ||
-          //         route.settings.name == LibraryScreen.clipsRouteName,
-          //   );
-          // }
-          if (mounted) context.pop();
-          return;
-        }
 
         // Update selected index after deletion - based on startIndex since
         // that's where the deleted clip was

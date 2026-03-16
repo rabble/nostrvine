@@ -74,6 +74,9 @@ class _VideoEditorMoreButtonState
 
   /// Shows options for clip editing mode: split, save, or delete current clip.
   Future<void> _openClipEditOptions() async {
+    final clips = context.read<ClipEditorBloc>().state.clips;
+    final isLastClip = clips.length <= 1;
+
     await VineBottomSheetActionMenu.show(
       context: context,
       options: [
@@ -95,7 +98,7 @@ class _VideoEditorMoreButtonState
           iconPath: 'assets/icon/trash.svg',
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Delete clip',
-          onTap: _removeClip,
+          onTap: isLastClip ? null : _removeClip,
           isDestructive: true,
         ),
       ],
