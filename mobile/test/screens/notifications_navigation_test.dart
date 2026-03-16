@@ -1,31 +1,20 @@
-// ABOUTME: Test for notifications screen navigation to videos and profiles
-// ABOUTME: Ensures tapping notifications navigates to correct video or profile
+// ABOUTME: Test notification navigation for resolved and missing video targets.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
+import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
-import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 
-// Mock VideoEvents without timers
-class _MockVideoEventsNoTimers extends VideoEvents {
-  @override
-  Stream<List<VideoEvent>> build() async* {
-    yield [];
-  }
-}
-
-/// Mock notifier that tracks markAsRead calls
 class _MockRelayNotifications extends RelayNotifications {
-  final List<String> markedAsReadIds = [];
-
   final List<NotificationModel> _notifications;
 
   _MockRelayNotifications(this._notifications);
@@ -40,126 +29,141 @@ class _MockRelayNotifications extends RelayNotifications {
   }
 
   @override
-  Future<void> markAsRead(String notificationId) async {
-    markedAsReadIds.add(notificationId);
-  }
+  Future<void> markAsRead(String notificationId) async {}
+
+  @override
+  Future<void> markAllAsRead() async {}
 }
 
-void main() {
-  Widget shell(ProviderContainer c) => UncontrolledProviderScope(
-    container: c,
-    child: MaterialApp.router(routerConfig: c.read(goRouterProvider)),
-  );
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
-  String currentLocation(ProviderContainer c) {
-    final router = c.read(goRouterProvider);
-    return router.routeInformationProvider.value.uri.toString();
+class _MockNostrClient extends Mock implements NostrClient {}
+
+void main() {
+  Widget buildScreen(
+    RelayNotifications Function() notifierFactory, {
+    required VideoEventService videoEventService,
+    required NostrClient nostrClient,
+  }) {
+    return ProviderScope(
+      overrides: [
+        relayNotificationsProvider.overrideWith(notifierFactory),
+        videoEventServiceProvider.overrideWithValue(videoEventService),
+        nostrServiceProvider.overrideWithValue(nostrClient),
+      ],
+      child: const MaterialApp(
+        home: Scaffold(body: NotificationsScreen()),
+      ),
+    );
   }
 
+  VideoEvent video(String id) => VideoEvent(
+    id: id,
+    pubkey: 'pubkey_$id',
+    createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    timestamp: DateTime.now(),
+    content: 'content',
+    title: 'title',
+    videoUrl: 'https://example.com/$id.mp4',
+    thumbnailUrl: 'https://example.com/$id.jpg',
+  );
+
+  Event commentEvent({required String rootVideoId}) => Event(
+    'd' * 64,
+    1111,
+    [
+      ['e', rootVideoId, '', 'root'],
+      ['e', 'parent_comment', '', 'reply'],
+    ],
+    'comment body',
+  );
+
   group('NotificationsScreen Navigation', () {
-    late _MockRelayNotifications mockNotifier;
-    late List<NotificationModel> testNotifications;
-
-    setUp(() {
-      testNotifications = [
-        NotificationModel(
-          id: 'notif1',
-          type: NotificationType.like,
-          actorPubkey: 'user123abcdef',
-          actorName: 'Test User',
-          message: 'liked your video',
-          timestamp: DateTime.now(),
-          targetEventId: 'video123',
-        ),
-        NotificationModel(
-          id: 'notif2',
-          type: NotificationType.follow,
-          actorPubkey: 'user456abcdef',
-          actorName: 'Another User',
-          message: 'started following you',
-          timestamp: DateTime.now(),
-        ),
-      ];
-
-      mockNotifier = _MockRelayNotifications(testNotifications);
-    });
-
-    testWidgets(
-      'tapping notification with video shows error when video not found',
-      (WidgetTester tester) async {
-        final c = ProviderContainer(
-          overrides: [
-            relayNotificationsProvider.overrideWith(() => mockNotifier),
-            videoEventsProvider.overrideWith(_MockVideoEventsNoTimers.new),
-          ],
-        );
-        addTearDown(c.dispose);
-
-        await tester.pumpWidget(shell(c));
-
-        // Navigate to notifications
-        c.read(goRouterProvider).go(NotificationsScreen.pathForIndex(0));
-        await tester.pump();
-        await tester.pump();
-
-        await tester.pumpAndSettle();
-
-        // Act: Tap on first notification (with video ID that doesn't exist)
-        final firstNotification = find.byType(NotificationListItem).first;
-        await tester.tap(firstNotification);
-        await tester.pump();
-        await tester.pump();
-
-        // Assert: Should show "Video not found" snackbar instead of navigating
-        expect(find.text('Video not found'), findsOneWidget);
-        expect(find.byType(ExploreVideoScreenPure), findsNothing);
-
-        // Verify markAsRead was called
-        expect(mockNotifier.markedAsReadIds, contains('notif1'));
-      },
-    );
-
-    testWidgets('tapping notification without video navigates to profile', (
+    testWidgets('comment target id resolves to parent video', (
       WidgetTester tester,
     ) async {
-      final user456Npub = NostrKeyUtils.encodePubKey('user456abcdef');
+      final mockVideoService = _MockVideoEventService();
+      final mockNostrClient = _MockNostrClient();
 
-      final c = ProviderContainer(
-        overrides: [
-          relayNotificationsProvider.overrideWith(() => mockNotifier),
-          videoEventsProvider.overrideWith(_MockVideoEventsNoTimers.new),
-        ],
+      final resolvedVideo = video('video_root_1');
+      when(
+        () => mockVideoService.getVideoById('comment_event_1'),
+      ).thenReturn(null);
+      when(() => mockVideoService.getVideoById('video_root_1')).thenReturn(
+        resolvedVideo,
       );
-      addTearDown(c.dispose);
+      when(
+        () => mockVideoService.shouldHideVideo(resolvedVideo),
+      ).thenReturn(true);
+      when(() => mockNostrClient.fetchEventById('comment_event_1')).thenAnswer(
+        (_) async => commentEvent(rootVideoId: 'video_root_1'),
+      );
 
-      await tester.pumpWidget(shell(c));
+      final notifier = _MockRelayNotifications([
+        NotificationModel(
+          id: 'notif-comment',
+          type: NotificationType.like,
+          actorPubkey: 'a' * 64,
+          actorName: 'Commenter',
+          message: 'liked your video',
+          timestamp: DateTime.now(),
+          targetEventId: 'comment_event_1',
+        ),
+      ]);
 
-      // Navigate to notifications
-      c.read(goRouterProvider).go(NotificationsScreen.pathForIndex(0));
-      await tester.pump();
-      await tester.pump();
-
+      await tester.pumpWidget(
+        buildScreen(
+          () => notifier,
+          videoEventService: mockVideoService,
+          nostrClient: mockNostrClient,
+        ),
+      );
       await tester.pumpAndSettle();
 
-      // Act: Tap on second notification (follow, no video)
-      final secondNotification = find.byType(NotificationListItem).at(1);
-      await tester.tap(secondNotification);
+      await tester.tap(find.byType(NotificationListItem).first);
+      await tester.pumpAndSettle();
 
-      // Pump frames to allow navigation and ProfileScreen initialization
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-      await tester.pump();
-
-      // Assert: Should navigate to profile screen
-      expect(
-        currentLocation(c),
-        contains(ProfileScreenRouter.pathForNpub(user456Npub)),
-      );
-
-      // Verify markAsRead was called
-      expect(mockNotifier.markedAsReadIds, contains('notif2'));
+      verify(() => mockVideoService.getVideoById('video_root_1')).called(1);
+      expect(find.text('Video unavailable'), findsOneWidget);
+      expect(find.text('Video not found'), findsNothing);
     });
-    // TODO(any): Fix and re-enable this test
-  }, skip: true);
+
+    testWidgets('missing target still shows fallback snackbar', (
+      WidgetTester tester,
+    ) async {
+      final mockVideoService = _MockVideoEventService();
+      final mockNostrClient = _MockNostrClient();
+
+      when(() => mockVideoService.getVideoById(any())).thenReturn(null);
+      when(
+        () => mockNostrClient.fetchEventById('missing_event'),
+      ).thenAnswer((_) async => null);
+
+      final notifier = _MockRelayNotifications([
+        NotificationModel(
+          id: 'notif-missing',
+          type: NotificationType.comment,
+          actorPubkey: 'b' * 64,
+          actorName: 'Commenter',
+          message: 'commented',
+          timestamp: DateTime.now(),
+          targetEventId: 'missing_event',
+        ),
+      ]);
+
+      await tester.pumpWidget(
+        buildScreen(
+          () => notifier,
+          videoEventService: mockVideoService,
+          nostrClient: mockNostrClient,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(NotificationListItem).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Video not found'), findsOneWidget);
+    });
+  });
 }

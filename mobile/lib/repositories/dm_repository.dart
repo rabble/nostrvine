@@ -603,11 +603,16 @@ class DmRepository {
   // Query - Conversations
   // -------------------------------------------------------------------------
 
-  /// Watch all conversations (reactive stream).
-  Stream<List<DmConversation>> watchConversations() {
-    return _conversationsDao.watchAllConversations().map(
-      (rows) => rows.map(_conversationFromRow).toList(),
-    );
+  /// Watch conversations (reactive stream), newest first.
+  ///
+  /// When [limit] is provided, only the top [limit] conversations are
+  /// watched. Omit for all conversations.
+  Stream<List<DmConversation>> watchConversations({int? limit}) {
+    return _conversationsDao
+        .watchAllConversations(limit: limit)
+        .map(
+          (rows) => rows.map(_conversationFromRow).toList(),
+        );
   }
 
   /// Get all conversations.

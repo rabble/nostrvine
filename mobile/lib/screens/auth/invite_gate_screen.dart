@@ -216,30 +216,6 @@ class _InviteGateScreenState extends State<InviteGateScreen> {
           case OnboardingMode.open:
             _redirectToCreateAccount();
             return const _InviteLoadingPage();
-          case OnboardingMode.waitlistOnly:
-            return _InviteSheetPage(
-              illustrationAsset: 'assets/stickers/programmer.png',
-              title: 'Divine is currently in private beta.',
-              body: const Text(
-                "Please join the waitlist and we'll share updates as access opens up.",
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 16,
-                  height: 1.5,
-                  letterSpacing: 0.15,
-                  color: VineTheme.lightText,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              primaryButton: DivinePrimaryButton(
-                label: 'Join waitlist',
-                onPressed: () => _showWaitlistSheet(config),
-              ),
-              secondaryButton: DivineSecondaryButton(
-                label: 'Contact support',
-                onPressed: () => _contactSupport(config.supportEmail),
-              ),
-            );
           case OnboardingMode.inviteCodeRequired:
             return _InviteCodeEntryPage(
               controller: _inviteCodeController,

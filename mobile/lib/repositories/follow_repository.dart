@@ -1,6 +1,6 @@
 // ABOUTME: Repository for managing follow relationships (follow/unfollow)
 // ABOUTME: Single source of truth for follow data with in-memory cache, local storage, and API sync
-// ABOUTME: Supports offline queuing via callback injection
+// ABOUTME: Uses FunnelcakeApiClient directly for REST API calls (follower/following bootstrap)
 
 // TODO(refactor): Extract this to packages/follow_repository once dependencies are resolved.
 // Currently blocked by app-level dependencies:
@@ -31,14 +31,6 @@ typedef IsOnlineCallback = bool Function();
 typedef QueueOfflineFollowCallback =
     Future<void> Function({required bool isFollow, required String pubkey});
 
-/// Callback to fetch following list from REST API (funnelcake)
-typedef FetchFollowingFromApiCallback =
-    Future<List<String>> Function(String pubkey);
-
-/// Callback to fetch followers list from REST API (funnelcake)
-typedef FetchFollowersFromApiCallback =
-    Future<List<String>> Function(String pubkey);
-
 /// Callback to fetch follower count from a source with accurate counts
 /// (e.g. SocialService which uses COUNT queries to indexer relays).
 typedef FetchFollowerCountCallback = Future<int> Function(String pubkey);
@@ -59,8 +51,6 @@ class FollowRepository {
     FunnelcakeApiClient? funnelcakeApiClient,
     IsOnlineCallback? isOnline,
     QueueOfflineFollowCallback? queueOfflineAction,
-    FetchFollowingFromApiCallback? fetchFollowingFromApi,
-    FetchFollowersFromApiCallback? fetchFollowersFromApi,
     FetchFollowerCountCallback? fetchFollowerCount,
     List<String>? indexerRelayUrls,
   }) : _nostrClient = nostrClient,
@@ -68,8 +58,6 @@ class FollowRepository {
        _funnelcakeApiClient = funnelcakeApiClient,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
-       _fetchFollowingFromApi = fetchFollowingFromApi,
-       _fetchFollowersFromApi = fetchFollowersFromApi,
        _fetchFollowerCount = fetchFollowerCount,
        _indexerRelayUrls =
            indexerRelayUrls ?? IndexerRelayConfig.defaultIndexers;
@@ -84,12 +72,6 @@ class FollowRepository {
   /// Callback to queue actions for offline sync
   final QueueOfflineFollowCallback? _queueOfflineAction;
 
-  /// Callback to fetch following list from REST API (fast, non-blocking)
-  final FetchFollowingFromApiCallback? _fetchFollowingFromApi;
-
-  /// Callback to fetch followers list from REST API (fast, non-blocking)
-  final FetchFollowersFromApiCallback? _fetchFollowersFromApi;
-
   /// Callback to fetch accurate follower count (e.g. from SocialService)
   final FetchFollowerCountCallback? _fetchFollowerCount;
 
@@ -100,9 +82,11 @@ class FollowRepository {
   // Default indexer relays come from IndexerRelayConfig.defaultIndexers.
 
   // BehaviorSubject replays last value to late subscribers, fixing race condition
-  // where BLoC subscribes AFTER initial emission
-  final _followingSubject = BehaviorSubject<List<String>>.seeded(const []);
-  Stream<List<String>> get followingStream => _followingSubject.stream;
+  // where BLoC subscribes AFTER initial emission.
+  // Seeded with null to distinguish "not yet initialized" from "empty following list".
+  final _followingSubject = BehaviorSubject<List<String>?>.seeded(null);
+  Stream<List<String>> get followingStream =>
+      _followingSubject.stream.whereType<List<String>>();
 
   // In-memory cache — following
   List<String> _followingPubkeys = [];
@@ -319,16 +303,23 @@ class FollowRepository {
     }
 
     // Run all three sources in parallel for best coverage
-    final apiFuture = _fetchFollowersFromApi != null
-        ? _fetchFollowersFromApi(pubkey).catchError((_) => <String>[])
-        : Future.value(<String>[]);
+    final apiFuture = (_funnelcakeApiClient?.isAvailable ?? false)
+        ? _funnelcakeApiClient!
+              .getFollowers(pubkey: pubkey, limit: 5000)
+              .then((r) => r.pubkeys)
+              .catchError((_) => <String>[])
+        : Future<List<String>>.value(const []);
 
     final relayFuture = _fetchFollowersFromRelays(pubkey);
     final indexerFuture = _fetchFollowerPubkeysFromIndexers(
       pubkey,
     ).catchError((_) => <String>[]);
 
-    final results = await Future.wait([apiFuture, relayFuture, indexerFuture]);
+    final results = await Future.wait<List<String>>([
+      apiFuture,
+      relayFuture,
+      indexerFuture,
+    ]);
     final apiFollowers = results[0];
     final relayFollowers = results[1];
     final indexerFollowers = results[2];
@@ -578,7 +569,8 @@ class FollowRepository {
       await _loadFromPersonalEventCache();
 
       // 3. If still empty, try REST API (funnelcake) for fast bootstrap
-      if (_followingPubkeys.isEmpty && _fetchFollowingFromApi != null) {
+      if (_followingPubkeys.isEmpty &&
+          (_funnelcakeApiClient?.isAvailable ?? false)) {
         await _loadFromRestApi();
       }
 
@@ -599,8 +591,8 @@ class FollowRepository {
 
       // Guarantee at least one post-seed emission for "no follows" users.
       // When the user follows nobody, _emitFollowingList() never fires
-      // (list stays [] = same as seed). Force-emit so subscribers can
-      // distinguish "init not done" from "genuinely empty."
+      // because the list stays [] which equals the previous value.
+      // With null seed, this force-emit of [] will always be distinct.
       if (_followingPubkeys.isEmpty && !_followingSubject.isClosed) {
         _followingSubject.add(const []);
       }
@@ -948,6 +940,9 @@ class FollowRepository {
     try {
       final currentUserPubkey = _nostrClient.publicKey;
       if (currentUserPubkey.isEmpty) return;
+      if (_funnelcakeApiClient == null || !_funnelcakeApiClient.isAvailable) {
+        return;
+      }
 
       Log.info(
         'Loading following list from REST API (cache was empty)',
@@ -955,7 +950,11 @@ class FollowRepository {
         category: LogCategory.system,
       );
 
-      final pubkeys = await _fetchFollowingFromApi!(currentUserPubkey);
+      final result = await _funnelcakeApiClient.getFollowing(
+        pubkey: currentUserPubkey,
+        limit: 5000,
+      );
+      final pubkeys = result.pubkeys;
 
       if (pubkeys.isNotEmpty) {
         _followingPubkeys = pubkeys;

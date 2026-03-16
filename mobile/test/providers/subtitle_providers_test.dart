@@ -4,6 +4,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
@@ -13,18 +14,25 @@ import 'package:openvine/providers/subtitle_providers.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
 
+class _MockHttpClient extends Mock implements http.Client {}
+
 void main() {
   const testPubkey =
       '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
 
   late _MockNostrClient mockNostrClient;
+  late _MockHttpClient mockHttpClient;
+  late List<Duration> requestedDelays;
 
   setUp(() {
     mockNostrClient = _MockNostrClient();
+    mockHttpClient = _MockHttpClient();
+    requestedDelays = [];
   });
 
   setUpAll(() {
     registerFallbackValue(<Filter>[]);
+    registerFallbackValue(Uri.parse('https://media.divine.video/fallback/vtt'));
   });
 
   ProviderContainer createContainer() {
@@ -33,6 +41,10 @@ void main() {
         nostrServiceProvider.overrideWith(
           () => _FakeNostrService(mockNostrClient),
         ),
+        subtitleHttpClientProvider.overrideWithValue(mockHttpClient),
+        subtitlePollDelayProvider.overrideWithValue((duration) async {
+          requestedDelays.add(duration);
+        }),
       ],
     );
   }
@@ -261,6 +273,124 @@ void main() {
   });
 
   group('subtitleCues Blossom VTT path', () {
+    test('retries Blossom fetch on 202 using Retry-After', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      var callCount = 0;
+      when(() => mockHttpClient.get(any())).thenAnswer((_) async {
+        callCount += 1;
+        if (callCount == 1) {
+          return http.Response(
+            '{"status":"cooling_down"}',
+            202,
+            headers: {'retry-after': '5'},
+          );
+        }
+        return http.Response(
+          'WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nReady now\n',
+          200,
+        );
+      });
+
+      final cues = await container.read(
+        subtitleCuesProvider(videoId: 'test-id', sha256: 'abc123').future,
+      );
+
+      expect(cues, hasLength(1));
+      expect(cues.first.text, equals('Ready now'));
+      expect(callCount, equals(2));
+      expect(requestedDelays, equals([const Duration(seconds: 5)]));
+    });
+
+    test('falls through to relay path on Blossom 404', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      when(
+        () => mockHttpClient.get(any()),
+      ).thenAnswer((_) async => http.Response('missing', 404));
+      when(
+        () => mockNostrClient.queryEvents(
+          any(),
+          tempRelays: any(named: 'tempRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          Event(
+            testPubkey,
+            39307,
+            [
+              ['d', 'subtitles:test-vine-id'],
+            ],
+            'WEBVTT\n\n1\n00:00:01.000 --> 00:00:02.000\nFrom relay fallback\n',
+            createdAt: 1757385263,
+          ),
+        ],
+      );
+
+      final cues = await container.read(
+        subtitleCuesProvider(
+          videoId: 'test-id',
+          sha256: 'abc123',
+          textTrackRef: '39307:$testPubkey:subtitles:test-vine-id',
+        ).future,
+      );
+
+      expect(cues, hasLength(1));
+      expect(cues.first.text, equals('From relay fallback'));
+    });
+
+    test('parses Blossom VTT immediately on 200', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      when(
+        () => mockHttpClient.get(any()),
+      ).thenAnswer(
+        (_) async => http.Response(
+          'WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nImmediate\n',
+          200,
+        ),
+      );
+
+      final cues = await container.read(
+        subtitleCuesProvider(videoId: 'test-id', sha256: 'abc123').future,
+      );
+
+      expect(cues, hasLength(1));
+      expect(cues.first.text, equals('Immediate'));
+      verifyNever(
+        () => mockNostrClient.queryEvents(
+          any(),
+          tempRelays: any(named: 'tempRelays'),
+        ),
+      );
+    });
+
+    test('stops polling after bounded 202 retries', () async {
+      final container = createContainer();
+      addTearDown(container.dispose);
+
+      var callCount = 0;
+      when(() => mockHttpClient.get(any())).thenAnswer((_) async {
+        callCount += 1;
+        return http.Response(
+          '{"status":"in_progress"}',
+          202,
+          headers: {'retry-after': '5'},
+        );
+      });
+
+      final cues = await container.read(
+        subtitleCuesProvider(videoId: 'test-id', sha256: 'abc123').future,
+      );
+
+      expect(cues, isEmpty);
+      expect(callCount, equals(4));
+      expect(requestedDelays, hasLength(3));
+    });
+
     test('prefers embedded textTrackContent over Blossom sha256 fetch', () async {
       final container = createContainer();
       addTearDown(container.dispose);

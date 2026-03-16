@@ -19,6 +19,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -74,6 +75,8 @@ class _AppShellState extends ConsumerState<AppShell> {
         return 'Explore';
       case RouteType.notifications:
         return 'Notifications';
+      case RouteType.inbox:
+        return 'Inbox';
       case RouteType.hashtag:
         final raw = ctx?.hashtag ?? '';
         return raw.isEmpty ? '#—' : '#$raw';
@@ -117,7 +120,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       RouteType.home => 0,
       // Hashtag is part of explore tab
       RouteType.explore || RouteType.hashtag => 1,
-      RouteType.notifications => 2,
+      RouteType.notifications || RouteType.inbox => 2,
       RouteType.profile => 3,
       // Not a main tab route
       _ => null,
@@ -158,7 +161,7 @@ class _AppShellState extends ConsumerState<AppShell> {
         // This prevents the "No videos available" bug when returning from another tab
         return context.go(ExploreScreen.path);
       case 2:
-        return context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
+        return context.go(InboxPage.path);
       case 3:
         // Always navigate to current user's profile when tapping Profile tab
         final authService = ref.read(authServiceProvider);
@@ -174,7 +177,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     return switch (index) {
       0 => 'Home',
       1 => 'Explore',
-      2 => 'Notifications',
+      2 => 'Inbox',
       3 => 'Profile',
       _ => 'Unknown',
     };
@@ -292,6 +295,13 @@ class _AppShellState extends ConsumerState<AppShell> {
       return child;
     }
 
+    // Inbox manages its own header (segmented toggle replaces app bar)
+    final isInbox = pageCtxAsync.maybeWhen(
+      data: (ctx) =>
+          ctx.type == RouteType.inbox || ctx.type == RouteType.conversation,
+      orElse: () => false,
+    );
+
     final isSearchRoute = pageCtxAsync.maybeWhen(
       data: (ctx) => ctx.type == RouteType.search,
       orElse: () => false,
@@ -333,7 +343,8 @@ class _AppShellState extends ConsumerState<AppShell> {
       },
       // Home tab uses FeedModeSwitch overlay (menu + mode dropdown + search)
       // instead of the standard AppBar, for full-screen video UX.
-      appBar: currentIndex == 0
+      // Inbox uses its own segmented toggle header.
+      appBar: currentIndex == 0 || isInbox
           ? null
           : DiVineAppBar(
               titleWidget: _buildTappableTitle(context, ref, title),
@@ -564,10 +575,10 @@ class _AppShellState extends ConsumerState<AppShell> {
                 child: _buildTabButton(
                   context,
                   ref,
-                  'assets/icon/bell.svg',
+                  'assets/icon/${DivineIconName.chat.fileName}.svg',
                   2,
                   currentIndex,
-                  'notifications_tab',
+                  'inbox_tab',
                 ),
               ),
               _buildTabButton(

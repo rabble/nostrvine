@@ -1800,6 +1800,9 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       );
 
       if (result.success) {
+        final videoEventService = ref.read(videoEventServiceProvider);
+        videoEventService.removeVideoCompletely(widget.video.id);
+
         Log.info(
           'Video deleted successfully: ${widget.video.id}',
           name: 'EditVideoDialog',

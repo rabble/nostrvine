@@ -649,7 +649,7 @@ class _WebFullscreenItem extends ConsumerWidget {
   }
 }
 
-class _PooledFullscreenItemContent extends StatefulWidget {
+class _PooledFullscreenItemContent extends ConsumerStatefulWidget {
   const _PooledFullscreenItemContent({
     required this.video,
     required this.index,
@@ -671,12 +671,12 @@ class _PooledFullscreenItemContent extends StatefulWidget {
   final String? sourceDetail;
 
   @override
-  State<_PooledFullscreenItemContent> createState() =>
+  ConsumerState<_PooledFullscreenItemContent> createState() =>
       _PooledFullscreenItemContentState();
 }
 
 class _PooledFullscreenItemContentState
-    extends State<_PooledFullscreenItemContent> {
+    extends ConsumerState<_PooledFullscreenItemContent> {
   bool _contentWarningRevealed = false;
 
   @override
@@ -684,6 +684,14 @@ class _PooledFullscreenItemContentState
     final video = widget.video;
     final isPortrait = video.dimensions != null && video.isPortrait;
     final alignment = videoAlignmentForDimensions(video.width, video.height);
+    final overlayLabels = contentWarningOverlayLabels(
+      contentWarningLabels: video.contentWarningLabels,
+      warnLabels: video.warnLabels,
+    );
+    final showContentWarningOverlay = shouldShowContentWarningOverlay(
+      contentWarningLabels: video.contentWarningLabels,
+      warnLabels: video.warnLabels,
+    );
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
@@ -711,12 +719,19 @@ class _PooledFullscreenItemContentState
           alignment: alignment,
         ),
         overlayBuilder: (context, videoController, player) {
-          if (video.shouldShowWarning && !_contentWarningRevealed) {
+          if (showContentWarningOverlay && !_contentWarningRevealed) {
             return ContentWarningBlurOverlay(
-              labels: video.warnLabels,
+              labels: overlayLabels,
               onReveal: () => setState(() {
                 _contentWarningRevealed = true;
               }),
+              onHideSimilar: () {
+                hideContentWarningsLikeThese(
+                  context: context,
+                  ref: ref,
+                  labels: overlayLabels,
+                );
+              },
             );
           }
           return MediaQuery(

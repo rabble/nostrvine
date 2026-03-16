@@ -202,6 +202,49 @@ return const Column(
 );
 ```
 
+### Uniform Spacing in Row/Column
+When all gaps between children are equal, use the `spacing` parameter instead of inserting `SizedBox` widgets between each child:
+
+```dart
+// Good - uniform spacing via parameter
+Column(
+  spacing: 8,
+  children: [
+    Text('Title'),
+    Text('Subtitle'),
+    Text('Body'),
+  ],
+);
+
+// Bad - manual SizedBox for uniform gaps
+Column(
+  children: [
+    Text('Title'),
+    SizedBox(height: 8),
+    Text('Subtitle'),
+    SizedBox(height: 8),
+    Text('Body'),
+  ],
+);
+```
+
+Use `SizedBox` only when gaps between children differ:
+
+```dart
+// SizedBox is fine here - gaps are not uniform
+Column(
+  children: [
+    Text('Title'),
+    SizedBox(height: 16),
+    Text('Subtitle'),
+    SizedBox(height: 8),
+    Text('Body'),
+  ],
+);
+```
+
+This applies equally to `Row(spacing: ...)` for horizontal layouts.
+
 ### List Performance
 Use `ListView.builder` or `SliverList` for long lists (lazy loading):
 

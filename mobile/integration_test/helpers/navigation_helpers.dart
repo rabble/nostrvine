@@ -10,6 +10,7 @@ import 'package:openvine/widgets/divine_primary_button.dart';
 ///
 /// The welcome screen has a passive terms notice — no checkboxes needed.
 /// Taps "Create a new Divine account" to reach the registration screen.
+/// Waits for the invite guard to resolve and the form to appear.
 Future<void> navigateToCreateAccount(WidgetTester tester) async {
   final createButton = find.text('Create a new Divine account');
   expect(
@@ -19,6 +20,21 @@ Future<void> navigateToCreateAccount(WidgetTester tester) async {
   );
   await tester.tap(createButton);
   await tester.pumpAndSettle(const Duration(seconds: 1));
+
+  // Wait for the invite guard to resolve and show the create account form.
+  // The InviteProtectedCreateAccountScreen fetches config asynchronously.
+  final foundForm = await waitForWidget(
+    tester,
+    find.byType(DivineAuthTextField),
+    maxSeconds: 20,
+  );
+  if (!foundForm) {
+    fail(
+      'Create account form did not appear within 20s. '
+      'The invite guard may have redirected to the invite gate screen. '
+      'Ensure the invite server returns OnboardingMode.open for LOCAL env.',
+    );
+  }
 }
 
 /// Navigate from the welcome screen to the login options screen.

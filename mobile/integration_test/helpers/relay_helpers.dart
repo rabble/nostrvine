@@ -198,6 +198,63 @@ Future<Uint8List> _generateTestThumbnail() async {
   return byteData!.buffer.asUint8List();
 }
 
+/// Query the local relay for events matching [filter].
+///
+/// Opens a WebSocket, sends a REQ, collects EVENT messages until EOSE,
+/// then closes the connection. Returns all matching events.
+Future<List<Event>> queryRelay(Map<String, dynamic> filter) async {
+  final channel = WebSocketChannel.connect(
+    Uri.parse('ws://$localHost:$localRelayPort'),
+  );
+
+  final subId = 'query-${DateTime.now().millisecondsSinceEpoch}';
+  final events = <Event>[];
+  final completer = Completer<List<Event>>();
+
+  final subscription = channel.stream.listen((message) {
+    final decoded = jsonDecode(message as String) as List<dynamic>;
+    if (decoded[0] == 'EVENT' && decoded[1] == subId) {
+      events.add(Event.fromJson(decoded[2] as Map<String, dynamic>));
+    } else if (decoded[0] == 'EOSE' && decoded[1] == subId) {
+      completer.complete(events);
+    }
+  });
+
+  channel.sink.add(jsonEncode(['REQ', subId, filter]));
+
+  try {
+    return await completer.future.timeout(const Duration(seconds: 10));
+  } finally {
+    channel.sink.add(jsonEncode(['CLOSE', subId]));
+    await subscription.cancel();
+    await channel.sink.close();
+  }
+}
+
+/// Publish a NIP-09 kind 5 deletion event targeting [eventId].
+///
+/// Signs with [privateKey] (must be the same author as the target event).
+/// Returns the deletion event ID.
+///
+/// Throws if the relay rejects the event or connection fails.
+Future<String> publishDeleteEvent({
+  required String eventId,
+  required int kind,
+  required String privateKey,
+}) async {
+  final pubKey = getPublicKey(privateKey);
+
+  final deleteEvent = Event(pubKey, 5, [
+    ['e', eventId],
+    ['k', kind.toString()],
+  ], '');
+  deleteEvent.sign(privateKey);
+
+  final deletionId = await _publishEvent(deleteEvent);
+  debugPrint('Published delete event: $deletionId (target: $eventId)');
+  return deletionId;
+}
+
 /// Send an event to the local relay and wait for OK confirmation.
 Future<String> _publishEvent(Event event) async {
   final channel = WebSocketChannel.connect(

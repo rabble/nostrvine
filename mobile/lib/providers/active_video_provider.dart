@@ -96,6 +96,8 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       );
       return null;
     case RouteType.notifications:
+    case RouteType.inbox:
+    case RouteType.conversation:
     case RouteType.videoRecorder:
     case RouteType.videoEditor:
     case RouteType.videoMetadata:

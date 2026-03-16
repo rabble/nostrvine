@@ -65,6 +65,9 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
 
         return video.copyWith(
           rawTags: parsed.rawTags,
+          contentWarningLabels: video.contentWarningLabels.isEmpty
+              ? parsed.contentWarningLabels
+              : video.contentWarningLabels,
           // Enrich with all missing fields from Nostr event
           title: video.title ?? parsed.title,
           videoUrl: video.videoUrl ?? parsed.videoUrl,

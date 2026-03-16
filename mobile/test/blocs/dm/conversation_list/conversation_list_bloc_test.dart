@@ -69,7 +69,9 @@ void main() {
             _createConversation(id: _testConversationId2),
           ];
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.value(conversations));
         },
         build: createBloc,
@@ -84,6 +86,7 @@ void main() {
               _createConversation(id: _testConversationId1),
               _createConversation(id: _testConversationId2),
             ],
+            hasMore: false,
           ),
         ],
       );
@@ -93,7 +96,9 @@ void main() {
         'when stream emits no conversations',
         setUp: () {
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.value(const []));
         },
         build: createBloc,
@@ -104,6 +109,7 @@ void main() {
           ),
           const ConversationListState(
             status: ConversationListStatus.loaded,
+            hasMore: false,
           ),
         ],
       );
@@ -112,7 +118,9 @@ void main() {
         'emits [loading, error] when stream emits an error',
         setUp: () {
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.error(Exception('db failure')));
         },
         build: createBloc,
@@ -136,7 +144,9 @@ void main() {
             isRead: false,
           );
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.value([conversation]));
         },
         build: createBloc,
@@ -164,7 +174,9 @@ void main() {
             _createConversation(id: _testConversationId2),
           ];
           when(
-            () => mockDmRepository.watchConversations(),
+            () => mockDmRepository.watchConversations(
+              limit: any(named: 'limit'),
+            ),
           ).thenAnswer((_) => Stream.fromIterable([first, second]));
         },
         build: createBloc,
@@ -178,6 +190,7 @@ void main() {
             conversations: [
               _createConversation(id: _testConversationId1),
             ],
+            hasMore: false,
           ),
           ConversationListState(
             status: ConversationListStatus.loaded,
@@ -185,6 +198,7 @@ void main() {
               _createConversation(id: _testConversationId1),
               _createConversation(id: _testConversationId2),
             ],
+            hasMore: false,
           ),
         ],
       );
@@ -221,6 +235,82 @@ void main() {
           const ConversationListMarkRead(_testConversationId1),
         ),
         expect: () => const <ConversationListState>[],
+      );
+    });
+
+    group('ConversationListNavigateToUser', () {
+      blocTest<ConversationListBloc, ConversationListState>(
+        'emits state with navigationTarget '
+        'containing computed conversation ID',
+        setUp: () {
+          when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ConversationListNavigateToUser(_testPubkey2),
+        ),
+        expect: () => [
+          isA<ConversationListState>()
+              .having(
+                (s) => s.navigationTarget,
+                'navigationTarget',
+                isNotNull,
+              )
+              .having(
+                (s) => s.navigationTarget!.participantPubkeys,
+                'participantPubkeys',
+                equals([_testPubkey2]),
+              )
+              .having(
+                (s) => s.navigationTarget!.conversationId,
+                'conversationId',
+                equals(
+                  DmRepository.computeConversationId(
+                    [_testPubkey1, _testPubkey2],
+                  ),
+                ),
+              ),
+        ],
+      );
+
+      blocTest<ConversationListBloc, ConversationListState>(
+        'does not emit when userPubkey is empty',
+        setUp: () {
+          when(() => mockDmRepository.userPubkey).thenReturn('');
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ConversationListNavigateToUser(_testPubkey2),
+        ),
+        expect: () => const <ConversationListState>[],
+      );
+    });
+
+    group('ConversationListNavigationConsumed', () {
+      blocTest<ConversationListBloc, ConversationListState>(
+        'clears the navigation target',
+        setUp: () {
+          when(() => mockDmRepository.userPubkey).thenReturn(_testPubkey1);
+        },
+        seed: () => ConversationListState(
+          navigationTarget: ConversationNavigationTarget(
+            conversationId: DmRepository.computeConversationId(
+              [_testPubkey1, _testPubkey2],
+            ),
+            participantPubkeys: const [_testPubkey2],
+          ),
+        ),
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          const ConversationListNavigationConsumed(),
+        ),
+        expect: () => [
+          isA<ConversationListState>().having(
+            (s) => s.navigationTarget,
+            'navigationTarget',
+            isNull,
+          ),
+        ],
       );
     });
 
@@ -319,7 +409,9 @@ void main() {
             var watchCallCount = 0;
 
             when(
-              () => mockDmRepository.watchConversations(),
+              () => mockDmRepository.watchConversations(
+                limit: any(named: 'limit'),
+              ),
             ).thenAnswer((_) {
               watchCallCount++;
               if (watchCallCount == 1) return controller1.stream;
@@ -367,7 +459,7 @@ void main() {
           },
           wait: const Duration(milliseconds: 200),
           expect: () => [
-            // First subscription starts
+            // First subscription starts (initial → loading)
             const ConversationListState(
               status: ConversationListStatus.loading,
             ),
@@ -377,15 +469,10 @@ void main() {
               conversations: [
                 _createConversation(id: _testConversationId1),
               ],
+              hasMore: false,
             ),
-            // Second ConversationListStarted restarts: emits loading.
-            // copyWith preserves conversations from previous state.
-            ConversationListState(
-              status: ConversationListStatus.loading,
-              conversations: [
-                _createConversation(id: _testConversationId1),
-              ],
-            ),
+            // Second ConversationListStarted: no loading emission
+            // because status is already loaded (not initial).
             // Second stream emits (old stream's late emission is
             // ignored because restartable() cancelled it)
             ConversationListState(
@@ -393,11 +480,14 @@ void main() {
               conversations: [
                 _createConversation(id: _testConversationId2),
               ],
+              hasMore: false,
             ),
           ],
           verify: (_) {
             verify(
-              () => mockDmRepository.watchConversations(),
+              () => mockDmRepository.watchConversations(
+                limit: any(named: 'limit'),
+              ),
             ).called(2);
           },
         );
@@ -478,7 +568,14 @@ void main() {
         conversations: conversations,
       );
 
-      expect(state.props, [ConversationListStatus.loaded, conversations]);
+      expect(state.props, [
+        ConversationListStatus.loaded,
+        conversations,
+        true,
+        false,
+        ConversationListState.pageSize,
+        null,
+      ]);
     });
   });
 
@@ -514,6 +611,69 @@ void main() {
       const event = ConversationListMarkRead(_testConversationId1);
 
       expect(event.props, equals([_testConversationId1]));
+    });
+
+    test('$ConversationListNavigateToUser supports value equality', () {
+      const event1 = ConversationListNavigateToUser(_testPubkey1);
+      const event2 = ConversationListNavigateToUser(_testPubkey1);
+
+      expect(event1, equals(event2));
+    });
+
+    test('$ConversationListNavigateToUser with different pubkeys '
+        'are not equal', () {
+      const event1 = ConversationListNavigateToUser(_testPubkey1);
+      const event2 = ConversationListNavigateToUser(_testPubkey2);
+
+      expect(event1, isNot(equals(event2)));
+    });
+
+    test('$ConversationListNavigateToUser props contains '
+        'participantPubkey', () {
+      const event = ConversationListNavigateToUser(_testPubkey1);
+
+      expect(event.props, equals([_testPubkey1]));
+    });
+
+    test('$ConversationListNavigationConsumed supports value equality', () {
+      const event1 = ConversationListNavigationConsumed();
+      const event2 = ConversationListNavigationConsumed();
+
+      expect(event1, equals(event2));
+    });
+
+    test('$ConversationListNavigationConsumed props is empty', () {
+      const event = ConversationListNavigationConsumed();
+
+      expect(event.props, equals(const <Object?>[]));
+    });
+  });
+
+  group(ConversationNavigationTarget, () {
+    test('supports value equality', () {
+      const target1 = ConversationNavigationTarget(
+        conversationId: _testConversationId1,
+        participantPubkeys: [_testPubkey2],
+      );
+      const target2 = ConversationNavigationTarget(
+        conversationId: _testConversationId1,
+        participantPubkeys: [_testPubkey2],
+      );
+
+      expect(target1, equals(target2));
+    });
+
+    test('targets with different conversation IDs are not equal', () {
+      const target1 = ConversationNavigationTarget(
+        conversationId: _testConversationId1,
+        participantPubkeys: [_testPubkey2],
+      );
+      const target2 = ConversationNavigationTarget(
+        conversationId: _testConversationId2,
+        participantPubkeys: [_testPubkey2],
+      );
+
+      expect(target1, isNot(equals(target2)));
     });
   });
 }

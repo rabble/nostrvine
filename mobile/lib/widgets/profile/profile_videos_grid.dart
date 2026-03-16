@@ -327,13 +327,18 @@ class _VideoGridTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(color: VineTheme.cardBackground),
-        child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
+  Widget build(BuildContext context) => Semantics(
+    identifier: 'video_thumbnail_$index',
+    label: 'Video thumbnail ${index + 1}',
+    button: true,
+    child: GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: DecoratedBox(
+          decoration: const BoxDecoration(color: VineTheme.cardBackground),
+          child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
+        ),
       ),
     ),
   );

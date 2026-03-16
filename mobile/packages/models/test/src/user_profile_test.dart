@@ -363,6 +363,57 @@ void main() {
       });
     });
 
+    group('handle', () {
+      test('returns @nip05 when nip05 is available', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'alice@example.com',
+          name: 'alice',
+        );
+
+        expect(profile.handle, equals('@alice@example.com'));
+      });
+
+      test('falls back to @name when nip05 is null', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          name: 'alice',
+        );
+
+        expect(profile.handle, equals('@alice'));
+      });
+
+      test('falls back to @name when nip05 is empty', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '',
+          name: 'alice',
+        );
+
+        expect(profile.handle, equals('@alice'));
+      });
+
+      test('returns empty string when neither nip05 nor name is set', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        );
+
+        expect(profile.handle, isEmpty);
+      });
+    });
+
     group('computed properties', () {
       test('shortPubkey returns full pubkey', () {
         final profile = UserProfile(

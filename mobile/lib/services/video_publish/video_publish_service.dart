@@ -108,9 +108,14 @@ class VideoPublishService {
       final pendingUpload = await _getOrCreateUpload(pubkey, draft);
       if (pendingUpload == null) {
         Log.error('❌ Upload creation failed', category: .video);
-        _backgroundUploadId = null;
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        return const PublishError('Failed to upload video. Please try again.');
+        final failedUpload = _backgroundUploadId != null
+            ? uploadManager.getUpload(_backgroundUploadId!)
+            : null;
+        return await _handleUploadError(
+          failedUpload?.errorMessage ?? 'Upload failed',
+          StackTrace.current,
+          draft,
+        );
       }
 
       // Check if upload failed
@@ -120,7 +125,7 @@ class VideoPublishService {
           category: .video,
         );
         return await _handleUploadError(
-          Exception(pendingUpload.errorMessage ?? 'Upload failed'),
+          pendingUpload.errorMessage ?? 'Upload failed',
           StackTrace.current,
           draft,
         );
@@ -206,10 +211,10 @@ class VideoPublishService {
     // If failed, return error
     if (upload.status == .failed) {
       _backgroundUploadId = null; // Clear failed upload ID
-      /// TODO(l10n): Replace with context.l10n when localization is added.
-      return PublishError(
-        'Upload failed: ${upload.errorMessage ?? "Unknown error"}',
+      final msg = await _getUserFriendlyErrorMessage(
+        upload.errorMessage ?? 'Upload failed',
       );
+      return PublishError(msg);
     }
 
     // Wait for upload to complete
@@ -217,12 +222,11 @@ class VideoPublishService {
       final result = await _pollUploadProgress(draftId, _backgroundUploadId!);
       if (!result) {
         final failedUpload = uploadManager.getUpload(_backgroundUploadId!);
-
-        /// TODO(l10n): Replace with context.l10n when localization is added.
         _backgroundUploadId = null; // Clear failed upload ID
-        return PublishError(
-          'Upload failed: ${failedUpload?.errorMessage ?? "Unknown error"}',
+        final msg = await _getUserFriendlyErrorMessage(
+          failedUpload?.errorMessage ?? 'Upload failed',
         );
+        return PublishError(msg);
       }
     }
 
@@ -317,10 +321,10 @@ class VideoPublishService {
       if (!success) {
         final upload = uploadManager.getUpload(_backgroundUploadId!);
         _backgroundUploadId = null;
-
-        /// TODO(l10n): Replace with context.l10n when localization is added.
-        return PublishError(
-          'Retry failed: ${upload?.errorMessage ?? "Unknown error"}',
+        return await _handleUploadError(
+          upload?.errorMessage ?? 'Retry failed',
+          StackTrace.current,
+          draft,
         );
       }
 
@@ -359,8 +363,27 @@ class VideoPublishService {
   }
 
   /// Converts technical error messages into user-friendly descriptions.
+  ///
+  /// If the error is already a user-friendly string (e.g. from the upload
+  /// manager), it is returned as-is instead of falling through to the
+  /// generic fallback.
   Future<String> _getUserFriendlyErrorMessage(Object? e) async {
-    final errorString = e.toString();
+    final raw = e.toString();
+    final errorString = raw.toLowerCase();
+
+    // Errors from the upload manager may already be user-friendly strings.
+    // Detect them by stripping any "Exception: " prefix and checking
+    // whether the remainder looks like a sentence, not a class/stack dump.
+    final stripped = raw.replaceFirst(RegExp(r'^Exception:\s*'), '');
+    if (stripped != raw || e is String) {
+      final clean = (e is String ? raw : stripped).trim();
+      if (clean.isNotEmpty &&
+          clean.contains('.') &&
+          !clean.contains('Exception') &&
+          !clean.contains('#0 ')) {
+        return clean;
+      }
+    }
     var serverName = 'Unknown server';
 
     try {
@@ -371,18 +394,88 @@ class VideoPublishService {
     } catch (_) {}
 
     /// TODO(l10n): Replace with context.l10n when localization is added.
+    // Network / connectivity
+    if (errorString.contains('socketexception') ||
+        errorString.contains('network is unreachable') ||
+        errorString.contains('no address associated') ||
+        errorString.contains('failed host lookup')) {
+      return 'No internet connection. '
+          'Check your Wi-Fi or mobile data and try again.';
+    }
+    if (errorString.contains('connection refused') ||
+        errorString.contains('connection reset') ||
+        errorString.contains('connection closed')) {
+      return 'Could not reach the server. Please try again in a moment.';
+    }
+    if (errorString.contains('timeout') || errorString.contains('timed out')) {
+      return 'The upload timed out. '
+          'Try a stronger connection or a smaller video.';
+    }
+
+    // TLS / certificate
+    if (errorString.contains('certificate') ||
+        errorString.contains('handshake') ||
+        errorString.contains('ssl') ||
+        errorString.contains('tls')) {
+      return 'Secure connection failed. '
+          'Check your network — public Wi-Fi can block uploads.';
+    }
+
+    // Server errors
     if (errorString.contains('404') || errorString.contains('not_found')) {
-      return 'The Blossom media server ($serverName) is not working. '
+      return 'The media server ($serverName) is not available. '
           'You can choose another in your settings.';
-    } else if (errorString.contains('500')) {
-      return 'The Blossom media server ($serverName) encountered an error. '
+    }
+    if (errorString.contains('413') ||
+        errorString.contains('payload too large') ||
+        errorString.contains('too large')) {
+      return 'The video file is too large for the server. '
+          'Try trimming it or lowering the quality.';
+    }
+    if (errorString.contains('500') ||
+        errorString.contains('internal server error')) {
+      return 'The media server ($serverName) had an internal error. '
           'You can choose another in your settings.';
-    } else if (errorString.contains('network') ||
-        errorString.contains('connection')) {
-      return 'Network error. Please check your connection and try again.';
-    } else if (errorString.contains('Not authenticated')) {
+    }
+    if (errorString.contains('502') ||
+        errorString.contains('503') ||
+        errorString.contains('bad gateway') ||
+        errorString.contains('service unavailable')) {
+      return 'The media server ($serverName) is temporarily down. '
+          'Try again shortly or choose another in your settings.';
+    }
+
+    // Auth
+    if (errorString.contains('not authenticated') ||
+        errorString.contains('unauthorized') ||
+        errorString.contains('401')) {
       return 'Please sign in to publish videos.';
     }
-    return 'Failed to publish video. Please try again.';
+    if (errorString.contains('403') || errorString.contains('forbidden')) {
+      return 'You don\u2019t have permission to upload to this server.';
+    }
+
+    // Local file issues
+    if (errorString.contains('no such file') ||
+        errorString.contains('file not found') ||
+        errorString.contains('pathnotfoundexception')) {
+      return 'The video file could not be found. '
+          'It may have been deleted. Re-record and try again.';
+    }
+    if (errorString.contains('storage') ||
+        errorString.contains('no space') ||
+        errorString.contains('disk full')) {
+      return 'Not enough storage on your device. '
+          'Free up some space and try again.';
+    }
+
+    // Nostr event publish
+    if (errorString.contains('failed to publish nostr event') ||
+        errorString.contains('relay')) {
+      return 'The video uploaded but the post could not be published. '
+          'Check your relay settings and try again.';
+    }
+
+    return 'Something went wrong. Please try again.';
   }
 }

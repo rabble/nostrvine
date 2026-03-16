@@ -1,5 +1,5 @@
-// ABOUTME: Full user journey E2E test: register → verify → publish → discover → navigate
-// ABOUTME: Requires: local Docker stack running (mise run local_up)
+// ABOUTME: Full user journey E2E test: register → verify → record → publish → delete → verify gone
+// ABOUTME: Requires: local Docker stack running (mise run local_up) + Android emulator
 // ABOUTME: Run with: mise run e2e_test (passes --dart-define=DEFAULT_ENV=LOCAL automatically)
 
 import 'package:flutter/material.dart';
@@ -14,159 +14,465 @@ import '../helpers/relay_helpers.dart';
 import '../helpers/test_setup.dart';
 
 void main() {
-  group('User Journey: Register → Upload → Discover → Navigate', () {
+  group('User Journey: Register → Record → Publish → Delete → Verify', () {
     final testEmail =
         'e2e-${DateTime.now().millisecondsSinceEpoch}@test.divine.video';
     const testPassword = 'TestPass123!';
 
     patrolTest(
-      'register, publish video, discover in feed, navigate tabs',
+      'full video lifecycle: create account, record, publish, delete, '
+      'confirm gone',
       ($) async {
         final tester = $.tester;
-        // Suppress non-critical relay/WebSocket errors from external relays.
         final originalOnError = suppressSetStateErrors();
-
-        // Save ErrorWidget.builder before app.main() sets a custom one.
-        // Must be restored before test body ends (framework checks it).
         final originalErrorBuilder = saveErrorWidgetBuilder();
 
-        // Launch the full app in a guarded zone to catch async relay errors
         launchAppGuarded(app.main);
         await tester.pumpAndSettle(const Duration(seconds: 3));
 
-        // ── 1-2. Welcome → Create account ──
+        // ── Phase 1-3: Register and verify email ──
+        logPhase('── Phase 1: Registration ──');
         await navigateToCreateAccount(tester);
-
-        // ── 3. Fill form, submit ──
         await registerNewUser(tester, testEmail, testPassword);
 
-        // Wait for network + navigation to verify-email screen.
-        // Cannot use pumpAndSettle here — the EmailVerificationCubit
-        // polls every 3s, so there are always pending timers.
         final foundVerifyScreen = await waitForText(
           tester,
           'Complete your registration',
         );
+        expect(foundVerifyScreen, isTrue);
 
-        // ── 7. Assert: email verification screen is displayed ──
-        expect(
-          foundVerifyScreen,
-          isTrue,
-          reason: 'Should navigate to email verification screen',
-        );
-
-        // ── 8. Extract verification token from local postgres ──
         final token = await getVerificationToken(testEmail);
-        expect(
-          token,
-          isNotEmpty,
-          reason: 'Should find verification token in local DB',
-        );
-
-        // ── 9. Verify email by calling keycast's verify endpoint directly ──
+        expect(token, isNotEmpty);
         await callVerifyEmail(token);
 
-        // ── 10. Wait for polling to detect verification ──
-        // The cubit polls every 3s, plus token exchange takes a moment
         final verified = await waitForTextGone(
           tester,
           'Complete your registration',
         );
-
-        expect(
-          verified,
-          isTrue,
-          reason: 'Polling should detect verification and navigate away',
-        );
-
-        // Pump a few more frames for post-verification navigation
+        expect(verified, isTrue);
         await pumpUntilSettled(tester);
 
-        // ── 11. Assert: we landed on the main app ──
         final hasBottomNav = find
-            .byType(BottomNavigationBar)
+            .bySemanticsIdentifier('home_tab')
             .evaluate()
             .isNotEmpty;
         final hasExploreContent =
             find.text('Popular').evaluate().isNotEmpty ||
             find.text('Trending').evaluate().isNotEmpty;
-
         expect(
           hasBottomNav || hasExploreContent,
           isTrue,
-          reason:
-              'Should land on main app screen after verification '
-              '(bottom nav or explore content)',
+          reason: 'Should land on main app after verification',
         );
+        logPhase('Registration and verification complete');
 
-        // ── Phase 4: Publish a test video to local relay ──
-        logPhase('── Phase 4: Publishing test video to relay ──');
-        final videoTitle =
-            'E2E Journey ${DateTime.now().millisecondsSinceEpoch}';
-        final video = await publishTestVideoEvent(title: videoTitle);
-        expect(
-          video.eventId,
-          isNotEmpty,
-          reason: 'Should publish event to relay',
+        // ── Phase 4: Open camera and record a video ──
+        logPhase('── Phase 4: Record video via emulator camera ──');
+
+        // Tap the camera button in bottom nav
+        await tapSemantic(tester, 'camera_button');
+        logPhase('Camera button tapped');
+
+        // The CameraPermissionGate shows a pre-permission bottom sheet
+        // with a "Continue" button before triggering the native OS dialog.
+        // We must tap "Continue" first, then handle the native dialogs.
+        final continuePermission = find.text('Continue');
+        final foundContinue = await waitForWidget(
+          tester,
+          continuePermission,
+          maxSeconds: 10,
         );
-
-        // Give the relay a moment to index
-        await tester.pump(const Duration(seconds: 2));
-
-        // ── Phase 5: Exercise explore feed (100+ seeded videos) ──
-        logPhase('── Phase 5: Exercising explore feed tabs ──');
-
-        // With 100 seeded videos, each tab triggers relay REQ/EOSE.
-        // The profiler captures EOSE timing and event counts.
-        for (final tabName in ['New', 'Popular']) {
-          final tab = find.text(tabName);
-          if (tab.evaluate().isNotEmpty) {
-            await tester.tap(tab);
-            await tester.pump(const Duration(seconds: 3));
-            logPhase('Explored "$tabName" tab');
-          }
+        if (foundContinue) {
+          await tester.tap(continuePermission);
+          await tester.pump(const Duration(seconds: 1));
+          logPhase('Tapped Continue on pre-permission sheet');
         }
 
-        // ── Phase 6: Navigate between tabs ──
-        logPhase('── Phase 6: Tab navigation cycle ──');
+        // Grant camera permission via Patrol native automation
+        if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+          timeout: const Duration(seconds: 5),
+        )) {
+          await $.platformAutomator.mobile.grantPermissionWhenInUse();
+          logPhase('Camera permission granted');
+        }
 
-        // Home tab
+        // Grant microphone permission if prompted
+        await tester.pump(const Duration(seconds: 1));
+        if (await $.platformAutomator.mobile.isPermissionDialogVisible(
+          timeout: const Duration(seconds: 3),
+        )) {
+          await $.platformAutomator.mobile.grantPermissionWhenInUse();
+          logPhase('Microphone permission granted');
+        }
+
+        // Wait for camera to fully initialize (authorized state, child
+        // rendered, camera service started). The record button exists in the
+        // placeholder but is disabled until isCameraInitialized is true.
+        // We wait for the tooltip to say "Start recording" with the button
+        // actually in the authorized camera view.
+        logPhase('Waiting for camera to initialize...');
+        var cameraReady = false;
+        for (var i = 0; i < 60; i++) {
+          await tester.pump(const Duration(milliseconds: 250));
+          // Check if we're past the permission gate: the pre-permission
+          // sheet text should be gone and the record button should be enabled.
+          final noPermSheet = find
+              .text('Allow camera, microphone & gallery access')
+              .evaluate()
+              .isEmpty;
+          final hasRecordBtn = find
+              .bySemanticsIdentifier('divine-camera-record-button')
+              .evaluate()
+              .isNotEmpty;
+          if (noPermSheet && hasRecordBtn) {
+            cameraReady = true;
+            break;
+          }
+        }
+        expect(
+          cameraReady,
+          isTrue,
+          reason: 'Camera should initialize after granting permissions',
+        );
+        // Give camera service a moment to fully start
+        await tester.pump(const Duration(seconds: 2));
+        logPhase('Camera ready');
+
+        // Use tap-based recording instead of long-press. The native camera
+        // on the emulator needs several seconds to produce its first keyframe
+        // (startRecording awaits this). A long-press release at 2s would call
+        // stopRecording while _isStartingRecording is still true, causing an
+        // early return with no clip added.
+        final recordButton = find.bySemanticsIdentifier(
+          'divine-camera-record-button',
+        );
+
+        // First tap → toggleRecording() → startRecording()
+        await tester.tap(recordButton);
+        logPhase('Record tap 1 — starting recording');
+
+        // Wait for native camera to produce first keyframe and truly start.
+        // On the emulator fake camera this can take 5-10 seconds.
+        for (var i = 0; i < 60; i++) {
+          await tester.pump(const Duration(milliseconds: 250));
+        }
+        logPhase('Waited 15s for recording');
+
+        // Second tap → toggleRecording() → stopRecording() → addClip()
+        await tester.tap(recordButton);
+        logPhase('Record tap 2 — stopping recording');
+
+        // Wait for clip processing (thumbnail, metadata extraction)
+        for (var i = 0; i < 20; i++) {
+          await tester.pump(const Duration(milliseconds: 250));
+        }
+        logPhase('Clip processing done');
+
+        // Tap the continue button and verify we navigate to the editor.
+        // The button exists in the tree but has onPressed: null when no clips,
+        // so tapping it when disabled is a no-op.
+        final continueButton = find.bySemanticsLabel(
+          'Continue to video editor',
+        );
+
+        // Poll: tap continue and check if we leave the recorder screen.
+        // If recording succeeded, clipCount > 0 and the button is enabled.
+        var leftRecorder = false;
+        for (var i = 0; i < 60; i++) {
+          await tester.pump(const Duration(milliseconds: 250));
+          if (continueButton.evaluate().isEmpty) {
+            leftRecorder = true;
+            break;
+          }
+          // Re-tap every ~2 seconds in case it just became enabled
+          if (i % 8 == 0) {
+            await tester.tap(continueButton);
+          }
+        }
+        expect(
+          leftRecorder,
+          isTrue,
+          reason:
+              'Should navigate away from recorder after tapping Continue. '
+              'If this fails, the emulator camera did not produce a clip — '
+              'check logcat for "Recording truly started".',
+        );
+        logPhase('Proceeding to video editor');
+
+        // ── Phase 5: Skip editor, add title, publish ──
+        logPhase('── Phase 5: Publish video ──');
+
+        // Wait for the editor "Next" button that navigates to metadata
+        final nextButton = find.text('Next');
+        final foundEditor = await waitForWidget(
+          tester,
+          nextButton,
+          maxSeconds: 15,
+        );
+        expect(
+          foundEditor,
+          isTrue,
+          reason: 'Editor "Next" button should appear on clip editor screen',
+        );
+
+        await tester.tap(nextButton);
+        await tester.pump(const Duration(seconds: 2));
+        logPhase('Editor Next tapped, proceeding to metadata');
+
+        // Wait for metadata screen — look for the Post button
+        final foundPost = await waitForWidget(
+          tester,
+          find.bySemanticsIdentifier('post_button'),
+          maxSeconds: 15,
+        );
+        expect(foundPost, isTrue, reason: 'Metadata screen should appear');
+
+        // Enter a unique title
+        final videoTitle =
+            'E2E Delete Test ${DateTime.now().millisecondsSinceEpoch}';
+        final titleField = find.byType(TextField).first;
+        await tester.enterText(titleField, videoTitle);
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Dismiss keyboard
+        await tester.tapAt(const Offset(10, 100));
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Wait for the video render to finish (Post button becomes enabled
+        // only when finalRenderedClip is available and isProcessing is false).
+        // Then tap Post and wait for navigation to the profile screen.
+        final postButton = find.bySemanticsIdentifier('post_button');
+        var posted = false;
+        for (var i = 0; i < 240; i++) {
+          await tester.pump(const Duration(milliseconds: 250));
+
+          // Check if we've already navigated to the shell
+          if (find.bySemanticsIdentifier('profile_tab').evaluate().isNotEmpty) {
+            posted = true;
+            break;
+          }
+
+          // Re-tap Post every ~2s in case it just became enabled
+          if (i % 8 == 0 && postButton.evaluate().isNotEmpty) {
+            await tester.tap(postButton);
+            logPhase('Post tap attempt ${i ~/ 8 + 1}');
+          }
+        }
+        expect(
+          posted,
+          isTrue,
+          reason: 'Should return to main shell after publishing',
+        );
+        await pumpUntilSettled(tester);
+        logPhase('Video published successfully');
+
+        // ── Phase 6: Find the video and query relay to confirm ──
+        logPhase('── Phase 6: Verify video on relay ──');
+
+        // Get the user's pubkey to query their videos
+        final userPubkey = await getUserPubkeyByEmail(testEmail);
+        expect(userPubkey, isNotNull, reason: 'User pubkey should be in DB');
+
+        // Query the relay for this user's kind 34236 videos
+        final userVideos = await queryRelay({
+          'kinds': [34236],
+          'authors': [userPubkey],
+        });
+        expect(
+          userVideos,
+          isNotEmpty,
+          reason: 'User should have at least one video on relay',
+        );
+        final publishedVideo = userVideos.first;
+        logPhase(
+          'Found video on relay: ${publishedVideo.id} '
+          '(author: $userPubkey)',
+        );
+
+        // ── Phase 7: Navigate to profile, open video, delete via Edit ──
+        logPhase('── Phase 7: Delete video through Edit Video dialog ──');
+
+        // Go to profile tab to see own videos
+        await tapBottomNavTab(tester, 'profile_tab');
+        await pumpUntilSettled(tester, maxSeconds: 10);
+        logPhase('On profile tab');
+
+        // Tap the video thumbnail to open fullscreen player.
+        // ProfileVideosGrid assigns semantics identifier
+        // 'video_thumbnail_$index' to each tile.
+        final videoTile = find.bySemanticsIdentifier('video_thumbnail_0');
+        final foundTile = await waitForWidget(
+          tester,
+          videoTile,
+          maxSeconds: 15,
+        );
+        expect(
+          foundTile,
+          isTrue,
+          reason: 'Profile should show video thumbnail tile',
+        );
+
+        await tester.tap(videoTile);
+        await tester.pump(const Duration(seconds: 2));
+        logPhase('Tapped video thumbnail → fullscreen player');
+
+        // Tap the edit pencil icon to open the Edit Video dialog.
+        // The button has semanticLabel: 'Edit video' in
+        // pooled_fullscreen_video_feed_screen.dart.
+        final editButton = find.bySemanticsLabel('Edit video');
+        final foundEdit = await waitForWidget(
+          tester,
+          editButton,
+          maxSeconds: 10,
+        );
+        expect(
+          foundEdit,
+          isTrue,
+          reason: 'Edit video button should appear on fullscreen player',
+        );
+
+        await tester.tap(editButton);
+        await tester.pump(const Duration(seconds: 2));
+        logPhase('Tapped Edit video → Edit Video dialog');
+
+        // Find and tap "Delete Video" button in the Edit Video dialog
+        final deleteButton = find.text('Delete Video');
+        final foundDelete = await waitForWidget(
+          tester,
+          deleteButton,
+          maxSeconds: 10,
+        );
+        expect(
+          foundDelete,
+          isTrue,
+          reason: 'Delete Video button should appear in Edit Video dialog',
+        );
+        await tester.tap(deleteButton);
+        await tester.pump(const Duration(seconds: 1));
+        logPhase('Tapped Delete Video');
+
+        // Confirm deletion in the "Delete Video?" confirmation dialog.
+        // The dialog has "Cancel" and "Delete" buttons.
+        final confirmDelete = find.text('Delete');
+        final foundConfirm = await waitForWidget(
+          tester,
+          confirmDelete,
+          maxSeconds: 5,
+        );
+        expect(
+          foundConfirm,
+          isTrue,
+          reason: 'Delete confirmation dialog should appear',
+        );
+        // Tap the last "Delete" (the action button, not the dialog title)
+        await tester.tap(confirmDelete.last);
+        await tester.pump(const Duration(seconds: 2));
+        logPhase('Confirmed deletion');
+
+        // Wait for "Video deletion requested" snackbar (confirms success)
+        final foundSnackbar = await waitForText(
+          tester,
+          'Video deletion requested',
+          maxSeconds: 15,
+        );
+        expect(
+          foundSnackbar,
+          isTrue,
+          reason: 'Should see "Video deletion requested" snackbar',
+        );
+        logPhase('Delete snackbar confirmed');
+
+        // ── Phase 8: Navigate back to profile, verify video is gone ──
+        logPhase('── Phase 8: Verify video gone after deletion ──');
+
+        // The edit dialog pops after deletion. We should be back on the
+        // fullscreen player. Navigate back to profile.
+        // Use system back or tap back button to leave fullscreen player.
+        await tester.pageBack();
+        await pumpUntilSettled(tester, maxSeconds: 5);
+
+        // Navigate: profile → home → explore → profile to force refresh
         await tapBottomNavTab(tester, 'home_tab');
         await pumpUntilSettled(tester);
-        logPhase('Navigated to home tab');
 
-        // Back to explore
         await tapBottomNavTab(tester, 'explore_tab');
         await pumpUntilSettled(tester);
-        logPhase('Navigated to explore tab');
 
-        // Profile tab
         await tapBottomNavTab(tester, 'profile_tab');
-        await pumpUntilSettled(tester);
-        logPhase('Navigated to profile tab');
+        await pumpUntilSettled(tester, maxSeconds: 10);
+        logPhase('Navigated back to profile');
 
-        // Back to explore
+        // Verify the deleted video is no longer visible on the profile grid
+        final videoTileAfterDelete = find.bySemanticsIdentifier(
+          'video_thumbnail_0',
+        );
+        expect(
+          videoTileAfterDelete,
+          findsNothing,
+          reason: 'Deleted video should not appear on profile after deletion',
+        );
+        logPhase('Confirmed: video tile gone from profile grid');
+
+        // ── Phase 9: Query relay to confirm deletion ──
+        logPhase('── Phase 9: Relay verification ──');
+
+        // Poll for the kind 5 delete event (app publishes async, may
+        // take a moment to reach the relay).
+        var hasDeleteForVideo = false;
+        for (var i = 0; i < 15; i++) {
+          final deleteEvents = await queryRelay({
+            'kinds': [5],
+            'authors': [userPubkey],
+          });
+          hasDeleteForVideo = deleteEvents.any(
+            (e) => e.tags.any(
+              (tag) =>
+                  tag.length >= 2 &&
+                  tag[0] == 'e' &&
+                  tag[1] == publishedVideo.id,
+            ),
+          );
+          if (hasDeleteForVideo) break;
+          await Future<void>.delayed(const Duration(seconds: 1));
+        }
+        expect(
+          hasDeleteForVideo,
+          isTrue,
+          reason: 'Kind 5 delete event should exist on relay for the video',
+        );
+        logPhase('Kind 5 delete event confirmed on relay');
+
+        // FunnelCake filters deleted events immediately — the original
+        // event should no longer appear in query results.
+        final afterDelete = await queryRelay({
+          'ids': [publishedVideo.id],
+        });
+        expect(
+          afterDelete,
+          isEmpty,
+          reason: 'Deleted video should be filtered from relay queries',
+        );
+        logPhase('Relay confirmed: video filtered after kind 5');
+
+        // ── Phase 10: Final stability check ──
+        logPhase('── Phase 10: Final state verification ──');
         await tapBottomNavTab(tester, 'explore_tab');
         await pumpUntilSettled(tester);
-        logPhase('Navigated back to explore tab');
 
-        // ── Phase 7: Assert we're on a stable screen ──
-        logPhase('── Phase 7: Final state verification ──');
         final hasExploreScreen =
             find.text('Popular').evaluate().isNotEmpty ||
             find.text('New').evaluate().isNotEmpty;
         expect(
           hasExploreScreen,
           isTrue,
-          reason: 'Should be on explore screen after navigation cycle',
+          reason: 'Should be on explore screen after full journey',
         );
 
-        // Drain pending errors before restoring handlers.
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);
       },
-      timeout: const Timeout(Duration(minutes: 5)),
+      timeout: const Timeout(Duration(minutes: 8)),
     );
   });
 }

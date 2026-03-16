@@ -31,6 +31,8 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/inbox/conversation/conversation_page.dart';
+import 'package:openvine/screens/inbox/inbox_page.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/library_screen.dart';
@@ -237,6 +239,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
 
+          // INBOX tab (Messages + Notifications combined)
+          GoRoute(
+            path: InboxPage.path,
+            name: InboxPage.routeName,
+            pageBuilder: (ctx, st) => NoTransitionPage(
+              key: st.pageKey,
+              child: Navigator(
+                key: NavigatorKeys.inbox,
+                onGenerateRoute: (r) => MaterialPageRoute(
+                  builder: (_) => const InboxPage(),
+                  settings: const RouteSettings(
+                    name: InboxPage.routeName,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
           // PROFILE tab subtree - grid mode (no index)
           GoRoute(
             path: ProfileScreenRouter.path,
@@ -393,6 +413,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
         ],
+      ),
+
+      // DM conversation detail (pushed from inbox, no bottom nav)
+      GoRoute(
+        path: ConversationPage.pathPattern,
+        name: ConversationPage.routeName,
+        builder: (ctx, st) {
+          final id = st.pathParameters['id'];
+          if (id == null || id.isEmpty) {
+            return const Scaffold(
+              appBar: DiVineAppBar(title: 'Error'),
+              body: Center(child: Text('Invalid conversation ID')),
+            );
+          }
+          final participantPubkeys = st.extra as List<String>? ?? [];
+          return ConversationPage(
+            conversationId: id,
+            participantPubkeys: participantPubkeys,
+          );
+        },
       ),
 
       // Non-tab routes outside the shell (camera/settings/editor/video/welcome)
@@ -837,7 +877,8 @@ int tabIndexFromLocation(String loc) {
     case 'hashtag':
       return 1; // Hashtag keeps explore tab active
     case 'notifications':
-      return 2;
+    case 'inbox':
+      return 2; // Inbox replaces notifications in the same tab position
     case 'profile':
     case 'liked-videos':
       return 3; // Liked videos keeps profile tab active

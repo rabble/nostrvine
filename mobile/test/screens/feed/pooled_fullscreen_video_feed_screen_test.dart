@@ -79,6 +79,8 @@ void main() {
   group('PooledFullscreenVideoFeedScreen', () {
     late MockFullscreenFeedBloc mockBloc;
     late MockVideoFeedController defaultController;
+    late MockProfileRepository mockProfileRepository;
+    late MockNip05VerificationService mockNip05VerificationService;
     late Map<int, ValueNotifier<VideoIndexState>> defaultIndexNotifiers;
     late StreamController<FullscreenFeedState> stateController;
 
@@ -99,6 +101,8 @@ void main() {
       await PlayerPool.init();
       mockBloc = MockFullscreenFeedBloc();
       defaultController = MockVideoFeedController();
+      mockProfileRepository = createMockProfileRepository();
+      mockNip05VerificationService = createMockNip05VerificationService();
       defaultIndexNotifiers = <int, ValueNotifier<VideoIndexState>>{};
       stateController = StreamController<FullscreenFeedState>.broadcast();
       stubVideoFeedController(defaultController, defaultIndexNotifiers);
@@ -153,6 +157,8 @@ void main() {
 
       return testMaterialApp(
         additionalOverrides: additionalOverrides,
+        mockProfileRepository: mockProfileRepository,
+        mockNip05VerificationService: mockNip05VerificationService,
         home: BlocProvider<FullscreenFeedBloc>.value(
           value: mockBloc,
           child: FullscreenFeedContent(

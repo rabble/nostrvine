@@ -22,7 +22,6 @@ import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/library_screen.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -72,9 +71,6 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
   /// Whether a refresh is currently in progress.
   bool _isRefreshing = false;
-
-  /// Key used to open the drawer from the AppBar leading button.
-  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   void _fetchProfileIfNeeded(String userIdHex, bool isOwnProfile) {
     if (isOwnProfile) return; // Own profile loads automatically
@@ -160,12 +156,13 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     };
 
     if (isOwnProfileGrid) {
-      final environment = ref.watch(currentEnvironmentProvider);
       final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
       final profileRepository = ref.watch(profileRepositoryProvider);
 
       if (userIdHex == null || profileRepository == null) {
-        return const ProfileLoadingView();
+        return _ProfileScaffold(
+          body: const ProfileLoadingView(),
+        );
       }
 
       return BlocProvider<MyProfileBloc>(
@@ -197,49 +194,17 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
               _ => null,
             };
 
-            return Scaffold(
-              key: _scaffoldKey,
-              backgroundColor: VineTheme.backgroundColor,
+            return _ProfileScaffold(
               onDrawerChanged: (isOpen) {
                 ref
                     .read(overlayVisibilityProvider.notifier)
                     .setDrawerOpen(isOpen);
               },
-              appBar: DiVineAppBar(
-                title: 'My Profile',
-                backgroundColor:
-                    profileColor ?? getEnvironmentAppBarColor(environment),
-                showMenuButton: true,
-                onMenuPressed: () {
-                  Log.info(
-                    '👆 User tapped menu button',
-                    name: 'Navigation',
-                    category: LogCategory.ui,
-                  );
-                  _scaffoldKey.currentState?.openDrawer();
-                },
-                actions: [
-                  DiVineAppBarAction(
-                    icon: _isRefreshing
-                        ? const MaterialIconSource(Icons.refresh)
-                        : const SvgIconSource('assets/icon/refresh.svg'),
-                    onPressed: !_isRefreshing
-                        ? () => _refreshProfile(userIdHex)
-                        : null,
-                    tooltip: 'Refresh',
-                    semanticLabel: 'Refresh profile',
-                  ),
-                  DiVineAppBarAction(
-                    icon: const SvgIconSource('assets/icon/DotsThree.svg'),
-                    onPressed: () => _more(userIdHex),
-                    tooltip: 'More',
-                    semanticLabel: 'More options',
-                  ),
-                ],
-              ),
-              drawer: const VineDrawer(),
+              onRefreshPressed: () => _refreshProfile(userIdHex),
+              onMorePressed: () => _more(userIdHex),
+              appBarColor: profileColor,
+              isRefreshing: _isRefreshing,
               body: content,
-              bottomNavigationBar: const VineBottomNav(currentIndex: 3),
             );
           },
         ),
@@ -465,6 +430,73 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         const SnackBar(content: Text('Embed code copied to clipboard')),
       );
     }
+  }
+}
+
+class _ProfileScaffold extends ConsumerWidget {
+  _ProfileScaffold({
+    required this.body,
+    this.isRefreshing = false,
+    this.appBarColor,
+    this.onDrawerChanged,
+    this.onRefreshPressed,
+    this.onMorePressed,
+  });
+
+  final bool isRefreshing;
+
+  final Color? appBarColor;
+
+  final Widget body;
+
+  final DrawerCallback? onDrawerChanged;
+  final VoidCallback? onRefreshPressed;
+  final VoidCallback? onMorePressed;
+
+  /// Key used to open the drawer from the AppBar leading button.
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final environment = ref.watch(currentEnvironmentProvider);
+
+    return Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: VineTheme.backgroundColor,
+      onDrawerChanged: onDrawerChanged,
+      appBar: DiVineAppBar(
+        title: 'My Profile',
+        backgroundColor: appBarColor ?? getEnvironmentAppBarColor(environment),
+        showMenuButton: true,
+        onMenuPressed: () {
+          Log.info(
+            '👆 User tapped menu button',
+            name: 'Navigation',
+            category: LogCategory.ui,
+          );
+          _scaffoldKey.currentState?.openDrawer();
+        },
+        actions: [
+          DiVineAppBarAction(
+            icon: isRefreshing
+                ? const MaterialIconSource(Icons.refresh)
+                : const SvgIconSource('assets/icon/refresh.svg'),
+            onPressed: isRefreshing ? null : onRefreshPressed,
+            tooltip: 'Refresh',
+            semanticLabel: 'Refresh profile',
+          ),
+          DiVineAppBarAction(
+            icon: const SvgIconSource('assets/icon/DotsThree.svg'),
+            onPressed: onMorePressed,
+            tooltip: 'More',
+            semanticLabel: 'More options',
+          ),
+        ],
+      ),
+      drawer: const VineDrawer(),
+      body: body,
+      bottomNavigationBar: const VineBottomNav(currentIndex: 3),
+    );
   }
 }
 
@@ -714,12 +746,10 @@ class ProfileViewSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundPublishBloc = context.watch<BackgroundPublishBloc>();
-
     // If videoIndex is set, show fullscreen video mode
     // Note: videoIndex maps directly to list index (0 = first video, etc.)
     // When videoIndex is null, show grid mode
-    final child = (videoIndex != null && videos.isNotEmpty)
+    return (videoIndex != null && videos.isNotEmpty)
         ? ProfileVideoFeedView(
             npub: npub,
             userIdHex: userIdHex,
@@ -744,47 +774,5 @@ class ProfileViewSwitcher extends StatelessWidget {
             onOpenAnalytics: onOpenAnalytics,
             refreshNotifier: refreshNotifier,
           );
-
-    // Filter for uploads that explicitly failed (PublishError), not all completed
-    final completedWithErrorUploads = backgroundPublishBloc.state.uploads
-        .where((upload) => upload.result is PublishError)
-        .toList();
-
-    if (completedWithErrorUploads.isNotEmpty) {
-      final faultUpload = completedWithErrorUploads.first;
-
-      return Stack(
-        children: [
-          Positioned.fill(child: child),
-          Positioned(
-            bottom: 16,
-            left: 16,
-            right: 16,
-            child: Dismissible(
-              key: ValueKey(faultUpload.draft.id),
-              onDismissed: (_) {
-                backgroundPublishBloc.add(
-                  BackgroundPublishVanished(draftId: faultUpload.draft.id),
-                );
-              },
-              child: DivineSnackbarContainer(
-                label: 'Video upload failed.',
-                error: true,
-                actionLabel: 'Retry',
-                onActionPressed: () {
-                  backgroundPublishBloc.add(
-                    BackgroundPublishRetryRequested(
-                      draftId: faultUpload.draft.id,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      );
-    } else {
-      return child;
-    }
   }
 }

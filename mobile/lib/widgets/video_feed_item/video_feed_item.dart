@@ -1,8 +1,6 @@
 // ABOUTME: Video feed item using individual controller architecture
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
 
-import 'dart:ui' as ui;
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -52,6 +50,7 @@ import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/center_playback_control.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
+import 'package:openvine/widgets/video_feed_item/content_warning_helpers.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
@@ -573,10 +572,13 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
   /// Handle playback state changes with generation counter to prevent race conditions
   void _handlePlaybackChange(bool shouldPlay) {
+    final showContentWarningOverlay = shouldShowContentWarningOverlay(
+      contentWarningLabels: widget.video.contentWarningLabels,
+      warnLabels: widget.video.warnLabels,
+    );
+
     // Don't autoplay videos behind a content warning overlay
-    if (shouldPlay &&
-        widget.video.shouldShowWarning &&
-        !_contentWarningRevealed) {
+    if (shouldPlay && showContentWarningOverlay && !_contentWarningRevealed) {
       return;
     }
 
@@ -1252,16 +1254,33 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               },
             ),
 
-            // Content warning overlay for videos with warn labels
-            if (video.shouldShowWarning && !_contentWarningRevealed)
-              _ContentWarningOverlay(
-                labels: video.warnLabels,
+            // Content warning overlay for flagged videos
+            if (shouldShowContentWarningOverlay(
+                  contentWarningLabels: video.contentWarningLabels,
+                  warnLabels: video.warnLabels,
+                ) &&
+                !_contentWarningRevealed)
+              ContentWarningBlurOverlay(
+                labels: contentWarningOverlayLabels(
+                  contentWarningLabels: video.contentWarningLabels,
+                  warnLabels: video.warnLabels,
+                ),
                 onReveal: () {
                   setState(() {
                     _contentWarningRevealed = true;
                   });
                   // Start playback now that the warning is dismissed
                   _handlePlaybackChange(true);
+                },
+                onHideSimilar: () {
+                  hideContentWarningsLikeThese(
+                    context: context,
+                    ref: ref,
+                    labels: contentWarningOverlayLabels(
+                      contentWarningLabels: video.contentWarningLabels,
+                      warnLabels: video.warnLabels,
+                    ),
+                  );
                 },
               ),
 
@@ -1460,7 +1479,11 @@ class VideoOverlayActions extends ConsumerWidget {
               ),
             ),
             // Content warning badge below back button area
-            if (video.hasContentWarning)
+            if (video.hasContentWarning &&
+                !shouldShowContentWarningOverlay(
+                  contentWarningLabels: video.contentWarningLabels,
+                  warnLabels: video.warnLabels,
+                ))
               Positioned(
                 top: safeAreaTop + topOffset + 56,
                 left: 16,
@@ -2486,82 +2509,6 @@ class _ContentWarningDetailsSheet extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Full-screen content warning overlay for videos with warn-level labels.
-///
-/// Shows a blurred overlay with warning text and matched content labels.
-/// User can tap "View Anyway" to reveal the video.
-class _ContentWarningOverlay extends StatelessWidget {
-  const _ContentWarningOverlay({required this.labels, required this.onReveal});
-
-  final List<String> labels;
-  final VoidCallback onReveal;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: ClipRect(
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: VineTheme.backgroundColor.withValues(alpha: 0.6),
-            ),
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.warning_amber_rounded,
-                      color: VineTheme.contentWarningAmber,
-                      size: 48,
-                    ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Sensitive Content',
-                      style: TextStyle(
-                        color: VineTheme.whiteText,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      labels.map(_ContentWarningBadge._humanize).join(', '),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: VineTheme.secondaryText,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    OutlinedButton(
-                      onPressed: onReveal,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: VineTheme.whiteText,
-                        side: const BorderSide(color: VineTheme.onSurfaceMuted),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 12,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
-                      child: const Text('View Anyway'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ),
       ),
     );

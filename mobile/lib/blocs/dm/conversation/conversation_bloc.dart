@@ -17,8 +17,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ConversationBloc({
     required DmRepository dmRepository,
     required String conversationId,
+    required String currentUserPubkey,
   }) : _dmRepository = dmRepository,
        _conversationId = conversationId,
+       _currentUserPubkey = currentUserPubkey,
        super(const ConversationState()) {
     on<ConversationStarted>(
       _onStarted,
@@ -32,6 +34,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
 
   final DmRepository _dmRepository;
   final String _conversationId;
+  final String _currentUserPubkey;
 
   Future<void> _onStarted(
     ConversationStarted event,
@@ -67,7 +70,26 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationMessageSent event,
     Emitter<ConversationState> emit,
   ) async {
-    emit(state.copyWith(sendStatus: SendStatus.sending));
+    // Optimistic insert: show the message instantly before the network
+    // round-trip. The stream from watchMessages will replace this with the
+    // persisted version once sendMessage completes and writes to the DB.
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final pendingId = 'pending-$now';
+    final optimisticMessage = DmMessage(
+      id: pendingId,
+      conversationId: _conversationId,
+      senderPubkey: _currentUserPubkey,
+      content: event.content,
+      createdAt: now,
+      giftWrapId: pendingId,
+    );
+
+    emit(
+      state.copyWith(
+        sendStatus: SendStatus.sending,
+        messages: [optimisticMessage, ...state.messages],
+      ),
+    );
 
     try {
       if (event.recipientPubkeys.length == 1) {
@@ -75,30 +97,21 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           recipientPubkey: event.recipientPubkeys.first,
           content: event.content,
         );
-        if (result.success) {
-          emit(state.copyWith(sendStatus: SendStatus.sent));
-        } else {
-          addError(
-            Exception(result.error ?? 'Failed to send message'),
-            StackTrace.current,
-          );
-          emit(state.copyWith(sendStatus: SendStatus.failed));
+        if (!result.success) {
+          throw Exception(result.error ?? 'Failed to send message');
         }
       } else {
         final results = await _dmRepository.sendGroupMessage(
           recipientPubkeys: event.recipientPubkeys,
           content: event.content,
         );
-        if (results.any((r) => r.success)) {
-          emit(state.copyWith(sendStatus: SendStatus.sent));
-        } else {
-          addError(
-            Exception(results.first.error ?? 'Failed to send group message'),
-            StackTrace.current,
+        if (!results.any((r) => r.success)) {
+          throw Exception(
+            results.first.error ?? 'Failed to send group message',
           );
-          emit(state.copyWith(sendStatus: SendStatus.failed));
         }
       }
+      emit(state.copyWith(sendStatus: SendStatus.sent));
     } catch (e, stackTrace) {
       addError(e, stackTrace);
       emit(state.copyWith(sendStatus: SendStatus.failed));

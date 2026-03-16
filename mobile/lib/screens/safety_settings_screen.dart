@@ -34,6 +34,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   bool _isAgeVerified = false;
   Set<ContentLabel> _accountLabels = {};
   bool _isDivineLabelerEnabled = true;
+  bool _isPeopleIFollowEnabled = false;
   bool _showDivineHostedOnly = false;
 
   @override
@@ -55,6 +56,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         _isDivineLabelerEnabled = labelService.subscribedLabelers.contains(
           ModerationLabelService.divineModerationPubkeyHex,
         );
+        _isPeopleIFollowEnabled = labelService.isFollowingModerationEnabled;
         _showDivineHostedOnly = divineHostFilterService.showDivineHostedOnly;
         _isLoading = false;
       });
@@ -283,14 +285,18 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
 
   Widget _buildPeopleIFollowProvider() {
     return SwitchListTile(
-      value: false,
-      onChanged: (value) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Coming soon: Follow-based moderation'),
-            duration: Duration(seconds: 2),
-          ),
+      value: _isPeopleIFollowEnabled,
+      onChanged: (value) async {
+        final labelService = ref.read(moderationLabelServiceProvider);
+        final followRepository = ref.read(followRepositoryProvider);
+        await labelService.setFollowingModerationEnabled(
+          value,
+          followedPubkeys: followRepository.followingPubkeys,
         );
+        if (!mounted) return;
+        setState(() {
+          _isPeopleIFollowEnabled = value;
+        });
       },
       title: const Text(
         'People I follow',
@@ -301,7 +307,12 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         style: TextStyle(color: VineTheme.secondaryText),
       ),
       activeThumbColor: VineTheme.vineGreen,
-      secondary: const Icon(Icons.people, color: VineTheme.onSurfaceDisabled),
+      secondary: Icon(
+        Icons.people,
+        color: _isPeopleIFollowEnabled
+            ? VineTheme.vineGreen
+            : VineTheme.onSurfaceDisabled,
+      ),
     );
   }
 

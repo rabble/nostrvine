@@ -126,12 +126,20 @@ void main() {
       });
 
       test('replaces existing event with same ID', () async {
-        final event1 = createEvent(content: 'original content');
+        // Pin createdAt so both events always compute the same ID
+        final fixedCreatedAt =
+            DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
+        final event1 = createEvent(
+          content: 'original content',
+          createdAt: fixedCreatedAt,
+        );
         await dao.upsertEvent(event1);
 
         // Create new event with same properties (same ID)
-        final event2 = createEvent(content: 'original content')
-          ..sig = 'updated_sig';
+        final event2 = createEvent(
+          content: 'original content',
+          createdAt: fixedCreatedAt,
+        )..sig = 'updated_sig';
         await dao.upsertEvent(event2);
 
         final result = await appDbClient.getEvent(event1.id);

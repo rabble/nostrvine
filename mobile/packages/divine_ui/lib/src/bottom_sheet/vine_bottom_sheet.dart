@@ -108,6 +108,8 @@ class VineBottomSheet extends StatelessWidget {
     double maxChildSize = 0.9,
     VoidCallback? onShow,
     VoidCallback? onDismiss,
+    bool isDismissible = true,
+    bool enableDrag = true,
   }) {
     // Call onShow callback before showing modal
     onShow?.call();
@@ -127,6 +129,8 @@ class VineBottomSheet extends StatelessWidget {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
+        isDismissible: isDismissible,
+        enableDrag: enableDrag,
         backgroundColor: VineTheme.transparent,
         elevation: 0,
         builder: (_) => DraggableScrollableSheet(
@@ -153,6 +157,8 @@ class VineBottomSheet extends StatelessWidget {
         context: context,
         isScrollControlled: isScrollControlled ?? expanded,
         useSafeArea: true,
+        isDismissible: isDismissible,
+        enableDrag: enableDrag,
         backgroundColor: VineTheme.transparent,
         elevation: 0,
         builder: (_) => VineBottomSheet(

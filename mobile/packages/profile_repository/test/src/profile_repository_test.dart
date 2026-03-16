@@ -2496,6 +2496,121 @@ void main() {
       });
     });
 
+    group('getSocialCounts', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+      });
+
+      test('returns SocialCounts when client is available', () async {
+        const expectedCounts = SocialCounts(
+          pubkey: testPubkey,
+          followerCount: 42,
+          followingCount: 10,
+        );
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getSocialCounts(testPubkey),
+        ).thenAnswer((_) async => expectedCounts);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.getSocialCounts(testPubkey);
+
+        expect(result, isNotNull);
+        expect(result!.followerCount, 42);
+        expect(result.followingCount, 10);
+        verify(
+          () => mockFunnelcakeClient.getSocialCounts(testPubkey),
+        ).called(1);
+      });
+
+      test('returns null when client is null', () async {
+        final result = await profileRepository.getSocialCounts(testPubkey);
+
+        expect(result, isNull);
+      });
+
+      test('returns null when client is not available', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.getSocialCounts(testPubkey);
+
+        expect(result, isNull);
+        verifyNever(() => mockFunnelcakeClient.getSocialCounts(any()));
+      });
+
+      test('passes pubkey to client correctly', () async {
+        // Uses the sibling otherPubkey constant defined in the parent group.
+        const expectedCounts = SocialCounts(
+          pubkey: otherPubkey,
+          followerCount: 5,
+          followingCount: 3,
+        );
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getSocialCounts(otherPubkey),
+        ).thenAnswer((_) async => expectedCounts);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repoWithFunnelcake.getSocialCounts(otherPubkey);
+
+        expect(result, isNotNull);
+        verify(
+          () => mockFunnelcakeClient.getSocialCounts(otherPubkey),
+        ).called(1);
+        verifyNever(
+          () => mockFunnelcakeClient.getSocialCounts(testPubkey),
+        );
+      });
+
+      test('propagates FunnelcakeApiException', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getSocialCounts(any()),
+        ).thenThrow(
+          const FunnelcakeApiException(
+            message: 'Server error',
+            statusCode: 500,
+            url: 'https://example.com/api/users/$testPubkey/social',
+          ),
+        );
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        expect(
+          () => repoWithFunnelcake.getSocialCounts(testPubkey),
+          throwsA(isA<FunnelcakeApiException>()),
+        );
+      });
+    });
+
     group('fetchBatchProfiles', () {
       const testPubkey2 =
           'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3';

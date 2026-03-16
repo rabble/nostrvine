@@ -77,9 +77,14 @@ class BlossomUploadService {
 
   final AuthService authService;
   final Dio dio;
+  final String _defaultServerUrl;
 
-  BlossomUploadService({required this.authService, Dio? dio})
-    : dio = dio ?? Dio();
+  BlossomUploadService({
+    required this.authService,
+    Dio? dio,
+    String? defaultServerUrl,
+  }) : dio = dio ?? Dio(),
+       _defaultServerUrl = defaultServerUrl ?? defaultBlossomServer;
 
   /// Determine which Blossom server to use for upload
   ///
@@ -104,8 +109,8 @@ class BlossomUploadService {
     }
 
     // 2. Always add default Divine server as fallback
-    if (!servers.contains(defaultBlossomServer)) {
-      servers.add(defaultBlossomServer);
+    if (!servers.contains(_defaultServerUrl)) {
+      servers.add(_defaultServerUrl);
     }
 
     return servers;
@@ -385,7 +390,7 @@ class BlossomUploadService {
 
       // Handle 409 Conflict - file already exists
       if (response.statusCode == 409) {
-        final existingUrl = '$defaultBlossomServer/$fileHash';
+        final existingUrl = '$_defaultServerUrl/$fileHash';
         onProgress?.call(1.0);
 
         return BlossomUploadResult(
@@ -548,7 +553,7 @@ class BlossomUploadService {
             // Construct the canonical Blossom URL from server + hash
             // Per Blossom spec (BUD-01), blobs are always at {server}/{sha256}
             // This is deterministic and doesn't depend on server response
-            final canonicalUrl = '$defaultBlossomServer/$fileHash';
+            final canonicalUrl = '$_defaultServerUrl/$fileHash';
 
             Log.info(
               '✅ Video uploaded to: $serverUrl',
@@ -704,7 +709,7 @@ class BlossomUploadService {
 
           if (result.success) {
             // Construct canonical Blossom URL from server + hash
-            final canonicalUrl = '$defaultBlossomServer/$fileHash';
+            final canonicalUrl = '$_defaultServerUrl/$fileHash';
 
             Log.info(
               '✅ Image uploaded to: $serverUrl',
@@ -1007,7 +1012,7 @@ class BlossomUploadService {
 
           if (result.success) {
             // Construct canonical Blossom URL from server + hash
-            final canonicalUrl = '$defaultBlossomServer/$fileHash';
+            final canonicalUrl = '$_defaultServerUrl/$fileHash';
 
             Log.info(
               '✅ Audio uploaded to: $serverUrl',
