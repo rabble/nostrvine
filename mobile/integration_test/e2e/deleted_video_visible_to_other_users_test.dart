@@ -1,12 +1,13 @@
-// ABOUTME: E2E test reproducing bug #2163: other users see deleted videos
-// ABOUTME: Proves that after a kind 5 delete event, other users' cached views
-// ABOUTME: still show the video until they force-refresh (pull to refresh)
+// ABOUTME: E2E test verifying fix for bug #2163: deleted video visibility
+// ABOUTME: After kind 5 delete, refreshIfStale() on profile navigation
+// ABOUTME: triggers a REST API re-fetch that filters the deleted video
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
 import 'package:openvine/main.dart' as app;
+import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:patrol/patrol.dart';
 
@@ -23,18 +24,18 @@ void main() {
     const testPassword = 'TestPass123!';
 
     patrolTest(
-      'deleted video remains visible to other users until force-refresh',
+      'deleted video disappears after re-navigation',
       ($) async {
         final tester = $.tester;
         final originalOnError = suppressSetStateErrors();
         final originalErrorBuilder = saveErrorWidgetBuilder();
 
+        // Use a short staleness TTL so we don't wait 30s in the test.
+        ProfileFeed.staleTtl = const Duration(seconds: 3);
+
         // ── Phase 1: Seed relay with User A's profile and video ──
         logPhase('── Phase 1: Seed User A profile + video on relay ──');
 
-        // Create User A's identity and publish a profile + video event
-        // BEFORE launching the app, so the data is available when User B
-        // navigates to User A's profile.
         final userA = await publishTestProfileEvent(
           name: 'e2e-user-a',
           displayName: 'E2E User A',
@@ -48,8 +49,7 @@ void main() {
         );
         logPhase('User A video published: ${video.eventId}');
 
-        // Verify the video is queryable on the relay before proceeding.
-        // ClickHouse may need a moment to make the event available for reads.
+        // Wait for the video to be queryable on the relay (WebSocket).
         var preCheck = <dynamic>[];
         for (var i = 0; i < 10; i++) {
           preCheck = await queryRelay({
@@ -66,6 +66,18 @@ void main() {
           reason: 'User A video should be on relay before app launch',
         );
         logPhase('Relay pre-check passed: video present');
+
+        // Wait for ClickHouse to materialize the video so the REST API
+        // returns it. Without this, ProfileFeedProvider falls back to
+        // Nostr (which caches indefinitely and won't reflect deletions).
+        logPhase('Waiting for Funnelcake REST API to index the video...');
+        final indexed = await waitForFunnelcakeVideo(userA.pubkey);
+        expect(
+          indexed,
+          isTrue,
+          reason: 'Funnelcake REST API should index the video within 30s',
+        );
+        logPhase('Funnelcake REST API confirmed: video indexed');
 
         // ── Phase 2: Launch app as User B, register ──
         logPhase('── Phase 2: Launch app, register User B ──');
@@ -93,7 +105,6 @@ void main() {
         expect(verified, isTrue);
         await pumpUntilSettled(tester);
 
-        // Confirm we're on the main app
         final hasBottomNav = find
             .bySemanticsIdentifier('home_tab')
             .evaluate()
@@ -108,20 +119,17 @@ void main() {
         // ── Phase 3: Navigate to User A's profile, see video ──
         logPhase('── Phase 3: Navigate to User A profile ──');
 
-        // Convert User A's hex pubkey to npub for the route
         final userANpub = Nip19.encodePubKey(userA.pubkey);
         final profilePath = OtherProfileScreen.pathForNpub(userANpub);
 
-        // Use GoRouter to push to User A's profile
         final router = GoRouter.of(
           tester.element(find.byType(Scaffold).first),
         );
         router.push(profilePath);
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await pumpUntilSettled(tester);
         logPhase('Pushed to User A profile: $profilePath');
 
-        // Wait for the video thumbnail to appear on User A's profile grid.
-        // ProfileVideosGrid assigns semantics id 'video_thumbnail_$index'.
+        // Wait for the video thumbnail on the profile grid.
         final videoTile = find.bySemanticsIdentifier('video_thumbnail_0');
         final foundTile = await waitForWidget(
           tester,
@@ -138,9 +146,6 @@ void main() {
         // ── Phase 4: Delete User A's video server-side ──
         logPhase('── Phase 4: Delete video via kind 5 (server-side) ──');
 
-        // Publish a kind 5 deletion event as User A.
-        // This simulates User A deleting their video from their device.
-        // User B's app has NO subscription for kind 5 events.
         final deletionId = await publishDeleteEvent(
           eventId: video.eventId,
           kind: 34236,
@@ -148,8 +153,7 @@ void main() {
         );
         logPhase('Kind 5 delete event published: $deletionId');
 
-        // Verify the relay has processed the deletion — querying the
-        // original video ID should return empty now.
+        // Verify the relay has processed the deletion.
         final afterDelete = await queryRelay({
           'ids': [video.eventId],
         });
@@ -160,95 +164,66 @@ void main() {
         );
         logPhase('Relay confirmed: video filtered after kind 5');
 
-        // ── Phase 5: Navigate away and back — video should STILL show ──
-        logPhase('── Phase 5: Navigate away and back (no force refresh) ──');
+        // Wait for the REST API to also reflect the deletion.
+        // ClickHouse needs time to process the kind 5 event.
+        logPhase('Waiting for Funnelcake REST API to filter deleted video...');
+        final apiFiltered = await waitForFunnelcakeVideoGone(userA.pubkey);
+        expect(
+          apiFiltered,
+          isTrue,
+          reason: 'Funnelcake REST API should filter deleted video within 30s',
+        );
+        logPhase('Funnelcake REST API confirmed: video filtered');
+
+        // ── Phase 5: Navigate away, wait for staleness, navigate back ──
+        logPhase('── Phase 5: Navigate away and back (refreshIfStale) ──');
 
         // Go back from User A's profile
         router.pop();
         await pumpUntilSettled(tester);
 
-        // Navigate to a different tab to clear the UI state
+        // Wait on explore tab for the cached data to become stale.
+        // Test overrides staleTtl to 3s so we only need a short wait.
         await tapBottomNavTab(tester, 'explore_tab');
         await pumpUntilSettled(tester);
-        logPhase('On explore tab');
+        logPhase('On explore tab, waiting for cache staleness...');
 
-        // Navigate back to User A's profile
+        // Navigate back to User A's profile.
+        // OtherProfileView.initState calls refreshIfStale() which triggers
+        // a background refresh. The REST API now filters the deleted video.
         router.push(profilePath);
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await pumpUntilSettled(tester, maxSeconds: 15);
         logPhase('Back on User A profile');
 
-        // THE BUG: The video should STILL be visible because:
-        // 1. ProfileFeedProvider is keepAlive — it cached the video list
-        // 2. No kind 5 subscription exists to notify the app of deletion
-        // 3. SQLite cache holds the event for 1 day
-        final videoStillVisible = find
-            .bySemanticsIdentifier('video_thumbnail_0')
-            .evaluate()
-            .isNotEmpty;
-
-        // Give it a moment to load if the provider needs to re-fetch
-        final stillShows =
-            videoStillVisible ||
-            await waitForWidget(tester, videoTile, maxSeconds: 10);
-
-        expect(
-          stillShows,
-          isTrue,
-          reason:
-              'BUG REPRODUCTION: Deleted video should STILL be visible to '
-              'other users after navigating away and back, because the app '
-              'has no mechanism to learn about the deletion. '
-              'ProfileFeedProvider is keepAlive and no kind 5 subscription '
-              'exists.',
-        );
-        logPhase(
-          'BUG CONFIRMED: Deleted video still visible after navigate away/back',
-        );
-
-        // ── Phase 6: Force refresh — video should disappear ──
-        logPhase('── Phase 6: Force refresh (pull to refresh) ──');
-
-        // Pull to refresh by flinging down on the profile grid.
-        // ProfileVideosGrid uses a CustomScrollView, and the profile
-        // screen wraps it in a RefreshIndicator or similar.
-        // If pull-to-refresh isn't available, navigating to the profile
-        // fresh (invalidating the provider) should also work.
-        //
-        // The profile_feed_provider.refresh() calls _refreshFromRestApi()
-        // which re-fetches from funnelcake REST API. The REST API filters
-        // deleted events via deleted_events_set.
-
-        // Try flinging to trigger refresh
-        final scrollable = find.byType(Scrollable);
-        if (scrollable.evaluate().isNotEmpty) {
-          await tester.fling(scrollable.first, const Offset(0, 400), 1000);
-          await pumpUntilSettled(tester, maxSeconds: 10);
-          logPhase('Flung down to trigger refresh');
-        }
-
-        // Check if video is gone after refresh
-        final videoGoneAfterRefresh = find
+        // Poll for the video to disappear (background refresh is async).
+        var videoGone = find
             .bySemanticsIdentifier('video_thumbnail_0')
             .evaluate()
             .isEmpty;
 
-        if (videoGoneAfterRefresh) {
-          logPhase('Video disappeared after pull-to-refresh (expected path)');
-        } else {
-          // If pull-to-refresh didn't work (no RefreshIndicator on other
-          // profile), the video stays cached. This is ALSO part of the bug:
-          // there's no way for the user to force-refresh another user's
-          // profile to see updated content.
-          logPhase(
-            'Video STILL visible even after fling — no pull-to-refresh '
-            'on other user profile. This is the full extent of the bug.',
-          );
+        if (!videoGone) {
+          for (var i = 0; i < 60; i++) {
+            await tester.pump(const Duration(milliseconds: 250));
+            videoGone = find
+                .bySemanticsIdentifier('video_thumbnail_0')
+                .evaluate()
+                .isEmpty;
+            if (videoGone) break;
+          }
         }
 
-        // Either way, the bug is reproduced: the deleted video was visible
-        // to User B after User A deleted it and the relay confirmed deletion.
+        expect(
+          videoGone,
+          isTrue,
+          reason:
+              'Deleted video should disappear after re-navigation because '
+              'refreshIfStale() triggers a REST API re-fetch, and Funnelcake '
+              'filters deleted videos via deleted_events_set.',
+        );
+        logPhase('Deleted video disappeared after re-navigation');
 
         // ── Cleanup ──
+        ProfileFeed.staleTtl = const Duration(seconds: 30);
         drainAsyncErrors(tester);
         restoreErrorHandler(originalOnError);
         restoreErrorWidgetBuilder(originalErrorBuilder);

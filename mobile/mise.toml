@@ -7,9 +7,9 @@ run = """
 docker compose -f ../local_stack/docker-compose.yml up -d
 docker compose -f ../local_stack/docker-compose.yml up -d --wait \
   keycast keycast-postgres keycast-redis \
-  funnelcake-relay funnelcake-api funnelcake-redis funnelcake-clickhouse \
+  funnelcake-relay funnelcake-api funnelcake-proxy funnelcake-redis funnelcake-clickhouse \
   minio blossom invite-stub
-docker compose -f ../local_stack/docker-compose.yml wait e2e-seed
+docker compose -f ../local_stack/docker-compose.yml run --rm e2e-seed
 """
 
 [tasks.local_down]
