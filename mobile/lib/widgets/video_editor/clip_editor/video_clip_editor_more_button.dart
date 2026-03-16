@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -9,7 +10,6 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/library_screen.dart';
-import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor_icon_button.dart';
 
@@ -164,23 +164,19 @@ class _VideoEditorMoreButtonState
     ref.read(clipManagerProvider.notifier).clearAll();
 
     /// Navigate back to the video-recorder page.
-    _popToVideoRecorder();
-  }
-
-  /// Pops the clip editor and the video editor to return to the video
-  /// recorder.
-  ///
-  /// The navigation stack is: video-recorder → video-editor → clip-editor.
-  /// Uses the route name set by GoRouter to stop at the recorder route.
-  void _popToVideoRecorder() {
-    Navigator.of(
-      context,
-    ).popUntil(
-      (route) =>
-          route.settings.name == VideoRecorderScreen.routeName ||
-          route.settings.name == LibraryScreen.draftsRouteName ||
-          route.settings.name == LibraryScreen.clipsRouteName,
-    );
+    // TODO(hm21): reimplement after design decision is done
+    // if we go back to camera and also clean all clips or not.
+    // if (mounted) {
+    //   Navigator.of(
+    //     context,
+    //   ).popUntil(
+    //     (route) =>
+    //         route.settings.name == VideoRecorderScreen.routeName ||
+    //         route.settings.name == LibraryScreen.draftsRouteName ||
+    //         route.settings.name == LibraryScreen.clipsRouteName,
+    //   );
+    // }
+    context.pop();
   }
 
   /// Opens the clip library screen in selection mode.

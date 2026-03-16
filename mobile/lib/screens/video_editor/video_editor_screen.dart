@@ -207,8 +207,13 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     }
   }
 
-  Future<void> _openClipsEditor() async {
+  Future<void> _openClipsEditor({
+    required VideoEditorMainBloc mainBloc,
+  }) async {
     // Pause playback while the clip editor is open.
+    mainBloc
+      ..add(const VideoEditorMainOpenSubEditor(.clips))
+      ..add(const VideoEditorExternalPauseRequested(isPaused: true));
     final currentPath = _videoOutputPathNotifier.value;
     final initialClips = ref.read(clipManagerProvider).clips;
 
@@ -220,6 +225,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
         ),
       ),
     );
+
+    // Always reset to false so the next open guarantees a state change.
+    mainBloc.add(const VideoEditorMainSubEditorClosed());
 
     if (clips != null) {
       Log.info(
@@ -353,7 +361,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
             bodySizeNotifier: _bodySizeNotifier,
             videoOutputPathNotifier: _videoOutputPathNotifier,
             fromLibrary: widget.fromLibrary,
-            onOpenClipsEditor: _openClipsEditor,
+            onOpenClipsEditor: () {
+              final mainBloc = context.read<VideoEditorMainBloc>();
+              _openClipsEditor(mainBloc: mainBloc);
+            },
             onAddStickers: _addStickers,
             onAddEditTextLayer: ([layer]) {
               final mainBloc = context.read<VideoEditorMainBloc>();

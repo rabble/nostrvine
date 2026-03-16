@@ -6,12 +6,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/screens/library_screen.dart';
-import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/haptic_service.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/controllers/clip_reorder_controller.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/gallery/scopes/gallery_calculations.dart';
@@ -257,16 +256,19 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
 
         // Check if all clips will be gone after removal.
         if (clips.length <= 1) {
-          if (mounted) {
-            Navigator.of(
-              context,
-            ).popUntil(
-              (route) =>
-                  route.settings.name == VideoRecorderScreen.routeName ||
-                  route.settings.name == LibraryScreen.draftsRouteName ||
-                  route.settings.name == LibraryScreen.clipsRouteName,
-            );
-          }
+          // TODO(hm21): reimplement after design decision is done
+          // if we go back to camera and also clean all clips or not.
+          // if (mounted) {
+          //   Navigator.of(
+          //     context,
+          //   ).popUntil(
+          //     (route) =>
+          //         route.settings.name == VideoRecorderScreen.routeName ||
+          //         route.settings.name == LibraryScreen.draftsRouteName ||
+          //         route.settings.name == LibraryScreen.clipsRouteName,
+          //   );
+          // }
+          if (mounted) context.pop();
           return;
         }
 
