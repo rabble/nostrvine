@@ -295,10 +295,13 @@ class _VideoClipPreviewState extends State<VideoEditorClipPreview> {
   }
 }
 
-/// Controls thumbnail visibility based on playback state.
+/// Controls thumbnail visibility based on playback and editing state.
 ///
-/// Shows thumbnail when video hasn't played yet, hides when playing or has played.
-/// Uses AnimatedSwitcher internally for smooth fade transitions.
+/// Hides the thumbnail when:
+/// - The video has played at least once, OR
+/// - The clip is in edit mode (split position seeking shows the live frame)
+///
+/// Uses AnimatedOpacity for smooth bidirectional fade transitions.
 class _ThumbnailVisibility extends StatelessWidget {
   const _ThumbnailVisibility({required this.isCurrentClip, required this.clip});
 
@@ -307,23 +310,19 @@ class _ThumbnailVisibility extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Only watch hasPlayedOnce for current clip
-    final hasPlayedOnce =
+    final shouldHide =
         isCurrentClip &&
         context.select<ClipEditorBloc, bool>(
-          (bloc) => bloc.state.hasPlayedOnce,
+          (bloc) => bloc.state.hasPlayedOnce || bloc.state.isEditing,
         );
 
-    return AnimatedSwitcher(
-      layoutBuilder: (currentChild, previousChildren) => Stack(
-        fit: StackFit.expand,
-        alignment: Alignment.center,
-        children: [...previousChildren, ?currentChild],
+    return IgnorePointer(
+      ignoring: shouldHide,
+      child: AnimatedOpacity(
+        opacity: shouldHide ? 0.0 : 1.0,
+        duration: const Duration(milliseconds: 150),
+        child: _ClipThumbnail(clip: clip),
       ),
-      duration: const Duration(milliseconds: 150),
-      child: hasPlayedOnce
-          ? const SizedBox.shrink()
-          : _ClipThumbnail(clip: clip),
     );
   }
 }

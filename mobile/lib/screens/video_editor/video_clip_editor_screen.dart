@@ -69,10 +69,17 @@ class VideoClipEditorScreen extends ConsumerWidget {
                     );
                   },
                   onClipRendered: (clip, video) {
+                    // Read the current clip from BLoC state to avoid
+                    // overwriting fields updated by earlier callbacks
+                    // (e.g. thumbnailPath from onThumbnailExtracted).
+                    final current = bloc.state.clips.where(
+                      (c) => c.id == clip.id,
+                    );
+                    final base = current.isNotEmpty ? current.first : clip;
                     bloc.add(
                       ClipEditorClipUpdated(
                         clipId: clip.id,
-                        clip: clip.copyWith(video: video),
+                        clip: base.copyWith(video: video),
                       ),
                     );
                     Log.debug(
