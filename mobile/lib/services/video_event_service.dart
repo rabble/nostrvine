@@ -38,7 +38,9 @@ import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/divine_host_filter_service.dart';
+import 'package:openvine/services/effective_content_labels.dart';
 import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/moderation_label_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -207,6 +209,7 @@ class VideoEventService extends ChangeNotifier {
   AgeVerificationService? _ageVerificationService;
   LikesRepository? _likesRepository;
   ContentFilterService? _contentFilterService;
+  ModerationLabelService? _moderationLabelService;
   DivineHostFilterService? _divineHostFilterService;
   final SubscriptionManager _subscriptionManager;
 
@@ -323,6 +326,18 @@ class VideoEventService extends ChangeNotifier {
     _contentFilterService = contentFilterService;
     Log.debug(
       'Content filter service attached to VideoEventService',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+  }
+
+  /// Set the trusted moderation label service for kind-1985 label lookups.
+  void setModerationLabelService(
+    ModerationLabelService moderationLabelService,
+  ) {
+    _moderationLabelService = moderationLabelService;
+    Log.debug(
+      'Moderation label service attached to VideoEventService',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -482,9 +497,10 @@ class VideoEventService extends ChangeNotifier {
 
     return baseVideos
         .map((video) {
-          // Only self-applied content-warning labels can trigger "warn"
-          // overlays. Moderation labels are handled in the hide filter below.
-          final labels = video.contentWarningLabels;
+          final labels = resolveEffectiveContentLabels(
+            video,
+            moderationLabelService: _moderationLabelService,
+          );
           if (labels.isEmpty) {
             return video.warnLabels.isEmpty
                 ? video
@@ -507,8 +523,11 @@ class VideoEventService extends ChangeNotifier {
               : video;
         })
         .where((video) {
-          // Hide check considers both self-labels AND moderation labels.
-          final selfLabels = video.contentWarningLabels;
+          // Hide check considers effective warning labels plus moderation labels.
+          final selfLabels = resolveEffectiveContentLabels(
+            video,
+            moderationLabelService: _moderationLabelService,
+          );
           final modLabels = video.moderationLabels;
           if (selfLabels.isEmpty && modLabels.isEmpty) return true;
 

@@ -457,12 +457,25 @@ AccountLabelService accountLabelService(Ref ref) {
 ModerationLabelService moderationLabelService(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
+  final followRepository = ref.watch(followRepositoryProvider);
   final service = ModerationLabelService(
     nostrClient: nostrClient,
     authService: authService,
   );
-  service.initialize();
-  ref.onDispose(service.dispose);
+  unawaited(
+    service.initialize().then((_) {
+      return service.syncFollowedLabelers(followRepository.followingPubkeys);
+    }),
+  );
+  final followingSubscription = followRepository.followingStream.listen((
+    pubkeys,
+  ) {
+    unawaited(service.syncFollowedLabelers(pubkeys));
+  });
+  ref.onDispose(() {
+    followingSubscription.cancel();
+    service.dispose();
+  });
   return service;
 }
 
@@ -960,6 +973,7 @@ VideoEventService videoEventService(Ref ref) {
   final eventRouter = EventRouter(db);
 
   final likesRepository = ref.watch(likesRepositoryProvider);
+  final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
 
   final service = VideoEventService(
@@ -973,6 +987,7 @@ VideoEventService videoEventService(Ref ref) {
   service.setAgeVerificationService(ageVerificationService);
   service.setLikesRepository(likesRepository);
   service.setContentFilterService(ref.watch(contentFilterServiceProvider));
+  service.setModerationLabelService(moderationLabelService);
   service.setDivineHostFilterService(divineHostFilterService);
   return service;
 }
@@ -1775,10 +1790,14 @@ VideosRepository videosRepository(Ref ref) {
   final localStorage = ref.watch(videoLocalStorageProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final contentFilterService = ref.watch(contentFilterServiceProvider);
+  final moderationLabelService = ref.watch(moderationLabelServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
   final divineHostFilterService = ref.read(divineHostFilterServiceProvider);
 
-  final nsfwFilter = createNsfwFilter(contentFilterService);
+  final nsfwFilter = createNsfwFilter(
+    contentFilterService,
+    moderationLabelService: moderationLabelService,
+  );
 
   return VideosRepository(
     nostrClient: nostrClient,
@@ -1788,7 +1807,10 @@ VideosRepository videosRepository(Ref ref) {
         nsfwFilter(video) ||
         (divineHostFilterService.showDivineHostedOnly &&
             !video.isFromDivineServer),
-    warningLabelsResolver: createNsfwWarnLabels(contentFilterService),
+    warningLabelsResolver: createNsfwWarnLabels(
+      contentFilterService,
+      moderationLabelService: moderationLabelService,
+    ),
     funnelcakeApiClient: funnelcakeClient,
   );
 }
