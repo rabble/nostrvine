@@ -8,10 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
-import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_top_bar.dart';
 import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
@@ -39,6 +37,7 @@ void main() {
       );
       final bloc = _TestClipEditorBloc(
         initialState: ClipEditorState(
+          clips: clips,
           currentClipIndex: currentClipIndex,
           isEditing: isEditing,
         ),
@@ -47,9 +46,6 @@ void main() {
       return ProviderScope(
         overrides: [
           videoEditorProvider.overrideWith(_TestVideoEditorNotifier.new),
-          clipManagerProvider.overrideWith(
-            () => _TestClipManagerNotifier(ClipManagerState(clips: clips)),
-          ),
         ],
         child: BlocProvider<ClipEditorBloc>.value(
           value: bloc,
@@ -82,10 +78,10 @@ void main() {
       expect(find.text('2/5'), findsOneWidget);
     });
 
-    testWidgets('does not display close icon when not editing', (tester) async {
+    testWidgets('displays close icon when not editing', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.byType(DivineIconButton), findsNothing);
+      expect(find.byType(DivineIconButton), findsWidgets);
     });
 
     testWidgets('displays close icon when editing', (tester) async {
@@ -97,7 +93,7 @@ void main() {
     testWidgets('displays done button when not editing', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.text('Done'), findsOneWidget);
+      expect(find.bySemanticsLabel('Done'), findsOneWidget);
     });
 
     testWidgets('close button stops editing when tapped', (tester) async {
@@ -109,8 +105,8 @@ void main() {
       await tester.tap(closeButton);
       await tester.pumpAndSettle();
 
-      // After tapping, editing is stopped and the button disappears
-      expect(closeButton, findsNothing);
+      // After tapping, editing stops and the Done button appears
+      expect(find.bySemanticsLabel('Done'), findsOneWidget);
     });
 
     testWidgets('displays correct clip counter for single clip', (
@@ -126,14 +122,6 @@ void main() {
 class _TestVideoEditorNotifier extends VideoEditorNotifier {
   @override
   VideoEditorProviderState build() => VideoEditorProviderState();
-}
-
-class _TestClipManagerNotifier extends ClipManagerNotifier {
-  _TestClipManagerNotifier(this._state);
-  final ClipManagerState _state;
-
-  @override
-  ClipManagerState build() => _state;
 }
 
 class _TestClipEditorBloc extends ClipEditorBloc {

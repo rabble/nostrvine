@@ -5,13 +5,10 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
-import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_split_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -20,16 +17,6 @@ class _TestClipEditorBloc extends ClipEditorBloc {
     ClipEditorState initialState = const ClipEditorState(),
   }) {
     emit(initialState);
-  }
-}
-
-class _TestClipManagerNotifier extends ClipManagerNotifier {
-  _TestClipManagerNotifier(this._clips);
-  final List<DivineVideoClip> _clips;
-
-  @override
-  ClipManagerState build() {
-    return ClipManagerState(clips: _clips);
   }
 }
 
@@ -61,20 +48,14 @@ void main() {
         initialState: ClipEditorState(
           splitPosition: splitPosition,
           currentClipIndex: currentClipIndex,
+          clips: testClips,
         ),
       );
 
-      return ProviderScope(
-        overrides: [
-          clipManagerProvider.overrideWith(
-            () => _TestClipManagerNotifier(testClips),
-          ),
-        ],
-        child: BlocProvider<ClipEditorBloc>.value(
-          value: bloc,
-          child: const MaterialApp(
-            home: Scaffold(body: VideoClipEditorSplitBar()),
-          ),
+      return BlocProvider<ClipEditorBloc>.value(
+        value: bloc,
+        child: const MaterialApp(
+          home: Scaffold(body: VideoClipEditorSplitBar()),
         ),
       );
     }

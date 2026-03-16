@@ -114,23 +114,23 @@ void main() {
         expect(find.textContaining('Artist Name'), findsOneWidget);
       });
 
-      testWidgets('shows music icon when sound selected', (tester) async {
+      testWidgets('shows audio bars when sound selected', (tester) async {
         final sound = _createTestAudioEvent(title: 'Test Sound');
         await tester.pumpWidget(buildWidget(selectedSound: sound));
         await tester.pumpAndSettle();
 
-        expect(find.byType(DivineIcon), findsOneWidget);
+        expect(find.byType(AnimatedContainer), findsNWidgets(5));
       });
 
-      testWidgets('does not show audio bars when sound selected', (
+      testWidgets('does not show music icon when sound selected', (
         tester,
       ) async {
         final sound = _createTestAudioEvent(title: 'Test Sound');
         await tester.pumpWidget(buildWidget(selectedSound: sound));
         await tester.pumpAndSettle();
 
-        // Audio bars should not be visible when a sound is selected
-        expect(find.byType(AnimatedContainer), findsNothing);
+        // No DivineIcon is used in sound-selected state
+        expect(find.byType(DivineIcon), findsNothing);
       });
     });
 

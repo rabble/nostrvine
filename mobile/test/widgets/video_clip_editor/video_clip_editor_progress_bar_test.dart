@@ -7,9 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/clip_editor/clip_editor_bloc.dart';
-import 'package:openvine/models/clip_manager_state.dart';
 import 'package:openvine/models/divine_video_clip.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/clip_editor/video_clip_editor_progress_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -24,6 +22,7 @@ void main() {
     }) {
       final bloc = _TestClipEditorBloc(
         initialState: ClipEditorState(
+          clips: clips,
           currentClipIndex: currentClipIndex,
           isReordering: isReordering,
           currentPosition: currentPosition,
@@ -32,11 +31,6 @@ void main() {
       );
 
       return ProviderScope(
-        overrides: [
-          clipManagerProvider.overrideWith(
-            () => _TestClipManagerNotifier(ClipManagerState(clips: clips)),
-          ),
-        ],
         child: BlocProvider<ClipEditorBloc>.value(
           value: bloc,
           child: const MaterialApp(
@@ -251,12 +245,4 @@ class _TestClipEditorBloc extends ClipEditorBloc {
   }) {
     emit(initialState);
   }
-}
-
-class _TestClipManagerNotifier extends ClipManagerNotifier {
-  _TestClipManagerNotifier(this._state);
-  final ClipManagerState _state;
-
-  @override
-  ClipManagerState build() => _state;
 }
