@@ -5,6 +5,7 @@
 
 import 'dart:developer' as developer;
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -12,6 +13,69 @@ import 'package:openvine/services/subtitle_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'subtitle_providers.g.dart';
+
+typedef SubtitlePollDelay = Future<void> Function(Duration duration);
+
+const _maxBlossomPollAttempts = 4;
+const _maxBlossomPollWait = Duration(seconds: 15);
+const _defaultBlossomRetryAfter = Duration(seconds: 3);
+
+final subtitleHttpClientProvider = Provider<http.Client>((ref) {
+  final client = http.Client();
+  ref.onDispose(client.close);
+  return client;
+});
+
+final subtitlePollDelayProvider = Provider<SubtitlePollDelay>(
+  (_) => Future<void>.delayed,
+);
+
+Duration _parseRetryAfter(Map<String, String> headers) {
+  final rawValue = headers['retry-after'];
+  if (rawValue == null) return _defaultBlossomRetryAfter;
+
+  final seconds = int.tryParse(rawValue.trim());
+  if (seconds == null || seconds <= 0) return _defaultBlossomRetryAfter;
+
+  return Duration(seconds: seconds);
+}
+
+Future<List<SubtitleCue>?> _fetchBlossomSubtitles({
+  required http.Client client,
+  required SubtitlePollDelay delay,
+  required Uri vttUrl,
+}) async {
+  var waited = Duration.zero;
+
+  for (var attempt = 0; attempt < _maxBlossomPollAttempts; attempt++) {
+    final response = await client.get(vttUrl);
+
+    if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
+      return SubtitleService.parseVtt(response.body);
+    }
+
+    if (response.statusCode == 202) {
+      if (attempt == _maxBlossomPollAttempts - 1) return null;
+
+      final retryAfter = _parseRetryAfter(response.headers);
+      if (waited + retryAfter > _maxBlossomPollWait) {
+        return null;
+      }
+
+      waited += retryAfter;
+      await delay(retryAfter);
+      continue;
+    }
+
+    if (response.statusCode == 404) {
+      return null;
+    }
+
+    return null;
+  }
+
+  return null;
+}
 
 /// Fetches subtitle cues for a video, using the fastest available path.
 ///
@@ -40,12 +104,17 @@ Future<List<SubtitleCue>> subtitleCues(
   // Blossom path: fetch VTT from media server by sha256
   if (sha256 != null && sha256.isNotEmpty) {
     final vttUrl = Uri.parse('https://media.divine.video/$sha256/vtt');
+    final client = ref.read(subtitleHttpClientProvider);
+    final delay = ref.read(subtitlePollDelayProvider);
     try {
-      final response = await http.get(vttUrl);
-      if (response.statusCode == 200 && response.body.trim().isNotEmpty) {
-        return SubtitleService.parseVtt(response.body);
+      final blossomCues = await _fetchBlossomSubtitles(
+        client: client,
+        delay: delay,
+        vttUrl: vttUrl,
+      );
+      if (blossomCues != null) {
+        return blossomCues;
       }
-      // 404 or empty = VTT not yet generated, fall through silently
     } catch (e) {
       developer.log(
         'Blossom VTT fetch failed for $sha256: $e',
