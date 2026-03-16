@@ -207,7 +207,6 @@ void main() {
         final foundEditor = await waitForWidget(
           tester,
           nextButton,
-          maxSeconds: 15,
         );
         expect(
           foundEditor,
@@ -223,7 +222,6 @@ void main() {
         final foundPost = await waitForWidget(
           tester,
           find.bySemanticsIdentifier('post_button'),
-          maxSeconds: 15,
         );
         expect(foundPost, isTrue, reason: 'Metadata screen should appear');
 
@@ -304,7 +302,6 @@ void main() {
         final foundTile = await waitForWidget(
           tester,
           videoTile,
-          maxSeconds: 15,
         );
         expect(
           foundTile,
@@ -373,7 +370,6 @@ void main() {
         final foundSnackbar = await waitForText(
           tester,
           'Video deletion requested',
-          maxSeconds: 15,
         );
         expect(
           foundSnackbar,
@@ -389,7 +385,7 @@ void main() {
         // fullscreen player. Navigate back to profile.
         // Use system back or tap back button to leave fullscreen player.
         await tester.pageBack();
-        await pumpUntilSettled(tester, maxSeconds: 5);
+        await pumpUntilSettled(tester);
 
         // Navigate: profile → home → explore → profile to force refresh
         await tapBottomNavTab(tester, 'home_tab');

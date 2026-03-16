@@ -41,10 +41,10 @@ jobs:
           fi
 
       - name: ✨ Check formatting
-        run: dart format --output=none --set-exit-if-changed lib test
+        run: dart format --output=none --set-exit-if-changed lib test integration_test
 
       - name: 🕵️ Analyze code
-        run: flutter analyze lib test
+        run: flutter analyze lib test integration_test
 
       - name: 🚀 Run tests
         run: flutter test
