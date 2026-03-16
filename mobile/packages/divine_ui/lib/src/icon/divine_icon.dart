@@ -140,6 +140,7 @@ enum DivineIconName {
   question('question'),
   queue('queue'),
   repeat('repeat'),
+  repost('repost'),
   removeLastClip('undo'),
   repeatDuo('repeat_duo'),
   save('save'),
