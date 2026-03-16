@@ -190,17 +190,16 @@ class VideoClipEditorBottomBar extends StatelessWidget {
 class _ClipRemoveArea extends ConsumerWidget {
   const _ClipRemoveArea();
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deleteButtonKey = ref.read(videoEditorProvider).deleteButtonKey;
-    final (:isOverDeleteZone, :isLastClip) =
-        context.select<ClipEditorBloc, ({bool isOverDeleteZone, bool isLastClip})>(
-      (bloc) => (
-        isOverDeleteZone: bloc.state.isOverDeleteZone,
-        isLastClip: bloc.state.clips.length <= 1,
-      ),
-    );
+    final (:isOverDeleteZone, :isLastClip) = context
+        .select<ClipEditorBloc, ({bool isOverDeleteZone, bool isLastClip})>(
+          (bloc) => (
+            isOverDeleteZone: bloc.state.isOverDeleteZone,
+            isLastClip: bloc.state.clips.length <= 1,
+          ),
+        );
     return Align(
       child: AnimatedScale(
         scale: isOverDeleteZone && !isLastClip ? 1.4 : 1.0,
