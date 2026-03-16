@@ -882,7 +882,7 @@ final class ModerationLabelServiceProvider
 }
 
 String _$moderationLabelServiceHash() =>
-    r'17757c116c5d70c141a10d508898fecda07c923d';
+    r'd792ccdba759d461ff86ca3bd6f62aa46463a85a';
 
 /// Audio sharing preference service for managing whether audio is available
 /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
@@ -2464,7 +2464,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'b3455a59a241ce1158a1bea7e55cbf29ab907155';
+String _$videoEventServiceHash() => r'b8cf948e728d3680cad3a1fff0e56994df434c8b';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -4338,7 +4338,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'b4df09d7cd1d332dba8ff7e96d17b37ae4746e98';
+String _$videosRepositoryHash() => r'2111f016dd9fc45c972a42a74f85366077f05fea';
 
 /// Provider for LikesRepository instance
 ///
