@@ -225,7 +225,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
     final clips = await Navigator.push<List<DivineVideoClip>>(
       context,
-      _ZoomFadePageRoute<List<DivineVideoClip>>(
+      _FadeUpPageRoute<List<DivineVideoClip>>(
         child: VideoClipEditorScreen(
           initialClips: initialClips.map((e) => e.copyWith()).toList(),
         ),
@@ -393,8 +393,8 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   }
 }
 
-class _ZoomFadePageRoute<T> extends PageRoute<T> {
-  _ZoomFadePageRoute({required this.child});
+class _FadeUpPageRoute<T> extends PageRoute<T> {
+  _FadeUpPageRoute({required this.child});
 
   final Widget child;
 

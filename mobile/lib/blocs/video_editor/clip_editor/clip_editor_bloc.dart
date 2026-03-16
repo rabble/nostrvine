@@ -455,15 +455,13 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
     ClipEditorDeleteZoneChanged event,
     Emitter<ClipEditorState> emit,
   ) {
-    if (state.isOverDeleteZone != event.isOver) {
-      Log.debug(
-        event.isOver
-            ? '🗑️  Clip over delete zone'
-            : '⬅️  Clip left delete zone',
-        name: 'ClipEditorBloc',
-        category: LogCategory.video,
-      );
-    }
+    if (state.isOverDeleteZone == event.isOver) return;
+
+    Log.debug(
+      event.isOver ? '🗑️  Clip over delete zone' : '⬅️  Clip left delete zone',
+      name: 'ClipEditorBloc',
+      category: LogCategory.video,
+    );
     emit(state.copyWith(isOverDeleteZone: event.isOver));
   }
 
@@ -519,7 +517,8 @@ class ClipEditorBloc extends Bloc<ClipEditorEvent, ClipEditorState> {
         name: 'ClipEditorBloc',
         category: LogCategory.video,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      addError(e, stackTrace);
       Log.error(
         '❌ Failed to split clip: $e',
         name: 'ClipEditorBloc',

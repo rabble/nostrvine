@@ -12,6 +12,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -313,6 +314,8 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // Guard against provider disposal during the async gap above.
     if (!ref.mounted) return true;
 
+    if (_clips.isEmpty) _clearProviders();
+
     // Delete files only if not referenced by drafts or clip library
     final db = ref.read(databaseProvider);
     await FileCleanupService.deleteRecordingClipFiles(
@@ -582,6 +585,11 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       final draftService = ref.read(draftStorageServiceProvider);
       await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
     }
+  }
+
+  Future<void> _clearProviders() async {
+    ref.read(videoPublishProvider.notifier).reset();
+    await ref.read(videoEditorProvider.notifier).reset();
   }
 
   /// Save clip(s) to library.
