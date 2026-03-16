@@ -3,6 +3,8 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:vine/constants/video_editor_constants.dart';
 
 /// Reusable top bar for video editor sub-editors.
 ///
@@ -66,7 +68,7 @@ class VideoEditorToolbar extends StatelessWidget {
           mainAxisAlignment: .spaceBetween,
           children: [
             Hero(
-              tag: 'leading',
+              tag: VideoEditorConstants.heroToolbarLeadingId,
               child: DivineIconButton(
                 icon: closeIcon,
                 semanticLabel: closeSemanticLabel,
@@ -77,7 +79,7 @@ class VideoEditorToolbar extends StatelessWidget {
             ),
             ?center,
             Hero(
-              tag: 'trailing',
+              tag: VideoEditorConstants.heroToolbarTrailingId,
               child: DivineIconButton(
                 icon: doneIcon,
                 semanticLabel: doneSemanticLabel,

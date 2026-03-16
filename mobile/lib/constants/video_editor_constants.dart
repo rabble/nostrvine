@@ -110,6 +110,12 @@ class VideoEditorConstants {
   /// Hero animation tag for the audio-chip in the video editor.
   static const heroAudioChipId = 'Video-Editor-Audio-Chip';
 
+  /// Hero animation tag for the toolbar leading (close) button.
+  static const heroToolbarLeadingId = 'Video-Editor-Toolbar-Leading';
+
+  /// Hero animation tag for the toolbar trailing (done) button.
+  static const heroToolbarTrailingId = 'Video-Editor-Toolbar-Trailing';
+
   /// List of filter presets sorted by popularity
   static final List<FilterModel> filters = [
     PresetFilters.none,
