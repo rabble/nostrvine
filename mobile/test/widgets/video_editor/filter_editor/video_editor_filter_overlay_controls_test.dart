@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
+import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
@@ -17,6 +18,10 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 class MockVideoEditorFilterBloc
     extends MockBloc<VideoEditorFilterEvent, VideoEditorFilterState>
     implements VideoEditorFilterBloc {}
+
+class MockVideoEditorMainBloc
+    extends MockBloc<VideoEditorMainEvent, VideoEditorMainState>
+    implements VideoEditorMainBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,10 +33,12 @@ void main() {
 
   group('VideoEditorFilterOverlayControls', () {
     late MockVideoEditorFilterBloc mockBloc;
+    late MockVideoEditorMainBloc mockMainBloc;
     late GlobalKey<ProImageEditorState> editorKey;
 
     setUp(() {
       mockBloc = MockVideoEditorFilterBloc();
+      mockMainBloc = MockVideoEditorMainBloc();
       editorKey = GlobalKey<ProImageEditorState>();
 
       // Default state - no filter selected
@@ -39,6 +46,13 @@ void main() {
         () => mockBloc.state,
       ).thenReturn(VideoEditorFilterState(filters: presetFiltersList));
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+
+      when(
+        () => mockMainBloc.state,
+      ).thenReturn(const VideoEditorMainState());
+      when(
+        () => mockMainBloc.stream,
+      ).thenAnswer((_) => const Stream.empty());
     });
 
     Widget buildWidget() {
@@ -54,8 +68,15 @@ void main() {
             onOpenClipsEditor: () {},
             onAddStickers: () {},
             onAddEditTextLayer: ([layer]) async => null,
-            child: BlocProvider<VideoEditorFilterBloc>.value(
-              value: mockBloc,
+            child: MultiBlocProvider(
+              providers: [
+                BlocProvider<VideoEditorFilterBloc>.value(
+                  value: mockBloc,
+                ),
+                BlocProvider<VideoEditorMainBloc>.value(
+                  value: mockMainBloc,
+                ),
+              ],
               child: const SizedBox(
                 width: 400,
                 height: 600,

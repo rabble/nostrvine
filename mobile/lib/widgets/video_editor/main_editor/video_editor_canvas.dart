@@ -147,9 +147,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       name: 'VideoEditorCanvas',
       category: LogCategory.video,
     );
-    VideoEditorScope.of(
-      context,
-    ).videoOutputPathNotifier.removeListener(_onOutputPathChanged);
     _outputPathNotifier = null;
     _videoPlayer?.removeListener(_onVideoPositionChange);
     _videoPlayer?.dispose();
@@ -522,7 +519,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
                 previous.isExternalPauseRequested !=
                 current.isExternalPauseRequested,
             listener: (context, state) {
-              _onExternalPauseChanged(isPaused: state.isExternalPauseRequested);
+              _onExternalPauseChanged(
+                isPaused: state.isExternalPauseRequested,
+              );
             },
           ),
           BlocListener<VideoEditorMainBloc, VideoEditorMainState>(

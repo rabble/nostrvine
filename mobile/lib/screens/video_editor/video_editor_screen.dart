@@ -226,7 +226,6 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       ),
     );
 
-    // Always reset to false so the next open guarantees a state change.
     mainBloc.add(const VideoEditorMainSubEditorClosed());
 
     if (clips != null) {
