@@ -107,6 +107,9 @@ class VideoEditorConstants {
   /// Hero animation tag for the final clip-preview in the video editor.
   static const heroMetaPreviewId = 'Video-metadata-clip-preview-video';
 
+  /// Hero animation tag for the audio-chip in the video editor.
+  static const heroAudioChipId = 'Video-Editor-Audio-Chip';
+
   /// List of filter presets sorted by popularity
   static final List<FilterModel> filters = [
     PresetFilters.none,
