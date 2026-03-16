@@ -177,6 +177,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     final clips = clipState.clips;
     if (clips.isEmpty) return;
 
+    // Single clip needs no merge — use its video file directly.
+    if (clips.length == 1) {
+      _videoOutputPathNotifier.value = clips.first.video.file?.path;
+      return;
+    }
+
     final cached = clipState.mergeOutputPath;
     if (cached != null && File(cached).existsSync()) {
       Log.debug(
