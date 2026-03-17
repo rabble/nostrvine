@@ -726,19 +726,19 @@ void main() {
         // ════════════════════════════════════════════════════════════
 
         logPhase('── Phase 3m: Checking notifications ──');
-        await tapBottomNavTab(tester, 'notifications_tab');
+        await tapBottomNavTab(tester, 'inbox_tab');
         await tester.pump(const Duration(seconds: 3));
 
-        final hasNotifTabs =
-            find.text('All').evaluate().isNotEmpty ||
-            find.text('Likes').evaluate().isNotEmpty;
+        final hasInboxTabs =
+            find.text('Messages').evaluate().isNotEmpty ||
+            find.text('Notifications').evaluate().isNotEmpty;
         expect(
-          hasNotifTabs,
+          hasInboxTabs,
           isTrue,
-          reason: 'Notifications screen should show filter tabs',
+          reason: 'Inbox screen should show Messages/Notifications toggle',
         );
 
-        logPhase('Phase 3m complete -- notifications screen rendered');
+        logPhase('Phase 3m complete -- inbox screen rendered');
 
         // ════════════════════════════════════════════════════════════
         // Phase 3n: Settings
