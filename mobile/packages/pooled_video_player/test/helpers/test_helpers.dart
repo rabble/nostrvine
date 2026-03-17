@@ -204,6 +204,37 @@ PooledPlayer createMockPooledPlayer({
   return mockPooledPlayer;
 }
 
+/// Creates a mock [PooledPlayer] from an existing [MockPlayerSetup].
+///
+/// Wires up `addOnDisposedCallback` and `dispose` so the disposal callbacks
+/// fire correctly (matching real [PooledPlayer] behaviour).
+PooledPlayer createMockPooledPlayerFromSetup(MockPlayerSetup setup) {
+  final mockPooledPlayer = _MockPooledPlayer();
+  final callbacks = <VoidCallback>[];
+
+  when(() => mockPooledPlayer.player).thenReturn(setup.player);
+  when(
+    () => mockPooledPlayer.videoController,
+  ).thenReturn(createMockVideoController());
+  when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+  when(() => mockPooledPlayer.addOnDisposedCallback(any())).thenAnswer((inv) {
+    callbacks.add(inv.positionalArguments.first as VoidCallback);
+  });
+  when(() => mockPooledPlayer.removeOnDisposedCallback(any())).thenAnswer((
+    inv,
+  ) {
+    callbacks.remove(inv.positionalArguments.first as VoidCallback);
+  });
+  when(mockPooledPlayer.dispose).thenAnswer((_) async {
+    for (final cb in List<VoidCallback>.of(callbacks)) {
+      cb();
+    }
+    callbacks.clear();
+  });
+
+  return mockPooledPlayer;
+}
+
 /// Creates a mock [PlayerPool] with default stubs.
 PlayerPool createMockPlayerPool({int maxPlayers = 5}) {
   final mockPool = _MockPlayerPool();

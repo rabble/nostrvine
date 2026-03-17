@@ -675,32 +675,42 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
 
     return ColoredBox(
       color: VineTheme.backgroundColor,
-      child: PooledVideoPlayer(
-        index: index,
-        thumbnailUrl: video.thumbnailUrl,
-        enableTapToPause: isActive,
-        videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
-          videoController: videoController,
-          isPortrait: isPortrait,
-          alignment: alignment,
-        ),
-        loadingBuilder: (context) => _VideoLoadingPlaceholder(
-          thumbnailUrl: video.thumbnailUrl,
-          isPortrait: isPortrait,
-          videoId: video.id,
-          feedMode: contextTitle,
-          index: index,
-          alignment: alignment,
-        ),
-        overlayBuilder: (context, videoController, player) => FeedVideoOverlay(
-          video: video,
-          isActive: isActive,
-          pagePosition: pagePosition,
-          index: index,
-          player: player,
-          firstFrameFuture: videoController?.waitUntilFirstFrameRendered,
-          listSources: listSources,
-        ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          PooledVideoPlayer(
+            index: index,
+            thumbnailUrl: video.thumbnailUrl,
+            enableTapToPause: isActive,
+            videoBuilder: (context, videoController, player) =>
+                _FittedVideoPlayer(
+                  videoController: videoController,
+                  isPortrait: isPortrait,
+                  alignment: alignment,
+                ),
+            loadingBuilder: (context) => _VideoLoadingPlaceholder(
+              thumbnailUrl: video.thumbnailUrl,
+              isPortrait: isPortrait,
+              videoId: video.id,
+              feedMode: contextTitle,
+              index: index,
+              alignment: alignment,
+            ),
+            overlayBuilder: (context, videoController, player) =>
+                FeedVideoOverlay(
+                  video: video,
+                  isActive: isActive,
+                  pagePosition: pagePosition,
+                  index: index,
+                  player: player,
+                  firstFrameFuture:
+                      videoController?.waitUntilFirstFrameRendered,
+                  listSources: listSources,
+                ),
+          ),
+          if (!video.isFromDivineServer)
+            _SlowExternalVideoOverlay(index: index),
+        ],
       ),
     );
   }
@@ -730,6 +740,77 @@ class _FittedVideoPlayer extends StatelessWidget {
       fit: boxFit,
       alignment: alignment,
       controls: null,
+    );
+  }
+}
+
+/// Overlay shown when an externally hosted video takes too long to load.
+///
+/// Listens to the controller's index notifier and shows a skip action
+/// when `isSlowLoad` is true and the video is still loading.
+/// Only rendered for non-Divine videos (controlled by the parent).
+class _SlowExternalVideoOverlay extends StatelessWidget {
+  const _SlowExternalVideoOverlay({required this.index});
+
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final feedController = VideoPoolProvider.feedOf(context);
+
+    return ValueListenableBuilder<VideoIndexState>(
+      valueListenable: feedController.getIndexNotifier(index),
+      builder: (context, state, _) {
+        if (!state.isSlowLoad || !state.isLoading) {
+          return const SizedBox.shrink();
+        }
+
+        return Positioned(
+          bottom: 120,
+          left: 16,
+          right: 16,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: VineTheme.backgroundColor.withValues(alpha: 0.85),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.public,
+                  color: VineTheme.secondaryText,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'External video loading slowly',
+                    style: TextStyle(
+                      color: VineTheme.whiteText,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Skip to the next video in the feed.
+                    final nextIndex = feedController.currentIndex + 1;
+                    if (nextIndex < feedController.videoCount) {
+                      feedController.onPageChanged(nextIndex);
+                    }
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: VineTheme.vineGreen,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  child: const Text('Skip'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

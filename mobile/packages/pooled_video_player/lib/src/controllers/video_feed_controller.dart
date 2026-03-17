@@ -66,6 +66,7 @@ class VideoFeedController extends ChangeNotifier {
     this.onVideoReady,
     this.positionCallback,
     this.positionCallbackInterval = const Duration(milliseconds: 250),
+    this.slowLoadThreshold = const Duration(seconds: 8),
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos),
        _currentIndex = initialIndex.clamp(
@@ -109,6 +110,12 @@ class VideoFeedController extends ChangeNotifier {
   /// Defaults to 200ms.
   final Duration positionCallbackInterval;
 
+  /// Duration after which a loading video is marked as slow.
+  ///
+  /// When exceeded, the index state's `isSlowLoad` flag is set so the
+  /// UI can show a slow-loading indicator or skip action.
+  final Duration slowLoadThreshold;
+
   /// Unmodifiable list of videos.
   List<VideoItem> get videos => List.unmodifiable(_videos);
 
@@ -131,6 +138,8 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, Timer> _loadWatchdogTimers = {};
   final Map<int, Stopwatch> _loadStopwatches = {};
   final Map<int, String> _openedSources = {};
+  final Set<int> _slowLoadIndices = {};
+  int _preloadGeneration = 0;
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -200,6 +209,7 @@ class VideoFeedController extends ChangeNotifier {
             : (_loadStates[index] ?? LoadState.none),
         videoController: isAlive ? pooledPlayer.videoController : null,
         player: isAlive ? pooledPlayer.player : null,
+        isSlowLoad: _slowLoadIndices.contains(index),
       );
     }
   }
@@ -251,6 +261,17 @@ class VideoFeedController extends ChangeNotifier {
       }
 
       final elapsedMs = _loadStopwatches[index]?.elapsedMilliseconds ?? 0;
+
+      // Mark as slow load once threshold is exceeded (fires once per index).
+      if (elapsedMs >= slowLoadThreshold.inMilliseconds &&
+          _slowLoadIndices.add(index)) {
+        _logDebug(
+          'slow_load ${_videoDebugDetails(index)} '
+          'elapsedMs=$elapsedMs threshold=${slowLoadThreshold.inMilliseconds}',
+        );
+        _notifyIndex(index);
+      }
+
       final shouldLog =
           index == _currentIndex ||
           elapsedMs == 1000 ||
@@ -460,14 +481,45 @@ class VideoFeedController extends ChangeNotifier {
       }
     }
 
-    // Load missing players in window (current first, then others)
-    final loadOrder = [index, ...toKeep.where((i) => i != index)];
-    for (final idx in loadOrder) {
-      if (!_loadedPlayers.containsKey(idx) && !_loadingIndices.contains(idx)) {
+    // Increment generation so stale preload callbacks are discarded.
+    _preloadGeneration++;
+
+    // Load current video first, then preloads after it completes.
+    // This ensures the visible video gets full network priority.
+    final preloadIndices = toKeep.where((i) => i != index).toList();
+    unawaited(
+      _loadCurrentThenPreloads(index, preloadIndices, _preloadGeneration),
+    );
+  }
+
+  /// Loads the current video, then fires preloads concurrently.
+  ///
+  /// The [generation] parameter is compared against [_preloadGeneration]
+  /// after the current video loads. If the user scrolled again in the
+  /// meantime, the preloads are skipped (a newer window superseded them).
+  Future<void> _loadCurrentThenPreloads(
+    int index,
+    List<int> preloadIndices,
+    int generation,
+  ) async {
+    // Load the current (visible) video first.
+    if (_shouldLoad(index)) {
+      await _loadPlayer(index);
+    }
+
+    // Bail if a newer preload window was requested while loading.
+    if (_isDisposed || _preloadGeneration != generation) return;
+
+    // Now fire preloads concurrently — they share remaining bandwidth.
+    for (final idx in preloadIndices) {
+      if (_shouldLoad(idx)) {
         unawaited(_loadPlayer(idx));
       }
     }
   }
+
+  bool _shouldLoad(int index) =>
+      !_loadedPlayers.containsKey(index) && !_loadingIndices.contains(index);
 
   Future<void> _loadPlayer(int index) async {
     if (_isDisposed || _loadingIndices.contains(index)) return;
@@ -656,6 +708,7 @@ class VideoFeedController extends ChangeNotifier {
     _stopLoadWatchdog(index);
     _loadStopwatches.remove(index)?.stop();
     _openedSources.remove(index);
+    _slowLoadIndices.remove(index);
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
     _loadingIndices.remove(index);
@@ -670,6 +723,7 @@ class VideoFeedController extends ChangeNotifier {
     if (player == null) return;
 
     _stopLoadWatchdog(index);
+    _slowLoadIndices.remove(index);
     _loadStates[index] = LoadState.ready;
     final elapsedMs = _loadStopwatches[index]?.elapsedMilliseconds;
     _logDebug(
@@ -849,6 +903,7 @@ class VideoFeedController extends ChangeNotifier {
     _stopLoadWatchdog(index);
     _loadStopwatches.remove(index)?.stop();
     _openedSources.remove(index);
+    _slowLoadIndices.remove(index);
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
     _loadingIndices.remove(index);

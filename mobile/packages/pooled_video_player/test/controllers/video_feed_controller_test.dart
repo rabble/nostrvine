@@ -1701,6 +1701,7 @@ void main() {
             disposedState[url] = false;
 
             final mockPooledPlayer = _MockPooledPlayer();
+            final callbacks = <VoidCallback>[];
             when(() => mockPooledPlayer.player).thenReturn(setup.player);
             when(
               () => mockPooledPlayer.videoController,
@@ -1709,8 +1710,30 @@ void main() {
             when(
               () => mockPooledPlayer.isDisposed,
             ).thenAnswer((_) => disposedState[url]!);
+            // Track onDisposed callbacks so dispose() fires them (like the
+            // real PooledPlayer). Required because current-video
+            // prioritization means eviction happens after _loadPlayer
+            // completes, so the callback is the only eviction signal.
+            when(
+              () => mockPooledPlayer.addOnDisposedCallback(any()),
+            ).thenAnswer((inv) {
+              callbacks.add(
+                inv.positionalArguments.first as VoidCallback,
+              );
+            });
+            when(
+              () => mockPooledPlayer.removeOnDisposedCallback(any()),
+            ).thenAnswer((inv) {
+              callbacks.remove(
+                inv.positionalArguments.first as VoidCallback,
+              );
+            });
             when(mockPooledPlayer.dispose).thenAnswer((_) async {
               disposedState[url] = true;
+              for (final cb in List<VoidCallback>.of(callbacks)) {
+                cb();
+              }
+              callbacks.clear();
             });
 
             return mockPooledPlayer;
@@ -1737,9 +1760,10 @@ void main() {
         // Grab notifier before load-state updates propagate.
         final notifier0 = controller.getIndexNotifier(0);
 
-        // Wait for all _loadPlayer calls to complete. Pool (maxPlayers=2)
-        // evicts video 0 when video 2 is requested.
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Wait for current video to load (serialized), then preloads
+        // to fire and evict. Pool (maxPlayers=2) evicts video 0 when
+        // video 2 is requested.
+        await Future<void>.delayed(const Duration(milliseconds: 300));
 
         expect(
           disposedState[videos[0].url],
@@ -1769,7 +1793,8 @@ void main() {
           preloadBehind: 0,
         );
 
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Wait for serialized current load + concurrent preloads.
+        await Future<void>.delayed(const Duration(milliseconds: 300));
 
         // Video 1 should NOT be evicted (only video 0 is).
         expect(disposedState[videos[1].url], isFalse);
@@ -1798,7 +1823,8 @@ void main() {
 
         final notifier0 = controller.getIndexNotifier(0);
 
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+        // Wait for serialized current load + concurrent preloads.
+        await Future<void>.delayed(const Duration(milliseconds: 300));
 
         // The isDisposed check in _loadPlayer already cleared index 0.
         expect(controller.getLoadState(0), equals(LoadState.none));
@@ -2936,6 +2962,200 @@ void main() {
           verify(
             () => setup0.player.open(any(), play: any(named: 'play')),
           ).called(1);
+        },
+      );
+    });
+
+    group('current-video prioritization', () {
+      test(
+        'current video open() completes before any preload open() starts',
+        () async {
+          final openOrder = <int>[];
+          final videos = createTestVideos(count: 4);
+
+          // Track the order in which open() is called per index.
+          final indexByUrl = <String, int>{
+            for (var i = 0; i < videos.length; i++) videos[i].url: i,
+          };
+
+          final trackingPool = TestablePlayerPool(
+            maxPlayers: 5,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup();
+              when(
+                () => setup.player.open(any(), play: any(named: 'play')),
+              ).thenAnswer((_) async {
+                openOrder.add(indexByUrl[url]!);
+              });
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(() => mockPooledPlayer.player).thenReturn(setup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+              when(
+                () => mockPooledPlayer.addOnDisposedCallback(any()),
+              ).thenAnswer((_) {});
+              when(
+                () => mockPooledPlayer.removeOnDisposedCallback(any()),
+              ).thenAnswer((_) {});
+              return mockPooledPlayer;
+            },
+          );
+
+          VideoFeedController(
+            videos: videos,
+            pool: trackingPool,
+            preloadBehind: 0,
+            // preloadAhead=2 → window: [0, 1, 2]
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+
+          // Current video (index 0) must open first.
+          expect(openOrder.first, equals(0));
+          // Preloads come after.
+          expect(openOrder.sublist(1), containsAll([1, 2]));
+
+          await trackingPool.dispose();
+        },
+      );
+
+      test(
+        'stale preloads are discarded when user scrolls during load',
+        () async {
+          final openOrder = <int>[];
+          final videos = createTestVideos(count: 6);
+          final indexByUrl = <String, int>{
+            for (var i = 0; i < videos.length; i++) videos[i].url: i,
+          };
+
+          final trackingPool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup();
+              when(
+                () => setup.player.open(any(), play: any(named: 'play')),
+              ).thenAnswer((_) async {
+                openOrder.add(indexByUrl[url]!);
+              });
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(() => mockPooledPlayer.player).thenReturn(setup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+              when(
+                () => mockPooledPlayer.addOnDisposedCallback(any()),
+              ).thenAnswer((_) {});
+              when(
+                () => mockPooledPlayer.removeOnDisposedCallback(any()),
+              ).thenAnswer((_) {});
+              return mockPooledPlayer;
+            },
+          );
+
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: trackingPool,
+            preloadBehind: 0,
+          );
+
+          // Let current video (0) start loading, then immediately scroll.
+          await Future<void>.delayed(Duration.zero);
+          controller.onPageChanged(3);
+
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+
+          // Video 3 (new current) must have been opened.
+          expect(openOrder, contains(3));
+
+          controller.dispose();
+          await trackingPool.dispose();
+        },
+      );
+    });
+
+    group('slow-load detection', () {
+      test(
+        'isSlowLoad is set when load exceeds threshold',
+        () async {
+          final videos = createTestVideos(count: 1);
+
+          // Use isBuffering: true so the video stays in loading state
+          // long enough for the watchdog to fire.
+          final slowPool = TestablePlayerPool(
+            maxPlayers: 5,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup(isBuffering: true);
+              return createMockPooledPlayerFromSetup(setup);
+            },
+          );
+
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: slowPool,
+            preloadBehind: 0,
+            preloadAhead: 0,
+            slowLoadThreshold: const Duration(seconds: 1),
+          );
+
+          final notifier = controller.getIndexNotifier(0);
+
+          // Initially not slow.
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          expect(notifier.value.isSlowLoad, isFalse);
+
+          // After threshold, watchdog should mark as slow.
+          await Future<void>.delayed(const Duration(milliseconds: 1200));
+          expect(notifier.value.isSlowLoad, isTrue);
+          expect(notifier.value.isLoading, isTrue);
+
+          controller.dispose();
+          await slowPool.dispose();
+        },
+      );
+
+      test(
+        'isSlowLoad is cleared when video becomes ready',
+        () async {
+          final videos = createTestVideos(count: 1);
+
+          final setupByUrl = <String, MockPlayerSetup>{};
+          final slowPool = TestablePlayerPool(
+            maxPlayers: 5,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup(isBuffering: true);
+              setupByUrl[url] = setup;
+              return createMockPooledPlayerFromSetup(setup);
+            },
+          );
+
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: slowPool,
+            preloadBehind: 0,
+            preloadAhead: 0,
+            slowLoadThreshold: const Duration(seconds: 1),
+          );
+
+          final notifier = controller.getIndexNotifier(0);
+
+          // Wait past threshold.
+          await Future<void>.delayed(const Duration(milliseconds: 1200));
+          expect(notifier.value.isSlowLoad, isTrue);
+
+          // Fire buffer-ready → video becomes ready, slow flag clears.
+          setupByUrl[videos[0].url]!.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(notifier.value.isSlowLoad, isFalse);
+          expect(notifier.value.isReady, isTrue);
+
+          controller.dispose();
+          await slowPool.dispose();
         },
       );
     });

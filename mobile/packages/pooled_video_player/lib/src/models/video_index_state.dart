@@ -15,6 +15,7 @@ class VideoIndexState extends Equatable {
     this.loadState = LoadState.none,
     this.videoController,
     this.player,
+    this.isSlowLoad = false,
   });
 
   /// The loading state of the video.
@@ -26,6 +27,13 @@ class VideoIndexState extends Equatable {
   /// The player for controlling playback, or null if not loaded.
   final Player? player;
 
+  /// Whether this video's load time has exceeded the slow-load threshold.
+  ///
+  /// Set once during loading and cleared when the video finishes loading
+  /// or is released. The UI can use this to show a slow-loading indicator
+  /// or skip action for externally hosted videos.
+  final bool isSlowLoad;
+
   /// Whether the video is ready for playback.
   bool get isReady => loadState == LoadState.ready;
 
@@ -36,5 +44,5 @@ class VideoIndexState extends Equatable {
   bool get isLoading => loadState == LoadState.loading;
 
   @override
-  List<Object?> get props => [loadState, videoController, player];
+  List<Object?> get props => [loadState, videoController, player, isSlowLoad];
 }
