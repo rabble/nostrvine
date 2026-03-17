@@ -14,7 +14,7 @@ void main() {
       double thumbHeight = 32,
       Color activeColor = VineTheme.primary,
       Color inactiveColor = VineTheme.onSurfaceDisabled,
-      Color thumbColor = Colors.white,
+      Color thumbColor = VineTheme.onSurface,
     }) {
       return MaterialApp(
         home: Scaffold(
@@ -140,6 +140,11 @@ void main() {
       testWidgets('does not call onChanged when disabled', (tester) async {
         var wasCalled = false;
 
+        await tester.pumpWidget(
+          buildSlider(onChanged: (_) => wasCalled = true),
+        );
+
+        // Rebuild with onChanged set to null (disabled)
         await tester.pumpWidget(buildSlider());
 
         await tester.tap(find.byType(Slider));
@@ -188,7 +193,7 @@ void main() {
 
       testWidgets('clamps value to valid range', (tester) async {
         await tester.pumpWidget(
-          buildSlider(value: 2, min: 0, max: 1),
+          buildSlider(value: 2),
         );
 
         final slider = tester.widget<Slider>(find.byType(Slider));

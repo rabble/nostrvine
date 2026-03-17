@@ -21,7 +21,7 @@ class DivineSlider extends StatelessWidget {
     this.thumbHeight = 32,
     this.activeColor = VineTheme.primary,
     this.inactiveColor = VineTheme.onSurfaceDisabled,
-    this.thumbColor = Colors.white,
+    this.thumbColor = VineTheme.onSurface,
     super.key,
   });
 
@@ -144,8 +144,7 @@ class DivineSliderTrackShape extends SliderTrackShape {
     canvas.drawRRect(
       inactiveRect,
       Paint()
-        ..color =
-            sliderTheme.inactiveTrackColor ?? inactiveRect.tlRadius.x as Color,
+        ..color = sliderTheme.inactiveTrackColor ?? VineTheme.onSurfaceDisabled,
     );
 
     // Active track (left side) — rounded left, flat right
@@ -200,9 +199,8 @@ class DivineSliderThumbShape extends SliderComponentShape {
     required Size sizeWithOverflow,
   }) {
     final canvas = context.canvas;
-    final adjustedCenter = Offset(center.dx + width / 2, center.dy);
     final rect = Rect.fromCenter(
-      center: adjustedCenter,
+      center: center,
       width: width,
       height: height,
     );
