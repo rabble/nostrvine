@@ -2,8 +2,42 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-class VideoEditorAudioAdjustSheet extends StatelessWidget {
-  const VideoEditorAudioAdjustSheet({super.key});
+/// Result returned when the user confirms the audio adjust sheet.
+typedef AudioAdjustResult = ({double recordedVolume, double customVolume});
+
+class VideoEditorAudioAdjustSheet extends StatefulWidget {
+  const VideoEditorAudioAdjustSheet({
+    super.key,
+    this.initialRecordedVolume = 1,
+    this.initialCustomVolume = 1,
+  });
+
+  final double initialRecordedVolume;
+  final double initialCustomVolume;
+
+  @override
+  State<VideoEditorAudioAdjustSheet> createState() =>
+      _VideoEditorAudioAdjustSheetState();
+}
+
+class _VideoEditorAudioAdjustSheetState
+    extends State<VideoEditorAudioAdjustSheet> {
+  late final ValueNotifier<double> _recordedVolume;
+  late final ValueNotifier<double> _customVolume;
+
+  @override
+  void initState() {
+    super.initState();
+    _recordedVolume = ValueNotifier(widget.initialRecordedVolume);
+    _customVolume = ValueNotifier(widget.initialCustomVolume);
+  }
+
+  @override
+  void dispose() {
+    _recordedVolume.dispose();
+    _customVolume.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +54,7 @@ class VideoEditorAudioAdjustSheet extends StatelessWidget {
                 icon: .x,
                 type: .secondary,
                 size: .small,
-                onPressed: context.pop,
+                onPressed: () => context.pop<AudioAdjustResult>(),
               ),
               Flexible(
                 child: Text(
@@ -31,7 +65,12 @@ class VideoEditorAudioAdjustSheet extends StatelessWidget {
               DivineIconButton(
                 icon: .check,
                 size: .small,
-                onPressed: () {},
+                onPressed: () => context.pop(
+                  (
+                    recordedVolume: _recordedVolume.value,
+                    customVolume: _customVolume.value,
+                  ),
+                ),
               ),
             ],
           ),
@@ -42,11 +81,15 @@ class VideoEditorAudioAdjustSheet extends StatelessWidget {
           color: VineTheme.outlinedDisabled,
         ),
         const SizedBox(height: 16),
-
-        const _ControlBar(label: 'Recorded audio', value: '95%'),
+        _ControlBar(
+          label: 'Recorded audio',
+          volume: _recordedVolume,
+        ),
         const SizedBox(height: 24),
-
-        const _ControlBar(label: 'Custom audio', value: '95%'),
+        _ControlBar(
+          label: 'Custom audio',
+          volume: _customVolume,
+        ),
         const SizedBox(height: 16),
       ],
     );
@@ -54,10 +97,13 @@ class VideoEditorAudioAdjustSheet extends StatelessWidget {
 }
 
 class _ControlBar extends StatelessWidget {
-  const _ControlBar({required this.label, required this.value});
+  const _ControlBar({
+    required this.label,
+    required this.volume,
+  });
 
   final String label;
-  final String value;
+  final ValueNotifier<double> volume;
 
   @override
   Widget build(BuildContext context) {
@@ -68,9 +114,19 @@ class _ControlBar extends StatelessWidget {
         crossAxisAlignment: .stretch,
         spacing: 8,
         children: [
-          _VolumeRow(label: label, value: value),
-          const Placeholder(
-            fallbackHeight: 40,
+          ValueListenableBuilder<double>(
+            valueListenable: volume,
+            builder: (_, value, _) => _VolumeRow(
+              label: label,
+              value: '${(value * 100).round()}%',
+            ),
+          ),
+          ValueListenableBuilder<double>(
+            valueListenable: volume,
+            builder: (_, value, _) => DivineSlider(
+              value: value,
+              onChanged: (v) => volume.value = v,
+            ),
           ),
         ],
       ),

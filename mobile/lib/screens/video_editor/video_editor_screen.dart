@@ -171,13 +171,15 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   /// Opens the audio volume adjust sheet.
   Future<void> _adjustVolume() async {
-    await VineBottomSheet.show<void>(
+    final result = await VineBottomSheet.show<AudioAdjustResult>(
       context: context,
       expanded: false,
       scrollable: false,
       isScrollControlled: true,
       body: const VideoEditorAudioAdjustSheet(),
     );
+    if (result == null) return;
+    // TODO: apply result.recordedVolume and result.customVolume
   }
 
   /// Opens the text editor screen to add or edit a text layer.
