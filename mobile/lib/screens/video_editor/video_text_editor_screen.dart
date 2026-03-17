@@ -79,7 +79,7 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
     );
   }
 
-  /// Converts font scale (0.5-4.0) to normalized value (0.0-1.0).
+  /// Converts font scale to normalized value (0.0-1.0).
   double _normalizeFontScale(double fontScale) {
     return ((fontScale - VideoEditorConstants.minFontScale) /
             (VideoEditorConstants.maxFontScale -
