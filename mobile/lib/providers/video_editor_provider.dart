@@ -406,19 +406,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(isPlaying: newState);
   }
 
-  /// Toggle audio mute state.
-  ///
-  /// Mutes or unmutes audio playback for the video editor.
-  void toggleMute() {
-    final newState = !state.isMuted;
-    Log.debug(
-      newState ? '🔇 Muted audio' : '🔊 Unmuted audio',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-    state = state.copyWith(isMuted: newState);
-  }
-
   /// Update the current playback position.
   ///
   /// In editing mode, uses absolute position within the clip.
@@ -686,6 +673,24 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(clearSelectedSound: true);
     invalidateFinalRenderedClip();
     triggerAutosave();
+  }
+
+  /// Update the volume level for the original video audio (0.0 to 1.0).
+  void setOriginalAudioVolume(double volume) {
+    if (volume != state.originalAudioVolume) {
+      state = state.copyWith(originalAudioVolume: volume.clamp(0.0, 1.0));
+      invalidateFinalRenderedClip();
+      triggerAutosave();
+    }
+  }
+
+  /// Update the volume level for the custom/added audio track (0.0 to 1.0).
+  void setCustomAudioVolume(double volume) {
+    if (volume != state.customAudioVolume) {
+      state = state.copyWith(customAudioVolume: volume.clamp(0.0, 1.0));
+      invalidateFinalRenderedClip();
+      triggerAutosave();
+    }
   }
 
   /// Update the start offset of the currently selected sound.
@@ -1065,8 +1070,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
     final result = await VideoEditorRenderService.renderVideoToClip(
       clips: _clips,
-      enableAudio: !state.isMuted,
       parameters: renderParameters,
+      originalAudioVolume: state.originalAudioVolume,
+      customAudioVolume: state.customAudioVolume,
     );
 
     if (result == null) {

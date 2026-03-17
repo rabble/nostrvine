@@ -80,7 +80,6 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
           isPlaying: state.isPlaying,
           isEditing: state.isEditing,
           isReordering: state.isReordering,
-          isMuted: state.isMuted,
           currentClipIndex: state.currentClipIndex,
           splitPosition: state.splitPosition,
         ),

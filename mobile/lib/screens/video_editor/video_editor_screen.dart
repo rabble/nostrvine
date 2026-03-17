@@ -16,6 +16,7 @@ import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.da
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
@@ -179,7 +180,10 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       body: const VideoEditorAudioAdjustSheet(),
     );
     if (result == null) return;
-    // TODO: apply result.recordedVolume and result.customVolume
+
+    ref.read(videoEditorProvider.notifier)
+      ..setOriginalAudioVolume(result.recordedVolume)
+      ..setCustomAudioVolume(result.customVolume);
   }
 
   /// Opens the text editor screen to add or edit a text layer.
