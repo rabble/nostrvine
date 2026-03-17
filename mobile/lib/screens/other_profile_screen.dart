@@ -135,6 +135,11 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   void initState() {
     super.initState();
     FeedPerformanceTracker().startFeedLoad('profile');
+    // Refresh stale profile data on navigation (fixes #2163)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(profileFeedProvider(widget.pubkey).notifier).refreshIfStale();
+    });
   }
 
   @override
