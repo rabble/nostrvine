@@ -2979,7 +2979,6 @@ void main() {
           };
 
           final trackingPool = TestablePlayerPool(
-            maxPlayers: 5,
             mockPlayerFactory: (url) {
               final setup = createMockPlayerSetup();
               when(
@@ -3087,7 +3086,6 @@ void main() {
           // Use isBuffering: true so the video stays in loading state
           // long enough for the watchdog to fire.
           final slowPool = TestablePlayerPool(
-            maxPlayers: 5,
             mockPlayerFactory: (url) {
               final setup = createMockPlayerSetup(isBuffering: true);
               return createMockPooledPlayerFromSetup(setup);
@@ -3125,7 +3123,6 @@ void main() {
 
           final setupByUrl = <String, MockPlayerSetup>{};
           final slowPool = TestablePlayerPool(
-            maxPlayers: 5,
             mockPlayerFactory: (url) {
               final setup = createMockPlayerSetup(isBuffering: true);
               setupByUrl[url] = setup;

@@ -26,7 +26,8 @@ enum LoadState {
 String? _extractCanonicalDivineBlobHash(String url) {
   try {
     final uri = Uri.parse(url);
-    if (uri.host.toLowerCase() != 'media.divine.video') return null;
+    // Match any Divine subdomain (media.divine.video, cdn.divine.video, etc.)
+    if (!uri.host.toLowerCase().contains('divine.video')) return null;
 
     final segments = uri.pathSegments;
     if (segments.isEmpty) return null;
