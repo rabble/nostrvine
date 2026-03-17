@@ -1,8 +1,13 @@
 """Seed script for E2E testing: generates and publishes test video events.
 
-Creates one H.264 MP4 via ffmpeg, uploads it to a local blossom server,
-then publishes 100 kind-34236 Nostr events to a local relay with a
-realistic distribution of authors, hashtags, and timestamps.
+Generates NUM_UNIQUE_VIDEOS distinct high-bitrate MP4s via ffmpeg (each
+with a different noise seed so SHA-256 hashes differ), uploads them to a
+local blossom server, transcodes 720p + 480p .ts variants into MinIO,
+then publishes NUM_VIDEOS kind-34236 Nostr events to a local relay with
+a realistic distribution of authors, hashtags, and timestamps.
+
+The multiple unique videos prevent HTTP cache from masking download time
+differences in performance tests.
 """
 
 import hashlib
@@ -25,7 +30,15 @@ import websockets.sync.client
 # ---------------------------------------------------------------------------
 RELAY_URL = os.environ.get("RELAY_URL", "ws://funnelcake-relay:7777")
 BLOSSOM_URL = os.environ.get("BLOSSOM_URL", "http://blossom:3000")
+# Public URL used in Nostr events — the emulator reaches the host via 10.0.2.2
+BLOSSOM_PUBLIC_URL = os.environ.get("BLOSSOM_PUBLIC_URL", "http://10.0.2.2:43003")
 NUM_VIDEOS = int(os.environ.get("NUM_VIDEOS", "100"))
+NUM_UNIQUE_VIDEOS = int(os.environ.get("NUM_UNIQUE_VIDEOS", "10"))
+
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", "http://minio:9000")
+MINIO_BUCKET = os.environ.get("MINIO_BUCKET", "divine-blossom-local")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "minioadmin")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
 
 SEED_PHRASE = "divine-e2e-seed-phrase-2026"
 NUM_AUTHORS = 20
@@ -105,20 +118,33 @@ def sign_event(event: dict, privkey_bytes: bytes) -> dict:
 # ---------------------------------------------------------------------------
 # Video generation via ffmpeg
 # ---------------------------------------------------------------------------
-def generate_test_video(path: str) -> None:
-    """Generate a 6-second 720x1280 H.264 MP4 with audio via ffmpeg."""
+def generate_test_video(path: str, seed_index: int = 0) -> None:
+    """Generate a 6-second 1080x1920 H.264 High profile MP4 at ~15 Mbps.
+
+    Each seed_index produces different random noise (via geq random seed)
+    so the resulting file has a unique SHA-256 hash. The video is large
+    enough to demonstrate bandwidth starvation when the client doesn't
+    use transcoded variants.
+    """
+    # Different random seed per video for unique content
+    noise_seed = seed_index + 1
+    freq = 220 + seed_index * 40  # different tone per video
+
     cmd = [
         "ffmpeg", "-y",
-        # Video: color bars / gradient background
+        # Video: noise pattern (incompressible, forces target bitrate)
         "-f", "lavfi", "-i",
-        "color=c=0x1a1a2e:s=720x1280:d=6:r=30,format=yuv420p,"
-        "drawtext=text='diVine E2E':fontsize=60:fontcolor=white:"
-        "x=(w-text_w)/2:y=(h-text_h)/2",
-        # Audio: sine tone
-        "-f", "lavfi", "-i", "sine=frequency=440:duration=6",
-        # Encoding
-        "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-        "-c:a", "aac", "-b:a", "64k",
+        f"nullsrc=s=1080x1920:d=6:r=30,"
+        f"geq='random({noise_seed})*255:128:128',"
+        f"format=yuv420p,"
+        f"drawtext=text='diVine E2E {seed_index}':fontsize=80:"
+        f"fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2",
+        # Audio: unique sine frequency
+        "-f", "lavfi", "-i", f"sine=frequency={freq}:duration=6",
+        # Encoding: H.264 High profile at 15 Mbps
+        "-c:v", "libx264", "-profile:v", "high", "-level", "4.2",
+        "-b:v", "15M", "-maxrate", "15M", "-bufsize", "30M",
+        "-c:a", "aac", "-b:a", "128k",
         "-movflags", "+faststart",
         "-pix_fmt", "yuv420p",
         path,
@@ -128,7 +154,7 @@ def generate_test_video(path: str) -> None:
         print(f"ffmpeg stderr:\n{result.stderr}", file=sys.stderr)
         sys.exit(1)
     size = os.path.getsize(path)
-    print(f"Generated test video: {path} ({size} bytes)")
+    print(f"Generated test video {seed_index}: {path} ({size:,} bytes, ~15 Mbps)")
 
 
 def extract_thumbnail(video_path: str, thumb_path: str) -> None:
@@ -146,6 +172,86 @@ def extract_thumbnail(video_path: str, thumb_path: str) -> None:
         sys.exit(1)
     size = os.path.getsize(thumb_path)
     print(f"Generated thumbnail: {thumb_path} ({size} bytes)")
+
+
+def generate_transcoded_variants(
+    source_path: str,
+    out_720p: str,
+    out_480p: str,
+) -> None:
+    """Transcode the source video into 720p and 480p MPEG-TS variants.
+
+    These match the layout divine-blossom serves at /{hash}/hls/stream_*.ts.
+    """
+    for label, outpath, scale, vbitrate, abitrate in [
+        ("720p", out_720p, "1280:720", "2500k", "128k"),
+        ("480p", out_480p, "854:480", "1000k", "96k"),
+    ]:
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", source_path,
+            "-vf", f"scale={scale}",
+            "-c:v", "libx264", "-profile:v", "main", "-level", "3.1",
+            "-b:v", vbitrate, "-maxrate", vbitrate,
+            "-bufsize", str(int(vbitrate.replace("k", "")) * 2) + "k",
+            "-c:a", "aac", "-b:a", abitrate,
+            "-f", "mpegts",
+            "-pix_fmt", "yuv420p",
+            outpath,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"ffmpeg {label} stderr:\n{result.stderr}", file=sys.stderr)
+            sys.exit(1)
+        size = os.path.getsize(outpath)
+        print(f"  Transcoded {label}: {outpath} ({size:,} bytes)")
+
+
+def upload_variants_to_minio(
+    sha256_hash: str,
+    path_720p: str,
+    path_480p: str,
+) -> None:
+    """Upload transcoded .ts variants to MinIO at the expected key paths.
+
+    Keys: {sha256_hash}/hls/stream_720p.ts and stream_480p.ts.
+    Fails loudly if boto3 or MinIO is unavailable — silent fallback would
+    hide a broken test setup.
+    """
+    import boto3
+    from botocore.exceptions import ClientError
+
+    try:
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=MINIO_ENDPOINT,
+            aws_access_key_id=MINIO_ACCESS_KEY,
+            aws_secret_access_key=MINIO_SECRET_KEY,
+        )
+
+        # Ensure bucket exists
+        try:
+            s3.head_bucket(Bucket=MINIO_BUCKET)
+        except ClientError:
+            s3.create_bucket(Bucket=MINIO_BUCKET)
+            print(f"  Created MinIO bucket: {MINIO_BUCKET}")
+
+        for label, path, key_suffix in [
+            ("720p", path_720p, "hls/stream_720p.ts"),
+            ("480p", path_480p, "hls/stream_480p.ts"),
+        ]:
+            key = f"{sha256_hash}/{key_suffix}"
+            s3.upload_file(
+                path,
+                MINIO_BUCKET,
+                key,
+                ExtraArgs={"ContentType": "video/mp2t"},
+            )
+            print(f"  Uploaded {label} to MinIO: s3://{MINIO_BUCKET}/{key}")
+
+    except Exception as e:
+        print(f"  MinIO variant upload failed: {type(e).__name__}: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +307,7 @@ def upload_to_blossom(
             "Authorization": auth,
         },
     )
-    with urlopen(req, timeout=30) as resp:
+    with urlopen(req, timeout=60) as resp:
         body = json.loads(resp.read().decode())
 
     print(f"Uploaded to blossom: url={body['url']} sha256={body['sha256']}")
@@ -422,8 +528,59 @@ def check_already_seeded() -> bool:
     return False
 
 
+def generate_and_upload_video(vid_idx: int) -> dict:
+    """Generate one unique video, upload raw + variants, return asset info.
+
+    Returns dict with keys: url, sha256, thumb_url.
+    """
+    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
+        video_path = tmp.name
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
+        thumb_path = tmp.name
+    with tempfile.NamedTemporaryFile(suffix=".ts", delete=False) as tmp:
+        path_720p = tmp.name
+    with tempfile.NamedTemporaryFile(suffix=".ts", delete=False) as tmp:
+        path_480p = tmp.name
+
+    try:
+        generate_test_video(video_path, seed_index=vid_idx)
+        extract_thumbnail(video_path, thumb_path)
+
+        print(f"Uploading video {vid_idx} to blossom...")
+        blossom_resp = upload_to_blossom(video_path, "video/mp4")
+        print(f"Uploading thumbnail {vid_idx} to blossom...")
+        thumb_resp = upload_to_blossom(thumb_path, "image/jpeg")
+
+        # Transcode and upload variants to MinIO
+        print(f"Transcoding variants for video {vid_idx}...")
+        generate_transcoded_variants(video_path, path_720p, path_480p)
+        print(f"Uploading variants {vid_idx} to MinIO...")
+        upload_variants_to_minio(blossom_resp["sha256"], path_720p, path_480p)
+
+        video_sha256 = blossom_resp["sha256"]
+        thumb_sha256 = thumb_resp["sha256"]
+        # Rewrite URLs to the emulator-accessible address (10.0.2.2)
+        video_url = f"{BLOSSOM_PUBLIC_URL}/{video_sha256}"
+        thumb_url = f"{BLOSSOM_PUBLIC_URL}/{thumb_sha256}"
+
+        return {
+            "url": video_url,
+            "sha256": video_sha256,
+            "thumb_url": thumb_url,
+        }
+    finally:
+        for p in (video_path, thumb_path, path_720p, path_480p):
+            try:
+                os.unlink(p)
+            except FileNotFoundError:
+                pass
+
+
 def main() -> None:
-    print(f"Config: RELAY_URL={RELAY_URL} BLOSSOM_URL={BLOSSOM_URL} NUM_VIDEOS={NUM_VIDEOS}")
+    print(
+        f"Config: RELAY_URL={RELAY_URL} BLOSSOM_URL={BLOSSOM_URL} "
+        f"NUM_VIDEOS={NUM_VIDEOS} NUM_UNIQUE_VIDEOS={NUM_UNIQUE_VIDEOS}"
+    )
 
     wait_for_services()
 
@@ -438,28 +595,20 @@ def main() -> None:
         label = "popular" if i < NUM_POPULAR else "long-tail"
         print(f"  Author {i} ({label}): {pubkey}")
 
-    # 2. Generate and upload video + thumbnail
-    print("\nGenerating test video...")
-    with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
-        video_path = tmp.name
-    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
-        thumb_path = tmp.name
-    try:
-        generate_test_video(video_path)
-        extract_thumbnail(video_path, thumb_path)
-        print("Uploading video to blossom...")
-        blossom_resp = upload_to_blossom(video_path, "video/mp4")
-        print("Uploading thumbnail to blossom...")
-        thumb_resp = upload_to_blossom(thumb_path, "image/jpeg")
-    finally:
-        os.unlink(video_path)
-        os.unlink(thumb_path)
+    # 2. Generate and upload unique videos + thumbnails + variants
+    # Each video has a different noise seed so SHA-256 hashes differ,
+    # preventing HTTP cache from masking download time in perf tests.
+    print(f"\nGenerating {NUM_UNIQUE_VIDEOS} unique test videos (1080x1920, ~15 Mbps each)...")
+    video_assets: list[dict] = []
 
-    video_url = blossom_resp["url"]
-    video_sha256 = blossom_resp["sha256"]
-    thumb_url = thumb_resp["url"]
+    for vid_idx in range(NUM_UNIQUE_VIDEOS):
+        asset = generate_and_upload_video(vid_idx)
+        video_assets.append(asset)
+        print(f"  Video {vid_idx}: {asset['url']}")
 
-    # 3. Build events
+    print(f"All {NUM_UNIQUE_VIDEOS} videos uploaded successfully")
+
+    # 3. Build events (round-robin across unique videos)
     print(f"\nBuilding {NUM_VIDEOS} events...")
     rng = random.Random(42)
     author_assignments = build_author_video_map(rng)
@@ -471,13 +620,16 @@ def main() -> None:
         timestamp = generate_timestamp(rng)
         hashtags = pick_hashtags(rng)
 
+        # Distribute unique videos round-robin across events
+        asset = video_assets[i % NUM_UNIQUE_VIDEOS]
+
         event = build_event(
             index=i,
             author_privkey=privkey,
             author_pubkey=pubkey,
-            blossom_url=video_url,
-            blossom_sha256=video_sha256,
-            thumb_url=thumb_url,
+            blossom_url=asset["url"],
+            blossom_sha256=asset["sha256"],
+            thumb_url=asset["thumb_url"],
             timestamp=timestamp,
             hashtags=hashtags,
             rng=rng,
