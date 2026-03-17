@@ -120,11 +120,21 @@ void main() {
         );
       });
 
-      test('returns hours for less than 24 hours ago', () {
-        final ts = unixSecondsAgo(const Duration(hours: 12));
+      test('returns hours for same calendar day', () {
+        final now = DateTime.now();
+        if (now.hour < 1) return; // skip: within first hour of the day
+        // Explicitly stay on today to avoid cross-day edge cases
+        final sameDay = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          now.hour - 1,
+          now.minute,
+        );
+        final ts = sameDay.millisecondsSinceEpoch ~/ 1000;
         expect(
           TimeFormatter.formatConversationTimestamp(ts),
-          equals('12h'),
+          equals('1h'),
         );
       });
 

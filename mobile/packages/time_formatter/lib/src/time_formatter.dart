@@ -53,7 +53,7 @@ abstract class TimeFormatter {
   ///
   /// - Under 1 minute: "now"
   /// - Under 1 hour: relative minutes — "1m", "5m", "59m"
-  /// - Under 24 hours: relative hours — "1h", "3h", "23h"
+  /// - Same calendar day: relative hours — "1h", "3h", "23h"
   /// - Yesterday: "Yesterday"
   /// - 2–6 days ago: day of week — "Monday", "Tuesday"
   /// - 7–364 days (same year): "Mar 3", "Jan 15"
@@ -65,12 +65,12 @@ abstract class TimeFormatter {
 
     if (diff.inMinutes < 1) return 'now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
-    if (diff.inHours < 24) return '${diff.inHours}h';
 
     final today = DateTime(now.year, now.month, now.day);
     final messageDay = DateTime(date.year, date.month, date.day);
     final dayDiff = today.difference(messageDay).inDays;
 
+    if (dayDiff == 0) return '${diff.inHours}h';
     if (dayDiff == 1) return 'Yesterday';
     if (dayDiff >= 2 && dayDiff <= 6) return DateFormat.EEEE().format(date);
     if (date.year == now.year) return DateFormat.MMMd().format(date);
