@@ -18,6 +18,7 @@ import 'package:openvine/models/divine_video_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_adjust_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
@@ -168,6 +169,17 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     }
   }
 
+  /// Opens the audio volume adjust sheet.
+  Future<void> _adjustVolume() async {
+    await VineBottomSheet.show<void>(
+      context: context,
+      expanded: false,
+      scrollable: false,
+      isScrollControlled: true,
+      body: const VideoEditorAudioAdjustSheet(),
+    );
+  }
+
   /// Opens the text editor screen to add or edit a text layer.
   ///
   /// If [layer] is provided, the editor is initialized with its values for
@@ -229,6 +241,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
             originalClipAspectRatio: _clip.originalAspectRatio,
             bodySizeNotifier: _bodySizeNotifier,
             onAddStickers: _addStickers,
+            onAdjustVolume: _adjustVolume,
             onAddEditTextLayer: ([layer]) {
               final mainBloc = context.read<VideoEditorMainBloc>();
               final textBloc = context.read<VideoEditorTextBloc>();
