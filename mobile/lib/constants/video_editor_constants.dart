@@ -56,7 +56,6 @@ class VideoEditorConstants {
     GoogleFonts.lato,
     GoogleFonts.poppins,
     GoogleFonts.robotoMono,
-    GoogleFonts.inter,
     GoogleFonts.oswald,
     GoogleFonts.raleway,
     GoogleFonts.ubuntu,

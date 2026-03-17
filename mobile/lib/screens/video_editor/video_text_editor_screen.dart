@@ -236,104 +236,72 @@ class _TextEditor extends StatelessWidget {
       ),
     );
 
-    return _TextEditorFocusWrapper(
-      editorKey: editorKey,
-      child: MediaQuery.removeViewPadding(
-        context: context,
-        removeBottom: true,
-        child: TextEditor(
-          key: editorKey,
-          layer: layer,
-          theme: Theme.of(context),
-          heroTag: layer?.id,
-          callbacks: ProImageEditorCallbacks(
-            textEditorCallbacks: TextEditorCallbacks(
-              onChanged: (value) {
-                context.read<VideoEditorTextBloc>().add(
-                  VideoEditorTextContentChanged(value),
-                );
-              },
-              onBackgroundModeChanged: (value) {
-                context.read<VideoEditorTextBloc>().add(
-                  VideoEditorTextBackgroundStyleChanged(value),
-                );
-              },
-              onTextAlignChanged: (value) {
-                context.read<VideoEditorTextBloc>().add(
-                  VideoEditorTextAlignmentChanged(value),
-                );
-              },
-            ),
+    return MediaQuery.removeViewPadding(
+      context: context,
+      removeBottom: true,
+      child: TextEditor(
+        key: editorKey,
+        layer: layer,
+        theme: Theme.of(context),
+        heroTag: layer?.id,
+        callbacks: ProImageEditorCallbacks(
+          textEditorCallbacks: TextEditorCallbacks(
+            onChanged: (value) {
+              context.read<VideoEditorTextBloc>().add(
+                VideoEditorTextContentChanged(value),
+              );
+            },
+            onBackgroundModeChanged: (value) {
+              context.read<VideoEditorTextBloc>().add(
+                VideoEditorTextBackgroundStyleChanged(value),
+              );
+            },
+            onTextAlignChanged: (value) {
+              context.read<VideoEditorTextBloc>().add(
+                VideoEditorTextAlignmentChanged(value),
+              );
+            },
           ),
-          configs: ProImageEditorConfigs(
-            i18n: const I18n(
-              textEditor: I18nTextEditor(inputHintText: ''),
+        ),
+        configs: ProImageEditorConfigs(
+          i18n: const I18n(
+            textEditor: I18nTextEditor(inputHintText: ''),
+          ),
+          textEditor: TextEditorConfigs(
+            style: const TextEditorStyle(
+              background: Colors.transparent,
+              inputCursorColor: VineTheme.whiteText,
+              inputTextFieldPadding: .only(
+                top: 96,
+                left: 16,
+                right: 48,
+              ),
             ),
-            textEditor: TextEditorConfigs(
-              style: const TextEditorStyle(
-                background: Colors.transparent,
-                inputCursorColor: VineTheme.whiteText,
-                inputTextFieldPadding: .only(
-                  top: 96,
-                  left: 16,
-                  right: 48,
+            resizeToAvoidBottomInset: false,
+            minFontScale: VideoEditorConstants.minFontScale,
+            maxFontScale: VideoEditorConstants.maxFontScale,
+            initFontScale: _getFontScale(fontSize),
+            initialBackgroundColorMode: backgroundStyle,
+            initialTextAlign: alignment,
+            initialPrimaryColor: color,
+            defaultTextStyle:
+                VideoEditorConstants.textFonts[selectedFontIndex](),
+            inputTextFieldAlign: _getInputAlignment(alignment),
+            enableAutoOverflow: false,
+            widgets: TextEditorWidgets(
+              appBar: (_, _) => null,
+              bottomBar: (_, _) => null,
+              colorPicker: (_, _, _, _) => null,
+              bodyItemsOverlay: (editor, rebuildStream) => [
+                ReactiveWidget(
+                  stream: rebuildStream,
+                  builder: (_) => const VideoEditorTextOverlayControls(),
                 ),
-              ),
-              resizeToAvoidBottomInset: false,
-              minFontScale: VideoEditorConstants.minFontScale,
-              maxFontScale: VideoEditorConstants.maxFontScale,
-              initFontScale: _getFontScale(fontSize),
-              initialBackgroundColorMode: backgroundStyle,
-              initialTextAlign: alignment,
-              initialPrimaryColor: color,
-              defaultTextStyle:
-                  VideoEditorConstants.textFonts[selectedFontIndex](),
-              inputTextFieldAlign: _getInputAlignment(alignment),
-              enableAutoOverflow: false,
-              widgets: TextEditorWidgets(
-                appBar: (_, _) => null,
-                bottomBar: (_, _) => null,
-                colorPicker: (_, _, _, _) => null,
-                bodyItemsOverlay: (editor, rebuildStream) => [
-                  ReactiveWidget(
-                    stream: rebuildStream,
-                    builder: (_) => const VideoEditorTextOverlayControls(),
-                  ),
-                ],
-              ),
+              ],
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Wraps the [TextEditor] with focus-request logic.
-///
-/// Only rebuilds when [text.isEmpty] changes (empty ↔ non-empty),
-/// not on every keystroke.
-class _TextEditorFocusWrapper extends StatelessWidget {
-  const _TextEditorFocusWrapper({
-    required this.editorKey,
-    required this.child,
-  });
-
-  final GlobalKey<TextEditorState> editorKey;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final isEmpty = context.select(
-      (VideoEditorTextBloc bloc) => bloc.state.text.isEmpty,
-    );
-
-    return GestureDetector(
-      behavior: .opaque,
-      onTap: isEmpty
-          ? () => editorKey.currentState?.focusNode.requestFocus()
-          : null,
-      child: IgnorePointer(ignoring: false, child: child),
     );
   }
 }
