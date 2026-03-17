@@ -1,7 +1,6 @@
 // ABOUTME: Tests for isFromDivineServer detection logic
 // ABOUTME: Verifies all Divine subdomains are recognized as first-party
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:nostr_sdk/event.dart';
@@ -146,7 +145,7 @@ void main() {
       expect(video.getOptimalVideoUrlForPlatform(), url);
     });
 
-    test('prefers direct MP4 for bare media.divine.video blob URLs', () {
+    test('uses 720p variant for bare media.divine.video blob URLs', () {
       const hash =
           '191679cbbeea3e4e3539d46b558e66fbadb673733af1ada0161a6e8b1cf61bea';
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
@@ -155,7 +154,7 @@ void main() {
       expect(video.shouldPreferHlsPlayback, isFalse);
       expect(
         video.getOptimalVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash'),
+        equals('https://media.divine.video/$hash/720p'),
       );
     });
 
@@ -175,13 +174,13 @@ void main() {
     const hash =
         'cfb5cf3415ec4ad3f45eff478570d898ff9a660ecea63d0c058892b22468a90d';
 
-    test('allow direct-file caching for bare hash paths', () {
+    test('caches the variant URL for bare hash paths', () {
       final video = _createVideoWithUrl('https://media.divine.video/$hash');
 
       expect(video.shouldSkipFileCaching, isFalse);
       expect(
         video.getCacheableVideoUrlForPlatform(),
-        equals('https://media.divine.video/$hash'),
+        equals('https://media.divine.video/$hash/720p'),
       );
     });
 
@@ -195,23 +194,20 @@ void main() {
     });
 
     test(
-      'do not force HLS for bare hash paths on cdn.divine.video',
+      'uses 720p variant for bare hash paths on cdn.divine.video',
       () {
         final video = _createVideoWithUrl('https://cdn.divine.video/$hash');
-        final expectedPlaybackUrl =
-            kIsWeb || defaultTargetPlatform != TargetPlatform.android
-            ? 'https://cdn.divine.video/$hash'
-            : 'https://media.divine.video/$hash/720p';
 
         expect(video.hasBareDivineHashPath, isFalse);
         expect(video.shouldPreferHlsPlayback, isFalse);
+        // All Divine servers resolve to media.divine.video variant URLs
         expect(
           video.getOptimalVideoUrlForPlatform(),
-          equals(expectedPlaybackUrl),
+          equals('https://media.divine.video/$hash/720p'),
         );
         expect(
           video.getCacheableVideoUrlForPlatform(),
-          equals('https://cdn.divine.video/$hash'),
+          equals('https://media.divine.video/$hash/720p'),
         );
       },
     );

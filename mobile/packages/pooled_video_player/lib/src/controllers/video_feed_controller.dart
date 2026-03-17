@@ -40,14 +40,6 @@ String? _extractCanonicalDivineBlobHash(String url) {
   }
 }
 
-bool _isCanonicalDivineBlobRawUrl(String url) {
-  final hash = _extractCanonicalDivineBlobHash(url);
-  if (hash == null) return false;
-
-  final uri = Uri.parse(url);
-  return uri.pathSegments.length == 1;
-}
-
 String _canonicalDivineBlobHlsUrl(String hash) =>
     'https://media.divine.video/$hash/hls/master.m3u8';
 
@@ -282,14 +274,14 @@ class VideoFeedController extends ChangeNotifier {
   ) {
     final resolvedSource = mediaSourceResolver?.call(video) ?? video.url;
 
-    if (_isCanonicalDivineBlobRawUrl(resolvedSource)) {
-      final hash = _extractCanonicalDivineBlobHash(resolvedSource);
-      if (hash != null) {
-        return (
-          primary: resolvedSource,
-          fallback: _canonicalDivineBlobHlsUrl(hash),
-        );
-      }
+    // For any Divine media URL (raw blob or variant like /720p, /480p),
+    // provide HLS as fallback for codec errors.
+    final hash = _extractCanonicalDivineBlobHash(resolvedSource);
+    if (hash != null) {
+      return (
+        primary: resolvedSource,
+        fallback: _canonicalDivineBlobHlsUrl(hash),
+      );
     }
 
     return (primary: resolvedSource, fallback: null);
