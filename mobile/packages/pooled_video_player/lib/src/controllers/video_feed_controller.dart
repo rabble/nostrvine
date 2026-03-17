@@ -140,7 +140,9 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, Stopwatch> _loadStopwatches = {};
   final Map<int, String> _openedSources = {};
   final Set<int> _slowLoadIndices = {};
+  final Set<int> _fallbackAttempted = {};
   int _preloadGeneration = 0;
+  Timer? _stuckPlaybackTimer;
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -814,6 +816,70 @@ class VideoFeedController extends ChangeNotifier {
     // (loop behavior) or was preloaded (already at zero from _onBufferReady).
     unawaited(_resume(index, player));
     _startPositionTimer(index);
+    _startStuckPlaybackWatchdog(index);
+  }
+
+  /// Detects stuck playback where the variant opens and reports "playing"
+  /// but position never advances (broken transcode). If position stays at
+  /// 0 for 5 seconds after playback starts, retries with the HLS fallback.
+  void _startStuckPlaybackWatchdog(int index) {
+    _stuckPlaybackTimer?.cancel();
+
+    // Only watch the current video, and only if a fallback exists.
+    if (index != _currentIndex) return;
+    if (index < 0 || index >= _videos.length) return;
+    final video = _videos[index];
+    final sources = _resolvePlaybackSources(video);
+    if (sources.fallback == null) return;
+    // Don't retry if we already tried the fallback for this index.
+    if (_fallbackAttempted.contains(index)) return;
+
+    var checksRemaining = 5;
+    _stuckPlaybackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isDisposed || _currentIndex != index || !_isActive || _isPaused) {
+        timer.cancel();
+        return;
+      }
+
+      final player = _loadedPlayers[index]?.player;
+      if (player == null) {
+        timer.cancel();
+        return;
+      }
+
+      // If position has advanced, playback is working — cancel watchdog.
+      if (player.state.position.inMilliseconds > 100) {
+        timer.cancel();
+        return;
+      }
+
+      checksRemaining--;
+      if (checksRemaining <= 0) {
+        timer.cancel();
+        _logDebug(
+          'stuck_playback ${_videoDebugDetails(index)} '
+          'retrying with fallback=${sources.fallback}',
+        );
+        _fallbackAttempted.add(index);
+        unawaited(_retryWithFallback(index, sources.fallback!));
+      }
+    });
+  }
+
+  /// Release the current player and reload with the fallback URL.
+  Future<void> _retryWithFallback(int index, String fallbackUrl) async {
+    if (_isDisposed) return;
+
+    // Release the broken player.
+    _releasePlayer(index);
+
+    // Replace the video's URL with the fallback so _loadPlayer uses it.
+    if (index < _videos.length) {
+      _videos[index] = VideoItem(id: _videos[index].id, url: fallbackUrl);
+    }
+
+    // Reload — this will go through the normal _loadPlayer path.
+    await _loadPlayer(index);
   }
 
   /// Unmute and play, seeking to the beginning only when at the end of the
@@ -867,6 +933,7 @@ class VideoFeedController extends ChangeNotifier {
       unawaited(player.setVolume(0));
       unawaited(player.pause());
     }
+    _stuckPlaybackTimer?.cancel();
     _stopPositionTimer(index);
   }
 
@@ -925,6 +992,8 @@ class VideoFeedController extends ChangeNotifier {
       timer.cancel();
     }
     _loadWatchdogTimers.clear();
+
+    _stuckPlaybackTimer?.cancel();
 
     // Cancel all buffer subscriptions.
     for (final subscription in _bufferSubscriptions.values) {
