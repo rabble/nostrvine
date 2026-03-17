@@ -20,7 +20,6 @@ import 'package:openvine/providers/overlay_visibility_provider.dart'; // For has
 import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
@@ -61,7 +60,7 @@ import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
-VideoControllerParams _videoControllerParamsFor(
+VideoControllerParams videoControllerParamsFor(
   WidgetRef ref,
   VideoEvent video,
 ) {
@@ -300,7 +299,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
   /// Controller params for the current video.
   VideoControllerParams get _controllerParams =>
-      _videoControllerParamsFor(ref, widget.video);
+      videoControllerParamsFor(ref, widget.video);
 
   @override
   void initState() {
@@ -1761,48 +1760,10 @@ class VideoOverlayActions extends ConsumerWidget {
                 duration: const Duration(milliseconds: 200),
                 child: IgnorePointer(
                   ignoring: false, // Action buttons SHOULD receive taps
-                  child: Column(
-                    children: [
-                      // Edit button (only show for owned videos when feature
-                      // is enabled)
-                      // Hide in fullscreen mode since it's shown in AppBar
-                      if (!isFullscreen && !isPreviewMode)
-                        _VideoEditButton(video: video),
-
-                      // CC (subtitles) button
-                      CcActionButton(video: video),
-
-                      const SizedBox(height: 4),
-
-                      // Like button
-                      LikeActionButton(
-                        video: video,
-                        isPreviewMode: isPreviewMode,
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      // Comment button with count
-                      _CommentActionButton(video: video, ref: ref),
-
-                      const SizedBox(height: 4),
-
-                      // Repost button
-                      RepostActionButton(
-                        video: video,
-                        isPreviewMode: isPreviewMode,
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      // Share button
-                      ShareActionButton(video: video),
-
-                      const SizedBox(height: 4),
-
-                      // More button (report, mute, block, etc.)
-                      MoreActionButton(video: video),
-                    ],
+                  child: VideoOverlayActionColumn(
+                    video: video,
+                    isFullscreen: isFullscreen,
+                    isPreviewMode: isPreviewMode,
                   ),
                 ),
               ),
@@ -1833,7 +1794,7 @@ class VideoOverlayActions extends ConsumerWidget {
     // Pause video before showing modal
     bool wasPaused = false;
     try {
-      final controllerParams = _videoControllerParamsFor(ref, video);
+      final controllerParams = videoControllerParamsFor(ref, video);
 
       final controller = ref.read(
         individualVideoControllerProvider(controllerParams),
@@ -1887,21 +1848,18 @@ class VideoOverlayActionColumn extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
+      spacing: 4,
       children: [
-        // Hide edit in fullscreen because those screens already surface it
-        // in their app bar.
         if (!isFullscreen && !isPreviewMode) _VideoEditButton(video: video),
         CcActionButton(video: video),
-        const SizedBox(height: 4),
         LikeActionButton(video: video, isPreviewMode: isPreviewMode),
-        const SizedBox(height: 4),
-        _CommentActionButton(video: video, ref: ref),
-        const SizedBox(height: 4),
+        CommentActionButton(video: video, isPreviewMode: isPreviewMode),
         RepostActionButton(video: video, isPreviewMode: isPreviewMode),
-        const SizedBox(height: 4),
         ShareActionButton(video: video),
-        const SizedBox(height: 4),
-        MoreActionButton(video: video),
+        Padding(
+          padding: const .only(top: 8),
+          child: MoreActionButton(video: video),
+        ),
       ],
     );
   }
@@ -2111,143 +2069,6 @@ class VideoRepostHeader extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-/// Comment action button with count display.
-///
-/// Uses [VideoInteractionsBloc] for the comment count when available,
-/// falls back to showing original Vine comment count.
-class _CommentActionButton extends StatelessWidget {
-  const _CommentActionButton({required this.video, required this.ref});
-
-  final VideoEvent video;
-  final WidgetRef ref;
-
-  @override
-  Widget build(BuildContext context) {
-    // Try to use VideoInteractionsBloc for comment count
-    final interactionsBloc = context.read<VideoInteractionsBloc?>();
-
-    if (interactionsBloc != null) {
-      return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
-        builder: (context, state) {
-          // Use bloc's commentCount if available (fetched from relays),
-          // otherwise fall back to video metadata's originalComments.
-          // Don't add them together - they represent the same data from
-          // different sources.
-          final totalComments =
-              state.commentCount ?? video.originalComments ?? 0;
-          return _buildButton(context, totalComments);
-        },
-      );
-    }
-
-    // Fall back to original comment count
-    return _buildButton(context, video.originalComments ?? 0);
-  }
-
-  Widget _buildButton(BuildContext context, int totalComments) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Semantics(
-          identifier: 'comments_button',
-          container: true,
-          explicitChildNodes: true,
-          button: true,
-          label: 'View comments',
-          child: IconButton(
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            style: IconButton.styleFrom(
-              highlightColor: VineTheme.transparent,
-              splashFactory: NoSplash.splashFactory,
-            ),
-            onPressed: () {
-              Log.info(
-                '💬 Comment button tapped for ${video.id}',
-                name: 'VideoFeedItem',
-                category: LogCategory.ui,
-              );
-              // Pause video before navigating to comments
-              if (video.videoUrl != null) {
-                try {
-                  final controllerParams = _videoControllerParamsFor(
-                    ref,
-                    video,
-                  );
-                  final controller = ref.read(
-                    individualVideoControllerProvider(controllerParams),
-                  );
-                  if (controller.value.isInitialized &&
-                      controller.value.isPlaying) {
-                    safePause(controller, video.id);
-                  }
-                } catch (e) {
-                  final errorStr = e.toString().toLowerCase();
-                  if (!errorStr.contains('no active player') &&
-                      !errorStr.contains('disposed')) {
-                    Log.error(
-                      'Failed to pause video before comments: $e',
-                      name: 'VideoFeedItem',
-                      category: LogCategory.video,
-                    );
-                  }
-                }
-              }
-              final interactionsBloc = context.read<VideoInteractionsBloc?>();
-              CommentsScreen.show(
-                context,
-                video,
-                initialCommentCount: totalComments,
-                onCommentCountChanged: interactionsBloc == null
-                    ? null
-                    : (count) {
-                        if (!interactionsBloc.isClosed) {
-                          interactionsBloc.add(
-                            VideoInteractionsCommentCountUpdated(count),
-                          );
-                        }
-                      },
-              );
-            },
-            icon: DecoratedBox(
-              decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: VineTheme.backgroundColor.withValues(alpha: 0.15),
-                    blurRadius: 15,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: const DivineIcon(
-                icon: DivineIconName.chat,
-                size: 32,
-                color: VineTheme.whiteText,
-              ),
-            ),
-          ),
-        ),
-        if (totalComments > 0) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              StringUtils.formatCompactNumber(totalComments),
-              style: const TextStyle(
-                fontFamily: 'Bricolage Grotesque',
-                color: VineTheme.whiteText,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ],
-      ],
     );
   }
 }

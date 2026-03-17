@@ -943,6 +943,66 @@ final class AudioSharingPreferenceServiceProvider
 String _$audioSharingPreferenceServiceHash() =>
     r'6d09af615c19937bc2842079c368161b513dd323';
 
+/// AI training opt-out preference service. Controls whether the
+/// CAWG training-mining assertion is embedded in C2PA manifests.
+/// keepAlive ensures setting persists across widget rebuilds.
+
+@ProviderFor(aiTrainingPreferenceService)
+const aiTrainingPreferenceServiceProvider =
+    AiTrainingPreferenceServiceProvider._();
+
+/// AI training opt-out preference service. Controls whether the
+/// CAWG training-mining assertion is embedded in C2PA manifests.
+/// keepAlive ensures setting persists across widget rebuilds.
+
+final class AiTrainingPreferenceServiceProvider
+    extends
+        $FunctionalProvider<
+          AiTrainingPreferenceService,
+          AiTrainingPreferenceService,
+          AiTrainingPreferenceService
+        >
+    with $Provider<AiTrainingPreferenceService> {
+  /// AI training opt-out preference service. Controls whether the
+  /// CAWG training-mining assertion is embedded in C2PA manifests.
+  /// keepAlive ensures setting persists across widget rebuilds.
+  const AiTrainingPreferenceServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'aiTrainingPreferenceServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$aiTrainingPreferenceServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AiTrainingPreferenceService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AiTrainingPreferenceService create(Ref ref) {
+    return aiTrainingPreferenceService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AiTrainingPreferenceService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AiTrainingPreferenceService>(value),
+    );
+  }
+}
+
+String _$aiTrainingPreferenceServiceHash() =>
+    r'9b679889e93d0f25cc130290244017d293d5a1ae';
+
 /// Audio device preference service for managing the preferred input device
 /// for recording on macOS. keepAlive ensures preference persists.
 

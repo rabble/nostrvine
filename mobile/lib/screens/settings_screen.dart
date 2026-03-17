@@ -149,6 +149,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => context.push(SafetySettingsScreen.path),
               ),
               _buildAudioSharingToggle(),
+              _buildAiTrainingOptOutToggle(),
               _buildLanguageSetting(),
               // Audio device selector (macOS only - shows when multiple mics)
               if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS)
@@ -311,6 +312,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
+    );
+  }
+
+  Widget _buildAiTrainingOptOutToggle() {
+    final aiTrainingService = ref.watch(aiTrainingPreferenceServiceProvider);
+    final isEnabled = aiTrainingService.isOptOutEnabled;
+
+    return SwitchListTile(
+      value: isEnabled,
+      onChanged: (value) async {
+        await aiTrainingService.setOptOutEnabled(value);
+        setState(() {});
+      },
+      title: const Text(
+        'Protect content from AI training',
+        style: TextStyle(
+          color: VineTheme.whiteText,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: const Text(
+        'Embeds a machine-readable flag telling AI systems not to '
+        'use your videos for training or data mining',
+        style: TextStyle(color: VineTheme.lightText, fontSize: 14),
+      ),
+      activeThumbColor: VineTheme.vineGreen,
+      secondary: const Icon(Icons.shield, color: VineTheme.vineGreen),
     );
   }
 

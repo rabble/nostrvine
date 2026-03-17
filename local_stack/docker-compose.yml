@@ -117,8 +117,6 @@ services:
   funnelcake-relay:
     image: ghcr.io/divinevideo/funnelcake-relay:latest
     pull_policy: always
-    ports:
-      - "47777:7777"
     depends_on:
       funnelcake-migrate:
         condition: service_completed_successfully
@@ -132,8 +130,6 @@ services:
   funnelcake-api:
     image: ghcr.io/divinevideo/funnelcake-api:latest
     pull_policy: always
-    ports:
-      - "43001:3001"
     depends_on:
       funnelcake-migrate:
         condition: service_completed_successfully
@@ -144,6 +140,23 @@ services:
       CLICKHOUSE_USER: default
       CLICKHOUSE_PASSWORD: clickhouse
       BIND_ADDR: 0.0.0.0:3001
+
+  # Reverse proxy that unifies relay (WebSocket) and API (REST) on one port,
+  # matching production where both live behind the same domain.
+  funnelcake-proxy:
+    image: nginx:alpine
+    ports:
+      - "47777:80"
+    depends_on:
+      - funnelcake-relay
+      - funnelcake-api
+    volumes:
+      - ./funnelcake-proxy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
 
   # ---------------------------------------------------------------------------
   # MinIO (S3-compatible storage for divine-blossom local mode)

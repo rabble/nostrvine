@@ -190,6 +190,7 @@ class VideoEditorRenderService {
   renderVideoToClip({
     required List<DivineVideoClip> clips,
     bool enableAudio = true,
+    bool aiTrainingOptOut = true,
     CompleteParameters? parameters,
   }) async {
     if (clips.isEmpty) return null;
@@ -224,6 +225,7 @@ class VideoEditorRenderService {
     );
     final proofData = await NativeProofModeService.proofFile(
       File(outputPath),
+      aiTrainingOptOut: aiTrainingOptOut,
     );
     final String? proofManifestJson = proofData != null
         ? jsonEncode(proofData)
