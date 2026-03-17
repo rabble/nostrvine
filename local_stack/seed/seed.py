@@ -27,6 +27,11 @@ RELAY_URL = os.environ.get("RELAY_URL", "ws://funnelcake-relay:7777")
 BLOSSOM_URL = os.environ.get("BLOSSOM_URL", "http://blossom:3000")
 NUM_VIDEOS = int(os.environ.get("NUM_VIDEOS", "100"))
 
+MINIO_ENDPOINT = os.environ.get("MINIO_ENDPOINT", "http://minio:9000")
+MINIO_BUCKET = os.environ.get("MINIO_BUCKET", "divine-blossom-local")
+MINIO_ACCESS_KEY = os.environ.get("MINIO_ACCESS_KEY", "minioadmin")
+MINIO_SECRET_KEY = os.environ.get("MINIO_SECRET_KEY", "minioadmin")
+
 SEED_PHRASE = "divine-e2e-seed-phrase-2026"
 NUM_AUTHORS = 20
 NUM_POPULAR = 5
@@ -106,19 +111,25 @@ def sign_event(event: dict, privkey_bytes: bytes) -> dict:
 # Video generation via ffmpeg
 # ---------------------------------------------------------------------------
 def generate_test_video(path: str) -> None:
-    """Generate a 6-second 720x1280 H.264 MP4 with audio via ffmpeg."""
+    """Generate a 6-second 1080x1920 H.264 High profile MP4 at ~15 Mbps.
+
+    This simulates a real high-bitrate upload (the raw blob that should
+    never be played directly). The video is large enough to demonstrate
+    bandwidth starvation when the client doesn't use transcoded variants.
+    """
     cmd = [
         "ffmpeg", "-y",
         # Video: color bars / gradient background
         "-f", "lavfi", "-i",
-        "color=c=0x1a1a2e:s=720x1280:d=6:r=30,format=yuv420p,"
-        "drawtext=text='diVine E2E':fontsize=60:fontcolor=white:"
+        "color=c=0x1a1a2e:s=1080x1920:d=6:r=30,format=yuv420p,"
+        "drawtext=text='diVine E2E 15Mbps':fontsize=80:fontcolor=white:"
         "x=(w-text_w)/2:y=(h-text_h)/2",
         # Audio: sine tone
         "-f", "lavfi", "-i", "sine=frequency=440:duration=6",
-        # Encoding
-        "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-        "-c:a", "aac", "-b:a", "64k",
+        # Encoding: H.264 High profile at 15 Mbps
+        "-c:v", "libx264", "-profile:v", "high", "-level", "4.2",
+        "-b:v", "15M", "-maxrate", "15M", "-bufsize", "30M",
+        "-c:a", "aac", "-b:a", "128k",
         "-movflags", "+faststart",
         "-pix_fmt", "yuv420p",
         path,
@@ -128,7 +139,7 @@ def generate_test_video(path: str) -> None:
         print(f"ffmpeg stderr:\n{result.stderr}", file=sys.stderr)
         sys.exit(1)
     size = os.path.getsize(path)
-    print(f"Generated test video: {path} ({size} bytes)")
+    print(f"Generated test video: {path} ({size:,} bytes, ~15 Mbps)")
 
 
 def extract_thumbnail(video_path: str, thumb_path: str) -> None:
@@ -146,6 +157,95 @@ def extract_thumbnail(video_path: str, thumb_path: str) -> None:
         sys.exit(1)
     size = os.path.getsize(thumb_path)
     print(f"Generated thumbnail: {thumb_path} ({size} bytes)")
+
+
+def generate_transcoded_variants(
+    source_path: str,
+    out_720p: str,
+    out_480p: str,
+) -> None:
+    """Transcode the source video into 720p and 480p MPEG-TS variants.
+
+    These match the layout divine-blossom serves at /{hash}/hls/stream_*.ts.
+    """
+    for label, outpath, scale, vbitrate, abitrate in [
+        ("720p", out_720p, "1280:720", "2500k", "128k"),
+        ("480p", out_480p, "854:480", "1000k", "96k"),
+    ]:
+        cmd = [
+            "ffmpeg", "-y",
+            "-i", source_path,
+            "-vf", f"scale={scale}",
+            "-c:v", "libx264", "-profile:v", "main", "-level", "3.1",
+            "-b:v", vbitrate, "-maxrate", vbitrate,
+            "-bufsize", str(int(vbitrate.replace("k", "")) * 2) + "k",
+            "-c:a", "aac", "-b:a", abitrate,
+            "-f", "mpegts",
+            "-pix_fmt", "yuv420p",
+            outpath,
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            print(f"ffmpeg {label} stderr:\n{result.stderr}", file=sys.stderr)
+            sys.exit(1)
+        size = os.path.getsize(outpath)
+        print(f"  Transcoded {label}: {outpath} ({size:,} bytes)")
+
+
+def upload_variants_to_minio(
+    sha256_hash: str,
+    path_720p: str,
+    path_480p: str,
+) -> None:
+    """Upload transcoded .ts variants to MinIO at the expected key paths.
+
+    Keys: {sha256_hash}/hls/stream_720p.ts and stream_480p.ts.
+    Skips gracefully if MinIO is not reachable (e.g., not in compose yet).
+    """
+    try:
+        import boto3
+        from botocore.exceptions import (
+            ClientError,
+            EndpointConnectionError,
+            NoCredentialsError,
+        )
+    except ImportError:
+        print("  boto3 not installed, skipping MinIO variant upload.")
+        return
+
+    try:
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=MINIO_ENDPOINT,
+            aws_access_key_id=MINIO_ACCESS_KEY,
+            aws_secret_access_key=MINIO_SECRET_KEY,
+        )
+
+        # Ensure bucket exists
+        try:
+            s3.head_bucket(Bucket=MINIO_BUCKET)
+        except ClientError:
+            s3.create_bucket(Bucket=MINIO_BUCKET)
+            print(f"  Created MinIO bucket: {MINIO_BUCKET}")
+
+        for label, path, key_suffix in [
+            ("720p", path_720p, "hls/stream_720p.ts"),
+            ("480p", path_480p, "hls/stream_480p.ts"),
+        ]:
+            key = f"{sha256_hash}/{key_suffix}"
+            s3.upload_file(
+                path,
+                MINIO_BUCKET,
+                key,
+                ExtraArgs={"ContentType": "video/mp2t"},
+            )
+            print(f"  Uploaded {label} to MinIO: s3://{MINIO_BUCKET}/{key}")
+
+    except (EndpointConnectionError, NoCredentialsError, OSError) as e:
+        print(
+            f"  MinIO not reachable ({type(e).__name__}), "
+            "skipping variant upload. Variants will use blossom stubs.",
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -399,12 +499,16 @@ def main() -> None:
         label = "popular" if i < NUM_POPULAR else "long-tail"
         print(f"  Author {i} ({label}): {pubkey}")
 
-    # 2. Generate and upload video + thumbnail
-    print("\nGenerating test video...")
+    # 2. Generate and upload video + thumbnail + transcoded variants
+    print("\nGenerating test video (1080x1920, ~15 Mbps)...")
     with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
         video_path = tmp.name
     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp:
         thumb_path = tmp.name
+    with tempfile.NamedTemporaryFile(suffix=".ts", delete=False) as tmp:
+        path_720p = tmp.name
+    with tempfile.NamedTemporaryFile(suffix=".ts", delete=False) as tmp:
+        path_480p = tmp.name
     try:
         generate_test_video(video_path)
         extract_thumbnail(video_path, thumb_path)
@@ -412,9 +516,18 @@ def main() -> None:
         blossom_resp = upload_to_blossom(video_path, "video/mp4")
         print("Uploading thumbnail to blossom...")
         thumb_resp = upload_to_blossom(thumb_path, "image/jpeg")
+
+        # Generate and upload transcoded variants to MinIO
+        print("Transcoding variants...")
+        generate_transcoded_variants(video_path, path_720p, path_480p)
+        print("Uploading variants to MinIO...")
+        upload_variants_to_minio(blossom_resp["sha256"], path_720p, path_480p)
     finally:
-        os.unlink(video_path)
-        os.unlink(thumb_path)
+        for p in (video_path, thumb_path, path_720p, path_480p):
+            try:
+                os.unlink(p)
+            except FileNotFoundError:
+                pass
 
     video_url = blossom_resp["url"]
     video_sha256 = blossom_resp["sha256"]

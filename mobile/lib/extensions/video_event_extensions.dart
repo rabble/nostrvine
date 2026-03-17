@@ -219,7 +219,7 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Whether playback should prefer HLS instead of direct asset URLs.
   ///
   /// All Divine videos now use transcoded variant URLs (/{hash}/720p or
-  /// /480p) which are direct MP4 files. HLS is only used as a fallback
+  /// /480p) which serve MPEG-TS files. HLS is only used as a fallback
   /// for codec errors.
   bool get shouldPreferHlsPlayback => false;
 
