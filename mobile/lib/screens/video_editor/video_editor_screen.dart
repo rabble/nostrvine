@@ -172,6 +172,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   /// Opens the audio volume adjust sheet.
   Future<void> _adjustVolume() async {
+    final notifier = ref.read(videoEditorProvider.notifier);
     final state = ref.read(videoEditorProvider);
     final initialRecordedVolume = state.originalAudioVolume;
     final initialCustomVolume = state.customAudioVolume;
@@ -184,11 +185,20 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
       body: VideoEditorAudioAdjustSheet(
         initialRecordedVolume: initialRecordedVolume,
         initialCustomVolume: initialCustomVolume,
+        onRecordedVolumeChanged: notifier.previewOriginalAudioVolume,
+        onCustomVolumeChanged: notifier.previewCustomAudioVolume,
       ),
     );
-    if (result == null) return;
 
-    ref.read(videoEditorProvider.notifier)
+    if (result == null) {
+      // Restore original values on cancel
+      notifier
+        ..previewOriginalAudioVolume(initialRecordedVolume)
+        ..previewCustomAudioVolume(initialCustomVolume);
+      return;
+    }
+
+    notifier
       ..setOriginalAudioVolume(result.recordedVolume)
       ..setCustomAudioVolume(result.customVolume);
   }

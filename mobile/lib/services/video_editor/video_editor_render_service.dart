@@ -634,14 +634,19 @@ class VideoEditorRenderService {
       'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
     );
 
+    final hasCustomAudio =
+        customAudioVolume > 0 && parameters?.customAudioTrack != null;
+
     final task = VideoRenderData(
       id: taskId,
       videoSegments: segments,
       endTime: VideoEditorConstants.maxDuration,
       shouldOptimizeForNetworkUse: true,
-      customAudioPath: await parameters?.customAudioTrack?.audio.safeFilePath(),
+      customAudioPath: hasCustomAudio
+          ? await parameters?.customAudioTrack?.audio.safeFilePath()
+          : null,
       loopCustomAudio: false,
-      enableAudio: originalAudioVolume > 0 || customAudioVolume > 0,
+      enableAudio: originalAudioVolume > 0 || hasCustomAudio,
       originalAudioVolume: originalAudioVolume,
       customAudioVolume: customAudioVolume,
       imageBytes: parameters?.layers.isNotEmpty == true

@@ -10,10 +10,18 @@ class VideoEditorAudioAdjustSheet extends StatefulWidget {
     super.key,
     this.initialRecordedVolume = 1,
     this.initialCustomVolume = 1,
+    this.onRecordedVolumeChanged,
+    this.onCustomVolumeChanged,
   });
 
   final double initialRecordedVolume;
   final double initialCustomVolume;
+
+  /// Called on every slider drag for live preview of original audio volume.
+  final ValueChanged<double>? onRecordedVolumeChanged;
+
+  /// Called on every slider drag for live preview of custom audio volume.
+  final ValueChanged<double>? onCustomVolumeChanged;
 
   @override
   State<VideoEditorAudioAdjustSheet> createState() =>
@@ -28,14 +36,28 @@ class _VideoEditorAudioAdjustSheetState
   @override
   void initState() {
     super.initState();
-    _recordedVolume = ValueNotifier(widget.initialRecordedVolume);
-    _customVolume = ValueNotifier(widget.initialCustomVolume);
+    _recordedVolume = ValueNotifier(widget.initialRecordedVolume)
+      ..addListener(_onRecordedVolumeChanged);
+    _customVolume = ValueNotifier(widget.initialCustomVolume)
+      ..addListener(_onCustomVolumeChanged);
+  }
+
+  void _onRecordedVolumeChanged() {
+    widget.onRecordedVolumeChanged?.call(_recordedVolume.value);
+  }
+
+  void _onCustomVolumeChanged() {
+    widget.onCustomVolumeChanged?.call(_customVolume.value);
   }
 
   @override
   void dispose() {
-    _recordedVolume.dispose();
-    _customVolume.dispose();
+    _recordedVolume
+      ..removeListener(_onRecordedVolumeChanged)
+      ..dispose();
+    _customVolume
+      ..removeListener(_onCustomVolumeChanged)
+      ..dispose();
     super.dispose();
   }
 

@@ -693,6 +693,28 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     }
   }
 
+  /// Preview original audio volume without invalidating render or autosave.
+  ///
+  /// Used during live slider interaction so the user can hear the change
+  /// immediately. Call [setOriginalAudioVolume] to commit the final value.
+  void previewOriginalAudioVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    if (clamped != state.originalAudioVolume) {
+      state = state.copyWith(originalAudioVolume: clamped);
+    }
+  }
+
+  /// Preview custom audio volume without invalidating render or autosave.
+  ///
+  /// Used during live slider interaction so the user can hear the change
+  /// immediately. Call [setCustomAudioVolume] to commit the final value.
+  void previewCustomAudioVolume(double volume) {
+    final clamped = volume.clamp(0.0, 1.0);
+    if (clamped != state.customAudioVolume) {
+      state = state.copyWith(customAudioVolume: clamped);
+    }
+  }
+
   /// Update the start offset of the currently selected sound.
   void updateSoundStartOffset(Duration offset) {
     if (state.selectedSound != null) {
